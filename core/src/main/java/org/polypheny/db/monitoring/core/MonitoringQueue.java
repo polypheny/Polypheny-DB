@@ -16,8 +16,9 @@
 
 package org.polypheny.db.monitoring.core;
 
-import org.polypheny.db.monitoring.dtos.MonitoringEventData;
-import org.polypheny.db.monitoring.persistence.MonitoringPersistentData;
+import org.polypheny.db.monitoring.dtos.MonitoringData;
+import org.polypheny.db.monitoring.dtos.MonitoringJob;
+import org.polypheny.db.monitoring.dtos.MonitoringPersistentData;
 import org.polypheny.db.util.Pair;
 
 /**
@@ -33,14 +34,26 @@ public interface MonitoringQueue {
      *
      * @param eventData the event data which will be queued.
      */
-    void queueEvent(MonitoringEventData eventData);
+    void queueEvent( MonitoringData eventData );
+
 
     /**
-     * @param classPair     pair for MonitoringEventData and the MonitoringPersistentData
-     * @param worker        worker which will handle the event.
-     * @param <TEvent>      the event data type.
+     * Monitoring jobs can be assigned directly and will be queued.
+     *
+     * @param job the job which will be monitored
+     * @param <TEvent> the event data type.
      * @param <TPersistent> the persistent data type.
      */
-    <TEvent extends MonitoringEventData, TPersistent extends MonitoringPersistentData>
-    void registerQueueWorker(Pair<Class<TEvent>, Class<TPersistent>> classPair, MonitoringQueueWorker<TEvent, TPersistent> worker);
+    <TEvent extends MonitoringData, TPersistent extends MonitoringPersistentData>
+    void queueJob( MonitoringJob<TEvent, TPersistent> job );
+
+    /**
+     * @param classPair pair for MonitoringEventData and the MonitoringPersistentData
+     * @param worker worker which will handle the event.
+     * @param <TEvent> the event data type.
+     * @param <TPersistent> the persistent data type.
+     */
+    <TEvent extends MonitoringData, TPersistent extends MonitoringPersistentData>
+    void registerQueueWorker( Pair<Class<TEvent>, Class<TPersistent>> classPair, MonitoringQueueWorker<TEvent, TPersistent> worker );
+
 }

@@ -14,14 +14,30 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.persistence;
+package org.polypheny.db.monitoring.persistent;
 
+import org.polypheny.db.monitoring.dtos.MonitoringData;
 import org.polypheny.db.monitoring.dtos.MonitoringJob;
+import org.polypheny.db.monitoring.dtos.MonitoringPersistentData;
 
-// make it generic?
-public interface WriteMonitoringRepository {
+/**
+ * Interface for writing monitoring jobs to repository.
+ */
+public interface MonitoringRepository {
 
+    /**
+     * Initialized the repository, might need some configuration beforehand.
+     */
     void initialize();
 
-    void writeEvent(MonitoringJob monitoringJob);
+    /**
+     * Persist given monitoring job.
+     *
+     * @param monitoringJob
+     * @param <TEvent>
+     * @param <TPersistent>
+     */
+    <TEvent extends MonitoringData, TPersistent extends MonitoringPersistentData>
+    void persistJob( MonitoringJob<TEvent, TPersistent> monitoringJob );
+
 }

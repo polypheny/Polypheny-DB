@@ -18,9 +18,14 @@ package org.polypheny.db.monitoring.core;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Provider for the MonitoringService singleton instance.
+ */
 @Slf4j
 public class MonitoringServiceProvider {
-    public static MonitoringService INSTANCE = null;
+
+    private static MonitoringService INSTANCE = null;
+
 
     public static MonitoringService MONITORING_SERVICE() {
         if (INSTANCE == null) {

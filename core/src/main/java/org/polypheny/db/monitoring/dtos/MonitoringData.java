@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.persistence;
+package org.polypheny.db.monitoring.dtos;
 
-import java.util.UUID;
+/**
+ * Marker interface for the data type, which can be monitored.
+ * A MonitoringData implementation should always have a corresponding
+ * MonitoringPersistentData implementation.
+ */
+public interface MonitoringData {
 
-public interface MonitoringPersistentData {
-    UUID Id();
-
-    long timestamp();
 }

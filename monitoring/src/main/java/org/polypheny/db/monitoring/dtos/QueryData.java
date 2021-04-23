@@ -16,25 +16,30 @@
 
 package org.polypheny.db.monitoring.dtos;
 
+import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.transaction.Statement;
 
-import java.util.List;
-
 @Getter
+@Setter
 @Builder
-public class QueryData implements MonitoringEventData {
+public class QueryData implements MonitoringData {
 
     public String monitoringType;
-    private String description;
-    private List<String> fieldNames;
-    private long recordedTimestamp;
-
     public RelRoot routed;
     public PolyphenyDbSignature signature;
     public Statement statement;
     public List<List<Object>> rows;
+    private String description;
+    private List<String> fieldNames;
+    private long recordedTimestamp;
+    private long executionTime;
+    private int rowCount;
+    private boolean isAnalyze;
+    private boolean isSubQuery;
+
 }

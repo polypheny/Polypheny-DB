@@ -17,30 +17,37 @@
 package org.polypheny.db.monitoring.core;
 
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.monitoring.Ui.MonitoringServiceUi;
-import org.polypheny.db.monitoring.Ui.MonitoringServiceUiImpl;
 import org.polypheny.db.monitoring.dtos.QueryData;
-import org.polypheny.db.monitoring.persistence.QueryPersistentData;
 import org.polypheny.db.monitoring.persistence.MapDbRepository;
+import org.polypheny.db.monitoring.persistence.QueryPersistentData;
+import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
+import org.polypheny.db.monitoring.ui.MonitoringServiceUiImpl;
 
 @Slf4j
 public class MonitoringServiceFactory {
 
     public static MonitoringServiceImpl CreateMonitoringService() {
+
+        // create mapDB repository
         MapDbRepository repo = new MapDbRepository();
+        // initialize the mapDB repo and open connection
         repo.initialize();
 
-        MonitoringQueueWorker worker = new QueryWorkerMonitoring(repo);
-
+        // create monitoring service with dependencies
         MonitoringQueue writeService = new MonitoringQueueImpl();
+        MonitoringServiceUi uiService = new MonitoringServiceUiImpl( repo );
 
-        MonitoringServiceUi uiService = new MonitoringServiceUiImpl(repo);
+        // initialize ui
         uiService.initializeInformationPage();
 
-        MonitoringServiceImpl result = new MonitoringServiceImpl(writeService, repo, uiService);
-        result.registerEventType(QueryData.class, QueryPersistentData.class, worker);
+        // initialize the monitoringService
+        MonitoringServiceImpl monitoringService = new MonitoringServiceImpl( writeService, repo, uiService );
 
-        return result;
+        // configure query monitoring event as system wide monitoring
+        MonitoringQueueWorker worker = new QueryWorker( repo );
+        monitoringService.registerEventType( QueryData.class, QueryPersistentData.class, worker );
+
+        return monitoringService;
     }
 
 }

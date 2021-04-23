@@ -19,10 +19,11 @@ package org.polypheny.db.information;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializer;
+import org.apache.commons.lang3.time.StopWatch;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.UUID;
-import org.apache.commons.lang3.time.StopWatch;
 
 
 public class InformationDuration extends Information {
@@ -59,6 +60,15 @@ public class InformationDuration extends Information {
 
     public Duration get( final String name ) {
         return this.children.get( name );
+    }
+
+
+    public long getSequence( final String name ) {
+        Duration child = this.children.get( name );
+        if ( child != null ) {
+            return child.sequence;
+        }
+        return 0;
     }
 
 
@@ -154,7 +164,6 @@ public class InformationDuration extends Information {
         public Duration get( final String name ) {
             return this.children.get( name );
         }
-
 
         /**
          * Set the limit in milliseconds. If the task too more time than the limit, it will be marked in the UI

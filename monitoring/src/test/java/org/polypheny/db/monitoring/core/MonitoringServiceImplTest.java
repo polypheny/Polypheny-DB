@@ -18,11 +18,11 @@ package org.polypheny.db.monitoring.core;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
-import org.polypheny.db.monitoring.Ui.MonitoringServiceUi;
 import org.polypheny.db.monitoring.dtos.QueryData;
 import org.polypheny.db.monitoring.persistence.QueryPersistentData;
-import org.polypheny.db.monitoring.persistence.ReadOnlyMonitoringRepository;
-import org.polypheny.db.monitoring.persistence.WriteMonitoringRepository;
+import org.polypheny.db.monitoring.persistent.ReadOnlyMonitoringRepository;
+import org.polypheny.db.monitoring.persistent.MonitoringRepository;
+import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
@@ -36,7 +36,7 @@ public class MonitoringServiceImplTest {
         ReadOnlyMonitoringRepository doc2 = mock(ReadOnlyMonitoringRepository.class);
         MonitoringServiceUi doc3 = mock(MonitoringServiceUi.class);
 
-        WriteMonitoringRepository doc4 = mock(WriteMonitoringRepository.class);
+        MonitoringRepository doc4 = mock( MonitoringRepository.class );
 
 
         MonitoringQueue writeQueueService = new MonitoringQueueImpl();

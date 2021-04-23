@@ -16,6 +16,19 @@
 
 package org.polypheny.db.monitoring.dtos;
 
-public interface MonitoringEventData {
+import java.io.Serializable;
+import java.sql.Timestamp;
+import java.util.UUID;
+
+/**
+ * Marker interface for the persistent data type, which can be monitored.
+ * A MonitoringPersistentData implementation need to be serializable and should always have a corresponding
+ * MonitoringData implementation. In theory, the same class could implement both interfaces.
+ */
+public interface MonitoringPersistentData extends Serializable {
+
+    UUID Id();
+
+    Timestamp timestamp();
 
 }

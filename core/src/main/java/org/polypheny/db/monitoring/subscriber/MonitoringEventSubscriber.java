@@ -16,8 +16,10 @@
 
 package org.polypheny.db.monitoring.subscriber;
 
-import org.polypheny.db.monitoring.dtos.MonitoringEventData;
+import org.polypheny.db.monitoring.dtos.MonitoringData;
 
-public interface MonitoringEventSubscriber<T extends MonitoringEventData> {
-    void update(T eventData);
+public interface MonitoringEventSubscriber<T extends MonitoringData> {
+
+    void update( T eventData );
+
 }

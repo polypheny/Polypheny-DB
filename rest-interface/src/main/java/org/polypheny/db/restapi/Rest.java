@@ -33,6 +33,8 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
+import org.polypheny.db.monitoring.dtos.QueryData;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
@@ -429,7 +431,7 @@ public class Rest {
         List<String> aliases = new ArrayList<>();
 
         for ( RequestColumn column : columns ) {
-            RexNode inputRef = rexBuilder.makeInputRef( baseNode, (int) column.getTableScanIndex() );
+            RexNode inputRef = rexBuilder.makeInputRef( baseNode, column.getTableScanIndex() );
             inputRefs.add( inputRef );
             aliases.add( column.getAlias() );
         }
@@ -446,7 +448,7 @@ public class Rest {
 
         for ( RequestColumn column : columns ) {
             if ( column.isExplicit() ) {
-                RexNode inputRef = rexBuilder.makeInputRef( baseNode, (int) column.getLogicalIndex() );
+                RexNode inputRef = rexBuilder.makeInputRef( baseNode, column.getLogicalIndex() );
                 inputRefs.add( inputRef );
                 aliases.add( column.getAlias() );
             }
@@ -485,7 +487,7 @@ public class Rest {
 
             List<Integer> groupByOrdinals = new ArrayList<>();
             for ( RequestColumn column : groupings ) {
-                groupByOrdinals.add( (int) column.getLogicalIndex() );
+                groupByOrdinals.add( column.getLogicalIndex() );
             }
 
             GroupKey groupKey = relBuilder.groupKey( ImmutableBitSet.of( groupByOrdinals ) );
@@ -504,7 +506,7 @@ public class Rest {
             List<RexNode> sortingNodes = new ArrayList<>();
             RelNode baseNodeForSorts = relBuilder.peek();
             for ( Pair<RequestColumn, Boolean> sort : sorts ) {
-                int inputField = (int) sort.left.getLogicalIndex();
+                int inputField = sort.left.getLogicalIndex();
                 RexNode inputRef = rexBuilder.makeInputRef( baseNodeForSorts, inputField );
                 RexNode sortingNode;
                 if ( sort.right ) {
@@ -545,9 +547,12 @@ public class Rest {
             Iterator<Object> iterator = iterable.iterator();
             restResult = new RestResult( relRoot.kind, iterator, signature.rowType, signature.columns );
             restResult.transform();
+            long executionTime = restResult.getExecutionTime();
             if ( !relRoot.kind.belongsTo( SqlKind.DML ) ) {
-                signature.getExecutionTimeMonitor().setExecutionTime( restResult.getExecutionTime() );
+                signature.getExecutionTimeMonitor().setExecutionTime( executionTime );
             }
+
+            ((QueryData) statement.getTransaction().getMonitoringJob().getMonitoringData()).setExecutionTime( executionTime );
             statement.getTransaction().commit();
         } catch ( Throwable e ) {
             log.error( "Error during execution of REST query", e );
@@ -558,7 +563,11 @@ public class Rest {
             }
             return null;
         }
-        return restResult.getResult( res );
+        Pair<String, Integer> result = restResult.getResult( res );
+        ((QueryData) statement.getTransaction().getMonitoringJob().getMonitoringData()).setRowCount( result.right );
+        MonitoringServiceProvider.MONITORING_SERVICE().monitorJob( statement.getTransaction().getMonitoringJob() );
+
+        return result.left;
     }
 
 }

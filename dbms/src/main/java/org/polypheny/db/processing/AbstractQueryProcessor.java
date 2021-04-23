@@ -19,6 +19,21 @@ package org.polypheny.db.processing;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import java.lang.reflect.Type;
+import java.sql.DatabaseMetaData;
+import java.sql.Types;
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -52,8 +67,9 @@ import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
+import org.polypheny.db.monitoring.dtos.MonitoringJob;
 import org.polypheny.db.monitoring.dtos.QueryData;
+import org.polypheny.db.monitoring.persistence.QueryPersistentData;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.RelTraitSet;
@@ -61,14 +77,42 @@ import org.polypheny.db.plan.ViewExpanders;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.prepare.Prepare.PreparedResultImpl;
-import org.polypheny.db.rel.*;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelCollations;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.rel.RelShuttle;
+import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.core.ConditionalExecute.Condition;
-import org.polypheny.db.rel.core.*;
-import org.polypheny.db.rel.logical.*;
+import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rel.core.TableFunctionScan;
+import org.polypheny.db.rel.core.TableScan;
+import org.polypheny.db.rel.core.Values;
+import org.polypheny.db.rel.logical.LogicalAggregate;
+import org.polypheny.db.rel.logical.LogicalConditionalExecute;
+import org.polypheny.db.rel.logical.LogicalCorrelate;
+import org.polypheny.db.rel.logical.LogicalExchange;
+import org.polypheny.db.rel.logical.LogicalFilter;
+import org.polypheny.db.rel.logical.LogicalIntersect;
+import org.polypheny.db.rel.logical.LogicalJoin;
+import org.polypheny.db.rel.logical.LogicalMatch;
+import org.polypheny.db.rel.logical.LogicalMinus;
+import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rel.logical.LogicalSort;
+import org.polypheny.db.rel.logical.LogicalTableModify;
+import org.polypheny.db.rel.logical.LogicalTableScan;
+import org.polypheny.db.rel.logical.LogicalUnion;
+import org.polypheny.db.rel.logical.LogicalValues;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rex.*;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
@@ -80,10 +124,14 @@ import org.polypheny.db.sql2rel.RelStructuredTypeFlattener;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
 import org.polypheny.db.tools.RelBuilder;
-import org.polypheny.db.transaction.*;
+import org.polypheny.db.transaction.DeadlockException;
 import org.polypheny.db.transaction.Lock.LockMode;
+import org.polypheny.db.transaction.LockManager;
+import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.TableAccessMap;
 import org.polypheny.db.transaction.TableAccessMap.Mode;
 import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
+import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.ExtraPolyTypes;
 import org.polypheny.db.type.PolyType;
@@ -91,28 +139,60 @@ import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
-import java.lang.reflect.Type;
-import java.sql.DatabaseMetaData;
-import java.sql.Types;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
 
 @Slf4j
 public abstract class AbstractQueryProcessor implements QueryProcessor {
-
-    private final Statement statement;
 
     protected static final boolean ENABLE_BINDABLE = false;
     protected static final boolean ENABLE_COLLATION_TRAIT = true;
     protected static final boolean ENABLE_ENUMERABLE = true;
     protected static final boolean CONSTANT_REDUCTION = false;
     protected static final boolean ENABLE_STREAM = true;
+    private final Statement statement;
 
 
     protected AbstractQueryProcessor( Statement statement ) {
         this.statement = statement;
+    }
+
+
+    private static RelDataType makeStruct( RelDataTypeFactory typeFactory, RelDataType type ) {
+        if ( type.isStruct() ) {
+            return type;
+        }
+        // TODO MV: This "null" might be wrong
+        return typeFactory.builder().add( "$0", null, type ).build();
+    }
+
+
+    private static String origin( List<String> origins, int offsetFromEnd ) {
+        return origins == null || offsetFromEnd >= origins.size()
+                ? null
+                : origins.get( origins.size() - 1 - offsetFromEnd );
+    }
+
+
+    private static int getScale( RelDataType type ) {
+        return type.getScale() == RelDataType.SCALE_NOT_SPECIFIED
+                ? 0
+                : type.getScale();
+    }
+
+
+    private static int getPrecision( RelDataType type ) {
+        return type.getPrecision() == RelDataType.PRECISION_NOT_SPECIFIED
+                ? 0
+                : type.getPrecision();
+    }
+
+
+    private static String getClassName( RelDataType type ) {
+        return Object.class.getName();
+    }
+
+
+    private static int getTypeOrdinal( RelDataType type ) {
+        return type.getPolyType().getJdbcOrdinal();
     }
 
 
@@ -225,7 +305,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             routedRoot = logicalRoot;
         }
 
-
         // Validate parameterValues
         ParameterValueValidator pmValidator = new ParameterValueValidator( routedRoot.validatedRowType, statement.getDataContext() );
         pmValidator.visit( routedRoot.rel );
@@ -252,33 +331,26 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                     statement.getDuration().stop( "Implementation Caching" );
                 }
 
-
                 //needed for row results
-                final Enumerable enumerable = signature.enumerable(statement.getDataContext());
+                final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
                 Iterator<Object> iterator = enumerable.iterator();
 
-                /*MonitoringService.INSTANCE.addWorkloadEventToQueue( MonitorEvent.builder()
+                TransactionImpl transaction = (TransactionImpl) statement.getTransaction();
+                MonitoringJob<QueryData, QueryPersistentData> monitoringJob = transaction.getMonitoringJob();
+
+                QueryData eventData = QueryData.builder()
                         .monitoringType( signature.statementType.toString() )
-                        .description( "Test description:"+ parameterizedRoot.kind.sql )
-                        .fieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames()))
+                        .description( "Test description:" + parameterizedRoot.kind.sql )
                         .recordedTimestamp( System.currentTimeMillis() )
                         .routed( logicalRoot )
+                        .fieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames() ) )
                         .rows( MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() ) )
-                        .build() );*/
+                        .isAnalyze( isAnalyze )
+                        .isSubQuery( isSubquery )
+                        .build();
 
-                MonitoringServiceProvider.MONITORING_SERVICE().monitorEvent(
-                        QueryData.builder()
-                                .monitoringType(signature.statementType.toString())
-                                .description("Test description:" + parameterizedRoot.kind.sql)
-                                .recordedTimestamp(System.currentTimeMillis())
-                                .routed(logicalRoot)
-                                .fieldNames(ImmutableList.copyOf(signature.rowType.getFieldNames()))
-                                .rows(MetaImpl.collect(signature.cursorFactory, iterator, new ArrayList<>()))
-                                .build()
-                );
+                monitoringJob.setMonitoringData( eventData );
 
-
-                //MonitoringService.MonitorEvent( InfluxPojo.Create(  routedRoot.rel.relCompareString(), signature.statementType.toString(), Long.valueOf( signature.columns.size() ) ) );
                 return signature;
             }
         }
@@ -360,35 +432,26 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             log.debug( "Preparing statement ... done. [{}]", stopWatch );
         }
 
-
-
-
         //needed for row results
         final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
         Iterator<Object> iterator = enumerable.iterator();
 
+        TransactionImpl transaction = (TransactionImpl) statement.getTransaction();
+        MonitoringJob<QueryData, QueryPersistentData> monitoringJob = transaction.getMonitoringJob();
 
-        /*MonitoringService.INSTANCE.addWorkloadEventToQueue( MonitorEvent.builder()
+        QueryData eventData = QueryData.builder()
                 .monitoringType( signature.statementType.toString() )
-                .description( "Test description:"+ parameterizedRoot.kind.sql )
-                .fieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames()))
+                .description( "Test description:" + parameterizedRoot.kind.sql )
                 .recordedTimestamp( System.currentTimeMillis() )
                 .routed( logicalRoot )
+                .fieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames() ) )
                 .rows( MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() ) )
-                .build() );*/
+                .isSubQuery( isSubquery )
+                .isAnalyze( isAnalyze )
+                .build();
 
-        MonitoringServiceProvider.MONITORING_SERVICE().monitorEvent(
-                QueryData.builder()
-                        .monitoringType(signature.statementType.toString())
-                        .description("Test description:" + parameterizedRoot.kind.sql)
-                        .fieldNames(ImmutableList.copyOf(signature.rowType.getFieldNames()))
-                        .routed(logicalRoot)
-                        .recordedTimestamp(System.currentTimeMillis())
-                        .rows(MetaImpl.collect(signature.cursorFactory, iterator, new ArrayList<>()))
-                        .build()
-        );
+        monitoringJob.setMonitoringData( eventData );
 
-        //MonitoringService.MonitorEvent( InfluxPojo.Create( routedRoot.rel.relCompareString(), signature.statementType.toString(), Long.valueOf( signature.columns.size() ) ));
         return signature;
     }
 
@@ -1008,46 +1071,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     }
 
 
-    private static RelDataType makeStruct( RelDataTypeFactory typeFactory, RelDataType type ) {
-        if ( type.isStruct() ) {
-            return type;
-        }
-        // TODO MV: This "null" might be wrong
-        return typeFactory.builder().add( "$0", null, type ).build();
-    }
-
-
-    private static String origin( List<String> origins, int offsetFromEnd ) {
-        return origins == null || offsetFromEnd >= origins.size()
-                ? null
-                : origins.get( origins.size() - 1 - offsetFromEnd );
-    }
-
-
-    private static int getScale( RelDataType type ) {
-        return type.getScale() == RelDataType.SCALE_NOT_SPECIFIED
-                ? 0
-                : type.getScale();
-    }
-
-
-    private static int getPrecision( RelDataType type ) {
-        return type.getPrecision() == RelDataType.PRECISION_NOT_SPECIFIED
-                ? 0
-                : type.getPrecision();
-    }
-
-
-    private static String getClassName( RelDataType type ) {
-        return Object.class.getName();
-    }
-
-
-    private static int getTypeOrdinal( RelDataType type ) {
-        return type.getPolyType().getJdbcOrdinal();
-    }
-
-
     protected LogicalTableModify.Operation mapTableModOp( boolean isDml, SqlKind sqlKind ) {
         if ( !isDml ) {
             return null;
@@ -1148,6 +1171,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     @Override
     public RelRoot expandView( RelDataType rowType, String queryString, List<String> schemaPath, List<String> viewPath ) {
         return null; // TODO
+    }
+
+
+    @Override
+    public void resetCaches() {
+        ImplementationCache.INSTANCE.reset();
+        QueryPlanCache.INSTANCE.reset();
+        statement.getRouter().resetCaches();
     }
 
 
@@ -1268,14 +1299,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             return node.copy( copy( node.getTraitSet() ), node.getInputs() );
         }
 
-    }
-
-
-    @Override
-    public void resetCaches() {
-        ImplementationCache.INSTANCE.reset();
-        QueryPlanCache.INSTANCE.reset();
-        statement.getRouter().resetCaches();
     }
 
 }

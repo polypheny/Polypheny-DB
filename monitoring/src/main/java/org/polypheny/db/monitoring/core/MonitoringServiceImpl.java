@@ -16,85 +16,109 @@
 
 package org.polypheny.db.monitoring.core;
 
-import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.monitoring.Ui.MonitoringServiceUi;
-import org.polypheny.db.monitoring.dtos.MonitoringEventData;
-import org.polypheny.db.monitoring.persistence.MonitoringPersistentData;
-import org.polypheny.db.monitoring.persistence.ReadOnlyMonitoringRepository;
-import org.polypheny.db.monitoring.subscriber.MonitoringEventSubscriber;
-import org.polypheny.db.util.Pair;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.monitoring.dtos.MonitoringData;
+import org.polypheny.db.monitoring.dtos.MonitoringJob;
+import org.polypheny.db.monitoring.dtos.MonitoringPersistentData;
+import org.polypheny.db.monitoring.persistent.ReadOnlyMonitoringRepository;
+import org.polypheny.db.monitoring.subscriber.MonitoringEventSubscriber;
+import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
+import org.polypheny.db.util.Pair;
 
 @Slf4j
 public class MonitoringServiceImpl implements MonitoringService {
-    private MonitoringQueue monitoringQueue;
-    private ReadOnlyMonitoringRepository readOnlyMonitoringRepository;
-    private MonitoringServiceUi monitoringServiceUi;
 
+    // region private fields
+
+    private final MonitoringQueue monitoringQueue;
+    private final ReadOnlyMonitoringRepository readOnlyMonitoringRepository;
+    private final MonitoringServiceUi monitoringServiceUi;
 
     private final List<Pair<Class, Class>> registeredMonitoringPair = new ArrayList<>();
+
+    // endregion
+
+    // region ctors
 
 
     public MonitoringServiceImpl(
             MonitoringQueue monitoringQueue,
             ReadOnlyMonitoringRepository readOnlyMonitoringRepository,
-            MonitoringServiceUi monitoringServiceUi) {
-        if (monitoringQueue == null)
-            throw new IllegalArgumentException("empty monitoring write queue service");
+            MonitoringServiceUi monitoringServiceUi ) {
+        if ( monitoringQueue == null ) {
+            throw new IllegalArgumentException( "empty monitoring write queue service" );
+        }
 
-        if (readOnlyMonitoringRepository == null)
-            throw new IllegalArgumentException("empty read-only repository");
+        if ( readOnlyMonitoringRepository == null ) {
+            throw new IllegalArgumentException( "empty read-only repository" );
+        }
 
-        if (monitoringServiceUi == null)
-            throw new IllegalArgumentException("empty monitoring ui service");
+        if ( monitoringServiceUi == null ) {
+            throw new IllegalArgumentException( "empty monitoring ui service" );
+        }
 
         this.monitoringQueue = monitoringQueue;
         this.readOnlyMonitoringRepository = readOnlyMonitoringRepository;
         this.monitoringServiceUi = monitoringServiceUi;
     }
 
+    // endregion
+
+    // region public methods
+
+
     @Override
-    public void monitorEvent(MonitoringEventData eventData) {
-        if (!this.registeredMonitoringPair.stream().anyMatch(pair -> pair.left.isInstance(eventData))) {
-            throw new IllegalArgumentException("Event Class is not yet registered");
+    public void monitorEvent( MonitoringData eventData ) {
+        if ( this.registeredMonitoringPair.stream().noneMatch( pair -> pair.left.isInstance( eventData ) ) ) {
+            throw new IllegalArgumentException( "Event Class is not yet registered" );
         }
 
-        this.monitoringQueue.queueEvent(eventData);
+        this.monitoringQueue.queueEvent( eventData );
     }
 
-    @Override
-    public <T extends MonitoringEventData> void subscribeEvent(Class<T> eventDataClass, MonitoringEventSubscriber<T> subscriber) {
-
-    }
 
     @Override
-    public <T extends MonitoringEventData> void unsubscribeEvent(Class<T> eventDataClass, MonitoringEventSubscriber<T> subscriber) {
+    public <T extends MonitoringData> void subscribeEvent( Class<T> eventDataClass, MonitoringEventSubscriber<T> subscriber ) {
 
     }
 
-    @Override
-    public <TEvent extends MonitoringEventData, TPersistent extends MonitoringPersistentData> void
-    registerEventType(Class<TEvent> eventDataClass, Class<TPersistent> eventPersistentDataClass) {
-        Pair<Class, Class> pair = new Pair(eventDataClass, eventPersistentDataClass);
 
-        if (eventDataClass != null && !this.registeredMonitoringPair.contains(pair)) {
-            this.registeredMonitoringPair.add(pair);
+    @Override
+    public <T extends MonitoringData> void unsubscribeEvent( Class<T> eventDataClass, MonitoringEventSubscriber<T> subscriber ) {
+
+    }
+
+
+    @Override
+    public void monitorJob( MonitoringJob job ) {
+        this.monitoringQueue.queueJob( job );
+    }
+
+
+    @Override
+    public <TEvent extends MonitoringData, TPersistent extends MonitoringPersistentData> void
+    registerEventType( Class<TEvent> eventDataClass, Class<TPersistent> eventPersistentDataClass ) {
+        Pair<Class, Class> pair = new Pair( eventDataClass, eventPersistentDataClass );
+
+        if ( eventDataClass != null && !this.registeredMonitoringPair.contains( pair ) ) {
+            this.registeredMonitoringPair.add( pair );
         }
     }
 
-    @Override
-    public <TEvent extends MonitoringEventData, TPersistent extends MonitoringPersistentData> void
-    registerEventType(Class<TEvent> eventDataClass, Class<TPersistent> eventPersistentDataClass, MonitoringQueueWorker<TEvent, TPersistent> consumer) {
-        Pair<Class<TEvent>, Class<TPersistent>> pair = new Pair(eventDataClass, eventPersistentDataClass);
 
-        if (eventDataClass != null && !this.registeredMonitoringPair.contains(pair)) {
-            this.registerEventType(eventDataClass, eventPersistentDataClass);
-            this.monitoringQueue.registerQueueWorker(pair, consumer);
-            this.monitoringServiceUi.registerPersistentClass(eventPersistentDataClass);
+    @Override
+    public <TEvent extends MonitoringData, TPersistent extends MonitoringPersistentData> void
+    registerEventType( Class<TEvent> eventDataClass, Class<TPersistent> eventPersistentDataClass, MonitoringQueueWorker<TEvent, TPersistent> consumer ) {
+        Pair<Class<TEvent>, Class<TPersistent>> pair = new Pair( eventDataClass, eventPersistentDataClass );
+
+        if ( eventDataClass != null && !this.registeredMonitoringPair.contains( pair ) ) {
+            this.registerEventType( eventDataClass, eventPersistentDataClass );
+            this.monitoringQueue.registerQueueWorker( pair, consumer );
+            this.monitoringServiceUi.registerPersistentClass( eventPersistentDataClass );
         }
     }
 
-
+    // endregion
 }

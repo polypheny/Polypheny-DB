@@ -23,7 +23,8 @@ import org.polypheny.db.monitoring.dtos.QueryData;
 public class QueryEventSubscriber implements MonitoringEventSubscriber<QueryData> {
 
     @Override
-    public void update(QueryData eventData) {
-        log.debug("Sample Query event subscriber:" + eventData.getMonitoringType());
+    public void update( QueryData eventData ) {
+        log.debug( "Sample Query event subscriber:" + eventData.getMonitoringType() );
     }
+
 }

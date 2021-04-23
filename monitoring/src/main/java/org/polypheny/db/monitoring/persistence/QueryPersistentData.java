@@ -16,13 +16,19 @@
 
 package org.polypheny.db.monitoring.persistence;
 
-import lombok.*;
-
 import java.io.Serializable;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.polypheny.db.monitoring.dtos.MonitoringPersistentData;
 
 @Getter
 @Setter
@@ -32,15 +38,16 @@ import java.util.UUID;
 public class QueryPersistentData implements MonitoringPersistentData, Serializable {
 
     private static final long serialVersionUID = 2312903042511293177L;
-
+    private final List<String> tables = new ArrayList<>();
+    private final HashMap<String, Object> dataElements = new HashMap<>();
     private UUID Id;
+    private Timestamp recordedTimestamp;
     private String monitoringType;
     private String description;
-    private long recordedTimestamp;
-    private final List<String> tables = new ArrayList<>();
+    private long executionTime;
+    private boolean isSubQuery;
+    private int rowCount;
     private List<String> fieldNames;
-
-    private final HashMap<String, Object> dataElements = new HashMap<>();
 
 
     @Override
@@ -48,10 +55,12 @@ public class QueryPersistentData implements MonitoringPersistentData, Serializab
         return this.Id;
     }
 
+
     @Override
-    public long timestamp() {
+    public Timestamp timestamp() {
         return this.recordedTimestamp;
     }
+
 }
 
 

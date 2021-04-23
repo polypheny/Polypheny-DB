@@ -14,13 +14,24 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.Ui;
+package org.polypheny.db.monitoring.ui;
 
-import org.polypheny.db.monitoring.persistence.MonitoringPersistentData;
+import org.polypheny.db.monitoring.dtos.MonitoringPersistentData;
 
+/**
+ * Ui abstraction service for monitoring.
+ */
 public interface MonitoringServiceUi {
 
     void initializeInformationPage();
 
-    <TPersistent extends MonitoringPersistentData> void registerPersistentClass(Class<TPersistent> registerClass);
+    /**
+     * Will add new section to monitoring information page for the specified
+     * MonitoringPersistentData type and register the refresh function to read from repository.
+     *
+     * @param persistentDataClass
+     * @param <TPersistent>
+     */
+    <TPersistent extends MonitoringPersistentData> void registerPersistentClass( Class<TPersistent> persistentDataClass );
+
 }
