@@ -318,19 +318,20 @@ public class MonetdbStore extends AbstractJdbcStore {
 
 
     private boolean testDockerConnection() {
+        ConnectionFactory connectionFactory = null;
         ConnectionHandler handler = null;
         try {
-            ConnectionFactory connectionFactory = createConnectionFactory();
+            connectionFactory = createConnectionFactory();
 
             PolyXid randomXid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.NODE ), PUID.randomPUID( Type.TRANSACTION ) );
             handler = connectionFactory.getOrCreateConnectionHandler( randomXid );
-            ResultSet resultSet = handler.executeQuery( "SELECT 0" );
+            ResultSet resultSet = handler.executeQuery( "SELECT 1" );
 
             if ( resultSet.isBeforeFirst() ) {
                 handler.commit();
+                connectionFactory.close();
                 return true;
             }
-
         } catch ( Exception e ) {
             // ignore
         }
@@ -338,6 +339,13 @@ public class MonetdbStore extends AbstractJdbcStore {
             try {
                 handler.commit();
             } catch ( ConnectionHandlerException e ) {
+                // ignore
+            }
+        }
+        if ( connectionFactory != null ) {
+            try {
+                connectionFactory.close();
+            } catch ( SQLException e ) {
                 // ignore
             }
         }

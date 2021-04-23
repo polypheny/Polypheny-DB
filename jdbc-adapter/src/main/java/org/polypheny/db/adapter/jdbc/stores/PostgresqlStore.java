@@ -20,6 +20,7 @@ package org.polypheny.db.adapter.jdbc.stores;
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -305,19 +306,20 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
 
     private boolean testDockerConnection() {
+        ConnectionFactory connectionFactory = null;
         ConnectionHandler handler = null;
         try {
-            ConnectionFactory connectionFactory = createConnectionFactory();
+            connectionFactory = createConnectionFactory();
 
             PolyXid randomXid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.NODE ), PUID.randomPUID( Type.TRANSACTION ) );
             handler = connectionFactory.getOrCreateConnectionHandler( randomXid );
-            ResultSet resultSet = handler.executeQuery( "SELECT 0" );
+            ResultSet resultSet = handler.executeQuery( "SELECT 1" );
 
             if ( resultSet.isBeforeFirst() ) {
                 handler.commit();
+                connectionFactory.close();
                 return true;
             }
-
         } catch ( Exception e ) {
             // ignore
         }
@@ -325,6 +327,13 @@ public class PostgresqlStore extends AbstractJdbcStore {
             try {
                 handler.commit();
             } catch ( ConnectionHandlerException e ) {
+                // ignore
+            }
+        }
+        if ( connectionFactory != null ) {
+            try {
+                connectionFactory.close();
+            } catch ( SQLException e ) {
                 // ignore
             }
         }
