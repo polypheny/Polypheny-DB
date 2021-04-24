@@ -165,6 +165,7 @@ import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.DateTimeStringUtils;
+import org.polypheny.db.util.FileInputHandle;
 import org.polypheny.db.util.FileSystemManager;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.LimitIterator;
@@ -639,7 +640,8 @@ public class Crud implements InformationObserver {
                         values.add( uiValueToSql( value, catalogColumn.type, catalogColumn.collectionsType ) );
                     } else {
                         values.add( "?" );
-                        statement.getDataContext().addParameterValues( i++, catalogColumn.getRelDataType( transaction.getTypeFactory() ), ImmutableList.of( part.getInputStream() ) );
+                        FileInputHandle fih = new FileInputHandle( statement, part.getInputStream() );
+                        statement.getDataContext().addParameterValues( i++, catalogColumn.getRelDataType( transaction.getTypeFactory() ), ImmutableList.of( fih ) );
                     }
                 }
             }
@@ -661,7 +663,7 @@ public class Crud implements InformationObserver {
             } catch ( TransactionException e2 ) {
                 log.error( "Caught error while rolling back transaction", e2 );
             }
-            return new Result( e );
+            return new Result( e ).setGeneratedQuery( query );
         }
     }
 
@@ -1182,7 +1184,8 @@ public class Crud implements InformationObserver {
                     }
                 } else {
                     setStatements.add( String.format( "\"%s\" = ?", catalogColumn.name ) );
-                    statement.getDataContext().addParameterValues( i++, null, ImmutableList.of( part.getInputStream() ) );
+                    FileInputHandle fih = new FileInputHandle( statement, part.getInputStream() );
+                    statement.getDataContext().addParameterValues( i++, null, ImmutableList.of( fih ) );
                 }
             }
         } catch ( IOException | ServletException e ) {
@@ -2540,16 +2543,15 @@ public class Crud implements InformationObserver {
                 for ( CatalogForeignKey catalogForeignKey : foreignKeys ) {
                     for ( int i = 0; i < catalogForeignKey.getReferencedKeyColumnNames().size(); i++ ) {
                         fKeys.add( ForeignKey.builder()
-                                .pkTableSchema( catalogForeignKey.getReferencedKeySchemaName() )
-                                .pkTableName( catalogForeignKey.getReferencedKeyTableName() )
-                                .pkColumnName( catalogForeignKey.getReferencedKeyColumnNames().get( i ) )
-                                .fkTableSchema( catalogForeignKey.getSchemaName() )
-                                .fkTableName( catalogForeignKey.getTableName() )
-                                .fkColumnName( catalogForeignKey.getColumnNames().get( i ) )
+                                .targetSchema( catalogForeignKey.getReferencedKeySchemaName() )
+                                .targetTable( catalogForeignKey.getReferencedKeyTableName() )
+                                .targetColumn( catalogForeignKey.getReferencedKeyColumnNames().get( i ) )
+                                .sourceSchema( catalogForeignKey.getSchemaName() )
+                                .sourceTable( catalogForeignKey.getTableName() )
+                                .sourceColumn( catalogForeignKey.getColumnNames().get( i ) )
                                 .fkName( catalogForeignKey.name )
-                                .pkName( "" ) // TODO
-                                .update( catalogForeignKey.updateRule.toString() )
-                                .delete( catalogForeignKey.deleteRule.toString() )
+                                .onUpdate( catalogForeignKey.updateRule.toString() )
+                                .onDelete( catalogForeignKey.deleteRule.toString() )
                                 .build() );
                     }
                 }
@@ -2609,14 +2611,14 @@ public class Crud implements InformationObserver {
         ForeignKey fk = this.gson.fromJson( req.body(), ForeignKey.class );
         Transaction transaction = getTransaction();
 
-        String[] t = fk.getFkTableName().split( "\\." );
+        String[] t = fk.getSourceTable().split( "\\." );
         String fkTable = String.format( "\"%s\".\"%s\"", t[0], t[1] );
-        t = fk.getPkTableName().split( "\\." );
+        t = fk.getTargetTable().split( "\\." );
         String pkTable = String.format( "\"%s\".\"%s\"", t[0], t[1] );
 
         Result result;
         String sql = String.format( "ALTER TABLE %s ADD CONSTRAINT \"%s\" FOREIGN KEY (\"%s\") REFERENCES %s(\"%s\") ON UPDATE %s ON DELETE %s",
-                fkTable, fk.getFkName(), fk.getFkColumnName(), pkTable, fk.getPkColumnName(), fk.getUpdate(), fk.getDelete() );
+                fkTable, fk.getFkName(), fk.getSourceColumn(), pkTable, fk.getTargetColumn(), fk.getOnUpdate(), fk.getOnDelete() );
         try {
             executeSqlUpdate( transaction, sql );
             transaction.commit();
@@ -3430,7 +3432,9 @@ public class Crud implements InformationObserver {
                                     File newLink = new File( mmFolder, columnName + "_" + f.getName() + extension );
                                     newLink.delete();//delete to override
                                     Path added;
-                                    if ( RuntimeConfig.UI_USE_HARDLINKS.getBoolean() && !f.isDirectory() ) {
+                                    if ( f.isDirectory() && transaction.getInvolvedAdapters().stream().anyMatch( a -> a.getAdapterName().equals( "QFS" ) ) ) {
+                                        added = Files.createSymbolicLink( newLink.toPath(), f.toPath() );
+                                    } else if ( RuntimeConfig.UI_USE_HARDLINKS.getBoolean() && !f.isDirectory() ) {
                                         added = Files.createLink( newLink.toPath(), f.toPath() );
                                     } else {
                                         added = Files.copy( f.toPath(), newLink.toPath() );

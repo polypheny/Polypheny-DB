@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,9 @@
 
 package org.polypheny.db.transaction;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -35,6 +37,7 @@ import org.polypheny.db.processing.QueryProviderImpl;
 import org.polypheny.db.processing.VolcanoQueryProcessor;
 import org.polypheny.db.router.RouterManager;
 import org.polypheny.db.routing.Router;
+import org.polypheny.db.util.FileInputHandle;
 
 public class StatementImpl implements Statement {
 
@@ -50,6 +53,7 @@ public class StatementImpl implements Statement {
 
     private DataContext dataContext = null;
     private ContextImpl prepareContext = null;
+    private final List<FileInputHandle> fileInputHandles = new ArrayList<>();
 
     private InformationDuration duration;
 
@@ -126,4 +130,22 @@ public class StatementImpl implements Statement {
     public Router getRouter() {
         return RouterManager.getInstance().getRouter();
     }
+
+
+    @Override
+    public void close() {
+        prepareContext = null;
+        if ( dataContext != null ) {
+            dataContext.getParameterValues().clear();
+        }
+        fileInputHandles.forEach( FileInputHandle::close );
+        dataContext = null;
+    }
+
+
+    @Override
+    public void registerFileInputHandle( FileInputHandle fileInputHandle ) {
+        fileInputHandles.add( fileInputHandle );
+    }
+
 }
