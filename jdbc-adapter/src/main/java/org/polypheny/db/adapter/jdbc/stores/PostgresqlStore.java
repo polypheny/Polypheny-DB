@@ -114,7 +114,6 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
         final String connectionUrl = getConnectionUrl( host, Integer.parseInt( settings.get( "port" ) ), database );
         dataSource.setUrl( connectionUrl );
-        log.info( "Postgres Connection URL: {}", connectionUrl );
         dataSource.setUsername( username );
         dataSource.setPassword( settings.get( "password" ) );
         dataSource.setDefaultAutoCommit( false );
