@@ -33,4 +33,9 @@ public class MonitoringServiceProvider {
         }
         return INSTANCE;
     }
+
+    //Additional Method to be consequent with other Instantiation invocations
+    public MonitoringService getInstance(){
+        return this.MONITORING_SERVICE();
+    }
 }

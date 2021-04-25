@@ -35,19 +35,24 @@ public class MonitoringServiceFactory {
         repo.initialize();
 
         // create monitoring service with dependencies
-        MonitoringQueue writeService = new MonitoringQueueImpl();
+        MonitoringQueue queueWriteService = new MonitoringQueueImpl();
         MonitoringServiceUi uiService = new MonitoringServiceUiImpl( repo );
 
         // initialize ui
         uiService.initializeInformationPage();
 
         // initialize the monitoringService
-        MonitoringServiceImpl monitoringService = new MonitoringServiceImpl( writeService, repo, uiService );
+        MonitoringServiceImpl monitoringService = new MonitoringServiceImpl( queueWriteService, repo, uiService );
 
         // configure query monitoring event as system wide monitoring
         MonitoringQueueWorker worker = new QueryWorker( repo );
 
+
         monitoringService.registerEventType( QueryData.class, QueryPersistentData.class, worker );
+
+        //Todo @Cedric Is this a dummy call here to subscribe something?
+        // Or should this represent an internal subscription?
+        // In that case when does this susbcriber get informed about chanegs?
         monitoringService.subscribeEvent( QueryPersistentData.class, new QueryEventSubscriber() );
 
         return monitoringService;

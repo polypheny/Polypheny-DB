@@ -95,13 +95,18 @@ public class QueryWorker implements MonitoringQueueWorker<QueryData, QueryPersis
     }
 
 
+    //@Cedric should every Worker really to this?
+    // One time is sufficient to do this.
+    // For me workers are a central part of the monitoring system and should therefore genarealize as much as possible. Whereas subscribers e.g.
+    //should be used to make more specific stuff.
+    //TODO Discuss
     private MonitoringJob<QueryData, QueryPersistentData> processRelNode( RelNode node, MonitoringJob<QueryData, QueryPersistentData> currentJob ) {
 
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
             processRelNode( node.getInput( i ), currentJob );
         }
 
-        // snd last relnode (mostly)
+
         if ( node.getTable() != null ) {
             currentJob.getMonitoringPersistentData().getTables().addAll( node.getTable().getQualifiedName() );
         }
