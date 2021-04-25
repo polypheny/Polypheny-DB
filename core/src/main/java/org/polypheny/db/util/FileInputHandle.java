@@ -54,7 +54,6 @@ public class FileInputHandle {
     private static final Charset CHARSET = StandardCharsets.UTF_8;
 
 
-
     static {
         folder = FileSystemManager.getInstance().registerNewFolder( "tmp/" + "fileInput" );
     }

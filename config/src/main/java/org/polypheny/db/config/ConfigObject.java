@@ -14,17 +14,20 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models;
+package org.polypheny.db.config;
+
+import java.util.concurrent.atomic.AtomicInteger;
+import lombok.Getter;
+
+public abstract class ConfigObject extends ConfigScalar {
+
+    static protected final transient AtomicInteger idBuilder = new AtomicInteger();
+    @Getter
+    public int id = idBuilder.getAndIncrement();
 
 
-import java.util.Map;
-import org.polypheny.db.adapter.Adapter.AbstractAdapterSetting;
-
-
-public class AdapterModel {
-
-    public String uniqueName;
-    public String clazzName;
-    public Map<String, AbstractAdapterSetting> settings;
+    protected ConfigObject( String key ) {
+        super( key );
+    }
 
 }

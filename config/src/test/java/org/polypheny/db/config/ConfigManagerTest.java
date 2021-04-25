@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -184,24 +184,28 @@ public class ConfigManagerTest implements ConfigListener {
     private static class TestClass {
 
         int a;
+
     }
 
 
     private static class FooImplementation extends TestClass {
 
         int b;
+
     }
 
 
     private static class BarImplementation extends TestClass {
 
         int c;
+
     }
 
 
     private static class FooBarImplementation extends TestClass {
 
         int d;
+
     }
 
 
@@ -381,6 +385,19 @@ public class ConfigManagerTest implements ConfigListener {
     }
 
 
+    @Test
+    public void configDocker() {
+        String url = "test";
+        String alias = "name";
+        ConfigDocker c = new ConfigDocker( 0, url, null, null, alias );
+        Assert.assertEquals( c.getAlias(), alias );
+        Assert.assertEquals( c.getHost(), url );
+
+        cm.registerConfig( c );
+        Assert.assertEquals( cm.getConfig( c.getKey() ), c );
+    }
+
+
     @Override
     public void onConfigChange( Config c ) {
         System.out.println( "configChange: " + c.getKey() );
@@ -420,6 +437,7 @@ public class ConfigManagerTest implements ConfigListener {
         public boolean wasNotified() {
             return this.wasNotified;
         }
+
     }
 
 }

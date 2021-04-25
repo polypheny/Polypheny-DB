@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 package org.polypheny.db.sql.dialect;
 
 
+import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
@@ -123,6 +124,19 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
 
     @Override
+    public String getArrayComponentTypeString( SqlType type ) {
+        switch ( type ) {
+            case TINYINT:
+                return "int2"; // Postgres has no tinyint (1 byte), so instead cast to smallint (2 bytes)
+            case DOUBLE:
+                return "float8";
+            default:
+                return super.getArrayComponentTypeString( type );
+        }
+    }
+
+
+    @Override
     protected boolean requiresAliasForFromItems() {
         return true;
     }
@@ -154,5 +168,6 @@ public class PostgresqlSqlDialect extends SqlDialect {
                 super.unparseCall( writer, call, leftPrec, rightPrec );
         }
     }
+
 }
 

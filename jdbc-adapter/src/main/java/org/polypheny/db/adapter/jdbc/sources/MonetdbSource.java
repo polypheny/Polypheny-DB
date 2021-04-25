@@ -17,12 +17,15 @@
 package org.polypheny.db.adapter.jdbc.sources;
 
 
-import com.google.common.collect.ImmutableList;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
+import org.polypheny.db.adapter.Adapter.AdapterProperties;
+import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
+import org.polypheny.db.adapter.Adapter.AdapterSettingString;
+import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -34,29 +37,18 @@ import org.polypheny.db.sql.dialect.MonetdbSqlDialect;
 
 
 @Slf4j
+@AdapterProperties(
+        name = "MonetDB",
+        description = "MonetDB is an open-source column-oriented database management system. It is based on an optimistic concurrency control.",
+        usedModes = DeployMode.REMOTE)
+@AdapterSettingString(name = "hose", defaultValue = "localhost", description = "Hostname or IP address of the remote MonetDB instance.", position = 1)
+@AdapterSettingInteger(name = "port", defaultValue = 50000, description = "JDBC port number on the remote MonetDB instance.", position = 2)
+@AdapterSettingString(name = "database", defaultValue = "polypheny", description = "JDBC port number on the remote MonetDB instance.", position = 3)
+@AdapterSettingString(name = "username", defaultValue = "polypheny", description = "Name of the database to connect to.", position = 4)
+@AdapterSettingString(name = "password", defaultValue = "polypheny", description = "Username to be used for authenticating at the remote instance.", position = 5)
+@AdapterSettingInteger(name = "maxConnections", defaultValue = 25, description = "Password to be used for authenticating at the remote instance.")
+@AdapterSettingString(name = "table", defaultValue = "public.foo,public.bar", description = "Maximum number of concurrent JDBC connections.")
 public class MonetdbSource extends AbstractJdbcSource {
-
-    public static final String ADAPTER_NAME = "MonetDB";
-
-    public static final String DESCRIPTION = "MonetDB is an open-source column-oriented database management system. It is based on an optimistic concurrency control.";
-
-    public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-            new AdapterSettingString( "host", false, true, false, "localhost" )
-                    .setDescription( "Hostname or IP address of the remote MonetDB instance." ),
-            new AdapterSettingInteger( "port", false, true, false, 50000 )
-                    .setDescription( "JDBC port number on the remote MonetDB instance." ),
-            new AdapterSettingString( "database", false, true, false, "polypheny" )
-                    .setDescription( "Name of the database to connect to." ),
-            new AdapterSettingString( "username", false, true, false, "polypheny" )
-                    .setDescription( "Username to be used for authenticating at the remote instance" ),
-            new AdapterSettingString( "password", false, true, false, "polypheny" )
-                    .setDescription( "Password to be used for authenticating at the remote instance" ),
-            new AdapterSettingInteger( "maxConnections", false, true, false, 25 )
-                    .setDescription( "Maximum number of concurrent JDBC connections." ),
-            new AdapterSettingString( "tables", false, true, false, "public.foo,public.bar" )
-                    .setDescription( "List of tables which should be imported. The names must to be in the format schemaName.tableName and separated by a comma." )
-    );
-
 
     public MonetdbSource( int storeId, String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, "nl.cwi.monetdb.jdbc.MonetDriver", MonetdbSqlDialect.DEFAULT, false );
@@ -93,18 +85,6 @@ public class MonetdbSource extends AbstractJdbcSource {
     @Override
     public Schema getCurrentSchema() {
         return currentJdbcSchema;
-    }
-
-
-    @Override
-    public String getAdapterName() {
-        return ADAPTER_NAME;
-    }
-
-
-    @Override
-    public List<AdapterSetting> getAvailableSettings() {
-        return AVAILABLE_SETTINGS;
     }
 
 

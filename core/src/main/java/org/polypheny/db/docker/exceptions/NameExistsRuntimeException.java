@@ -14,17 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models;
+package org.polypheny.db.docker.exceptions;
 
 
-import java.util.Map;
-import org.polypheny.db.adapter.Adapter.AbstractAdapterSetting;
+public class NameExistsRuntimeException extends DockerRuntimeException {
 
-
-public class AdapterModel {
-
-    public String uniqueName;
-    public String clazzName;
-    public Map<String, AbstractAdapterSetting> settings;
+    public NameExistsRuntimeException() {
+        super( "There already exists a container with this name." );
+    }
 
 }

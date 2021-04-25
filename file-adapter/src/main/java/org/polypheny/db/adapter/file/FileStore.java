@@ -23,7 +23,9 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.SystemUtils;
+import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -44,14 +46,11 @@ import org.polypheny.db.util.FileSystemManager;
 
 
 @Slf4j
+@AdapterProperties(
+        name = "File",
+        description = "An adapter that stores all data as files. It is especially suitable for multimedia collections.",
+        usedModes = DeployMode.EMBEDDED)
 public class FileStore extends DataStore {
-
-    @SuppressWarnings("WeakerAccess")
-    public static final String ADAPTER_NAME = "File";
-    @SuppressWarnings("WeakerAccess")
-    public static final String DESCRIPTION = "An adapter that stores all data as files. It is especially suitable for multimedia collections.";
-    @SuppressWarnings("WeakerAccess")
-    public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of();
 
     // Standards
     public static final Charset CHARSET = StandardCharsets.UTF_8;
@@ -381,18 +380,6 @@ public class FileStore extends DataStore {
     public void updateColumnType( Context context, CatalogColumnPlacement placement, CatalogColumn catalogColumn, PolyType oldType ) {
         //context.getStatement().getTransaction().registerInvolvedStore( this );
         throw new RuntimeException( "File adapter does not support updating column types!" );
-    }
-
-
-    @Override
-    public String getAdapterName() {
-        return ADAPTER_NAME;
-    }
-
-
-    @Override
-    public List<AdapterSetting> getAvailableSettings() {
-        return AVAILABLE_SETTINGS;
     }
 
 

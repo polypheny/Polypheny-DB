@@ -291,7 +291,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
                 } else {
                     throw new RuntimeException( "Unknown data type: " + ((List<?>) value).get( 0 ).getClass() );
                 }
-                Array array = connectionHandler.createArrayOf( componentType.name(), ((List<?>) value).toArray() );
+                Array array = connectionHandler.createArrayOf( connectionHandler.getDialect().getArrayComponentTypeString( componentType ), ((List<?>) value).toArray() );
                 preparedStatement.setArray( i, array );
             } else {
                 preparedStatement.setString( i, gson.toJson( value ) );

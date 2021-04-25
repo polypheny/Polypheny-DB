@@ -14,17 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models;
+package org.polypheny.db.docker.exceptions;
 
+public class DockerNotRunningRuntimeException extends DockerRuntimeException {
 
-import java.util.Map;
-import org.polypheny.db.adapter.Adapter.AbstractAdapterSetting;
-
-
-public class AdapterModel {
-
-    public String uniqueName;
-    public String clazzName;
-    public Map<String, AbstractAdapterSetting> settings;
+    public DockerNotRunningRuntimeException() {
+        super( "Docker is either not installed or not running at the moment." );
+    }
 
 }
