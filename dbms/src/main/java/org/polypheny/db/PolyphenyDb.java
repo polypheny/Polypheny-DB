@@ -36,7 +36,9 @@ import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.information.HostInformation;
 import org.polypheny.db.information.JavaInformation;
-import org.polypheny.db.monitoring.obsolet.MonitoringService;
+import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
+import org.polypheny.db.monitoring.core.MonitoringService;
+//import org.polypheny.db.monitoring.obsolet.MonitoringService;
 import org.polypheny.db.monitoring.obsolet.subscriber.DummySubscriber;
 import org.polypheny.db.monitoring.obsolet.subscriber.InternalSubscriber;
 import org.polypheny.db.monitoring.obsolet.subscriber.SubscriptionTopic;
@@ -259,12 +261,16 @@ public class PolyphenyDb {
 
 
         // Todo remove this testing
-        InternalSubscriber internalSubscriber = new InternalSubscriber();
+       /* InternalSubscriber internalSubscriber = new InternalSubscriber();
         DummySubscriber dummySubscriber = new DummySubscriber();
         MonitoringService.INSTANCE.subscribeToEvents( internalSubscriber, SubscriptionTopic.TABLE, 6, "Internal Usage" );
         MonitoringService.INSTANCE.subscribeToEvents( internalSubscriber, SubscriptionTopic.STORE, 2, "Internal Usage" );
         MonitoringService.INSTANCE.subscribeToEvents( dummySubscriber, SubscriptionTopic.TABLE, 6, "Lorem ipsum" );
-        //
+        *///
+
+        MonitoringService monitoringService = MonitoringServiceProvider.MONITORING_SERVICE();
+
+
         //
 
 
