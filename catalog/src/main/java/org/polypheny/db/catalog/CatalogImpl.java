@@ -607,7 +607,7 @@ public class CatalogImpl extends Catalog {
         if ( adapterNames.size() == 0 ) {
             // Deploy default hsqldb store
             final Map<String, String> hsqldbSettings = new HashMap<>();
-            hsqldbSettings.put( "type", "Embedded" );
+            hsqldbSettings.put( "mode", "embedded" );
             hsqldbSettings.put( "host", "localhost" );
             hsqldbSettings.put( "port", "1865" );
             hsqldbSettings.put( "database", "cottontail" );

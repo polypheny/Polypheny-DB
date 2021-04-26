@@ -841,7 +841,7 @@ public abstract class Adapter {
         @Override
         public AbstractAdapterSetting deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
             JsonObject jsonObject = json.getAsJsonObject();
-            String type = jsonObject.get( "type" ).getAsString();
+            String type = jsonObject.get( "mode" ).getAsString();
             String name = jsonObject.get( "name" ).getAsString();
             boolean canBeNull = jsonObject.get( "canBeNull" ).getAsBoolean();
             boolean required = jsonObject.get( "required" ).getAsBoolean();
