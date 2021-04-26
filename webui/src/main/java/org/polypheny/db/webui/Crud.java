@@ -94,9 +94,9 @@ import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.adapter.Adapter;
-import org.polypheny.db.adapter.Adapter.AdapterSetting;
+import org.polypheny.db.adapter.Adapter.AbstractAdapterSetting;
+import org.polypheny.db.adapter.Adapter.AbstractAdapterSettingDirectory;
 import org.polypheny.db.adapter.Adapter.AdapterSettingDeserializer;
-import org.polypheny.db.adapter.Adapter.AdapterSettingDirectory;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.AdapterManager.AdapterInformation;
 import org.polypheny.db.adapter.DataSource;
@@ -129,6 +129,7 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.exploreByExample.Explore;
 import org.polypheny.db.exploreByExample.ExploreManager;
 import org.polypheny.db.iface.QueryInterface;
@@ -165,6 +166,7 @@ import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.DateTimeStringUtils;
+import org.polypheny.db.util.FileInputHandle;
 import org.polypheny.db.util.FileSystemManager;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.LimitIterator;
@@ -221,7 +223,7 @@ public class Crud implements InformationObserver {
     private final TransactionManager transactionManager;
     private final String databaseName;
     private final String userName;
-    private final StatisticsManager statisticsManager = StatisticsManager.getInstance();
+    private final StatisticsManager<?> statisticsManager = StatisticsManager.getInstance();
     private boolean isActiveTracking = false;
     private final Catalog catalog = Catalog.getInstance();
 
@@ -639,7 +641,8 @@ public class Crud implements InformationObserver {
                         values.add( uiValueToSql( value, catalogColumn.type, catalogColumn.collectionsType ) );
                     } else {
                         values.add( "?" );
-                        statement.getDataContext().addParameterValues( i++, catalogColumn.getRelDataType( transaction.getTypeFactory() ), ImmutableList.of( part.getInputStream() ) );
+                        FileInputHandle fih = new FileInputHandle( statement, part.getInputStream() );
+                        statement.getDataContext().addParameterValues( i++, catalogColumn.getRelDataType( transaction.getTypeFactory() ), ImmutableList.of( fih ) );
                     }
                 }
             }
@@ -661,7 +664,7 @@ public class Crud implements InformationObserver {
             } catch ( TransactionException e2 ) {
                 log.error( "Caught error while rolling back transaction", e2 );
             }
-            return new Result( e );
+            return new Result( e ).setGeneratedQuery( query );
         }
     }
 
@@ -1182,7 +1185,8 @@ public class Crud implements InformationObserver {
                     }
                 } else {
                     setStatements.add( String.format( "\"%s\" = ?", catalogColumn.name ) );
-                    statement.getDataContext().addParameterValues( i++, null, ImmutableList.of( part.getInputStream() ) );
+                    FileInputHandle fih = new FileInputHandle( statement, part.getInputStream() );
+                    statement.getDataContext().addParameterValues( i++, null, ImmutableList.of( fih ) );
                 }
             }
         } catch ( IOException | ServletException e ) {
@@ -2219,19 +2223,11 @@ public class Crud implements InformationObserver {
     private Gson adapterSerializer() {
         //see https://futurestud.io/tutorials/gson-advanced-custom-serialization-part-1
         JsonSerializer<DataStore> storeSerializer = ( src, typeOfSrc, context ) -> {
-            List<AdapterSetting> adapterSettings = new ArrayList<>();
-            for ( AdapterSetting s : src.getAvailableSettings() ) {
-                for ( String current : src.getCurrentSettings().keySet() ) {
-                    if ( s.name.equals( current ) ) {
-                        adapterSettings.add( s );
-                    }
-                }
-            }
 
             JsonObject jsonStore = new JsonObject();
             jsonStore.addProperty( "adapterId", src.getAdapterId() );
             jsonStore.addProperty( "uniqueName", src.getUniqueName() );
-            jsonStore.add( "adapterSettings", context.serialize( adapterSettings ) );
+            jsonStore.add( "adapterSettings", context.serialize( serializeSettings( src.getAvailableSettings(), src.getCurrentSettings() ) ) );
             jsonStore.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
             jsonStore.addProperty( "adapterName", src.getAdapterName() );
             jsonStore.addProperty( "type", src.getClass().getCanonicalName() );
@@ -2240,26 +2236,31 @@ public class Crud implements InformationObserver {
             return jsonStore;
         };
         JsonSerializer<DataSource> sourceSerializer = ( src, typeOfSrc, context ) -> {
-            List<AdapterSetting> adapterSettings = new ArrayList<>();
-            for ( AdapterSetting s : src.getAvailableSettings() ) {
-                for ( String current : src.getCurrentSettings().keySet() ) {
-                    if ( s.name.equals( current ) ) {
-                        adapterSettings.add( s );
-                    }
-                }
-            }
 
             JsonObject jsonSource = new JsonObject();
             jsonSource.addProperty( "adapterId", src.getAdapterId() );
             jsonSource.addProperty( "uniqueName", src.getUniqueName() );
             jsonSource.addProperty( "adapterName", src.getAdapterName() );
-            jsonSource.add( "adapterSettings", context.serialize( adapterSettings ) );
+            jsonSource.add( "adapterSettings", context.serialize( serializeSettings( src.getAvailableSettings(), src.getCurrentSettings() ) ) );
             jsonSource.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
             jsonSource.add( "dataReadOnly", context.serialize( src.isDataReadOnly() ) );
             jsonSource.addProperty( "type", src.getClass().getCanonicalName() );
             return jsonSource;
         };
         return new GsonBuilder().registerTypeAdapter( DataStore.class, storeSerializer ).registerTypeAdapter( DataSource.class, sourceSerializer ).create();
+    }
+
+
+    private List<AbstractAdapterSetting> serializeSettings( List<AbstractAdapterSetting> availableSettings, Map<String, String> currentSettings ) {
+        ArrayList<AbstractAdapterSetting> abstractAdapterSettings = new ArrayList<>();
+        for ( AbstractAdapterSetting s : availableSettings ) {
+            for ( String current : currentSettings.keySet() ) {
+                if ( s.name.equals( current ) ) {
+                    abstractAdapterSettings.add( s );
+                }
+            }
+        }
+        return abstractAdapterSettings;
     }
 
 
@@ -2400,12 +2401,12 @@ public class Crud implements InformationObserver {
             log.error( "Could not get form data to add a new Adapter", e );
             return new Result( e );
         }
-        GsonBuilder gsonBuilder = new GsonBuilder().registerTypeAdapter( AdapterSetting.class, new AdapterSettingDeserializer() );
+        GsonBuilder gsonBuilder = new GsonBuilder().registerTypeAdapter( AbstractAdapterSetting.class, new AdapterSettingDeserializer() );
         AdapterModel a = gsonBuilder.create().fromJson( body, AdapterModel.class );
         Map<String, String> settings = new HashMap<>();
-        for ( Entry<String, AdapterSetting> entry : a.settings.entrySet() ) {
-            if ( entry.getValue() instanceof AdapterSettingDirectory ) {
-                AdapterSettingDirectory setting = ((AdapterSettingDirectory) entry.getValue());
+        for ( Entry<String, AbstractAdapterSetting> entry : a.settings.entrySet() ) {
+            if ( entry.getValue() instanceof AbstractAdapterSettingDirectory ) {
+                AbstractAdapterSettingDirectory setting = ((AbstractAdapterSettingDirectory) entry.getValue());
                 for ( String fileName : setting.fileNames ) {
                     setting.inputStreams.put( fileName, inputStreams.get( fileName ) );
                 }
@@ -2540,16 +2541,15 @@ public class Crud implements InformationObserver {
                 for ( CatalogForeignKey catalogForeignKey : foreignKeys ) {
                     for ( int i = 0; i < catalogForeignKey.getReferencedKeyColumnNames().size(); i++ ) {
                         fKeys.add( ForeignKey.builder()
-                                .pkTableSchema( catalogForeignKey.getReferencedKeySchemaName() )
-                                .pkTableName( catalogForeignKey.getReferencedKeyTableName() )
-                                .pkColumnName( catalogForeignKey.getReferencedKeyColumnNames().get( i ) )
-                                .fkTableSchema( catalogForeignKey.getSchemaName() )
-                                .fkTableName( catalogForeignKey.getTableName() )
-                                .fkColumnName( catalogForeignKey.getColumnNames().get( i ) )
+                                .targetSchema( catalogForeignKey.getReferencedKeySchemaName() )
+                                .targetTable( catalogForeignKey.getReferencedKeyTableName() )
+                                .targetColumn( catalogForeignKey.getReferencedKeyColumnNames().get( i ) )
+                                .sourceSchema( catalogForeignKey.getSchemaName() )
+                                .sourceTable( catalogForeignKey.getTableName() )
+                                .sourceColumn( catalogForeignKey.getColumnNames().get( i ) )
                                 .fkName( catalogForeignKey.name )
-                                .pkName( "" ) // TODO
-                                .update( catalogForeignKey.updateRule.toString() )
-                                .delete( catalogForeignKey.deleteRule.toString() )
+                                .onUpdate( catalogForeignKey.updateRule.toString() )
+                                .onDelete( catalogForeignKey.deleteRule.toString() )
                                 .build() );
                     }
                 }
@@ -2609,14 +2609,14 @@ public class Crud implements InformationObserver {
         ForeignKey fk = this.gson.fromJson( req.body(), ForeignKey.class );
         Transaction transaction = getTransaction();
 
-        String[] t = fk.getFkTableName().split( "\\." );
+        String[] t = fk.getSourceTable().split( "\\." );
         String fkTable = String.format( "\"%s\".\"%s\"", t[0], t[1] );
-        t = fk.getPkTableName().split( "\\." );
+        t = fk.getTargetTable().split( "\\." );
         String pkTable = String.format( "\"%s\".\"%s\"", t[0], t[1] );
 
         Result result;
         String sql = String.format( "ALTER TABLE %s ADD CONSTRAINT \"%s\" FOREIGN KEY (\"%s\") REFERENCES %s(\"%s\") ON UPDATE %s ON DELETE %s",
-                fkTable, fk.getFkName(), fk.getFkColumnName(), pkTable, fk.getPkColumnName(), fk.getUpdate(), fk.getDelete() );
+                fkTable, fk.getFkName(), fk.getSourceColumn(), pkTable, fk.getTargetColumn(), fk.getOnUpdate(), fk.getOnDelete() );
         try {
             executeSqlUpdate( transaction, sql );
             transaction.commit();
@@ -3430,7 +3430,9 @@ public class Crud implements InformationObserver {
                                     File newLink = new File( mmFolder, columnName + "_" + f.getName() + extension );
                                     newLink.delete();//delete to override
                                     Path added;
-                                    if ( RuntimeConfig.UI_USE_HARDLINKS.getBoolean() && !f.isDirectory() ) {
+                                    if ( f.isDirectory() && transaction.getInvolvedAdapters().stream().anyMatch( a -> a.getAdapterName().equals( "QFS" ) ) ) {
+                                        added = Files.createSymbolicLink( newLink.toPath(), f.toPath() );
+                                    } else if ( RuntimeConfig.UI_USE_HARDLINKS.getBoolean() && !f.isDirectory() ) {
                                         added = Files.createLink( newLink.toPath(), f.toPath() );
                                     } else {
                                         added = Files.copy( f.toPath(), newLink.toPath() );
@@ -3733,6 +3735,26 @@ public class Crud implements InformationObserver {
             }
         }
         return directoryToBeDeleted.delete();
+    }
+
+
+    /**
+     * This method can be used to retrieve the status of a specific Docker instance and if
+     * it is running correctly when using the provided settings
+     *
+     * @return if the Docker instance is correctly configured and can be accessed by Polypheny
+     */
+    public boolean testDockerInstance( Request req, Response res ) {
+        String dockerId = req.params( "dockerId" );
+        return DockerManager.getInstance().testDockerRunning( Integer.parseInt( dockerId ) );
+    }
+
+
+    /**
+     * Retrieve a collection which maps the dockerInstance ids to the corresponding used ports
+     */
+    public Map<Integer, List<Integer>> getUsedDockerPorts( Request req, Response res ) {
+        return DockerManager.getInstance().getUsedPortsSorted();
     }
 
 

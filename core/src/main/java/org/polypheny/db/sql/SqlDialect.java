@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.linq4j.function.Experimental;
@@ -748,6 +749,11 @@ public class SqlDialect {
     }
 
 
+    public String getArrayComponentTypeString( SqlType type ) {
+        return type.name();
+    }
+
+
     /**
      * A few utility functions copied from org.polypheny.db.util.Util. We have copied them because we wish to keep SqlDialect's dependencies to a minimum.
      */
@@ -788,6 +794,7 @@ public class SqlDialect {
             }
             return sb.toString();
         }
+
     }
 
 
@@ -934,6 +941,7 @@ public class SqlDialect {
         JethroDataSqlDialect.JethroInfo jethroInfo();
 
         Context withJethroInfo( JethroDataSqlDialect.JethroInfo jethroInfo );
+
     }
 
 
@@ -1166,5 +1174,7 @@ public class SqlDialect {
                     dataTypeSystem,
                     jethroInfo );
         }
+
     }
+
 }

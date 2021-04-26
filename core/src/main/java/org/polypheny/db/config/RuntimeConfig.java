@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,9 @@ package org.polypheny.db.config;
 
 
 import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.util.background.BackgroundTask;
 
@@ -297,7 +300,20 @@ public enum RuntimeConfig {
             "Enable query simplification using polystore level indexes.",
             false,
             ConfigType.BOOLEAN,
-            "polystoreIndexGroup" );
+            "polystoreIndexGroup" ),
+
+    DOCKER_INSTANCES( "runtime/dockerInstances",
+            "Configure different docker instances, which can be used to place adapters on.",
+            Collections.singletonList( new ConfigDocker( 0, "localhost", null, null, "localhost" )
+                    .setDockerRunning( true ) ),
+            ConfigType.INSTANCE_LIST,
+            "dockerGroup" ),
+
+    FILE_HANDLE_CACHE_SIZE( "runtime/fileHandleCacheSize",
+            "Size (in Bytes) up to which media files are cached in-memory instead of creating a temporary file. Needs to be >= 0 and smaller than Integer.MAX_SIZE. Setting to zero disables caching of media files.",
+            0,
+            ConfigType.INTEGER,
+            "runtimExecutionGroup" );
 
 
     private final String key;
@@ -366,6 +382,16 @@ public enum RuntimeConfig {
         exploreByExampleGroup.withTitle( "Explore by Example" );
         configManager.registerWebUiPage( exploreByExamplePage );
         configManager.registerWebUiGroup( exploreByExampleGroup );
+
+        //Docker Settings
+        final WebUiPage dockerPage = new WebUiPage(
+                "dockerPage",
+                "Docker",
+                "Settings for using Docker in Polypheny." );
+        final WebUiGroup dockerGroup = new WebUiGroup( "dockerGroup", dockerPage.getId() );
+        dockerGroup.withTitle( "Docker" );
+        configManager.registerWebUiPage( dockerPage );
+        configManager.registerWebUiGroup( dockerGroup );
 
         // UI specific setting
         final WebUiPage uiSettingsPage = new WebUiPage(
@@ -466,6 +492,14 @@ public enum RuntimeConfig {
                 config = new ConfigArray( key, (String[]) defaultValue );
                 break;
 
+            case STRING_LIST:
+                config = new ConfigList( key, (List<?>) defaultValue, String.class );
+                break;
+
+            case INSTANCE_LIST:
+                config = new ConfigList( key, (List<?>) defaultValue, ConfigDocker.class );
+                break;
+
             default:
                 throw new RuntimeException( "Unknown config type: " + configType.name() );
         }
@@ -510,6 +544,16 @@ public enum RuntimeConfig {
         return configManager.getConfig( key ).getString();
     }
 
+
+    public List<String> getStringList() {
+        return configManager.getConfig( key ).getStringList();
+    }
+
+
+    public <T> List<T> getList( Class<T> type ) {
+        return configManager.getConfig( key ).getList( type );
+    }
+
     // TODO: Add methods for array and table
 
 
@@ -543,13 +587,33 @@ public enum RuntimeConfig {
     }
 
 
+    public void setList( final List<ConfigScalar> values ) {
+        configManager.getConfig( key ).setList( values );
+    }
+
+
     public void addObserver( final ConfigListener listener ) {
         configManager.getConfig( key ).addObserver( listener );
     }
 
 
+    public void removeObserver( final ConfigListener listener ) {
+        configManager.getConfig( key ).removeObserver( listener );
+    }
+
+
+    public <T extends ConfigObject> T getWithId( Class<T> type, int id ) {
+        Optional<T> optional = configManager.getConfig( key ).getList( type ).stream().filter( config -> config.id == id ).findAny();
+        if ( optional.isPresent() ) {
+            return optional.get();
+        } else {
+            throw new RuntimeException( "The was an error while retrieving the config." );
+        }
+    }
+
+
     public enum ConfigType {
-        BOOLEAN, DECIMAL, DOUBLE, INTEGER, LONG, STRING, ENUM, BOOLEAN_TABLE, DECIMAL_TABLE, DOUBLE_TABLE, INTEGER_TABLE, LONG_TABLE, STRING_TABLE, BOOLEAN_ARRAY, DECIMAL_ARRAY, DOUBLE_ARRAY, INTEGER_ARRAY, LONG_ARRAY, STRING_ARRAY
+        BOOLEAN, DECIMAL, DOUBLE, INTEGER, LONG, STRING, ENUM, BOOLEAN_TABLE, DECIMAL_TABLE, DOUBLE_TABLE, INTEGER_TABLE, LONG_TABLE, STRING_TABLE, BOOLEAN_ARRAY, DECIMAL_ARRAY, DOUBLE_ARRAY, INTEGER_ARRAY, LONG_ARRAY, STRING_ARRAY, STRING_LIST, INSTANCE_LIST
     }
 
 }

@@ -87,6 +87,16 @@ allprojects {
         options.memberLevel = JavadocMemberLevel.PRIVATE
     }
 
+    task integrationTests(type: Test) {
+        description = 'Runs integration tests.'
+        group = 'verification'
+        useJUnit {
+            includeCategories 'org.polypheny.db.docker.DockerManagerTest'
+        }
+        shouldRunAfter(tasks.named('test'))
+    }
+    integrationTests.dependsOn(testClasses)
+
     testlogger {
         theme 'standard'
         showExceptions true

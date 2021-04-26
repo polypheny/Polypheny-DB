@@ -11,6 +11,7 @@ dependencies {
     implementation group: "org.mapdb", name: "mapdb", version: mapdb_version  // Apache 2.0
 
     // --- Test Compile ---
+    testImplementation project(path: ":core", configuration: "tests")
     testImplementation group: "junit", name: "junit", version: junit_version
 }
 

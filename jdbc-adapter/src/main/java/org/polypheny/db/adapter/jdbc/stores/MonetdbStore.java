@@ -18,11 +18,18 @@ package org.polypheny.db.adapter.jdbc.stores;
 
 
 import com.google.common.collect.ImmutableList;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
+import org.polypheny.db.adapter.Adapter.AdapterProperties;
+import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
+import org.polypheny.db.adapter.Adapter.AdapterSettingString;
+import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
@@ -32,10 +39,11 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.docker.DockerManager;
+import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.dialect.MonetdbSqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PUID.Type;
@@ -45,24 +53,61 @@ import org.polypheny.db.type.PolyTypeFamily;
 
 
 @Slf4j
+@AdapterProperties(
+        name = "MonetDB",
+        description = "MonetDB is an open-source column-oriented database management system. It is based on an optimistic concurrency control.",
+        usedModes = { DeployMode.REMOTE, DeployMode.DOCKER })
+@AdapterSettingString(name = "host", defaultValue = "localhost", description = "Hostname or IP address of the remote MonetDB instance.", position = 1, appliesTo = DeploySetting.REMOTE)
+@AdapterSettingInteger(name = "port", defaultValue = 50000, description = "JDBC port number on the remote MonetDB instance.", position = 2)
+@AdapterSettingString(name = "database", defaultValue = "polypheny", description = "JDBC port number on the remote MonetDB instance.", position = 3, appliesTo = DeploySetting.REMOTE)
+@AdapterSettingString(name = "username", defaultValue = "polypheny", description = "Name of the database to connect to.", position = 4, appliesTo = DeploySetting.REMOTE)
+@AdapterSettingString(name = "password", defaultValue = "polypheny", description = "Username to be used for authenticating at the remote instance.")
+@AdapterSettingInteger(name = "maxConnections", defaultValue = 25, description = "Password to be used for authenticating at the remote instance.")
 public class MonetdbStore extends AbstractJdbcStore {
 
-    public static final String ADAPTER_NAME = "MonetDB";
-
-    public static final String DESCRIPTION = "MonetDB is an open-source column-oriented database management system. It is based on an optimistic concurrency control.";
-
-    public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-            new AdapterSettingString( "host", false, true, false, "localhost" ),
-            new AdapterSettingInteger( "port", false, true, false, 50000 ),
-            new AdapterSettingString( "database", false, true, false, "polypheny" ),
-            new AdapterSettingString( "username", false, true, false, "polypheny" ),
-            new AdapterSettingString( "password", false, true, false, "" ),
-            new AdapterSettingInteger( "maxConnections", false, true, false, 25 )
-    );
+    private String host;
+    private String database;
+    private String username;
 
 
     public MonetdbStore( int storeId, String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, createConnectionFactory( settings, MonetdbSqlDialect.DEFAULT ), MonetdbSqlDialect.DEFAULT, true );
+        super( storeId, uniqueName, settings, MonetdbSqlDialect.DEFAULT, true );
+    }
+
+
+    @Override
+    protected ConnectionFactory deployDocker( int dockerInstanceId ) {
+        DockerManager.Container container = new ContainerBuilder( getAdapterId(), "topaztechnology/monetdb:11.37.11", getUniqueName(), dockerInstanceId )
+                .withMappedPort( 50000, Integer.parseInt( settings.get( "port" ) ) )
+                .withEnvironmentVariables( Arrays.asList( "MONETDB_PASSWORD=" + settings.get( "password" ), "MONET_DATABASE=monetdb" ) )
+                .withReadyTest( this::testDockerConnection, 15000 )
+                .build();
+
+        host = container.getHost();
+        database = "monetdb";
+        username = "monetdb";
+
+        DockerManager.getInstance().initialize( container ).start();
+
+        ConnectionFactory connectionFactory = createConnectionFactory();
+        createDefaultSchema( connectionFactory );
+        return connectionFactory;
+    }
+
+
+
+    @Override
+    protected ConnectionFactory deployRemote() {
+        host = settings.get( "host" );
+        database = settings.get( "database" );
+        username = settings.get( "username" );
+        ConnectionFactory connectionFactory = createConnectionFactory();
+        createDefaultSchema( connectionFactory );
+        return connectionFactory;
+    }
+
+
+    private void createDefaultSchema( ConnectionFactory connectionFactory ) {
         // Create schema public if it does not exist
         PolyXid randomXid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.NODE ), PUID.randomPUID( Type.TRANSACTION ) );
         try {
@@ -75,14 +120,13 @@ public class MonetdbStore extends AbstractJdbcStore {
     }
 
 
-    public static ConnectionFactory createConnectionFactory( final Map<String, String> settings, SqlDialect dialect ) {
+    private ConnectionFactory createConnectionFactory() {
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName( "nl.cwi.monetdb.jdbc.MonetDriver" );
 
-        final String connectionUrl = getConnectionUrl( settings.get( "host" ), Integer.parseInt( settings.get( "port" ) ), settings.get( "database" ) );
+        final String connectionUrl = getConnectionUrl( host, Integer.parseInt( settings.get( "port" ) ), database );
         dataSource.setUrl( connectionUrl );
-        log.info( "MonetDB Connection URL: {}", connectionUrl );
-        dataSource.setUsername( settings.get( "username" ) );
+        dataSource.setUsername( username );
         dataSource.setPassword( settings.get( "password" ) );
         dataSource.setDefaultAutoCommit( false );
         return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ), dialect );
@@ -196,18 +240,6 @@ public class MonetdbStore extends AbstractJdbcStore {
 
 
     @Override
-    public String getAdapterName() {
-        return ADAPTER_NAME;
-    }
-
-
-    @Override
-    public List<AdapterSetting> getAvailableSettings() {
-        return AVAILABLE_SETTINGS;
-    }
-
-
-    @Override
     public List<AvailableIndexMethod> getAvailableIndexMethods() {
         // According to the MonetDB documentation, MonetDB takes create index statements only as an advice and often freely
         // neglects them. Indexes are created and removed automatically. We therefore decided to not support manually creating
@@ -225,17 +257,6 @@ public class MonetdbStore extends AbstractJdbcStore {
     @Override
     public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
         return ImmutableList.of(); // TODO
-    }
-
-
-    @Override
-    public void shutdown() {
-        try {
-            removeInformationPage();
-            connectionFactory.close();
-        } catch ( SQLException e ) {
-            log.warn( "Exception while shutting down {}", getUniqueName(), e );
-        }
     }
 
 
@@ -292,6 +313,43 @@ public class MonetdbStore extends AbstractJdbcStore {
 
     private static String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName ) {
         return String.format( "jdbc:monetdb://%s:%d/%s", dbHostname, dbPort, dbName );
+    }
+
+
+    private boolean testDockerConnection() {
+        ConnectionFactory connectionFactory = null;
+        ConnectionHandler handler = null;
+        try {
+            connectionFactory = createConnectionFactory();
+
+            PolyXid randomXid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.NODE ), PUID.randomPUID( Type.TRANSACTION ) );
+            handler = connectionFactory.getOrCreateConnectionHandler( randomXid );
+            ResultSet resultSet = handler.executeQuery( "SELECT 1" );
+
+            if ( resultSet.isBeforeFirst() ) {
+                handler.commit();
+                connectionFactory.close();
+                return true;
+            }
+        } catch ( Exception e ) {
+            // ignore
+        }
+        if ( handler != null ) {
+            try {
+                handler.commit();
+            } catch ( ConnectionHandlerException e ) {
+                // ignore
+            }
+        }
+        if ( connectionFactory != null ) {
+            try {
+                connectionFactory.close();
+            } catch ( SQLException e ) {
+                // ignore
+            }
+        }
+
+        return false;
     }
 
 }
