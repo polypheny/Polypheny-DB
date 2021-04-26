@@ -29,7 +29,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.Adapter;
+import org.polypheny.db.adapter.Adapter.AdapterProperties;
+import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
+import org.polypheny.db.adapter.Adapter.AdapterSettingList;
+import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.cottontail.util.CottontailNameUtil;
@@ -87,13 +90,14 @@ import org.vitrivr.cottontail.server.grpc.CottontailGrpcServer;
 
 
 @Slf4j
-@Adapter.AdapterProperties(
+@AdapterProperties(
         name = "Cottontail-DB",
         description = "Cottontail-DB is a column store aimed at multimedia retrieval. It is optimized for classical boolean as well as vector-space retrieval.",
         usedModes = { DeployMode.EMBEDDED, DeployMode.REMOTE })
-@Adapter.AdapterSettingString(name = "host", defaultValue = "localhost", position = 1)
-@Adapter.AdapterSettingInteger(name = "port", defaultValue = 1865, position = 2)
-@Adapter.AdapterSettingString(name = "database", defaultValue = "cottontail", position = 3)
+@AdapterSettingString(name = "host", defaultValue = "localhost", position = 1)
+@AdapterSettingInteger(name = "port", defaultValue = 1865, position = 2)
+@AdapterSettingString(name = "database", defaultValue = "cottontail", position = 3)
+@AdapterSettingList(name = "engine", options = { "MAPDB", "HARE" }, position = 4)
 public class CottontailStore extends DataStore {
 
     // Running embedded
