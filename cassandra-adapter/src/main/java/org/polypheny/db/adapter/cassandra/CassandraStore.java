@@ -43,7 +43,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adapter.Adapter.AdapterProperties;
+import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
+import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -51,6 +56,9 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.docker.DockerInstance;
+import org.polypheny.db.docker.DockerManager;
+import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -60,24 +68,18 @@ import org.polypheny.db.type.PolyType;
 
 
 @Slf4j
+@AdapterProperties(
+        name = "Cassandra",
+        description = "Apache Cassandra is an open-source wide-column store (i.e. a two-dimensional key–value store) designed to handle large amount of data. Cassandra can be deployed in a distributed manner.",
+        usedModes = { DeployMode.EMBEDDED, DeployMode.REMOTE, DeployMode.DOCKER })
+@AdapterSettingString(name = "host", defaultValue = "localhost", position = 0, appliesTo = DeploySetting.REMOTE)
+@AdapterSettingInteger(name = "port", defaultValue = 9042, position = 1, appliesTo = { DeploySetting.REMOTE, DeploySetting.DOCKER })
+@AdapterSettingString(name = "keyspace", defaultValue = "cassandra", position = 2, appliesTo = DeploySetting.REMOTE)
+@AdapterSettingString(name = "username", defaultValue = "cassandra", position = 3, appliesTo = DeploySetting.REMOTE)
+@AdapterSettingString(name = "password", defaultValue = "cassandra", position = 4, appliesTo = DeploySetting.REMOTE)
 public class CassandraStore extends DataStore {
 
-    @SuppressWarnings("WeakerAccess")
-    public static final String ADAPTER_NAME = "Cassandra";
-    @SuppressWarnings("WeakerAccess")
-    public static final String DESCRIPTION = "Apache Cassandra is an open-source wide-column store (i.e. a two-dimensional key–value store) designed to handle large amount of data. Cassandra can be deployed in a distributed manner.";
-    @SuppressWarnings("WeakerAccess")
-    public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-            new AdapterSettingList( "type", false, true, false, ImmutableList.of( "Standalone", "Embedded" ) ),
-            new AdapterSettingString( "host", false, true, false, "localhost" ),
-            new AdapterSettingInteger( "port", false, true, false, 9042 ),
-            new AdapterSettingString( "keyspace", false, true, false, "cassandra" ),
-            new AdapterSettingString( "username", false, true, false, "cassandra" ),
-            new AdapterSettingString( "password", false, true, false, "" )
-    );
-
     // Running embedded
-    private final boolean isEmbedded;
     private final Cassandra embeddedCassandra;
 
     // Connection information
@@ -102,14 +104,8 @@ public class CassandraStore extends DataStore {
         super( storeId, uniqueName, settings, true );
 
         // Parse settings
-        this.dbHostname = settings.get( "host" );
-        this.dbPort = Integer.parseInt( settings.get( "port" ) );
-        this.dbKeyspace = settings.get( "keyspace" );
-        this.dbUsername = settings.get( "username" );
-        this.dbPassword = settings.get( "password" );
-        this.isEmbedded = settings.get( "type" ).equalsIgnoreCase( "Embedded" );
 
-        if ( this.isEmbedded ) {
+        if ( deployMode == DeployMode.EMBEDDED ) {
             // Making sure we are on java 8, as cassandra does not support anything newer!
             // This is a cassandra issue. It is also marked as "won't fix"...
             // See: https://issues.apache.org/jira/browse/CASSANDRA-13107
@@ -129,9 +125,37 @@ public class CassandraStore extends DataStore {
             this.dbHostname = this.embeddedCassandra.getAddress().getHostAddress();
             this.dbPort = this.embeddedCassandra.getPort();
 
+            this.dbKeyspace = "keyspace";
+            this.dbUsername = "cassandra";
+            this.dbPassword = "";
             log.warn( "Embedded cassandra address: {}:{}", this.dbHostname, this.dbPort );
-        } else {
+        } else if ( deployMode == DeployMode.DOCKER ) {
+            this.dbUsername = "cassandra";
+            this.dbPassword = "cassandra";
+
+            DockerManager.Container container = new ContainerBuilder( getAdapterId(), "bitnami/cassandra:3", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
+                    .withMappedPort( 9042, Integer.parseInt( settings.get( "port" ) ) )
+                    // cassandra can take quite some time to start
+                    .withReadyTest( this::testDockerConnection, 20000 )
+                    //.withEnvironmentVariables( Arrays.asList( "CASSANDRA_USER=" + this.dbUsername, "CASSANDRA_PASSWORD=" + this.dbPassword ) )
+                    .build();
+
+            this.dbHostname = container.getHost();
+            this.dbKeyspace = "cassandra";
+            this.dbPort = Integer.parseInt( settings.get( "port" ) );
+
+            DockerManager.getInstance().initialize( container ).start();
+
             this.embeddedCassandra = null;
+        } else if ( deployMode == DeployMode.REMOTE ) {
+            this.embeddedCassandra = null;
+            this.dbHostname = settings.get( "host" );
+            this.dbKeyspace = settings.get( "keyspace" );
+            this.dbUsername = settings.get( "username" );
+            this.dbPassword = settings.get( "password" );
+            this.dbPort = Integer.parseInt( settings.get( "port" ) );
+        } else {
+            throw new RuntimeException( "Unknown deploy mode: " + deployMode.name() );
         }
 
         try {
@@ -433,18 +457,6 @@ public class CassandraStore extends DataStore {
 
 
     @Override
-    public String getAdapterName() {
-        return ADAPTER_NAME;
-    }
-
-
-    @Override
-    public List<AdapterSetting> getAvailableSettings() {
-        return AVAILABLE_SETTINGS;
-    }
-
-
-    @Override
     public List<AvailableIndexMethod> getAvailableIndexMethods() {
         return new ArrayList<>();
     }
@@ -471,8 +483,10 @@ public class CassandraStore extends DataStore {
             log.warn( "Exception while shutting down {}", getUniqueName(), e );
         }
 
-        if ( this.isEmbedded ) {
+        if ( deployMode == DeployMode.EMBEDDED ) {
             this.embeddedCassandra.stop();
+        } else if ( deployMode == DeployMode.DOCKER ) {
+            DockerInstance.getInstance().destroyAll( getAdapterId() );
         }
 
         log.info( "Shut down Cassandra store: {}", this.getUniqueName() );
@@ -483,6 +497,44 @@ public class CassandraStore extends DataStore {
     protected void reloadSettings( List<String> updatedSettings ) {
         // TODO JS: Implement
         log.warn( "reloadSettings is not implemented yet." );
+    }
+
+
+    private boolean testDockerConnection() {
+        CqlSession mySession = null;
+        try {
+            CqlSessionBuilder cluster = CqlSession.builder();
+            cluster.withLocalDatacenter( "datacenter1" );
+            List<InetSocketAddress> contactPoints = new ArrayList<>( 1 );
+            contactPoints.add( new InetSocketAddress( this.dbHostname, this.dbPort ) );
+            if ( this.dbUsername != null && this.dbPassword != null ) {
+                cluster.addContactPoints( contactPoints ).withAuthCredentials( this.dbUsername, this.dbPassword );
+            } else {
+                cluster.addContactPoints( contactPoints );
+            }
+            mySession = cluster.build();
+            ResultSet resultSet = mySession.execute( "SELECT release_version FROM system.local" );
+            if ( resultSet.one() != null ) {
+                try {
+                    mySession.close();
+                } catch ( RuntimeException e ) {
+                    log.warn( "Exception while shutting test connection down {}", getUniqueName(), e );
+                }
+                return true;
+            }
+
+        } catch ( Exception e ) {
+            // ignore
+        }
+        if ( mySession != null ) {
+            try {
+                mySession.close();
+            } catch ( RuntimeException e ) {
+                log.warn( "Exception while shutting test connection down {}", getUniqueName(), e );
+            }
+        }
+
+        return false;
     }
 
 }

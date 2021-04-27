@@ -19,6 +19,7 @@ package org.polypheny.db.catalog.entity;
 
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -32,10 +33,13 @@ public final class CatalogSchema implements CatalogEntity, Comparable<CatalogSch
     private static final long serialVersionUID = 6130781950959616712L;
 
     public final long id;
+    @Getter
     public final String name;
     public final long databaseId;
     public final int ownerId;
     public final String ownerName;
+    @Getter
+    @EqualsAndHashCode.Exclude
     public final SchemaType schemaType;
 
 
@@ -72,9 +76,9 @@ public final class CatalogSchema implements CatalogEntity, Comparable<CatalogSch
     public int compareTo( CatalogSchema o ) {
         if ( o != null ) {
             int comp = (int) (this.databaseId - o.databaseId);
-            if( comp == 0 ){
+            if ( comp == 0 ) {
                 return (int) (this.id - o.id);
-            }else {
+            } else {
                 return comp;
             }
 
@@ -90,6 +94,7 @@ public final class CatalogSchema implements CatalogEntity, Comparable<CatalogSch
         public final String tableCatalog;
         public final String owner;
         public final String schemaType;
+
     }
 
 }

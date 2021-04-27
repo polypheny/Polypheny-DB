@@ -17,11 +17,15 @@
 package org.polypheny.db.adapter.jdbc.sources;
 
 
-import com.google.common.collect.ImmutableList;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adapter.Adapter.AdapterProperties;
+import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
+import org.polypheny.db.adapter.Adapter.AdapterSettingList;
+import org.polypheny.db.adapter.Adapter.AdapterSettingString;
+import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.schema.Schema;
@@ -30,31 +34,27 @@ import org.polypheny.db.sql.dialect.MysqlSqlDialect;
 
 
 @Slf4j
+@AdapterProperties(
+        name = "MySQL",
+        description = "Data source adapter for the relational database systems MariaDB and MySQL.",
+        usedModes = DeployMode.REMOTE)
+@AdapterSettingString(name = "host", defaultValue = "localhost", position = 1,
+        description = "Hostname or IP address of the remote MariaDB / MySQL instance.")
+@AdapterSettingInteger(name = "port", defaultValue = 3306, position = 2,
+        description = "JDBC port number on the remote MariaDB / MySQL instance.")
+@AdapterSettingString(name = "database", defaultValue = "polypheny", position = 3,
+        description = "Name of the database to connect to.")
+@AdapterSettingString(name = "username", defaultValue = "polypheny", position = 4,
+        description = "Username to be used for authenticating at the remote instance.")
+@AdapterSettingString(name = "password", defaultValue = "polypheny", position = 5,
+        description = "Password to be used for authenticating at the remote instance.")
+@AdapterSettingInteger(name = "maxConnections", defaultValue = 25,
+        description = "Maximum number of concurrent JDBC connections.")
+@AdapterSettingList(name = "transactionIsolation", options = { "SERIALIZABLE", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ" },
+        description = "Which level of transaction isolation should be used.")
+@AdapterSettingString(name = "tables", defaultValue = "foo,bar",
+        description = "List of tables which should be imported. The names must to be separated by a comma.")
 public class MysqlSource extends AbstractJdbcSource {
-
-    public static final String ADAPTER_NAME = "MySQL";
-
-    public static final String DESCRIPTION = "Data source adapter for the relational database systems MariaDB and MySQL.";
-
-    public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-            new AdapterSettingString( "host", false, true, false, "localhost" )
-                    .setDescription( "Hostname or IP address of the remote MariaDB / MySQL instance." ),
-            new AdapterSettingInteger( "port", false, true, false, 3306 )
-                    .setDescription( "JDBC port number on the remote MariaDB / MySQL instance." ),
-            new AdapterSettingString( "database", false, true, false, "polypheny" )
-                    .setDescription( "Name of the database to connect to." ),
-            new AdapterSettingString( "username", false, true, false, "polypheny" )
-                    .setDescription( "Username to be used for authenticating at the remote instance" ),
-            new AdapterSettingString( "password", false, true, false, "polypheny" )
-                    .setDescription( "Password to be used for authenticating at the remote instance" ),
-            new AdapterSettingInteger( "maxConnections", false, true, false, 25 )
-                    .setDescription( "Maximum number of concurrent JDBC connections." ),
-            new AdapterSettingList( "transactionIsolation", false, true, false, ImmutableList.of( "SERIALIZABLE", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ" ) )
-                    .setDescription( "Which level of transaction isolation should be used." ),
-            new AdapterSettingString( "tables", false, true, false, "foo,bar" )
-                    .setDescription( "List of tables which should be imported. The names must to be separated by a comma." )
-    );
-
 
     public MysqlSource( int storeId, String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, "org.mariadb.jdbc.Driver", MysqlSqlDialect.DEFAULT, false );
@@ -70,18 +70,6 @@ public class MysqlSource extends AbstractJdbcSource {
     @Override
     public Schema getCurrentSchema() {
         return currentJdbcSchema;
-    }
-
-
-    @Override
-    public String getAdapterName() {
-        return ADAPTER_NAME;
-    }
-
-
-    @Override
-    public List<AdapterSetting> getAvailableSettings() {
-        return AVAILABLE_SETTINGS;
     }
 
 

@@ -615,6 +615,7 @@ public class CatalogImpl extends Catalog {
             // Deploy default hsqldb store
             Map<String, String> hsqldbSettings = new HashMap<>();
             hsqldbSettings.put( "type", "Memory" );
+            hsqldbSettings.put( "mode", "embedded" );
             hsqldbSettings.put( "tableType", "Memory" );
             hsqldbSettings.put( "maxConnections", "25" );
             hsqldbSettings.put( "trxControlMode", "mvcc" );
@@ -623,6 +624,7 @@ public class CatalogImpl extends Catalog {
 
             // Deploy default CSV view
             Map<String, String> csvSettings = new HashMap<>();
+            csvSettings.put( "mode", "embedded" );
             csvSettings.put( "directory", "classpath://hr" );
             csvSettings.put( "maxStringLength", "255" );
             addAdapter( "hr", "org.polypheny.db.adapter.csv.CsvSource", AdapterType.SOURCE, csvSettings );
@@ -2944,6 +2946,17 @@ public class CatalogImpl extends Catalog {
         } catch ( NullPointerException e ) {
             throw new UnknownAdapterIdRuntimeException( adapterId );
         }
+    }
+
+
+    /**
+     * checks if an adapter exists
+     *
+     * @param adapterId the id of the adapter
+     */
+    @Override
+    public boolean checkIfExistsAdapter( int adapterId ) {
+        return adapters.containsKey( adapterId );
     }
 
 

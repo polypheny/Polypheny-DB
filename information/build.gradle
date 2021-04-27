@@ -14,6 +14,8 @@ dependencies {
     
 
     // --- Test Compile ---
+    testImplementation project(path: ":core", configuration: "tests")
+
     testImplementation group: "junit", name: "junit", version: junit_version
 
     testImplementation group: "com.github.oshi", name: "oshi-core", version: oshi_core_version  // MIT

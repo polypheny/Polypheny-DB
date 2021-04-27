@@ -1272,6 +1272,11 @@ public class DbmsMeta implements ProtobufMeta {
                 rowsChanged = num;
             }
 
+            // Some stores do not correctly report the number of changed rows (set to zero to avoid assertion error in the MetaResultSet.count() method)
+            if ( rowsChanged < 0 ) {
+                rowsChanged = 0;
+            }
+
             MetaResultSet metaResultSet = MetaResultSet.count( h.connectionId, h.id, rowsChanged );
             resultSets = ImmutableList.of( metaResultSet );
         } else {
