@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -393,6 +393,93 @@ public abstract class Config {
         throw new ConfigRuntimeException( "Not possible remove a enum from a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
 
+
+    /**
+     * Get the current value of this config
+     *
+     * @return List of String values
+     * @throws ConfigRuntimeException If config value can not be converted into a list of Strings
+     */
+    public List<String> getStringList() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a String value!" );
+    }
+
+
+    public <T> List<T> getList( Class<T> type ) {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a " + type.getSimpleName() + " value!" );
+    }
+
+
+    /**
+     * Get the current value of this config
+     *
+     * @return List of Integer values
+     * @throws ConfigRuntimeException If config value can not be converted into a list of Integer
+     */
+    public List<Integer> getIntegerList() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a Enum value!" );
+    }
+
+
+    /**
+     * Get the current value of this config
+     *
+     * @return List of Double values
+     * @throws ConfigRuntimeException If config value can not be converted into a list of Double
+     */
+    public List<Double> getDoubleList() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a Enum value!" );
+    }
+
+
+    /**
+     * Get the current value of this config
+     *
+     * @return List of Long values
+     * @throws ConfigRuntimeException If config value can not be converted into a list of Long.
+     */
+    public List<Long> getStringLong() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a Enum value!" );
+    }
+
+
+    /**
+     * Get the current value of this config
+     *
+     * @return List of BigDecimal values
+     * @throws ConfigRuntimeException If config value can not be converted into a list of BigDecimal.
+     */
+    public List<BigDecimal> getDecimalList() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a Enum value!" );
+    }
+
+
+    /**
+     * Get the current value of this config
+     *
+     * @return List of Boolean values
+     * @throws ConfigRuntimeException If config value can not be converted into a list of Boolean.
+     */
+    public List<Boolean> getBooleanList() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a Enum value!" );
+    }
+
+
+    /**
+     * Sets the value of a config list which holds ConfigObjects
+     *
+     * @param values the raw values ( object type )
+     * @param clazz the class, which the raw values belong to
+     * @return if the parsing and setting was successful
+     */
+    public boolean setConfigObjectList( final List<Object> values, Class<? extends ConfigScalar> clazz ) {
+        throw new ConfigRuntimeException( "Not possible to set a list on a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
+
+
+    public void setList( List<ConfigScalar> values ) {
+        throw new ConfigRuntimeException( "Not possible to set a list on a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
 
 
     /**
@@ -859,9 +946,19 @@ public abstract class Config {
     /**
      * Parse the string and set as value.
      *
-     * @param value
+     * @param value The string to be parsed as value
      */
     public abstract boolean parseStringAndSetValue( String value );
+
+
+    /**
+     * Retrieve the template if set
+     *
+     * @return the template, which is a ConfigScalar
+     */
+    public Class<? extends ConfigScalar> getTemplateClass() {
+        throw new ConfigRuntimeException( "No template was set for this configType" );
+    }
 
 
     /**
@@ -873,6 +970,7 @@ public abstract class Config {
         void onConfigChange( Config c );
 
         void restart( Config c );
+
     }
 
 
@@ -882,6 +980,7 @@ public abstract class Config {
     public interface ConfigValidator {
 
         boolean validate( Object a );
+
     }
 
 }

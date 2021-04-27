@@ -29,7 +29,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adapter.Adapter.AdapterProperties;
+import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
+import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.cottontail.util.CottontailNameUtil;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.catalog.Catalog;
@@ -75,18 +79,14 @@ import org.vitrivr.cottontail.server.grpc.CottontailGrpcServer;
 
 
 @Slf4j
+@AdapterProperties(
+        name = "Cottontail-DB",
+        description = "Cottontail-DB is a column store aimed at multimedia retrieval. It is optimized for classical boolean as well as vector-space retrieval.",
+        usedModes = { DeployMode.EMBEDDED, DeployMode.REMOTE })
+@AdapterSettingString(name = "host", defaultValue = "localhost", position = 1)
+@AdapterSettingInteger(name = "port", defaultValue = 1865, position = 2)
+@AdapterSettingString(name = "database", defaultValue = "cottontail", position = 3)
 public class CottontailStore extends DataStore {
-
-    public static final String ADAPTER_NAME = "Cottontail-DB";
-
-    public static final String DESCRIPTION = "Cottontail-DB is a column store aimed at multimedia retrieval. It is optimized for classical boolean as well as vector-space retrieval.";
-
-    public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-            new AdapterSettingList( "type", false, true, false, ImmutableList.of( "Embedded", "Standalone" ) ),
-            new AdapterSettingString( "host", false, true, false, "localhost" ),
-            new AdapterSettingInteger( "port", false, true, false, 1865 ),
-            new AdapterSettingString( "database", false, true, false, "cottontail" )
-    );
 
     // Running embedded
     private final boolean isEmbedded;
@@ -105,7 +105,7 @@ public class CottontailStore extends DataStore {
     public CottontailStore( int storeId, String uniqueName, Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );
         this.dbName = settings.get( "database" );
-        this.isEmbedded = settings.get( "type" ).equalsIgnoreCase( "Embedded" );
+        this.isEmbedded = settings.get( "mode" ).equalsIgnoreCase( "embedded" );
         this.dbPort = Integer.parseInt( settings.get( "port" ) );
 
         if ( this.isEmbedded ) {
@@ -546,18 +546,6 @@ public class CottontailStore extends DataStore {
         }
 
         this.wrapper.dropEntityBlocking( tableEntity );
-    }
-
-
-    @Override
-    public String getAdapterName() {
-        return ADAPTER_NAME;
-    }
-
-
-    @Override
-    public List<AdapterSetting> getAvailableSettings() {
-        return AVAILABLE_SETTINGS;
     }
 
 

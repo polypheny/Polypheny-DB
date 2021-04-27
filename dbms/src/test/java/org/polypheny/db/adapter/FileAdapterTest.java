@@ -49,7 +49,7 @@ public class FileAdapterTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "ALTER ADAPTERS ADD \"mm\" USING 'org.polypheny.db.adapter.file.FileStore' WITH '{}'" );
+                statement.executeUpdate( "ALTER ADAPTERS ADD \"mm\" USING 'org.polypheny.db.adapter.file.FileStore' WITH '{mode:embedded}'" );
             }
         }
     }

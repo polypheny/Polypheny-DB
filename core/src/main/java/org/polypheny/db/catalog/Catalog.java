@@ -909,6 +909,14 @@ public abstract class Catalog {
     public abstract CatalogAdapter getAdapter( int adapterId );
 
     /**
+     * Check if an adapter with the given id exists
+     *
+     * @param adapterId the id of the adapter
+     * @return if the adapter exists
+     */
+    public abstract boolean checkIfExistsAdapter( int adapterId );
+
+    /**
      * Add an adapter
      *
      * @param uniqueName The unique name of the adapter

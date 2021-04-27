@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,10 @@ package org.polypheny.db.config;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
+import lombok.EqualsAndHashCode;
 import org.polypheny.db.config.exception.ConfigRuntimeException;
 
-
+@EqualsAndHashCode(callSuper = true)
 public class ConfigString extends ConfigScalar {
 
     private String value;

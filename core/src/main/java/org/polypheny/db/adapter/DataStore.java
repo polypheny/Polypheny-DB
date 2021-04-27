@@ -36,7 +36,7 @@ public abstract class DataStore extends Adapter {
     @Getter
     private final boolean persistent;
 
-    protected final Catalog catalog = Catalog.getInstance();
+    protected final transient Catalog catalog = Catalog.getInstance();
 
 
     public DataStore( final int adapterId, final String uniqueName, final Map<String, String> settings, final boolean persistent ) {
