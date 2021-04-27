@@ -53,6 +53,7 @@ public final class RelTraitSet extends AbstractList<RelTrait> implements Seriali
 
     private static final RelTrait[] EMPTY_TRAITS = new RelTrait[0];
 
+    //private transient final Cache cache;
     private final Cache cache;
     private final RelTrait[] traits;
     private final String string;
@@ -403,7 +404,7 @@ public final class RelTraitSet extends AbstractList<RelTrait> implements Seriali
     public boolean containsIfApplicable( RelTrait trait ) {
         // Note that '==' is sufficient, because trait should be canonized.
         final RelTrait trait1 = getTrait( trait.getTraitDef() );
-        return trait1 == null || trait1 == trait;
+        return trait1 == null || trait1.equals(trait);
     }
 
 

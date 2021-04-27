@@ -515,7 +515,9 @@ public class SqlToRelConverter {
             }
         }
         RelCollation collation = RelCollations.EMPTY;
-        if ( !query.isA( SqlKind.DML ) ) {
+        if (result.hasView()){
+            collation = ((ViewTableScan)((LogicalProject)result).getInput()).getRelRoot().collation;
+        } else if ( !query.isA( SqlKind.DML ) ) {
             if ( isOrdered( query ) ) {
                 collation = requiredCollation( result );
             }
@@ -532,6 +534,7 @@ public class SqlToRelConverter {
         }
 
         final RelDataType validatedRowType = validator.getValidatedNodeType( query );
+
         return RelRoot.of( result, validatedRowType, query.getKind() ).withCollation( collation );
     }
 

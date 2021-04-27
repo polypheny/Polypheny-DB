@@ -1325,8 +1325,7 @@ public class CatalogImpl extends Catalog {
 
         synchronized ( this ) {
             tables.put( id, table );
-
-            tableChildren.put( id, ImmutableList.<Long>builder().build() );
+             tableChildren.put( id, ImmutableList.<Long>builder().build() );
             tableNames.put( new Object[]{ schema.databaseId, schemaId, name }, table );
             List<Long> children = new ArrayList<>( Objects.requireNonNull( schemaChildren.get( schemaId ) ) );
             children.add( id );

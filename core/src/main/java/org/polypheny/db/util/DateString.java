@@ -35,6 +35,7 @@ package org.polypheny.db.util;
 
 
 import com.google.common.base.Preconditions;
+import java.io.Serializable;
 import java.util.Calendar;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
@@ -46,7 +47,7 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
  *
  * Immutable, internally represented as a string (in ISO format).
  */
-public class DateString implements Comparable<DateString> {
+public class DateString implements Comparable<DateString>, Serializable {
 
     private static final Pattern PATTERN = Pattern.compile( "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]" );
 
