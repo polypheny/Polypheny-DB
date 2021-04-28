@@ -14,15 +14,20 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.obsolet.exceptions;
+package org.polypheny.db.monitoring.events;
 
+import java.io.Serializable;
+import java.sql.Timestamp;
+import java.util.UUID;
 
-public class UnknownSubscriptionTopicRuntimeException extends RuntimeException{
-    public UnknownSubscriptionTopicRuntimeException( final int id ) {
-        super( "There is no SubscriptionTopic with id: " + id );
-    }
+/**
+ * Marker interface for the persistent metric type, which can be monitored.
+ * A MonitoringEvent will be analyzed and create metric objects.
+ */
+public interface MonitoringMetric extends Serializable {
 
-    public UnknownSubscriptionTopicRuntimeException( final String name ) {
-        super( "There is no SubscriptionTopic with name: " + name );
-    }
+    UUID id();
+
+    Timestamp timestamp();
+
 }

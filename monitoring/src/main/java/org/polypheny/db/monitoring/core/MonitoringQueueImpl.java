@@ -26,11 +26,10 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.polypheny.db.monitoring.dtos.MonitoringData;
-import org.polypheny.db.monitoring.dtos.MonitoringJob;
-import org.polypheny.db.monitoring.dtos.MonitoringPersistentData;
-import org.polypheny.db.monitoring.subscriber.MonitoringEventSubscriber;
-import org.polypheny.db.util.Pair;
+import org.polypheny.db.monitoring.events.MonitoringEvent;
+import org.polypheny.db.monitoring.events.MonitoringMetric;
+import org.polypheny.db.monitoring.persistence.MonitoringRepository;
+import org.polypheny.db.monitoring.subscriber.MonitoringMetricSubscriber;
 import org.polypheny.db.util.background.BackgroundTask;
 import org.polypheny.db.util.background.BackgroundTaskManager;
 
@@ -46,17 +45,13 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     /**
      * monitoring queue which will queue all the incoming jobs.
      */
-    private final Queue<MonitoringJob> monitoringJobQueue = new ConcurrentLinkedQueue<>();
+    private final Queue<MonitoringEvent> monitoringJobQueue = new ConcurrentLinkedQueue<>();
 
     private final Lock processingQueueLock = new ReentrantLock();
 
-    /**
-     * The registered job type pairs. The pairs are always of type
-     * ( Class<MonitoringEventData> , Class<MonitoringPersistentData>)
-     */
-    private final HashMap<Pair<Class, Class>, MonitoringQueueWorker> jobQueueWorkers = new HashMap();
+    private final HashMap<Class, List<MonitoringMetricSubscriber>> subscribers = new HashMap();
 
-    private final HashMap<Class, List<MonitoringEventSubscriber>> subscribers = new HashMap();
+    private final MonitoringRepository repository;
 
     private String backgroundTaskId;
 
@@ -70,8 +65,15 @@ public class MonitoringQueueImpl implements MonitoringQueue {
      *
      * @param startBackGroundTask Indicates whether the background task for consuming the queue will be started.
      */
-    public MonitoringQueueImpl( boolean startBackGroundTask ) {
+    public MonitoringQueueImpl( boolean startBackGroundTask, MonitoringRepository repository ) {
         log.info( "write queue service" );
+
+        if ( repository == null ) {
+            throw new IllegalArgumentException( "repo parameter is null" );
+        }
+
+        this.repository = repository;
+
         if ( startBackGroundTask ) {
             this.startBackgroundTask();
         }
@@ -81,8 +83,8 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     /**
      * Ctor will automatically start the background task for consuming the queue.
      */
-    public MonitoringQueueImpl() {
-        this( true );
+    public MonitoringQueueImpl( MonitoringRepository repository ) {
+        this( true, repository );
     }
 
     // endregion
@@ -100,82 +102,33 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
 
     @Override
-    public void queueEvent( MonitoringData eventData ) {
-        if ( eventData == null ) {
+    public void queueEvent( MonitoringEvent event ) {
+        if ( event == null ) {
             throw new IllegalArgumentException( "Empty event data" );
         }
 
-        val job = this.createMonitorJob( eventData );
-        if ( job.isPresent() ) {
-            this.monitoringJobQueue.add( job.get() );
-        }
+        this.monitoringJobQueue.add( event );
     }
 
 
     @Override
-    public <TEvent extends MonitoringData, TPersistent extends MonitoringPersistentData>
-    void registerQueueWorker( Pair<Class<TEvent>, Class<TPersistent>> classPair, MonitoringQueueWorker<TEvent, TPersistent> worker ) {
-        if ( classPair == null || worker == null ) {
-            throw new IllegalArgumentException( "Parameter is null" );
-        }
-
-        if ( this.jobQueueWorkers.containsKey( classPair ) ) {
-            throw new IllegalArgumentException( "Consumer already registered" );
-        }
-
-        val key = new Pair<Class, Class>( classPair.left, classPair.right );
-        this.jobQueueWorkers.put( key, worker );
-    }
-
-
-    @Override
-    public <TPersistent extends MonitoringPersistentData>
-    void subscribeEvent( Class<TPersistent> eventDataClass, MonitoringEventSubscriber<TPersistent> subscriber ) {
-        if ( this.subscribers.containsKey( eventDataClass ) ) {
-            this.subscribers.get( eventDataClass ).add( subscriber );
+    public <T extends MonitoringMetric> void subscribeMetric( Class<T> metricClass, MonitoringMetricSubscriber<T> subscriber ) {
+        if ( this.subscribers.containsKey( metricClass ) ) {
+            this.subscribers.get( metricClass ).add( subscriber );
         } else {
-            this.subscribers.putIfAbsent( eventDataClass, Arrays.asList( subscriber ) );
+            this.subscribers.putIfAbsent( metricClass, Arrays.asList( subscriber ) );
         }
     }
 
 
     @Override
-    public <TPersistent extends MonitoringPersistentData> void unsubscribeEvent( Class<TPersistent> eventDataClass, MonitoringEventSubscriber<TPersistent> subscriber ) {
-        this.subscribers.get( eventDataClass ).remove( subscriber );
+    public <T extends MonitoringMetric> void unsubscribeMetric( Class<T> metricClass, MonitoringMetricSubscriber<T> subscriber ) {
+        this.subscribers.get( metricClass ).remove( subscriber );
     }
 
     // endregion
 
     // region private helper methods
-
-
-    /**
-     * will try to create a MonitoringJob which incoming eventData object
-     * and newly created but empty MonitoringPersistentData object.
-     *
-     * @return Will return an Optional MonitoringJob
-     */
-    private Optional<MonitoringJob> createMonitorJob( MonitoringData eventData ) {
-        val pair = this.getTypesForEvent( eventData );
-        if ( pair.isPresent() ) {
-            try {
-                val job = new MonitoringJob( eventData, (MonitoringPersistentData) pair.get().right.newInstance() );
-                return Optional.of( job );
-            } catch ( InstantiationException e ) {
-                log.error( "Could not instantiate monitoring job" );
-            } catch ( IllegalAccessException e ) {
-                log.error( "Could not instantiate monitoring job" );
-            }
-        }
-
-        return Optional.empty();
-    }
-
-
-    private Optional<Pair<Class, Class>> getTypesForEvent( MonitoringData eventData ) {
-        // use the registered worker to find the eventData and return optional key of the entry.
-        return this.jobQueueWorkers.keySet().stream().filter( elem -> elem.left.isInstance( eventData ) ).findFirst();
-    }
 
 
     private void startBackgroundTask() {
@@ -194,29 +147,20 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         log.debug( "Start processing queue" );
         this.processingQueueLock.lock();
 
-        Optional<MonitoringJob> job;
+        Optional<MonitoringEvent> event;
 
         try {
             // while there are jobs to consume:
-            while ( (job = this.getNextJob()).isPresent() ) {
-                log.debug( "get new monitoring job" + job.get().getId().toString() );
+            while ( (event = this.getNextJob()).isPresent() ) {
+                log.debug( "get new monitoring job" + event.get().id().toString() );
+                val metrics = event.get().analyze();
 
-                // get the worker
-                MonitoringJob monitoringJob = job.get();
-                val workerKey = new Pair( monitoringJob.getMonitoringData().getClass(), monitoringJob.getMonitoringPersistentData().getClass() );
-                val worker = jobQueueWorkers.get( workerKey );
-
-                if ( worker != null ) {
-                    val result = worker.handleJob( monitoringJob );
-
-                    val classSubscribers = this.subscribers.get( monitoringJob.getMonitoringPersistentData().getClass() );
-                    if ( classSubscribers != null ) {
-                        classSubscribers.forEach( s -> s.update( result.getMonitoringPersistentData() ) );
-                    }
-
-                } else {
-                    log.error( "no worker for event registered" );
+                for ( val metric : metrics ) {
+                    this.repository.persistMetric( metric );
+                    this.notifySubscribers( metric );
                 }
+
+
             }
         } finally {
             this.processingQueueLock.unlock();
@@ -224,7 +168,18 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     }
 
 
-    private Optional<MonitoringJob> getNextJob() {
+    private void notifySubscribers( MonitoringMetric metric ) {
+
+        val classSubscribers = this.subscribers.get( metric.getClass() );
+        if ( classSubscribers != null ) {
+            classSubscribers.forEach( s -> s.update( metric ) );
+        }
+
+
+    }
+
+
+    private Optional<MonitoringEvent> getNextJob() {
         if ( monitoringJobQueue.peek() != null ) {
             return Optional.of( monitoringJobQueue.poll() );
         }

@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.dtos;
+package org.polypheny.db.monitoring.events;
 
+import java.sql.Timestamp;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -27,7 +31,7 @@ import org.polypheny.db.transaction.Statement;
 @Getter
 @Setter
 @NoArgsConstructor
-public class QueryData implements MonitoringData {
+public class QueryEvent extends BaseEvent implements MonitoringEvent {
 
     private String monitoringType;
     private RelRoot routed;
@@ -42,5 +46,35 @@ public class QueryData implements MonitoringData {
     private boolean isAnalyze;
     private boolean isSubQuery;
     private String durations;
+
+
+    @Override
+    public UUID id() {
+        return super.getId();
+    }
+
+
+    @Override
+    public Timestamp timestamp() {
+        return new Timestamp( recordedTimestamp );
+    }
+
+
+    @Override
+    public <T extends MonitoringMetric> List<Class<T>> getMetrics() {
+        return Arrays.asList( (Class<T>) QueryMetric.class );
+    }
+
+
+    @Override
+    public <T extends MonitoringMetric> List<Class<T>> getOptionalMetrics() {
+        return Collections.emptyList();
+    }
+
+
+    @Override
+    public List<MonitoringMetric> analyze() {
+        return Arrays.asList( QueryEventAnalyzer.analyze( this ) );
+    }
 
 }

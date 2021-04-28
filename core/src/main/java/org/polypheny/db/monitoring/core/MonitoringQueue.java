@@ -16,10 +16,9 @@
 
 package org.polypheny.db.monitoring.core;
 
-import org.polypheny.db.monitoring.dtos.MonitoringData;
-import org.polypheny.db.monitoring.dtos.MonitoringPersistentData;
-import org.polypheny.db.monitoring.subscriber.MonitoringEventSubscriber;
-import org.polypheny.db.util.Pair;
+import org.polypheny.db.monitoring.events.MonitoringEvent;
+import org.polypheny.db.monitoring.events.MonitoringMetric;
+import org.polypheny.db.monitoring.subscriber.MonitoringMetricSubscriber;
 
 /**
  * Monitoring queue interface which will
@@ -34,22 +33,13 @@ public interface MonitoringQueue {
      *
      * @param eventData the event data which will be queued.
      */
-    void queueEvent( MonitoringData eventData );
+    void queueEvent( MonitoringEvent eventData );
 
 
-    /**
-     * @param classPair pair for MonitoringEventData and the MonitoringPersistentData
-     * @param worker worker which will handle the event.
-     * @param <TEvent> the event data type.
-     * @param <TPersistent> the persistent data type.
-     */
-    <TEvent extends MonitoringData, TPersistent extends MonitoringPersistentData>
-    void registerQueueWorker( Pair<Class<TEvent>, Class<TPersistent>> classPair, MonitoringQueueWorker<TEvent, TPersistent> worker );
+    <T extends MonitoringMetric>
+    void subscribeMetric( Class<T> metricClass, MonitoringMetricSubscriber<T> subscriber );
 
-    <TPersistent extends MonitoringPersistentData>
-    void subscribeEvent( Class<TPersistent> eventDataClass, MonitoringEventSubscriber<TPersistent> subscriber );
-
-    <TPersistent extends MonitoringPersistentData>
-    void unsubscribeEvent( Class<TPersistent> eventDataClass, MonitoringEventSubscriber<TPersistent> subscriber );
+    <T extends MonitoringMetric>
+    void unsubscribeMetric( Class<T> metricClass, MonitoringMetricSubscriber<T> subscriber );
 
 }

@@ -16,15 +16,14 @@
 
 package org.polypheny.db.monitoring.core;
 
-import java.util.ArrayList;
+import java.sql.Timestamp;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.monitoring.dtos.MonitoringData;
-import org.polypheny.db.monitoring.dtos.MonitoringPersistentData;
-import org.polypheny.db.monitoring.persistence.ReadOnlyMonitoringRepository;
-import org.polypheny.db.monitoring.subscriber.MonitoringEventSubscriber;
+import org.polypheny.db.monitoring.events.MonitoringEvent;
+import org.polypheny.db.monitoring.events.MonitoringMetric;
+import org.polypheny.db.monitoring.persistence.MonitoringRepository;
+import org.polypheny.db.monitoring.subscriber.MonitoringMetricSubscriber;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
-import org.polypheny.db.util.Pair;
 
 @Slf4j
 public class MonitoringServiceImpl implements MonitoringService {
@@ -32,10 +31,8 @@ public class MonitoringServiceImpl implements MonitoringService {
     // region private fields
 
     private final MonitoringQueue monitoringQueue;
-    private final ReadOnlyMonitoringRepository readOnlyMonitoringRepository;
+    private final MonitoringRepository repository;
     private final MonitoringServiceUi monitoringServiceUi;
-
-    private final List<Pair<Class, Class>> registeredMonitoringPair = new ArrayList<>();
 
     // endregion
 
@@ -44,13 +41,13 @@ public class MonitoringServiceImpl implements MonitoringService {
 
     public MonitoringServiceImpl(
             MonitoringQueue monitoringQueue,
-            ReadOnlyMonitoringRepository readOnlyMonitoringRepository,
+            MonitoringRepository repository,
             MonitoringServiceUi monitoringServiceUi ) {
         if ( monitoringQueue == null ) {
             throw new IllegalArgumentException( "empty monitoring write queue service" );
         }
 
-        if ( readOnlyMonitoringRepository == null ) {
+        if ( repository == null ) {
             throw new IllegalArgumentException( "empty read-only repository" );
         }
 
@@ -59,7 +56,7 @@ public class MonitoringServiceImpl implements MonitoringService {
         }
 
         this.monitoringQueue = monitoringQueue;
-        this.readOnlyMonitoringRepository = readOnlyMonitoringRepository;
+        this.repository = repository;
         this.monitoringServiceUi = monitoringServiceUi;
     }
 
@@ -69,9 +66,9 @@ public class MonitoringServiceImpl implements MonitoringService {
 
 
     @Override
-    public void monitorEvent( MonitoringData eventData ) {
-        if ( this.registeredMonitoringPair.stream().noneMatch( pair -> pair.left.isInstance( eventData ) ) ) {
-            throw new IllegalArgumentException( "Event Class is not yet registered" );
+    public void monitorEvent( MonitoringEvent eventData ) {
+        if ( eventData == null ) {
+            throw new IllegalArgumentException( "event is null" );
         }
 
         this.monitoringQueue.queueEvent( eventData );
@@ -79,38 +76,32 @@ public class MonitoringServiceImpl implements MonitoringService {
 
 
     @Override
-    public <TPersistent extends MonitoringPersistentData> void subscribeEvent( Class<TPersistent> eventDataClass, MonitoringEventSubscriber<TPersistent> subscriber ) {
-        this.monitoringQueue.subscribeEvent( eventDataClass, subscriber );
+    public <TPersistent extends MonitoringMetric> void subscribeMetric( Class<TPersistent> eventDataClass, MonitoringMetricSubscriber<TPersistent> subscriber ) {
+        this.monitoringQueue.subscribeMetric( eventDataClass, subscriber );
     }
 
 
     @Override
-    public <TPersistent extends MonitoringPersistentData> void unsubscribeEvent( Class<TPersistent> eventDataClass, MonitoringEventSubscriber<TPersistent> subscriber ) {
-        this.monitoringQueue.unsubscribeEvent( eventDataClass, subscriber );
+    public <TPersistent extends MonitoringMetric> void unsubscribeMetric( Class<TPersistent> eventDataClass, MonitoringMetricSubscriber<TPersistent> subscriber ) {
+        this.monitoringQueue.unsubscribeMetric( eventDataClass, subscriber );
     }
 
 
     @Override
-    public <TEvent extends MonitoringData, TPersistent extends MonitoringPersistentData> void
-    registerEventType( Class<TEvent> eventDataClass, Class<TPersistent> eventPersistentDataClass ) {
-        Pair<Class, Class> pair = new Pair( eventDataClass, eventPersistentDataClass );
-
-        if ( eventDataClass != null && !this.registeredMonitoringPair.contains( pair ) ) {
-            this.registeredMonitoringPair.add( pair );
-        }
+    public <T extends MonitoringMetric> List<T> getAllMetrics( Class<T> metricClass ) {
+        return this.repository.getAllMetrics( metricClass );
     }
 
 
     @Override
-    public <TEvent extends MonitoringData, TPersistent extends MonitoringPersistentData> void
-    registerEventType( Class<TEvent> eventDataClass, Class<TPersistent> eventPersistentDataClass, MonitoringQueueWorker<TEvent, TPersistent> worker ) {
-        Pair<Class<TEvent>, Class<TPersistent>> pair = new Pair( eventDataClass, eventPersistentDataClass );
+    public <T extends MonitoringMetric> List<T> getMetricsBefore( Class<T> metricClass, Timestamp timestamp ) {
+        return this.repository.getMetricsBefore( metricClass, timestamp );
+    }
 
-        if ( eventDataClass != null && !this.registeredMonitoringPair.contains( pair ) ) {
-            this.registerEventType( eventDataClass, eventPersistentDataClass );
-            this.monitoringQueue.registerQueueWorker( pair, worker );
-            this.monitoringServiceUi.registerPersistentClass( eventPersistentDataClass );
-        }
+
+    @Override
+    public <T extends MonitoringMetric> List<T> getMetricsAfter( Class<T> metricClass, Timestamp timestamp ) {
+        return this.repository.getMetricsAfter( metricClass, timestamp );
     }
 
     // endregion

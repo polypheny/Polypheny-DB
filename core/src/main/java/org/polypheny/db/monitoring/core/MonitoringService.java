@@ -16,9 +16,11 @@
 
 package org.polypheny.db.monitoring.core;
 
-import org.polypheny.db.monitoring.dtos.MonitoringData;
-import org.polypheny.db.monitoring.dtos.MonitoringPersistentData;
-import org.polypheny.db.monitoring.subscriber.MonitoringEventSubscriber;
+import java.sql.Timestamp;
+import java.util.List;
+import org.polypheny.db.monitoring.events.MonitoringEvent;
+import org.polypheny.db.monitoring.events.MonitoringMetric;
+import org.polypheny.db.monitoring.subscriber.MonitoringMetricSubscriber;
 
 /**
  * Main interface for working with the MonitoringService environment. Jobs can be registered, monitored
@@ -26,44 +28,44 @@ import org.polypheny.db.monitoring.subscriber.MonitoringEventSubscriber;
  */
 public interface MonitoringService {
 
-    <TPersistent extends MonitoringPersistentData> void subscribeEvent( Class<TPersistent> eventDataClass, MonitoringEventSubscriber<TPersistent> subscriber );
+    <T extends MonitoringMetric> void subscribeMetric( Class<T> metricClass, MonitoringMetricSubscriber<T> subscriber );
 
-    <TPersistent extends MonitoringPersistentData> void unsubscribeEvent( Class<TPersistent> eventDataClass, MonitoringEventSubscriber<TPersistent> subscriber );
+    <T extends MonitoringMetric> void unsubscribeMetric( Class<T> metricClass, MonitoringMetricSubscriber<T> subscriber );
 
     /**
      * monitor event which will be queued immediately and get processed by a registered queue worker.
      *
      * @param eventData The event data object.
-     * @param <TEvent> The type parameter for the event, which will implement MonitoringEventData
+     * @param <T> The type parameter for the event, which will implement MonitoringEventData
      */
-    <TEvent extends MonitoringData> void monitorEvent( TEvent eventData );
+    <T extends MonitoringEvent> void monitorEvent( T eventData );
 
     /**
-     * For monitoring events and processing them, they need first to be registered.
-     * A registration has always two type parameters for the event class type and
-     * the persistent type.
+     * Get all data for given monitoring persistent type.
      *
-     * @param eventDataClass
-     * @param monitoringJobClass
-     * @param <TEvent>
-     * @param <TPersistent>
+     * @param metricClass
+     * @param <T>
+     * @return
      */
-    <TEvent extends MonitoringData, TPersistent extends MonitoringPersistentData> void
-    registerEventType( Class<TEvent> eventDataClass, Class<TPersistent> monitoringJobClass );
+    <T extends MonitoringMetric> List<T> getAllMetrics( Class<T> metricClass );
 
     /**
-     * For monitoring events and processing them, they need first to be registered.
-     * A registration has always two type parameters for the event class type and
-     * the persistent type. Moreover, a worker for the data types need to be registered.
+     * Get data before specified timestamp for given monitoring persistent type.
      *
-     * @param eventDataClass
-     * @param monitoringJobClass
-     * @param worker
-     * @param <TEvent>
-     * @param <TPersistent>
+     * @param metricClass
+     * @param <T>
+     * @return
      */
-    <TEvent extends MonitoringData, TPersistent extends MonitoringPersistentData> void
-    registerEventType( Class<TEvent> eventDataClass, Class<TPersistent> monitoringJobClass, MonitoringQueueWorker<TEvent, TPersistent> worker );
+    <T extends MonitoringMetric> List<T> getMetricsBefore( Class<T> metricClass, Timestamp timestamp );
+
+    /**
+     * Get data after specified timestamp for given monitoring persistent type.
+     *
+     * @param metricClass
+     * @param <T>
+     * @return
+     */
+    <T extends MonitoringMetric> List<T> getMetricsAfter( Class<T> metricClass, Timestamp timestamp );
 
 }
 

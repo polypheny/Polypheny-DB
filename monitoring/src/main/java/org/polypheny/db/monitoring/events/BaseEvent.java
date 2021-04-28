@@ -14,12 +14,16 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.subscriber;
+package org.polypheny.db.monitoring.events;
 
-import org.polypheny.db.monitoring.dtos.MonitoringPersistentData;
+import java.util.UUID;
+import lombok.Getter;
 
-public interface MonitoringEventSubscriber<TPersistent extends MonitoringPersistentData> {
+public abstract class BaseEvent implements MonitoringEvent {
 
-    void update( TPersistent eventData );
+    @Getter
+    private final UUID id = UUID.randomUUID();
+    @Getter
+    private final long timestamp = System.currentTimeMillis();
 
 }

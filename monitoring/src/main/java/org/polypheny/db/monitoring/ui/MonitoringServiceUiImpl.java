@@ -28,17 +28,17 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
-import org.polypheny.db.monitoring.dtos.MonitoringPersistentData;
-import org.polypheny.db.monitoring.persistence.ReadOnlyMonitoringRepository;
+import org.polypheny.db.monitoring.events.MonitoringMetric;
+import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 
 @Slf4j
 public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
     private InformationPage informationPage;
-    private final ReadOnlyMonitoringRepository repo;
+    private final MonitoringRepository repo;
 
 
-    public MonitoringServiceUiImpl( ReadOnlyMonitoringRepository repo ) {
+    public MonitoringServiceUiImpl( MonitoringRepository repo ) {
         if ( repo == null ) {
             throw new IllegalArgumentException( "repo parameter is null" );
         }
@@ -49,7 +49,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
     @Override
     public void initializeInformationPage() {
         //Initialize Information Page
-        informationPage = new InformationPage( "Workload Monitoring CM" );
+        informationPage = new InformationPage( "Workload Monitoring" );
         informationPage.fullWidth();
         InformationManager im = InformationManager.getInstance();
         im.addPage( informationPage );
@@ -57,15 +57,15 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
 
     @Override
-    public <TPersistent extends MonitoringPersistentData> void registerPersistentClass( Class<TPersistent> persistentDataClass ) {
-        String className = persistentDataClass.getName();
+    public <T extends MonitoringMetric> void registerMetricForUi( Class<T> metricClass ) {
+        String className = metricClass.getName();
         val informationGroup = new InformationGroup( informationPage, className );
 
         // TODO: see todo below
-        val fieldAsString = Arrays.stream( persistentDataClass.getDeclaredFields() ).map( f -> f.getName() ).filter( str -> !str.equals( "serialVersionUID" ) ).collect( Collectors.toList() );
+        val fieldAsString = Arrays.stream( metricClass.getDeclaredFields() ).map( f -> f.getName() ).filter( str -> !str.equals( "serialVersionUID" ) ).collect( Collectors.toList() );
         val informationTable = new InformationTable( informationGroup, fieldAsString );
 
-        informationGroup.setRefreshFunction( () -> this.updateQueueInformationTable( informationTable, persistentDataClass ) );
+        informationGroup.setRefreshFunction( () -> this.updateQueueInformationTable( informationTable, metricClass ) );
 
         InformationManager im = InformationManager.getInstance();
         im.addGroup( informationGroup );
@@ -73,13 +73,13 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
     }
 
 
-    private <TPersistent extends MonitoringPersistentData> void updateQueueInformationTable( InformationTable table, Class<TPersistent> registerClass ) {
-        List<TPersistent> elements = this.repo.GetAll( registerClass );
+    private <T extends MonitoringMetric> void updateQueueInformationTable( InformationTable table, Class<T> metricClass ) {
+        List<T> elements = this.repo.getAllMetrics( metricClass );
         table.reset();
 
-        Field[] fields = registerClass.getDeclaredFields();
-        Method[] methods = registerClass.getMethods();
-        for ( TPersistent element : elements ) {
+        Field[] fields = metricClass.getDeclaredFields();
+        Method[] methods = metricClass.getMethods();
+        for ( T element : elements ) {
             List<String> row = new LinkedList<>();
 
             for ( Field field : fields ) {

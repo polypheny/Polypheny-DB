@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.dtos;
+package org.polypheny.db.monitoring.events;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
@@ -34,9 +34,10 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @AllArgsConstructor(access = AccessLevel.MODULE)
-public class QueryPersistentData implements MonitoringPersistentData, Serializable {
+public class QueryMetric implements MonitoringMetric, Serializable {
 
     private static final long serialVersionUID = 2312903042511293177L;
+
     private final List<String> tables = new ArrayList<>();
     private final HashMap<String, Object> dataElements = new HashMap<>();
     private UUID Id;
@@ -50,7 +51,7 @@ public class QueryPersistentData implements MonitoringPersistentData, Serializab
 
 
     @Override
-    public UUID Id() {
+    public UUID id() {
         return this.Id;
     }
 

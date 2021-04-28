@@ -16,39 +16,34 @@
 
 package org.polypheny.db.monitoring.core;
 
-import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
-import org.polypheny.db.monitoring.dtos.QueryData;
-import org.polypheny.db.monitoring.dtos.QueryPersistentData;
-import org.polypheny.db.monitoring.persistence.ReadOnlyMonitoringRepository;
-import org.polypheny.db.monitoring.persistence.MonitoringRepository;
-import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
-
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
+
+import lombok.extern.slf4j.Slf4j;
+import org.junit.Test;
+import org.polypheny.db.monitoring.events.QueryEvent;
+import org.polypheny.db.monitoring.persistence.MonitoringRepository;
+import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 
 @Slf4j
 public class MonitoringServiceImplTest {
 
     @Test
     public void TestIt() {
-        MonitoringQueue doc1 = mock(MonitoringQueue.class);
-        ReadOnlyMonitoringRepository doc2 = mock(ReadOnlyMonitoringRepository.class);
-        MonitoringServiceUi doc3 = mock(MonitoringServiceUi.class);
+        MonitoringQueue doc1 = mock( MonitoringQueue.class );
+        MonitoringRepository doc2 = mock( MonitoringRepository.class );
+        MonitoringServiceUi doc3 = mock( MonitoringServiceUi.class );
 
         MonitoringRepository doc4 = mock( MonitoringRepository.class );
 
+        MonitoringQueue writeQueueService = new MonitoringQueueImpl( doc2 );
 
-        MonitoringQueue writeQueueService = new MonitoringQueueImpl();
+        MonitoringService sut = new MonitoringServiceImpl( writeQueueService, doc2, doc3 );
+        QueryEvent eventData = mock( QueryEvent.class );
 
+        sut.monitorEvent( eventData );
 
-        MonitoringService sut = new MonitoringServiceImpl(writeQueueService, doc2, doc3);
-        QueryData eventData = mock(QueryData.class);
-        sut.registerEventType(QueryData.class, QueryPersistentData.class);
-
-        sut.monitorEvent(eventData);
-
-        assertNotNull(sut);
+        assertNotNull( sut );
 
     }
 

@@ -14,21 +14,17 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.dtos;
+package org.polypheny.db.monitoring.subscriber;
 
-import java.io.Serializable;
-import java.sql.Timestamp;
-import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.monitoring.events.QueryMetric;
 
-/**
- * Marker interface for the persistent data type, which can be monitored.
- * A MonitoringPersistentData implementation need to be serializable and should always have a corresponding
- * MonitoringData implementation. In theory, the same class could implement both interfaces.
- */
-public interface MonitoringPersistentData extends Serializable {
+@Slf4j
+public class QueryMetricSubscriber implements MonitoringMetricSubscriber<QueryMetric> {
 
-    UUID Id();
-
-    Timestamp timestamp();
+    @Override
+    public void update( QueryMetric eventData ) {
+        log.debug( "Sample Query event subscriber:" + eventData.getMonitoringType() );
+    }
 
 }

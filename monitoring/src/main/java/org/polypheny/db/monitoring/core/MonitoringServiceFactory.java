@@ -17,10 +17,9 @@
 package org.polypheny.db.monitoring.core;
 
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.monitoring.dtos.QueryData;
+import org.polypheny.db.monitoring.events.QueryMetric;
 import org.polypheny.db.monitoring.persistence.MapDbRepository;
-import org.polypheny.db.monitoring.dtos.QueryPersistentData;
-import org.polypheny.db.monitoring.subscriber.QueryEventSubscriber;
+import org.polypheny.db.monitoring.subscriber.QueryMetricSubscriber;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUiImpl;
 
@@ -35,25 +34,17 @@ public class MonitoringServiceFactory {
         repo.initialize();
 
         // create monitoring service with dependencies
-        MonitoringQueue queueWriteService = new MonitoringQueueImpl();
+        MonitoringQueue queueWriteService = new MonitoringQueueImpl( repo );
         MonitoringServiceUi uiService = new MonitoringServiceUiImpl( repo );
 
         // initialize ui
         uiService.initializeInformationPage();
+        uiService.registerMetricForUi( QueryMetric.class );
 
         // initialize the monitoringService
         MonitoringServiceImpl monitoringService = new MonitoringServiceImpl( queueWriteService, repo, uiService );
 
-        // configure query monitoring event as system wide monitoring
-        MonitoringQueueWorker worker = new QueryWorker( repo );
-
-
-        monitoringService.registerEventType( QueryData.class, QueryPersistentData.class, worker );
-
-        //Todo @Cedric Is this a dummy call here to subscribe something?
-        // Or should this represent an internal subscription?
-        // In that case when does this susbcriber get informed about chanegs?
-        monitoringService.subscribeEvent( QueryPersistentData.class, new QueryEventSubscriber() );
+        monitoringService.subscribeMetric( QueryMetric.class, new QueryMetricSubscriber() );
 
         return monitoringService;
     }

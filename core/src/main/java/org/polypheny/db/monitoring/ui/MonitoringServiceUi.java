@@ -16,7 +16,7 @@
 
 package org.polypheny.db.monitoring.ui;
 
-import org.polypheny.db.monitoring.dtos.MonitoringPersistentData;
+import org.polypheny.db.monitoring.events.MonitoringMetric;
 
 /**
  * Ui abstraction service for monitoring.
@@ -29,9 +29,9 @@ public interface MonitoringServiceUi {
      * Will add new section to monitoring information page for the specified
      * MonitoringPersistentData type and register the refresh function to read from repository.
      *
-     * @param persistentDataClass
-     * @param <TPersistent>
+     * @param metricClass
+     * @param <T>
      */
-    <TPersistent extends MonitoringPersistentData> void registerPersistentClass( Class<TPersistent> persistentDataClass );
+    <T extends MonitoringMetric> void registerMetricForUi( Class<T> metricClass );
 
 }

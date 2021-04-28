@@ -14,20 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.obsolet.storage;
+package org.polypheny.db.monitoring.subscriber;
 
+import org.polypheny.db.monitoring.events.MonitoringMetric;
 
-import org.polypheny.db.monitoring.obsolet.MonitorEvent;
+public interface MonitoringMetricSubscriber<T extends MonitoringMetric> {
 
-
-public interface BackendConnector {
-
-    void initializeConnectorClient();
-
-    void monitorEvent();
-
-    boolean writeStatisticEvent(long key, MonitorEvent incomingEvent);
-
-    void readStatisticEvent(String outgoingEvent);
+    void update( T metric );
 
 }

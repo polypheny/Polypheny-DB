@@ -27,15 +27,11 @@ public class MonitoringServiceProvider {
     private static MonitoringService INSTANCE = null;
 
 
-    public static MonitoringService MONITORING_SERVICE() {
-        if (INSTANCE == null) {
+    public static MonitoringService getInstance() {
+        if ( INSTANCE == null ) {
             INSTANCE = MonitoringServiceFactory.CreateMonitoringService();
         }
         return INSTANCE;
     }
 
-    //Additional Method to be consequent with other Instantiation invocations
-    public MonitoringService getInstance(){
-        return this.MONITORING_SERVICE();
-    }
 }
