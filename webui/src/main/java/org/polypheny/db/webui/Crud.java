@@ -3287,7 +3287,9 @@ public class Crud implements InformationObserver {
 
             ArrayList<String[]> data = computeResultData( rows, header, statement.getTransaction() );
 
+
             ((QueryData) statement.getTransaction().getMonitoringData()).setRowCount( data.size() );
+
             MonitoringServiceProvider.MONITORING_SERVICE().monitorEvent( statement.getTransaction().getMonitoringData() );
 
             return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );

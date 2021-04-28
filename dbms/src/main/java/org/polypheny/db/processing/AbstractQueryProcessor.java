@@ -329,8 +329,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                     statement.getDuration().stop( "Implementation Caching" );
                 }
 
+
+                //TODO @Cedric this produces an error causing severall checks to fail. Please investigate
                 //needed for row results
-                final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
+                /*final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
                 Iterator<Object> iterator = enumerable.iterator();
 
                 TransactionImpl transaction = (TransactionImpl) statement.getTransaction();
@@ -346,6 +348,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 eventData.setSubQuery( isSubquery );
                 eventData.setDurations( statement.getDuration().asJson() );
 
+                 */
                 return signature;
             }
         }
@@ -427,6 +430,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             log.debug( "Preparing statement ... done. [{}]", stopWatch );
         }
 
+        /*
+
+        //TODO @Cedric this produces an error causing severall checks to fail. Please investigate
         //needed for row results
         final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
         Iterator<Object> iterator = enumerable.iterator();
@@ -443,6 +449,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         eventData.setSubQuery( isSubquery );
         eventData.setDurations( statement.getDuration().asJson() );
 
+
+         */
         return signature;
     }
 
