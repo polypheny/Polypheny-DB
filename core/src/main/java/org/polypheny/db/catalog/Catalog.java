@@ -1460,7 +1460,9 @@ public abstract class Catalog {
         NONE( 0 ),
         RANGE( 1 ),
         LIST( 2 ),
-        HASH( 3 );
+        HASH( 3 ),
+        //TODO @HENNLO think about excluding "UDPF" here, these should only be used for internal Partiiton Functions
+        TEMPERATURE(4);
 
         private final int id;
 

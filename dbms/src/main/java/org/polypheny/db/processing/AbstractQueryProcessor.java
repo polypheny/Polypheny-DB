@@ -347,8 +347,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 eventData.setAnalyze( isAnalyze );
                 eventData.setSubQuery( isSubquery );
                 eventData.setDurations( statement.getDuration().asJson() );
-
                  */
+
                 return signature;
             }
         }

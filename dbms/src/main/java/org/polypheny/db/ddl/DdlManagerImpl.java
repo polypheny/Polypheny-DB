@@ -86,7 +86,7 @@ import org.polypheny.db.ddl.exception.PlacementIsPrimaryException;
 import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
-import org.polypheny.db.partition.PartitionManager;
+import org.polypheny.db.partition.manager.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.runtime.PolyphenyDbContextException;

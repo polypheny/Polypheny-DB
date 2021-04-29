@@ -16,6 +16,12 @@
 package org.polypheny.db.partition;
 
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.partition.manager.HashPartitionManager;
+import org.polypheny.db.partition.manager.ListPartitionManager;
+import org.polypheny.db.partition.manager.PartitionManager;
+import org.polypheny.db.partition.manager.RangePartitionManager;
+import org.polypheny.db.partition.manager.TemperatureAwarePartitionManager;
+
 
 public class PartitionManagerFactory {
 
@@ -29,6 +35,11 @@ public class PartitionManagerFactory {
 
             case RANGE:
                 return new RangePartitionManager();
+
+            //TODO @HENNLO think about excluding "UDPF" here, these should only be used for internal Partiiton Functions
+            //Or create an internal mapping from PARTITIONTYPE to teh handling partition manager
+            case TEMPERATURE:
+                return new TemperatureAwarePartitionManager();
         }
 
         throw new RuntimeException( "Unknown partition type: " + partitionType );

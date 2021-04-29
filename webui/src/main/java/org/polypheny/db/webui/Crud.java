@@ -71,7 +71,7 @@ import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.dtos.QueryData;
 import org.polypheny.db.partition.PartitionFunctionInfo;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
-import org.polypheny.db.partition.PartitionManager;
+import org.polypheny.db.partition.manager.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.rel.RelCollation;
