@@ -18,16 +18,23 @@ package org.polypheny.db.monitoring.ui;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.calcite.avatica.remote.Service.Base;
+import org.polypheny.db.adapter.java.Array;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.monitoring.core.MonitoringQueue;
+import org.polypheny.db.monitoring.events.BaseEvent;
+import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.events.MonitoringMetric;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 
@@ -36,13 +43,21 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
     private InformationPage informationPage;
     private final MonitoringRepository repo;
+    private final MonitoringQueue queue;
 
 
-    public MonitoringServiceUiImpl( MonitoringRepository repo ) {
+    public MonitoringServiceUiImpl( MonitoringRepository repo, MonitoringQueue queue ) {
         if ( repo == null ) {
             throw new IllegalArgumentException( "repo parameter is null" );
         }
         this.repo = repo;
+
+        if ( queue == null ) {
+            throw new IllegalArgumentException( "queue parameter is null" );
+        }
+        this.queue = queue;
+
+        initializeInformationPage();
     }
 
 
@@ -53,6 +68,8 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
         informationPage.fullWidth();
         InformationManager im = InformationManager.getInstance();
         im.addPage( informationPage );
+
+        initializeQueueInformationTable();
     }
 
 
@@ -65,15 +82,28 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
         val fieldAsString = Arrays.stream( metricClass.getDeclaredFields() ).map( f -> f.getName() ).filter( str -> !str.equals( "serialVersionUID" ) ).collect( Collectors.toList() );
         val informationTable = new InformationTable( informationGroup, fieldAsString );
 
-        informationGroup.setRefreshFunction( () -> this.updateQueueInformationTable( informationTable, metricClass ) );
+        informationGroup.setRefreshFunction( () -> this.updateMetricInformationTable( informationTable, metricClass ) );
 
-        InformationManager im = InformationManager.getInstance();
-        im.addGroup( informationGroup );
-        im.registerInformation( informationTable );
+        addInformationGroupTUi( informationGroup, Arrays.asList( informationTable )  ) ;
     }
 
 
-    private <T extends MonitoringMetric> void updateQueueInformationTable( InformationTable table, Class<T> metricClass ) {
+    /** Universal method to add arbitrary new information Groups to UI
+     *
+     * @param informationGroup
+     * @param informationTables
+     */
+    private void addInformationGroupTUi(InformationGroup informationGroup, List<InformationTable> informationTables) {
+        InformationManager im = InformationManager.getInstance();
+        im.addGroup( informationGroup );
+
+        for ( InformationTable informationTable: informationTables ) {
+            im.registerInformation( informationTable );
+        }
+    }
+
+
+    private <T extends MonitoringMetric> void updateMetricInformationTable( InformationTable table, Class<T> metricClass ) {
         List<T> elements = this.repo.getAllMetrics( metricClass );
         table.reset();
 
@@ -98,6 +128,38 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
                     e.printStackTrace();
                 }
             }
+
+            table.addRow( row );
+        }
+    }
+
+
+    private void initializeQueueInformationTable(){
+
+        //On first subscriber also add
+        //Also build active subscription table Metric to subscribers
+        //or which subscribers, exist and to which metrics they are subscribed
+
+        val informationGroup = new InformationGroup( informationPage, "Monitoring Queue" );
+        val informationTable = new InformationTable( informationGroup,
+                Arrays.asList( "Event Type", "UUID", "Timestamp" )  );
+
+        informationGroup.setRefreshFunction( () -> this.updateQueueInformationTable( informationTable ) );
+
+        addInformationGroupTUi( informationGroup, Arrays.asList( informationTable )  ) ;
+
+    }
+
+    private <T extends MonitoringMetric> void updateQueueInformationTable( InformationTable table ) {
+        List<MonitoringEvent> queueElements = this.queue.getElementsInQueue();
+        table.reset();
+
+
+        for ( MonitoringEvent event : queueElements ){
+            List<String> row = new ArrayList<>();
+            row.add( event.getEventType() );
+            row.add( event.id().toString() );
+            row.add( event.recordedTimestamp().toString() );
 
             table.addRow( row );
         }

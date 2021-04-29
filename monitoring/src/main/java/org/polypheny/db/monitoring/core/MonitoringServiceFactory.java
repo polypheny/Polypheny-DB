@@ -17,6 +17,7 @@
 package org.polypheny.db.monitoring.core;
 
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.monitoring.events.QueryMetric;
 import org.polypheny.db.monitoring.persistence.MapDbRepository;
 import org.polypheny.db.monitoring.subscriber.QueryMetricSubscriber;
@@ -35,11 +36,13 @@ public class MonitoringServiceFactory {
 
         // create monitoring service with dependencies
         MonitoringQueue queueWriteService = new MonitoringQueueImpl( repo );
-        MonitoringServiceUi uiService = new MonitoringServiceUiImpl( repo );
+        MonitoringServiceUi uiService = new MonitoringServiceUiImpl( repo, queueWriteService );
 
-        // initialize ui
-        uiService.initializeInformationPage();
+        // initialize ui with first Metric
         uiService.registerMetricForUi( QueryMetric.class );
+
+
+
 
         // initialize the monitoringService
         MonitoringServiceImpl monitoringService = new MonitoringServiceImpl( queueWriteService, repo, uiService );

@@ -16,6 +16,7 @@
 
 package org.polypheny.db.monitoring.core;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +27,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.polypheny.db.monitoring.events.BaseEvent;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.events.MonitoringMetric;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
@@ -54,6 +56,9 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     private final MonitoringRepository repository;
 
     private String backgroundTaskId;
+
+    // number of elements beeing processed from the queue to the backend per "batch"
+    private final int QUEUE_PROCESSING_ELEMENTS = 50;
 
     // endregion
 
@@ -126,6 +131,22 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         this.subscribers.get( metricClass ).remove( subscriber );
     }
 
+
+
+    @Override
+    public List<MonitoringEvent> getElementsInQueue(){
+
+        List<MonitoringEvent> eventsInQueue = new ArrayList<>();
+
+        for ( MonitoringEvent event : monitoringJobQueue ) {
+            eventsInQueue.add( event );
+        }
+
+        System.out.println("COntents in Queue: " + monitoringJobQueue);
+
+        return eventsInQueue;
+    }
+
     // endregion
 
     // region private helper methods
@@ -151,16 +172,20 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
         try {
             // while there are jobs to consume:
-            while ( (event = this.getNextJob()).isPresent() ) {
+            int processed_events = 0;
+            while ( (event = this.getNextJob()).isPresent() && processed_events < QUEUE_PROCESSING_ELEMENTS) {
                 log.debug( "get new monitoring job" + event.get().id().toString() );
+
+                //returns list of metrics which was produced by this particular event
                 val metrics = event.get().analyze();
 
+                //Sends all extracted metrics to subscribers
                 for ( val metric : metrics ) {
                     this.repository.persistMetric( metric );
                     this.notifySubscribers( metric );
                 }
 
-
+                processed_events++;
             }
         } finally {
             this.processingQueueLock.unlock();
@@ -177,7 +202,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
 
     }
-
 
     private Optional<MonitoringEvent> getNextJob() {
         if ( monitoringJobQueue.peek() != null ) {

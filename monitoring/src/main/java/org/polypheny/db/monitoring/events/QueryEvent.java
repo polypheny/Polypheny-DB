@@ -30,8 +30,7 @@ import org.polypheny.db.transaction.Statement;
 
 @Getter
 @Setter
-@NoArgsConstructor
-public class QueryEvent extends BaseEvent implements MonitoringEvent {
+public class QueryEvent extends BaseEvent {
 
     private String monitoringType;
     private RelRoot routed;
@@ -47,6 +46,11 @@ public class QueryEvent extends BaseEvent implements MonitoringEvent {
     private boolean isSubQuery;
     private String durations;
 
+    private String eventType = "QUERY EVENT";
+
+    public QueryEvent (){
+        super.setEventType(eventType);
+    }
 
     @Override
     public UUID id() {
@@ -55,9 +59,10 @@ public class QueryEvent extends BaseEvent implements MonitoringEvent {
 
 
     @Override
-    public Timestamp timestamp() {
+    public Timestamp recordedTimestamp() {
         return new Timestamp( recordedTimestamp );
     }
+
 
 
     @Override
