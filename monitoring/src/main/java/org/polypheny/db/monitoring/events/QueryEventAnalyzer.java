@@ -30,12 +30,12 @@ public class QueryEventAnalyzer {
                 .builder()
                 .description( queryEvent.getDescription() )
                 .monitoringType( queryEvent.getMonitoringType() )
-                .Id( queryEvent.id() )
+                .Id( queryEvent.getId() )
                 .fieldNames( queryEvent.getFieldNames() )
                 .executionTime( queryEvent.getExecutionTime() )
                 .rowCount( queryEvent.getRowCount() )
                 .isSubQuery( queryEvent.isSubQuery() )
-                .recordedTimestamp( new Timestamp( queryEvent.getRecordedTimestamp() ) )
+                .recordedTimestamp( queryEvent.getRecordedTimestamp()  )
                 .build();
 
         RelNode node = queryEvent.getRouted().rel;

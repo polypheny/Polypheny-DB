@@ -27,9 +27,11 @@ import java.util.UUID;
  */
 public interface MonitoringEvent {
 
-    UUID id();
+    UUID getId();
 
-    Timestamp timestamp();
+    Timestamp getRecordedTimestamp();
+
+    String getEventType();
 
     /**
      * @param <T> Defined Class Types which will be generated from the event.

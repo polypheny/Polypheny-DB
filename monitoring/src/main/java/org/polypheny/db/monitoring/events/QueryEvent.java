@@ -39,7 +39,6 @@ public class QueryEvent extends BaseEvent {
     private List<List<Object>> rows;
     private String description;
     private List<String> fieldNames;
-    private long recordedTimestamp;
     private long executionTime;
     private int rowCount;
     private boolean isAnalyze;
@@ -50,17 +49,6 @@ public class QueryEvent extends BaseEvent {
 
     public QueryEvent (){
         super.setEventType(eventType);
-    }
-
-    @Override
-    public UUID id() {
-        return super.getId();
-    }
-
-
-    @Override
-    public Timestamp recordedTimestamp() {
-        return new Timestamp( recordedTimestamp );
     }
 
 

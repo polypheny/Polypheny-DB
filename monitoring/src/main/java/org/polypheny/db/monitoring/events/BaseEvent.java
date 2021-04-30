@@ -16,6 +16,7 @@
 
 package org.polypheny.db.monitoring.events;
 
+import java.sql.Timestamp;
 import java.util.UUID;
 import lombok.Getter;
 import org.apache.calcite.avatica.remote.Service.Base;
@@ -29,14 +30,14 @@ public abstract class BaseEvent implements MonitoringEvent {
     protected  String eventType;
 
 
-   public BaseEvent (){
-        setEventType( eventType );
+
+    private long recordedTimestamp; // = getCurrentTimestamp();
+
+    public BaseEvent (){
+
+       setEventType( eventType );
+       recordedTimestamp = getCurrentTimestamp();
     }
-
-    @Getter
-    private final long recordedTimestamp = System.currentTimeMillis();
-
-
 
 
     public void setEventType( String eventType ) {
@@ -47,6 +48,19 @@ public abstract class BaseEvent implements MonitoringEvent {
     @Override
     public String getEventType() {
         return eventType;
+    }
+
+
+
+    @Override
+    public Timestamp getRecordedTimestamp() {
+        return new Timestamp( recordedTimestamp );
+    }
+
+
+
+    private long getCurrentTimestamp(){
+       return System.currentTimeMillis();
     }
 
 }

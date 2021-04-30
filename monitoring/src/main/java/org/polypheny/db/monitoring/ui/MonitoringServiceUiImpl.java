@@ -158,8 +158,8 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
         for ( MonitoringEvent event : queueElements ){
             List<String> row = new ArrayList<>();
             row.add( event.getEventType() );
-            row.add( event.id().toString() );
-            row.add( event.recordedTimestamp().toString() );
+            row.add( event.getId().toString() );
+            row.add( event.getRecordedTimestamp().toString() );
 
             table.addRow( row );
         }

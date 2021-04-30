@@ -174,7 +174,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
             // while there are jobs to consume:
             int processed_events = 0;
             while ( (event = this.getNextJob()).isPresent() && processed_events < QUEUE_PROCESSING_ELEMENTS) {
-                log.debug( "get new monitoring job" + event.get().id().toString() );
+                log.debug( "get new monitoring job" + event.get().getId().toString() );
 
                 //returns list of metrics which was produced by this particular event
                 val metrics = event.get().analyze();

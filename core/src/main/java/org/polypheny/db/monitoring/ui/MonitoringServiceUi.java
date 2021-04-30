@@ -16,6 +16,7 @@
 
 package org.polypheny.db.monitoring.ui;
 
+import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.monitoring.events.MonitoringMetric;
 
 /**
@@ -33,5 +34,6 @@ public interface MonitoringServiceUi {
      * @param <T>
      */
     <T extends MonitoringMetric> void registerMetricForUi( Class<T> metricClass );
+
 
 }
