@@ -16,6 +16,7 @@
 
 package org.polypheny.db.monitoring.events;
 
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -27,25 +28,40 @@ import org.polypheny.db.monitoring.events.metrics.QueryMetric;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.transaction.Statement;
 
-@Getter
+
+/**
+ * Basis class needed for every statement type like, QUERY, DML, DDL
+ */
 @Setter
-public class QueryEvent extends StatementEvent {
+@Getter
+public abstract class StatementEvent extends BaseEvent{
 
+    protected String monitoringType;
+    protected RelRoot routed;
+    protected PolyphenyDbSignature signature;
+    protected Statement statement;
+    protected List<List<Object>> rows;
+    protected String description;
+    protected List<String> fieldNames;
+    protected long executionTime;
+    protected int rowCount;
+    protected boolean isAnalyze;
+    protected boolean isSubQuery;
+    protected String durations;
 
-    private String eventType = "QUERY EVENT";
 
 
 
     @Override
-    public <T extends MonitoringMetric> List<Class<T>> getMetrics() {
-        return Arrays.asList( (Class<T>) QueryMetric.class );
-    }
-
+    public abstract <T extends MonitoringMetric> List<Class<T>> getMetrics();
 
 
     @Override
-    public List<MonitoringMetric> analyze() {
-        return Arrays.asList( QueryEventAnalyzer.analyze( this ) );
+    public <T extends MonitoringMetric> List<Class<T>> getOptionalMetrics() {
+        return Collections.emptyList();
     }
 
+
+    @Override
+    public abstract List<MonitoringMetric> analyze();
 }

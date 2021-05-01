@@ -14,47 +14,50 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.events;
+package org.polypheny.db.monitoring.events.analyzer;
+
 
 import com.google.gson.Gson;
-import java.sql.Timestamp;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.InformationDuration;
+import org.polypheny.db.monitoring.events.DMLEvent;
+import org.polypheny.db.monitoring.events.QueryEvent;
+import org.polypheny.db.monitoring.events.metrics.DMLMetric;
+import org.polypheny.db.monitoring.events.metrics.QueryMetric;
 import org.polypheny.db.rel.RelNode;
 
 @Slf4j
-public class QueryEventAnalyzer {
+public class DMLEventAnalyzer {
 
-    public static QueryMetric analyze( QueryEvent queryEvent ) {
-        QueryMetric metric = QueryMetric
+    public static DMLMetric analyze( DMLEvent dmlEvent ) {
+        DMLMetric metric = DMLMetric
                 .builder()
-                .description( queryEvent.getDescription() )
-                .monitoringType( queryEvent.getMonitoringType() )
-                .Id( queryEvent.getId() )
-                .fieldNames( queryEvent.getFieldNames() )
-                .executionTime( queryEvent.getExecutionTime() )
-                .rowCount( queryEvent.getRowCount() )
-                .isSubQuery( queryEvent.isSubQuery() )
-                .recordedTimestamp( queryEvent.getRecordedTimestamp()  )
+                .description( dmlEvent.getDescription() )
+                .monitoringType( dmlEvent.getMonitoringType() )
+                .Id( dmlEvent.getId() )
+                .fieldNames( dmlEvent.getFieldNames() )
+                .executionTime( dmlEvent.getExecutionTime() )
+                .rowCount( dmlEvent.getRowCount() )
+                .isSubQuery( dmlEvent.isSubQuery() )
+                .recordedTimestamp( dmlEvent.getRecordedTimestamp()  )
                 .build();
 
-        RelNode node = queryEvent.getRouted().rel;
-        processRelNode( node, queryEvent, metric );
+        RelNode node = dmlEvent.getRouted().rel;
+        processRelNode( node, dmlEvent, metric );
 
         // TODO: read even more data
         // job.getMonitoringPersistentData().getDataElements()
-        if ( queryEvent.isAnalyze() ) {
-            processDurationInfo( queryEvent, metric );
-
+        if ( dmlEvent.isAnalyze() ) {
+            processDurationInfo( dmlEvent, metric );
         }
 
         return metric;
     }
 
 
-    private static void processDurationInfo( QueryEvent queryEvent, QueryMetric metric ) {
+    private static void processDurationInfo( DMLEvent dmlEvent, DMLMetric metric ) {
         try {
-            InformationDuration duration = new Gson().fromJson( queryEvent.getDurations(), InformationDuration.class );
+            InformationDuration duration = new Gson().fromJson( dmlEvent.getDurations(), InformationDuration.class );
             getDurationInfo( metric, "Plan Caching", duration );
             getDurationInfo( metric, "Index Lookup Rewrite", duration );
             getDurationInfo( metric, "Constraint Enforcement", duration );
@@ -70,17 +73,17 @@ public class QueryEventAnalyzer {
     }
 
 
-    private static void getDurationInfo( QueryMetric queryMetric, String durationName, InformationDuration duration ) {
+    private static void getDurationInfo( DMLMetric dmlMetric, String durationName, InformationDuration duration ) {
         try {
             long time = duration.getDuration( durationName );
-            queryMetric.getDataElements().put( durationName, time );
+            dmlMetric.getDataElements().put( durationName, time );
         } catch ( Exception e ) {
             log.debug( "could no find duration:" + durationName );
         }
     }
 
 
-    private static void processRelNode( RelNode node, QueryEvent event, QueryMetric metric ) {
+    private static void processRelNode( RelNode node, DMLEvent event, DMLMetric metric ) {
 
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
             processRelNode( node.getInput( i ), event, metric );

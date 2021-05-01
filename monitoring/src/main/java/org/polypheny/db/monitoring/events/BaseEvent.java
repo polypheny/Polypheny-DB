@@ -34,7 +34,6 @@ public abstract class BaseEvent implements MonitoringEvent {
     private long recordedTimestamp; // = getCurrentTimestamp();
 
     public BaseEvent (){
-
        setEventType( eventType );
        recordedTimestamp = getCurrentTimestamp();
     }

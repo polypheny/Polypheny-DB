@@ -17,14 +17,15 @@
 package org.polypheny.db.monitoring.subscriber;
 
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.monitoring.events.QueryMetric;
+import org.polypheny.db.monitoring.events.metrics.QueryMetric;
 
 @Slf4j
-public class QueryMetricSubscriber implements MonitoringMetricSubscriber<QueryMetric> {
+public class DummyMetricSubscriber implements MonitoringMetricSubscriber<QueryMetric> {
 
     @Override
     public void update( QueryMetric eventData ) {
-        log.debug( "Sample Query event subscriber:" + eventData.getMonitoringType() );
+        log.info( "Received Sample Query event subscriber:" + eventData.getMonitoringType() );
     }
+
 
 }

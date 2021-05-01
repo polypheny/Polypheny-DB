@@ -22,20 +22,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.calcite.avatica.remote.Service.Base;
-import org.polypheny.db.adapter.java.Array;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.monitoring.core.MonitoringQueue;
-import org.polypheny.db.monitoring.events.BaseEvent;
+import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.events.MonitoringMetric;
+import org.polypheny.db.monitoring.events.metrics.QueryMetric;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 
 @Slf4j
@@ -179,15 +177,17 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
     }
 
     private void updateWorkloadInformationTable(InformationTable table){
+
+
         table.reset();
 
         table.addRow( "Number of processed events in total", queue.getNumberOfProcessedEvents( true ) );
         table.addRow( "Number of processed events since restart", queue.getNumberOfProcessedEvents( false ) );
         table.addRow( "Number of events in queue", queue.getElementsInQueue().size() );
         table.addRow( "Active Subscriptions", queue.getActiveSubscribers().size() );
-        table.addRow( "Metrics available", queue );
+        //table.addRow( "Metrics available", queue.getMetrics );
+        table.addRow( "# SELECT Statements ", MonitoringServiceProvider.getInstance().getAllMetrics( QueryMetric.class ).size() );
     }
-
 
 
 }

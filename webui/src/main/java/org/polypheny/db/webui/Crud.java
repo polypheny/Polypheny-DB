@@ -145,7 +145,9 @@ import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
+import org.polypheny.db.monitoring.events.DMLEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
+import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.partition.PartitionFunctionInfo;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionManager;
@@ -837,6 +839,7 @@ public class Crud implements InformationObserver {
             queryAnalyzer.addGroup( g1 );
             queryAnalyzer.registerInformation( text );
         }
+
 
         return results;
     }
@@ -3291,7 +3294,7 @@ public class Crud implements InformationObserver {
 
             long executionTime = stopWatch.getNanoTime();
             signature.getExecutionTimeMonitor().setExecutionTime( executionTime );
-            ((QueryEvent) statement.getTransaction().getMonitoringData()).setExecutionTime( executionTime );
+            ((StatementEvent) statement.getTransaction().getMonitoringData()).setExecutionTime( executionTime );
 
         } catch ( Throwable t ) {
             if ( statement.getTransaction().isAnalyze() ) {
@@ -3366,7 +3369,7 @@ public class Crud implements InformationObserver {
 
             ArrayList<String[]> data = computeResultData( rows, header, statement.getTransaction() );
 
-            ((QueryEvent) statement.getTransaction().getMonitoringData()).setRowCount( data.size() );
+            ((StatementEvent) statement.getTransaction().getMonitoringData()).setRowCount( data.size() );
 
             MonitoringServiceProvider.getInstance().monitorEvent( statement.getTransaction().getMonitoringData() );
 
@@ -3614,6 +3617,9 @@ public class Crud implements InformationObserver {
                     throw new QueryExecutionException( e.getMessage(), e );
                 }
             }
+
+            //((DMLEvent) statement.getTransaction().getMonitoringData()).setRowCount( rowsChanged );
+            MonitoringServiceProvider.getInstance().monitorEvent( statement.getTransaction().getMonitoringData() );
             return rowsChanged;
         } else {
             throw new QueryExecutionException( "Unknown statement type: " + signature.statementType );

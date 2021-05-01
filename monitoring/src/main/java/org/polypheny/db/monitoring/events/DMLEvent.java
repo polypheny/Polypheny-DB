@@ -22,30 +22,31 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.monitoring.events.analyzer.DMLEventAnalyzer;
 import org.polypheny.db.monitoring.events.analyzer.QueryEventAnalyzer;
+import org.polypheny.db.monitoring.events.metrics.DMLMetric;
 import org.polypheny.db.monitoring.events.metrics.QueryMetric;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.transaction.Statement;
 
 @Getter
 @Setter
-public class QueryEvent extends StatementEvent {
+public class DMLEvent extends StatementEvent {
 
 
-    private String eventType = "QUERY EVENT";
-
+    private String eventType = "DML EVENT";
 
 
     @Override
     public <T extends MonitoringMetric> List<Class<T>> getMetrics() {
-        return Arrays.asList( (Class<T>) QueryMetric.class );
+        return Arrays.asList( (Class<T>) DMLMetric.class );
     }
 
 
 
     @Override
     public List<MonitoringMetric> analyze() {
-        return Arrays.asList( QueryEventAnalyzer.analyze( this ) );
+        return Arrays.asList( DMLEventAnalyzer.analyze( this ) );
     }
 
 }
