@@ -88,6 +88,12 @@ public class MonitoringServiceImpl implements MonitoringService {
 
 
     @Override
+    public void unsubscribeFromAllMetrics( MonitoringMetricSubscriber subscriber ) {
+        this.monitoringQueue.unsubscribeFromAllMetrics( subscriber );
+    }
+
+
+    @Override
     public <T extends MonitoringMetric> List<T> getAllMetrics( Class<T> metricClass ) {
         return this.repository.getAllMetrics( metricClass );
     }

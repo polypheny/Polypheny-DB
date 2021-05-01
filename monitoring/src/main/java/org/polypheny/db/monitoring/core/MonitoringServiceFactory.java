@@ -18,6 +18,7 @@ package org.polypheny.db.monitoring.core;
 
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.monitoring.events.MonitoringMetric;
 import org.polypheny.db.monitoring.events.QueryMetric;
 import org.polypheny.db.monitoring.persistence.MapDbRepository;
 import org.polypheny.db.monitoring.subscriber.QueryMetricSubscriber;
@@ -39,7 +40,9 @@ public class MonitoringServiceFactory {
         MonitoringServiceUi uiService = new MonitoringServiceUiImpl( repo, queueWriteService );
 
         // initialize ui with first Metric
-        uiService.registerMetricForUi( QueryMetric.class );
+        //Todo @Cedric to we need to display this at the monitoring view?
+        //For me seems to be necessary only for debugging purposes
+        //uiService.registerMetricForUi( QueryMetric.class );
 
 
 
@@ -47,8 +50,13 @@ public class MonitoringServiceFactory {
         // initialize the monitoringService
         MonitoringServiceImpl monitoringService = new MonitoringServiceImpl( queueWriteService, repo, uiService );
 
-        monitoringService.subscribeMetric( QueryMetric.class, new QueryMetricSubscriber() );
+        QueryMetricSubscriber metric = new QueryMetricSubscriber();
 
+        monitoringService.subscribeMetric( QueryMetric.class, metric );
+        //Todo Remove
+        //Test unsubscribe
+        //monitoringService.unsubscribeFromAllMetrics(metric);
+        //monitoringService.unsubscribeMetric( QueryMetric.class, metric );
         return monitoringService;
     }
 

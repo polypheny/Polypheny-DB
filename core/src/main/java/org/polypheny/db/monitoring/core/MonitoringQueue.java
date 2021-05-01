@@ -43,10 +43,24 @@ public interface MonitoringQueue {
      */
     List<MonitoringEvent> getElementsInQueue();
 
+    long getNumberOfProcessedEvents(boolean all);
+
+    List<MonitoringMetricSubscriber> getActiveSubscribers();
+
     <T extends MonitoringMetric>
     void subscribeMetric( Class<T> metricClass, MonitoringMetricSubscriber<T> subscriber );
 
+    /**
+     *
+     * @param metricClass
+     * @param subscriber
+     * @param <T>
+     * @return true if there a subscriptions left. And false if that was the last subscription
+     */
     <T extends MonitoringMetric>
-    void unsubscribeMetric( Class<T> metricClass, MonitoringMetricSubscriber<T> subscriber );
+    boolean unsubscribeMetric( Class<T> metricClass, MonitoringMetricSubscriber<T> subscriber );
+
+
+    void unsubscribeFromAllMetrics( MonitoringMetricSubscriber subscriber );
 
 }

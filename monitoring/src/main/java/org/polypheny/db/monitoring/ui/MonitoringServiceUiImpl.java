@@ -69,6 +69,8 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
         InformationManager im = InformationManager.getInstance();
         im.addPage( informationPage );
 
+
+        initializeWorkloadInformationTable();
         initializeQueueInformationTable();
     }
 
@@ -134,13 +136,24 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
     }
 
 
+    private void initializeWorkloadInformationTable(){
+        val informationGroup = new InformationGroup( informationPage, "Workload Overview" );
+        val informationTable = new InformationTable( informationGroup,
+                Arrays.asList( "Attribute", "Value" )  );
+
+        informationGroup.setRefreshFunction( () -> this.updateWorkloadInformationTable( informationTable ) );
+
+        addInformationGroupTUi( informationGroup, Arrays.asList( informationTable )  ) ;
+    }
+
+
     private void initializeQueueInformationTable(){
 
         //On first subscriber also add
         //Also build active subscription table Metric to subscribers
         //or which subscribers, exist and to which metrics they are subscribed
 
-        val informationGroup = new InformationGroup( informationPage, "Monitoring Queue" );
+        val informationGroup = new InformationGroup( informationPage, "Monitoring Queue" ).setOrder( 2 );
         val informationTable = new InformationTable( informationGroup,
                 Arrays.asList( "Event Type", "UUID", "Timestamp" )  );
 
@@ -150,7 +163,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
     }
 
-    private <T extends MonitoringMetric> void updateQueueInformationTable( InformationTable table ) {
+    private void updateQueueInformationTable( InformationTable table ) {
         List<MonitoringEvent> queueElements = this.queue.getElementsInQueue();
         table.reset();
 
@@ -164,5 +177,17 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
             table.addRow( row );
         }
     }
+
+    private void updateWorkloadInformationTable(InformationTable table){
+        table.reset();
+
+        table.addRow( "Number of processed events in total", queue.getNumberOfProcessedEvents( true ) );
+        table.addRow( "Number of processed events since restart", queue.getNumberOfProcessedEvents( false ) );
+        table.addRow( "Number of events in queue", queue.getElementsInQueue().size() );
+        table.addRow( "Active Subscriptions", queue.getActiveSubscribers().size() );
+        table.addRow( "Metrics available", queue );
+    }
+
+
 
 }

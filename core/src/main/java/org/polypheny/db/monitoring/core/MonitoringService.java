@@ -28,9 +28,11 @@ import org.polypheny.db.monitoring.subscriber.MonitoringMetricSubscriber;
  */
 public interface MonitoringService {
 
-    <T extends MonitoringMetric> void subscribeMetric( Class<T> metricClass, MonitoringMetricSubscriber<T> subscriber );
+    <T extends MonitoringMetric> void subscribeMetric(Class<T> metricClass, MonitoringMetricSubscriber<T> subscriber );
 
     <T extends MonitoringMetric> void unsubscribeMetric( Class<T> metricClass, MonitoringMetricSubscriber<T> subscriber );
+
+    void unsubscribeFromAllMetrics( MonitoringMetricSubscriber subscriber );
 
     /**
      * monitor event which will be queued immediately and get processed by a registered queue worker.

@@ -328,7 +328,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 }
 
 
-                //TODO @Cedric this produces an error causing severall checks to fail. Please investigate
+                //TODO @Cedric this produces an error causing several checks to fail. Please investigate
                 //needed for row results
                 /*final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
                 Iterator<Object> iterator = enumerable.iterator();
