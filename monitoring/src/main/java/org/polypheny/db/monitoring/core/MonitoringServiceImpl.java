@@ -18,6 +18,7 @@ package org.polypheny.db.monitoring.core;
 
 import java.sql.Timestamp;
 import java.util.List;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.events.MonitoringMetric;
@@ -40,20 +41,9 @@ public class MonitoringServiceImpl implements MonitoringService {
 
 
     public MonitoringServiceImpl(
-            MonitoringQueue monitoringQueue,
-            MonitoringRepository repository,
-            MonitoringServiceUi monitoringServiceUi ) {
-        if ( monitoringQueue == null ) {
-            throw new IllegalArgumentException( "empty monitoring write queue service" );
-        }
-
-        if ( repository == null ) {
-            throw new IllegalArgumentException( "empty read-only repository" );
-        }
-
-        if ( monitoringServiceUi == null ) {
-            throw new IllegalArgumentException( "empty monitoring ui service" );
-        }
+            @NonNull MonitoringQueue monitoringQueue,
+            @NonNull MonitoringRepository repository,
+            @NonNull MonitoringServiceUi monitoringServiceUi ) {
 
         this.monitoringQueue = monitoringQueue;
         this.repository = repository;
@@ -66,47 +56,43 @@ public class MonitoringServiceImpl implements MonitoringService {
 
 
     @Override
-    public void monitorEvent( MonitoringEvent eventData ) {
-        if ( eventData == null ) {
-            throw new IllegalArgumentException( "event is null" );
-        }
-
+    public void monitorEvent( @NonNull MonitoringEvent eventData ) {
         this.monitoringQueue.queueEvent( eventData );
     }
 
 
     @Override
-    public <TPersistent extends MonitoringMetric> void subscribeMetric( Class<TPersistent> eventDataClass, MonitoringMetricSubscriber<TPersistent> subscriber ) {
+    public <T extends MonitoringMetric> void subscribeMetric( @NonNull Class<T> eventDataClass, @NonNull MonitoringMetricSubscriber<T> subscriber ) {
         this.monitoringQueue.subscribeMetric( eventDataClass, subscriber );
     }
 
 
     @Override
-    public <TPersistent extends MonitoringMetric> void unsubscribeMetric( Class<TPersistent> eventDataClass, MonitoringMetricSubscriber<TPersistent> subscriber ) {
+    public <T extends MonitoringMetric> void unsubscribeMetric( @NonNull Class<T> eventDataClass, @NonNull MonitoringMetricSubscriber<T> subscriber ) {
         this.monitoringQueue.unsubscribeMetric( eventDataClass, subscriber );
     }
 
 
     @Override
-    public void unsubscribeFromAllMetrics( MonitoringMetricSubscriber subscriber ) {
+    public void unsubscribeFromAllMetrics( @NonNull MonitoringMetricSubscriber subscriber ) {
         this.monitoringQueue.unsubscribeFromAllMetrics( subscriber );
     }
 
 
     @Override
-    public <T extends MonitoringMetric> List<T> getAllMetrics( Class<T> metricClass ) {
+    public <T extends MonitoringMetric> List<T> getAllMetrics( @NonNull Class<T> metricClass ) {
         return this.repository.getAllMetrics( metricClass );
     }
 
 
     @Override
-    public <T extends MonitoringMetric> List<T> getMetricsBefore( Class<T> metricClass, Timestamp timestamp ) {
+    public <T extends MonitoringMetric> List<T> getMetricsBefore( @NonNull Class<T> metricClass, @NonNull Timestamp timestamp ) {
         return this.repository.getMetricsBefore( metricClass, timestamp );
     }
 
 
     @Override
-    public <T extends MonitoringMetric> List<T> getMetricsAfter( Class<T> metricClass, Timestamp timestamp ) {
+    public <T extends MonitoringMetric> List<T> getMetricsAfter( @NonNull Class<T> metricClass, @NonNull Timestamp timestamp ) {
         return this.repository.getMetricsAfter( metricClass, timestamp );
     }
 

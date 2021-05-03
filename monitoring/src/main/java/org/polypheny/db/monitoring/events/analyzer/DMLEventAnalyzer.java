@@ -28,6 +28,7 @@ import org.polypheny.db.rel.RelNode;
 
 @Slf4j
 public class DMLEventAnalyzer {
+    // TODO: Bis jetzt sind die Klassen mehr oder weniger identisch. Ist das einfach vorbereitet für später oder wie?
 
     public static DMLMetric analyze( DMLEvent dmlEvent ) {
         DMLMetric metric = DMLMetric
@@ -56,6 +57,7 @@ public class DMLEventAnalyzer {
 
 
     private static void processDurationInfo( DMLEvent dmlEvent, DMLMetric metric ) {
+        // TODO: Könnte wir in einem StatementEventAnalyzer auslagern, dann haben wir die Funktion nur 1 mal :)
         try {
             InformationDuration duration = new Gson().fromJson( dmlEvent.getDurations(), InformationDuration.class );
             getDurationInfo( metric, "Plan Caching", duration );

@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.mapdb.BTreeMap;
@@ -38,7 +39,7 @@ public class MapDbRepository implements MonitoringRepository {
 
     // region private fields
 
-    private static final String FILE_PATH = "simpleBackendDb-cm";
+    private static final String FILE_PATH = "simpleBackendDb";
     private static final String FOLDER_NAME = "monitoring";
     private final HashMap<Class, BTreeMap<UUID, MonitoringMetric>> data = new HashMap<>();
     private DB simpleBackendDb;
@@ -69,7 +70,7 @@ public class MapDbRepository implements MonitoringRepository {
 
 
     @Override
-    public void persistMetric( MonitoringMetric metric ) {
+    public void persistMetric( @NonNull MonitoringMetric metric ) {
         if ( metric == null ) {
             throw new IllegalArgumentException( "invalid argument null" );
         }
@@ -88,7 +89,7 @@ public class MapDbRepository implements MonitoringRepository {
 
 
     @Override
-    public <TPersistent extends MonitoringMetric> List<TPersistent> getAllMetrics( Class<TPersistent> classPersistent ) {
+    public <TPersistent extends MonitoringMetric> List<TPersistent> getAllMetrics( @NonNull Class<TPersistent> classPersistent ) {
         val table = this.data.get( classPersistent );
         if ( table != null ) {
             return table.values()
@@ -103,7 +104,7 @@ public class MapDbRepository implements MonitoringRepository {
 
 
     @Override
-    public <T extends MonitoringMetric> List<T> getMetricsBefore( Class<T> classPersistent, Timestamp timestamp ) {
+    public <T extends MonitoringMetric> List<T> getMetricsBefore( @NonNull Class<T> classPersistent, @NonNull Timestamp timestamp ) {
         // TODO: not tested yet
         val table = this.data.get( classPersistent );
         if ( table != null ) {
@@ -120,7 +121,7 @@ public class MapDbRepository implements MonitoringRepository {
 
 
     @Override
-    public <T extends MonitoringMetric> List<T> getMetricsAfter( Class<T> classPersistent, Timestamp timestamp ) {
+    public <T extends MonitoringMetric> List<T> getMetricsAfter( @NonNull Class<T> classPersistent, @NonNull Timestamp timestamp ) {
         // TODO: not tested yet
         val table = this.data.get( classPersistent );
         if ( table != null ) {

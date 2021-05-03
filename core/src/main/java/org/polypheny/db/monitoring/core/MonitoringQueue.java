@@ -17,7 +17,6 @@
 package org.polypheny.db.monitoring.core;
 
 import java.util.List;
-import java.util.Queue;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.events.MonitoringMetric;
 import org.polypheny.db.monitoring.subscriber.MonitoringMetricSubscriber;
@@ -37,13 +36,14 @@ public interface MonitoringQueue {
      */
     void queueEvent( MonitoringEvent eventData );
 
-    /** Essential usage to display current contents of queue
+    /**
+     * Essential usage to display current contents of queue
      *
      * @return All current elements in Queue
      */
     List<MonitoringEvent> getElementsInQueue();
 
-    long getNumberOfProcessedEvents(boolean all);
+    long getNumberOfProcessedEvents( boolean all );
 
     List<MonitoringMetricSubscriber> getActiveSubscribers();
 
@@ -51,7 +51,6 @@ public interface MonitoringQueue {
     void subscribeMetric( Class<T> metricClass, MonitoringMetricSubscriber<T> subscriber );
 
     /**
-     *
      * @param metricClass
      * @param subscriber
      * @param <T>

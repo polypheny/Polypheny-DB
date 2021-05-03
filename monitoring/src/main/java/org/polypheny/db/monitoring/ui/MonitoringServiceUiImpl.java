@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.polypheny.db.information.InformationGroup;
@@ -44,15 +45,9 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
     private final MonitoringQueue queue;
 
 
-    public MonitoringServiceUiImpl( MonitoringRepository repo, MonitoringQueue queue ) {
-        if ( repo == null ) {
-            throw new IllegalArgumentException( "repo parameter is null" );
-        }
+    // TODO: die Abhänigkeit zur Queue ist nicht wirklich optimal, aber lassen wir vielleicht mal so stehen
+    public MonitoringServiceUiImpl( @NonNull MonitoringRepository repo, @NonNull MonitoringQueue queue ) {
         this.repo = repo;
-
-        if ( queue == null ) {
-            throw new IllegalArgumentException( "queue parameter is null" );
-        }
         this.queue = queue;
 
         initializeInformationPage();
@@ -74,7 +69,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
 
     @Override
-    public <T extends MonitoringMetric> void registerMetricForUi( Class<T> metricClass ) {
+    public <T extends MonitoringMetric> void registerMetricForUi( @NonNull Class<T> metricClass ) {
         String className = metricClass.getName();
         val informationGroup = new InformationGroup( informationPage, className );
 
@@ -93,7 +88,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
      * @param informationGroup
      * @param informationTables
      */
-    private void addInformationGroupTUi(InformationGroup informationGroup, List<InformationTable> informationTables) {
+    private void addInformationGroupTUi(@NonNull InformationGroup informationGroup, @NonNull List<InformationTable> informationTables) {
         InformationManager im = InformationManager.getInstance();
         im.addGroup( informationGroup );
 
@@ -177,7 +172,6 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
     }
 
     private void updateWorkloadInformationTable(InformationTable table){
-
 
         table.reset();
 

@@ -31,6 +31,8 @@ public interface MonitoringEvent {
 
     Timestamp getRecordedTimestamp();
 
+    // TODO: Für was brauchst du hier noch einen String?
+    //  Die nötigen infos hast du eigentlich schon im typ, oder nicht? Oder einfach für debugging?
     String getEventType();
 
     /**

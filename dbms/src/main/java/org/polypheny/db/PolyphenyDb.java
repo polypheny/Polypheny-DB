@@ -68,7 +68,7 @@ public class PolyphenyDb {
     private final TransactionManager transactionManager = new TransactionManagerImpl();
 
     @Option(name = { "-resetCatalog" }, description = "Reset the catalog")
-    public boolean resetCatalog = false;
+    public boolean resetCatalog = true;
 
     @Option(name = { "-memoryCatalog" }, description = "Store catalog only in-memory")
     public boolean memoryCatalog = false;

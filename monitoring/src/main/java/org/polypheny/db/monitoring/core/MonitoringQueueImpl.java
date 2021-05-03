@@ -29,11 +29,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
-import javax.management.monitor.Monitor;
-import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.polypheny.db.monitoring.events.BaseEvent;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.events.MonitoringMetric;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
@@ -55,13 +53,11 @@ public class MonitoringQueueImpl implements MonitoringQueue {
      */
     private final Queue<MonitoringEvent> monitoringJobQueue = new ConcurrentLinkedQueue<>();
     private final Lock processingQueueLock = new ReentrantLock();
-    private HashMap<Class, List<MonitoringMetricSubscriber>> subscribers = new HashMap();
     private final MonitoringRepository repository;
-    private String backgroundTaskId;
-
     // number of elements beeing processed from the queue to the backend per "batch"
     private final int QUEUE_PROCESSING_ELEMENTS = 50;
-
+    private HashMap<Class, List<MonitoringMetricSubscriber>> subscribers = new HashMap();
+    private String backgroundTaskId;
     //For ever
     private long processedEventsTotal;
 
@@ -78,14 +74,12 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     // region ctors
 
 
-
-
     /**
      * Ctor which automatically will start the background task based on the given boolean
      *
      * @param startBackGroundTask Indicates whether the background task for consuming the queue will be started.
      */
-    public MonitoringQueueImpl( boolean startBackGroundTask, MonitoringRepository repository ) {
+    public MonitoringQueueImpl( boolean startBackGroundTask, @NonNull MonitoringRepository repository ) {
         log.info( "write queue service" );
 
         if ( repository == null ) {
@@ -100,17 +94,14 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     }
 
 
-
-
     /**
      * Ctor will automatically start the background task for consuming the queue.
      */
-    public MonitoringQueueImpl( MonitoringRepository repository ) {
+    public MonitoringQueueImpl( @NonNull MonitoringRepository repository ) {
         this( true, repository );
     }
 
     // endregion
-
 
     // region public methods
 
@@ -125,11 +116,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
 
     @Override
-    public void queueEvent( MonitoringEvent event ) {
-        if ( event == null ) {
-            throw new IllegalArgumentException( "Empty event data" );
-        }
-
+    public void queueEvent( @NonNull MonitoringEvent event ) {
         this.monitoringJobQueue.add( event );
     }
 
@@ -151,17 +138,17 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     @Override
     public <T extends MonitoringMetric> boolean unsubscribeMetric( Class<T> metricClass, MonitoringMetricSubscriber<T> subscriber ) {
 
-
         List<MonitoringMetricSubscriber> tempSubs;
 
         if ( this.subscribers.containsKey( metricClass ) ) {
-            tempSubs = new ArrayList<>(this.subscribers.get( metricClass ));
+            tempSubs = new ArrayList<>( this.subscribers.get( metricClass ) );
             tempSubs.remove( subscriber );
             this.subscribers.put( metricClass, tempSubs );
         }
 
         // If this was the last occurence of the Subscriber in any Subscription remove him from ALL list
-        if ( !hasActiveSubscription( subscriber ) ){
+        // TODO: Für was brauchst du das Feld allSubscribers. Ist doch nur aufwändig die 2 mal zu halten...?
+        if ( !hasActiveSubscription( subscriber ) ) {
             allSubscribers.remove( subscriber );
             return true;
         }
@@ -172,11 +159,14 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
 
     @Override
-    public  void unsubscribeFromAllMetrics( MonitoringMetricSubscriber subscriber ) {
+    public void unsubscribeFromAllMetrics( @NonNull MonitoringMetricSubscriber subscriber ) {
+        // TODO: Macht für mich irgendwie auch nicht so sinn. Ein Subsriber hat in den meisten fällen sowieso nur eine metric aboniert,
+        //  ansonsten müsste der das Interface MonitoringMetricSubscriber mehrfach implementieren.
+        //  Wäre natürlich möglich aber fäne ich ein wenig komisch.
 
         for ( Entry entry : subscribers.entrySet() ) {
-            if ( subscribers.get( entry.getKey() ).contains( subscriber ) ){
-                unsubscribeMetric( (Class)entry.getKey(), subscriber);
+            if ( subscribers.get( entry.getKey() ).contains( subscriber ) ) {
+                unsubscribeMetric( (Class) entry.getKey(), subscriber );
             }
         }
 
@@ -184,7 +174,10 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
 
     @Override
-    public List<MonitoringEvent> getElementsInQueue(){
+    public List<MonitoringEvent> getElementsInQueue() {
+        // TODO: Würde ich definitiv nicht so machen. Wenn du im UI die Anzahl Events
+        //   wissen willst dann unbedingt nur die Anzahl rausgeben. Sonst gibt du die ganzen Instanzen raus und
+        //   könntest die Queue zum übelsten missbrauchen ;-)
 
         List<MonitoringEvent> eventsInQueue = new ArrayList<>();
 
@@ -192,7 +185,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
             eventsInQueue.add( event );
         }
 
-        System.out.println("Contents in Queue: " + monitoringJobQueue);
+        System.out.println( "Contents in Queue: " + monitoringJobQueue );
 
         return eventsInQueue;
     }
@@ -200,21 +193,22 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
     @Override
     public long getNumberOfProcessedEvents( boolean all ) {
-        if ( all ){
+        // TODO: Wird hier noch das persistiert? Könnten wir selbst als Metric aufbauen und persistieren ;-)
+        if ( all ) {
             return processedEventsTotal;
         }
-        //retruns only processed events since last restart
+        //returns only processed events since last restart
         return processedEvents;
     }
 
 
     @Override
     public List<MonitoringMetricSubscriber> getActiveSubscribers() {
-        return allSubscribers.stream().collect( Collectors.toList());
+        // TODO: würde ich auch nur die Anzahl rausgeben, könnte auch ziemlich misbraucht werden...
+        return allSubscribers.stream().collect( Collectors.toList() );
     }
 
     // endregion
-
 
     // region private helper methods
 
@@ -240,7 +234,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         try {
             // while there are jobs to consume:
             int countEvents = 0;
-            while ( (event = this.getNextJob()).isPresent() && countEvents < QUEUE_PROCESSING_ELEMENTS) {
+            while ( (event = this.getNextJob()).isPresent() && countEvents < QUEUE_PROCESSING_ELEMENTS ) {
                 log.debug( "get new monitoring job" + event.get().getId().toString() );
 
                 //returns list of metrics which was produced by this particular event
@@ -254,8 +248,8 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
                 countEvents++;
             }
-            processedEvents+=countEvents;
-            processedEventsTotal+=processedEvents;
+            processedEvents += countEvents;
+            processedEventsTotal += processedEvents;
         } finally {
             this.processingQueueLock.unlock();
         }
@@ -268,9 +262,8 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         if ( classSubscribers != null ) {
             classSubscribers.forEach( s -> s.update( metric ) );
         }
-
-
     }
+
 
     private Optional<MonitoringEvent> getNextJob() {
         if ( monitoringJobQueue.peek() != null ) {
@@ -282,20 +275,20 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
     /**
      * Mainly used as a helper to identify if subscriber has active subscriptions left or can be completely removed from Broker
+     *
      * @param subscriber
      * @return if Subscriber ist still registered to events
      */
-    private boolean hasActiveSubscription(MonitoringMetricSubscriber subscriber){
+    private boolean hasActiveSubscription( MonitoringMetricSubscriber subscriber ) {
 
         for ( Entry currentSub : subscribers.entrySet() ) {
-            if ( subscribers.get( currentSub.getKey() ).contains( subscriber ) ){
+            if ( subscribers.get( currentSub.getKey() ).contains( subscriber ) ) {
                 return true;
             }
         }
 
         return false;
     }
-
 
     // endregion
 }
