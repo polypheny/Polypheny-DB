@@ -1452,7 +1452,24 @@ public class CatalogImpl extends Catalog {
     public void setTableOwner( long tableId, int ownerId ) {
         CatalogTable old = getTable( tableId );
         CatalogUser user = getUser( ownerId );
-        CatalogTable table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, ownerId, user.name, old.tableType, old.definition, old.primaryKey, old.placementsByAdapter, old.modifiable );
+        CatalogTable table = new CatalogTable( old.id,
+                old.name,
+                old.columnIds,
+                old.schemaId,
+                old.databaseId,
+                ownerId,
+                user.name,
+                old.tableType,
+                old.definition,
+                old.primaryKey,
+                old.placementsByAdapter,
+                old.modifiable,
+                old.numPartitions,
+                old.partitionType,
+                old.partitionIds,
+                old.partitionColumnId,
+                old.isPartitioned,
+                old.connectedViews);
         synchronized ( this ) {
             tables.replace( tableId, table );
             tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
@@ -1470,7 +1487,24 @@ public class CatalogImpl extends Catalog {
     @Override
     public void setPrimaryKey( long tableId, Long keyId ) {
         CatalogTable old = getTable( tableId );
-        CatalogTable table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, keyId, old.placementsByAdapter, old.modifiable );
+        CatalogTable table = new CatalogTable( old.id,
+                old.name,
+                old.columnIds,
+                old.schemaId,
+                old.databaseId,
+                old.ownerId,
+                old.ownerName,
+                old.tableType,
+                old.definition,
+                keyId,
+                old.placementsByAdapter,
+                old.modifiable,
+                old.numPartitions,
+                old.partitionType,
+                old.partitionIds,
+                old.partitionColumnId,
+                old.isPartitioned,
+                old.connectedViews);
         synchronized ( this ) {
             tables.replace( tableId, table );
             tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
@@ -1547,7 +1581,8 @@ public class CatalogImpl extends Catalog {
                         old.numPartitions,
                         old.partitionType,
                         old.partitionIds,
-                        old.partitionColumnId );
+                        old.partitionColumnId,
+                        old.connectedViews);
 
                 // If table is partitioned and no concrete partitions are defined place all partitions on columnPlacement
                 if ( partitionIds == null ) {
@@ -1584,7 +1619,13 @@ public class CatalogImpl extends Catalog {
                         old.definition,
                         old.primaryKey,
                         ImmutableMap.copyOf( placementsByStore ),
-                        old.modifiable );
+                        old.modifiable,
+                        old.numPartitions,
+                        old.partitionType,
+                        old.partitionIds,
+                        old.partitionColumnId,
+                        old.isPartitioned,
+                        old.connectedViews);
             }
 
             tables.replace( column.tableId, table );
@@ -1646,7 +1687,8 @@ public class CatalogImpl extends Catalog {
                         oldTable.numPartitions,
                         oldTable.partitionType,
                         oldTable.partitionIds,
-                        oldTable.partitionColumnId );
+                        oldTable.partitionColumnId,
+                        oldTable.connectedViews);
 
                 //Check if this is the last placement on store. If so remove dataPartitionPlacement
                 if ( lastPlacementOnStore ) {
@@ -1671,8 +1713,13 @@ public class CatalogImpl extends Catalog {
                         oldTable.definition,
                         oldTable.primaryKey,
                         ImmutableMap.copyOf( placementsByStore ),
-                        oldTable.modifiable );
-            }
+                        oldTable.modifiable,
+                        oldTable.numPartitions,
+                        oldTable.partitionType,
+                        oldTable.partitionIds,
+                        oldTable.partitionColumnId,
+                        oldTable.isPartitioned,
+                        oldTable.connectedViews);          }
 
             tables.replace( table.id, table );
             tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
@@ -2279,7 +2326,24 @@ public class CatalogImpl extends Catalog {
         CatalogTable old = getTable( column.tableId );
         List<Long> columnIds = new ArrayList<>( old.columnIds );
         columnIds.remove( columnId );
-        CatalogTable table = new CatalogTable( old.id, old.name, ImmutableList.copyOf( columnIds ), old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, old.placementsByAdapter, old.modifiable );
+        CatalogTable table = new CatalogTable( old.id,
+                old.name,
+                ImmutableList.copyOf( columnIds ),
+                old.schemaId,
+                old.databaseId,
+                old.ownerId,
+                old.ownerName,
+                old.tableType,
+                old.definition,
+                old.primaryKey,
+                old.placementsByAdapter,
+                old.modifiable,
+                old.numPartitions,
+                old.partitionType,
+                old.partitionIds,
+                old.partitionColumnId,
+                old.isPartitioned,
+                old.connectedViews);
 
         synchronized ( this ) {
             columnNames.remove( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name } );
@@ -3239,7 +3303,8 @@ public class CatalogImpl extends Catalog {
                 numPartitions,
                 partitionType,
                 ImmutableList.copyOf( partitionIds ),
-                partitionColumnId );
+                partitionColumnId,
+                old.connectedViews);
 
         synchronized ( this ) {
             tables.replace( tableId, table );
