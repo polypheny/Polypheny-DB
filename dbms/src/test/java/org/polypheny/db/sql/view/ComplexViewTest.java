@@ -23,7 +23,6 @@ import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -38,14 +37,14 @@ Table and Queries from https://github.com/polypheny/OLTPBench/tree/polypheny/src
 public class ComplexViewTest {
 
 
-    private final static String DROP_TABLES = "DROP TABLE IF EXISTS nation;"
-            + "DROP TABLE IF EXISTS region;"
-            + "DROP TABLE IF EXISTS part;"
-            + "DROP TABLE IF EXISTS supplier;"
-            + "DROP TABLE IF EXISTS partsupp;"
-            + "DROP TABLE IF EXISTS orders;"
-            + "DROP TABLE IF EXISTS customer;"
-            + "DROP TABLE IF EXISTS lineitem;";
+    private final static String DROP_TABLES_NATION = "DROP TABLE IF EXISTS nation ";
+    private final static String DROP_TABLES_REGION = "DROP TABLE IF EXISTS region ";
+    private final static String DROP_TABLES_PART = "DROP TABLE IF EXISTS part ";
+    private final static String DROP_TABLES_SUPPLIER = "DROP TABLE IF EXISTS supplier ";
+    private final static String DROP_TABLES_PARTSUPP =  "DROP TABLE IF EXISTS partsupp ";
+    private final static String DROP_TABLES_ORDERS =  "DROP TABLE IF EXISTS orders ";
+    private final static String DROP_TABLES_CUSTOMER = "DROP TABLE IF EXISTS customer ";
+    private final static String DROP_TABLES_LINEITEM = "DROP TABLE IF EXISTS lineitem ";
 
     private final static String NATION_TABLE = "CREATE TABLE nation  ( "
             + "n_nationkey  INTEGER NOT NULL,"
@@ -270,7 +269,7 @@ public class ComplexViewTest {
             + "'L',"
             + "date '2020-07-03',"
             + "date '2020-07-03',"
-            + "date '2020-05-03',"
+            + "date '2020-09-03',"
             + "'shipingstruct',"
             + "'mode',"
             + "'shipingComment'"
@@ -289,11 +288,25 @@ public class ComplexViewTest {
             "L",
             Date.valueOf( "2020-07-03" ),
             Date.valueOf( "2020-07-03" ),
-            Date.valueOf( "2020-05-03" ),
+            Date.valueOf( "2020-09-03" ),
             "shipingstruct",
             "mode",
             "shipingComment" };
 
+    private final static Object[] date_TEST_DATA = new Object[]{
+            Date.valueOf( "2020-07-03" ) };
+
+    private final static Object[] decimal_TEST_DATA = new Object[]{
+            new BigDecimal( "65.15" ) };
+
+    private final static Object[] decimalDate_TEST_DATA = new Object[]{
+            new BigDecimal( "65.15" ),
+            Date.valueOf( "2020-07-03" ) };
+
+    private final static Object[] decimalDateInt_TEST_DATA = new Object[]{
+            new BigDecimal( "65.15" ),
+            Date.valueOf( "2020-07-03" ),
+            1 };
 
     private final static Object[] q1_TEST_DATA = new Object[]{
             "R",
@@ -313,6 +326,14 @@ public class ComplexViewTest {
             Date.valueOf( "2020-07-03" ),
             1 };
 
+    private final static Object[] q4_TEST_DATA = new Object[]{
+            "orderPriority",
+            1L };
+
+    private final static Object[] q5_TEST_DATA = new Object[]{
+            "orderPriority",
+            1L };
+
 
     @BeforeClass
     public static void start() {
@@ -323,7 +344,6 @@ public class ComplexViewTest {
 
 
     public void initTables(Statement statement) throws SQLException {
-        statement.addBatch( DROP_TABLES );
         statement.executeUpdate( NATION_TABLE );
         statement.executeUpdate( NATION_TABLE_DATA );
         statement.executeUpdate( REGION_TABLE );
@@ -342,6 +362,17 @@ public class ComplexViewTest {
         statement.executeUpdate( LINEITEM_TABLE_DATA );
     }
 
+    public void dropTables(Statement statement) throws SQLException {
+        statement.executeUpdate( DROP_TABLES_NATION );
+        statement.executeUpdate( DROP_TABLES_REGION );
+        statement.executeUpdate( DROP_TABLES_PART );
+        statement.executeUpdate( DROP_TABLES_SUPPLIER );
+        statement.executeUpdate( DROP_TABLES_PARTSUPP );
+        statement.executeUpdate( DROP_TABLES_ORDERS );
+        statement.executeUpdate( DROP_TABLES_CUSTOMER );
+        statement.executeUpdate( DROP_TABLES_LINEITEM );
+    }
+
 
     @Test
     public void testPreparations() throws SQLException {
@@ -349,7 +380,8 @@ public class ComplexViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                initTables(statement);
+                dropTables(statement);
+                initTables( statement );
 
                 try {
 
@@ -390,8 +422,172 @@ public class ComplexViewTest {
 
                     connection.commit();
                 } finally {
-                    statement.addBatch( DROP_TABLES );
+                    dropTables(statement);
 
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testDate() throws SQLException {
+
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                dropTables(statement);
+                statement.executeUpdate( ORDERS_TABLE );
+                statement.executeUpdate( ORDERS_TABLE_DATA );
+
+                try {
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "select "
+                                    + "o_orderdate "
+                                    + "from "
+                                    + "orders " ),
+                            ImmutableList.of( date_TEST_DATA )
+                    );
+
+                    statement.executeUpdate( "CREATE VIEW date_VIEW AS "
+                            + "select "
+                            + "o_orderdate "
+                            + "from "
+                            + "orders " );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM date_VIEW" ),
+                            ImmutableList.of( date_TEST_DATA )
+                    );
+
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP VIEW date_VIEW" );
+                    dropTables(statement);
+
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testDecimal() throws SQLException {
+
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                dropTables(statement);
+                statement.executeUpdate( ORDERS_TABLE );
+                statement.executeUpdate( ORDERS_TABLE_DATA );
+
+                try {
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "select "
+                                    + "o_totalprice "
+                                    + "from "
+                                    + "orders " ),
+                            ImmutableList.of( decimal_TEST_DATA )
+                    );
+
+                    statement.executeUpdate( "CREATE VIEW decimal_VIEW AS "
+                            + "select "
+                            + "o_totalprice "
+                            + "from "
+                            + "orders " );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM decimal_VIEW" ),
+                            ImmutableList.of( decimal_TEST_DATA )
+                    );
+
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP VIEW decimal_VIEW" );
+                    dropTables(statement);
+
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testDecimalDate() throws SQLException {
+
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                dropTables(statement);
+                statement.executeUpdate( ORDERS_TABLE );
+                statement.executeUpdate( ORDERS_TABLE_DATA );
+
+                try {
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "select "
+                                    + "o_totalprice, "
+                                    + "o_orderdate "
+                                    + "from "
+                                    + "orders " ),
+                            ImmutableList.of( decimalDate_TEST_DATA )
+                    );
+
+                    statement.executeUpdate( "CREATE VIEW decimalDate_VIEW AS "
+                            + "select "
+                            + "o_totalprice, "
+                            + "o_orderdate "
+                            + "from "
+                            + "orders " );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM decimalDate_VIEW" ),
+                            ImmutableList.of( decimalDate_TEST_DATA )
+                    );
+
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP VIEW decimalDate_VIEW" );
+                    dropTables(statement);
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testDecimalDateInt() throws SQLException {
+
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                dropTables(statement);
+                statement.executeUpdate( ORDERS_TABLE );
+                statement.executeUpdate( ORDERS_TABLE_DATA );
+
+                try {
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "select "
+                                    + "o_totalprice, "
+                                    + "o_orderdate,"
+                                    + "o_orderkey "
+                                    + "from "
+                                    + "orders " ),
+                            ImmutableList.of( decimalDateInt_TEST_DATA )
+                    );
+
+                    statement.executeUpdate( "CREATE VIEW decimalDateInt_VIEW AS "
+                            + "select "
+                            + "o_totalprice, "
+                            + "o_orderdate,"
+                            + "o_orderkey "
+                            + "from "
+                            + "orders " );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM decimalDateInt_VIEW" ),
+                            ImmutableList.of( decimalDateInt_TEST_DATA )
+                    );
+
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP VIEW decimalDateInt_VIEW" );
+                    dropTables(statement);
                 }
             }
         }
@@ -404,6 +600,7 @@ public class ComplexViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
+                dropTables(statement);
                 initTables(statement);
 
                 try {
@@ -427,29 +624,26 @@ public class ComplexViewTest {
 
                     statement.executeUpdate( "CREATE VIEW q1_VIEW AS "
                             + "select l_returnflag, l_linestatus, "
-                                    + "sum(l_quantity) as sum_qty, "
-                                    + "sum(l_extendedprice) as sum_base_price, "
-                                    + "sum(l_extendedprice * (1 - l_discount)) as sum_disc_price, "
-                                    + "sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge, "
-                                    + "avg(l_quantity) as avg_qty, "
-                                    + "avg(l_extendedprice) as avg_price, "
-                                    + "avg(l_discount) as avg_disc, "
-                                    + "count(*) as count_order "
-                                    + "from lineitem "
-                                    + "where l_shipdate <= date '2020-07-03' "
-                                    + "group by l_returnflag, l_linestatus order by l_returnflag, l_linestatus" );
+                            + "sum(l_quantity) as sum_qty, "
+                            + "sum(l_extendedprice) as sum_base_price, "
+                            + "sum(l_extendedprice * (1 - l_discount)) as sum_disc_price, "
+                            + "sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge, "
+                            + "avg(l_quantity) as avg_qty, "
+                            + "avg(l_extendedprice) as avg_price, "
+                            + "avg(l_discount) as avg_disc, "
+                            + "count(*) as count_order "
+                            + "from lineitem "
+                            + "where l_shipdate <= date '2020-07-03' "
+                            + "group by l_returnflag, l_linestatus order by l_returnflag, l_linestatus" );
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM q1_VIEW" ),
+                            statement.executeQuery( "SELECT * FROM q1_VIEW " ),
                             ImmutableList.of( q1_TEST_DATA )
                     );
-
-
 
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP VIEW q1_VIEW" );
-                    statement.addBatch( DROP_TABLES );
-
+                    dropTables(statement);
                 }
             }
         }
@@ -464,7 +658,8 @@ public class ComplexViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                initTables(statement);
+                dropTables(statement);
+                initTables( statement );
 
                 try {
 
@@ -518,12 +713,12 @@ public class ComplexViewTest {
 
                     connection.commit();
                 } finally {
-                    statement.addBatch( DROP_TABLES );
-
+                    dropTables(statement);
                 }
             }
         }
     }
+
 
     @Test
     public void testQ3() throws SQLException {
@@ -531,7 +726,8 @@ public class ComplexViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                initTables(statement);
+                dropTables(statement);
+                initTables( statement );
 
                 try {
 
@@ -561,8 +757,7 @@ public class ComplexViewTest {
                                     + "limit 10" ),
                             ImmutableList.of( q3_TEST_DATA )
                     );
-
-
+/*
                     statement.executeUpdate( "CREATE VIEW q3_VIEW AS "
                                     + "select "
                                     +     "l_orderkey, "
@@ -593,13 +788,11 @@ public class ComplexViewTest {
                     );
 
 
-
-
+ */
                     connection.commit();
                 } finally {
                     //statement.executeUpdate( "DROP VIEW q3_VIEW" );
-                    statement.addBatch( DROP_TABLES );
-
+                    dropTables(statement);
                 }
             }
         }
