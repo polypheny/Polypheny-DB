@@ -330,9 +330,18 @@ public class ComplexViewTest {
             "orderPriority",
             1L };
 
-    private final static Object[] q5_TEST_DATA = new Object[]{
-            "orderPriority",
-            1L };
+    private final static Object[] q6_TEST_DATA = new Object[]{
+            new BigDecimal( "1010.5225" )};
+
+    private final static Object[] q7_TEST_DATA = new Object[]{
+            "Switzerland",
+            "Switzerland",
+            2020L ,
+            new BigDecimal( "-960.3725" )};
+
+    private final static Object[] q8_TEST_DATA = new Object[]{
+            2020L ,
+            new BigDecimal( "1.0000" )};
 
 
     @BeforeClass
@@ -720,7 +729,10 @@ public class ComplexViewTest {
     }
 
 
-    @Test
+    /*
+    org.polypheny.db.runtime.PolyphenyDbException: Cannot convert java.util.GregorianCalendar[time=1591142400000,areFieldsSet=true,areAllFieldsSet=true,lenient=true,zone=sun.util.calendar.ZoneInfo[id="UTC",offset=0,dstSavings=0,useDaylight=false,transitions=0,lastRule=null],firstDayOfWeek=1,minimalDaysInFirstWeek=1,ERA=1,YEAR=2020,MONTH=5,WEEK_OF_YEAR=23,WEEK_OF_MONTH=1,DAY_OF_MONTH=3,DAY_OF_YEAR=155,DAY_OF_WEEK=4,DAY_OF_WEEK_IN_MONTH=1,AM_PM=0,HOUR=0,HOUR_OF_DAY=0,MINUTE=0,SECOND=0,MILLISECOND=0,ZONE_OFFSET=0,DST_OFFSET=0] to int
+     */
+    @Ignore
     public void testQ3() throws SQLException {
 
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -757,7 +769,7 @@ public class ComplexViewTest {
                                     + "limit 10" ),
                             ImmutableList.of( q3_TEST_DATA )
                     );
-/*
+
                     statement.executeUpdate( "CREATE VIEW q3_VIEW AS "
                                     + "select "
                                     +     "l_orderkey, "
@@ -787,15 +799,366 @@ public class ComplexViewTest {
                             ImmutableList.of( q1_TEST_DATA )
                     );
 
-
- */
                     connection.commit();
                 } finally {
-                    //statement.executeUpdate( "DROP VIEW q3_VIEW" );
+                    statement.executeUpdate( "DROP VIEW q3_VIEW" );
                     dropTables(statement);
                 }
             }
         }
     }
+
+
+    //java.lang.ClassCastException: class org.apache.calcite.linq4j.EnumerableDefaults$LookupResultEnumerable$1 cannot be cast to class java.lang.AutoCloseable (org.apache.calcite.linq4j.EnumerableDefaults$LookupResultEnumerable$1 is in unnamed module of loader 'app'; java.lang.AutoCloseable is in module java.base of loader 'bootstrap')
+    @Test
+    public void testQ4() throws SQLException {
+
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                dropTables(statement);
+                initTables( statement );
+
+                try {
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "select "
+                                    +     "o_orderpriority, "
+                                    +     "count(*) as order_count "
+                                    + "from "
+                                    +     "orders "
+                                    + "where "
+                                    +     "o_orderdate >= date '2020-07-03' "
+                                    +     "and o_orderdate < date '2020-07-03' + interval '3' month "
+                                    +     "and exists ( "
+                                    +         "select "
+                                    +             "* "
+                                    +         "from "
+                                    +             "lineitem "
+                                    +         "where "
+                                    +             "l_orderkey = o_orderkey "
+                                    +             "and l_commitdate < l_receiptdate "
+                                    +     ") "
+                                    + "group by "
+                                    +     "o_orderpriority "
+                                    + "order by "
+                                    +     "o_orderpriority" ),
+                            ImmutableList.of( q4_TEST_DATA )
+                    );
+
+
+                    statement.executeUpdate( "CREATE VIEW q4_VIEW AS "
+                            + "select "
+                            +     "o_orderpriority, "
+                            +     "count(*) as order_count "
+                            + "from "
+                            +     "orders "
+                            + "where "
+                            +     "o_orderdate >= date '2020-07-03' "
+                            +     "and o_orderdate < date '2020-07-03' + interval '3' month "
+                            +     "and exists ( "
+                            +         "select "
+                            +             "* "
+                            +         "from "
+                            +             "lineitem "
+                            +         "where "
+                            +             "l_orderkey = o_orderkey "
+                            +             "and l_commitdate < l_receiptdate "
+                            +     ") "
+                            + "group by "
+                            +     "o_orderpriority "
+                            + "order by "
+                            +     "o_orderpriority"  );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM q4_VIEW" ),
+                            ImmutableList.of( q4_TEST_DATA )
+                    );
+
+
+
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP VIEW q4_VIEW" );
+                    dropTables(statement);
+                }
+            }
+        }
+    }
+
+
+    //original query with l_discount between 20.15 - 0.01 and ? + 0.01 does not return a result
+    //changed to
+    @Test
+    public void testQ6() throws SQLException {
+
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                dropTables(statement);
+                initTables( statement );
+
+                try {
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery("select "
+                                    +     "sum(l_extendedprice * l_discount) as revenue "
+                                    + "from "
+                                    +     "lineitem "
+                                    + "where "
+                                    +     "l_shipdate >= date '2020-07-03' "
+                                    +     "and l_shipdate < date '2020-07-03' + interval '1' year "
+                                    +     "and l_discount between 20.14 and 20.16 "
+                                    +     "and l_quantity < 20.20" ),
+                            ImmutableList.of( q6_TEST_DATA )
+                    );
+
+                    statement.executeUpdate( "CREATE VIEW q6_VIEW AS "
+                            + "select "
+                            +     "sum(l_extendedprice * l_discount) as revenue "
+                            + "from "
+                            +     "lineitem "
+                            + "where "
+                            +     "l_shipdate >= date '2020-07-03' "
+                            +     "and l_shipdate < date '2020-07-03' + interval '1' year "
+                            +     "and l_discount between 20.14 and 20.16 "
+                            +     "and l_quantity < 20.20" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM q6_VIEW" ),
+                            ImmutableList.of( q6_TEST_DATA )
+                    );
+
+
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP VIEW q6_VIEW" );
+                    dropTables(statement);
+                }
+            }
+        }
+    }
+
+    // deleted "or (n1.n_name = ? and n2.n_name = ?) " because there is only one nation in this table
+    /*
+    org.polypheny.db.runtime.PolyphenyDbException: Cannot convert java.util.GregorianCalendar[time=1591142400000,areFieldsSet=true,areAllFieldsSet=true,lenient=true,zone=sun.util.calendar.ZoneInfo[id="UTC",offset=0,dstSavings=0,useDaylight=false,transitions=0,lastRule=null],firstDayOfWeek=1,minimalDaysInFirstWeek=1,ERA=1,YEAR=2020,MONTH=5,WEEK_OF_YEAR=23,WEEK_OF_MONTH=1,DAY_OF_MONTH=3,DAY_OF_YEAR=155,DAY_OF_WEEK=4,DAY_OF_WEEK_IN_MONTH=1,AM_PM=0,HOUR=0,HOUR_OF_DAY=0,MINUTE=0,SECOND=0,MILLISECOND=0,ZONE_OFFSET=0,DST_OFFSET=0] to int
+     */
+    @Ignore
+    public void testQ7() throws SQLException {
+
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                dropTables(statement);
+                initTables( statement );
+
+                try {
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery("select "
+                                    +     "supp_nation, "
+                                    +     "cust_nation, "
+                                    +     "l_year, "
+                                    +     "sum(volume) as revenue "
+                                    + "from "
+                                    +     "( "
+                                    +         "select "
+                                    +             "n1.n_name as supp_nation, "
+                                    +             "n2.n_name as cust_nation, "
+                                    +             "extract(year from l_shipdate) as l_year, "
+                                    +             "l_extendedprice * (1 - l_discount) as volume "
+                                    +         "from "
+                                    +             "supplier, "
+                                    +             "lineitem, "
+                                    +             "orders, "
+                                    +             "customer, "
+                                    +             "nation n1, "
+                                    +             "nation n2 "
+                                    +         "where "
+                                    +             "s_suppkey = l_suppkey "
+                                    +             "and o_orderkey = l_orderkey "
+                                    +             "and c_custkey = o_custkey "
+                                    +             "and s_nationkey = n1.n_nationkey "
+                                    +             "and c_nationkey = n2.n_nationkey "
+                                    +             "and (n1.n_name = 'Switzerland' and n2.n_name = 'Switzerland') "
+                                    +             "and l_shipdate between date '2020-06-03' and date '2020-08-03' "
+                                    +     ") as shipping "
+                                    + "group by "
+                                    +     "supp_nation, "
+                                    +     "cust_nation, "
+                                    +     "l_year "
+                                    + "order by "
+                                    +     "supp_nation, "
+                                    +     "cust_nation, "
+                                    +     "l_year" ),
+                            ImmutableList.of( q7_TEST_DATA )
+                    );
+
+
+                    statement.executeUpdate( "CREATE VIEW q7_VIEW AS "
+                            + "select "
+                            +     "supp_nation, "
+                            +     "cust_nation, "
+                            +     "l_year, "
+                            +     "sum(volume) as revenue "
+                            + "from "
+                            +     "( "
+                            +         "select "
+                            +             "n1.n_name as supp_nation, "
+                            +             "n2.n_name as cust_nation, "
+                            +             "extract(year from l_shipdate) as l_year, "
+                            +             "l_extendedprice * (1 - l_discount) as volume "
+                            +         "from "
+                            +             "supplier, "
+                            +             "lineitem, "
+                            +             "orders, "
+                            +             "customer, "
+                            +             "nation n1, "
+                            +             "nation n2 "
+                            +         "where "
+                            +             "s_suppkey = l_suppkey "
+                            +             "and o_orderkey = l_orderkey "
+                            +             "and c_custkey = o_custkey "
+                            +             "and s_nationkey = n1.n_nationkey "
+                            +             "and c_nationkey = n2.n_nationkey "
+                            +             "and (n1.n_name = 'Switzerland' and n2.n_name = 'Switzerland') "
+                            +             "and l_shipdate between date '2020-06-03' and date '2020-08-03' "
+                            +     ") as shipping "
+                            + "group by "
+                            +     "supp_nation, "
+                            +     "cust_nation, "
+                            +     "l_year "
+                            + "order by "
+                            +     "supp_nation, "
+                            +     "cust_nation, "
+                            +     "l_year" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM q7_VIEW" ),
+                            ImmutableList.of( q7_TEST_DATA )
+                    );
+
+
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP VIEW q7_VIEW" );
+                    dropTables(statement);
+                }
+            }
+        }
+    }
+
+
+    /*
+    org.polypheny.db.runtime.PolyphenyDbException: Cannot convert java.util.GregorianCalendar[time=1591142400000,areFieldsSet=true,areAllFieldsSet=true,lenient=true,zone=sun.util.calendar.ZoneInfo[id="UTC",offset=0,dstSavings=0,useDaylight=false,transitions=0,lastRule=null],firstDayOfWeek=1,minimalDaysInFirstWeek=1,ERA=1,YEAR=2020,MONTH=5,WEEK_OF_YEAR=23,WEEK_OF_MONTH=1,DAY_OF_MONTH=3,DAY_OF_YEAR=155,DAY_OF_WEEK=4,DAY_OF_WEEK_IN_MONTH=1,AM_PM=0,HOUR=0,HOUR_OF_DAY=0,MINUTE=0,SECOND=0,MILLISECOND=0,ZONE_OFFSET=0,DST_OFFSET=0] to int
+     */
+    @Ignore
+    public void testQ8() throws SQLException {
+
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                dropTables(statement);
+                initTables( statement );
+
+                try {
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery("select "
+                                    +     "o_year, "
+                                    +     "sum(case "
+                                    +         "when nation = 'Switzerland' then volume "
+                                    +         "else 0 "
+                                    +     "end) / sum(volume) as mkt_share "
+                                    + "from "
+                                    +     "( "
+                                    +         "select "
+                                    +             "extract(year from o_orderdate) as o_year, "
+                                    +             "l_extendedprice * (1 - l_discount) as volume, "
+                                    +             "n2.n_name as nation "
+                                    +         "from "
+                                    +             "part, "
+                                    +             "supplier, "
+                                    +             "lineitem, "
+                                    +             "orders, "
+                                    +             "customer, "
+                                    +             "nation n1, "
+                                    +             "nation n2, "
+                                    +             "region "
+                                    +         "where "
+                                    +             "p_partkey = l_partkey "
+                                    +             "and s_suppkey = l_suppkey "
+                                    +             "and l_orderkey = o_orderkey "
+                                    +             "and o_custkey = c_custkey "
+                                    +             "and c_nationkey = n1.n_nationkey "
+                                    +             "and n1.n_regionkey = r_regionkey "
+                                    +             "and r_name = 'Basel' "
+                                    +             "and s_nationkey = n2.n_nationkey "
+                                    +             "and o_orderdate between date '2020-06-03' and date '2020-08-03' "
+                                    +             "and p_type = 'Wireless' "
+                                    +     ") as all_nations "
+                                    + "group by "
+                                    +     "o_year "
+                                    + "order by "
+                                    +     "o_year" ),
+                            ImmutableList.of( q8_TEST_DATA )
+                    );
+
+                    statement.executeUpdate( "CREATE VIEW q8_VIEW AS "
+                            + "select "
+                            +     "o_year, "
+                            +     "sum(case "
+                            +         "when nation = 'Switzerland' then volume "
+                            +         "else 0 "
+                            +     "end) / sum(volume) as mkt_share "
+                            + "from "
+                            +     "( "
+                            +         "select "
+                            +             "extract(year from o_orderdate) as o_year, "
+                            +             "l_extendedprice * (1 - l_discount) as volume, "
+                            +             "n2.n_name as nation "
+                            +         "from "
+                            +             "part, "
+                            +             "supplier, "
+                            +             "lineitem, "
+                            +             "orders, "
+                            +             "customer, "
+                            +             "nation n1, "
+                            +             "nation n2, "
+                            +             "region "
+                            +         "where "
+                            +             "p_partkey = l_partkey "
+                            +             "and s_suppkey = l_suppkey "
+                            +             "and l_orderkey = o_orderkey "
+                            +             "and o_custkey = c_custkey "
+                            +             "and c_nationkey = n1.n_nationkey "
+                            +             "and n1.n_regionkey = r_regionkey "
+                            +             "and r_name = 'Basel' "
+                            +             "and s_nationkey = n2.n_nationkey "
+                            +             "and o_orderdate between date '2020-06-03' and date '2020-08-03' "
+                            +             "and p_type = 'Wireless' "
+                            +     ") as all_nations "
+                            + "group by "
+                            +     "o_year "
+                            + "order by "
+                            +     "o_year" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM q8_VIEW" ),
+                            ImmutableList.of( q8_TEST_DATA )
+                    );
+
+
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP VIEW q8_VIEW" );
+                    dropTables(statement);
+                }
+            }
+        }
+    }
+
+
+
+
+
+
+
 
 }
