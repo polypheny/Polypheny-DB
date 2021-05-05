@@ -1361,6 +1361,11 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * deletes all View dependencies after a view is dropped
+     *
+     * @param catalogView view to be deleted
+     */
     public void deleteViewDependencies( CatalogView catalogView ) {
         for ( long id : catalogView.getUnderlyingTables() ) {
             CatalogTable old = getTable( id );

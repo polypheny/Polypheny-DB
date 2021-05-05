@@ -415,7 +415,7 @@ public abstract class OperandTypes implements Serializable {
     public static final PolySingleOperandTypeChecker MINUS_OPERATOR = OperandTypes.or( NUMERIC_NUMERIC, INTERVAL_SAME_SAME, DATETIME_INTERVAL );  // TODO: compatibility check
 
     public static final FamilyOperandTypeChecker MINUS_DATE_OPERATOR =
-            new FamilyOperandTypeChecker( ImmutableList.of( PolyTypeFamily.DATETIME, PolyTypeFamily.DATETIME, PolyTypeFamily.DATETIME_INTERVAL ), i -> false ) {
+            new FamilyOperandTypeChecker( ImmutableList.of( PolyTypeFamily.DATETIME, PolyTypeFamily.DATETIME, PolyTypeFamily.DATETIME_INTERVAL ), (Predicate<Integer> & Serializable) i -> false ) {
                 @Override
                 public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
                     if ( !super.checkOperandTypes( callBinding, throwOnFailure ) ) {
@@ -569,7 +569,7 @@ public abstract class OperandTypes implements Serializable {
      * [ROW] (DATETIME, DATETIME)
      * [ROW] (DATETIME, INTERVAL)
      */
-    private static class PeriodOperandTypeChecker implements PolySingleOperandTypeChecker {
+    private static class PeriodOperandTypeChecker implements PolySingleOperandTypeChecker, Serializable {
 
         @Override
         public boolean checkSingleOperandType( SqlCallBinding callBinding, SqlNode node, int iFormalOperand, boolean throwOnFailure ) {
