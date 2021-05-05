@@ -81,7 +81,7 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
         for ( Map<String, CottontailGrpc.Literal> value : values ) {
             final InsertMessage.Builder message = InsertMessage.newBuilder().setFrom( from_ ).setTxId( txId );
             for ( Entry<String, Literal> e : value.entrySet() ) {
-                message.addInserts( InsertElement.newBuilder().setColumn( ColumnName.newBuilder().setName( e.getKey() ) ).setValue( e.getValue() ).build() );
+                message.addElements( InsertElement.newBuilder().setColumn( ColumnName.newBuilder().setName( e.getKey() ) ).setValue( e.getValue() ).build() );
             }
             insertMessages.add( message.build() );
         }
@@ -108,14 +108,14 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
             final InsertMessage.Builder insert = InsertMessage.newBuilder().setFrom( from_ ).setTxId( txId );
             final Map<String, Literal> values = tupleBuilder.apply( new HashMap<>() );
             for ( Entry<String, Literal> e : values.entrySet() ) {
-                insert.addInserts( InsertElement.newBuilder().setColumn( ColumnName.newBuilder().setName( e.getKey() ) ).setValue( e.getValue() ) );
+                insert.addElements( InsertElement.newBuilder().setColumn( ColumnName.newBuilder().setName( e.getKey() ) ).setValue( e.getValue() ) );
             }
             insertMessages.add( insert.build() );
         } else {
             for ( Map<Long, Object> parameterValues : dataContext.getParameterValues() ) {
                 final InsertMessage.Builder insert = InsertMessage.newBuilder().setFrom( from_ ).setTxId( txId );
                 for ( Entry<String, CottontailGrpc.Literal> e : tupleBuilder.apply( parameterValues ).entrySet() ) {
-                    insert.addInserts( InsertElement.newBuilder().setColumn( ColumnName.newBuilder().setName( e.getKey() ) ).setValue( e.getValue() ) );
+                    insert.addElements( InsertElement.newBuilder().setColumn( ColumnName.newBuilder().setName( e.getKey() ) ).setValue( e.getValue() ) );
                 }
                 insertMessages.add( insert.build() );
             }

@@ -351,12 +351,11 @@ public class CottontailStore extends DataStore {
                 );
                 int i = 0;
                 for ( CottontailGrpc.Literal literal : tuple.getDataList() ) {
-                    insert.addInsertsBuilder().setColumn( responseMessage.getColumns( i++ ) ).setValue( literal );
+                    insert.addElementsBuilder().setColumn( responseMessage.getColumns( i++ ) ).setValue( literal );
                 }
-                insert.addInsertsBuilder()
+                insert.addElementsBuilder()
                         .setColumn( ColumnName.newBuilder().setName( newPhysicalColumnName ).build() )
                         .setValue( defaultData );
-
                 if ( !this.wrapper.insert( insert.build() ) ) {
                     throw new RuntimeException( "Unable to migrate data." );
                 }
@@ -426,7 +425,7 @@ public class CottontailStore extends DataStore {
                 int i = 0;
                 for ( Literal l : tuple.getDataList() ) {
                     if ( i != droppedIndex ) {
-                        insert.addInsertsBuilder().setColumn( responseMessage.getColumns( i ) ).setValue( l );
+                        insert.addElementsBuilder().setColumn( responseMessage.getColumns( i ) ).setValue( l );
                     }
                     i++;
                 }
@@ -568,7 +567,7 @@ public class CottontailStore extends DataStore {
                 final InsertMessage.Builder insert = InsertMessage.newBuilder().setTxId( txId ).setFrom( from );
                 int i = 0;
                 for ( Literal d : tuple.getDataList() ) {
-                    insert.addInserts( InsertElement.newBuilder()
+                    insert.addElements( InsertElement.newBuilder()
                             .setColumn( response.getColumns( i++ ) )
                             .setValue( d ) );
                 }
