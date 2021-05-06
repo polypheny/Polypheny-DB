@@ -117,7 +117,8 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
             final long numPartitions,
             final PartitionType partitionType,
             final ImmutableList<Long> partitionIds,
-            final long partitionColumnId ) {
+            final long partitionColumnId,
+            ImmutableList<Long> connectedViews) {
         this.id = id;
         this.name = name;
         this.columnIds = columnIds;
@@ -136,9 +137,15 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
         this.numPartitions = numPartitions;
         this.isPartitioned = true;
 
-        this.connectedViews = ImmutableList.<Long>builder().build();
+        this.connectedViews = connectedViews;
+
+        if ( type == TableType.TABLE && !modifiable ) {
+            throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
+        }
 
     }
+
+
 
 
     public CatalogTable(
@@ -180,6 +187,10 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
         this.numPartitions = numPartitions;
 
         this.connectedViews = connectedViews;
+
+        if ( type == TableType.TABLE && !modifiable ) {
+            throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
+        }
     }
 
 
@@ -263,7 +274,13 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
                 definition,
                 primaryKey,
                 placementsByAdapter,
-                modifiable );
+                modifiable,
+                numPartitions,
+                partitionType,
+                partitionIds,
+                partitionColumnId,
+                isPartitioned,
+                connectedViews);
     }
 
 
@@ -303,7 +320,13 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
                 definition,
                 primaryKey,
                 placementsByAdapter,
-                modifiable );
+                modifiable,
+                numPartitions,
+                partitionType,
+                partitionIds,
+                partitionColumnId,
+                isPartitioned,
+                connectedViews);
     }
 
 

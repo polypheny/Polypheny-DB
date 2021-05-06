@@ -82,7 +82,7 @@ public interface Convention extends RelTrait, Serializable {
     class Impl implements Convention {
 
         private final String name;
-        private final Class<? extends RelNode> relClass;
+        private final transient Class<? extends RelNode> relClass;
 
 
         public Impl( String name, Class<? extends RelNode> relClass ) {

@@ -34,6 +34,8 @@
 package org.polypheny.db.plan;
 
 
+import java.io.Serializable;
+
 /**
  * RelTrait represents the manifestation of a relational expression trait within a trait definition. For example, a {@code CallingConvention.JAVA} is a trait of the {@link ConventionTraitDef} trait definition.
  *
@@ -43,7 +45,7 @@ package org.polypheny.db.plan;
  * and {@link #equals(Object)}. If, however, new RelTrait instances are generated at runtime (e.g. based on state external to the planner), you must implement {@link #hashCode()} and
  * {@link #equals(Object)} for proper {@link RelTraitDef#canonize canonization} of your RelTrait objects.
  */
-public interface RelTrait {
+public interface RelTrait extends Serializable {
 
     /**
      * Returns the RelTraitDef that defines this RelTrait.

@@ -139,7 +139,7 @@ public class DdlManagerImpl extends DdlManager {
             for ( Long id : catalogTable.connectedViews ) {
                 views.add( catalog.getTable( id ).name );
             }
-            throw new PolyphenyDbException( "Cannot drop table because of underlying View " + views.stream().map( String::valueOf ).collect( Collectors.joining( (", ") ) ) );
+            throw new PolyphenyDbException( "Cannot alter table because of underlying View " + views.stream().map( String::valueOf ).collect( Collectors.joining( (", ") ) ) );
         }
     }
 
@@ -799,6 +799,9 @@ public class DdlManagerImpl extends DdlManager {
             throw new RuntimeException( "Cannot drop sole column of table " + catalogTable.name );
         }
 
+        //check if views are dependent from this view
+        checkViewDependencies(catalogTable);
+
         CatalogColumn column = getCatalogColumn( catalogTable.id, columnName );
 
         // Check if column is part of an key
@@ -1078,6 +1081,9 @@ public class DdlManagerImpl extends DdlManager {
             throw new PlacementNotExistsException();
         }
 
+        //check if views are dependent from this view
+        checkViewDependencies(catalogTable);
+
         // Which columns to remove
         for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapter( storeInstance.getAdapterId(), catalogTable.id ) ) {
             if ( !columnIds.contains( placement.columnId ) ) {
@@ -1279,6 +1285,9 @@ public class DdlManagerImpl extends DdlManager {
         if ( catalog.checkIfExistsTable( catalogTable.schemaId, newTableName ) ) {
             throw new TableAlreadyExistsException();
         }
+        //check if views are dependent from this view
+        checkViewDependencies(catalogTable);
+
         catalog.renameTable( catalogTable.id, newTableName );
 
         // Rest plan cache and implementation cache (not sure if required in this case)
@@ -1293,6 +1302,8 @@ public class DdlManagerImpl extends DdlManager {
         if ( catalog.checkIfExistsColumn( catalogColumn.tableId, newColumnName ) ) {
             throw new ColumnAlreadyExistsException( newColumnName, catalogColumn.getTableName() );
         }
+        //check if views are dependent from this view
+        checkViewDependencies(catalogTable);
 
         catalog.renameColumn( catalogColumn.id, newColumnName );
 

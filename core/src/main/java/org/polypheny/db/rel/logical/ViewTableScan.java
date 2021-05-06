@@ -28,6 +28,7 @@ import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.prepare.RelOptTableImpl;
+import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollationTraitDef;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
@@ -53,6 +54,7 @@ public class ViewTableScan extends TableScan {
     public static RelNode create( RelOptCluster cluster, final RelOptTable relOptTable ) {
         final Table table = relOptTable.unwrap( Table.class );
 
+
         final RelTraitSet traitSet =
                 cluster.traitSetOf( Convention.NONE )
                         .replaceIfs(
@@ -64,13 +66,17 @@ public class ViewTableScan extends TableScan {
                                     return ImmutableList.of();
                                 } );
 
+
+
         Catalog catalog = Catalog.getInstance();
         CatalogTable catalogTable;
 
         long idLogical = ((LogicalTable) ((RelOptTableImpl) relOptTable).getTable()).getTableId();
         catalogTable = catalog.getTable( idLogical );
 
-        return new ViewTableScan( cluster, traitSet, relOptTable, ((CatalogView) catalogTable).prepareView( cluster, traitSet ) );
+        RelCollation relCollation = catalogTable.definition.collation;
+
+        return new ViewTableScan( cluster, traitSet, relOptTable, ((CatalogView) catalogTable).prepareView( cluster, relCollation ) );
 
     }
 

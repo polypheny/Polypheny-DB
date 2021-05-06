@@ -18,13 +18,13 @@ package org.polypheny.db.webui.models;
 
 
 import java.util.Map;
-import org.polypheny.db.adapter.Adapter.AdapterSetting;
+import org.polypheny.db.adapter.Adapter.AbstractAdapterSetting;
 
 
 public class AdapterModel {
 
     public String uniqueName;
     public String clazzName;
-    public Map<String, AdapterSetting> settings;
+    public Map<String, AbstractAdapterSetting> settings;
 
 }

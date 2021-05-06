@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.routing.Router;
+import org.polypheny.db.util.FileInputHandle;
 
 public interface Statement {
 
@@ -35,5 +36,9 @@ public interface Statement {
     InformationDuration getDuration();
 
     Router getRouter();
+
+    void close();
+
+    void registerFileInputHandle( FileInputHandle fileInputHandle );
 
 }

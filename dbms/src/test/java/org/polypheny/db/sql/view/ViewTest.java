@@ -113,7 +113,7 @@ public class ViewTest {
                                     new Object[]{ "Elsa", "HR" }
                             )
                     );
-
+                    connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP VIEW viewTestEmp" );
                     statement.executeUpdate( "Drop VIEW viewTestEmpDep" );
@@ -163,6 +163,7 @@ public class ViewTest {
                                     new Object[]{ 1 },
                                     new Object[]{ 2 },
                                     new Object[]{ 3 } ) );
+                    connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP VIEW viewTestEmp" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
@@ -205,6 +206,7 @@ public class ViewTest {
                                     new Object[]{ 3, "HR", 3 }
                             )
                     );
+                    connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP VIEW viewRenameEmpTest" );
                     statement.executeUpdate( "DROP VIEW viewRenameDepTest" );

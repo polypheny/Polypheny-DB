@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.polypheny.db.catalog.Catalog.IndexType;
@@ -84,6 +85,7 @@ public final class CatalogIndex implements Serializable {
         private static final long serialVersionUID = -5596459769680478780L;
 
         private final int ordinalPosition;
+        @Getter
         private final String columnName;
 
 

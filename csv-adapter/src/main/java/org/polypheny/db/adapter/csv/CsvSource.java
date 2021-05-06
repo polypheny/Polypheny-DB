@@ -1,7 +1,6 @@
 package org.polypheny.db.adapter.csv;
 
 
-import com.google.common.collect.ImmutableList;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -18,7 +17,11 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adapter.Adapter.AdapterProperties;
+import org.polypheny.db.adapter.Adapter.AdapterSettingDirectory;
+import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.DataSource;
+import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -38,20 +41,15 @@ import org.reflections.scanners.ResourcesScanner;
 
 
 @Slf4j
-public class CsvSource extends DataSource implements Serializable {
+@AdapterProperties(
+        name = "CSV",
+        description = "An adapter for querying CSV files. The location of the directory containing the CSV files can be specified. Currently, this adapter only supports read operations.",
+        usedModes = DeployMode.EMBEDDED)
+@AdapterSettingDirectory(name = "directory", description = "You can upload one or multiple .csv or .csv.gz files.", position = 1)
+@AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 2,
+        description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
+public class CsvSource extends DataSource implements Serializable{
 
-    @SuppressWarnings("WeakerAccess")
-    public static final String ADAPTER_NAME = "CSV";
-    @SuppressWarnings("WeakerAccess")
-    public static final String DESCRIPTION = "An adapter for querying CSV files. The location of the directory containing the CSV files can be specified. Currently, this adapter only supports read operations.";
-    @SuppressWarnings("WeakerAccess")
-    public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-            new AdapterSettingDirectory( "directory", false, true, false )
-                    .setDescription( "You can upload one or multiple .csv or .csv.gz files." ),
-            new AdapterSettingInteger( "maxStringLength", false, true, false, 255 )
-                    .setDescription( "Which length (number of characters including whitespace) should be used for the varchar "
-                            + "columns. Make sure this is equal or larger than the longest string in any of the columns." )
-    );
 
     private URL csvDir;
     private CsvSchema currentSchema;
@@ -69,6 +67,7 @@ public class CsvSource extends DataSource implements Serializable {
 
         setCsvDir( settings );
         registerInformationPage( uniqueName );
+        enableInformationPage();
     }
 
 
@@ -236,18 +235,6 @@ public class CsvSource extends DataSource implements Serializable {
     @Override
     public void rollback( PolyXid xid ) {
         log.debug( "CSV Store does not support rollback()." );
-    }
-
-
-    @Override
-    public String getAdapterName() {
-        return ADAPTER_NAME;
-    }
-
-
-    @Override
-    public List<AdapterSetting> getAvailableSettings() {
-        return AVAILABLE_SETTINGS;
     }
 
 
