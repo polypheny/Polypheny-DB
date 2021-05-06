@@ -17,14 +17,11 @@
 package org.polypheny.db.monitoring.events;
 
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.monitoring.events.analyzer.QueryEventAnalyzer;
-import org.polypheny.db.monitoring.events.metrics.QueryMetric;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.transaction.Statement;
 
@@ -53,15 +50,15 @@ public abstract class StatementEvent extends BaseEvent{
 
 
     @Override
-    public abstract <T extends MonitoringMetric> List<Class<T>> getMetrics();
+    public abstract <T extends MonitoringDataPoint> List<Class<T>> getMetrics();
 
 
     @Override
-    public <T extends MonitoringMetric> List<Class<T>> getOptionalMetrics() {
+    public <T extends MonitoringDataPoint> List<Class<T>> getOptionalMetrics() {
         return Collections.emptyList();
     }
 
 
     @Override
-    public abstract List<MonitoringMetric> analyze();
+    public abstract List<MonitoringDataPoint> analyze();
 }

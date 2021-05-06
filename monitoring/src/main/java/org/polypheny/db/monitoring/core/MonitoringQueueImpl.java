@@ -17,25 +17,17 @@
 package org.polypheny.db.monitoring.core;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
-import org.polypheny.db.monitoring.events.MonitoringMetric;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
-import org.polypheny.db.monitoring.subscriber.MonitoringMetricSubscriber;
 import org.polypheny.db.util.background.BackgroundTask;
 import org.polypheny.db.util.background.BackgroundTaskManager;
 
@@ -56,18 +48,12 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     private final MonitoringRepository repository;
     // number of elements beeing processed from the queue to the backend per "batch"
     private final int QUEUE_PROCESSING_ELEMENTS = 50;
-    private HashMap<Class, List<MonitoringMetricSubscriber>> subscribers = new HashMap();
     private String backgroundTaskId;
     //For ever
     private long processedEventsTotal;
 
     //Since restart
     private long processedEvents;
-
-
-    //additional field that gets aggregated as soon as new subscription is in place
-    //to better retrieve a distinct list of subscribers
-    private Set<MonitoringMetricSubscriber> allSubscribers = new HashSet<>();
 
     // endregion
 
@@ -122,58 +108,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
 
     @Override
-    public <T extends MonitoringMetric> void subscribeMetric( Class<T> metricClass, MonitoringMetricSubscriber<T> subscriber ) {
-        //Can be added all the time since we are using a set
-        //Its faster than using  list and an if
-        allSubscribers.add( subscriber );
-
-        if ( this.subscribers.containsKey( metricClass ) ) {
-            this.subscribers.get( metricClass ).add( subscriber );
-        } else {
-            this.subscribers.putIfAbsent( metricClass, Arrays.asList( subscriber ) );
-        }
-    }
-
-
-    @Override
-    public <T extends MonitoringMetric> boolean unsubscribeMetric( Class<T> metricClass, MonitoringMetricSubscriber<T> subscriber ) {
-
-        List<MonitoringMetricSubscriber> tempSubs;
-
-        if ( this.subscribers.containsKey( metricClass ) ) {
-            tempSubs = new ArrayList<>( this.subscribers.get( metricClass ) );
-            tempSubs.remove( subscriber );
-            this.subscribers.put( metricClass, tempSubs );
-        }
-
-        // If this was the last occurence of the Subscriber in any Subscription remove him from ALL list
-        // TODO: Für was brauchst du das Feld allSubscribers. Ist doch nur aufwändig die 2 mal zu halten...?
-        if ( !hasActiveSubscription( subscriber ) ) {
-            allSubscribers.remove( subscriber );
-            return true;
-        }
-
-        //returns false only if it wasn't last subscription
-        return false;
-    }
-
-
-    @Override
-    public void unsubscribeFromAllMetrics( @NonNull MonitoringMetricSubscriber subscriber ) {
-        // TODO: Macht für mich irgendwie auch nicht so sinn. Ein Subsriber hat in den meisten fällen sowieso nur eine metric aboniert,
-        //  ansonsten müsste der das Interface MonitoringMetricSubscriber mehrfach implementieren.
-        //  Wäre natürlich möglich aber fäne ich ein wenig komisch.
-
-        for ( Entry entry : subscribers.entrySet() ) {
-            if ( subscribers.get( entry.getKey() ).contains( subscriber ) ) {
-                unsubscribeMetric( (Class) entry.getKey(), subscriber );
-            }
-        }
-
-    }
-
-
-    @Override
     public List<MonitoringEvent> getElementsInQueue() {
         // TODO: Würde ich definitiv nicht so machen. Wenn du im UI die Anzahl Events
         //   wissen willst dann unbedingt nur die Anzahl rausgeben. Sonst gibt du die ganzen Instanzen raus und
@@ -199,13 +133,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         }
         //returns only processed events since last restart
         return processedEvents;
-    }
-
-
-    @Override
-    public List<MonitoringMetricSubscriber> getActiveSubscribers() {
-        // TODO: würde ich auch nur die Anzahl rausgeben, könnte auch ziemlich misbraucht werden...
-        return allSubscribers.stream().collect( Collectors.toList() );
     }
 
     // endregion
@@ -238,12 +165,11 @@ public class MonitoringQueueImpl implements MonitoringQueue {
                 log.debug( "get new monitoring job" + event.get().getId().toString() );
 
                 //returns list of metrics which was produced by this particular event
-                val metrics = event.get().analyze();
+                val dataPoints = event.get().analyze();
 
                 //Sends all extracted metrics to subscribers
-                for ( val metric : metrics ) {
-                    this.repository.persistMetric( metric );
-                    this.notifySubscribers( metric );
+                for ( val dataPoint : dataPoints ) {
+                    this.repository.persistDataPoint( dataPoint );
                 }
 
                 countEvents++;
@@ -256,38 +182,11 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     }
 
 
-    private void notifySubscribers( MonitoringMetric metric ) {
-
-        val classSubscribers = this.subscribers.get( metric.getClass() );
-        if ( classSubscribers != null ) {
-            classSubscribers.forEach( s -> s.update( metric ) );
-        }
-    }
-
-
     private Optional<MonitoringEvent> getNextJob() {
         if ( monitoringJobQueue.peek() != null ) {
             return Optional.of( monitoringJobQueue.poll() );
         }
         return Optional.empty();
-    }
-
-
-    /**
-     * Mainly used as a helper to identify if subscriber has active subscriptions left or can be completely removed from Broker
-     *
-     * @param subscriber
-     * @return if Subscriber ist still registered to events
-     */
-    private boolean hasActiveSubscription( MonitoringMetricSubscriber subscriber ) {
-
-        for ( Entry currentSub : subscribers.entrySet() ) {
-            if ( subscribers.get( currentSub.getKey() ).contains( subscriber ) ) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     // endregion

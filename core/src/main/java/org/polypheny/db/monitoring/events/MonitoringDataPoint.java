@@ -14,12 +14,20 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.subscriber;
+package org.polypheny.db.monitoring.events;
 
-import org.polypheny.db.monitoring.events.MonitoringMetric;
+import java.io.Serializable;
+import java.sql.Timestamp;
+import java.util.UUID;
 
-public interface MonitoringMetricSubscriber<T extends MonitoringMetric> {
+/**
+ * Marker interface for the persistent metric type, which can be monitored.
+ * A MonitoringEvent will be analyzed and create metric objects.
+ */
+public interface MonitoringDataPoint extends Serializable {
 
-    void update( T metric );
+    UUID id();
+
+    Timestamp timestamp();
 
 }

@@ -20,10 +20,9 @@ import java.sql.Timestamp;
 import java.util.List;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
-import org.polypheny.db.monitoring.events.MonitoringMetric;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
-import org.polypheny.db.monitoring.subscriber.MonitoringMetricSubscriber;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 
 @Slf4j
@@ -62,38 +61,20 @@ public class MonitoringServiceImpl implements MonitoringService {
 
 
     @Override
-    public <T extends MonitoringMetric> void subscribeMetric( @NonNull Class<T> eventDataClass, @NonNull MonitoringMetricSubscriber<T> subscriber ) {
-        this.monitoringQueue.subscribeMetric( eventDataClass, subscriber );
+    public <T extends MonitoringDataPoint> List<T> getAllDataPoints( @NonNull Class<T> dataPointClass ) {
+        return this.repository.getAllDataPoints( dataPointClass );
     }
 
 
     @Override
-    public <T extends MonitoringMetric> void unsubscribeMetric( @NonNull Class<T> eventDataClass, @NonNull MonitoringMetricSubscriber<T> subscriber ) {
-        this.monitoringQueue.unsubscribeMetric( eventDataClass, subscriber );
+    public <T extends MonitoringDataPoint> List<T> getDataPointsBefore( @NonNull Class<T> dataPointClass, @NonNull Timestamp timestamp ) {
+        return this.repository.getDataPointsBefore( dataPointClass, timestamp );
     }
 
 
     @Override
-    public void unsubscribeFromAllMetrics( @NonNull MonitoringMetricSubscriber subscriber ) {
-        this.monitoringQueue.unsubscribeFromAllMetrics( subscriber );
-    }
-
-
-    @Override
-    public <T extends MonitoringMetric> List<T> getAllMetrics( @NonNull Class<T> metricClass ) {
-        return this.repository.getAllMetrics( metricClass );
-    }
-
-
-    @Override
-    public <T extends MonitoringMetric> List<T> getMetricsBefore( @NonNull Class<T> metricClass, @NonNull Timestamp timestamp ) {
-        return this.repository.getMetricsBefore( metricClass, timestamp );
-    }
-
-
-    @Override
-    public <T extends MonitoringMetric> List<T> getMetricsAfter( @NonNull Class<T> metricClass, @NonNull Timestamp timestamp ) {
-        return this.repository.getMetricsAfter( metricClass, timestamp );
+    public <T extends MonitoringDataPoint> List<T> getDataPointsAfter( @NonNull Class<T> dataPointClass, @NonNull Timestamp timestamp ) {
+        return this.repository.getDataPointsAfter( dataPointClass, timestamp );
     }
 
     // endregion

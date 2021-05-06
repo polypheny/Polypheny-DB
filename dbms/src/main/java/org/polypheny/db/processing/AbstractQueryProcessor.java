@@ -66,6 +66,7 @@ import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.RelTraitSet;
@@ -330,23 +331,22 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
                 //TODO @Cedric this produces an error causing several checks to fail. Please investigate
                 //needed for row results
-                /*final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
-                Iterator<Object> iterator = enumerable.iterator();
+                //final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
+                //Iterator<Object> iterator = enumerable.iterator();
 
                 TransactionImpl transaction = (TransactionImpl) statement.getTransaction();
 
-                QueryData eventData = (QueryData) transaction.getMonitoringData();
+                QueryEvent eventData = (QueryEvent) transaction.getMonitoringData();
                 eventData.setMonitoringType( signature.statementType.toString() );
                 eventData.setDescription( "Test description:" + parameterizedRoot.kind.sql );
-                eventData.setRecordedTimestamp( System.currentTimeMillis() );
+                //eventData.setRecordedTimestamp( System.currentTimeMillis() );
                 eventData.setRouted( logicalRoot );
                 eventData.setFieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames() ) );
-                eventData.setRows( MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() ) );
+                //eventData.setRows( MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() ) );
                 eventData.setAnalyze( isAnalyze );
                 eventData.setSubQuery( isSubquery );
                 eventData.setDurations( statement.getDuration().asJson() );
 
-                 */
                 return signature;
             }
         }
@@ -428,27 +428,25 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             log.debug( "Preparing statement ... done. [{}]", stopWatch );
         }
 
-        /*
 
         //TODO @Cedric this produces an error causing severall checks to fail. Please investigate
         //needed for row results
-        final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
-        Iterator<Object> iterator = enumerable.iterator();
+        //final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
+        //Iterator<Object> iterator = enumerable.iterator();
 
         TransactionImpl transaction = (TransactionImpl) statement.getTransaction();
-        QueryData eventData = (QueryData) transaction.getMonitoringData();
+        QueryEvent eventData = (QueryEvent) transaction.getMonitoringData();
         eventData.setMonitoringType( signature.statementType.toString() );
         eventData.setDescription( "Test description:" + parameterizedRoot.kind.sql );
-        eventData.setRecordedTimestamp( System.currentTimeMillis() );
+        //eventData.setRecordedTimestamp( System.currentTimeMillis() );
         eventData.setRouted( logicalRoot );
         eventData.setFieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames() ) );
-        eventData.setRows( MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() ) );
+        //eventData.setRows( MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() ) );
         eventData.setAnalyze( isAnalyze );
         eventData.setSubQuery( isSubquery );
         eventData.setDurations( statement.getDuration().asJson() );
 
 
-         */
         return signature;
     }
 

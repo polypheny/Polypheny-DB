@@ -28,7 +28,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.polypheny.db.monitoring.events.MonitoringMetric;
+import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 
 
 @Getter
@@ -36,7 +36,7 @@ import org.polypheny.db.monitoring.events.MonitoringMetric;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @AllArgsConstructor(access = AccessLevel.MODULE)
-public class QueryMetric implements MonitoringMetric, Serializable {
+public class QueryDataPoint implements MonitoringDataPoint, Serializable {
 
     private static final long serialVersionUID = 2312903042511293177L;
 

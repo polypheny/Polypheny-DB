@@ -17,17 +17,11 @@
 package org.polypheny.db.monitoring.events;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.monitoring.events.analyzer.DMLEventAnalyzer;
-import org.polypheny.db.monitoring.events.analyzer.QueryEventAnalyzer;
-import org.polypheny.db.monitoring.events.metrics.DMLMetric;
-import org.polypheny.db.monitoring.events.metrics.QueryMetric;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
 
 @Getter
 @Setter
@@ -38,14 +32,14 @@ public class DMLEvent extends StatementEvent {
 
 
     @Override
-    public <T extends MonitoringMetric> List<Class<T>> getMetrics() {
-        return Arrays.asList( (Class<T>) DMLMetric.class );
+    public <T extends MonitoringDataPoint> List<Class<T>> getMetrics() {
+        return Arrays.asList( (Class<T>) DMLDataPoint.class );
     }
 
 
 
     @Override
-    public List<MonitoringMetric> analyze() {
+    public List<MonitoringDataPoint> analyze() {
         return Arrays.asList( DMLEventAnalyzer.analyze( this ) );
     }
 

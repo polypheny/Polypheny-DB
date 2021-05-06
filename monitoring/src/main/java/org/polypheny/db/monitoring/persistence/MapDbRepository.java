@@ -31,7 +31,7 @@ import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.Serializer;
-import org.polypheny.db.monitoring.events.MonitoringMetric;
+import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.util.FileSystemManager;
 
 @Slf4j
@@ -41,7 +41,7 @@ public class MapDbRepository implements MonitoringRepository {
 
     private static final String FILE_PATH = "simpleBackendDb";
     private static final String FOLDER_NAME = "monitoring";
-    private final HashMap<Class, BTreeMap<UUID, MonitoringMetric>> data = new HashMap<>();
+    private final HashMap<Class, BTreeMap<UUID, MonitoringDataPoint>> data = new HashMap<>();
     private DB simpleBackendDb;
 
     // endregion
@@ -70,32 +70,32 @@ public class MapDbRepository implements MonitoringRepository {
 
 
     @Override
-    public void persistMetric( @NonNull MonitoringMetric metric ) {
-        if ( metric == null ) {
+    public void persistDataPoint( @NonNull MonitoringDataPoint dataPoint ) {
+        if ( dataPoint == null ) {
             throw new IllegalArgumentException( "invalid argument null" );
         }
 
-        BTreeMap table = this.data.get( metric.getClass() );
+        BTreeMap table = this.data.get( dataPoint.getClass() );
         if ( table == null ) {
-            this.createPersistentTable( metric.getClass() );
-            table = this.data.get( metric.getClass() );
+            this.createPersistentTable( dataPoint.getClass() );
+            table = this.data.get( dataPoint.getClass() );
         }
 
-        if ( table != null && metric != null ) {
-            table.put( metric.id(), metric );
+        if ( table != null && dataPoint != null ) {
+            table.put( dataPoint.id(), dataPoint );
             this.simpleBackendDb.commit();
         }
     }
 
 
     @Override
-    public <TPersistent extends MonitoringMetric> List<TPersistent> getAllMetrics( @NonNull Class<TPersistent> classPersistent ) {
-        val table = this.data.get( classPersistent );
+    public <TPersistent extends MonitoringDataPoint> List<TPersistent> getAllDataPoints( @NonNull Class<TPersistent> dataPointClass ) {
+        val table = this.data.get( dataPointClass );
         if ( table != null ) {
             return table.values()
                     .stream()
                     .map( monitoringPersistentData -> (TPersistent) monitoringPersistentData )
-                    .sorted( Comparator.comparing( MonitoringMetric::timestamp ).reversed() )
+                    .sorted( Comparator.comparing( MonitoringDataPoint::timestamp ).reversed() )
                     .collect( Collectors.toList() );
         }
 
@@ -104,14 +104,14 @@ public class MapDbRepository implements MonitoringRepository {
 
 
     @Override
-    public <T extends MonitoringMetric> List<T> getMetricsBefore( @NonNull Class<T> classPersistent, @NonNull Timestamp timestamp ) {
+    public <T extends MonitoringDataPoint> List<T> getDataPointsBefore( @NonNull Class<T> dataPointClass, @NonNull Timestamp timestamp ) {
         // TODO: not tested yet
-        val table = this.data.get( classPersistent );
+        val table = this.data.get( dataPointClass );
         if ( table != null ) {
             return table.values()
                     .stream()
                     .map( monitoringPersistentData -> (T) monitoringPersistentData )
-                    .sorted( Comparator.comparing( MonitoringMetric::timestamp ).reversed() )
+                    .sorted( Comparator.comparing( MonitoringDataPoint::timestamp ).reversed() )
                     .filter( elem -> elem.timestamp().before( timestamp ) )
                     .collect( Collectors.toList() );
         }
@@ -121,14 +121,14 @@ public class MapDbRepository implements MonitoringRepository {
 
 
     @Override
-    public <T extends MonitoringMetric> List<T> getMetricsAfter( @NonNull Class<T> classPersistent, @NonNull Timestamp timestamp ) {
+    public <T extends MonitoringDataPoint> List<T> getDataPointsAfter( @NonNull Class<T> dataPointClass, @NonNull Timestamp timestamp ) {
         // TODO: not tested yet
-        val table = this.data.get( classPersistent );
+        val table = this.data.get( dataPointClass );
         if ( table != null ) {
             return table.values()
                     .stream()
                     .map( monitoringPersistentData -> (T) monitoringPersistentData )
-                    .sorted( Comparator.comparing( MonitoringMetric::timestamp ).reversed() )
+                    .sorted( Comparator.comparing( MonitoringDataPoint::timestamp ).reversed() )
                     .filter( elem -> elem.timestamp().after( timestamp ) )
                     .collect( Collectors.toList() );
         }
@@ -141,7 +141,7 @@ public class MapDbRepository implements MonitoringRepository {
     // region private helper methods
 
 
-    private void createPersistentTable( Class<? extends MonitoringMetric> classPersistentData ) {
+    private void createPersistentTable( Class<? extends MonitoringDataPoint> classPersistentData ) {
         if ( classPersistentData != null ) {
             val treeMap = simpleBackendDb.treeMap( classPersistentData.getName(), Serializer.UUID, Serializer.JAVA ).createOrOpen();
             data.put( classPersistentData, treeMap );

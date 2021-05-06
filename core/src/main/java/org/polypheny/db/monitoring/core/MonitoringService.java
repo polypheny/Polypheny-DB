@@ -18,21 +18,14 @@ package org.polypheny.db.monitoring.core;
 
 import java.sql.Timestamp;
 import java.util.List;
+import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
-import org.polypheny.db.monitoring.events.MonitoringMetric;
-import org.polypheny.db.monitoring.subscriber.MonitoringMetricSubscriber;
 
 /**
  * Main interface for working with the MonitoringService environment. Jobs can be registered, monitored
  * and subscriber can the registered based on MonitoringEventData
  */
 public interface MonitoringService {
-
-    <T extends MonitoringMetric> void subscribeMetric(Class<T> metricClass, MonitoringMetricSubscriber<T> subscriber );
-
-    <T extends MonitoringMetric> void unsubscribeMetric( Class<T> metricClass, MonitoringMetricSubscriber<T> subscriber );
-
-    void unsubscribeFromAllMetrics( MonitoringMetricSubscriber subscriber );
 
     /**
      * monitor event which will be queued immediately and get processed by a registered queue worker.
@@ -45,29 +38,29 @@ public interface MonitoringService {
     /**
      * Get all data for given monitoring persistent type.
      *
-     * @param metricClass
+     * @param dataPointClass
      * @param <T>
      * @return
      */
-    <T extends MonitoringMetric> List<T> getAllMetrics( Class<T> metricClass );
+    <T extends MonitoringDataPoint> List<T> getAllDataPoints( Class<T> dataPointClass );
 
     /**
      * Get data before specified timestamp for given monitoring persistent type.
      *
-     * @param metricClass
+     * @param dataPointClass
      * @param <T>
      * @return
      */
-    <T extends MonitoringMetric> List<T> getMetricsBefore( Class<T> metricClass, Timestamp timestamp );
+    <T extends MonitoringDataPoint> List<T> getDataPointsBefore( Class<T> dataPointClass, Timestamp timestamp );
 
     /**
      * Get data after specified timestamp for given monitoring persistent type.
      *
-     * @param metricClass
+     * @param dataPointClass
      * @param <T>
      * @return
      */
-    <T extends MonitoringMetric> List<T> getMetricsAfter( Class<T> metricClass, Timestamp timestamp );
+    <T extends MonitoringDataPoint> List<T> getDataPointsAfter( Class<T> dataPointClass, Timestamp timestamp );
 
 }
 

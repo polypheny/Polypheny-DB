@@ -18,8 +18,6 @@ package org.polypheny.db.monitoring.core;
 
 import java.util.List;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
-import org.polypheny.db.monitoring.events.MonitoringMetric;
-import org.polypheny.db.monitoring.subscriber.MonitoringMetricSubscriber;
 
 /**
  * Monitoring queue interface which will
@@ -44,22 +42,5 @@ public interface MonitoringQueue {
     List<MonitoringEvent> getElementsInQueue();
 
     long getNumberOfProcessedEvents( boolean all );
-
-    List<MonitoringMetricSubscriber> getActiveSubscribers();
-
-    <T extends MonitoringMetric>
-    void subscribeMetric( Class<T> metricClass, MonitoringMetricSubscriber<T> subscriber );
-
-    /**
-     * @param metricClass
-     * @param subscriber
-     * @param <T>
-     * @return true if there a subscriptions left. And false if that was the last subscription
-     */
-    <T extends MonitoringMetric>
-    boolean unsubscribeMetric( Class<T> metricClass, MonitoringMetricSubscriber<T> subscriber );
-
-
-    void unsubscribeFromAllMetrics( MonitoringMetricSubscriber subscriber );
 
 }

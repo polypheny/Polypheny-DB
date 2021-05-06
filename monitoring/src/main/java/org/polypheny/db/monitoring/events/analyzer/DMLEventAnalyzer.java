@@ -21,17 +21,15 @@ import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.monitoring.events.DMLEvent;
-import org.polypheny.db.monitoring.events.QueryEvent;
-import org.polypheny.db.monitoring.events.metrics.DMLMetric;
-import org.polypheny.db.monitoring.events.metrics.QueryMetric;
+import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
 import org.polypheny.db.rel.RelNode;
 
 @Slf4j
 public class DMLEventAnalyzer {
     // TODO: Bis jetzt sind die Klassen mehr oder weniger identisch. Ist das einfach vorbereitet für später oder wie?
 
-    public static DMLMetric analyze( DMLEvent dmlEvent ) {
-        DMLMetric metric = DMLMetric
+    public static DMLDataPoint analyze( DMLEvent dmlEvent ) {
+        DMLDataPoint metric = DMLDataPoint
                 .builder()
                 .description( dmlEvent.getDescription() )
                 .monitoringType( dmlEvent.getMonitoringType() )
@@ -56,7 +54,7 @@ public class DMLEventAnalyzer {
     }
 
 
-    private static void processDurationInfo( DMLEvent dmlEvent, DMLMetric metric ) {
+    private static void processDurationInfo( DMLEvent dmlEvent, DMLDataPoint metric ) {
         // TODO: Könnte wir in einem StatementEventAnalyzer auslagern, dann haben wir die Funktion nur 1 mal :)
         try {
             InformationDuration duration = new Gson().fromJson( dmlEvent.getDurations(), InformationDuration.class );
@@ -75,7 +73,7 @@ public class DMLEventAnalyzer {
     }
 
 
-    private static void getDurationInfo( DMLMetric dmlMetric, String durationName, InformationDuration duration ) {
+    private static void getDurationInfo( DMLDataPoint dmlMetric, String durationName, InformationDuration duration ) {
         try {
             long time = duration.getDuration( durationName );
             dmlMetric.getDataElements().put( durationName, time );
@@ -85,7 +83,7 @@ public class DMLEventAnalyzer {
     }
 
 
-    private static void processRelNode( RelNode node, DMLEvent event, DMLMetric metric ) {
+    private static void processRelNode( RelNode node, DMLEvent event, DMLDataPoint metric ) {
 
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
             processRelNode( node.getInput( i ), event, metric );
@@ -94,7 +92,5 @@ public class DMLEventAnalyzer {
         if ( node.getTable() != null ) {
             metric.getTables().addAll( node.getTable().getQualifiedName() );
         }
-
     }
-
 }

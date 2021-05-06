@@ -20,14 +20,14 @@ import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.monitoring.events.QueryEvent;
-import org.polypheny.db.monitoring.events.metrics.QueryMetric;
+import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
 import org.polypheny.db.rel.RelNode;
 
 @Slf4j
 public class QueryEventAnalyzer {
 
-    public static QueryMetric analyze( QueryEvent queryEvent ) {
-        QueryMetric metric = QueryMetric
+    public static QueryDataPoint analyze( QueryEvent queryEvent ) {
+        QueryDataPoint metric = QueryDataPoint
                 .builder()
                 .description( queryEvent.getDescription() )
                 .monitoringType( queryEvent.getMonitoringType() )
@@ -53,7 +53,7 @@ public class QueryEventAnalyzer {
     }
 
 
-    private static void processDurationInfo( QueryEvent queryEvent, QueryMetric metric ) {
+    private static void processDurationInfo( QueryEvent queryEvent, QueryDataPoint metric ) {
         try {
             InformationDuration duration = new Gson().fromJson( queryEvent.getDurations(), InformationDuration.class );
             getDurationInfo( metric, "Plan Caching", duration );
@@ -71,7 +71,7 @@ public class QueryEventAnalyzer {
     }
 
 
-    private static void getDurationInfo( QueryMetric queryMetric, String durationName, InformationDuration duration ) {
+    private static void getDurationInfo( QueryDataPoint queryMetric, String durationName, InformationDuration duration ) {
         try {
             long time = duration.getDuration( durationName );
             queryMetric.getDataElements().put( durationName, time );
@@ -81,7 +81,7 @@ public class QueryEventAnalyzer {
     }
 
 
-    private static void processRelNode( RelNode node, QueryEvent event, QueryMetric metric ) {
+    private static void processRelNode( RelNode node, QueryEvent event, QueryDataPoint metric ) {
 
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
             processRelNode( node.getInput( i ), event, metric );
