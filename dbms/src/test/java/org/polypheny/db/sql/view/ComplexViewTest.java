@@ -389,7 +389,6 @@ public class ComplexViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                dropTables(statement);
                 initTables( statement );
 
                 try {
@@ -432,7 +431,6 @@ public class ComplexViewTest {
                     connection.commit();
                 } finally {
                     dropTables(statement);
-
                 }
             }
         }
@@ -445,7 +443,6 @@ public class ComplexViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                dropTables(statement);
                 statement.executeUpdate( ORDERS_TABLE );
                 statement.executeUpdate( ORDERS_TABLE_DATA );
 
@@ -467,10 +464,9 @@ public class ComplexViewTest {
                             statement.executeQuery( "SELECT * FROM date_VIEW" ),
                             ImmutableList.of( date_TEST_DATA )
                     );
-
+                    statement.executeUpdate( "DROP VIEW date_VIEW" );
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP VIEW date_VIEW" );
                     dropTables(statement);
 
                 }
@@ -485,7 +481,6 @@ public class ComplexViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                dropTables(statement);
                 statement.executeUpdate( ORDERS_TABLE );
                 statement.executeUpdate( ORDERS_TABLE_DATA );
 
@@ -508,9 +503,9 @@ public class ComplexViewTest {
                             ImmutableList.of( decimal_TEST_DATA )
                     );
 
+                    statement.executeUpdate( "DROP VIEW decimal_VIEW" );
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP VIEW decimal_VIEW" );
                     dropTables(statement);
 
                 }
@@ -525,7 +520,6 @@ public class ComplexViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                dropTables(statement);
                 statement.executeUpdate( ORDERS_TABLE );
                 statement.executeUpdate( ORDERS_TABLE_DATA );
 
@@ -550,9 +544,9 @@ public class ComplexViewTest {
                             ImmutableList.of( decimalDate_TEST_DATA )
                     );
 
+                    statement.executeUpdate( "DROP VIEW decimalDate_VIEW" );
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP VIEW decimalDate_VIEW" );
                     dropTables(statement);
                 }
             }
@@ -566,7 +560,6 @@ public class ComplexViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                dropTables(statement);
                 statement.executeUpdate( ORDERS_TABLE );
                 statement.executeUpdate( ORDERS_TABLE_DATA );
 
@@ -593,9 +586,9 @@ public class ComplexViewTest {
                             ImmutableList.of( decimalDateInt_TEST_DATA )
                     );
 
+                    statement.executeUpdate( "DROP VIEW decimalDateInt_VIEW" );
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP VIEW decimalDateInt_VIEW" );
                     dropTables(statement);
                 }
             }
@@ -609,7 +602,6 @@ public class ComplexViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                dropTables(statement);
                 initTables(statement);
 
                 try {
@@ -649,9 +641,9 @@ public class ComplexViewTest {
                             ImmutableList.of( q1_TEST_DATA )
                     );
 
+                    statement.executeUpdate( "DROP VIEW q1_VIEW" );
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP VIEW q1_VIEW" );
                     dropTables(statement);
                 }
             }
@@ -667,7 +659,6 @@ public class ComplexViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                dropTables(statement);
                 initTables( statement );
 
                 try {
@@ -738,7 +729,6 @@ public class ComplexViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                dropTables(statement);
                 initTables( statement );
 
                 try {
@@ -799,9 +789,9 @@ public class ComplexViewTest {
                             ImmutableList.of( q1_TEST_DATA )
                     );
 
+                    statement.executeUpdate( "DROP VIEW q3_VIEW" );
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP VIEW q3_VIEW" );
                     dropTables(statement);
                 }
             }
@@ -816,7 +806,6 @@ public class ComplexViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                dropTables(statement);
                 initTables( statement );
 
                 try {
@@ -874,11 +863,10 @@ public class ComplexViewTest {
                             ImmutableList.of( q4_TEST_DATA )
                     );
 
-
-
+                    statement.executeUpdate( "DROP VIEW q4_VIEW" );
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP VIEW q4_VIEW" );
+
                     dropTables(statement);
                 }
             }
@@ -895,7 +883,6 @@ public class ComplexViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                dropTables(statement);
                 initTables( statement );
 
                 try {
@@ -928,10 +915,10 @@ public class ComplexViewTest {
                             ImmutableList.of( q6_TEST_DATA )
                     );
 
-
+                    statement.executeUpdate( "DROP VIEW q6_VIEW" );
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP VIEW q6_VIEW" );
+
                     dropTables(statement);
                 }
             }
@@ -948,7 +935,6 @@ public class ComplexViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                dropTables(statement);
                 initTables( statement );
 
                 try {
@@ -1036,10 +1022,9 @@ public class ComplexViewTest {
                             ImmutableList.of( q7_TEST_DATA )
                     );
 
-
+                    statement.executeUpdate( "DROP VIEW q7_VIEW" );
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP VIEW q7_VIEW" );
                     dropTables(statement);
                 }
             }
@@ -1056,7 +1041,6 @@ public class ComplexViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                dropTables(statement);
                 initTables( statement );
 
                 try {
@@ -1145,10 +1129,9 @@ public class ComplexViewTest {
                             ImmutableList.of( q8_TEST_DATA )
                     );
 
-
+                    statement.executeUpdate( "DROP VIEW q8_VIEW" );
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP VIEW q8_VIEW" );
                     dropTables(statement);
                 }
             }

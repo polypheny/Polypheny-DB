@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaSqlException;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
@@ -148,6 +149,71 @@ public class JdbcDdlTest {
                             ImmutableList.of( new Object[]{ DDLTEST_DATA[10] } ) );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT tvarchar FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[11] } ) );
+
+                    connection.commit();
+                } finally {
+                    // Drop ddltest table
+                    statement.executeUpdate( "DROP TABLE ddltest" );
+                }
+            }
+        }
+    }
+
+    @Ignore
+    public void viewTestTypes() throws SQLException {
+        // Check if there are new types missing in this test
+        Assert.assertEquals( "Unexpected number of available types", PolyType.availableTypes().size(), 16 );
+
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                // Create ddltest table and insert data
+                statement.executeUpdate( DDLTEST_SQL );
+                statement.executeUpdate( DDLTEST_DATA_SQL );
+                statement.executeUpdate( "CREATE VIEW ddltestview as SELECT * FROM ddltest"  );
+
+                try {
+                    // Checks
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM ddltestview" ),
+                            ImmutableList.of( DDLTEST_DATA ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tbigint FROM ddltestview" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[0] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tboolean FROM ddltestview" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[1] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tdate FROM ddltestview" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[2] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tdecimal FROM ddltestview" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[3] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tdouble FROM ddltestview" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[4] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tinteger FROM ddltestview" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[5] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT treal FROM ddltestview" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[6] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tsmallint FROM ddltestview" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[7] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT ttime FROM ddltestview" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[8] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT ttimestamp FROM ddltestview" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[9] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT ttinyint FROM ddltestview" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[10] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tvarchar FROM ddltestview" ),
                             ImmutableList.of( new Object[]{ DDLTEST_DATA[11] } ) );
 
                     connection.commit();
