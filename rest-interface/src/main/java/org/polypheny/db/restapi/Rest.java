@@ -34,7 +34,7 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
-import org.polypheny.db.monitoring.dtos.QueryData;
+import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
@@ -554,7 +554,7 @@ public class Rest {
                 signature.getExecutionTimeMonitor().setExecutionTime( executionTime );
             }
 
-            ((QueryData) statement.getTransaction().getMonitoringData()).setExecutionTime( executionTime );
+            ((QueryEvent) statement.getTransaction().getMonitoringData()).setExecutionTime( executionTime );
             statement.getTransaction().commit();
         } catch ( Throwable e ) {
             log.error( "Error during execution of REST query", e );
@@ -566,8 +566,8 @@ public class Rest {
             return null;
         }
         Pair<String, Integer> result = restResult.getResult( res );
-        ((QueryData) statement.getTransaction().getMonitoringData()).setRowCount( result.right );
-        MonitoringServiceProvider.MONITORING_SERVICE().monitorEvent( statement.getTransaction().getMonitoringData() );
+        ((QueryEvent) statement.getTransaction().getMonitoringData()).setRowCount( result.right );
+        MonitoringServiceProvider.getInstance().monitorEvent( statement.getTransaction().getMonitoringData() );
 
         return result.left;
     }

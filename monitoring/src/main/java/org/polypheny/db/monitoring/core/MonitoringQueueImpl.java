@@ -16,7 +16,7 @@
 
 package org.polypheny.db.monitoring.core;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
@@ -24,13 +24,11 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.polypheny.db.monitoring.dtos.MonitoringData;
-import org.polypheny.db.monitoring.dtos.MonitoringJob;
-import org.polypheny.db.monitoring.dtos.MonitoringPersistentData;
-import org.polypheny.db.monitoring.subscriber.MonitoringEventSubscriber;
-import org.polypheny.db.util.Pair;
+import org.polypheny.db.monitoring.events.MonitoringEvent;
+import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 import org.polypheny.db.util.background.BackgroundTask;
 import org.polypheny.db.util.background.BackgroundTaskManager;
 
@@ -46,19 +44,17 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     /**
      * monitoring queue which will queue all the incoming jobs.
      */
-    private final Queue<MonitoringJob> monitoringJobQueue = new ConcurrentLinkedQueue<>();
-
+    private final Queue<MonitoringEvent> monitoringJobQueue = new ConcurrentLinkedQueue<>();
     private final Lock processingQueueLock = new ReentrantLock();
-
-    /**
-     * The registered job type pairs. The pairs are always of type
-     * ( Class<MonitoringEventData> , Class<MonitoringPersistentData>)
-     */
-    private final HashMap<Pair<Class, Class>, MonitoringQueueWorker> jobQueueWorkers = new HashMap();
-
-    private final HashMap<Class, List<MonitoringEventSubscriber>> subscribers = new HashMap();
-
+    private final MonitoringRepository repository;
+    // number of elements beeing processed from the queue to the backend per "batch"
+    private final int QUEUE_PROCESSING_ELEMENTS = 50;
     private String backgroundTaskId;
+    //For ever
+    private long processedEventsTotal;
+
+    //Since restart
+    private long processedEvents;
 
     // endregion
 
@@ -70,8 +66,15 @@ public class MonitoringQueueImpl implements MonitoringQueue {
      *
      * @param startBackGroundTask Indicates whether the background task for consuming the queue will be started.
      */
-    public MonitoringQueueImpl( boolean startBackGroundTask ) {
+    public MonitoringQueueImpl( boolean startBackGroundTask, @NonNull MonitoringRepository repository ) {
         log.info( "write queue service" );
+
+        if ( repository == null ) {
+            throw new IllegalArgumentException( "repo parameter is null" );
+        }
+
+        this.repository = repository;
+
         if ( startBackGroundTask ) {
             this.startBackgroundTask();
         }
@@ -81,8 +84,8 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     /**
      * Ctor will automatically start the background task for consuming the queue.
      */
-    public MonitoringQueueImpl() {
-        this( true );
+    public MonitoringQueueImpl( @NonNull MonitoringRepository repository ) {
+        this( true, repository );
     }
 
     // endregion
@@ -100,82 +103,52 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
 
     @Override
-    public void queueEvent( MonitoringData eventData ) {
-        if ( eventData == null ) {
-            throw new IllegalArgumentException( "Empty event data" );
-        }
+    public void queueEvent( @NonNull MonitoringEvent event ) {
+        this.monitoringJobQueue.add( event );
+    }
 
-        val job = this.createMonitorJob( eventData );
-        if ( job.isPresent() ) {
-            this.monitoringJobQueue.add( job.get() );
-        }
+
+    /**
+     * Display current number of elements in queue
+     *
+     * @return Current numbe of elements in Queue
+     */
+    @Override
+    public long getNumberOfElementsInQueue() {
+        return getElementsInQueue().size();
     }
 
 
     @Override
-    public <TEvent extends MonitoringData, TPersistent extends MonitoringPersistentData>
-    void registerQueueWorker( Pair<Class<TEvent>, Class<TPersistent>> classPair, MonitoringQueueWorker<TEvent, TPersistent> worker ) {
-        if ( classPair == null || worker == null ) {
-            throw new IllegalArgumentException( "Parameter is null" );
-        }
+    public List<HashMap<String, String>> getInformationOnElementsInQueue() {
+        List<HashMap<String, String>> infoList = new ArrayList<>();
 
-        if ( this.jobQueueWorkers.containsKey( classPair ) ) {
-            throw new IllegalArgumentException( "Consumer already registered" );
-        }
 
-        val key = new Pair<Class, Class>( classPair.left, classPair.right );
-        this.jobQueueWorkers.put( key, worker );
+        for ( MonitoringEvent event : getElementsInQueue() ) {
+            HashMap<String, String> infoRow = new HashMap<String,String>();
+            infoRow.put("type", event.getEventType() );
+            infoRow.put("id", event.getId().toString() );
+            infoRow.put("timestamp", event.getRecordedTimestamp().toString() );
+
+            infoList.add( infoRow );
+        }
+        return infoList;
     }
 
 
     @Override
-    public <TPersistent extends MonitoringPersistentData>
-    void subscribeEvent( Class<TPersistent> eventDataClass, MonitoringEventSubscriber<TPersistent> subscriber ) {
-        if ( this.subscribers.containsKey( eventDataClass ) ) {
-            this.subscribers.get( eventDataClass ).add( subscriber );
-        } else {
-            this.subscribers.putIfAbsent( eventDataClass, Arrays.asList( subscriber ) );
+    public long getNumberOfProcessedEvents( boolean all ) {
+        // TODO: Wird hier noch das persistiert? Könnten wir selbst als Metric aufbauen und persistieren ;-)
+        if ( all ) {
+            return processedEventsTotal;
         }
-    }
-
-
-    @Override
-    public <TPersistent extends MonitoringPersistentData> void unsubscribeEvent( Class<TPersistent> eventDataClass, MonitoringEventSubscriber<TPersistent> subscriber ) {
-        this.subscribers.get( eventDataClass ).remove( subscriber );
+        //returns only processed events since last restart
+        return processedEvents;
     }
 
     // endregion
 
     // region private helper methods
-
-
-    /**
-     * will try to create a MonitoringJob which incoming eventData object
-     * and newly created but empty MonitoringPersistentData object.
-     *
-     * @return Will return an Optional MonitoringJob
-     */
-    private Optional<MonitoringJob> createMonitorJob( MonitoringData eventData ) {
-        val pair = this.getTypesForEvent( eventData );
-        if ( pair.isPresent() ) {
-            try {
-                val job = new MonitoringJob( eventData, (MonitoringPersistentData) pair.get().right.newInstance() );
-                return Optional.of( job );
-            } catch ( InstantiationException e ) {
-                log.error( "Could not instantiate monitoring job" );
-            } catch ( IllegalAccessException e ) {
-                log.error( "Could not instantiate monitoring job" );
-            }
-        }
-
-        return Optional.empty();
-    }
-
-
-    private Optional<Pair<Class, Class>> getTypesForEvent( MonitoringData eventData ) {
-        // use the registered worker to find the eventData and return optional key of the entry.
-        return this.jobQueueWorkers.keySet().stream().filter( elem -> elem.left.isInstance( eventData ) ).findFirst();
-    }
 
 
     private void startBackgroundTask() {
@@ -190,41 +163,51 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     }
 
 
+    private List<MonitoringEvent> getElementsInQueue() {
+        // TODO: Würde ich definitiv nicht so machen. Wenn du im UI die Anzahl Events
+        //   wissen willst dann unbedingt nur die Anzahl rausgeben. Sonst gibt du die ganzen Instanzen raus und
+        //   könntest die Queue zum übelsten missbrauchen ;-)
+
+        List<MonitoringEvent> eventsInQueue = new ArrayList<>();
+
+        for ( MonitoringEvent event : monitoringJobQueue ) {
+            eventsInQueue.add( event );
+        }
+
+        return eventsInQueue;
+    }
+
     private void processQueue() {
         log.debug( "Start processing queue" );
         this.processingQueueLock.lock();
 
-        Optional<MonitoringJob> job;
+        Optional<MonitoringEvent> event;
 
         try {
             // while there are jobs to consume:
-            while ( (job = this.getNextJob()).isPresent() ) {
-                log.debug( "get new monitoring job" + job.get().getId().toString() );
+            int countEvents = 0;
+            while ( (event = this.getNextJob()).isPresent() && countEvents < QUEUE_PROCESSING_ELEMENTS ) {
+                log.debug( "get new monitoring job" + event.get().getId().toString() );
 
-                // get the worker
-                MonitoringJob monitoringJob = job.get();
-                val workerKey = new Pair( monitoringJob.getMonitoringData().getClass(), monitoringJob.getMonitoringPersistentData().getClass() );
-                val worker = jobQueueWorkers.get( workerKey );
+                //returns list of metrics which was produced by this particular event
+                val dataPoints = event.get().analyze();
 
-                if ( worker != null ) {
-                    val result = worker.handleJob( monitoringJob );
-
-                    val classSubscribers = this.subscribers.get( monitoringJob.getMonitoringPersistentData().getClass() );
-                    if ( classSubscribers != null ) {
-                        classSubscribers.forEach( s -> s.update( result.getMonitoringPersistentData() ) );
-                    }
-
-                } else {
-                    log.error( "no worker for event registered" );
+                //Sends all extracted metrics to subscribers
+                for ( val dataPoint : dataPoints ) {
+                    this.repository.persistDataPoint( dataPoint );
                 }
+
+                countEvents++;
             }
+            processedEvents += countEvents;
+            processedEventsTotal += countEvents;
         } finally {
             this.processingQueueLock.unlock();
         }
     }
 
 
-    private Optional<MonitoringJob> getNextJob() {
+    private Optional<MonitoringEvent> getNextJob() {
         if ( monitoringJobQueue.peek() != null ) {
             return Optional.of( monitoringJobQueue.poll() );
         }

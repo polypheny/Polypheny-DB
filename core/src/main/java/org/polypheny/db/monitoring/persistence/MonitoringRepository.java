@@ -16,9 +16,9 @@
 
 package org.polypheny.db.monitoring.persistence;
 
-import org.polypheny.db.monitoring.dtos.MonitoringData;
-import org.polypheny.db.monitoring.dtos.MonitoringJob;
-import org.polypheny.db.monitoring.dtos.MonitoringPersistentData;
+import java.sql.Timestamp;
+import java.util.List;
+import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 
 /**
  * Interface for writing monitoring jobs to repository.
@@ -31,13 +31,37 @@ public interface MonitoringRepository {
     void initialize();
 
     /**
-     * Persist given monitoring job.
+     * Persist given monitoring metric.
      *
-     * @param monitoringJob
-     * @param <TEvent>
-     * @param <TPersistent>
+     * @param dataPoint
      */
-    <TEvent extends MonitoringData, TPersistent extends MonitoringPersistentData>
-    void persistJob( MonitoringJob<TEvent, TPersistent> monitoringJob );
+    void persistDataPoint( MonitoringDataPoint dataPoint );
+
+    /**
+     * Get all data for given monitoring persistent type.
+     *
+     * @param dataPointClass
+     * @param <T>
+     * @return
+     */
+    <T extends MonitoringDataPoint> List<T> getAllDataPoints( Class<T> dataPointClass );
+
+    /**
+     * Get data before specified timestamp for given monitoring persistent type.
+     *
+     * @param dataPointClass
+     * @param <T>
+     * @return
+     */
+    <T extends MonitoringDataPoint> List<T> getDataPointsBefore( Class<T> dataPointClass, Timestamp timestamp );
+
+    /**
+     * Get data after specified timestamp for given monitoring persistent type.
+     *
+     * @param dataPointClass
+     * @param <T>
+     * @return
+     */
+    <T extends MonitoringDataPoint> List<T> getDataPointsAfter( Class<T> dataPointClass, Timestamp timestamp );
 
 }

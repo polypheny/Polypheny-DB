@@ -20,9 +20,67 @@ package org.polypheny.db.webui;
 import au.com.bytecode.opencsv.CSVReader;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.gson.*;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonSerializer;
+import com.google.gson.JsonSyntaxException;
 import com.j256.simplemagic.ContentInfo;
 import com.j256.simplemagic.ContentInfoUtil;
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PushbackInputStream;
+import java.io.RandomAccessFile;
+import java.io.Reader;
+import java.math.BigDecimal;
+import java.net.URL;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Set;
+import java.util.StringJoiner;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
+import javax.servlet.MultipartConfigElement;
+import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.Part;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 import lombok.extern.slf4j.Slf4j;
@@ -53,8 +111,21 @@ import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.*;
-import org.polypheny.db.catalog.exceptions.*;
+import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogConstraint;
+import org.polypheny.db.catalog.entity.CatalogForeignKey;
+import org.polypheny.db.catalog.entity.CatalogIndex;
+import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
@@ -65,10 +136,18 @@ import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformation;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformationRequest;
-import org.polypheny.db.information.*;
+import org.polypheny.db.information.Information;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationObserver;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationStacktrace;
+import org.polypheny.db.information.InformationText;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
-import org.polypheny.db.monitoring.dtos.QueryData;
+import org.polypheny.db.monitoring.events.DMLEvent;
+import org.polypheny.db.monitoring.events.QueryEvent;
+import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.partition.PartitionFunctionInfo;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.manager.PartitionManager;
@@ -98,45 +177,47 @@ import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonColumn;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonTable;
-import org.polypheny.db.webui.models.*;
+import org.polypheny.db.webui.models.AdapterModel;
+import org.polypheny.db.webui.models.DbColumn;
+import org.polypheny.db.webui.models.DbTable;
+import org.polypheny.db.webui.models.ExploreResult;
+import org.polypheny.db.webui.models.ForeignKey;
+import org.polypheny.db.webui.models.HubMeta;
 import org.polypheny.db.webui.models.HubMeta.TableMapping;
+import org.polypheny.db.webui.models.HubResult;
+import org.polypheny.db.webui.models.Index;
+import org.polypheny.db.webui.models.PartitionFunctionModel;
 import org.polypheny.db.webui.models.PartitionFunctionModel.FieldType;
 import org.polypheny.db.webui.models.PartitionFunctionModel.PartitionFunctionColumn;
-import org.polypheny.db.webui.models.requests.*;
+import org.polypheny.db.webui.models.Placement;
+import org.polypheny.db.webui.models.QueryInterfaceModel;
+import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.ResultType;
+import org.polypheny.db.webui.models.Schema;
+import org.polypheny.db.webui.models.SidebarElement;
+import org.polypheny.db.webui.models.SortState;
+import org.polypheny.db.webui.models.Status;
+import org.polypheny.db.webui.models.TableConstraint;
+import org.polypheny.db.webui.models.Uml;
+import org.polypheny.db.webui.models.requests.BatchUpdateRequest;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest.Update;
+import org.polypheny.db.webui.models.requests.ClassifyAllData;
+import org.polypheny.db.webui.models.requests.ColumnRequest;
+import org.polypheny.db.webui.models.requests.ConstraintRequest;
+import org.polypheny.db.webui.models.requests.EditTableRequest;
+import org.polypheny.db.webui.models.requests.ExploreData;
+import org.polypheny.db.webui.models.requests.ExploreTables;
+import org.polypheny.db.webui.models.requests.HubRequest;
+import org.polypheny.db.webui.models.requests.PartitioningRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest.ModifyPartitionRequest;
+import org.polypheny.db.webui.models.requests.QueryExplorationRequest;
+import org.polypheny.db.webui.models.requests.QueryRequest;
+import org.polypheny.db.webui.models.requests.RelAlgRequest;
+import org.polypheny.db.webui.models.requests.SchemaTreeRequest;
+import org.polypheny.db.webui.models.requests.UIRequest;
 import spark.Request;
 import spark.Response;
 import spark.utils.IOUtils;
-
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.Part;
-import java.io.*;
-import java.math.BigDecimal;
-import java.net.URL;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.sql.Array;
-import java.sql.Blob;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
 
 
 @Slf4j
@@ -597,6 +678,7 @@ public class Crud implements InformationObserver {
      */
     ArrayList<Result> anyQuery( final QueryRequest request, final Session session ) {
         Transaction transaction = getTransaction( request.analyze );
+
         if ( request.analyze ) {
             transaction.getQueryAnalyzer().setSession( session );
         }
@@ -707,6 +789,7 @@ public class Crud implements InformationObserver {
                     temp = System.nanoTime();
                     int numOfRows = executeSqlUpdate( transaction, query );
                     executionTime += System.nanoTime() - temp;
+                    transaction.getMonitoringData().setExecutionTime( executionTime );
                     result = new Result( numOfRows ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
                     results.add( result );
                     if ( autoCommit ) {
@@ -3195,6 +3278,7 @@ public class Crud implements InformationObserver {
         List<List<Object>> rows;
         Iterator<Object> iterator = null;
         boolean hasMoreRows = false;
+        statement.getTransaction().setMonitoringData( new QueryEvent() );
         try {
             signature = processQuery( statement, sqlSelect );
             final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
@@ -3210,9 +3294,11 @@ public class Crud implements InformationObserver {
             hasMoreRows = iterator.hasNext();
             stopWatch.stop();
 
+
             long executionTime = stopWatch.getNanoTime();
             signature.getExecutionTimeMonitor().setExecutionTime( executionTime );
-            ((QueryData) statement.getTransaction().getMonitoringData()).setExecutionTime( executionTime );
+
+            statement.getTransaction().getMonitoringData().setExecutionTime( executionTime );
 
         } catch ( Throwable t ) {
             if ( statement.getTransaction().isAnalyze() ) {
@@ -3287,10 +3373,8 @@ public class Crud implements InformationObserver {
 
             ArrayList<String[]> data = computeResultData( rows, header, statement.getTransaction() );
 
-
-            ((QueryData) statement.getTransaction().getMonitoringData()).setRowCount( data.size() );
-
-            MonitoringServiceProvider.MONITORING_SERVICE().monitorEvent( statement.getTransaction().getMonitoringData() );
+            statement.getTransaction().getMonitoringData().setRowCount( data.size() );
+            MonitoringServiceProvider.getInstance().monitorEvent( statement.getTransaction().getMonitoringData() );
 
             return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
         } finally {
@@ -3490,6 +3574,8 @@ public class Crud implements InformationObserver {
 
     private int executeSqlUpdate( final Statement statement, final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
         PolyphenyDbSignature<?> signature;
+
+        statement.getTransaction().setMonitoringData( new DMLEvent() );
         try {
             signature = processQuery( statement, sqlUpdate );
         } catch ( Throwable t ) {
@@ -3536,6 +3622,12 @@ public class Crud implements InformationObserver {
                     throw new QueryExecutionException( e.getMessage(), e );
                 }
             }
+
+
+            StatementEvent ev = statement.getTransaction().getMonitoringData();
+            ev.setRowCount( rowsChanged );
+
+            MonitoringServiceProvider.getInstance().monitorEvent( ev );
             return rowsChanged;
         } else {
             throw new QueryExecutionException( "Unknown statement type: " + signature.statementType );

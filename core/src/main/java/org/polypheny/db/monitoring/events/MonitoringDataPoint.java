@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.obsolet.storage;
+package org.polypheny.db.monitoring.events;
 
+import java.io.Serializable;
+import java.sql.Timestamp;
+import java.util.UUID;
 
-import org.polypheny.db.monitoring.obsolet.MonitorEvent;
+/**
+ * Marker interface for the persistent metric type, which can be monitored.
+ * A MonitoringEvent will be analyzed and create metric objects.
+ */
+public interface MonitoringDataPoint extends Serializable {
 
+    UUID id();
 
-public interface BackendConnector {
-
-    void initializeConnectorClient();
-
-    void monitorEvent();
-
-    boolean writeStatisticEvent(long key, MonitorEvent incomingEvent);
-
-    void readStatisticEvent(String outgoingEvent);
+    Timestamp timestamp();
 
 }

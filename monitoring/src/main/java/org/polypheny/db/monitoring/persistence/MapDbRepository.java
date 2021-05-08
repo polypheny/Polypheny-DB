@@ -24,25 +24,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.Serializer;
-import org.polypheny.db.monitoring.dtos.MonitoringData;
-import org.polypheny.db.monitoring.dtos.MonitoringJob;
-import org.polypheny.db.monitoring.dtos.MonitoringPersistentData;
+import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.util.FileSystemManager;
 
 @Slf4j
-public class MapDbRepository implements MonitoringRepository, ReadOnlyMonitoringRepository {
+public class MapDbRepository implements MonitoringRepository {
 
     // region private fields
 
-    private static final String FILE_PATH = "simpleBackendDb-cm";
+    private static final String FILE_PATH = "simpleBackendDb";
     private static final String FOLDER_NAME = "monitoring";
-    private final HashMap<Class, BTreeMap<UUID, MonitoringPersistentData>> data = new HashMap<>();
+    private final HashMap<Class, BTreeMap<UUID, MonitoringDataPoint>> data = new HashMap<>();
     private DB simpleBackendDb;
 
     // endregion
@@ -71,32 +70,32 @@ public class MapDbRepository implements MonitoringRepository, ReadOnlyMonitoring
 
 
     @Override
-    public <TEvent extends MonitoringData, TPersistent extends MonitoringPersistentData> void persistJob( MonitoringJob<TEvent, TPersistent> job ) {
-        if ( job == null || job.getMonitoringPersistentData() == null ) {
+    public void persistDataPoint( @NonNull MonitoringDataPoint dataPoint ) {
+        if ( dataPoint == null ) {
             throw new IllegalArgumentException( "invalid argument null" );
         }
 
-        val table = this.data.get( job.getMonitoringPersistentData().getClass() );
+        BTreeMap table = this.data.get( dataPoint.getClass() );
         if ( table == null ) {
-            this.createPersistentTable( job.getMonitoringPersistentData().getClass() );
-            this.persistJob( job );
+            this.createPersistentTable( dataPoint.getClass() );
+            table = this.data.get( dataPoint.getClass() );
         }
 
-        if ( table != null && job.getMonitoringPersistentData() != null ) {
-            table.put( job.getId(), job.getMonitoringPersistentData() );
+        if ( table != null && dataPoint != null ) {
+            table.put( dataPoint.id(), dataPoint );
             this.simpleBackendDb.commit();
         }
     }
 
 
     @Override
-    public <TPersistent extends MonitoringPersistentData> List<TPersistent> GetAll( Class<TPersistent> classPersistent ) {
-        val table = this.data.get( classPersistent );
+    public <TPersistent extends MonitoringDataPoint> List<TPersistent> getAllDataPoints( @NonNull Class<TPersistent> dataPointClass ) {
+        val table = this.data.get( dataPointClass );
         if ( table != null ) {
             return table.values()
                     .stream()
                     .map( monitoringPersistentData -> (TPersistent) monitoringPersistentData )
-                    .sorted( Comparator.comparing( MonitoringPersistentData::timestamp ).reversed() )
+                    .sorted( Comparator.comparing( MonitoringDataPoint::timestamp ).reversed() )
                     .collect( Collectors.toList() );
         }
 
@@ -105,14 +104,14 @@ public class MapDbRepository implements MonitoringRepository, ReadOnlyMonitoring
 
 
     @Override
-    public <TPersistent extends MonitoringPersistentData> List<TPersistent> GetBefore( Class<TPersistent> classPersistent, Timestamp timestamp ) {
+    public <T extends MonitoringDataPoint> List<T> getDataPointsBefore( @NonNull Class<T> dataPointClass, @NonNull Timestamp timestamp ) {
         // TODO: not tested yet
-        val table = this.data.get( classPersistent );
+        val table = this.data.get( dataPointClass );
         if ( table != null ) {
             return table.values()
                     .stream()
-                    .map( monitoringPersistentData -> (TPersistent) monitoringPersistentData )
-                    .sorted( Comparator.comparing( MonitoringPersistentData::timestamp ).reversed() )
+                    .map( monitoringPersistentData -> (T) monitoringPersistentData )
+                    .sorted( Comparator.comparing( MonitoringDataPoint::timestamp ).reversed() )
                     .filter( elem -> elem.timestamp().before( timestamp ) )
                     .collect( Collectors.toList() );
         }
@@ -122,14 +121,14 @@ public class MapDbRepository implements MonitoringRepository, ReadOnlyMonitoring
 
 
     @Override
-    public <TPersistent extends MonitoringPersistentData> List<TPersistent> GetAfter( Class<TPersistent> classPersistent, Timestamp timestamp ) {
+    public <T extends MonitoringDataPoint> List<T> getDataPointsAfter( @NonNull Class<T> dataPointClass, @NonNull Timestamp timestamp ) {
         // TODO: not tested yet
-        val table = this.data.get( classPersistent );
+        val table = this.data.get( dataPointClass );
         if ( table != null ) {
             return table.values()
                     .stream()
-                    .map( monitoringPersistentData -> (TPersistent) monitoringPersistentData )
-                    .sorted( Comparator.comparing( MonitoringPersistentData::timestamp ).reversed() )
+                    .map( monitoringPersistentData -> (T) monitoringPersistentData )
+                    .sorted( Comparator.comparing( MonitoringDataPoint::timestamp ).reversed() )
                     .filter( elem -> elem.timestamp().after( timestamp ) )
                     .collect( Collectors.toList() );
         }
@@ -142,7 +141,7 @@ public class MapDbRepository implements MonitoringRepository, ReadOnlyMonitoring
     // region private helper methods
 
 
-    private void createPersistentTable( Class<? extends MonitoringPersistentData> classPersistentData ) {
+    private void createPersistentTable( Class<? extends MonitoringDataPoint> classPersistentData ) {
         if ( classPersistentData != null ) {
             val treeMap = simpleBackendDb.treeMap( classPersistentData.getName(), Serializer.UUID, Serializer.JAVA ).createOrOpen();
             data.put( classPersistentData, treeMap );

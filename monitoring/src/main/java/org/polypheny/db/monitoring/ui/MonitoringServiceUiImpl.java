@@ -18,68 +18,95 @@ package org.polypheny.db.monitoring.ui;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
-import org.polypheny.db.monitoring.dtos.MonitoringPersistentData;
-import org.polypheny.db.monitoring.persistence.ReadOnlyMonitoringRepository;
+import org.polypheny.db.monitoring.core.MonitoringQueue;
+import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
+import org.polypheny.db.monitoring.events.MonitoringDataPoint;
+import org.polypheny.db.monitoring.events.MonitoringEvent;
+import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
+import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
+import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 
 @Slf4j
 public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
+    private final MonitoringRepository repo;
+    private final MonitoringQueue queue;
     private InformationPage informationPage;
-    private final ReadOnlyMonitoringRepository repo;
 
 
-    public MonitoringServiceUiImpl( ReadOnlyMonitoringRepository repo ) {
-        if ( repo == null ) {
-            throw new IllegalArgumentException( "repo parameter is null" );
-        }
+    // TODO: die Abhänigkeit zur Queue ist nicht wirklich optimal, aber lassen wir vielleicht mal so stehen
+    public MonitoringServiceUiImpl( @NonNull MonitoringRepository repo, @NonNull MonitoringQueue queue ) {
         this.repo = repo;
+        this.queue = queue;
+
+        initializeInformationPage();
     }
 
 
     @Override
     public void initializeInformationPage() {
         //Initialize Information Page
-        informationPage = new InformationPage( "Workload Monitoring CM" );
+        informationPage = new InformationPage( "Workload Monitoring" );
         informationPage.fullWidth();
         InformationManager im = InformationManager.getInstance();
         im.addPage( informationPage );
+
+        initializeWorkloadInformationTable();
+        initializeQueueInformationTable();
     }
 
 
     @Override
-    public <TPersistent extends MonitoringPersistentData> void registerPersistentClass( Class<TPersistent> persistentDataClass ) {
-        String className = persistentDataClass.getName();
+    public <T extends MonitoringDataPoint> void registerDataPointForUi( @NonNull Class<T> metricClass ) {
+        String className = metricClass.getName();
         val informationGroup = new InformationGroup( informationPage, className );
 
         // TODO: see todo below
-        val fieldAsString = Arrays.stream( persistentDataClass.getDeclaredFields() ).map( f -> f.getName() ).filter( str -> !str.equals( "serialVersionUID" ) ).collect( Collectors.toList() );
+        val fieldAsString = Arrays.stream( metricClass.getDeclaredFields() ).map( f -> f.getName() ).filter( str -> !str.equals( "serialVersionUID" ) ).collect( Collectors.toList() );
         val informationTable = new InformationTable( informationGroup, fieldAsString );
 
-        informationGroup.setRefreshFunction( () -> this.updateQueueInformationTable( informationTable, persistentDataClass ) );
+        informationGroup.setRefreshFunction( () -> this.updateMetricInformationTable( informationTable, metricClass ) );
 
-        InformationManager im = InformationManager.getInstance();
-        im.addGroup( informationGroup );
-        im.registerInformation( informationTable );
+        addInformationGroupTUi( informationGroup, Arrays.asList( informationTable ) );
     }
 
 
-    private <TPersistent extends MonitoringPersistentData> void updateQueueInformationTable( InformationTable table, Class<TPersistent> registerClass ) {
-        List<TPersistent> elements = this.repo.GetAll( registerClass );
+    /**
+     * Universal method to add arbitrary new information Groups to UI
+     *
+     * @param informationGroup
+     * @param informationTables
+     */
+    private void addInformationGroupTUi( @NonNull InformationGroup informationGroup, @NonNull List<InformationTable> informationTables ) {
+        InformationManager im = InformationManager.getInstance();
+        im.addGroup( informationGroup );
+
+        for ( InformationTable informationTable : informationTables ) {
+            im.registerInformation( informationTable );
+        }
+    }
+
+
+    private <T extends MonitoringDataPoint> void updateMetricInformationTable( InformationTable table, Class<T> metricClass ) {
+        List<T> elements = this.repo.getAllDataPoints( metricClass );
         table.reset();
 
-        Field[] fields = registerClass.getDeclaredFields();
-        Method[] methods = registerClass.getMethods();
-        for ( TPersistent element : elements ) {
+        Field[] fields = metricClass.getDeclaredFields();
+        Method[] methods = metricClass.getMethods();
+        for ( T element : elements ) {
             List<String> row = new LinkedList<>();
 
             for ( Field field : fields ) {
@@ -102,5 +129,63 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
             table.addRow( row );
         }
     }
+
+
+    private void initializeWorkloadInformationTable() {
+        val informationGroup = new InformationGroup( informationPage, "Workload Overview" );
+        val informationTable = new InformationTable( informationGroup,
+                Arrays.asList( "Attribute", "Value" ) );
+        informationGroup.setOrder( 1 );
+
+        informationGroup.setRefreshFunction( () -> this.updateWorkloadInformationTable( informationTable ) );
+
+        addInformationGroupTUi( informationGroup, Arrays.asList( informationTable ) );
+    }
+
+
+    private void initializeQueueInformationTable() {
+
+        //On first subscriber also add
+        //Also build active subscription table Metric to subscribers
+        //or which subscribers, exist and to which metrics they are subscribed
+
+        val informationGroup = new InformationGroup( informationPage, "Monitoring Queue" ).setOrder( 2 );
+        val informationTable = new InformationTable( informationGroup,
+                Arrays.asList( "Event Type", "UUID", "Timestamp" ) );
+
+        informationGroup.setRefreshFunction( () -> this.updateQueueInformationTable( informationTable ) );
+
+        addInformationGroupTUi( informationGroup, Arrays.asList( informationTable ) );
+
+    }
+
+
+    private void updateQueueInformationTable( InformationTable table ) {
+        List<HashMap<String, String>> queueInfoElements = this.queue.getInformationOnElementsInQueue();
+        table.reset();
+
+        for ( HashMap<String, String> infoRow : queueInfoElements ) {
+            List<String> row = new ArrayList<>();
+            row.add( infoRow.get("type"));
+            row.add( infoRow.get("id"));
+            row.add( infoRow.get("timestamp"));
+
+            table.addRow( row );
+        }
+    }
+
+
+    private void updateWorkloadInformationTable( InformationTable table ) {
+
+        table.reset();
+
+        table.addRow( "Number of processed events in total", queue.getNumberOfProcessedEvents( true ) );
+        table.addRow( "Number of processed events since restart", queue.getNumberOfProcessedEvents( false ) );
+        table.addRow( "Number of events in queue", queue.getNumberOfElementsInQueue());
+        //table.addRow( "# Data Points", queue.getElementsInQueue().size() );
+        table.addRow( "# SELECT", MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPoint.class ).size() );
+        table.addRow( "# DML", MonitoringServiceProvider.getInstance().getAllDataPoints( DMLDataPoint.class ).size() );
+    }
+
 
 }
