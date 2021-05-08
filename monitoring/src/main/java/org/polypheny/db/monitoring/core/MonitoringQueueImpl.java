@@ -17,6 +17,7 @@
 package org.polypheny.db.monitoring.core;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
@@ -107,21 +108,31 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     }
 
 
+    /**
+     * Display current number of elements in queue
+     *
+     * @return Current numbe of elements in Queue
+     */
     @Override
-    public List<MonitoringEvent> getElementsInQueue() {
-        // TODO: Würde ich definitiv nicht so machen. Wenn du im UI die Anzahl Events
-        //   wissen willst dann unbedingt nur die Anzahl rausgeben. Sonst gibt du die ganzen Instanzen raus und
-        //   könntest die Queue zum übelsten missbrauchen ;-)
+    public long getNumberOfElementsInQueue() {
+        return getElementsInQueue().size();
+    }
 
-        List<MonitoringEvent> eventsInQueue = new ArrayList<>();
 
-        for ( MonitoringEvent event : monitoringJobQueue ) {
-            eventsInQueue.add( event );
+    @Override
+    public List<HashMap<String, String>> getInformationOnElementsInQueue() {
+        List<HashMap<String, String>> infoList = new ArrayList<>();
+
+
+        for ( MonitoringEvent event : getElementsInQueue() ) {
+            HashMap<String, String> infoRow = new HashMap<String,String>();
+            infoRow.put("type", event.getEventType() );
+            infoRow.put("id", event.getId().toString() );
+            infoRow.put("timestamp", event.getRecordedTimestamp().toString() );
+
+            infoList.add( infoRow );
         }
-
-        System.out.println( "Contents in Queue: " + monitoringJobQueue );
-
-        return eventsInQueue;
+        return infoList;
     }
 
 
@@ -152,6 +163,20 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     }
 
 
+    private List<MonitoringEvent> getElementsInQueue() {
+        // TODO: Würde ich definitiv nicht so machen. Wenn du im UI die Anzahl Events
+        //   wissen willst dann unbedingt nur die Anzahl rausgeben. Sonst gibt du die ganzen Instanzen raus und
+        //   könntest die Queue zum übelsten missbrauchen ;-)
+
+        List<MonitoringEvent> eventsInQueue = new ArrayList<>();
+
+        for ( MonitoringEvent event : monitoringJobQueue ) {
+            eventsInQueue.add( event );
+        }
+
+        return eventsInQueue;
+    }
+
     private void processQueue() {
         log.debug( "Start processing queue" );
         this.processingQueueLock.lock();
@@ -175,7 +200,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
                 countEvents++;
             }
             processedEvents += countEvents;
-            processedEventsTotal += processedEvents;
+            processedEventsTotal += countEvents;
         } finally {
             this.processingQueueLock.unlock();
         }

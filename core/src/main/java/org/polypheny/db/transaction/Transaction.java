@@ -24,6 +24,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
+import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.SqlProcessor;
@@ -74,7 +75,9 @@ public interface Transaction {
 
     DataMigrator getDataMigrator();
 
-    MonitoringEvent getMonitoringData();
+    StatementEvent getMonitoringData();
+
+    void setMonitoringData( StatementEvent event );
 
     /**
      * Flavor, how multimedia results should be returned from a store.

@@ -40,6 +40,7 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
+import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
@@ -83,7 +84,8 @@ public class TransactionImpl implements Transaction, Comparable {
     private final boolean analyze;
 
 
-    private QueryEvent queryData = new QueryEvent();
+
+    private StatementEvent statementEventData;
 
     private final AtomicLong statementCounter = new AtomicLong();
 
@@ -274,8 +276,14 @@ public class TransactionImpl implements Transaction, Comparable {
 
 
     @Override
-    public MonitoringEvent getMonitoringData() {
-        return this.queryData;
+    public StatementEvent getMonitoringData() {
+        return this.statementEventData;
+    }
+
+
+    @Override
+    public void setMonitoringData( StatementEvent event ) {
+        this.statementEventData = event;
     }
 
     // For locking
