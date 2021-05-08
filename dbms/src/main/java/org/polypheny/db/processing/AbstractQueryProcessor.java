@@ -340,8 +340,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
                 if ( statement.getTransaction().getMonitoringData() != null ) {
                     StatementEvent eventData = statement.getTransaction().getMonitoringData();
-                    eventData.setMonitoringType( signature.statementType.toString() );
-                    eventData.setDescription( "Test description:" + parameterizedRoot.kind.sql );
+                    eventData.setMonitoringType( parameterizedRoot.kind.sql );
+                    eventData.setDescription( "Test description: " + signature.statementType.toString() );
                     eventData.setRouted( logicalRoot );
                     eventData.setFieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames() ) );
                     //eventData.setRows( MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() ) );
@@ -441,8 +441,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         TransactionImpl transaction = (TransactionImpl) statement.getTransaction();
         if ( transaction.getMonitoringData() != null ) {
             StatementEvent eventData = transaction.getMonitoringData();
-            eventData.setMonitoringType( signature.statementType.toString() );
-            eventData.setDescription( "Test description:" + parameterizedRoot.kind.sql );
+            eventData.setMonitoringType( parameterizedRoot.kind.sql );
+            eventData.setDescription( "Test description: " + signature.statementType.toString() );
             eventData.setRouted( logicalRoot );
             eventData.setFieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames() ) );
             //eventData.setRows( MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() ) );
