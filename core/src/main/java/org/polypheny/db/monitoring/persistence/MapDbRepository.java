@@ -31,7 +31,7 @@ import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.Serializer;
-import org.polypheny.db.monitoring.events.MonitoringDataPoint;
+import org.polypheny.db.monitoring.events.metrics.MonitoringDataPoint;
 import org.polypheny.db.util.FileSystemManager;
 
 @Slf4j

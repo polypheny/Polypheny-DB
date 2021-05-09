@@ -57,6 +57,10 @@ dependencies {
 
     implementation group: "com.drewnoakes", name: "metadata-extractor", version: metadata_extractor_version // Apache 2.0
 
+
+    implementation group: "org.mapdb", name: "mapdb", version: mapdb_version
+    implementation 'org.junit.jupiter:junit-jupiter:5.7.0'// Apache 2.0
+
     // https://github.com/docker-java/docker-java
     implementation group: 'com.github.docker-java', name: 'docker-java', version: java_docker_version // Apache 2.0
     implementation group: 'com.github.docker-java', name: 'docker-java-transport-httpclient5', version: java_docker_version //TODO: should probably be independent version in future
@@ -69,6 +73,8 @@ dependencies {
     testImplementation group: "org.incava", name: "java-diff", version: java_diff_version  // Apache 2.0
     testImplementation group: "org.apache.commons", name: "commons-pool2", version: commons_pool2_version // Apache 2.0
 
+
+    testImplementation group: "org.mockito", name: "mockito-core", version: mockito_core_version
     //testImplementation group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version  // Apache 2.0
     //testImplementation group: "com.h2database", name: "h2", version: h2_version
     //testImplementation group: "mysql", name: "mysql-connector-java", version: mysql_connector_java_version

@@ -33,9 +33,8 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.monitoring.core.MonitoringQueue;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
-import org.polypheny.db.monitoring.events.MonitoringDataPoint;
-import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
+import org.polypheny.db.monitoring.events.metrics.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 

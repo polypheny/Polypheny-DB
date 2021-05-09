@@ -126,7 +126,8 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
 
         //COST MODEL
         //Fixed rows to display after dynamically generated ones
-       /* List<List<PartitionFunctionInfoColumn>> rowsAfter = new ArrayList<>();
+        List<List<PartitionFunctionInfoColumn>> rowsAfter = new ArrayList<>();
+
         List<PartitionFunctionInfoColumn> unboundRow = new ArrayList<>();
         unboundRow.add( PartitionFunctionInfoColumn.builder()
                 .fieldType( PartitionFunctionInfoColumnType.LABEL )
@@ -135,7 +136,7 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
                 .sqlPrefix( "" )
                 .sqlSuffix( "" )
                 .valueSeparation( "" )
-                .defaultValue( "UNBOUND" )
+                .defaultValue( "Internal Partitioning" )
                 .build() );
 
         unboundRow.add( PartitionFunctionInfoColumn.builder()
@@ -145,11 +146,94 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
                 .sqlPrefix( "" )
                 .sqlSuffix( "" )
                 .valueSeparation( "" )
-                .defaultValue( "automatically filled" )
+                .defaultValue( "HASH" )
                 .build() );
 
+
+
+        List<PartitionFunctionInfoColumn> chunkRow = new ArrayList<>();
+        chunkRow.add( PartitionFunctionInfoColumn.builder()
+                .fieldType( PartitionFunctionInfoColumnType.LABEL )
+                .mandatory( false )
+                .modifiable( false )
+                .sqlPrefix( "" )
+                .sqlSuffix( "" )
+                .valueSeparation( "" )
+                .defaultValue( "Number of internal  data chunks" )
+                .build() );
+
+        chunkRow.add( PartitionFunctionInfoColumn.builder()
+                .fieldType( PartitionFunctionInfoColumnType.STRING )
+                .mandatory( false )
+                .modifiable( false )
+                .sqlPrefix( "" )
+                .sqlSuffix( "" )
+                .valueSeparation( "" )
+                .defaultValue( "20" )
+                .build() );
+
+
+        List<PartitionFunctionInfoColumn> costRow = new ArrayList<>();
+        costRow.add( PartitionFunctionInfoColumn.builder()
+                .fieldType( PartitionFunctionInfoColumnType.LABEL )
+                .mandatory( false )
+                .modifiable( false )
+                .sqlPrefix( "" )
+                .sqlSuffix( "" )
+                .valueSeparation( "" )
+                .defaultValue( "Cost Model" )
+                .build() );
+
+        costRow.add( PartitionFunctionInfoColumn.builder()
+                .fieldType( PartitionFunctionInfoColumnType.LIST )
+                .mandatory( false )
+                .modifiable( true )
+                .sqlPrefix( "" )
+                .sqlSuffix( "" )
+                .valueSeparation( "" )
+                .options(new ArrayList<>( Arrays.asList( "Total Access Frequency", "Write Frequency", "Read Frequency" )  ))
+                .build() );
+
+        List<PartitionFunctionInfoColumn> extendedCostRow = new ArrayList<>();
+
+        extendedCostRow.add( PartitionFunctionInfoColumn.builder()
+                .fieldType( PartitionFunctionInfoColumnType.LABEL )
+                .mandatory( false )
+                .modifiable( false )
+                .sqlPrefix( "" )
+                .sqlSuffix( "" )
+                .valueSeparation( "" )
+                .defaultValue( "Time Window" )
+                .build() );
+
+        extendedCostRow.add( PartitionFunctionInfoColumn.builder()
+                .fieldType( PartitionFunctionInfoColumnType.STRING )
+                .mandatory( false )
+                .modifiable( true )
+                .sqlPrefix( "" )
+                .sqlSuffix( "" )
+                .valueSeparation( "" )
+                .defaultValue( "2" )
+                .build() );
+
+        extendedCostRow.add( PartitionFunctionInfoColumn.builder()
+                .fieldType( PartitionFunctionInfoColumnType.LIST )
+                .mandatory( false )
+                .modifiable( true )
+                .sqlPrefix( "" )
+                .sqlSuffix( "" )
+                .valueSeparation( "" )
+                .options(new ArrayList<>( Arrays.asList( "Minutes", "Hours", "Days" )  ))
+                .build() );
+
+
+
+
         rowsAfter.add( unboundRow );
-*/
+        rowsAfter.add( chunkRow );
+        rowsAfter.add( costRow );
+        rowsAfter.add( extendedCostRow );
+
 
 
 
@@ -164,9 +248,13 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
                 .sqlSuffix( ")" )
                 .rowSeparation( "," )
                 .rowsBefore( rowsBefore )
-                //.rowsAfter( rowsAfter )
-                .headings( new ArrayList<>( Arrays.asList( "Partition Name, Classification" ) ) )
+                .rowsAfter( rowsAfter )
+                .headings( new ArrayList<>( Arrays.asList( "Partition Name", "Classification" ) ) )
                 .build();
+
+
+
+
 
         return uiObject;
     }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.events;
+package org.polypheny.db.monitoring.events.metrics;
 
 import java.io.Serializable;
 import java.sql.Timestamp;

@@ -20,8 +20,9 @@ import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.db.monitoring.events.analyzer.DMLEventAnalyzer;
 import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
+import org.polypheny.db.monitoring.events.metrics.MonitoringDataPoint;
+
 
 @Getter
 @Setter

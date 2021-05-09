@@ -14,25 +14,25 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.ui;
+package org.polypheny.db.partition;
 
-import org.polypheny.db.monitoring.events.metrics.MonitoringDataPoint;
 
-/**
- * Ui abstraction service for monitoring.
- */
-public interface MonitoringServiceUi {
+import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 
-    void initializeInformationPage();
 
-    /**
-     * Will add new section to monitoring information page for the specified
-     * MonitoringPersistentData type and register the refresh function to read from repository.
-     *
-     * @param metricClass
-     * @param <T>
-     */
-    <T extends MonitoringDataPoint> void registerDataPointForUi( Class<T> metricClass );
+public class FrequencyMap {
 
+
+    public void getTableFrequency(){
+        
+    }
+
+    public void getPartitionFrequency(){
+
+    }
+
+    public void getPartitionFrequencyOnStore(){
+
+    }
 
 }

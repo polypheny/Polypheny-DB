@@ -18,7 +18,7 @@ package org.polypheny.db.monitoring.core;
 
 import java.sql.Timestamp;
 import java.util.List;
-import org.polypheny.db.monitoring.events.MonitoringDataPoint;
+import org.polypheny.db.monitoring.events.metrics.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 
 /**

@@ -14,13 +14,18 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.core;
+package org.polypheny.db.monitoring;
 
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
+import org.mockito.Mockito;
+import org.polypheny.db.monitoring.core.MonitoringQueue;
+import org.polypheny.db.monitoring.core.MonitoringQueueImpl;
+import org.polypheny.db.monitoring.core.MonitoringService;
+import org.polypheny.db.monitoring.core.MonitoringServiceImpl;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
@@ -30,16 +35,16 @@ public class MonitoringServiceImplTest {
 
     @Test
     public void TestIt() {
-        MonitoringQueue doc1 = mock( MonitoringQueue.class );
-        MonitoringRepository doc2 = mock( MonitoringRepository.class );
-        MonitoringServiceUi doc3 = mock( MonitoringServiceUi.class );
+        MonitoringQueue doc1 = Mockito.mock( MonitoringQueue.class );
+        MonitoringRepository doc2 = Mockito.mock( MonitoringRepository.class );
+        MonitoringServiceUi doc3 = Mockito.mock( MonitoringServiceUi.class );
 
-        MonitoringRepository doc4 = mock( MonitoringRepository.class );
+        MonitoringRepository doc4 = Mockito.mock( MonitoringRepository.class );
 
         MonitoringQueue writeQueueService = new MonitoringQueueImpl( doc2 );
 
         MonitoringService sut = new MonitoringServiceImpl( writeQueueService, doc2, doc3 );
-        QueryEvent eventData = mock( QueryEvent.class );
+        QueryEvent eventData = Mockito.mock( QueryEvent.class );
 
         sut.monitorEvent( eventData );
 
