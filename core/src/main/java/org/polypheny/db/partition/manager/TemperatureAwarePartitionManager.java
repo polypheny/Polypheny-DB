@@ -17,6 +17,7 @@
 package org.polypheny.db.partition.manager;
 
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -32,6 +33,7 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
 
     public static final boolean REQUIRES_UNBOUND_PARTITION = false;
     public static final String FUNCTION_TITLE = "TEMPERATURE";
+    public static final List<PolyType> SUPPORTED_TYPES = ImmutableList.of( PolyType.INTEGER, PolyType.BIGINT, PolyType.SMALLINT, PolyType.TINYINT, PolyType.VARCHAR );
 
     //TODO HENNLO central config to define the thresholds when data is considered hot and when cold (15% and 20%)
 
@@ -59,13 +61,13 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
 
     @Override
     public boolean requiresUnboundPartition() {
-        return false;
+        return REQUIRES_UNBOUND_PARTITION;
     }
 
 
     @Override
     public boolean supportsColumnOfType( PolyType type ) {
-        return true;
+        return SUPPORTED_TYPES.contains( type );
     }
 
 

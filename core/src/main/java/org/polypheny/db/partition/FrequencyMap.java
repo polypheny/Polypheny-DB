@@ -20,7 +20,17 @@ package org.polypheny.db.partition;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 
 
+/**
+ * Periodically retrieves information from the MonitoringService to get current statistics about
+ * the frequency map to determine which chunk of data should reside in HOT & which in COLD partition
+ *
+ * Only one instance of the MAP exists.
+ * Which gets created once the first TEMPERATURE partitioned table gets created. (Including creation of BackgroundTask)
+ * and consequently will be shutdown when no TEMPERATURE partitioned tables exist anymore
+ */
 public class FrequencyMap {
+
+
 
 
     public void getTableFrequency(){

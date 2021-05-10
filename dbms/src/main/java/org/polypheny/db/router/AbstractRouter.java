@@ -258,6 +258,10 @@ public abstract class AbstractRouter implements Router {
                                 identPartitions.add( identPart );
                                 log.debug( "Identified PartitionId: {} for value: {}", identPart, partitionValue );
                             }
+                            // Add identified partitions to monitoring object
+                            // Currently only one partition is identified, therefore LIST is not needed YET.
+
+                            statement.getTransaction().getMonitoringData().setAccessedPartitions( identPartitions );
                             placements = partitionManager.getRelevantPlacements( catalogTable, identPartitions );
                         } else {
                             placements = partitionManager.getRelevantPlacements( catalogTable, null );
@@ -576,6 +580,13 @@ public abstract class AbstractRouter implements Router {
                         } else {
                             log.debug( "PartitionColumnID was not an explicit part of statement, partition routing will therefore assume worst-case: Routing to ALL PARTITIONS" );
                         }
+
+                        // Add identified partitions to monitoring object
+                        // Currently only one partition is identified, therefore LIST is not needed YET.
+                        List <Long> accessedPartitionList = new ArrayList<>();
+                        accessedPartitionList.add( identPart );
+                        statement.getTransaction().getMonitoringData().setAccessedPartitions( accessedPartitionList );
+
                     }
 
                     // Build DML

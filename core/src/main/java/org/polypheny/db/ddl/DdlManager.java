@@ -635,9 +635,27 @@ public abstract class DdlManager {
                     .collect( Collectors.toList() );
             List<List<String>> qualifiers = partitionQualifierList
                     .stream()
-                    .map( qs -> qs.stream().map( SqlNode::toString ).collect( Collectors.toList() ) )
+                    .map( qs -> qs.stream().map( SqlNode::toString ).map( qualifier -> removeFirstAndLast( qualifier ) ).collect( Collectors.toList() ) )
                     .collect( Collectors.toList() );
             return new PartitionInformation( table, typeName, columnName, names, numberOf, qualifiers );
+        }
+
+
+        /**
+         * Needed to modify strings otherwise the SQL-input 'a' will be also added as the value "'a'" and not as "a" as intended
+         * Essentially removes " ' " at the start and end of value
+         * @param str String to be modified
+         * @return String
+         */
+        public static String removeFirstAndLast(String str) {
+
+            if ( str.startsWith( "'" ) && str.endsWith( "'" )) {
+                StringBuilder sb = new StringBuilder( str );
+                sb.deleteCharAt( str.length() - 1 );
+                sb.deleteCharAt( 0 );
+                return sb.toString();
+            }
+            return str;
         }
 
     }
