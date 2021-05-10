@@ -516,7 +516,9 @@ public class SqlToRelConverter {
         }
         RelCollation collation = RelCollations.EMPTY;
         if (result.hasView()){
-            collation = ((ViewTableScan)((LogicalProject)result).getInput()).getRelRoot().collation;
+
+            //TODO IG: fix
+            collation = ((ViewTableScan)((SingleRel)result).getInput()).getRelRoot().collation;
         } else if ( !query.isA( SqlKind.DML ) ) {
             if ( isOrdered( query ) ) {
                 collation = requiredCollation( result );
