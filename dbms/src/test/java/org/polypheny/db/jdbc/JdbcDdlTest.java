@@ -160,7 +160,7 @@ public class JdbcDdlTest {
         }
     }
 
-    @Ignore
+    @Test
     public void viewTestTypes() throws SQLException {
         // Check if there are new types missing in this test
         Assert.assertEquals( "Unexpected number of available types", PolyType.availableTypes().size(), 16 );
@@ -174,8 +174,6 @@ public class JdbcDdlTest {
                 statement.executeUpdate( "CREATE VIEW ddltestview as SELECT * FROM ddltest"  );
 
                 try {
-                    // Checks
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM ddltestview" ),
                             ImmutableList.of( DDLTEST_DATA ) );
@@ -215,10 +213,9 @@ public class JdbcDdlTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT tvarchar FROM ddltestview" ),
                             ImmutableList.of( new Object[]{ DDLTEST_DATA[11] } ) );
-
+                    statement.executeUpdate( "DROP VIEW ddltestview" );
                     connection.commit();
                 } finally {
-                    // Drop ddltest table
                     statement.executeUpdate( "DROP TABLE ddltest" );
                 }
             }
