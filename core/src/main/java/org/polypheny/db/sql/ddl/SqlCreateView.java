@@ -36,9 +36,11 @@ package org.polypheny.db.sql.ddl;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import lombok.Getter;
+import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
@@ -134,6 +136,12 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
                 statement,
                 sqlProcessor.validate( statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left );
 
+        List<String> columns = null;
+
+        if ( columnList != null ) {
+            columns = getColumnInfo();
+        }
+
         try {
             DdlManager.getInstance().createView(
                     viewName,
@@ -142,7 +150,7 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
                     statement,
                     store,
                     placementType,
-                    null ); // ToDo: Check if columnList != null and provide list of column information
+                    columns ); // ToDo: Check if columnList != null and provide list of column information
         } catch ( TableAlreadyExistsException e ) {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( viewName ) );
         }
@@ -160,6 +168,25 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
         } catch ( UnknownCollationException e ) {
             throw new RuntimeException( e );
         }
+    }
+
+
+    private List<String> getColumnInfo() {
+        List<String> columnName = new ArrayList<>();
+
+        for ( Ord<SqlNode> c : Ord.zip( columnList ) ) {
+            if ( c.e instanceof SqlIdentifier ) {
+                SqlIdentifier sqlIdentifier = (SqlIdentifier) c.e;
+
+                columnName.add(sqlIdentifier.getSimple());
+
+            } else  {
+                throw new AssertionError( c.e.getClass() );
+            }
+        }
+
+        return columnName;
+
     }
 
 

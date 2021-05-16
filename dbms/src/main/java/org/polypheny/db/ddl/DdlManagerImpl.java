@@ -1314,7 +1314,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createView( String viewName, long schemaId, RelRoot relRoot, Statement statement, List<DataStore> stores, PlacementType placementType, List<ColumnInformation> projectedColumns ) throws TableAlreadyExistsException {
+    public void createView( String viewName, long schemaId, RelRoot relRoot, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns ) throws TableAlreadyExistsException {
 
         if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
             throw new TableAlreadyExistsException();
@@ -1329,28 +1329,31 @@ public class DdlManagerImpl extends DdlManager {
         RelDataType fieldList = relRoot.rel.getRowType();
 
         List<ColumnInformation> columns = new ArrayList<>();
-        if ( projectedColumns == null ) {
-            int position = 1;
-            for ( RelDataTypeField rel : fieldList.getFieldList() ) {
-                RelDataType type = rel.getValue();
-                if ( rel.getType().getPolyType() == PolyType.ARRAY ) {
-                    type = ((ArrayType) rel.getValue()).getComponentType();
-                }
-                columns.add( new ColumnInformation(
-                        rel.getName(),
-                        new ColumnTypeInformation(
-                                type.getPolyType(),
-                                rel.getType().getPolyType(),
-                                type.getPrecision(),
-                                type.getScale(),
-                                rel.getValue().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) rel.getValue()).getDimension() : -1,
-                                rel.getValue().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) rel.getValue()).getCardinality() : -1,
-                                rel.getValue().isNullable() ),
-                        Collation.getDefaultCollation(),
-                        null,
-                        position ) );
-                position++;
+
+        int position = 1;
+        for ( RelDataTypeField rel : fieldList.getFieldList() ) {
+            RelDataType type = rel.getValue();
+            if ( rel.getType().getPolyType() == PolyType.ARRAY ) {
+                type = ((ArrayType) rel.getValue()).getComponentType();
             }
+            String colName = rel.getName();
+            if ( projectedColumns != null ) {
+                colName = projectedColumns.get( position - 1 );
+            }
+            columns.add( new ColumnInformation(
+                    colName,
+                    new ColumnTypeInformation(
+                            type.getPolyType(),
+                            rel.getType().getPolyType(),
+                            type.getPrecision(),
+                            type.getScale(),
+                            rel.getValue().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) rel.getValue()).getDimension() : -1,
+                            rel.getValue().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) rel.getValue()).getCardinality() : -1,
+                            rel.getValue().isNullable() ),
+                    Collation.getDefaultCollation(),
+                    null,
+                    position ) );
+            position++;
         }
 
         List<Long> underlyingTables = new ArrayList<>();
