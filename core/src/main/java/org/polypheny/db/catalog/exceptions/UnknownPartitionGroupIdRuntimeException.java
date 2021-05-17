@@ -17,9 +17,9 @@
 package org.polypheny.db.catalog.exceptions;
 
 
-public class UnknownPartitionIdRuntimeException extends CatalogRuntimeException {
+public class UnknownPartitionGroupIdRuntimeException extends CatalogRuntimeException {
 
-    public UnknownPartitionIdRuntimeException( long partitionId ) {
+    public UnknownPartitionGroupIdRuntimeException( long partitionId ) {
         super( "There is no partition with id '" + partitionId + "'." );
     }
 

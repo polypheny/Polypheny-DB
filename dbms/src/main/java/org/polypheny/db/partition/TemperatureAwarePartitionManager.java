@@ -30,7 +30,7 @@ import org.polypheny.db.type.PolyType;
 
 public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
 
-    public static final boolean REQUIRES_UNBOUND_PARTITION = false;
+    public static final boolean REQUIRES_UNBOUND_PARTITION_GROUP = false;
     public static final String FUNCTION_TITLE = "TEMPERATURE";
     public static final List<PolyType> SUPPORTED_TYPES = ImmutableList.of( PolyType.INTEGER, PolyType.BIGINT, PolyType.SMALLINT, PolyType.TINYINT, PolyType.VARCHAR );
 
@@ -41,26 +41,26 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
 
 
     @Override
-    public long getTargetPartitionId( CatalogTable catalogTable, String columnValue ) {
+    public long getTargetPartitionGroupId( CatalogTable catalogTable, String columnValue ) {
         return 0;
     }
 
 
     @Override
-    public boolean probePartitionDistributionChange( CatalogTable catalogTable, int storeId, long columnId ) {
+    public boolean probePartitionGroupDistributionChange( CatalogTable catalogTable, int storeId, long columnId ) {
         return false;
     }
 
 
     @Override
-    public List<CatalogColumnPlacement> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
+    public List<CatalogColumnPlacement> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionGroupIds ) {
         return null;
     }
 
 
     @Override
-    public boolean requiresUnboundPartition() {
-        return REQUIRES_UNBOUND_PARTITION;
+    public boolean requiresUnboundPartitionGroup() {
+        return REQUIRES_UNBOUND_PARTITION_GROUP;
     }
 
 

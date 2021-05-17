@@ -28,17 +28,17 @@ public interface PartitionManager {
     /**
      * Returns the Index of the partition where to place the object
      */
-    long getTargetPartitionId( CatalogTable catalogTable, String columnValue );
+    long getTargetPartitionGroupId( CatalogTable catalogTable, String columnValue );
 
-    boolean validatePartitionDistribution( CatalogTable table );
+    boolean validatePartitionGroupDistribution( CatalogTable table );
 
-    boolean probePartitionDistributionChange( CatalogTable catalogTable, int storeId, long columnId );
+    boolean probePartitionGroupDistributionChange( CatalogTable catalogTable, int storeId, long columnId );
 
-    List<CatalogColumnPlacement> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds );
+    List<CatalogColumnPlacement> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionGroupIds );
 
-    boolean validatePartitionSetup( List<List<String>> partitionQualifiers, long numPartitions, List<String> partitionNames, CatalogColumn partitionColumn );
+    boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, CatalogColumn partitionColumn );
 
-    boolean requiresUnboundPartition();
+    boolean requiresUnboundPartitionGroup();
 
     boolean supportsColumnOfType( PolyType type );
 

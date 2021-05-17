@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartition;
+import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumnType;
@@ -35,53 +35,53 @@ import org.polypheny.db.type.PolyTypeFamily;
 @Slf4j
 public class ListPartitionManager extends AbstractPartitionManager {
 
-    public static final boolean REQUIRES_UNBOUND_PARTITION = true;
+    public static final boolean REQUIRES_UNBOUND_PARTITION_GROUP = true;
     public static final String FUNCTION_TITLE = "LIST";
     public static final List<PolyType> SUPPORTED_TYPES = ImmutableList.of( PolyType.INTEGER, PolyType.BIGINT, PolyType.SMALLINT, PolyType.TINYINT, PolyType.VARCHAR );
 
 
     @Override
-    public long getTargetPartitionId( CatalogTable catalogTable, String columnValue ) {
+    public long getTargetPartitionGroupId( CatalogTable catalogTable, String columnValue ) {
         log.debug( "ListPartitionManager" );
 
         Catalog catalog = Catalog.getInstance();
-        long selectedPartitionId = -1;
-        long unboundPartitionId = -1;
+        long selectedPartitionGroupId = -1;
+        long unboundPartitionGroupId = -1;
 
-        for ( long partitionID : catalogTable.partitionIds ) {
+        for ( long partitionGroupID : catalogTable.partitionGroupIds ) {
 
-            CatalogPartition catalogPartition = catalog.getPartition( partitionID );
+            CatalogPartitionGroup catalogPartitionGroup = catalog.getPartitionGroup( partitionGroupID );
 
-            if ( catalogPartition.isUnbound ) {
-                unboundPartitionId = catalogPartition.id;
+            if ( catalogPartitionGroup.isUnbound ) {
+                unboundPartitionGroupId = catalogPartitionGroup.id;
             }
-            for ( int i = 0; i < catalogPartition.partitionQualifiers.size(); i++ ) {
+            for ( int i = 0; i < catalogPartitionGroup.partitionQualifiers.size(); i++ ) {
                 //Could be int
-                if ( catalogPartition.partitionQualifiers.get( i ).equals( columnValue ) ) {
+                if ( catalogPartitionGroup.partitionQualifiers.get( i ).equals( columnValue ) ) {
                     if ( log.isDebugEnabled() ) {
                         log.debug( "Found column value: {} on partitionID {} with qualifiers: {}",
                                 columnValue,
-                                partitionID,
-                                catalogPartition.partitionQualifiers );
+                                partitionGroupID,
+                                catalogPartitionGroup.partitionQualifiers );
                     }
-                    selectedPartitionId = catalogPartition.id;
+                    selectedPartitionGroupId = catalogPartitionGroup.id;
                     break;
                 }
             }
 
         }
         // If no concrete partition could be identified, report back the unbound/default partition
-        if ( selectedPartitionId == -1 ) {
-            selectedPartitionId = unboundPartitionId;
+        if ( selectedPartitionGroupId == -1 ) {
+            selectedPartitionGroupId = unboundPartitionGroupId;
         }
 
-        return selectedPartitionId;
+        return selectedPartitionGroupId;
     }
 
 
     // Needed when columnPlacements are being dropped
     @Override
-    public boolean probePartitionDistributionChange( CatalogTable catalogTable, int storeId, long columnId ) {
+    public boolean probePartitionGroupDistributionChange( CatalogTable catalogTable, int storeId, long columnId ) {
 
         Catalog catalog = Catalog.getInstance();
 
@@ -112,10 +112,10 @@ public class ListPartitionManager extends AbstractPartitionManager {
 
         // TODO can be removed if upper codeblock is enabled
         // change is only critical if there is only one column left with the characteristics
-        int numberOfFullPlacements = getPlacementsWithAllPartitions( columnId, catalogTable.numPartitions ).size();
+        int numberOfFullPlacements = getPlacementsWithAllPartitionGroups( columnId, catalogTable.numPartitionGroups ).size();
         if ( numberOfFullPlacements <= 1 ) {
             //Check if this one column is the column we are about to delete
-            if ( catalog.getPartitionsOnDataPlacement( storeId, catalogTable.id ).size() == catalogTable.numPartitions ) {
+            if ( catalog.getPartitionGroupsOnDataPlacement( storeId, catalogTable.id ).size() == catalogTable.numPartitionGroups ) {
                 return false;
             }
         }
@@ -127,21 +127,21 @@ public class ListPartitionManager extends AbstractPartitionManager {
 
     // Relevant for select
     @Override
-    public List<CatalogColumnPlacement> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
+    public List<CatalogColumnPlacement> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionGroupIds ) {
         Catalog catalog = Catalog.getInstance();
         List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();
 
-        if ( partitionIds != null ) {
-            for ( long partitionId : partitionIds ) {
+        if ( partitionGroupIds != null ) {
+            for ( long partitionGroupId : partitionGroupIds ) {
                 // Find stores with full placements (partitions)
                 // Pick for each column the column placement which has full partitioning //SELECT WORST-CASE ergo Fallback
                 for ( long columnId : catalogTable.columnIds ) {
-                    List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartition( catalogTable.id, partitionId, columnId );
+                    List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartitionGroup( catalogTable.id, partitionGroupId, columnId );
                     if ( !ccps.isEmpty() ) {
                         //get first column placement which contains partition
                         relevantCcps.add( ccps.get( 0 ) );
                         if ( log.isDebugEnabled() ) {
-                            log.debug( "{} {} with part. {}", ccps.get( 0 ).adapterUniqueName, ccps.get( 0 ).getLogicalColumnName(), partitionId );
+                            log.debug( "{} {} with part. {}", ccps.get( 0 ).adapterUniqueName, ccps.get( 0 ).getLogicalColumnName(), partitionGroupId );
                         }
                     }
                 }
@@ -150,7 +150,7 @@ public class ListPartitionManager extends AbstractPartitionManager {
             // Take the first column placement
             // Worst-case
             for ( long columnId : catalogTable.columnIds ) {
-                relevantCcps.add( getPlacementsWithAllPartitions( columnId, catalogTable.numPartitions ).get( 0 ) );
+                relevantCcps.add( getPlacementsWithAllPartitionGroups( columnId, catalogTable.numPartitionGroups ).get( 0 ) );
             }
         }
         return relevantCcps;
@@ -158,11 +158,11 @@ public class ListPartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public boolean validatePartitionSetup( List<List<String>> partitionQualifiers, long numPartitions, List<String> partitionNames, CatalogColumn partitionColumn ) {
-        super.validatePartitionSetup( partitionQualifiers, numPartitions, partitionNames, partitionColumn );
+    public boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, CatalogColumn partitionColumn ) {
+        super.validatePartitionGroupSetup( partitionGroupQualifiers, numPartitionGroups, partitionGroupNames, partitionColumn );
 
         if ( partitionColumn.type.getFamily() == PolyTypeFamily.NUMERIC ) {
-            for ( List<String> singlePartitionQualifiers : partitionQualifiers ) {
+            for ( List<String> singlePartitionQualifiers : partitionGroupQualifiers ) {
                 for ( String qualifier : singlePartitionQualifiers ) {
                     try {
                         Integer.valueOf( qualifier );
@@ -173,14 +173,14 @@ public class ListPartitionManager extends AbstractPartitionManager {
             }
         }
 
-        if ( partitionQualifiers.isEmpty() ) {
-            throw new RuntimeException( "LIST Partitioning doesn't support  empty Partition Qualifiers: '" + partitionQualifiers +
+        if ( partitionGroupQualifiers.isEmpty() ) {
+            throw new RuntimeException( "LIST Partitioning doesn't support  empty Partition Qualifiers: '" + partitionGroupQualifiers +
                     "'. USE (PARTITION name1 VALUES(value1)[(,PARTITION name1 VALUES(value1))*])" );
         }
 
-        if ( partitionQualifiers.size() + 1 != numPartitions ) {
-            throw new RuntimeException( "Number of partitionQualifiers '" + partitionQualifiers +
-                    "' + (mandatory 'Unbound' partition) is not equal to number of specified partitions '" + numPartitions + "'" );
+        if ( partitionGroupQualifiers.size() + 1 != numPartitionGroups ) {
+            throw new RuntimeException( "Number of partitionQualifiers '" + partitionGroupQualifiers +
+                    "' + (mandatory 'Unbound' partition) is not equal to number of specified partitions '" + numPartitionGroups + "'" );
         }
 
         return true;
@@ -255,8 +255,8 @@ public class ListPartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public boolean requiresUnboundPartition() {
-        return REQUIRES_UNBOUND_PARTITION;
+    public boolean requiresUnboundPartitionGroup() {
+        return REQUIRES_UNBOUND_PARTITION_GROUP;
     }
 
 

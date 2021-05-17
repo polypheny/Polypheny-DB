@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogPartition;
+import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -121,41 +121,41 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
             for ( int partitionId : partitionList ) {
                 // Check if specified partition index is even part of table and if so get corresponding uniquePartId
                 try {
-                    tempPartitionList.add( catalogTable.partitionIds.get( partitionId ) );
+                    tempPartitionList.add( catalogTable.partitionGroupIds.get( partitionId ) );
                 } catch ( IndexOutOfBoundsException e ) {
                     throw new RuntimeException( "Specified Partition-Index: '" + partitionId + "' is not part of table '"
-                            + catalogTable.name + "', has only " + catalogTable.numPartitions + " partitions" );
+                            + catalogTable.name + "', has only " + catalogTable.numPartitionGroups + " partitions" );
                 }
             }
         }
         // If name partitions are specified
         else if ( !partitionNamesList.isEmpty() && partitionList.isEmpty() ) {
-            List<CatalogPartition> catalogPartitions = catalog.getPartitions( tableId );
+            List<CatalogPartitionGroup> catalogPartitionGroups = catalog.getPartitionGroups( tableId );
             for ( String partitionName : partitionNamesList.stream().map( Object::toString )
                     .collect( Collectors.toList() ) ) {
                 boolean isPartOfTable = false;
-                for ( CatalogPartition catalogPartition : catalogPartitions ) {
-                    if ( partitionName.equals( catalogPartition.partitionName.toLowerCase() ) ) {
-                        tempPartitionList.add( catalogPartition.id );
+                for ( CatalogPartitionGroup catalogPartitionGroup : catalogPartitionGroups ) {
+                    if ( partitionName.equals( catalogPartitionGroup.partitionGroupName.toLowerCase() ) ) {
+                        tempPartitionList.add( catalogPartitionGroup.id );
                         isPartOfTable = true;
                         break;
                     }
                 }
                 if ( !isPartOfTable ) {
                     throw new RuntimeException( "Specified Partition-Name: '" + partitionName + "' is not part of table '"
-                            + catalogTable.name + "', has only " + catalog.getPartitionNames( tableId ) + " partitions" );
+                            + catalogTable.name + "', has only " + catalog.getPartitionGroupNames( tableId ) + " partitions" );
                 }
             }
         }
 
         // Check if in-memory dataPartitionPlacement Map should even be changed and therefore start costly partitioning
         // Avoid unnecessary partitioning when the placement is already partitioned in the same way it has been specified
-        if ( tempPartitionList.equals( catalog.getPartitionsOnDataPlacement( storeId, tableId ) ) ) {
+        if ( tempPartitionList.equals( catalog.getPartitionGroupsOnDataPlacement( storeId, tableId ) ) ) {
             log.info( "The data placement for table: '{}' on store: '{}' already contains all specified partitions of statement: {}", catalogTable.name, storeName, partitionList );
             return;
         }
         // Update
-        catalog.updatePartitionsOnDataPlacement( storeId, tableId, tempPartitionList );
+        catalog.updatePartitionGroupsOnDataPlacement( storeId, tableId, tempPartitionList );
     }
 
 }

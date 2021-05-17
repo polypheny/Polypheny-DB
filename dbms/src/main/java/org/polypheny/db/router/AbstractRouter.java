@@ -254,7 +254,7 @@ public abstract class AbstractRouter implements Router {
                             List<Long> identPartitions = new ArrayList<>();
                             for ( String partitionValue : partitionValues ) {
                                 log.debug( "Extracted PartitionValue: {}", partitionValue );
-                                long identPart = partitionManager.getTargetPartitionId( catalogTable, partitionValue );
+                                long identPart = partitionManager.getTargetPartitionGroupId( catalogTable, partitionValue );
                                 identPartitions.add( identPart );
                                 log.debug( "Identified PartitionId: {} for value: {}", identPart, partitionValue );
                             }
@@ -357,12 +357,12 @@ public abstract class AbstractRouter implements Router {
                 List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacements( pkColumn.id );
 
                 if ( catalogTable.isPartitioned && log.isDebugEnabled() ) {
-                    log.debug( "\nListing all relevant stores for table: '{}' and all partitions: {}", catalogTable.name, catalogTable.partitionIds );
+                    log.debug( "\nListing all relevant stores for table: '{}' and all partitions: {}", catalogTable.name, catalogTable.partitionGroupIds );
                     for ( CatalogColumnPlacement dataPlacement : pkPlacements ) {
                         log.debug( "\t\t -> '{}' {}\t{}",
                                 dataPlacement.adapterUniqueName,
-                                catalog.getPartitionsOnDataPlacement( dataPlacement.adapterId, dataPlacement.tableId ),
-                                catalog.getPartitionsIndexOnDataPlacement( dataPlacement.adapterId, dataPlacement.tableId ) );
+                                catalog.getPartitionGroupsOnDataPlacement( dataPlacement.adapterId, dataPlacement.tableId ),
+                                catalog.getPartitionGroupsIndexOnDataPlacement( dataPlacement.adapterId, dataPlacement.tableId ) );
                     }
                 }
 
@@ -417,7 +417,7 @@ public abstract class AbstractRouter implements Router {
 
                         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
                         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionType );
-                        partitionManager.validatePartitionDistribution( catalogTable );
+                        partitionManager.validatePartitionGroupDistribution( catalogTable );
 
                         WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor( statement, catalogTable.columnIds.indexOf( catalogTable.partitionColumnId ) );
                         node.accept( new RelShuttleImpl() {
@@ -461,9 +461,9 @@ public abstract class AbstractRouter implements Router {
                                         if ( log.isDebugEnabled() ) {
                                             log.debug( "UPDATE: partitionColumn-value: '{}' should be put on partition: {}",
                                                     partitionValue,
-                                                    partitionManager.getTargetPartitionId( catalogTable, partitionValue ) );
+                                                    partitionManager.getTargetPartitionGroupId( catalogTable, partitionValue ) );
                                         }
-                                        identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
+                                        identPart = (int) partitionManager.getTargetPartitionGroupId( catalogTable, partitionValue );
                                         break;
                                     }
                                 } catch ( UnknownColumnException e ) {
@@ -474,7 +474,7 @@ public abstract class AbstractRouter implements Router {
 
                             // If only one where clause op
                             if ( whereClauseValue != null && partitionColumnIdentified ) {
-                                if ( whereClauseValue.size() == 1 && identPart == partitionManager.getTargetPartitionId( catalogTable, whereClauseValue.get( 0 ) ) ) {
+                                if ( whereClauseValue.size() == 1 && identPart == partitionManager.getTargetPartitionGroupId( catalogTable, whereClauseValue.get( 0 ) ) ) {
                                     worstCaseRouting = false;
                                 } else {
                                     worstCaseRouting = true;
@@ -485,7 +485,7 @@ public abstract class AbstractRouter implements Router {
                                 log.debug( "Activate WORST-CASE ROUTING! No WHERE clause specified for partition column" );
                             } else if ( whereClauseValue != null && !partitionColumnIdentified ) {
                                 if ( whereClauseValue.size() == 1 ) {
-                                    identPart = (int) partitionManager.getTargetPartitionId( catalogTable, whereClauseValue.get( 0 ) );
+                                    identPart = (int) partitionManager.getTargetPartitionGroupId( catalogTable, whereClauseValue.get( 0 ) );
                                     worstCaseRouting = false;
                                 } else {
                                     worstCaseRouting = true;
@@ -505,7 +505,7 @@ public abstract class AbstractRouter implements Router {
                                             partitionColumnIdentified = true;
                                             worstCaseRouting = false;
                                             partitionValue = ((LogicalValues) ((LogicalTableModify) node).getInput()).tuples.get( 0 ).get( i ).toString().replace( "'", "" );
-                                            identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
+                                            identPart = (int) partitionManager.getTargetPartitionGroupId( catalogTable, partitionValue );
                                             break;
                                         }
                                     }
@@ -525,7 +525,7 @@ public abstract class AbstractRouter implements Router {
                                         } else {
                                             partitionColumnIdentified = true;
                                             partitionValue = ((LogicalTableModify) node).getInput().getChildExps().get( i ).toString().replace( "'", "" );
-                                            identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
+                                            identPart = (int) partitionManager.getTargetPartitionGroupId( catalogTable, partitionValue );
                                         }
                                         break;
                                     }
@@ -536,7 +536,7 @@ public abstract class AbstractRouter implements Router {
 
                             if ( log.isDebugEnabled() ) {
                                 String partitionColumnName = catalog.getColumn( catalogTable.partitionColumnId ).name;
-                                String partitionName = catalog.getPartition( identPart ).partitionName;
+                                String partitionName = catalog.getPartitionGroup( identPart ).partitionGroupName;
                                 log.debug( "INSERT: partitionColumn-value: '{}' should be put on partition: {} ({}), which is partitioned with column",
                                         partitionValue, identPart, partitionName, partitionColumnName );
                             }
@@ -551,7 +551,7 @@ public abstract class AbstractRouter implements Router {
                                     partitionColumnIdentified = false;
                                 } else {
                                     worstCaseRouting = false;
-                                    identPart = (int) partitionManager.getTargetPartitionId( catalogTable, whereClauseValue.get( 0 ) );
+                                    identPart = (int) partitionManager.getTargetPartitionGroupId( catalogTable, whereClauseValue.get( 0 ) );
                                 }
                             }
 
@@ -559,13 +559,13 @@ public abstract class AbstractRouter implements Router {
 
                         if ( !worstCaseRouting ) {
                             log.debug( "Get all Placements by identified Partition: {}", identPart );
-                            if ( !catalog.getPartitionsOnDataPlacement( pkPlacement.adapterId, pkPlacement.tableId ).contains( identPart ) ) {
+                            if ( !catalog.getPartitionGroupsOnDataPlacement( pkPlacement.adapterId, pkPlacement.tableId ).contains( identPart ) ) {
                                 if ( log.isDebugEnabled() ) {
                                     log.debug( "DataPlacement: {}.{} SKIPPING since it does NOT contain identified partition: '{}' {}",
                                             pkPlacement.adapterUniqueName,
                                             pkPlacement.physicalTableName,
                                             identPart,
-                                            catalog.getPartitionsOnDataPlacement( pkPlacement.adapterId, pkPlacement.tableId ) );
+                                            catalog.getPartitionGroupsOnDataPlacement( pkPlacement.adapterId, pkPlacement.tableId ) );
                                 }
                                 continue;
                             } else {
@@ -574,7 +574,7 @@ public abstract class AbstractRouter implements Router {
                                             pkPlacement.adapterUniqueName,
                                             pkPlacement.physicalTableName,
                                             identPart,
-                                            catalog.getPartitionsOnDataPlacement( pkPlacement.adapterId, pkPlacement.tableId ) );
+                                            catalog.getPartitionGroupsOnDataPlacement( pkPlacement.adapterId, pkPlacement.tableId ) );
                                 }
                             }
                         } else {

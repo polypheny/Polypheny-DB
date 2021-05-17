@@ -31,7 +31,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
     // returns the Index of the partition where to place the object
     @Override
-    public abstract long getTargetPartitionId( CatalogTable catalogTable, String columnValue );
+    public abstract long getTargetPartitionGroupId( CatalogTable catalogTable, String columnValue );
 
 
     /**
@@ -42,10 +42,10 @@ public abstract class AbstractPartitionManager implements PartitionManager {
      * @return If its correctly distributed or not
      */
     @Override
-    public boolean validatePartitionDistribution( CatalogTable table ) {
+    public boolean validatePartitionGroupDistribution( CatalogTable table ) {
         // Check for every column if there exists at least one placement which contains all partitions
         for ( long columnId : table.columnIds ) {
-            int numberOfFullPlacements = getPlacementsWithAllPartitions( columnId, table.numPartitions ).size();
+            int numberOfFullPlacements = getPlacementsWithAllPartitionGroups( columnId, table.numPartitionGroups ).size();
             if ( numberOfFullPlacements >= 1 ) {
                 log.debug( "Found ColumnPlacement which contains all partitions for column: {}", columnId );
                 break;
@@ -62,19 +62,19 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
 
     @Override
-    public abstract boolean probePartitionDistributionChange( CatalogTable catalogTable, int storeId, long columnId );
+    public abstract boolean probePartitionGroupDistributionChange( CatalogTable catalogTable, int storeId, long columnId );
 
     @Override
-    public abstract List<CatalogColumnPlacement> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds );
+    public abstract List<CatalogColumnPlacement> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionGroupIds );
 
 
     @Override
-    public boolean validatePartitionSetup(
-            List<List<String>> partitionQualifiers,
-            long numPartitions,
-            List<String> partitionNames,
+    public boolean validatePartitionGroupSetup(
+            List<List<String>> partitionGroupQualifiers,
+            long numPartitionGroups,
+            List<String> partitionGroupNames,
             CatalogColumn partitionColumn ) {
-        if ( numPartitions == 0 && partitionNames.size() < 2 ) {
+        if ( numPartitionGroups == 0 && partitionGroupNames.size() < 2 ) {
             throw new RuntimeException( "Partitioning of table failed! Can't partition table with less than 2 partitions/names" );
         }
         return true;
@@ -85,10 +85,10 @@ public abstract class AbstractPartitionManager implements PartitionManager {
      * Returns number of placements for this column which contain all partitions
      *
      * @param columnId column to be checked
-     * @param numPartitions numPartitions
+     * @param numPartitionGroups numPartitions
      * @return If its correctly distributed or not
      */
-    protected List<CatalogColumnPlacement> getPlacementsWithAllPartitions( long columnId, long numPartitions ) {
+    protected List<CatalogColumnPlacement> getPlacementsWithAllPartitionGroups( long columnId, long numPartitionGroups ) {
         Catalog catalog = Catalog.getInstance();
 
         // Return every placement of this column
@@ -97,7 +97,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
         int placementCounter = 0;
         for ( CatalogColumnPlacement ccp : tempCcps ) {
             // If the DataPlacement has stored all partitions and therefore all partitions for this placement
-            if ( catalog.getPartitionsOnDataPlacement( ccp.adapterId, ccp.tableId ).size() == numPartitions ) {
+            if ( catalog.getPartitionGroupsOnDataPlacement( ccp.adapterId, ccp.tableId ).size() == numPartitionGroups ) {
                 returnCcps.add( ccp );
                 placementCounter++;
             }

@@ -1944,7 +1944,7 @@ public class Crud implements InformationObserver {
         String tableName = index.getTable();
         try {
             CatalogTable table = catalog.getTable( databaseName, schemaName, tableName );
-            Placement p = new Placement( table.isPartitioned, catalog.getPartitionNames( table.id ) );
+            Placement p = new Placement( table.isPartitioned, catalog.getPartitionGroupNames( table.id ) );
             long pkid = table.primaryKey;
             List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
             CatalogColumn pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );
@@ -1955,8 +1955,8 @@ public class Crud implements InformationObserver {
                         adapter.getUniqueName(),
                         adapter.getAdapterName(),
                         catalog.getColumnPlacementsOnAdapter( adapter.getAdapterId(), table.id ),
-                        catalog.getPartitionsIndexOnDataPlacement( placement.adapterId, placement.tableId ),
-                        table.numPartitions,
+                        catalog.getPartitionGroupsIndexOnDataPlacement( placement.adapterId, placement.tableId ),
+                        table.numPartitionGroups,
                         table.partitionType ) );
             }
             return p;

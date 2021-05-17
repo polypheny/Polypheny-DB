@@ -51,7 +51,7 @@ import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.CatalogPartition;
+import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -607,7 +607,7 @@ public class DdlManagerImpl extends DdlManager {
             // Check if this column placement is the first on the data placement
             // If this returns null this means that this is the first placement and partition list can therefore be specified
             List<Long> currentPartList = new ArrayList<>();
-            currentPartList = catalog.getPartitionsOnDataPlacement( dataStore.getAdapterId(), catalogTable.id );
+            currentPartList = catalog.getPartitionGroupsOnDataPlacement( dataStore.getAdapterId(), catalogTable.id );
 
             isDataPlacementPartitioned = !currentPartList.isEmpty();
 
@@ -624,10 +624,10 @@ public class DdlManagerImpl extends DdlManager {
                 for ( int partitionId : partitionIds ) {
                     // Check if specified partition index is even part of table and if so get corresponding uniquePartId
                     try {
-                        tempPartitionList.add( catalogTable.partitionIds.get( partitionId ) );
+                        tempPartitionList.add( catalogTable.partitionGroupIds.get( partitionId ) );
                     } catch ( IndexOutOfBoundsException e ) {
                         throw new RuntimeException( "Specified Partition-Index: '" + partitionId + "' is not part of table '"
-                                + catalogTable.name + "', has only " + catalogTable.numPartitions + " partitions" );
+                                + catalogTable.name + "', has only " + catalogTable.numPartitionGroups + " partitions" );
                     }
                 }
             } else if ( !partitionNames.isEmpty() && partitionIds.isEmpty() ) {
@@ -637,19 +637,19 @@ public class DdlManagerImpl extends DdlManager {
                             + dataStore.getAdapterName() + "' already contains manually specified partitions: " + currentPartList + ". Use 'ALTER TABLE ... MODIFY PARTITIONS...' instead" );
                 }
 
-                List<CatalogPartition> catalogPartitions = catalog.getPartitions( tableId );
+                List<CatalogPartitionGroup> catalogPartitionGroups = catalog.getPartitionGroups( tableId );
                 for ( String partitionName : partitionNames ) {
                     boolean isPartOfTable = false;
-                    for ( CatalogPartition catalogPartition : catalogPartitions ) {
-                        if ( partitionName.equals( catalogPartition.partitionName.toLowerCase() ) ) {
-                            tempPartitionList.add( catalogPartition.id );
+                    for ( CatalogPartitionGroup catalogPartitionGroup : catalogPartitionGroups ) {
+                        if ( partitionName.equals( catalogPartitionGroup.partitionGroupName.toLowerCase() ) ) {
+                            tempPartitionList.add( catalogPartitionGroup.id );
                             isPartOfTable = true;
                             break;
                         }
                     }
                     if ( !isPartOfTable ) {
                         throw new RuntimeException( "Specified Partition-Name: '" + partitionName + "' is not part of table '"
-                                + catalogTable.name + "'. Available partitions: " + String.join( ",", catalog.getPartitionNames( tableId ) ) );
+                                + catalogTable.name + "'. Available partitions: " + String.join( ",", catalog.getPartitionGroupNames( tableId ) ) );
 
                     }
                 }
@@ -662,7 +662,7 @@ public class DdlManagerImpl extends DdlManager {
                     // If DataPlacement already contains partitions then create new placement with same set of partitions.
                     tempPartitionList = currentPartList;
                 } else {
-                    tempPartitionList = catalogTable.partitionIds;
+                    tempPartitionList = catalogTable.partitionGroupIds;
                 }
             }
         }
@@ -898,7 +898,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Remove All
-        catalog.deletePartitionsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id );
+        catalog.deletePartitionGroupsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id );
     }
 
 
@@ -1092,32 +1092,32 @@ public class DdlManagerImpl extends DdlManager {
                 for ( int partitionId : partitionIds ) {
                     // Check if specified partition index is even part of table and if so get corresponding uniquePartId
                     try {
-                        tempPartitionList.add( catalogTable.partitionIds.get( partitionId ) );
+                        tempPartitionList.add( catalogTable.partitionGroupIds.get( partitionId ) );
                     } catch ( IndexOutOfBoundsException e ) {
                         throw new RuntimeException( "Specified Partition-Index: '" + partitionId + "' is not part of table '"
-                                + catalogTable.name + "', has only " + catalogTable.numPartitions + " partitions" );
+                                + catalogTable.name + "', has only " + catalogTable.numPartitionGroups + " partitions" );
                     }
                 }
-                catalog.updatePartitionsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id, tempPartitionList );
+                catalog.updatePartitionGroupsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id, tempPartitionList );
             }
             // If name partitions are specified
             else if ( !partitionNames.isEmpty() && partitionIds.isEmpty() ) {
-                List<CatalogPartition> catalogPartitions = catalog.getPartitions( tableId );
+                List<CatalogPartitionGroup> catalogPartitionGroups = catalog.getPartitionGroups( tableId );
                 for ( String partitionName : partitionNames ) {
                     boolean isPartOfTable = false;
-                    for ( CatalogPartition catalogPartition : catalogPartitions ) {
-                        if ( partitionName.equals( catalogPartition.partitionName.toLowerCase() ) ) {
-                            tempPartitionList.add( catalogPartition.id );
+                    for ( CatalogPartitionGroup catalogPartitionGroup : catalogPartitionGroups ) {
+                        if ( partitionName.equals( catalogPartitionGroup.partitionGroupName.toLowerCase() ) ) {
+                            tempPartitionList.add( catalogPartitionGroup.id );
                             isPartOfTable = true;
                             break;
                         }
                     }
                     if ( !isPartOfTable ) {
                         throw new RuntimeException( "Specified partition name: '" + partitionName + "' is not part of table '"
-                                + catalogTable.name + "'. Available partitions: " + String.join( ",", catalog.getPartitionNames( tableId ) ) );
+                                + catalogTable.name + "'. Available partitions: " + String.join( ",", catalog.getPartitionGroupNames( tableId ) ) );
                     }
                 }
-                catalog.updatePartitionsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id, tempPartitionList );
+                catalog.updatePartitionGroupsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id, tempPartitionList );
             }
         }
 
@@ -1351,14 +1351,14 @@ public class DdlManagerImpl extends DdlManager {
             numberOfPartitions = partitionInfo.partitionNames.size();
         }
 
-        if ( partitionManager.requiresUnboundPartition() ) {
+        if ( partitionManager.requiresUnboundPartitionGroup() ) {
             // Because of the implicit unbound partition
             numberOfPartitions = partitionInfo.partitionNames.size();
             numberOfPartitions += 1;
         }
 
         // Validate partition setup
-        if ( !partitionManager.validatePartitionSetup( partitionInfo.qualifiers, numberOfPartitions, partitionInfo.partitionNames, catalogColumn ) ) {
+        if ( !partitionManager.validatePartitionGroupSetup( partitionInfo.qualifiers, numberOfPartitions, partitionInfo.partitionNames, catalogColumn ) ) {
             throw new RuntimeException( "Partitioning failed for table: " + partitionInfo.table.name );
         }
 
@@ -1368,7 +1368,7 @@ public class DdlManagerImpl extends DdlManager {
             String partitionName;
 
             // Make last partition unbound partition
-            if ( partitionManager.requiresUnboundPartition() && i == numberOfPartitions - 1 ) {
+            if ( partitionManager.requiresUnboundPartitionGroup() && i == numberOfPartitions - 1 ) {
                 partId = catalog.addPartition(
                         partitionInfo.table.id,
                         "Unbound",
@@ -1420,7 +1420,7 @@ public class DdlManagerImpl extends DdlManager {
         CatalogColumn pkColumn = catalog.getColumn( pkColumnIds.get( 0 ) );
         // This gets us only one ccp per store (first part of PK)
         for ( CatalogColumnPlacement ccp : catalog.getColumnPlacements( pkColumn.id ) ) {
-            catalog.updatePartitionsOnDataPlacement( ccp.adapterId, ccp.tableId, partitionIds );
+            catalog.updatePartitionGroupsOnDataPlacement( ccp.adapterId, ccp.tableId, partitionIds );
         }
 
     }

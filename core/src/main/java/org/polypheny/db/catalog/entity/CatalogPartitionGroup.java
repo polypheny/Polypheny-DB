@@ -24,12 +24,12 @@ import org.polypheny.db.catalog.Catalog;
 
 
 @EqualsAndHashCode
-public final class CatalogPartition implements CatalogEntity {
+public final class CatalogPartitionGroup implements CatalogEntity {
 
     private static final long serialVersionUID = 2312903632511266177L;
 
     public final long id;
-    public final String partitionName;
+    public final String partitionGroupName;
 
     public final long tableId;
     public final long schemaId;
@@ -40,9 +40,9 @@ public final class CatalogPartition implements CatalogEntity {
     public final long partitionKey;
 
 
-    public CatalogPartition(
+    public CatalogPartitionGroup(
             final long id,
-            final String partitionName,
+            final String partitionGroupName,
             final long tableId,
             final long schemaId,
             final long databaseId,
@@ -50,7 +50,7 @@ public final class CatalogPartition implements CatalogEntity {
             final List<String> partitionQualifiers,
             final boolean isUnbound ) {
         this.id = id;
-        this.partitionName = partitionName;
+        this.partitionGroupName = partitionGroupName;
         this.tableId = tableId;
         this.schemaId = schemaId;
         this.databaseId = databaseId;

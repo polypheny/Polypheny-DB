@@ -134,7 +134,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
                 schemaInformation.addRow( s.id, s.name, s.databaseId, s.schemaType );
             } );
             catalog.getTables( null, null, null ).forEach( t -> {
-                tableInformation.addRow( t.id, t.name, t.databaseId, t.schemaId, t.partitionType.toString(), t.numPartitions );
+                tableInformation.addRow( t.id, t.name, t.databaseId, t.schemaId, t.partitionType.toString(), t.numPartitionGroups );
             } );
             catalog.getColumns( null, null, null, null ).forEach( c -> {
                 String placements = catalog.getColumnPlacements( c.id ).stream().map( plac -> String.valueOf( plac.adapterId ) ).collect( Collectors.joining( "," ) );
@@ -143,8 +143,8 @@ public class CatalogInfoPage implements PropertyChangeListener {
             catalog.getIndexes().forEach( i -> {
                 indexInformation.addRow( i.id, i.name, i.keyId, i.location, i.method, i.unique );
             } );
-            catalog.getPartitions( null, null, null ).forEach( p -> {
-                partitionInformation.addRow( p.id, p.partitionName, p.tableId, p.partitionQualifiers );
+            catalog.getPartitionGroups( null, null, null ).forEach( p -> {
+                partitionInformation.addRow( p.id, p.partitionGroupName, p.tableId, p.partitionQualifiers );
             } );
         } catch ( Exception e ) {
             log.error( "Exception while reset catalog information page", e );

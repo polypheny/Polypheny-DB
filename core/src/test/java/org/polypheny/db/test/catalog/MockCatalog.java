@@ -29,7 +29,7 @@ import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.CatalogPartition;
+import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogSchema;
@@ -252,7 +252,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, List<Long> partitionIds ) {
+    public void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, List<Long> partitionGroupIds ) {
         throw new NotImplementedException();
     }
 
@@ -684,25 +684,25 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addPartition( long tableId, String partitionName, long schemaId, int ownerId, PartitionType partitionType, List<String> effectivePartitionQualifier, boolean isUnbound ) throws GenericCatalogException {
+    public long addPartition( long tableId, String partitionGroupName, long schemaId, int ownerId, PartitionType partitionType, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public void deletePartition( long tableId, long schemaId, long partitionId ) {
+    public void deletePartitionGroup( long tableId, long schemaId, long partitionGroupId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogPartition getPartition( long partitionId ) {
+    public CatalogPartitionGroup getPartitionGroup( long partitionGroupId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitions, List<Long> partitionIds ) {
+    public void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitionGroups, List<Long> partitionGroupIds ) {
         throw new NotImplementedException();
     }
 
@@ -714,61 +714,61 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<CatalogPartition> getPartitions( long tableId ) {
+    public List<CatalogPartitionGroup> getPartitionGroups( long tableId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<CatalogPartition> getPartitions( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) {
+    public List<CatalogPartitionGroup> getPartitionGroups( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<String> getPartitionNames( long tableId ) {
+    public List<String> getPartitionGroupNames( long tableId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<CatalogColumnPlacement> getColumnPlacementsByPartition( long tableId, long partitionId, long columnId ) {
+    public List<CatalogColumnPlacement> getColumnPlacementsByPartitionGroup( long tableId, long partitionGroupId, long columnId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<CatalogAdapter> getAdaptersByPartition( long tableId, long partitionId ) {
+    public List<CatalogAdapter> getAdaptersByPartitionGroup( long tableId, long partitionGroupId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public void updatePartitionsOnDataPlacement( int adapterId, long tableId, List<Long> partitionIds ) {
+    public void updatePartitionGroupsOnDataPlacement( int adapterId, long tableId, List<Long> partitionGroupIds ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<Long> getPartitionsOnDataPlacement( int adapterId, long tableId ) {
+    public List<Long> getPartitionGroupsOnDataPlacement( int adapterId, long tableId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<Long> getPartitionsIndexOnDataPlacement( int adapterId, long tableId ) {
+    public List<Long> getPartitionGroupsIndexOnDataPlacement( int adapterId, long tableId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public void deletePartitionsOnDataPlacement( int storeId, long tableId ) {
+    public void deletePartitionGroupsOnDataPlacement( int storeId, long tableId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public boolean validatePartitionDistribution( int adapterId, long tableId, long columnId ) {
+    public boolean validatePartitionGroupDistribution( int adapterId, long tableId, long columnId ) {
         throw new NotImplementedException();
     }
 
