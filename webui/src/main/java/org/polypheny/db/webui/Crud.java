@@ -2015,7 +2015,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    private List<PartitionFunctionColumn> buildPartitionFunctionRow( List<PartitionFunctionInfoColumn> columnList ) {
+    private List<PartitionFunctionColumn> buildPartitionFunctionRow( PartitioningRequest request, List<PartitionFunctionInfoColumn> columnList ) {
         List<PartitionFunctionColumn> constructedRow = new ArrayList<>();
 
         for ( PartitionFunctionInfoColumn currentColumn : columnList ) {
@@ -2044,7 +2044,19 @@ public class Crud implements InformationObserver {
                         .setSqlPrefix( currentColumn.getSqlPrefix() )
                         .setSqlSuffix( currentColumn.getSqlSuffix() ) );
             } else {
-                constructedRow.add( new PartitionFunctionColumn( type, currentColumn.getDefaultValue() )
+
+                String defaultValue = currentColumn.getDefaultValue();
+
+                //Used specifically for Temp-Partitoning since number of selected partitions remains 2 but chunks change
+                //enables user to used selected "number of partitions" beeing used as default value for "number of interal data chunks"
+                if ( request.method.equals( PartitionType.TEMPERATURE ) ){
+
+                    if ( type.equals( FieldType.STRING ) && currentColumn.getDefaultValue().equals( "-04071993" ))
+                    defaultValue = String.valueOf( request.numPartitions );
+                }
+
+
+                constructedRow.add( new PartitionFunctionColumn( type, defaultValue )
                         .setModifiable( currentColumn.isModifiable() )
                         .setMandatory( currentColumn.isMandatory() )
                         .setSqlPrefix( currentColumn.getSqlPrefix() )
@@ -2079,20 +2091,23 @@ public class Crud implements InformationObserver {
 
         JsonObject infoJson = gson.toJsonTree( partitionManager.getPartitionFunctionInfo() ).getAsJsonObject();
 
+
+
         List<List<PartitionFunctionColumn>> rows = new ArrayList<>();
 
         if ( infoJson.has( "rowsBefore" ) ) {
             // Insert Rows Before
             List<List<PartitionFunctionInfoColumn>> rowsBefore = functionInfo.getRowsBefore();
             for ( int i = 0; i < rowsBefore.size(); i++ ) {
-                rows.add( buildPartitionFunctionRow( rowsBefore.get( i ) ) );
+                rows.add( buildPartitionFunctionRow( request, rowsBefore.get( i ) ) );
             }
+
         }
 
         if ( infoJson.has( "dynamicRows" ) ) {
             // Build as many dynamic rows as requested per num Partitions
             for ( int i = 0; i < request.numPartitions; i++ ) {
-                rows.add( buildPartitionFunctionRow( functionInfo.getDynamicRows() ) );
+                rows.add( buildPartitionFunctionRow( request, functionInfo.getDynamicRows() ) );
             }
         }
 
@@ -2100,7 +2115,7 @@ public class Crud implements InformationObserver {
             // Insert Rows After
             List<List<PartitionFunctionInfoColumn>> rowsAfter = functionInfo.getRowsAfter();
             for ( int i = 0; i < rowsAfter.size(); i++ ) {
-                rows.add( buildPartitionFunctionRow( rowsAfter.get( i ) ) );
+                rows.add( buildPartitionFunctionRow( request, rowsAfter.get( i ) ) );
             }
         }
 

@@ -167,11 +167,11 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
         chunkRow.add( PartitionFunctionInfoColumn.builder()
                 .fieldType( PartitionFunctionInfoColumnType.STRING )
                 .mandatory( false )
-                .modifiable( false )
+                .modifiable( true )
                 .sqlPrefix( "" )
                 .sqlSuffix( "" )
                 .valueSeparation( "" )
-                .defaultValue( "20" )
+                .defaultValue( "-04071993" )
                 .build() );
 
 

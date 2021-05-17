@@ -55,6 +55,7 @@ import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
@@ -635,7 +636,7 @@ public abstract class DdlManager {
                     .collect( Collectors.toList() );
             List<List<String>> qualifiers = partitionQualifierList
                     .stream()
-                    .map( qs -> qs.stream().map( SqlNode::toString ).map( qualifier -> removeFirstAndLast( qualifier ) ).collect( Collectors.toList() ) )
+                    .map( qs -> qs.stream().map( PartitionInformation::getValueOfSqlNode ).collect( Collectors.toList() ) )
                     .collect( Collectors.toList() );
             return new PartitionInformation( table, typeName, columnName, names, numberOf, qualifiers );
         }
@@ -644,18 +645,15 @@ public abstract class DdlManager {
         /**
          * Needed to modify strings otherwise the SQL-input 'a' will be also added as the value "'a'" and not as "a" as intended
          * Essentially removes " ' " at the start and end of value
-         * @param str String to be modified
+         * @param node Node to be modified
          * @return String
          */
-        public static String removeFirstAndLast(String str) {
+        public static String getValueOfSqlNode(SqlNode node) {
 
-            if ( str.startsWith( "'" ) && str.endsWith( "'" )) {
-                StringBuilder sb = new StringBuilder( str );
-                sb.deleteCharAt( str.length() - 1 );
-                sb.deleteCharAt( 0 );
-                return sb.toString();
+            if ( node instanceof SqlLiteral ) {
+                return ((SqlLiteral) node).getValue().toString();
             }
-            return str;
+            return node.toString();
         }
 
     }
