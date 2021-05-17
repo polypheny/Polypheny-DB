@@ -13,36 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.polypheny.db.partition;
 
+
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.partition.manager.HashPartitionManager;
-import org.polypheny.db.partition.manager.ListPartitionManager;
-import org.polypheny.db.partition.manager.PartitionManager;
-import org.polypheny.db.partition.manager.RangePartitionManager;
-import org.polypheny.db.partition.manager.TemperatureAwarePartitionManager;
 
 
-public class PartitionManagerFactory {
+public abstract class PartitionManagerFactory {
 
-    public PartitionManager getInstance( Catalog.PartitionType partitionType ) {
-        switch ( partitionType ) {
-            case HASH:
-                return new HashPartitionManager();
 
-            case LIST:
-                return new ListPartitionManager();
+    public static PartitionManagerFactory INSTANCE = null;
 
-            case RANGE:
-                return new RangePartitionManager();
-
-            //TODO @HENNLO think about excluding "UDPF" here, these should only be used for internal Partiiton Functions
-            //Or create an internal mapping from PARTITIONTYPE to teh handling partition manager
-            case TEMPERATURE:
-                return new TemperatureAwarePartitionManager();
+    public static PartitionManagerFactory setAndGetInstance( PartitionManagerFactory factory ) {
+        if ( INSTANCE != null ) {
+            throw new RuntimeException( "Setting the PartitionManager, when already set is not permitted." );
         }
-
-        throw new RuntimeException( "Unknown partition type: " + partitionType );
+        INSTANCE = factory;
+        return INSTANCE;
     }
 
+    public static PartitionManagerFactory getInstance() {
+        if ( INSTANCE == null ) {
+            throw new RuntimeException( "PartitionManager was not set correctly on Polypheny-DB start-up" );
+        }
+        return INSTANCE;
+    }
+
+    public abstract PartitionManager getPartitionManager( Catalog.PartitionType partitionType );
 }

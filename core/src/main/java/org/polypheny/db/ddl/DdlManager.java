@@ -651,7 +651,8 @@ public abstract class DdlManager {
         public static String getValueOfSqlNode(SqlNode node) {
 
             if ( node instanceof SqlLiteral ) {
-                return ((SqlLiteral) node).getValue().toString();
+                System.out.println("Pre: " + node.toString() + " Post: " + ((SqlLiteral) node).toValue());
+                return ((SqlLiteral) node).toValue();
             }
             return node.toString();
         }

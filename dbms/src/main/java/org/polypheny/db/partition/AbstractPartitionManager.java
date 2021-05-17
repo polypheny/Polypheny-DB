@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.partition.manager;
+package org.polypheny.db.partition;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +23,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.partition.PartitionFunctionInfo;
 
 
 @Slf4j

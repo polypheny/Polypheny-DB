@@ -43,7 +43,7 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
-import org.polypheny.db.partition.manager.PartitionManager;
+import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
@@ -241,8 +241,8 @@ public abstract class AbstractRouter implements Router {
                     }
                     List<String> partitionValues = filterMap.get( node.getId() );
 
-                    PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
-                    PartitionManager partitionManager = partitionManagerFactory.getInstance( catalogTable.partitionType );
+                    PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
+                    PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionType );
                     if ( partitionValues != null ) {
                         if ( log.isDebugEnabled() ) {
                             log.debug( "TableID: {} is partitioned on column: {} - {}",
@@ -415,8 +415,8 @@ public abstract class AbstractRouter implements Router {
                     if ( catalogTable.isPartitioned ) {
                         boolean worstCaseRouting = false;
 
-                        PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
-                        PartitionManager partitionManager = partitionManagerFactory.getInstance( catalogTable.partitionType );
+                        PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
+                        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionType );
                         partitionManager.validatePartitionDistribution( catalogTable );
 
                         WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor( statement, catalogTable.columnIds.indexOf( catalogTable.partitionColumnId ) );

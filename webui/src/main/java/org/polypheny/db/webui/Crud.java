@@ -150,7 +150,7 @@ import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.partition.PartitionFunctionInfo;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
-import org.polypheny.db.partition.manager.PartitionManager;
+import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.rel.RelCollation;
@@ -2072,8 +2072,8 @@ public class Crud implements InformationObserver {
         PartitioningRequest request = gson.fromJson( req.body(), PartitioningRequest.class );
 
         // Get correct partition function
-        PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
-        PartitionManager partitionManager = partitionManagerFactory.getInstance( request.method );
+        PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
+        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( request.method );
 
         // Check whether the selected partition function supports the selected partition column
         CatalogColumn partitionColumn;
@@ -2133,10 +2133,10 @@ public class Crud implements InformationObserver {
         PartitionFunctionModel request = gson.fromJson( req.body(), PartitionFunctionModel.class );
 
         // Get correct partition function
-        PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
+        PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = null;
         try {
-            partitionManager = partitionManagerFactory.getInstance( PartitionType.getByName( request.functionName ) );
+            partitionManager = partitionManagerFactory.getPartitionManager( PartitionType.getByName( request.functionName ) );
         } catch ( UnknownPartitionTypeException e ) {
             throw new RuntimeException( e );
         }

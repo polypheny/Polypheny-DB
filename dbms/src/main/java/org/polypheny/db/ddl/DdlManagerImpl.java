@@ -86,7 +86,7 @@ import org.polypheny.db.ddl.exception.PlacementIsPrimaryException;
 import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
-import org.polypheny.db.partition.manager.PartitionManager;
+import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
@@ -1336,8 +1336,8 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Get partition manager
-        PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
-        PartitionManager partitionManager = partitionManagerFactory.getInstance( actualPartitionType );
+        PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
+        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( actualPartitionType );
 
         // Check whether partition function supports type of partition column
         if ( !partitionManager.supportsColumnOfType( catalogColumn.type ) ) {

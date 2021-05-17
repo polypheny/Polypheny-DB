@@ -45,6 +45,8 @@ import org.polypheny.db.information.HostInformation;
 import org.polypheny.db.information.JavaInformation;
 import org.polypheny.db.monitoring.core.MonitoringService;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
+import org.polypheny.db.partition.PartitionManagerFactory;
+import org.polypheny.db.partition.PartitionManagerFactoryImpl;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.statistic.StatisticQueryProcessor;
 import org.polypheny.db.statistic.StatisticsManager;
@@ -236,6 +238,9 @@ public class PolyphenyDb {
 
         // Initialize DdlManager
         DdlManager.setAndGetInstance( new DdlManagerImpl( catalog ) );
+
+        //Intialize PartitionMangerFactory
+        PartitionManagerFactory.setAndGetInstance( new PartitionManagerFactoryImpl() );
 
         // Start Polypheny UI
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator );

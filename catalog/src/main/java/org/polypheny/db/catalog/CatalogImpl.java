@@ -84,7 +84,7 @@ import org.polypheny.db.catalog.exceptions.UnknownTableIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.exceptions.UnknownUserIdRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.partition.manager.PartitionManager;
+import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
@@ -3449,8 +3449,8 @@ public class CatalogImpl extends Catalog {
         if ( isTableFlaggedForDeletion( tableId ) ) {
             return true;
         }
-        PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
-        PartitionManager partitionManager = partitionManagerFactory.getInstance( catalogTable.partitionType );
+        PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
+        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionType );
 
         return partitionManager.probePartitionDistributionChange( catalogTable, adapterId, columnId );
     }

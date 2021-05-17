@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.partition.manager;
+package org.polypheny.db.partition;
 
 import java.util.List;
 import org.polypheny.db.catalog.entity.CatalogColumn;

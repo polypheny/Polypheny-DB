@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.partition.manager;
+package org.polypheny.db.partition;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
@@ -26,7 +26,6 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.partition.PartitionFunctionInfo;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumnType;
 import org.polypheny.db.type.PolyType;
