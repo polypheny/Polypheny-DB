@@ -14,47 +14,50 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.events;
+package org.polypheny.db.monitoring.events.analyzer;
+
 
 import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.InformationDuration;
-import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
+import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
+import org.polypheny.db.monitoring.events.DMLEvent;
 import org.polypheny.db.rel.RelNode;
 
 @Slf4j
-public class QueryEventAnalyzer {
+public class DMLEventAnalyzer {
+    // TODO: Bis jetzt sind die Klassen mehr oder weniger identisch. Ist das einfach vorbereitet für später oder wie?
 
-    public static QueryDataPoint analyze( QueryEvent queryEvent ) {
-        QueryDataPoint metric = QueryDataPoint
+    public static DMLDataPoint analyze( DMLEvent dmlEvent ) {
+        DMLDataPoint metric = DMLDataPoint
                 .builder()
-                .description( queryEvent.getDescription() )
-                .monitoringType( queryEvent.getMonitoringType() )
-                .Id( queryEvent.getId() )
-                .fieldNames( queryEvent.getFieldNames() )
-                .executionTime( queryEvent.getExecutionTime() )
-                .rowCount( queryEvent.getRowCount() )
-                .isSubQuery( queryEvent.isSubQuery() )
-                .recordedTimestamp( queryEvent.getRecordedTimestamp()  )
+                .description( dmlEvent.getDescription() )
+                .monitoringType( dmlEvent.getMonitoringType() )
+                .Id( dmlEvent.getId() )
+                .fieldNames( dmlEvent.getFieldNames() )
+                .executionTime( dmlEvent.getExecutionTime() )
+                .rowCount( dmlEvent.getRowCount() )
+                .isSubQuery( dmlEvent.isSubQuery() )
+                .recordedTimestamp( dmlEvent.getRecordedTimestamp()  )
                 .build();
 
-        RelNode node = queryEvent.getRouted().rel;
-        processRelNode( node, queryEvent, metric );
+        RelNode node = dmlEvent.getRouted().rel;
+        processRelNode( node, dmlEvent, metric );
 
         // TODO: read even more data
         // job.getMonitoringPersistentData().getDataElements()
-        if ( queryEvent.isAnalyze() ) {
-            processDurationInfo( queryEvent, metric );
-
+        if ( dmlEvent.isAnalyze() ) {
+            processDurationInfo( dmlEvent, metric );
         }
 
         return metric;
     }
 
 
-    private static void processDurationInfo( QueryEvent queryEvent, QueryDataPoint metric ) {
+    private static void processDurationInfo( DMLEvent dmlEvent, DMLDataPoint metric ) {
+        // TODO: Könnte wir in einem StatementEventAnalyzer auslagern, dann haben wir die Funktion nur 1 mal :)
         try {
-            InformationDuration duration = new Gson().fromJson( queryEvent.getDurations(), InformationDuration.class );
+            InformationDuration duration = new Gson().fromJson( dmlEvent.getDurations(), InformationDuration.class );
             getDurationInfo( metric, "Plan Caching", duration );
             getDurationInfo( metric, "Index Lookup Rewrite", duration );
             getDurationInfo( metric, "Constraint Enforcement", duration );
@@ -70,17 +73,17 @@ public class QueryEventAnalyzer {
     }
 
 
-    private static void getDurationInfo( QueryDataPoint queryMetric, String durationName, InformationDuration duration ) {
+    private static void getDurationInfo( DMLDataPoint dmlMetric, String durationName, InformationDuration duration ) {
         try {
             long time = duration.getDuration( durationName );
-            queryMetric.getDataElements().put( durationName, time );
+            dmlMetric.getDataElements().put( durationName, time );
         } catch ( Exception e ) {
             log.debug( "could no find duration:" + durationName );
         }
     }
 
 
-    private static void processRelNode( RelNode node, QueryEvent event, QueryDataPoint metric ) {
+    private static void processRelNode( RelNode node, DMLEvent event, DMLDataPoint metric ) {
 
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
             processRelNode( node.getInput( i ), event, metric );
@@ -89,7 +92,5 @@ public class QueryEventAnalyzer {
         if ( node.getTable() != null ) {
             metric.getTables().addAll( node.getTable().getQualifiedName() );
         }
-
     }
-
 }

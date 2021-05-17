@@ -20,28 +20,31 @@ import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
+import org.polypheny.db.monitoring.events.analyzer.QueryEventAnalyzer;
 import org.polypheny.db.monitoring.events.metrics.MonitoringDataPoint;
+import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
 
 
 @Getter
 @Setter
-public class DMLEvent extends StatementEvent {
+public class QueryEvent extends StatementEvent {
 
 
-    private String eventType = "DML EVENT";
+    private String eventType = "QUERY EVENT";
+
 
 
     @Override
     public <T extends MonitoringDataPoint> List<Class<T>> getMetrics() {
-        return Arrays.asList( (Class<T>) DMLDataPoint.class );
+        return Arrays.asList( (Class<T>) QueryDataPoint.class );
     }
 
 
 
     @Override
     public List<MonitoringDataPoint> analyze() {
-        return Arrays.asList( DMLEventAnalyzer.analyze( this ) );
+        // TODO: failure handling
+        return Arrays.asList( QueryEventAnalyzer.analyze( this ) );
     }
 
 }

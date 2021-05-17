@@ -19,7 +19,7 @@ targetCompatibility = 1.8
 
 dependencies {
 
-    //implementation project(":core")
+    implementation project(":core")
     implementation group: "org.mapdb", name: "mapdb", version: mapdb_version
     implementation 'org.junit.jupiter:junit-jupiter:5.7.0'// Apache 2.0
 
