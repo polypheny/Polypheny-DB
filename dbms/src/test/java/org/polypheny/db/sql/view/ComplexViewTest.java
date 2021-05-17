@@ -371,9 +371,22 @@ public class ComplexViewTest {
             new BigDecimal( "100.00" )
     };
 
+    private final static Object[] q15_TEST_DATA = new Object[]{
+            1,
+            "SupplierName",
+            "SupplierAddress",
+            "phone" ,
+            new BigDecimal( "-960.3725" )};
+
     private final static Object[] q17_TEST_DATA = new Object[]{
             new BigDecimal( "7.164285714285714" )
     };
+
+    private final static Object[] q19_TEST_DATA = new Object[]{
+            new BigDecimal( "-960.3725" )
+    };
+
+
 
     @BeforeClass
     public static void start() {
@@ -1672,8 +1685,8 @@ public class ComplexViewTest {
     }
 
 
-    // org.polypheny.db.runtime.PolyphenyDbContextException: From line 1, column 103 to line 1, column 113: Column 'supplier_no' not found in any table
-    @Ignore
+    // changed max(total_revenue) to total_revenue
+    @Test
     public void testQ15() throws SQLException {
 
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -1708,13 +1721,13 @@ public class ComplexViewTest {
                                     +     "s_suppkey = supplier_no "
                                     +     "and total_revenue = ( "
                                     +         "select "
-                                    +             "max(total_revenue) "
+                                    +             "total_revenue "
                                     +         "from "
                                     +             "revenue0 "
                                     +     ") "
                                     + "order by "
                                     +     "s_suppkey" ),
-                            ImmutableList.of( new Object[]{} )
+                            ImmutableList.of( q15_TEST_DATA )
                     );
 
                     statement.executeUpdate( "DROP VIEW revenue0" );
@@ -1853,6 +1866,332 @@ public class ComplexViewTest {
             }
         }
     }
+
+    //Select not possible
+    //Caused by: org.hsqldb.HsqlException: data type of expression is not boolean
+    // java.lang.RuntimeException: While executing SQL [SELECT "t8"."c_name", "t8"."c_custkey", "t8"."o_orderkey", "t8"."o_orderdate", "t8"."o_totalprice", COALESCE(SUM("t"."l_quantity"), 0) FROM (SELECT "t6"."c_custkey", "t6"."c_name", "t6"."o_orderkey", "t6"."o_totalprice", "t6"."o_orderdate", COALESCE(SUM("t"."l_quantity"), 0) FROM (SELECT "col72" AS "l_orderkey", "col76" AS "l_quantity" FROM "PUBLIC"."tab12") AS "t" INNER JOIN (SELECT "t5"."c_custkey", "t5"."c_name", "t4"."o_orderkey", "t4"."o_custkey", "t4"."o_totalprice", "t4"."o_orderdate", "t2"."col72" AS "l_orderkey" FROM (SELECT "col72" FROM (SELECT "col72", "col76" FROM "PUBLIC"."tab12" GROUP BY "col72", "col76" HAVING "col76" > ?) AS "t1" GROUP BY "col72") AS "t2" INNER JOIN (SELECT "col63" AS "o_orderkey", "col64" AS "o_custkey", "col66" AS "o_totalprice", "col67" AS "o_orderdate" FROM "PUBLIC"."tab11" WHERE ?) AS "t4" ON "t2"."col72" = "t4"."o_orderkey" INNER JOIN (SELECT "col55" AS "c_custkey", "col56" AS "c_name" FROM "PUBLIC"."tab10") AS "t5" ON "t4"."o_custkey" = "t5"."c_custkey") AS "t6" ON "t"."l_orderkey" = "t6"."o_orderkey" GROUP BY "t6"."c_custkey", "t6"."c_name", "t6"."o_orderkey", "t6"."o_totalprice", "t6"."o_orderdate" ORDER BY "t6"."o_totalprice" DESC, "t6"."o_orderdate") AS "t8"] on JDBC sub-schema
+    @Ignore
+    public void testQ18() throws SQLException {
+
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                initTables( statement );
+
+                try {
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "select "
+                                    +     "c_name, "
+                                    +     "c_custkey, "
+                                    +     "o_orderkey, "
+                                    +     "o_orderdate, "
+                                    +     "o_totalprice, "
+                                    +     "sum(l_quantity) "
+                                    + "from "
+                                    +     "customer, "
+                                    +     "orders, "
+                                    +     "lineitem "
+                                    + "where "
+                                    +     "o_orderkey in ( "
+                                    +         "select "
+                                    +             "l_orderkey "
+                                    +         "from "
+                                    +             "lineitem "
+                                    +         "group by "
+                                    +             "l_orderkey having "
+                                    +                 "sum(l_quantity) > 0 "
+                                    +     ") "
+                                    +     "and c_custkey = o_custkey "
+                                    +     "and o_orderkey = l_orderkey "
+                                    + "group by "
+                                    +     "c_name, "
+                                    +     "c_custkey, "
+                                    +     "o_orderkey, "
+                                    +     "o_orderdate, "
+                                    +     "o_totalprice "
+                                    + "order by "
+                                    +     "o_totalprice desc, "
+                                    +     "o_orderdate "
+                                    + "limit 100" ),
+                            ImmutableList.of( new Object[]{} )
+                    );
+
+
+                    connection.commit();
+                } finally {
+                    dropTables(statement);
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testQ19() throws SQLException {
+
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                initTables( statement );
+
+                try {
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery("select sum(l_extendedprice* (1 - l_discount)) as revenue "
+                                    + "from lineitem, part "
+                                    + "where (p_partkey = l_partkey and p_brand = 'Logitec' "
+                                    + "and p_container in ( 'container')  "
+                                    + "and l_quantity >= 1 "
+                                    + "and p_size between 1 and 6 "
+                                    + "and l_shipmode in ('mode') "
+                                    + "and l_shipinstruct = 'shipingstruct') "
+                                    + "or ( p_partkey = l_partkey "
+                                    + "and p_brand = 'Logitec' "
+                                    + "and p_container in ('MED BAG', 'MED BOX', 'MED PKG', 'container') "
+                                    + "and l_quantity >= 1 and l_quantity <=  10 "
+                                    + "and p_size between 1 and 10 "
+                                    + "and l_shipmode in ('mode', 'AIR REG') "
+                                    + "and l_shipinstruct = 'shipingstruct' ) or "
+                                    + "( p_partkey = l_partkey "
+                                    + "and p_brand = 'Logitec' "
+                                    + "and p_container in ('LG CASE', 'LG BOX', 'LG PACK', 'container') "
+                                    + "and l_quantity >= 1 and l_quantity <= 10 "
+                                    + "and p_size between 1 and 15 "
+                                    + "and l_shipmode in ('mode', 'AIR REG') "
+                                    + "and l_shipinstruct = 'shipingstruct' )" ),
+                            ImmutableList.of( q19_TEST_DATA )
+                    );
+
+                    statement.executeUpdate( "CREATE VIEW q19_VIEW AS "
+                            +       "select sum(l_extendedprice* (1 - l_discount)) as revenue "
+                                    + "from lineitem, part "
+                                    + "where (p_partkey = l_partkey and p_brand = 'Logitec' "
+                                    + "and p_container in ( 'container')  "
+                                    + "and l_quantity >= 1 "
+                                    + "and p_size between 1 and 6 "
+                                    + "and l_shipmode in ('mode') "
+                                    + "and l_shipinstruct = 'shipingstruct') "
+                                    + "or ( p_partkey = l_partkey "
+                                    + "and p_brand = 'Logitec' "
+                                    + "and p_container in ('MED BAG', 'MED BOX', 'MED PKG', 'container') "
+                                    + "and l_quantity >= 1 and l_quantity <=  10 "
+                                    + "and p_size between 1 and 10 "
+                                    + "and l_shipmode in ('mode', 'AIR REG') "
+                                    + "and l_shipinstruct = 'shipingstruct' ) or "
+                                    + "( p_partkey = l_partkey "
+                                    + "and p_brand = 'Logitec' "
+                                    + "and p_container in ('LG CASE', 'LG BOX', 'LG PACK', 'container') "
+                                    + "and l_quantity >= 1 and l_quantity <= 10 "
+                                    + "and p_size between 1 and 15 "
+                                    + "and l_shipmode in ('mode', 'AIR REG') "
+                                    + "and l_shipinstruct = 'shipingstruct' )"  );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM q19_VIEW" ),
+                            ImmutableList.of( q19_TEST_DATA )
+                    );
+
+                    statement.executeUpdate( "DROP VIEW q19_VIEW" );
+
+
+                    connection.commit();
+                } finally {
+                    dropTables(statement);
+                }
+            }
+        }
+    }
+
+    //SELECT NOT POSSIBLE
+    // java.lang.AssertionError: type mismatch: ref: VARCHAR(25) NOT NULL input: INTEGER NOT NULL
+    @Ignore
+    public void testQ20() throws SQLException {
+
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                initTables( statement );
+
+                try {
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "select "
+                                    +     "s_name, "
+                                    +     "s_address "
+                                    + "from "
+                                    +     "supplier, "
+                                    +     "nation "
+                                    + "where "
+                                    +     "s_suppkey in ( "
+                                    +         "select "
+                                    +             "ps_suppkey "
+                                    +         "from "
+                                    +             "partsupp "
+                                    +         "where "
+                                    +             "ps_partkey in ( "
+                                    +                 "select "
+                                    +                     "p_partkey "
+                                    +                 "from "
+                                    +                     "part "
+                                    +                 "where "
+                                    +                     "p_name like ? "
+                                    +             ") "
+                                    +             "and ps_availqty > ( "
+                                    +                 "select "
+                                    +                     "0.5 * sum(l_quantity) "
+                                    +                 "from "
+                                    +                     "lineitem "
+                                    +                 "where "
+                                    +                     "l_partkey = ps_partkey "
+                                    +                     "and l_suppkey = ps_suppkey "
+                                    +                     "and l_shipdate >= date ? "
+                                    +                     "and l_shipdate < date ? + interval '1' year "
+                                    +             ") "
+                                    +     ") "
+                                    +     "and s_nationkey = n_nationkey "
+                                    +     "and n_name = ? "
+                                    + "order by "
+                                    +     "s_name" ),
+                            ImmutableList.of( new Object[]{} )
+                    );
+
+                    connection.commit();
+                } finally {
+                    dropTables( statement );
+                }
+            }
+        }
+    }
+
+
+    //SELECT NOT POSSIBLE
+    // java.lang.AssertionError: type mismatch: ref: INTEGER NOT NULL input: VARCHAR(1) NOT NULL
+    @Ignore
+    public void testQ21() throws SQLException {
+
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                initTables( statement );
+
+                try {
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "select "
+                                    +     "s_name, "
+                                    +     "count(*) as numwait "
+                                    + "from "
+                                    +     "supplier, "
+                                    +     "lineitem l1, "
+                                    +     "orders, "
+                                    +     "nation "
+                                    + "where "
+                                    +     "s_suppkey = l1.l_suppkey "
+                                    +     "and o_orderkey = l1.l_orderkey "
+                                    +     "and o_orderstatus = 'A' "
+                                    +     "and l1.l_receiptdate > l1.l_commitdate "
+                                    +     "and exists ( "
+                                    +         "select "
+                                    +             "* "
+                                    +         "from "
+                                    +             "lineitem l2 "
+                                    +         "where "
+                                    +             "l2.l_orderkey = l1.l_orderkey "
+                                    +             "and l2.l_suppkey <> l1.l_suppkey "
+                                    +     ") "
+                                    +     "and not exists ( "
+                                    +         "select "
+                                    +             "* "
+                                    +         "from "
+                                    +             "lineitem l3 "
+                                    +         "where "
+                                    +             "l3.l_orderkey = l1.l_orderkey "
+                                    +             "and l3.l_suppkey <> l1.l_suppkey "
+                                    +             "and l3.l_receiptdate > l3.l_commitdate "
+                                    +     ") "
+                                    +     "and s_nationkey = n_nationkey "
+                                    +     "and n_name = 'Switzerland' "
+                                    + "group by "
+                                    +     "s_name "
+                                    + "order by "
+                                    +     "numwait desc, "
+                                    +     "s_name "
+                                    + "limit 100" ),
+                            ImmutableList.of( new Object[]{} )
+                    );
+
+                    connection.commit();
+                } finally {
+                    dropTables( statement );
+                }
+            }
+        }
+    }
+
+
+    //SELECT NOT POSSIBLE
+    // Caused by: java.sql.SQLException: General error
+    @Ignore
+    public void testQ22() throws SQLException {
+
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                initTables( statement );
+
+                try {
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery("select "
+                                    +     "cntrycode, "
+                                    +     "count(*) as numcust, "
+                                    +     "sum(c_acctbal) as totacctbal "
+                                    + "from "
+                                    +     "( "
+                                    +         "select "
+                                    +             "substring(c_phone from 1 for 2) as cntrycode, "
+                                    +             "c_acctbal "
+                                    +         "from "
+                                    +             "customer "
+                                    +         "where "
+                                    +             "substring(c_phone from 1 for 2) in "
+                                    +                 "(?, ?, ?, ?, ?, ?, ?) "
+                                    +             "and c_acctbal > ( "
+                                    +                 "select "
+                                    +                     "avg(c_acctbal) "
+                                    +                 "from "
+                                    +                     "customer "
+                                    +                 "where "
+                                    +                     "c_acctbal > 0.00 "
+                                    +                     "and substring(c_phone from 1 for 2) in "
+                                    +                         "(?, ?, ?, ?, ?, ?, ?) "
+                                    +             ") "
+                                    +             "and not exists ( "
+                                    +                 "select "
+                                    +                     "* "
+                                    +                 "from "
+                                    +                     "orders "
+                                    +                 "where "
+                                    +                     "o_custkey = c_custkey "
+                                    +             ") "
+                                    +     ") as custsale "
+                                    + "group by "
+                                    +     "cntrycode "
+                                    + "order by "
+                                    +     "cntrycode" ),
+                            ImmutableList.of( new Object[]{} )
+                    );
+
+                    connection.commit();
+                } finally {
+                    dropTables( statement );
+                }
+            }
+        }
+    }
+
+
+
 
 
 }

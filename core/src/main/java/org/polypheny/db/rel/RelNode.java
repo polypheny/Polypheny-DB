@@ -350,6 +350,16 @@ public interface RelNode extends RelOptNode, Cloneable {
             input.tryExpandView( input );
         }
     }
+    /*
+    default RelCollation getViewCollation(RelNode result){
+        if (result instanceof ViewTableScan){
+            return ((ViewTableScan)result).getRelRoot().collation;
+        } else {
+            result.getViewCollation( result );
+        }
+    }
+
+     */
 
     /**
      * Context of a relational expression, for purposes of checking validity.
