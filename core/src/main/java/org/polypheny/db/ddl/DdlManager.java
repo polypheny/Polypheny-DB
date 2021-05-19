@@ -441,7 +441,7 @@ public abstract class DdlManager {
      * @param relRoot the relNode which was built form the Select part of the view
      * @param statement the used Statement
      */
-    public abstract void createView( String viewName, long schemaId, RelRoot relRoot, Statement statement, List<DataStore> stores, PlacementType placementType, List<ColumnInformation> projectedColumns ) throws TableAlreadyExistsException;
+    public abstract void createView( String viewName, long schemaId, RelRoot relRoot, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns ) throws TableAlreadyExistsException;
 
     /**
      * Add new partitions for the column

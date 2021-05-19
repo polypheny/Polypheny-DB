@@ -36,6 +36,7 @@ package org.polypheny.db.sql;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -99,7 +100,7 @@ import org.polypheny.db.util.Util;
  *
  * <p>An instance of this class is immutable.
  */
-public class SqlIntervalQualifier extends SqlNode {
+public class SqlIntervalQualifier extends SqlNode implements Serializable {
     //~ Static fields/initializers ---------------------------------------------
 
     private static final BigDecimal ZERO = BigDecimal.ZERO;
@@ -109,9 +110,9 @@ public class SqlIntervalQualifier extends SqlNode {
 
     //~ Instance fields --------------------------------------------------------
 
-    private final int startPrecision;
-    public final TimeUnitRange timeUnitRange;
-    private final int fractionalSecondPrecision;
+    private int startPrecision;
+    public TimeUnitRange timeUnitRange;
+    private int fractionalSecondPrecision;
 
     //~ Constructors -----------------------------------------------------------
 
@@ -143,6 +144,11 @@ public class SqlIntervalQualifier extends SqlNode {
                 endUnit,
                 RelDataType.PRECISION_NOT_SPECIFIED,
                 pos );
+    }
+
+
+    public SqlIntervalQualifier() {
+
     }
 
     //~ Methods ----------------------------------------------------------------

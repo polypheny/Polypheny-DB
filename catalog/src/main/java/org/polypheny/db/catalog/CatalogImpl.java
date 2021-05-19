@@ -2102,8 +2102,10 @@ public class CatalogImpl extends Catalog {
         if ( type.getFamily() == PolyTypeFamily.CHARACTER && collation == null ) {
             throw new RuntimeException( "Collation is not allowed to be null for char types." );
         }
-        if ( scale != null && scale > length ) {
-            throw new RuntimeException( "Invalid scale! Scale can not be larger than length." );
+        if(scale != null && length != null){
+            if ( scale > length ) {
+                throw new RuntimeException( "Invalid scale! Scale can not be larger than length." );
+            }
         }
 
         long id = columnIdBuilder.getAndIncrement();

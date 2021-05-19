@@ -61,8 +61,9 @@ public abstract class SqlNode implements Cloneable {
     public static final SqlNode[] EMPTY_ARRAY = new SqlNode[0];
 
 
-    protected final SqlParserPos pos;
+    protected SqlParserPos pos;
 
+    SqlNode(){}
 
     /**
      * Creates a node.
@@ -287,5 +288,6 @@ public abstract class SqlNode implements Cloneable {
         }
         return litmus.succeed();
     }
+
 }
 

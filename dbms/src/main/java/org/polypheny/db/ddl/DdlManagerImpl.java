@@ -106,6 +106,7 @@ import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.LogicalView;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 
 
@@ -800,7 +801,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         //check if views are dependent from this view
-        checkViewDependencies(catalogTable);
+        checkViewDependencies( catalogTable );
 
         CatalogColumn column = getCatalogColumn( catalogTable.id, columnName );
 
@@ -1082,7 +1083,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         //check if views are dependent from this view
-        checkViewDependencies(catalogTable);
+        checkViewDependencies( catalogTable );
 
         // Which columns to remove
         for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapter( storeInstance.getAdapterId(), catalogTable.id ) ) {
@@ -1286,7 +1287,7 @@ public class DdlManagerImpl extends DdlManager {
             throw new TableAlreadyExistsException();
         }
         //check if views are dependent from this view
-        checkViewDependencies(catalogTable);
+        checkViewDependencies( catalogTable );
 
         catalog.renameTable( catalogTable.id, newTableName );
 
@@ -1303,7 +1304,7 @@ public class DdlManagerImpl extends DdlManager {
             throw new ColumnAlreadyExistsException( newColumnName, catalogColumn.getTableName() );
         }
         //check if views are dependent from this view
-        checkViewDependencies(catalogTable);
+        checkViewDependencies( catalogTable );
 
         catalog.renameColumn( catalogColumn.id, newColumnName );
 
@@ -1313,7 +1314,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createView( String viewName, long schemaId, RelRoot relRoot, Statement statement, List<DataStore> stores, PlacementType placementType, List<ColumnInformation> projectedColumns ) throws TableAlreadyExistsException {
+    public void createView( String viewName, long schemaId, RelRoot relRoot, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns ) throws TableAlreadyExistsException {
 
         if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
             throw new TableAlreadyExistsException();
@@ -1328,24 +1329,31 @@ public class DdlManagerImpl extends DdlManager {
         RelDataType fieldList = relRoot.rel.getRowType();
 
         List<ColumnInformation> columns = new ArrayList<>();
-        if ( projectedColumns == null ) {
-            int position = 1;
-            for ( RelDataTypeField rel : fieldList.getFieldList() ) {
-                columns.add( new ColumnInformation(
-                        rel.getName(),
-                        new ColumnTypeInformation(
-                                rel.getType().getPolyType(),
-                                null,
-                                rel.getValue().getPrecision(),
-                                rel.getValue().getScale(),
-                                -1,
-                                -1,
-                                rel.getValue().isNullable() ),
-                        Collation.getDefaultCollation(),
-                        null,
-                        position ) );
-                position++;
+
+        int position = 1;
+        for ( RelDataTypeField rel : fieldList.getFieldList() ) {
+            RelDataType type = rel.getValue();
+            if ( rel.getType().getPolyType() == PolyType.ARRAY ) {
+                type = ((ArrayType) rel.getValue()).getComponentType();
             }
+            String colName = rel.getName();
+            if ( projectedColumns != null ) {
+                colName = projectedColumns.get( position - 1 );
+            }
+            columns.add( new ColumnInformation(
+                    colName,
+                    new ColumnTypeInformation(
+                            type.getPolyType(),
+                            rel.getType().getPolyType(),
+                            type.getPrecision(),
+                            type.getScale(),
+                            rel.getValue().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) rel.getValue()).getDimension() : -1,
+                            rel.getValue().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) rel.getValue()).getCardinality() : -1,
+                            rel.getValue().isNullable() ),
+                    Collation.getDefaultCollation(),
+                    null,
+                    position ) );
+            position++;
         }
 
         List<Long> underlyingTables = new ArrayList<>();
@@ -1651,7 +1659,7 @@ public class DdlManagerImpl extends DdlManager {
         //check if views are dependent from this view
         checkViewDependencies( catalogView );
 
-        catalog.deleteViewDependencies( (CatalogView) catalogView);
+        catalog.deleteViewDependencies( (CatalogView) catalogView );
 
         // Delete columns
         for ( Long columnId : catalogView.columnIds ) {
