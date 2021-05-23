@@ -264,6 +264,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     SqlIdentifier store = null;
     SqlIdentifier partitionColumn = null;
     SqlIdentifier partitionType = null;
+    int numPartitionGroups = 0;
     int numPartitions = 0;
     List<SqlIdentifier> partitionNamesList = new ArrayList<SqlIdentifier>();
     SqlIdentifier partitionName = null;
@@ -285,7 +286,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
         <LPAREN> partitionColumn = SimpleIdentifier() <RPAREN>
         [
             (
-                    <PARTITIONS> numPartitions = UnsignedIntLiteral()
+                    <PARTITIONS> numPartitionGroups = UnsignedIntLiteral()
                 |
                     <WITH> <LPAREN>
                             partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
@@ -318,7 +319,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
         ]
     ]
     {
-        return SqlDdlNodes.createTable(s.end(this), replace, ifNotExists, id, tableElementList, query, store, partitionType, partitionColumn, numPartitions, partitionNamesList, partitionQualifierList);
+        return SqlDdlNodes.createTable(s.end(this), replace, ifNotExists, id, tableElementList, query, store, partitionType, partitionColumn, numPartitionGroups, numPartitions, partitionNamesList, partitionQualifierList);
     }
 }
 

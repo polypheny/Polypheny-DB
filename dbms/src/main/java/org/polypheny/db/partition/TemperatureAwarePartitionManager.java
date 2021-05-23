@@ -69,6 +69,11 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
         return SUPPORTED_TYPES.contains( type );
     }
 
+    //ToDo place everything on COLD and then on later on by distribution on HOT
+    @Override
+    public int getNumberOfPartitionsPerGroup( int numberOfPartitions){
+        return 1;
+    }
 
     @Override
     public PartitionFunctionInfo getPartitionFunctionInfo() {

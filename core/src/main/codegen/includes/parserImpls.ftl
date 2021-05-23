@@ -95,6 +95,7 @@ SqlAlterTable SqlAlterTable(Span s) :
     final SqlIdentifier partitionColumn;
     List<Integer> partitionList = new ArrayList<Integer>();
     int partitionIndex = 0;
+    int numPartitionGroups = 0;
     int numPartitions = 0;
     List<SqlIdentifier> partitionNamesList = new ArrayList<SqlIdentifier>();
     SqlIdentifier partitionName = null;
@@ -453,7 +454,7 @@ SqlAlterTable SqlAlterTable(Span s) :
         <LPAREN> partitionColumn = SimpleIdentifier() <RPAREN>
         [
                 (
-                        <PARTITIONS> numPartitions = UnsignedIntLiteral()
+                        <PARTITIONS> numPartitionGroups = UnsignedIntLiteral()
                     |
                         <WITH> <LPAREN>
                                 partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
@@ -484,7 +485,7 @@ SqlAlterTable SqlAlterTable(Span s) :
                 )
         ]
         {
-            return new SqlAlterTableAddPartitions(s.end(this), table, partitionColumn, partitionType, numPartitions, partitionNamesList, partitionQualifierList);
+            return new SqlAlterTableAddPartitions(s.end(this), table, partitionColumn, partitionType, numPartitionGroups, numPartitions, partitionNamesList, partitionQualifierList);
         }
 
     |

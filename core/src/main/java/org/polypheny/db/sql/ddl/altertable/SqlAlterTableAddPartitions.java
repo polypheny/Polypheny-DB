@@ -29,7 +29,7 @@ import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.PartitionInformation;
-import org.polypheny.db.ddl.exception.PartitionNamesNotUniqueException;
+import org.polypheny.db.ddl.exception.PartitionGroupNamesNotUniqueException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -50,6 +50,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
     private final SqlIdentifier table;
     private final SqlIdentifier partitionColumn;
     private final SqlIdentifier partitionType;
+    private final int numPartitionGroups;
     private final int numPartitions;
     private final List<SqlIdentifier> partitionNamesList;
     private final List<List<SqlNode>> partitionQualifierList;
@@ -60,6 +61,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
             SqlIdentifier table,
             SqlIdentifier partitionColumn,
             SqlIdentifier partitionType,
+            int numPartitionGroups,
             int numPartitions,
             List<SqlIdentifier> partitionNamesList,
             List<List<SqlNode>> partitionQualifierList ) {
@@ -67,6 +69,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
         this.table = Objects.requireNonNull( table );
         this.partitionType = Objects.requireNonNull( partitionType );
         this.partitionColumn = Objects.requireNonNull( partitionColumn );
+        this.numPartitionGroups = numPartitionGroups; //May be empty
         this.numPartitions = numPartitions; //May be empty
         this.partitionNamesList = partitionNamesList; //May be null and can only be used in association with PARTITION BY and PARTITIONS
         this.partitionQualifierList = partitionQualifierList;
@@ -100,11 +103,12 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
         try {
             // Check if table is already partitioned
             if ( catalogTable.partitionType == Catalog.PartitionType.NONE ) {
-                DdlManager.getInstance().addPartition( PartitionInformation.fromSqlLists(
+                DdlManager.getInstance().addPartitioning( PartitionInformation.fromSqlLists(
                         catalogTable,
                         partitionType.getSimple(),
                         partitionColumn.getSimple(),
                         partitionNamesList,
+                        numPartitionGroups,
                         numPartitions,
                         partitionQualifierList ) );
 
@@ -113,7 +117,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
             }
         } catch ( UnknownPartitionTypeException | GenericCatalogException e ) {
             throw new RuntimeException( e );
-        } catch ( PartitionNamesNotUniqueException e ) {
+        } catch ( PartitionGroupNamesNotUniqueException e ) {
             throw SqlUtil.newContextException( partitionColumn.getParserPosition(), RESOURCE.partitionNamesNotUnique() );
         } catch ( UnknownColumnException e ) {
             throw SqlUtil.newContextException( partitionColumn.getParserPosition(), RESOURCE.columnNotFoundInTable( partitionColumn.getSimple(), catalogTable.name ) );

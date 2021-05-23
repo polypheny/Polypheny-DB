@@ -684,7 +684,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addPartition( long tableId, String partitionGroupName, long schemaId, int ownerId, PartitionType partitionType, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException {
+    public long addPartitionGroup( long tableId, String partitionGroupName, long schemaId, int ownerId, PartitionType partitionType, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException {
         throw new NotImplementedException();
     }
 

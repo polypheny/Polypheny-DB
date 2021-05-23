@@ -34,6 +34,7 @@ import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
+import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
@@ -987,18 +988,17 @@ public abstract class Catalog {
      *
      * @param tableId The unique id of the table
      * @param schemaId The unique id of the table
-     * @param ownerId the partitionId to be deleted
      * @param partitionType partition Type of the added partition
-     * @return The id of the created partition
+     * @return The id of the created partitionGroup
      */
-    public abstract long addPartition( long tableId, String partitionGroupName, long schemaId, int ownerId, PartitionType partitionType, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException;
+    public abstract long addPartitionGroup( long tableId, String partitionGroupName, long schemaId, PartitionType partitionType, long numberOfInternalPartitions, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException;
 
     /**
      * Deletes a single partition and all references.
      *
      * @param tableId The unique id of the table
      * @param schemaId The unique id of the table
-     * @param partitionGroupId The partitionId to be deleted
+     * @param partitionGroupId The partitionGroupId to be deleted
      */
     public abstract void deletePartitionGroup( long tableId, long schemaId, long partitionGroupId );
 
@@ -1006,9 +1006,37 @@ public abstract class Catalog {
      * Get a partition object by its unique id
      *
      * @param partitionGroupId The unique id of the partition
-     * @return A catalog partition
+     * @return A catalog partitionGroup
      */
     public abstract CatalogPartitionGroup getPartitionGroup( long partitionGroupId );
+
+
+    /**
+     * Adds a partition to the catalog
+     *
+     * @param tableId The unique id of the table
+     * @param schemaId The unique id of the table
+     * @param partitionGroupId partitionGroupId where the partition should be initially added to
+     * @return The id of the created partition
+     */
+    public abstract long addPartition( long tableId, long schemaId, long partitionGroupId, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException;
+
+    /**
+     * Deletes a single partition and all references.
+     *
+     * @param tableId The unique id of the table
+     * @param schemaId The unique id of the table
+     * @param partitionId The partitionId to be deleted
+     */
+    public abstract void deletePartition( long tableId, long schemaId, long partitionId );
+
+    /**
+     * Get a partition object by its unique id
+     *
+     * @param partitionId The unique id of the partition
+     * @return A catalog partition
+     */
+    public abstract CatalogPartition getPartition( long partitionId );
 
     /**
      * Effectively partitions a table with the specified partitionType
@@ -1047,6 +1075,26 @@ public abstract class Catalog {
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
     public abstract List<CatalogPartitionGroup> getPartitionGroups( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern );
+
+    /**
+     * Get a List of all partitions belonging to a specific table
+     *
+     * @param partitionGroupId Table to be queried
+     * @return list of all partitions on this table
+     */
+    public abstract List<CatalogPartition> getPartitions( long partitionGroupId );
+
+    /**
+     * Get all partitions of the specified database which fit to the specified filter patterns.
+     * <code>getColumns(xid, databaseName, null, null, null)</code> returns all partitions of the database.
+     *
+     * @param databaseNamePattern Pattern for the database name. null returns all.
+     * @param schemaNamePattern Pattern for the schema name. null returns all.
+     * @param tableNamePattern Pattern for the table name. null returns catalog/src/test/java/org/polypheny/db/test/CatalogTest.javaall.
+     * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
+     */
+    public abstract List<CatalogPartition> getPartitions( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern );
+
 
     /**
      * Get a List of all partition name belonging to a specific table

@@ -16,74 +16,58 @@
 
 package org.polypheny.db.catalog.entity;
 
-import com.google.common.collect.ImmutableList;
+
 import java.io.Serializable;
 import java.util.List;
 import lombok.EqualsAndHashCode;
-import lombok.SneakyThrows;
-import org.polypheny.db.catalog.Catalog;
+import lombok.Getter;
 
 
 @EqualsAndHashCode
-public final class CatalogPartitionGroup implements CatalogEntity {
+public class CatalogPartition implements CatalogEntity{
 
-    private static final long serialVersionUID = 2312903632511266177L;
+
+    private static final long serialVersionUID = 6187228972854325431L;
 
     public final long id;
-    public final String partitionGroupName;
 
+    @Getter
+    public final List<String> partitionQualifiers;
+
+
+
+
+    //To be checked if even needed
+    @Getter
+    public final long partitionGroupId;
     public final long tableId;
     public final long schemaId;
     public final long databaseId;
-    public final List<String> partitionQualifiers;
-    public final ImmutableList<Long> partitionIds;
     public final boolean isUnbound;
 
-    public final long partitionKey;
 
-
-    public CatalogPartitionGroup(
+    public CatalogPartition(
             final long id,
-            final String partitionGroupName,
             final long tableId,
             final long schemaId,
             final long databaseId,
-            final long partitionKey,
             final List<String> partitionQualifiers,
-            ImmutableList<Long> partitionIds, final boolean isUnbound ) {
+            final boolean isUnbound,
+            final long partitionGroupId) {
         this.id = id;
-        this.partitionGroupName = partitionGroupName;
         this.tableId = tableId;
         this.schemaId = schemaId;
         this.databaseId = databaseId;
-        this.partitionKey = partitionKey;
         this.partitionQualifiers = partitionQualifiers;
-        this.partitionIds = partitionIds;
         this.isUnbound = isUnbound;
+        this.partitionGroupId = partitionGroupId;
     }
 
 
-    @SneakyThrows
-    public String getTableName() {
-        return Catalog.getInstance().getTable( tableId ).name;
-    }
-
-
-    @SneakyThrows
-    public String getDatabaseName() {
-        return Catalog.getInstance().getDatabase( databaseId ).name;
-    }
-
-
-    @SneakyThrows
-    public String getSchemaName() {
-        return Catalog.getInstance().getSchema( schemaId ).name;
-    }
 
 
     @Override
     public Serializable[] getParameterArray() {
         throw new RuntimeException( "Not implemented" );
     }
-
 }

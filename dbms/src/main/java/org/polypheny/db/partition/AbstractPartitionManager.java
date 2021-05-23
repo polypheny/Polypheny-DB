@@ -80,6 +80,12 @@ public abstract class AbstractPartitionManager implements PartitionManager {
         return true;
     }
 
+    //Returns 1 for most PartitionFunctions since they have a 1:1 relation between Groups and Internal Partitions
+    //In that case the input of numberOfPartitions is ommitted
+    @Override
+    public int getNumberOfPartitionsPerGroup( int numberOfPartitions){
+        return 1;
+    }
 
     /**
      * Returns number of placements for this column which contain all partitions

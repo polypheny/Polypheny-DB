@@ -75,8 +75,8 @@ public class SqlDdlNodes {
     /**
      * Creates a CREATE TABLE.
      */
-    public static SqlCreateTable createTable( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query, SqlIdentifier store, SqlIdentifier partitionType, SqlIdentifier partitionColumn, int numPartitions, List<SqlIdentifier> partitionNamesList, List<List<SqlNode>> partitionQualifierList ) {
-        return new SqlCreateTable( pos, replace, ifNotExists, name, columnList, query, store, partitionType, partitionColumn, numPartitions, partitionNamesList, partitionQualifierList );
+    public static SqlCreateTable createTable( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query, SqlIdentifier store, SqlIdentifier partitionType, SqlIdentifier partitionColumn, int numPartitionGroups, int numPartitions, List<SqlIdentifier> partitionNamesList, List<List<SqlNode>> partitionQualifierList ) {
+        return new SqlCreateTable( pos, replace, ifNotExists, name, columnList, query, store, partitionType, partitionColumn, numPartitionGroups, numPartitions, partitionNamesList, partitionQualifierList );
     }
 
 

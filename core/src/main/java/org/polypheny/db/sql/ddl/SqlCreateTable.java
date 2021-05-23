@@ -58,7 +58,7 @@ import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.ddl.DdlManager.ConstraintInformation;
 import org.polypheny.db.ddl.DdlManager.PartitionInformation;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
-import org.polypheny.db.ddl.exception.PartitionNamesNotUniqueException;
+import org.polypheny.db.ddl.exception.PartitionGroupNamesNotUniqueException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlCreate;
 import org.polypheny.db.sql.SqlExecutableStatement;
@@ -88,6 +88,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
     private final SqlIdentifier store;
     private final SqlIdentifier partitionColumn;
     private final SqlIdentifier partitionType;
+    private final int numPartitionGroups;
     private final int numPartitions;
     private final List<SqlIdentifier> partitionNamesList;
 
@@ -109,6 +110,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             SqlIdentifier store,
             SqlIdentifier partitionType,
             SqlIdentifier partitionColumn,
+            int numPartitionGroups,
             int numPartitions,
             List<SqlIdentifier> partitionNamesList,
             List<List<SqlNode>> partitionQualifierList ) {
@@ -119,7 +121,8 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         this.store = store; // ON STORE [store name]; may be null
         this.partitionType = partitionType; // PARTITION BY (HASH | RANGE | LIST); may be null
         this.partitionColumn = partitionColumn; // May be null
-        this.numPartitions = numPartitions; // May be null and can only be used in association with PARTITION BY
+        this.numPartitionGroups = numPartitionGroups; // May be null and can only be used in association with PARTITION BY
+        this.numPartitions = numPartitions;
         this.partitionNamesList = partitionNamesList; // May be null and can only be used in association with PARTITION BY and PARTITIONS
         this.partitionQualifierList = partitionQualifierList;
     }
@@ -231,11 +234,12 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                     statement );
 
             if ( partitionType != null ) {
-                DdlManager.getInstance().addPartition( PartitionInformation.fromSqlLists(
+                DdlManager.getInstance().addPartitioning( PartitionInformation.fromSqlLists(
                         getCatalogTable( context, new SqlIdentifier( tableName, SqlParserPos.ZERO ) ),
                         partitionType.getSimple(),
                         partitionColumn.getSimple(),
                         partitionNamesList,
+                        numPartitionGroups,
                         numPartitions,
                         partitionQualifierList ) );
             }
@@ -246,7 +250,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             throw SqlUtil.newContextException( partitionColumn.getParserPosition(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
         } catch ( UnknownPartitionTypeException e ) {
             throw SqlUtil.newContextException( partitionType.getParserPosition(), RESOURCE.unknownPartitionType( partitionType.getSimple() ) );
-        } catch ( PartitionNamesNotUniqueException e ) {
+        } catch ( PartitionGroupNamesNotUniqueException e ) {
             throw SqlUtil.newContextException( partitionColumn.getParserPosition(), RESOURCE.partitionNamesNotUnique() );
         } catch ( GenericCatalogException | UnknownColumnException e ) {
             // we just added the table/column so it has to exist or we have a internal problem
