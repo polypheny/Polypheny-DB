@@ -36,11 +36,11 @@ package org.polypheny.db.sql;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.Getter;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.rel.type.RelDataType;
@@ -100,7 +100,7 @@ import org.polypheny.db.util.Util;
  *
  * <p>An instance of this class is immutable.
  */
-public class SqlIntervalQualifier extends SqlNode implements Serializable {
+public class SqlIntervalQualifier extends SqlNode {
     //~ Static fields/initializers ---------------------------------------------
 
     private static final BigDecimal ZERO = BigDecimal.ZERO;
@@ -110,9 +110,10 @@ public class SqlIntervalQualifier extends SqlNode implements Serializable {
 
     //~ Instance fields --------------------------------------------------------
 
-    private int startPrecision;
-    public TimeUnitRange timeUnitRange;
-    private int fractionalSecondPrecision;
+    private final int startPrecision;
+    public final TimeUnitRange timeUnitRange;
+    @Getter
+    private final int fractionalSecondPrecision;
 
     //~ Constructors -----------------------------------------------------------
 
@@ -147,8 +148,15 @@ public class SqlIntervalQualifier extends SqlNode implements Serializable {
     }
 
 
-    public SqlIntervalQualifier() {
-
+    public SqlIntervalQualifier(
+            int startPrecision,
+            int fractionalSecondPrecision,
+            TimeUnitRange timeUnitRange,
+            SqlParserPos pos ) {
+        super( pos );
+        this.timeUnitRange = timeUnitRange;
+        this.startPrecision = startPrecision;
+        this.fractionalSecondPrecision = fractionalSecondPrecision;
     }
 
     //~ Methods ----------------------------------------------------------------
@@ -1258,5 +1266,6 @@ public class SqlIntervalQualifier extends SqlNode implements Serializable {
                 RESOURCE.intervalFieldExceedsPrecision(
                         value, type.name() + "(" + precision + ")" ) );
     }
+
 }
 

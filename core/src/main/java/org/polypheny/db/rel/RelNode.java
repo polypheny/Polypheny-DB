@@ -339,10 +339,16 @@ public interface RelNode extends RelOptNode, Cloneable {
         return isCacheable;
     }
 
+    /**
+     * To check if a RelNode includes a ViewTableScan
+     */
     default boolean hasView() {
         return false;
     }
 
+    /**
+     * Expands View and if a part of RelNode is a ViewTableScan in order to replace this part within expandViewNode()
+     */
     default void tryExpandView( RelNode input ) {
         if ( input instanceof ViewTableScan ) {
             input = ((ViewTableScan) input).expandViewNode();
@@ -350,16 +356,6 @@ public interface RelNode extends RelOptNode, Cloneable {
             input.tryExpandView( input );
         }
     }
-    /*
-    default RelCollation getViewCollation(RelNode result){
-        if (result instanceof ViewTableScan){
-            return ((ViewTableScan)result).getRelRoot().collation;
-        } else {
-            result.getViewCollation( result );
-        }
-    }
-
-     */
 
     /**
      * Context of a relational expression, for purposes of checking validity.

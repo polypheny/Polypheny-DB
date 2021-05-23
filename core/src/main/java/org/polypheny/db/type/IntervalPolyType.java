@@ -53,7 +53,8 @@ import org.polypheny.db.sql.util.SqlString;
 public class IntervalPolyType extends AbstractPolyType {
 
     private final RelDataTypeSystem typeSystem;
-    private final SqlIntervalQualifier intervalQualifier;
+    //private final SqlIntervalQualifier intervalQualifier;
+    private final PolyIntervalQualifier newIntervalQualifier;
 
 
     /**
@@ -62,7 +63,8 @@ public class IntervalPolyType extends AbstractPolyType {
     public IntervalPolyType( RelDataTypeSystem typeSystem, SqlIntervalQualifier intervalQualifier, boolean isNullable ) {
         super( intervalQualifier.typeName(), isNullable, null );
         this.typeSystem = Objects.requireNonNull( typeSystem );
-        this.intervalQualifier = Objects.requireNonNull( intervalQualifier );
+        //this.intervalQualifier = Objects.requireNonNull( intervalQualifier );
+        this.newIntervalQualifier = PolyIntervalQualifier.fromSqlQualifier( intervalQualifier );
         computeDigest();
     }
 
@@ -75,7 +77,7 @@ public class IntervalPolyType extends AbstractPolyType {
         writer.setAlwaysUseParentheses( false );
         writer.setSelectListItemsOnSeparateLines( false );
         writer.setIndentation( 0 );
-        intervalQualifier.unparse( writer, 0, 0 );
+        newIntervalQualifier.toSqlIntervalQualifier().unparse( writer, 0, 0 );
         final String sql = writer.toString();
         sb.append( new SqlString( dialect, sql ).getSql() );
     }
@@ -83,7 +85,7 @@ public class IntervalPolyType extends AbstractPolyType {
 
     @Override
     public SqlIntervalQualifier getIntervalQualifier() {
-        return intervalQualifier;
+        return newIntervalQualifier.toSqlIntervalQualifier();
     }
 
 
@@ -102,23 +104,23 @@ public class IntervalPolyType extends AbstractPolyType {
         final TimeUnit thatStart = Objects.requireNonNull( that.typeName.getStartUnit() );
         final TimeUnit thatEnd = that.typeName.getEndUnit();
 
-        int secondPrec = this.intervalQualifier.getStartPrecisionPreservingDefault();
+        int secondPrec = this.newIntervalQualifier.getStartPrecisionPreservingDefault();
         final int fracPrec =
-                SqlIntervalQualifier.combineFractionalSecondPrecisionPreservingDefault(
+                PolyIntervalQualifier.combineFractionalSecondPrecisionPreservingDefault(
                         typeSystem,
-                        this.intervalQualifier,
-                        that.intervalQualifier );
+                        this.newIntervalQualifier,
+                        that.newIntervalQualifier );
 
         if ( thisStart.ordinal() > thatStart.ordinal() ) {
             thisEnd = thisStart;
             thisStart = thatStart;
-            secondPrec = that.intervalQualifier.getStartPrecisionPreservingDefault();
+            secondPrec = that.newIntervalQualifier.getStartPrecisionPreservingDefault();
         } else if ( thisStart.ordinal() == thatStart.ordinal() ) {
             secondPrec =
-                    SqlIntervalQualifier.combineStartPrecisionPreservingDefault(
+                    PolyIntervalQualifier.combineStartPrecisionPreservingDefault(
                             typeFactory.getTypeSystem(),
-                            this.intervalQualifier,
-                            that.intervalQualifier );
+                            this.newIntervalQualifier,
+                            that.newIntervalQualifier );
         } else if ( null == thisEnd || thisEnd.ordinal() < thatStart.ordinal() ) {
             thisEnd = thatStart;
         }
@@ -137,13 +139,14 @@ public class IntervalPolyType extends AbstractPolyType {
 
     @Override
     public int getPrecision() {
-        return intervalQualifier.getStartPrecision( typeSystem );
+        return newIntervalQualifier.getStartPrecision( typeSystem );
     }
 
 
     @Override
     public int getScale() {
-        return intervalQualifier.getFractionalSecondPrecision( typeSystem );
+        return newIntervalQualifier.getFractionalSecondPrecision( typeSystem );
     }
+
 }
 

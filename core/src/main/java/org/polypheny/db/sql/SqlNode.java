@@ -61,9 +61,7 @@ public abstract class SqlNode implements Cloneable {
     public static final SqlNode[] EMPTY_ARRAY = new SqlNode[0];
 
 
-    protected SqlParserPos pos;
-
-    SqlNode(){}
+    protected final SqlParserPos pos;
 
     /**
      * Creates a node.
