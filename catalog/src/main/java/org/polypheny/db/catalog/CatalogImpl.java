@@ -1378,9 +1378,11 @@ public class CatalogImpl extends Catalog {
         synchronized ( this ) {
             schemaChildren.replace( table.schemaId, ImmutableList.copyOf( children ) );
 
-            getPartitionGroups( tableId );
-            for ( Long partitionGroupId : Objects.requireNonNull(table.partitionGroupIds) ) {
-                deletePartitionGroup(  table.id, table.schemaId, partitionGroupId );
+
+            if ( table.isPartitioned ) {
+                for ( Long partitionGroupId : Objects.requireNonNull( table.partitionGroupIds ) ) {
+                    deletePartitionGroup( table.id, table.schemaId, partitionGroupId );
+                }
             }
 
             for ( Long columnId : Objects.requireNonNull( tableChildren.get( tableId ) ) ) {
