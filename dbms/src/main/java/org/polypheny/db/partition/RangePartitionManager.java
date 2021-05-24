@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
@@ -47,25 +48,36 @@ public class RangePartitionManager extends AbstractPartitionManager {
         Catalog catalog = Catalog.getInstance();
         long selectedPartitionGroupId = -1;
         long unboundPartitionGroupId = -1;
+        long selectedPartitionId = -1;
 
+        //Get and accumulate all catalogPartitions for table
+        List<CatalogPartition> catalogPartitions  = new ArrayList<>();
         for ( long partitionGroupID : catalogTable.partitionGroupIds ) {
-
             CatalogPartitionGroup catalogPartitionGroup = catalog.getPartitionGroup( partitionGroupID );
 
             if ( catalogPartitionGroup.isUnbound ) {
                 unboundPartitionGroupId = catalogPartitionGroup.id;
-                continue;
+                break;
             }
 
-            if ( isValueInRange( columnValue, catalogPartitionGroup ) ) {
+            //Build long list of catalog partitions to process later on
+            for ( Long internalPartitionID : catalogPartitionGroup.partitionIds ) {
+                catalogPartitions.add( catalog.getPartition( internalPartitionID ) );
+            }
+        }
+
+        //Process all accumulated CatalogPartitions
+        for ( CatalogPartition catalogPartition : catalogPartitions ) {
+            if ( isValueInRange( columnValue, catalogPartition ) ) {
                 if ( log.isDebugEnabled() ) {
                     log.debug( "Found column value: {} on partitionGroupID {} in range: [{} - {}]",
                             columnValue,
-                            partitionGroupID,
-                            catalogPartitionGroup.partitionQualifiers.get( 0 ),
-                            catalogPartitionGroup.partitionQualifiers.get( 1 ) );
+                            catalogPartition.id,
+                            catalogPartition.partitionQualifiers.get( 0 ),
+                            catalogPartition.partitionQualifiers.get( 1 ) );
                 }
-                selectedPartitionGroupId = catalogPartitionGroup.id;
+                selectedPartitionId = catalogPartition.id;
+                selectedPartitionGroupId = catalogPartition.partitionGroupId;
                 return selectedPartitionGroupId;
             }
         }
@@ -308,9 +320,9 @@ public class RangePartitionManager extends AbstractPartitionManager {
     }
 
 
-    private boolean isValueInRange( String columnValue, CatalogPartitionGroup catalogPartitionGroup ) {
-        int lowerBound = Integer.parseInt( catalogPartitionGroup.partitionQualifiers.get( 0 ) );
-        int upperBound = Integer.parseInt( catalogPartitionGroup.partitionQualifiers.get( 1 ) );
+    private boolean isValueInRange( String columnValue, CatalogPartition catalogPartition ) {
+        int lowerBound = Integer.parseInt( catalogPartition.partitionQualifiers.get( 0 ) );
+        int upperBound = Integer.parseInt( catalogPartition.partitionQualifiers.get( 1 ) );
 
         double numericValue = Double.parseDouble( columnValue );
 

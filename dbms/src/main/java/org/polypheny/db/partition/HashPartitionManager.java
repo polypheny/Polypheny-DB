@@ -24,6 +24,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogPartition;
+import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumnType;
@@ -39,15 +41,31 @@ public class HashPartitionManager extends AbstractPartitionManager {
 
     @Override
     public long getTargetPartitionGroupId( CatalogTable catalogTable, String columnValue ) {
-        long partitionGroupID = columnValue.hashCode() * -1;
+        long hashValue = columnValue.hashCode() * -1;
 
         // Don't want any neg. value for now
-        if ( partitionGroupID <= 0 ) {
-            partitionGroupID *= -1;
+        if ( hashValue <= 0 ) {
+            hashValue *= -1;
         }
 
+        Catalog catalog = Catalog.getInstance();
+
+        //Get and accumulate all catalogPartitions for table
+        List<CatalogPartition> catalogPartitions  = new ArrayList<>();
+        for ( long partitionGroupID : catalogTable.partitionGroupIds ) {
+            CatalogPartitionGroup catalogPartitionGroup = catalog.getPartitionGroup( partitionGroupID );
+
+            //Build long list of catalog partitions to process later on
+            for ( Long internalPartitionID : catalogPartitionGroup.partitionIds ) {
+                catalogPartitions.add( catalog.getPartition( internalPartitionID ) );
+            }
+        }
+
+        //Get designated HASH partition based on number of internal partitions
+        int partitionIndex = (int) (hashValue % catalogPartitions.size());
+
         // Finally decide on which partition to put it
-        return catalogTable.partitionGroupIds.get( (int) (partitionGroupID % catalogTable.numPartitionGroups) );
+        return catalogPartitions.get( partitionIndex ).partitionGroupId ;
     }
 
 

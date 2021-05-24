@@ -57,6 +57,8 @@ public final class CatalogPartitionGroup implements CatalogEntity {
         this.schemaId = schemaId;
         this.databaseId = databaseId;
         this.partitionKey = partitionKey;
+        // TODO @HENNLO Although the qualifiers are now part of CatalogPartitions, it might be a good improvement to accumulate all qualifiers of all
+        // internal partitions here to speed up query time.
         this.partitionQualifiers = partitionQualifiers;
         this.partitionIds = partitionIds;
         this.isUnbound = isUnbound;

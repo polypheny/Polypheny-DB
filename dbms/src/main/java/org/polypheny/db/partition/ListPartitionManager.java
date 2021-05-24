@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
@@ -47,29 +48,41 @@ public class ListPartitionManager extends AbstractPartitionManager {
         Catalog catalog = Catalog.getInstance();
         long selectedPartitionGroupId = -1;
         long unboundPartitionGroupId = -1;
+        long selectedPartitionId = -1;
 
+        //Get and accumulate all catalogPartitions for table
+        List<CatalogPartition> catalogPartitions  = new ArrayList<>();
         for ( long partitionGroupID : catalogTable.partitionGroupIds ) {
-
             CatalogPartitionGroup catalogPartitionGroup = catalog.getPartitionGroup( partitionGroupID );
 
             if ( catalogPartitionGroup.isUnbound ) {
                 unboundPartitionGroupId = catalogPartitionGroup.id;
             }
-            for ( int i = 0; i < catalogPartitionGroup.partitionQualifiers.size(); i++ ) {
+
+            //Build long list of catalog partitions to process later on
+            for ( Long internalPartitionID : catalogPartitionGroup.partitionIds ) {
+                catalogPartitions.add( catalog.getPartition( internalPartitionID ) );
+            }
+        }
+
+        //Process all accumulated CatalogPartitions
+        for ( CatalogPartition catalogPartition : catalogPartitions ) {
+            for ( int i = 0; i < catalogPartition.partitionQualifiers.size(); i++ ) {
                 //Could be int
-                if ( catalogPartitionGroup.partitionQualifiers.get( i ).equals( columnValue ) ) {
+                if ( catalogPartition.partitionQualifiers.get( i ).equals( columnValue ) ) {
                     if ( log.isDebugEnabled() ) {
                         log.debug( "Found column value: {} on partitionID {} with qualifiers: {}",
                                 columnValue,
-                                partitionGroupID,
-                                catalogPartitionGroup.partitionQualifiers );
+                                catalogPartition.id,
+                                catalogPartition.partitionQualifiers );
                     }
-                    selectedPartitionGroupId = catalogPartitionGroup.id;
+                    selectedPartitionId = catalogPartition.id;
+                    selectedPartitionGroupId = catalogPartition.partitionGroupId;
                     break;
                 }
             }
-
         }
+
         // If no concrete partition could be identified, report back the unbound/default partition
         if ( selectedPartitionGroupId == -1 ) {
             selectedPartitionGroupId = unboundPartitionGroupId;
@@ -77,6 +90,8 @@ public class ListPartitionManager extends AbstractPartitionManager {
 
         return selectedPartitionGroupId;
     }
+
+
 
 
     // Needed when columnPlacements are being dropped
