@@ -42,6 +42,9 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
 
     @Override
     public long getTargetPartitionGroupId( CatalogTable catalogTable, String columnValue ) {
+
+        //Simply decide IF hot or COLD based on internal partition Function
+
         return 0;
     }
 
@@ -74,6 +77,7 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
     public int getNumberOfPartitionsPerGroup( int numberOfPartitions){
         return 1;
     }
+
 
     @Override
     public PartitionFunctionInfo getPartitionFunctionInfo() {

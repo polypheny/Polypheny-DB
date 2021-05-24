@@ -87,6 +87,7 @@ import org.polypheny.db.catalog.exceptions.UnknownUserIdRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -1352,7 +1353,8 @@ public class CatalogImpl extends Catalog {
                     , old.numPartitionGroups
                     , old.partitionType
                     , old.partitionGroupIds
-                    , old.partitionColumnId);
+                    , old.partitionColumnId
+                    , old.partitionProperty);
         }else {
             table = new CatalogTable( old.id, name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, old.placementsByAdapter, old.modifiable );
         }
@@ -1432,7 +1434,8 @@ public class CatalogImpl extends Catalog {
                     , old.numPartitionGroups
                     , old.partitionType
                     , old.partitionGroupIds
-                    , old.partitionColumnId);
+                    , old.partitionColumnId
+                    ,old.partitionProperty );
         }else {
             table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, ownerId, user.name, old.tableType, old.definition, old.primaryKey, old.placementsByAdapter, old.modifiable );
         }
@@ -1471,7 +1474,8 @@ public class CatalogImpl extends Catalog {
                      ,  old.numPartitionGroups
                      , old.partitionType
                      , old.partitionGroupIds
-                     , old.partitionColumnId);
+                     , old.partitionColumnId
+                     , old.partitionProperty);
         }else {
              table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, keyId, old.placementsByAdapter, old.modifiable );
         }
@@ -1552,7 +1556,8 @@ public class CatalogImpl extends Catalog {
                         old.numPartitionGroups,
                         old.partitionType,
                         old.partitionGroupIds,
-                        old.partitionColumnId );
+                        old.partitionColumnId
+                        ,old.partitionProperty );
 
                 // If table is partitioned and no concrete partitions are defined place all partitions on columnPlacement
                 if ( partitionGroupIds == null ) {
@@ -1651,7 +1656,8 @@ public class CatalogImpl extends Catalog {
                         oldTable.numPartitionGroups,
                         oldTable.partitionType,
                         oldTable.partitionGroupIds,
-                        oldTable.partitionColumnId );
+                        oldTable.partitionColumnId,
+                        oldTable.partitionProperty);
 
                 //Check if this is the last placement on store. If so remove dataPartitionPlacement
                 if ( lastPlacementOnStore ) {
@@ -2106,7 +2112,8 @@ public class CatalogImpl extends Catalog {
                         , table.numPartitionGroups
                         , table.partitionType
                         , table.partitionGroupIds
-                        , table.partitionColumnId);
+                        , table.partitionColumnId
+                        , table.partitionProperty );
             }else {
                 updatedTable = new CatalogTable( table.id, table.name, ImmutableList.copyOf( columnIds ), table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByAdapter, table.modifiable );
             }
@@ -2326,7 +2333,8 @@ public class CatalogImpl extends Catalog {
                     , old.numPartitionGroups
                     , old.partitionType
                     , old.partitionGroupIds
-                    , old.partitionColumnId);
+                    , old.partitionColumnId
+                    , old.partitionProperty);
         }else {
             table = new CatalogTable( old.id, old.name, ImmutableList.copyOf( columnIds ), old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, old.placementsByAdapter, old.modifiable );
         }
@@ -3216,7 +3224,7 @@ public class CatalogImpl extends Catalog {
                     schemaId,
                     schema.databaseId,
                     0,
-                    effectivePartitionGroupQualifier,
+                    null,
                     ImmutableList.copyOf(partitionIds)
                     , isUnbound );
 
@@ -3348,7 +3356,7 @@ public class CatalogImpl extends Catalog {
      * @param partitionGroupIds List of ids of the catalog partitions
      */
     @Override
-    public void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitionGroups, List<Long> partitionGroupIds ) {
+    public void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitionGroups, List<Long> partitionGroupIds, PartitionProperty  partitionProperty) {
         CatalogTable old = Objects.requireNonNull( tables.get( tableId ) );
 
         CatalogTable table = new CatalogTable(
@@ -3367,7 +3375,8 @@ public class CatalogImpl extends Catalog {
                 numPartitionGroups,
                 partitionType,
                 ImmutableList.copyOf( partitionGroupIds ),
-                partitionColumnId );
+                partitionColumnId,
+                partitionProperty);
 
         synchronized ( this ) {
             tables.replace( tableId, table );

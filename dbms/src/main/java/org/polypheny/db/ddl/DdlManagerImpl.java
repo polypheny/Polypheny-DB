@@ -89,6 +89,10 @@ import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
+import org.polypheny.db.partition.TemperatureAwarePartitionManager;
+import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
+import org.polypheny.db.partition.properties.TemperaturePartitionProperty.PartitionCostIndication;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
@@ -1413,8 +1417,31 @@ public class DdlManagerImpl extends DdlManager {
             partitionGroupIds.add( partId );
         }
 
+
+        //TODO Find better place to work with Property handling
+
+        PartitionProperty partitionProperty;
+        if ( actualPartitionType == PartitionType.TEMPERATURE ){
+            partitionProperty = TemperaturePartitionProperty.builder()
+                    .partitionType( actualPartitionType )
+                    .internalPartitionFunction( PartitionType.HASH ) //TODO HENNLO RemoveHard coded HASH
+                    .partitionColumnId( catalogColumn.id )
+                    .partitionGroupIds( ImmutableList.copyOf( partitionGroupIds ))
+                    .partitionCostIndication( PartitionCostIndication.WRITE )
+                    .hotAccessPercentageIn( 10 )
+                    .hotAccessPercentageOut( 18 )
+                    .build();
+        }
+        else{
+            partitionProperty = PartitionProperty.builder()
+                    .partitionType( actualPartitionType )
+                    .partitionColumnId( catalogColumn.id )
+                    .partitionGroupIds( ImmutableList.copyOf( partitionGroupIds ))
+                    .build();
+        }
+
         // Update catalog table
-        catalog.partitionTable( partitionInfo.table.id, actualPartitionType, catalogColumn.id, numberOfPartitionGroups, partitionGroupIds );
+        catalog.partitionTable( partitionInfo.table.id, actualPartitionType, catalogColumn.id, numberOfPartitionGroups, partitionGroupIds, partitionProperty );
 
         // Get primary key of table and use PK to find all DataPlacements of table
         long pkid = partitionInfo.table.primaryKey;

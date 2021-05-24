@@ -29,6 +29,7 @@ import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.partition.properties.PartitionProperty;
 
 
 @EqualsAndHashCode
@@ -53,6 +54,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     public final Catalog.PartitionType partitionType;
     public final ImmutableList<Long> partitionGroupIds;
     public final long partitionColumnId;
+    public final PartitionProperty partitionProperty;
 
     public final long numPartitionGroups;
 
@@ -88,6 +90,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         this.partitionGroupIds = null;
         this.partitionColumnId = 0;
         this.numPartitionGroups = 0;
+        this.partitionProperty = null;
 
         if ( type == TableType.TABLE && !modifiable ) {
             throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
@@ -113,7 +116,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
             final long numPartitionGroups,
             final PartitionType partitionType,
             final ImmutableList<Long> partitionGroupIds,
-            final long partitionColumnId ) {
+            final long partitionColumnId, PartitionProperty partitionProperty ) {
         this.id = id;
         this.name = name;
         this.columnIds = columnIds;
@@ -131,6 +134,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         this.partitionColumnId = partitionColumnId;
         this.numPartitionGroups = numPartitionGroups;
         this.isPartitioned = true;
+        this.partitionProperty = partitionProperty;
 
     }
 

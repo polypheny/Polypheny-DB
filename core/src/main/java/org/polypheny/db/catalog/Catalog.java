@@ -70,6 +70,7 @@ import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -1047,7 +1048,7 @@ public abstract class Catalog {
      * @param numPartitionGroups Explicit number of partitions
      * @param partitionGroupIds List of ids of the catalog partitions
      */
-    public abstract void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitionGroups, List<Long> partitionGroupIds );
+    public abstract void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitionGroups, List<Long> partitionGroupIds, PartitionProperty partitionProperty );
 
     /**
      * Merges a  partitioned table.
