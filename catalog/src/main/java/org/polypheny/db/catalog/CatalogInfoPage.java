@@ -120,6 +120,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
         adapterInformation.reset();
         indexInformation.reset();
         partitionGroupInformation.reset();
+        partitionInformation.reset();
 
         if ( catalog == null ) {
             log.error( "Catalog not defined in the catalogInformationPage." );

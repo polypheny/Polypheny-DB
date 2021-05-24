@@ -1490,6 +1490,7 @@ public class CatalogImpl extends Catalog {
     }
 
 
+
     /**
      * Adds a placement for a column.
      *
@@ -3203,7 +3204,7 @@ public class CatalogImpl extends Catalog {
             CatalogSchema schema = Objects.requireNonNull( schemas.get( schemaId ) );
 
             List<Long> partitionIds = new ArrayList<>();
-            for ( int i = 0; i < effectivePartitionGroupQualifier.size(); i++ ) {
+            for ( int i = 0; i < numberOfInternalPartitions; i++ ) {
                 long partId = addPartition( tableId, schemaId, id, effectivePartitionGroupQualifier, isUnbound );
                 partitionIds.add( partId );
             }
@@ -3242,14 +3243,13 @@ public class CatalogImpl extends Catalog {
     public void deletePartitionGroup( long tableId, long schemaId, long partitionGroupId ) throws UnknownPartitionGroupIdRuntimeException {
         log.debug( "Deleting partitionGroup with id '{}' on table with id '{}'", partitionGroupId, tableId );
         // Check whether there this partition id exists
-        CatalogPartitionGroup partitionsGroup = getPartitionGroup( partitionGroupId );
+        CatalogPartitionGroup partitionGroup = getPartitionGroup( partitionGroupId );
         synchronized ( this ) {
-            for ( long partitionId :  partitionsGroup.partitionIds ){
+            for ( long partitionId :  partitionGroup.partitionIds ){
                 deletePartition( tableId, schemaId, partitionId );
             }
             partitionGroups.remove( partitionGroupId );
         }
-
     }
 
 
@@ -3467,7 +3467,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get a List of all partitions belonging to a specific table
+     * Get a List of all partitions currently assigend to to a specific PartitionGroup
      *
      * @param partitionGroupId Table to be queried
      * @return list of all partitions on this table
