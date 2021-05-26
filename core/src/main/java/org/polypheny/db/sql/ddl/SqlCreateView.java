@@ -43,10 +43,10 @@ import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.UnknownCollationException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -54,7 +54,6 @@ import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.sql.SqlCreate;
 import org.polypheny.db.sql.SqlExecutableStatement;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -150,22 +149,11 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
                     statement,
                     store,
                     placementType,
-                    columns ); // ToDo: Check if columnList != null and provide list of column information
+                    columns );
         } catch ( TableAlreadyExistsException e ) {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( viewName ) );
-        }
-    }
-
-
-    private Collation getCollation( RelDataTypeField rel ) {
-        try {
-            if ( rel.getValue().getCollation() != null ) {
-                return Collation.parse( rel.getValue().getCollation().getCollationName() );
-            } else {
-                return Collation.getDefaultCollation();
-            }
-
-        } catch ( UnknownCollationException e ) {
+        }catch ( GenericCatalogException | UnknownColumnException e ) {
+            // we just added the table/column so it has to exist or we have a internal problem
             throw new RuntimeException( e );
         }
     }
@@ -177,16 +165,13 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
         for ( Ord<SqlNode> c : Ord.zip( columnList ) ) {
             if ( c.e instanceof SqlIdentifier ) {
                 SqlIdentifier sqlIdentifier = (SqlIdentifier) c.e;
+                columnName.add( sqlIdentifier.getSimple() );
 
-                columnName.add(sqlIdentifier.getSimple());
-
-            } else  {
+            } else {
                 throw new AssertionError( c.e.getClass() );
             }
         }
-
         return columnName;
-
     }
 
 

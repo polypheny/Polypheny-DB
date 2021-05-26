@@ -20,6 +20,9 @@ package org.polypheny.db;
 import static org.junit.Assert.fail;
 
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -45,7 +48,7 @@ import org.polypheny.db.transaction.TransactionManager;
 public class TestHelper {
 
     private static final TestHelper INSTANCE = new TestHelper();
-
+    private static double DELTA = 0.1;
     private final PolyphenyDb polyphenyDb;
 
     @Getter
@@ -127,6 +130,7 @@ public class TestHelper {
             int j = 0;
             while ( j < expectedRow.length ) {
                 if ( expectedRow.length >= j + 1 ) {
+                    int columnType = resultSet.getMetaData().getColumnType( j + 1 );
                     if ( resultSet.getMetaData().getColumnType( j + 1 ) == Types.BINARY ) {
                         if ( expectedRow[j] == null ) {
                             Assert.assertNull( "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "': ", resultSet.getBytes( j + 1 ) );
@@ -135,11 +139,26 @@ public class TestHelper {
                                     new String( (byte[]) expectedRow[j] ),
                                     new String( resultSet.getBytes( j + 1 ) ) );
                         }
-                    } else if ( resultSet.getMetaData().getColumnType( j + 1 ) != Types.ARRAY ) {
-                        Assert.assertEquals(
-                                "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "'",
-                                expectedRow[j],
-                                resultSet.getObject( j + 1 ) );
+                    } else if ( columnType != Types.ARRAY ) {
+                        if (expectedRow[j] != null){
+                            if(columnType == Types.FLOAT){
+                                Assert.assertTrue( Math.abs( (float)expectedRow[j] - (float)resultSet.getObject( j + 1 ) ) < DELTA );
+                            }else if(columnType == Types.DOUBLE){
+                                Assert.assertTrue( Math.abs( (double)expectedRow[j] - (double)resultSet.getObject( j + 1 ) ) < DELTA );
+                            }else if(columnType == Types.DECIMAL){
+                                BigDecimal expectedResult = ((BigDecimal) expectedRow[j]);
+                                BigDecimal result = ((BigDecimal) resultSet.getObject( j + 1 ));
+                                Assert.assertTrue( Math.abs( expectedResult.doubleValue() - result.doubleValue() ) < DELTA );
+                        }
+
+                        }else {
+                            Assert.assertEquals(
+                                    "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "'",
+                                    expectedRow[j],
+                                    resultSet.getObject( j + 1 )
+                            );
+                        }
+
                     } else {
                         List resultList = SqlFunctions.deepArrayToList( resultSet.getArray( j + 1 ) );
                         Object[] expectedArray = (Object[]) expectedRow[j];

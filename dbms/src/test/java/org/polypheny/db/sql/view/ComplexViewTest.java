@@ -936,7 +936,7 @@ public class ComplexViewTest {
                 initTables( statement );
 
                 try {
-/*
+
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select "
                                     +     "o_orderpriority, "
@@ -963,7 +963,7 @@ public class ComplexViewTest {
                     );
 
 
- */
+
                     statement.executeUpdate( "CREATE VIEW q4_VIEW AS "
                             + "select "
                             +     "o_orderpriority, "
@@ -1105,6 +1105,8 @@ public class ComplexViewTest {
                             ImmutableList.of( q7_TEST_DATA )
                     );
 
+
+
                     statement.executeUpdate( "CREATE VIEW q7_VIEW AS "
                             + "select "
                             +     "supp_nation, "
@@ -1151,7 +1153,6 @@ public class ComplexViewTest {
                     connection.commit();
                 } finally {
                     dropTables(statement);
-                    //statement.executeUpdate( "DROP VIEW q7_VIEW" );
 
                 }
             }
@@ -1685,7 +1686,7 @@ public class ComplexViewTest {
     }
 
 
-    // changed max(total_revenue) to total_revenue
+    // changed max(total_revenue) to total_revenue // Not possible in normal to SELECT aggregate within inner query
     @Test
     public void testQ15() throws SQLException {
 

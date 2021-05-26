@@ -22,6 +22,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
@@ -61,7 +62,7 @@ public class ViewTest {
             + "( 2, 'Sales', 2),"
             + "( 3, 'HR', 3)";
 
-    private final static String VIEWTESTLOCTABLE_DAT_SQL = "INSTER INTO viewTestLocTable VALUES"
+    private final static String VIEWTESTLOCTABLE_DATA_SQL = "INSERT INTO viewTestLocTable VALUES"
             + "(1, 'Bergstrasse 15', 4058, 'Basel', 'Switzerland'),"
             + "(2, 'Waldstrasse 11', 99900, 'Singen', 'Germany'),"
             + "(3, '5th Avenue 1234', 10001, 'New York', 'USA') ";
@@ -216,5 +217,97 @@ public class ViewTest {
             }
         }
     }
+
+
+    //SELECT not possible if inner Select with MAX()
+    @Ignore
+    public void selectAggregateInnerSelectTest() throws  SQLException{
+        try(JdbcConnection polyphenyDbConnection = new JdbcConnection( true )) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
+                statement.executeUpdate( VIEWTESTDEPTABLE_DATA_SQL );
+                statement.executeUpdate( VIEWTESTLOCTABLE_SQL );
+                statement.executeUpdate( VIEWTESTLOCTABLE_DATA_SQL );
+
+                try {
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT viewTestLocTable.postcode FROM viewTestLocTable, viewTestDepTable WHERE viewTestLocTable.postcode = (SELECT max(postcode) FROM viewTestLocTable)" ),
+                            ImmutableList.of(
+                                    new Object[]{99900}
+                            )
+                    );
+                    connection.commit();
+                }finally {
+                    statement.executeUpdate( "DROP TABLE viewTestDepTable" );
+                    statement.executeUpdate( "DROP TABLE viewTestLocTable" );
+
+                }
+
+            }
+        }
+    }
+
+
+    @Test
+    public void selectAggregateViewTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
+                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
+                statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
+                statement.executeUpdate( VIEWTESTDEPTABLE_DATA_SQL );
+                statement.executeUpdate( VIEWTESTLOCTABLE_SQL );
+                statement.executeUpdate( VIEWTESTLOCTABLE_DATA_SQL );
+
+                statement.executeUpdate( "CREATE VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
+                statement.executeUpdate( "CREATE VIEW viewTestDep AS SELECT * FROM viewTestDepTable" );
+                statement.executeUpdate( "CREATE VIEW viewTestLoc AS SELECT * FROM viewTestLocTable" );
+
+                try {
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT max(postcode) FROM viewTestLocTable" ),
+                            ImmutableList.of(
+                                    new Object[]{ 99900 }
+                            )
+                    );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT min(postcode) FROM viewTestLocTable" ),
+                            ImmutableList.of(
+                                    new Object[]{ 4058 }
+                            )
+                    );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT avg(postcode) FROM viewTestLocTable" ),
+                            ImmutableList.of(
+                                    new Object[]{37986}
+                            )
+                    );
+                    /*
+                    Not possible to do this in SELECT without View
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT viewTestLoc.postcode FROM viewTestLoc, viewTestDep WHERE viewTestLoc.postcode = (SELECT max(postcode) FROM viewTestLoc)" ),
+                            ImmutableList.of(
+                                    new Object[]{99900}
+                            )
+                    );
+
+                     */
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP VIEW viewTestEmp" );
+                    statement.executeUpdate( "DROP VIEW viewTestDep" );
+                    statement.executeUpdate( "DROP VIEW viewTestLoc" );
+                    statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
+                    statement.executeUpdate( "DROP TABLE viewTestDepTable" );
+                    statement.executeUpdate( "DROP TABLE viewTestLocTable" );
+                }
+            }
+        }
+    }
+
 
 }

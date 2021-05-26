@@ -87,6 +87,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.avatica.MetaImpl;
+import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
@@ -423,9 +424,9 @@ public class Crud implements InformationObserver {
                     schemaTree.addChildren( tableTree ).setRouterLink( "" );
                 }
                 if ( request.views ) {
-                    if (request.showTable){
+                    if ( request.showTable ) {
                         schemaTree.addChild( new SidebarElement( schema.name + ".views", "views", request.routerLinkRoot, "icon-eye" ).addChildren( viewTree ).setRouterLink( "" ) );
-                    } else{
+                    } else {
                         schemaTree.addChildren( viewTree ).setRouterLink( "" );
                     }
 
@@ -3574,7 +3575,12 @@ public class Crud implements InformationObserver {
                 analyzer.addGroup( exceptionGroup );
                 analyzer.registerInformation( exceptionElement );
             }
-            throw new QueryExecutionException( t.getMessage(), t );
+            if ( t instanceof AvaticaRuntimeException ) {
+                throw new QueryExecutionException( ((AvaticaRuntimeException) t).getErrorMessage(), t );
+            } else {
+                throw new QueryExecutionException( t.getMessage(), t );
+            }
+
         }
 
         if ( signature.statementType == StatementType.OTHER_DDL ) {
