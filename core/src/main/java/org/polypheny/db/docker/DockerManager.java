@@ -129,6 +129,16 @@ public abstract class DockerManager {
         }
 
 
+        @Override
+        public boolean equals( Object obj ) {
+            if ( obj instanceof Image ) {
+                Image image = (Image) obj;
+                return name.equals( image.name ) && version.equals( image.version );
+            }
+            return false;
+        }
+
+
         Image( String name, String version ) {
             this.name = name;
             this.version = version;

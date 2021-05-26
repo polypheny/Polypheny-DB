@@ -34,11 +34,22 @@
 package org.polypheny.db.adapter.mongodb;
 
 
+import com.mongodb.client.gridfs.GridFSBucket;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import lombok.Getter;
+import lombok.Setter;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
+import org.bson.json.JsonMode;
+import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.TableModify.Operation;
+import org.polypheny.db.rel.type.RelRecordType;
 import org.polypheny.db.util.Pair;
 
 
@@ -52,18 +63,48 @@ public interface MongoRel extends RelNode {
     /**
      * Calling convention for relational operations that occur in MongoDB.
      */
-    Convention CONVENTION = new Convention.Impl( "MONGO", MongoRel.class );
+    Convention CONVENTION = MongoConvention.INSTANCE;//new Convention.Impl( "MONGO", MongoRel.class );
 
 
     /**
      * Callback for the implementation process that converts a tree of {@link MongoRel} nodes into a MongoDB query.
      */
-    class Implementor {
+    class Implementor implements Serializable {
 
         final List<Pair<String, String>> list = new ArrayList<>();
+        public List<BsonDocument> operations = new ArrayList<>();
+        public BsonArray filter = new BsonArray();
+        @Getter
+        @Setter
+        public GridFSBucket bucket;
+        public List<BsonDocument> preProjections = new ArrayList<>();
 
         RelOptTable table;
+        @Setter
+        @Getter
+        public boolean hasProject = false;
+
         MongoTable mongoTable;
+        @Setter
+        @Getter
+        private boolean isDML;
+
+        @Getter
+        @Setter
+        private Operation operation;
+
+        @Getter
+        private RelRecordType staticRowType;
+
+
+        public Implementor() {
+            isDML = false;
+        }
+
+
+        public Implementor( boolean isDML ) {
+            this.isDML = isDML;
+        }
 
 
         public void add( String findOp, String aggOp ) {
@@ -75,6 +116,58 @@ public interface MongoRel extends RelNode {
             assert ordinal == 0;
             ((MongoRel) input).implement( this );
         }
+
+
+        public void setStaticRowType( RelRecordType staticRowType ) {
+            if ( this.staticRowType != null ) {
+                return;
+            }
+            if ( mongoTable != null ) {
+                this.staticRowType = MongoRowType.fromRecordType( staticRowType, mongoTable );
+            } else {
+                this.staticRowType = staticRowType;
+            }
+        }
+
+
+        public String getPhysicalName( String name ) {
+            int index = mongoTable.getCatalogTable().getColumnNames().indexOf( name );
+            if ( index != -1 ) {
+                return MongoStore.getPhysicalColumnName( mongoTable.getCatalogTable().columnIds.get( index ) );
+            }
+            throw new RuntimeException( "This column is not part of the table." );
+        }
+
+
+        public BsonDocument getFilter() {
+            BsonDocument filter;
+            if ( this.filter.size() == 1 ) {
+                filter = this.filter.get( 0 ).asDocument();
+            } else if ( this.filter.size() == 0 ) {
+                filter = new BsonDocument();
+            } else {
+                filter = new BsonDocument( "$or", this.filter );
+            }
+
+            return filter;
+        }
+
+
+        public String getFilterSerialized() {
+            return getFilter().toJson( JsonWriterSettings.builder().outputMode( JsonMode.EXTENDED ).build() );
+        }
+
+
+        public List<String> getPreProjects() {
+            return preProjections.stream().map( p -> p.toJson( JsonWriterSettings.builder().outputMode( JsonMode.EXTENDED ).build() ) ).collect( Collectors.toList() );
+        }
+
+
+        public List<String> getOperations() {
+            return operations.stream().map( p -> p.toJson( JsonWriterSettings.builder().outputMode( JsonMode.EXTENDED ).build() ) ).collect( Collectors.toList() );
+        }
+
     }
+
 }
 

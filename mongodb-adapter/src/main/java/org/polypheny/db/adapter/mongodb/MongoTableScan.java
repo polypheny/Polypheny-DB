@@ -45,6 +45,7 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.TableScan;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelRecordType;
 
 
 /**
@@ -100,7 +101,6 @@ public class MongoTableScan extends TableScan implements MongoRel {
 
     @Override
     public void register( RelOptPlanner planner ) {
-        planner.addRule( MongoToEnumerableConverterRule.INSTANCE );
         for ( RelOptRule rule : MongoRules.RULES ) {
             planner.addRule( rule );
         }
@@ -111,6 +111,7 @@ public class MongoTableScan extends TableScan implements MongoRel {
     public void implement( Implementor implementor ) {
         implementor.mongoTable = mongoTable;
         implementor.table = table;
+        implementor.setStaticRowType( (RelRecordType) rowType );
     }
 }
 

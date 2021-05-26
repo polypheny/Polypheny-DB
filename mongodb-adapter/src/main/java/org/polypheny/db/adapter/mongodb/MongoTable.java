@@ -34,49 +34,94 @@
 package org.polypheny.db.adapter.mongodb;
 
 
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.gridfs.GridFSBucket;
+import com.mongodb.client.model.DeleteManyModel;
+import com.mongodb.client.model.WriteModel;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
+import lombok.Getter;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
+import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
+import org.polypheny.db.adapter.mongodb.MongoEnumerator.IterWrapper;
+import org.polypheny.db.adapter.mongodb.util.MongoDynamicUtil;
+import org.polypheny.db.adapter.mongodb.util.MongoTypeUtil;
+import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.TableModify;
+import org.polypheny.db.rel.core.TableModify.Operation;
+import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
-import org.polypheny.db.type.PolyType;
+import org.polypheny.db.transaction.PolyXid;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
 
 /**
  * Table based on a MongoDB collection.
  */
-public class MongoTable extends AbstractQueryableTable implements TranslatableTable {
+public class MongoTable extends AbstractQueryableTable implements TranslatableTable, ModifiableTable {
 
+    @Getter
     private final String collectionName;
+    @Getter
+    private final RelProtoDataType protoRowType;
+    @Getter
+    private final MongoSchema mongoSchema;
+    @Getter
+    private final MongoCollection<Document> collection;
+    @Getter
+    private final CatalogTable catalogTable;
+    @Getter
+    private final TransactionProvider transactionProvider;
+    @Getter
+    private final int storeId;
 
 
     /**
      * Creates a MongoTable.
      */
-    MongoTable( String collectionName ) {
+    MongoTable( CatalogTable catalogTable, MongoSchema schema, RelProtoDataType proto, TransactionProvider transactionProvider, int storeId ) {
         super( Object[].class );
-        this.collectionName = collectionName;
+        this.collectionName = MongoStore.getPhysicalTableName( catalogTable.id );
+        this.transactionProvider = transactionProvider;
+        this.catalogTable = catalogTable;
+        this.protoRowType = proto;
+        this.mongoSchema = schema;
+        this.collection = schema.database.getCollection( collectionName );
+        this.storeId = storeId;
     }
 
 
@@ -87,12 +132,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 
     @Override
     public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
-        final RelDataType mapType =
-                typeFactory.createMapType(
-                        typeFactory.createPolyType( PolyType.VARCHAR ),
-                        typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true ) );
-        // TODO (PCP)
-        return typeFactory.builder().add( "_MAP", null, mapType ).build();
+        return protoRowType.apply( typeFactory );
     }
 
 
@@ -121,16 +161,17 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
      * @param fields List of fields to project; or null to return map
      * @return Enumerator of results
      */
-    private Enumerable<Object> find( MongoDatabase mongoDb, String filterJson, String projectJson, List<Map.Entry<String, Class>> fields ) {
+    private Enumerable<Object> find( MongoDatabase mongoDb, MongoTable table, String filterJson, String projectJson, List<Entry<String, Class>> fields, List<Entry<String, Class>> arrayFields ) {
         final MongoCollection collection = mongoDb.getCollection( collectionName );
         final Bson filter = filterJson == null ? null : BsonDocument.parse( filterJson );
         final Bson project = projectJson == null ? null : BsonDocument.parse( projectJson );
-        final Function1<Document, Object> getter = MongoEnumerator.getter( fields );
+        final Function1<Document, Object> getter = MongoEnumerator.getter( fields, arrayFields );
+
         return new AbstractEnumerable<Object>() {
             @Override
             public Enumerator<Object> enumerator() {
                 @SuppressWarnings("unchecked") final FindIterable<Document> cursor = collection.find( filter ).projection( project );
-                return new MongoEnumerator( cursor.iterator(), getter );
+                return new MongoEnumerator( cursor.iterator(), getter, table.getMongoSchema().getBucket() );
             }
         };
     }
@@ -145,29 +186,79 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
      * "{$group: {_id: '$city', c: {$sum: 1}, p: {$sum: '$pop'}}}")
      * </code>
      *
+     * @param session
      * @param mongoDb MongoDB connection
      * @param fields List of fields to project; or null to return map
      * @param operations One or more JSON strings
+     * @param parameterValues
+     * @param filter
      * @return Enumerator of results
      */
-    private Enumerable<Object> aggregate( final MongoDatabase mongoDb, final List<Map.Entry<String, Class>> fields, final List<String> operations ) {
-        final List<Bson> list = new ArrayList<>();
-        for ( String operation : operations ) {
-            list.add( BsonDocument.parse( operation ) );
+    private Enumerable<Object> aggregate( ClientSession session, final MongoDatabase mongoDb, MongoTable table, final List<Entry<String, Class>> fields, List<Entry<String, Class>> arrayFields, final List<String> operations, Map<Long, Object> parameterValues, BsonDocument filter, List<BsonDocument> preOps ) {
+        final List<BsonDocument> list = new ArrayList<>();
+
+        if ( parameterValues.size() == 0 ) {
+            // direct query
+            preOps.forEach( op -> list.add( new BsonDocument( "$project", op ) ) );
+
+            list.add( new BsonDocument( "$match", filter ) );
+
+            for ( String operation : operations ) {
+                list.add( BsonDocument.parse( operation ) );
+            }
+        } else {
+            // prepared
+            preOps.stream()
+                    .map( op -> new MongoDynamicUtil( new BsonDocument( "$project", op ), mongoSchema.getBucket() ) )
+                    .forEach( util -> list.add( util.insert( parameterValues ) ) );
+
+            MongoDynamicUtil util = new MongoDynamicUtil( filter, getMongoSchema().getBucket() );
+            list.add( new BsonDocument( "$match", util.insert( parameterValues ) ) );
+
+            for ( String operation : operations ) {
+                MongoDynamicUtil opUtil = new MongoDynamicUtil( BsonDocument.parse( operation ), getMongoSchema().getBucket() );
+                list.add( opUtil.insert( parameterValues ) );
+            }
+
         }
-        final Function1<Document, Object> getter = MongoEnumerator.getter( fields );
+
+        // do we need to add all if nothing is selected?
+        if ( operations.size() == 0 ) {
+            projectMatchAll( fields, list );
+        }
+
+        final Function1<Document, Object> getter = MongoEnumerator.getter( fields, arrayFields );
+        //list.forEach( el -> System.out.println( el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ) );
         return new AbstractEnumerable<Object>() {
             @Override
             public Enumerator<Object> enumerator() {
                 final Iterator<Document> resultIterator;
                 try {
-                    resultIterator = mongoDb.getCollection( collectionName ).aggregate( list ).iterator();
+                    if ( list.size() != 0 ) {
+                        resultIterator = mongoDb.getCollection( collectionName ).aggregate( session, list ).iterator();
+                    } else {
+                        resultIterator = Collections.emptyIterator();
+                    }
                 } catch ( Exception e ) {
-                    throw new RuntimeException( "While running MongoDB query " + Util.toString( operations, "[", ",\n", "]" ), e );
+                    throw new RuntimeException( "While running MongoDB query " + Util.toString( list, "[", ",\n", "]" ), e );
                 }
-                return new MongoEnumerator( resultIterator, getter );
+                return new MongoEnumerator( resultIterator, getter, table.getMongoSchema().getBucket() );
             }
         };
+    }
+
+
+    private void projectMatchAll( List<Entry<String, Class>> fields, List<BsonDocument> list ) {
+        // project all
+        BsonDocument projects = new BsonDocument();
+        for ( String name : Pair.left( fields ) ) {
+            int index = catalogTable.getColumnNames().indexOf( name );
+            projects.append( name, new BsonString( "$" + MongoStore.getPhysicalColumnName( catalogTable.columnIds.get( index ) ) ) );
+        }
+        list.add( new BsonDocument().append( "$project", projects ) );
+
+        // match all
+        list.add( new BsonDocument().append( "$match", new BsonDocument().append( "_id", new BsonDocument().append( "$exists", new BsonBoolean( true ) ) ) ) );
     }
 
 
@@ -179,6 +270,36 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
      */
     private static Integer parseIntString( String valueString ) {
         return Integer.parseInt( valueString.replaceAll( "[^0-9]", "" ) );
+    }
+
+
+    @Override
+    public Collection getModifiableCollection() {
+        throw new RuntimeException( "getModifiableCollection() is not implemented for MongoDB adapter!" );
+    }
+
+
+    @Override
+    public TableModify toModificationRel(
+            RelOptCluster cluster,
+            RelOptTable table,
+            CatalogReader catalogReader,
+            RelNode child,
+            Operation operation,
+            List<String> updateColumnList,
+            List<RexNode> sourceExpressionList,
+            boolean flattened ) {
+        mongoSchema.getConvention().register( cluster.getPlanner() );
+        return new LogicalTableModify(
+                cluster,
+                cluster.traitSetOf( Convention.NONE ),
+                table,
+                catalogReader,
+                child,
+                operation,
+                updateColumnList,
+                sourceExpressionList,
+                flattened );
     }
 
 
@@ -197,13 +318,13 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
         @Override
         public Enumerator<T> enumerator() {
             //noinspection unchecked
-            final Enumerable<T> enumerable = (Enumerable<T>) getTable().find( getMongoDb(), null, null, null );
+            final Enumerable<T> enumerable = (Enumerable<T>) getTable().find( getMongoDb(), getTable(), null, null, null, null );
             return enumerable.enumerator();
         }
 
 
         private MongoDatabase getMongoDb() {
-            return schema.unwrap( MongoSchema.class ).mongoDb;
+            return schema.unwrap( MongoSchema.class ).database;
         }
 
 
@@ -218,8 +339,15 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
          * @see MongoMethod#MONGO_QUERYABLE_AGGREGATE
          */
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<Object> aggregate( List<Map.Entry<String, Class>> fields, List<String> operations ) {
-            return getTable().aggregate( getMongoDb(), fields, operations );
+        public Enumerable<Object> aggregate( List<Map.Entry<String, Class>> fields, List<Map.Entry<String, Class>> arrayClass, List<String> operations, String filter, List<String> preProjections ) {
+            ClientSession session = getTable().getTransactionProvider().getSession( dataContext.getStatement().getTransaction().getXid() );
+
+            Map<Long, Object> values = new HashMap<>();
+            if ( dataContext.getParameterValues().size() == 1 ) {
+                values = dataContext.getParameterValues().get( 0 );
+            }
+
+            return getTable().aggregate( session, getMongoDb(), getTable(), fields, arrayClass, operations, values, BsonDocument.parse( filter ), preProjections.stream().map( BsonDocument::parse ).collect( Collectors.toList() ) );
         }
 
 
@@ -233,8 +361,87 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
          * @see MongoMethod#MONGO_QUERYABLE_FIND
          */
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<Object> find( String filterJson, String projectJson, List<Map.Entry<String, Class>> fields ) {
-            return getTable().find( getMongoDb(), filterJson, projectJson, fields );
+        public Enumerable<Object> find( String filterJson, String projectJson, List<Map.Entry<String, Class>> fields, List<Map.Entry<String, Class>> arrayClasses ) {
+            return getTable().find( getMongoDb(), getTable(), filterJson, projectJson, fields, arrayClasses );
         }
+
+
+        /**
+         * This methods handles direct DMLs(which already have the values) in Mongodb for now TODO DL: reevaluate
+         *
+         * @return
+         */
+        @SuppressWarnings("UnusedDeclaration")
+        public Enumerable<Object> handleDirectDML( Operation operation, String filter, List<String> operations ) {
+            MongoTable mongoTable = getTable();
+            PolyXid xid = dataContext.getStatement().getTransaction().getXid();
+            dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( mongoTable.getStoreId() ) );
+            ClientSession session = mongoTable.getTransactionProvider().startTransaction( xid );
+            GridFSBucket bucket = mongoTable.getMongoSchema().getBucket();
+
+            long changes = 0;
+
+            switch ( operation ) {
+
+                case INSERT:
+                    if ( dataContext.getParameterValues().size() != 0 ) {
+                        assert operations.size() == 1;
+                        // prepared
+                        MongoDynamicUtil util = new MongoDynamicUtil( BsonDocument.parse( operations.get( 0 ) ), bucket );
+
+                        List<Document> inserts = util.getAll( dataContext.getParameterValues() );
+
+                        mongoTable.getCollection().insertMany( session, inserts );
+                        changes = inserts.size();
+                    } else {
+                        // direct
+                        List<Document> docs = operations.stream().map( BsonDocument::parse ).map( MongoTypeUtil::asDocument ).collect( Collectors.toList() );
+                        mongoTable.getCollection().insertMany( session, docs );
+                        changes = docs.size();
+                    }
+
+                    break;
+                case UPDATE:
+                    assert operations.size() == 1;
+                    if ( dataContext.getParameterValues().size() != 0 ) {
+                        // prepared
+                        MongoDynamicUtil filterUtil = new MongoDynamicUtil( BsonDocument.parse( filter ), bucket );
+                        MongoDynamicUtil docUtil = new MongoDynamicUtil( BsonDocument.parse( operations.get( 0 ) ), bucket );
+                        for ( Map<Long, Object> parameterValue : dataContext.getParameterValues() ) {
+                            changes += mongoTable.getCollection().updateMany( session, filterUtil.insert( parameterValue ), Collections.singletonList( docUtil.insert( parameterValue ) ) ).getModifiedCount();
+                        }
+
+                    } else {
+                        // direct
+                        changes = mongoTable.getCollection().updateMany( session, BsonDocument.parse( filter ), Collections.singletonList( BsonDocument.parse( operations.get( 0 ) ) ) ).getModifiedCount();
+                    }
+
+                    break;
+                case DELETE:
+                    if ( dataContext.getParameterValues().size() != 0 ) {
+                        // prepared
+                        MongoDynamicUtil filterUtil = new MongoDynamicUtil( BsonDocument.parse( filter ), bucket );
+                        List<? extends WriteModel<Document>> filters = filterUtil.getAll( dataContext.getParameterValues(), DeleteManyModel::new );
+
+                        changes = mongoTable.getCollection().bulkWrite( session, filters ).getDeletedCount();
+                    } else {
+                        // direct
+                        changes = mongoTable.getCollection().deleteMany( session, BsonDocument.parse( filter ) ).getDeletedCount();
+                    }
+                    break;
+                case MERGE:
+                    throw new RuntimeException( "MERGE IS NOT SUPPORTED" );
+            }
+
+            long finalChanges = changes;
+            return new AbstractEnumerable<Object>() {
+                @Override
+                public Enumerator<Object> enumerator() {
+                    return new IterWrapper( Collections.singletonList( (Object) finalChanges ).iterator() );
+                }
+            };
+        }
+
     }
+
 }

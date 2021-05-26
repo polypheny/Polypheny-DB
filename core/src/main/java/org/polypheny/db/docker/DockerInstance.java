@@ -264,6 +264,7 @@ public class DockerInstance extends DockerManager {
             }
         }
 
+        container.setContainerId( containerInfo.getId() );
         container.setStatus( ContainerStatus.RUNNING );
     }
 
@@ -441,7 +442,7 @@ public class DockerInstance extends DockerManager {
             stop( container );
         }
 
-        client.removeContainerCmd( container.getPhysicalName() ).exec();
+        client.removeContainerCmd( container.getPhysicalName() ).withRemoveVolumes( true ).exec();
         container.setStatus( ContainerStatus.DESTROYED );
 
         usedNames.remove( container.uniqueName );

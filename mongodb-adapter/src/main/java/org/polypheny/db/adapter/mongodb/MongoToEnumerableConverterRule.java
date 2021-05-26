@@ -57,14 +57,22 @@ public class MongoToEnumerableConverterRule extends ConverterRule {
      * @param relBuilderFactory Builder for relational expressions
      */
     public MongoToEnumerableConverterRule( RelBuilderFactory relBuilderFactory ) {
-        super( RelNode.class, (Predicate<RelNode>) r -> true, MongoRel.CONVENTION, EnumerableConvention.INSTANCE, relBuilderFactory, "MongoToEnumerableConverterRule" );
+
+        super(
+                RelNode.class,
+                (Predicate<RelNode>) r -> true,
+                MongoRel.CONVENTION,
+                EnumerableConvention.INSTANCE,
+                relBuilderFactory,
+                "MongoToEnumerableConverterRule" );
     }
 
 
     @Override
     public RelNode convert( RelNode rel ) {
-        RelTraitSet newTraitSet = rel.getTraitSet().replace( getOutConvention() );
+        RelTraitSet newTraitSet = rel.getTraitSet().replace( getOutTrait() );
         return new MongoToEnumerableConverter( rel.getCluster(), newTraitSet, rel );
     }
+
 }
 

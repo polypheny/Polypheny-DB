@@ -92,7 +92,7 @@ public class EnumUtils {
     }
 
 
-    static Class javaRowClass( JavaTypeFactory typeFactory, RelDataType type ) {
+    public static Class javaRowClass( JavaTypeFactory typeFactory, RelDataType type ) {
         if ( type.isStruct() && type.getFieldCount() == 1 ) {
             type = type.getFieldList().get( 0 ).getType();
         }
