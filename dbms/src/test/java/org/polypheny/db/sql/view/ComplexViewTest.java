@@ -1802,7 +1802,7 @@ public class ComplexViewTest {
     // changed and l_quantity < to and l_quantity >
     //Rounding necessary
     //java.lang.ArithmeticException: Rounding necessary
-    @Ignore
+    @Test
     public void testQ17() throws SQLException {
 
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
