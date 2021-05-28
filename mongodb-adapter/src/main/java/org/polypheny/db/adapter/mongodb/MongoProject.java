@@ -134,9 +134,14 @@ public class MongoProject extends Project implements MongoRel {
                     // we can have multidimensional arrays and have to take care here
                     blankExpr = new StringBuilder( arrayName );
                     for ( int i = 1; i < splits.length; i++ ) {
-                        // we have to adjust as sql arrays start at 1
-                        int pos = Integer.parseInt( splits[i].replace( "]", "" ) ) - 1;
-                        blankExpr = new StringBuilder( "{$arrayElemAt:[" + blankExpr + ", " + pos + "]}" );
+                        if ( splits[i].startsWith( "{" ) && splits[i].endsWith( "}]" ) ) {
+                            String dynamic = splits[i].substring( 0, splits[i].length() - 1 );
+                            blankExpr = new StringBuilder( "{$arrayElemAt:[" + blankExpr + ", {$add: [" + dynamic + ", -1]}]}" );
+                        } else {
+                            // we have to adjust as sql arrays start at 1
+                            int pos = Integer.parseInt( splits[i].replace( "]", "" ) ) - 1;
+                            blankExpr = new StringBuilder( "{$arrayElemAt:[" + blankExpr + ", " + pos + "]}" );
+                        }
                     }
                     expr = blankExpr.toString();
 
@@ -153,7 +158,7 @@ public class MongoProject extends Project implements MongoRel {
         final String aggregateString = "{$project: " + findString + "}";
         final Pair<String, String> op = Pair.of( findString, aggregateString );
         implementor.hasProject = true;
-        if ( !implementor.isDML() && items.size() != 0 ) {
+        if ( !implementor.isDML() && items.size() + documents.size() != 0 ) {
             implementor.add( op.left, op.right );
         }
     }

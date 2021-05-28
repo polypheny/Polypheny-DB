@@ -41,6 +41,7 @@ import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.types.Decimal128;
 import org.bson.types.ObjectId;
+import org.polypheny.db.adapter.mongodb.MongoRel.Implementor;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -196,7 +197,11 @@ public class MongoTypeUtil {
                 }
 
             case INTEGER:
-                return new BsonInt32( (Integer) obj );
+                if ( obj instanceof Long ) {
+                    return new BsonInt32( ((Long) obj).intValue() );
+                } else {
+                    return new BsonInt32( (Integer) obj );
+                }
             case FLOAT:
             case REAL:
                 return new BsonDouble( Double.parseDouble( obj.toString() ) );
@@ -430,6 +435,11 @@ public class MongoTypeUtil {
             default:
                 throw new IllegalStateException( "Unexpected value: " + type );
         }
+    }
+
+
+    public static BsonDocument visit( RexNode left, Implementor preProjections ) {
+        return null;
     }
 
 }

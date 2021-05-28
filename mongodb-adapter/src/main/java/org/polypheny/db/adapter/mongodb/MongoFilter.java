@@ -34,12 +34,21 @@
 package org.polypheny.db.adapter.mongodb;
 
 
+import static org.polypheny.db.sql.SqlKind.DISTANCE;
+import static org.polypheny.db.sql.SqlKind.DYNAMIC_PARAM;
+import static org.polypheny.db.sql.SqlKind.INPUT_REF;
+import static org.polypheny.db.sql.SqlKind.LITERAL;
+import static org.polypheny.db.sql.SqlKind.OTHER_FUNCTION;
+
 import com.mongodb.client.gridfs.GridFSBucket;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonInt32;
+import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
@@ -57,7 +66,7 @@ import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.fun.SqlItemOperator;
 import org.polypheny.db.util.JsonBuilder;
 
 
@@ -92,9 +101,9 @@ public class MongoFilter extends Filter implements MongoRel {
         // to not break the existing functionality for now we have to handle it this way
         Translator translator;
         if ( implementor.getStaticRowType() != null && implementor.getStaticRowType() instanceof MongoRowType ) {
-            translator = new Translator( MongoRules.mongoFieldNames( getRowType() ), (MongoRowType) implementor.getStaticRowType(), implementor.getBucket() );
+            translator = new Translator( MongoRules.mongoFieldNames( getRowType() ), (MongoRowType) implementor.getStaticRowType(), implementor );
         } else {
-            translator = new Translator( MongoRules.mongoFieldNames( getRowType() ), implementor.getBucket() );
+            translator = new Translator( MongoRules.mongoFieldNames( getRowType() ), implementor );
         }
         translator.translateMatch( condition, implementor );
 
@@ -112,18 +121,20 @@ public class MongoFilter extends Filter implements MongoRel {
         private final BsonArray dynamics = new BsonArray();
         private final GridFSBucket bucket;
         private final BsonDocument preProjections = new BsonDocument();
+        private final Implementor implementor;
 
 
-        Translator( List<String> fieldNames, GridFSBucket bucket ) {
-            this( fieldNames, null, bucket );
+        Translator( List<String> fieldNames, Implementor implementor ) {
+            this( fieldNames, null, implementor );
         }
 
 
-        Translator( List<String> fieldNames, MongoRowType rowType, GridFSBucket bucket ) {
+        Translator( List<String> fieldNames, MongoRowType rowType, Implementor implementor ) {
             this.builder.setMongo( true );
             this.fieldNames = fieldNames;
             this.rowType = rowType;
-            this.bucket = bucket;
+            this.bucket = implementor.bucket;
+            this.implementor = implementor;
         }
 
 
@@ -271,14 +282,8 @@ public class MongoFilter extends Filter implements MongoRel {
 
                 return true;
             } else if ( right instanceof RexCall && left instanceof RexLiteral ) {
-                if ( right.isA( SqlKind.DISTANCE ) ) {
-                    String randomName = "__temp" + preProjections.size();
-                    this.preProjections.put( randomName, BsonFunctionHelper.getFunction( (RexCall) right, rowType, bucket ) );
-                    if ( op == null ) {
-                        this.dynamics.add( new BsonDocument( randomName, MongoTypeUtil.getAsBson( (RexLiteral) left, bucket ) ) );
-                    } else {
-                        this.dynamics.add( new BsonDocument( randomName, new BsonDocument( op, MongoTypeUtil.getAsBson( (RexLiteral) left, bucket ) ) ) );
-                    }
+                if ( right.isA( DISTANCE ) ) {
+                    translateFunction( op, (RexCall) right, left );
 
                 } else {
                     // $9[1] -> el1
@@ -294,23 +299,59 @@ public class MongoFilter extends Filter implements MongoRel {
         }
 
 
+        private boolean translateFunction( String op, RexCall right, RexNode left ) {
+            String randomName = getRandomName();
+            this.preProjections.put( randomName, BsonFunctionHelper.getFunction( right, rowType, bucket ) );
+
+            switch ( left.getKind() ) {
+                case LITERAL:
+                    if ( op == null ) {
+                        this.dynamics.add( new BsonDocument( randomName, MongoTypeUtil.getAsBson( (RexLiteral) left, bucket ) ) );
+                        return true;
+                    } else {
+                        this.dynamics.add( new BsonDocument( randomName, new BsonDocument( op, MongoTypeUtil.getAsBson( (RexLiteral) left, bucket ) ) ) );
+                        return true;
+                    }
+                case DYNAMIC_PARAM:
+                    if ( op == null ) {
+                        this.dynamics.add( new BsonDocument( randomName, new BsonDynamic( (RexDynamicParam) left ) ) );
+                        return true;
+                    } else {
+                        this.dynamics.add( new BsonDocument( randomName, new BsonDocument( op, new BsonDynamic( (RexDynamicParam) left ) ) ) );
+                        return true;
+                    }
+                default:
+                    return false;
+            }
+
+        }
+
+
+        private String getRandomName() {
+            return "__temp" + preProjections.size();
+        }
+
+
         /**
          * Translates a call to a binary operator. Returns whether successful.
          */
         private boolean translateBinary2( String op, RexNode left, RexNode right ) {
             switch ( right.getKind() ) {
                 case LITERAL:
-                    break;
+                    return translateLiteral( op, left, (RexLiteral) right );
                 case DYNAMIC_PARAM:
-                    attachDynamic( left, (RexDynamicParam) right, op );
-                    return true;
+                    return translateDynamic( op, left, (RexDynamicParam) right );
                 default:
                     return false;
             }
-            final RexLiteral rightLiteral = (RexLiteral) right;
+
+        }
+
+
+        private boolean translateLiteral( String op, RexNode left, RexLiteral right ) {
             switch ( left.getKind() ) {
                 case INPUT_REF:
-                    translateOp2( op, getPhysicalName( (RexInputRef) left ), rightLiteral );
+                    translateOp2( op, getPhysicalName( (RexInputRef) left ), right );
                     return true;
                 case CAST:
                     return translateBinary2( op, ((RexCall) left).operands.get( 0 ), right );
@@ -318,7 +359,7 @@ public class MongoFilter extends Filter implements MongoRel {
 
                     String itemName = MongoRules.isItem( (RexCall) left );
                     if ( itemName != null ) {
-                        translateOp2( op, itemName, rightLiteral );
+                        translateOp2( op, itemName, right );
                         return true;
                     }
                     // fall through
@@ -328,8 +369,8 @@ public class MongoFilter extends Filter implements MongoRel {
         }
 
 
-        private void attachDynamic( RexNode left, RexDynamicParam right, String op ) {
-            if ( left.getKind() == SqlKind.INPUT_REF ) {
+        private boolean translateDynamic( String op, RexNode left, RexDynamicParam right ) {
+            if ( left.getKind() == INPUT_REF ) {
                 if ( op == null ) {
                     this.dynamics
                             .add(
@@ -345,7 +386,46 @@ public class MongoFilter extends Filter implements MongoRel {
                                                     getPhysicalName( (RexInputRef) left ),
                                                     new BsonDocument().append( op, new BsonDynamic( right ) ) ) );
                 }
+                return true;
             }
+            if ( left.getKind() == DISTANCE ) {
+                return translateFunction( op, (RexCall) left, right );
+            }
+            if ( left.getKind() == OTHER_FUNCTION ) {
+                return translateItem( op, (RexCall) left, right );
+            }
+
+            return false;
+        }
+
+
+        private boolean translateItem( String op, RexCall left, RexDynamicParam right ) {
+            if ( left.op instanceof SqlItemOperator ) {
+                RexNode l = left.operands.get( 0 );
+                RexNode r = left.operands.get( 1 );
+
+                if ( l.isA( INPUT_REF ) ) {
+                    BsonValue item;
+                    if ( r.isA( LITERAL ) ) {
+                        item = MongoTypeUtil.getAsBson( (RexLiteral) r, bucket );
+                    } else if ( r.isA( DYNAMIC_PARAM ) ) {
+                        item = new BsonDynamic( (RexDynamicParam) r );
+                    } else {
+                        return false;
+                    }
+                    String name = getRandomName();
+                    BsonArray array = new BsonArray(
+                            Arrays.asList(
+                                    new BsonString( "$" + getPhysicalName( (RexInputRef) l ) ),
+                                    new BsonDocument( "$add", new BsonArray( Arrays.asList( item, new BsonInt32( -1 ) ) ) ) ) );
+                    this.preProjections.put( name, new BsonDocument( "$arrayElemAt", array ) );
+
+                    this.dynamics.add( new BsonDocument( name, new BsonDynamic( right ) ) );
+
+                    return true;
+                }
+            }
+            return false;
         }
 
 

@@ -61,6 +61,8 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.bson.json.JsonMode;
+import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
@@ -209,7 +211,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
         } else {
             // prepared
             preOps.stream()
-                    .map( op -> new MongoDynamicUtil( new BsonDocument( "$project", op ), mongoSchema.getBucket() ) )
+                    .map( op -> new MongoDynamicUtil( new BsonDocument( "$addFields", op ), mongoSchema.getBucket() ) )
                     .forEach( util -> list.add( util.insert( parameterValues ) ) );
 
             MongoDynamicUtil util = new MongoDynamicUtil( filter, getMongoSchema().getBucket() );
@@ -228,7 +230,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
         }
 
         final Function1<Document, Object> getter = MongoEnumerator.getter( fields, arrayFields );
-        //list.forEach( el -> System.out.println( el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ) );
+        list.forEach( el -> System.out.println( el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ) );
         return new AbstractEnumerable<Object>() {
             @Override
             public Enumerator<Object> enumerator() {

@@ -103,23 +103,6 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
         final BlockBuilder list = new BlockBuilder();
         final MongoRel.Implementor mongoImplementor = new MongoRel.Implementor();
         mongoImplementor.visitChild( 0, getInput() );
-        /*int aggCount = 0; // TODO DL: check whats the idea behind this
-        int findCount = 0;
-        String project = null;
-        String filter = null;
-        for ( Pair<String, String> op : mongoImplementor.list ) {
-            if ( op.left == null ) {
-                ++aggCount;
-            }
-            if ( op.right.startsWith( "{$match:" ) ) {
-                filter = op.left;
-                ++findCount;
-            }
-            if ( op.right.startsWith( "{$project:" ) ) {
-                project = op.left;
-                ++findCount;
-            }
-        }*/
 
         final RelDataType rowType = getRowType();
         ;

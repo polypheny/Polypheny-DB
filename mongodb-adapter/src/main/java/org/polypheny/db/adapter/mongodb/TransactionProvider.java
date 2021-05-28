@@ -19,6 +19,7 @@ package org.polypheny.db.adapter.mongodb;
 import static org.reflections.Reflections.log;
 
 import com.mongodb.MongoClientException;
+import com.mongodb.MongoCommandException;
 import com.mongodb.ReadConcern;
 import com.mongodb.ReadPreference;
 import com.mongodb.TransactionOptions;
@@ -45,17 +46,25 @@ public class TransactionProvider {
 
 
     public ClientSession startTransaction( PolyXid xid ) {
+        TransactionOptions options = TransactionOptions.builder()
+                .readPreference( ReadPreference.primary() )
+                .readConcern( ReadConcern.LOCAL )
+                .writeConcern( WriteConcern.MAJORITY ).build();
+        ClientSession session;
         if ( !sessions.containsKey( xid ) ) {
 
-            ClientSession session = client.startSession();
-            TransactionOptions options = TransactionOptions.builder()
-                    .readPreference( ReadPreference.primary() )
-                    .readConcern( ReadConcern.LOCAL )
-                    .writeConcern( WriteConcern.MAJORITY ).build();
+            session = client.startSession();
+
             session.startTransaction( options );
             sessions.put( xid, session );
+        } else {
+            session = sessions.get( xid );
+            if ( !session.hasActiveTransaction() ) {
+                session.startTransaction();
+            }
         }
-        return sessions.get( xid );
+
+        return session;
     }
 
 
@@ -66,8 +75,10 @@ public class TransactionProvider {
                 if ( session.hasActiveTransaction() ) {
                     session.commitTransaction();
                 }
-            } catch ( MongoClientException e ) {
-                session.abortTransaction();
+            } catch ( MongoClientException | MongoCommandException e ) {
+                if ( session.hasActiveTransaction() ) {
+                    session.abortTransaction();
+                }
             } finally {
                 session.close();
                 sessions.remove( xid );

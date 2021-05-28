@@ -138,6 +138,10 @@ public class MongoRules {
                 && ((RexLiteral) op1).getValue2() instanceof String ) {
             return (String) ((RexLiteral) op1).getValue2();
         }
+        /*if ( op0 instanceof RexInputRef && op1 instanceof RexDynamicParam ) {
+            return new BsonDynamic( (RexDynamicParam) op1 ).toJson();
+        }*/
+
         if ( op0.getType().getPolyType() == PolyType.ARRAY & op1 instanceof RexLiteral && op0 instanceof RexInputRef ) {
             return null;
         }
@@ -267,11 +271,16 @@ public class MongoRules {
             }
             if ( call.getOperator() == SqlStdOperatorTable.ITEM ) {
                 final RexNode op1 = call.operands.get( 1 );
+                // normal
                 if ( op1 instanceof RexLiteral && op1.getType().getPolyType() == PolyType.INTEGER ) {
                     if ( !Bug.CALCITE_194_FIXED ) {
                         return "'" + stripQuotes( strings.get( 0 ) ) + "[" + ((RexLiteral) op1).getValue2() + "]'";
                     }
                     return strings.get( 0 ) + "[" + strings.get( 1 ) + "]";
+                }
+                // prepared
+                if ( op1 instanceof RexDynamicParam ) {
+                    return strings.get( 0 ) + "[" + new BsonDynamic( (RexDynamicParam) op1 ).toJson() + "]";
                 }
             }
             if ( call.getOperator() == SqlStdOperatorTable.CASE ) {
@@ -305,7 +314,7 @@ public class MongoRules {
                 array.addAll( visitList( call.operands ).stream().map( BsonString::new ).collect( Collectors.toList() ) );
                 return array.toString();
             }
-            throw new IllegalArgumentException( "Translation of " + call.toString() + " is not supported by MongoProject" );
+            throw new IllegalArgumentException( "Translation of " + call + " is not supported by MongoProject" );
         }
 
 
