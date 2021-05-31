@@ -783,6 +783,7 @@ public class ComplexViewTest {
     //java.lang.AssertionError: type mismatch: ref: VARCHAR(55) NOT NULL input: INTEGER NOT NULL
     //new Object for result must be created correctly
     @Ignore
+    @Test
     public void testQ2() throws SQLException {
 
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -1456,6 +1457,7 @@ public class ComplexViewTest {
     //Not possible to Select java.lang.AssertionError: type mismatch: ref: DECIMAL(19, 2) NOT NULL input: INTEGER NOT NULL
     //renamed value to valueAA
     @Ignore
+    @Test
     public void testQ11() throws SQLException {
 
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -1508,6 +1510,7 @@ public class ComplexViewTest {
     // Caused by: java.sql.SQLSyntaxErrorException: data type cast needed for parameter or null literal in statement [SELECT "t0"."l_shipmode", COALESCE(SUM(CASE WHEN "t1"."o_orderpriority" = ? OR "t1"."o_orderpriority" = ? THEN ? ELSE ? END), 0) AS "high_line_count", COALESCE(SUM(CASE WHEN "t1"."o_orderpriority" <> ? AND "t1"."o_orderpriority" <> ? THEN ? ELSE ? END), 0) AS "low_line_count"
     // changed and l_shipmode in (?,?) to and l_shipmode = 'mode'
     @Ignore
+    @Test
     public void testQ12() throws SQLException {
 
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -1558,6 +1561,7 @@ public class ComplexViewTest {
         }
     }
 
+    @Ignore
     @Test
     public void testQ13() throws SQLException {
 
