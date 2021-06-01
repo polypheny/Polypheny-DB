@@ -44,8 +44,9 @@ public class CottontailSchema extends AbstractSchema {
     private final CottontailStore cottontailStore;
 
     private final String name;
+
     @Getter
-    private final CottontailGrpc.Schema cottontailSchema;
+    private final CottontailGrpc.SchemaName cottontailSchema;
 
     @Getter
     private final CottontailWrapper wrapper;
@@ -64,7 +65,7 @@ public class CottontailSchema extends AbstractSchema {
         this.physicalToLogicalTableNameMap = physicalToLogicalTableNameMap;
         this.cottontailStore = cottontailStore;
         this.name = name;
-        this.cottontailSchema = CottontailGrpc.Schema.newBuilder().setName( this.name ).build();
+        this.cottontailSchema = CottontailGrpc.SchemaName.newBuilder().setName( this.name ).build();
     }
 
 
@@ -79,7 +80,7 @@ public class CottontailSchema extends AbstractSchema {
         this.tableMap = new HashMap<>();
         this.physicalToLogicalTableNameMap = new HashMap<>();
         this.name = name;
-        this.cottontailSchema = CottontailGrpc.Schema.newBuilder().setName( "cottontail" ).build();
+        this.cottontailSchema = CottontailGrpc.SchemaName.newBuilder().setName( "cottontail" ).build();
     }
 
 

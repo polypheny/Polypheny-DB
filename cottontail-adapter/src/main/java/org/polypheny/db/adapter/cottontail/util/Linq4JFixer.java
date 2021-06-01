@@ -20,15 +20,21 @@ package org.polypheny.db.adapter.cottontail.util;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.calcite.avatica.util.ByteString;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicLiteralBooleanPredicate;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanOperand;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanPredicate;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnName;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.ComparisonOperator;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.CompoundBooleanPredicate;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Data;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.ConnectionOperator;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Knn;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Knn.Distance;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.KnnHint;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.KnnHint.NoIndexKnnHint;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Literal;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Literals;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Vector;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
 
@@ -37,158 +43,167 @@ public class Linq4JFixer {
 
 
     public static Object getBooleanData( Object data ) {
-        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
             return null;
         }
-        return ((CottontailGrpc.Data) data).getBooleanData();
+        return ((CottontailGrpc.Literal) data).getBooleanData();
     }
 
 
     public static Object getIntData( Object data ) {
-        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
             return null;
         }
-        return ((CottontailGrpc.Data) data).getIntData();
+        return ((CottontailGrpc.Literal) data).getIntData();
     }
 
 
     public static Object getLongData( Object data ) {
-        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
             return null;
         }
-        return ((CottontailGrpc.Data) data).getLongData();
+        return ((CottontailGrpc.Literal) data).getLongData();
     }
 
 
     public static Object getTinyIntData( Object data ) {
-        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
             return null;
         }
-        return Integer.valueOf( ((CottontailGrpc.Data) data).getIntData() ).byteValue();
+        return Integer.valueOf( ((CottontailGrpc.Literal) data).getIntData() ).byteValue();
     }
 
 
     public static Object getSmallIntData( Object data ) {
-        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
             return null;
         }
-        return Integer.valueOf( ((CottontailGrpc.Data) data).getIntData() ).shortValue();
+        return Integer.valueOf( ((CottontailGrpc.Literal) data).getIntData() ).shortValue();
     }
 
 
     public static Object getFloatData( Object data ) {
-        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
             return null;
         }
-        return ((CottontailGrpc.Data) data).getFloatData();
+        return ((CottontailGrpc.Literal) data).getFloatData();
     }
 
 
     public static Object getDoubleData( Object data ) {
-        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
             return null;
         }
-        return ((CottontailGrpc.Data) data).getDoubleData();
+        return ((CottontailGrpc.Literal) data).getDoubleData();
     }
 
 
     public static String getStringData( Object data ) {
-        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
             return null;
         }
-        return ((CottontailGrpc.Data) data).getStringData();
+        return ((CottontailGrpc.Literal) data).getStringData();
     }
 
 
     public static Object getDecimalData( Object data ) {
-        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
             return null;
         }
-        return new BigDecimal( ((CottontailGrpc.Data) data).getStringData() );
+        return new BigDecimal( ((CottontailGrpc.Literal) data).getStringData() );
     }
 
 
     public static Object getBinaryData( Object data ) {
-        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
             return null;
         }
-        return ByteString.parseBase64( ((CottontailGrpc.Data) data).getStringData() );
+        return ByteString.parseBase64( ((CottontailGrpc.Literal) data).getStringData() );
     }
 
 
     public static Object getTimeData( Object data ) {
-        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
             return null;
         }
-        return ((CottontailGrpc.Data) data).getIntData();
-//        return new TimeString( ((CottontailGrpc.Data) data).getStringData() ).getMillisOfDay();
+        return ((CottontailGrpc.Literal) data).getIntData();
     }
 
 
     public static Object getDateData( Object data ) {
-        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
             return null;
         }
-        return ((CottontailGrpc.Data) data).getIntData();
-//        return new DateString( ((CottontailGrpc.Data) data).getStringData() ).getDaysSinceEpoch();
+        return ((CottontailGrpc.Literal) data).getIntData();
     }
 
 
     public static Object getTimestampData( Object data ) {
-        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
             return null;
         }
-        return ((CottontailGrpc.Data) data).getLongData();
-        /*try {
-            return new TimestampString( ((CottontailGrpc.Data) data).getStringData() ).getMillisSinceEpoch();
-        } catch ( Exception e ) {
-            throw new RuntimeException( e );
-        }*/
+        return ((CottontailGrpc.Literal) data).getDateData().getUtcTimestamp();
     }
 
 
     public static Object getNullData( Object data ) {
-        return ((CottontailGrpc.Data) data).getNullData();
+        return ((CottontailGrpc.Literal) data).getNullData();
     }
 
 
     public static Object getBoolVector( Object data ) {
-        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
             return null;
         }
-        return ((CottontailGrpc.Data) data).getVectorData().getBoolVector().getVectorList();
+        return ((CottontailGrpc.Literal) data).getVectorData().getBoolVector().getVectorList();
+    }
+
+
+    public static Object getTinyIntVector( Object data ) {
+        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
+            return null;
+        }
+        return ((CottontailGrpc.Literal) data).getVectorData().getIntVector().getVectorList().stream().map( Integer::byteValue ).collect( Collectors.toList() );
+    }
+
+
+    public static Object getSmallIntVector( Object data ) {
+        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
+            return null;
+        }
+        return ((CottontailGrpc.Literal) data).getVectorData().getIntVector().getVectorList().stream().map( Integer::shortValue ).collect( Collectors.toList() );
     }
 
 
     public static Object getIntVector( Object data ) {
-        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
             return null;
         }
-        return ((CottontailGrpc.Data) data).getVectorData().getIntVector().getVectorList();
+        return ((CottontailGrpc.Literal) data).getVectorData().getIntVector().getVectorList();
     }
 
 
     public static Object getFloatVector( Object data ) {
-        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
             return null;
         }
-        return ((CottontailGrpc.Data) data).getVectorData().getFloatVector().getVectorList();
+        return ((CottontailGrpc.Literal) data).getVectorData().getFloatVector().getVectorList();
     }
 
 
     public static Object getDoubleVector( Object data ) {
-        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
             return null;
         }
-        return ((CottontailGrpc.Data) data).getVectorData().getDoubleVector().getVectorList();
+        return ((CottontailGrpc.Literal) data).getVectorData().getDoubleVector().getVectorList();
     }
 
 
     public static Object getLongVector( Object data ) {
-        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
             return null;
         }
-        return ((CottontailGrpc.Data) data).getVectorData().getLongVector().getVectorList();
+        return ((CottontailGrpc.Literal) data).getVectorData().getLongVector().getVectorList();
     }
 
 
@@ -198,46 +213,45 @@ public class Linq4JFixer {
             Object left,
             Object right
     ) {
-        CompoundBooleanPredicate.Operator operator = (CompoundBooleanPredicate.Operator) operator_;
+        ConnectionOperator operator = (ConnectionOperator) operator_;
         CompoundBooleanPredicate.Builder builder = CompoundBooleanPredicate.newBuilder();
         builder = builder.setOp( operator );
 
-        if ( left instanceof AtomicLiteralBooleanPredicate ) {
-            builder = builder.setAleft( (AtomicLiteralBooleanPredicate) left );
+        if ( left instanceof AtomicBooleanPredicate ) {
+            builder.setAleft( (AtomicBooleanPredicate) left );
         } else {
-            builder = builder.setCleft( (CompoundBooleanPredicate) left );
+            builder.setCleft( (CompoundBooleanPredicate) left );
         }
 
-        if ( right instanceof AtomicLiteralBooleanPredicate ) {
-            builder = builder.setAright( (AtomicLiteralBooleanPredicate) right );
+        if ( right instanceof AtomicBooleanPredicate ) {
+            builder.setAright( (AtomicBooleanPredicate) right );
         } else {
-            builder = builder.setCright( (CompoundBooleanPredicate) right );
+            builder.setCright( (CompoundBooleanPredicate) right );
         }
 
         return builder.build();
     }
 
 
-    public static AtomicLiteralBooleanPredicate generateAtomicPredicate(
+    public static AtomicBooleanPredicate generateAtomicPredicate(
             String attribute,
             Boolean not,
             Object operator_,
             Object data_
     ) {
-        AtomicLiteralBooleanPredicate.Operator operator = (AtomicLiteralBooleanPredicate.Operator) operator_;
-        Data data = (Data) data_;
-        return AtomicLiteralBooleanPredicate.newBuilder()
-                .addData( data )
-                .setNot( not )
-                .setAttribute( attribute )
+        final ComparisonOperator operator = (ComparisonOperator) operator_;
+        final Literal data = (Literal) data_;
+        return AtomicBooleanPredicate.newBuilder().setNot( not )
+                .setLeft( ColumnName.newBuilder().setName( attribute ).build() )
                 .setOp( operator )
+                .setRight( AtomicBooleanOperand.newBuilder().setLiterals( Literals.newBuilder().addLiteral( data ).build() ).build() )
                 .build();
     }
 
 
     public static Where generateWhere( Object filterExpression ) {
-        if ( filterExpression instanceof AtomicLiteralBooleanPredicate ) {
-            return Where.newBuilder().setAtomic( (AtomicLiteralBooleanPredicate) filterExpression ).build();
+        if ( filterExpression instanceof AtomicBooleanPredicate ) {
+            return Where.newBuilder().setAtomic( (AtomicBooleanPredicate) filterExpression ).build();
         }
 
         if ( filterExpression instanceof CompoundBooleanPredicate ) {
@@ -256,7 +270,7 @@ public class Linq4JFixer {
             Object weights ) {
         Knn.Builder knnBuilder = Knn.newBuilder();
 
-        knnBuilder.setAttribute( (String) column );
+        knnBuilder.setAttribute( ColumnName.newBuilder().setName( (String) column ) );
 
         if ( k != null ) {
             knnBuilder.setK( (Integer) k );
@@ -269,11 +283,11 @@ public class Linq4JFixer {
         }
 
         if ( target != null ) {
-            knnBuilder.addQuery( (Vector) target );
+            knnBuilder.setQuery( (Vector) target );
         }
 
         if ( weights != null ) {
-            knnBuilder.addWeights( (Vector) weights );
+            knnBuilder.setWeight( (Vector) weights );
         }
 
         knnBuilder.setDistance( getDistance( (String) distance ) );
