@@ -1161,6 +1161,9 @@ public class ComplexViewTest {
     }
 
 
+    // only with JAVA 8
+    // java.lang.OutOfMemoryError: Java heap space
+    @Ignore
     @Test
     public void testQ8() throws SQLException {
 
@@ -1561,6 +1564,8 @@ public class ComplexViewTest {
         }
     }
 
+    // only with JAVA 8
+    // java.lang.OutOfMemoryError: Java heap space
     @Ignore
     @Test
     public void testQ13() throws SQLException {
