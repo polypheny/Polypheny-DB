@@ -160,13 +160,13 @@ public class CottontailStore extends DataStore {
         ManagedChannel channel = NettyChannelBuilder
                 .forAddress( this.dbHostname, this.dbPort )
                 .usePlaintext()
-                .maxInboundMetadataSize( CottontailWrapper.maxMessageSize )
-                .maxInboundMessageSize( CottontailWrapper.maxMessageSize )
+                .maxInboundMetadataSize( CottontailWrapper.MAX_MESSAGE_SIZE )
+                .maxInboundMessageSize( CottontailWrapper.MAX_MESSAGE_SIZE )
                 .build();
         this.wrapper = new CottontailWrapper( channel, this );
 
         this.wrapper.checkedCreateSchemaBlocking(
-            CottontailGrpc.CreateSchemaMessage.newBuilder().setSchema( SchemaName.newBuilder().setName( this.dbName ) ).build()
+                CottontailGrpc.CreateSchemaMessage.newBuilder().setSchema( SchemaName.newBuilder().setName( this.dbName ) ).build()
         );
     }
 
@@ -320,10 +320,10 @@ public class CottontailStore extends DataStore {
                 .build();
 
         final CreateEntityMessage message = CreateEntityMessage.newBuilder()
-                .setTxId(txId )
+                .setTxId( txId )
                 .setDefinition( EntityDefinition.newBuilder()
-                .setEntity( newTableEntity )
-                .addAllColumns( columns ) ).build();
+                        .setEntity( newTableEntity )
+                        .addAllColumns( columns ) ).build();
 
         if ( !this.wrapper.createEntityBlocking( message ) ) {
             throw new RuntimeException( "Unable to create table." );
@@ -503,6 +503,7 @@ public class CottontailStore extends DataStore {
         return false;
     }
 
+
     @Override
     public void commit( PolyXid xid ) {
         this.wrapper.commit( xid );
@@ -513,6 +514,7 @@ public class CottontailStore extends DataStore {
     public void rollback( PolyXid xid ) {
         this.wrapper.rollback( xid );
     }
+
 
     @Override
     public void truncate( Context context, CatalogTable table ) {
@@ -587,6 +589,7 @@ public class CottontailStore extends DataStore {
 
         this.wrapper.dropEntityBlocking( DropEntityMessage.newBuilder().setTxId( txId ).setEntity( tableEntity ).build() );
     }
+
 
     @Override
     public List<AvailableIndexMethod> getAvailableIndexMethods() {

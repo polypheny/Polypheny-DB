@@ -442,11 +442,11 @@ public class CottontailTypeUtil {
         final Object firstItem = ((List) vectorObject).get( 0 );
         if ( firstItem instanceof Byte ) {
             return vectorBuilder.setIntVector(
-                IntVector.newBuilder().addAllVector( ((List<Byte>) vectorObject).stream().map(Byte::intValue).collect(Collectors.toList()) ).build() ).build();
+                    IntVector.newBuilder().addAllVector( ((List<Byte>) vectorObject).stream().map( Byte::intValue ).collect( Collectors.toList() ) ).build() ).build();
         } else if ( firstItem instanceof Short ) {
             return vectorBuilder.setIntVector(
-                IntVector.newBuilder().addAllVector( ((List<Short>) vectorObject).stream().map(Short::intValue).collect(Collectors.toList()) ).build() ).build();
-        } else if ( firstItem instanceof Integer) {
+                    IntVector.newBuilder().addAllVector( ((List<Short>) vectorObject).stream().map( Short::intValue ).collect( Collectors.toList() ) ).build() ).build();
+        } else if ( firstItem instanceof Integer ) {
             return vectorBuilder.setIntVector(
                     IntVector.newBuilder().addAllVector( (List<Integer>) vectorObject ) ).build();
         } else if ( firstItem instanceof Double ) {
@@ -460,7 +460,7 @@ public class CottontailTypeUtil {
                     FloatVector.newBuilder().addAllVector( (List<Float>) vectorObject ) ).build();
         } else if ( firstItem instanceof Boolean ) {
             return vectorBuilder.setBoolVector(
-                BoolVector.newBuilder().addAllVector( (List<Boolean>) vectorObject ) ).build();
+                    BoolVector.newBuilder().addAllVector( (List<Boolean>) vectorObject ) ).build();
         } else {
             return null;
         }

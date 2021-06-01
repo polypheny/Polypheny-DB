@@ -348,4 +348,5 @@ public class StatisticQueryProcessor {
         }
 
     }
+
 }

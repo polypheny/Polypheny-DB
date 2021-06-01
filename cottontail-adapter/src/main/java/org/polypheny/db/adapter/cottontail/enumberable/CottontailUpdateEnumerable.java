@@ -32,7 +32,6 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.CottontailWrapper;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
-import org.polypheny.db.transaction.PolyXid;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnName;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Literal;

@@ -30,7 +30,6 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.CottontailWrapper;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
-import org.polypheny.db.transaction.PolyXid;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnName;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.InsertMessage;
@@ -41,13 +40,17 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.TransactionId;
 
 public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
 
-    /** Method signature for INSERT of values. */
+    /**
+     * Method signature for INSERT of values.
+     */
     public static final Method CREATE_INSERT_VALUES = Types.lookupMethod(
             CottontailInsertEnumerable.class,
             "fromValues",
             String.class, String.class, List.class, DataContext.class, CottontailWrapper.class );
 
-    /** Method signature for INSERT for prepared statements. */
+    /**
+     * Method signature for INSERT for prepared statements.
+     */
     public static final Method CREATE_INSERT_PREPARED = Types.lookupMethod(
             CottontailInsertEnumerable.class,
             "fromPreparedStatements",
@@ -56,6 +59,7 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
     private final List<InsertMessage> inserts;
     private final CottontailWrapper wrapper;
     private final boolean fromPrepared;
+
 
     public CottontailInsertEnumerable( List<InsertMessage> inserts, DataContext dataContext, CottontailWrapper wrapper, boolean fromPrepared ) {
         this.inserts = inserts;
@@ -66,11 +70,11 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
 
     @SuppressWarnings("unused") // Used via reflection
     public static CottontailInsertEnumerable<Object> fromValues(
-        String from,
-        String schema,
-        List<Map<String, CottontailGrpc.Literal>> values,
-        DataContext dataContext,
-        CottontailWrapper wrapper
+            String from,
+            String schema,
+            List<Map<String, CottontailGrpc.Literal>> values,
+            DataContext dataContext,
+            CottontailWrapper wrapper
     ) {
         /* Begin or continue Cottontail DB transaction. */
         final TransactionId txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
@@ -190,6 +194,7 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
         @Override
         public void close() {
         }
+
     }
 
 }

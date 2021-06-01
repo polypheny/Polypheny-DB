@@ -36,7 +36,6 @@ import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
-import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.ArrayType;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.BatchedQueryMessage;

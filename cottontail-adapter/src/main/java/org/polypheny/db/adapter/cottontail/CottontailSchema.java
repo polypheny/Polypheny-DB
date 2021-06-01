@@ -100,6 +100,7 @@ public class CottontailSchema extends AbstractSchema {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( this.cottontailStore );
     }
 
+
     @Override
     public boolean isMutable() {
         return true;

@@ -26,8 +26,6 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.BatchedQueryMessage;
@@ -67,14 +65,19 @@ import org.vitrivr.cottontail.grpc.TXNGrpc.TXNBlockingStub;
 public class CottontailWrapper implements AutoCloseable {
 
     private final ManagedChannel channel;
-    public static final int maxMessageSize = 150_000_000;
+    public static final int MAX_MESSAGE_SIZE = 150_000_000;
     private static final long MAX_QUERY_CALL_TIMEOUT = 300_000; // TODO expose to config
 
-    /** A map of all the {@link PolyXid} and the Cottontail DB {@link TransactionId} of all ongoing transactions. */
+    /**
+     * A map of all the {@link PolyXid} and the Cottontail DB {@link TransactionId} of all ongoing transactions.
+     */
     private final ConcurrentHashMap<PolyXid, TransactionId> transactions = new ConcurrentHashMap<>();
 
-    /** Reference to the {@link CottontailStore} this {@link CottontailWrapper} belongs to. */
+    /**
+     * Reference to the {@link CottontailStore} this {@link CottontailWrapper} belongs to.
+     */
     private final CottontailStore store;
+
 
     /**
      * Default constructor.
@@ -87,6 +90,7 @@ public class CottontailWrapper implements AutoCloseable {
         this.store = store;
     }
 
+
     /**
      * Begins a new transaction and returns its {@link TransactionId}.
      *
@@ -96,16 +100,17 @@ public class CottontailWrapper implements AutoCloseable {
     public TransactionId beginOrContinue( Transaction transaction ) {
         final PolyXid xid = transaction.getXid();
         transaction.registerInvolvedAdapter( this.store );
-        return this.transactions.computeIfAbsent(xid, polyXid -> {
+        return this.transactions.computeIfAbsent( xid, polyXid -> {
             try {
-                final TXNBlockingStub stub = TXNGrpc.newBlockingStub(this.channel);
-                return stub.begin(Empty.getDefaultInstance());
+                final TXNBlockingStub stub = TXNGrpc.newBlockingStub( this.channel );
+                return stub.begin( Empty.getDefaultInstance() );
             } catch ( StatusRuntimeException e ) {
                 log.error( "Could not start transaction due to error", e );
                 return null;
             }
-        });
+        } );
     }
+
 
     /**
      * Commits a transaction for the given {@link TransactionId}.
@@ -114,7 +119,7 @@ public class CottontailWrapper implements AutoCloseable {
      */
     public void commit( PolyXid xid ) {
         final TransactionId txId = this.transactions.remove( xid );
-        if (txId != null) {
+        if ( txId != null ) {
             try {
                 final TXNBlockingStub stub = TXNGrpc.newBlockingStub( this.channel );
                 final Empty result = stub.commit( txId );
@@ -126,6 +131,7 @@ public class CottontailWrapper implements AutoCloseable {
         }
     }
 
+
     /**
      * Rolls back the transaction for the given {@link TransactionId}.
      *
@@ -133,7 +139,7 @@ public class CottontailWrapper implements AutoCloseable {
      */
     public void rollback( PolyXid xid ) {
         final TransactionId txId = this.transactions.remove( xid );
-        if (txId != null) {
+        if ( txId != null ) {
             try {
                 final TXNBlockingStub stub = TXNGrpc.newBlockingStub( this.channel );
                 final Empty result = stub.rollback( txId );

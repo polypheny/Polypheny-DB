@@ -25,11 +25,9 @@ import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Filter;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.tools.RelBuilderFactory;
-import org.polypheny.db.type.PolyType;
 
 
 public class CottontailFilterRule extends CottontailConverterRule {
@@ -107,6 +105,7 @@ public class CottontailFilterRule extends CottontailConverterRule {
         }
     }
 
+
     private boolean checkAtomicConditionArguments( RexNode left, RexNode right ) {
         switch ( right.getKind() ) {
             case LITERAL:
@@ -118,4 +117,5 @@ public class CottontailFilterRule extends CottontailConverterRule {
         }
         return left.getKind() == SqlKind.INPUT_REF;
     }
+
 }

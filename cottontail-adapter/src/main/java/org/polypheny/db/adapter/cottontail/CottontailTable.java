@@ -45,7 +45,6 @@ import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
-import org.polypheny.db.transaction.PolyXid;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.EntityName;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.From;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Query;
@@ -183,9 +182,11 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
 
 
     private class CottontailTableQueryable<T> extends AbstractTableQueryable<T> {
+
         public CottontailTableQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
             super( dataContext, schema, CottontailTable.this, tableName );
         }
+
 
         @Override
         public Enumerator<T> enumerator() {
@@ -199,8 +200,10 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
             final QueryMessage queryMessage = QueryMessage.newBuilder().setTxId( txId ).setQuery( query ).build();
             final Enumerable enumerable = new CottontailQueryEnumerable<>(
                     cottontailTable.cottontailSchema.getWrapper().query( queryMessage ),
-                    new CottontailQueryEnumerable.RowTypeParser(cottontailTable.getRowType( typeFactory ), cottontailTable.physicalColumnNames ) );
+                    new CottontailQueryEnumerable.RowTypeParser( cottontailTable.getRowType( typeFactory ), cottontailTable.physicalColumnNames ) );
             return enumerable.enumerator();
         }
+
     }
+
 }

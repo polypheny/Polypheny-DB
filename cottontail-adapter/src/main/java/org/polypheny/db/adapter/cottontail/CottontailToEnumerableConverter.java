@@ -488,6 +488,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         return new CottontailQueryEnumerable<>( queryResponseIterator, rowParser );
     }
 
+
     private static Expression expressionOrNullExpression( Expression expression ) {
         if ( expression == null ) {
             return Expressions.constant( null );
