@@ -64,6 +64,10 @@ public class TestHelper {
         Runnable runnable = () -> {
             try {
                 polyphenyDb.testMode = true;
+                String defaultStoreName = System.getProperty( "store.default" );
+                if ( defaultStoreName != null ) {
+                    polyphenyDb.defaultStoreName = defaultStoreName;
+                }
                 // polyphenyDb.resetCatalog = true;
                 polyphenyDb.runPolyphenyDb();
             } catch ( GenericCatalogException e ) {
