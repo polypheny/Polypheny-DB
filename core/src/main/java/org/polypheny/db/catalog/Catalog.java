@@ -1173,6 +1173,7 @@ public abstract class Catalog {
 
     /**
      * Deletes all the dependencies before deleting a View
+     *
      * @param catalogView view to be deleted
      */
     public abstract void deleteViewDependencies( CatalogView catalogView );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,13 +72,13 @@ public class AggregateCall implements Serializable {
      * Creates an AggregateCall.
      *
      * @param aggFunction Aggregate function
-     * @param distinct    Whether distinct
+     * @param distinct Whether distinct
      * @param approximate Whether approximate
-     * @param argList     List of ordinals of arguments
-     * @param filterArg   Ordinal of filter argument (the {@code FILTER (WHERE ...)} clause in SQL), or -1
-     * @param collation   How to sort values before aggregation (the {@code WITHIN GROUP} clause in SQL)
-     * @param type        Result type
-     * @param name        Name (may be null)
+     * @param argList List of ordinals of arguments
+     * @param filterArg Ordinal of filter argument (the {@code FILTER (WHERE ...)} clause in SQL), or -1
+     * @param collation How to sort values before aggregation (the {@code WITHIN GROUP} clause in SQL)
+     * @param type Result type
+     * @param name Name (may be null)
      */
     private AggregateCall(
             SqlAggFunction aggFunction,
@@ -344,4 +344,5 @@ public class AggregateCall implements Serializable {
                         : -1,
                 RelCollations.permute( collation, mapping ) );
     }
+
 }

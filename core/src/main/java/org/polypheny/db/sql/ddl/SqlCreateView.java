@@ -152,7 +152,7 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
                     columns );
         } catch ( TableAlreadyExistsException e ) {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( viewName ) );
-        }catch ( GenericCatalogException | UnknownColumnException e ) {
+        } catch ( GenericCatalogException | UnknownColumnException e ) {
             // we just added the table/column so it has to exist or we have a internal problem
             throw new RuntimeException( e );
         }

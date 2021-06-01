@@ -73,7 +73,7 @@ import org.polypheny.db.util.Util;
  *
  * <strong>NOTE: This class is experimental and subject to change/removal without notice</strong>.</p>
  */
-public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaTypeFactory{
+public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaTypeFactory {
 
     private final Map<List<Pair<Type, Boolean>>, SyntheticRecordType> syntheticTypes = new HashMap<>();
 

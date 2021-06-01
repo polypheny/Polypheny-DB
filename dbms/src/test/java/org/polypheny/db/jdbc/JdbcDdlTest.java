@@ -29,7 +29,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaSqlException;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
@@ -160,6 +159,7 @@ public class JdbcDdlTest {
         }
     }
 
+
     @Test
     public void viewTestTypes() throws SQLException {
         // Check if there are new types missing in this test
@@ -171,7 +171,7 @@ public class JdbcDdlTest {
                 // Create ddltest table and insert data
                 statement.executeUpdate( DDLTEST_SQL );
                 statement.executeUpdate( DDLTEST_DATA_SQL );
-                statement.executeUpdate( "CREATE VIEW ddltestview as SELECT * FROM ddltest"  );
+                statement.executeUpdate( "CREATE VIEW ddltestview as SELECT * FROM ddltest" );
 
                 try {
                     TestHelper.checkResultSet(

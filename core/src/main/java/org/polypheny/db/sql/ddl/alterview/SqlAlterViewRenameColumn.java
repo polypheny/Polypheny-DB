@@ -40,20 +40,23 @@ public class SqlAlterViewRenameColumn extends SqlAlterView {
     private final SqlIdentifier columnOldName;
     private final SqlIdentifier columnNewName;
 
-    public SqlAlterViewRenameColumn( SqlParserPos pos, SqlIdentifier view, SqlIdentifier columnOldName, SqlIdentifier columnNewName){
-        super(pos);
+
+    public SqlAlterViewRenameColumn( SqlParserPos pos, SqlIdentifier view, SqlIdentifier columnOldName, SqlIdentifier columnNewName ) {
+        super( pos );
         this.view = Objects.requireNonNull( view );
         this.columnOldName = Objects.requireNonNull( columnOldName );
         this.columnNewName = Objects.requireNonNull( columnNewName );
     }
 
-    @Override
-    public List<SqlNode> getOperandList(){
-        return ImmutableNullableList.of(view, columnNewName, columnOldName);
-    }
 
     @Override
-    public void unparse( SqlWriter writer, int leftPrec, int rightPrec ){
+    public List<SqlNode> getOperandList() {
+        return ImmutableNullableList.of( view, columnNewName, columnOldName );
+    }
+
+
+    @Override
+    public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
         writer.keyword( "VIEW" );
         view.unparse( writer, leftPrec, rightPrec );
@@ -64,9 +67,10 @@ public class SqlAlterViewRenameColumn extends SqlAlterView {
         columnNewName.unparse( writer, leftPrec, rightPrec );
     }
 
+
     @Override
-    public void execute( Context context, Statement statement ){
-        CatalogView catalogView = (CatalogView)getCatalogTable( context, view );
+    public void execute( Context context, Statement statement ) {
+        CatalogView catalogView = (CatalogView) getCatalogTable( context, view );
 
         try {
             DdlManager.getInstance().renameColumn( catalogView, columnOldName.getSimple(), columnNewName.getSimple(), statement );

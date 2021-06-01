@@ -54,7 +54,6 @@ public class ViewTableScan extends TableScan {
     public static RelNode create( RelOptCluster cluster, final RelOptTable relOptTable ) {
         final Table table = relOptTable.unwrap( Table.class );
 
-
         final RelTraitSet traitSet =
                 cluster.traitSetOf( Convention.NONE )
                         .replaceIfs(
@@ -65,8 +64,6 @@ public class ViewTableScan extends TableScan {
                                     }
                                     return ImmutableList.of();
                                 } );
-
-
 
         Catalog catalog = Catalog.getInstance();
         CatalogTable catalogTable;

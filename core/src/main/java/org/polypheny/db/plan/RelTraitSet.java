@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -404,7 +404,7 @@ public final class RelTraitSet extends AbstractList<RelTrait> implements Seriali
     public boolean containsIfApplicable( RelTrait trait ) {
         // Note that '==' is sufficient, because trait should be canonized.
         final RelTrait trait1 = getTrait( trait.getTraitDef() );
-        return trait1 == null || trait1.equals(trait);
+        return trait1 == null || trait1.equals( trait );
     }
 
 
@@ -564,7 +564,7 @@ public final class RelTraitSet extends AbstractList<RelTrait> implements Seriali
     /**
      * Cache of trait sets.
      */
-    private static class Cache implements Serializable{
+    private static class Cache implements Serializable {
 
         final Map<List<RelTrait>, RelTraitSet> map = new HashMap<>();
 
@@ -582,6 +582,8 @@ public final class RelTraitSet extends AbstractList<RelTrait> implements Seriali
             map.put( traits, traitSet );
             return traitSet;
         }
+
     }
+
 }
 

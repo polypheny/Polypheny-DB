@@ -41,6 +41,7 @@ public class SqlAlterViewRename extends SqlAlterView {
     private final SqlIdentifier oldName;
     private final SqlIdentifier newName;
 
+
     /**
      * Creates a SqlAlterSchema.
      *
@@ -55,7 +56,7 @@ public class SqlAlterViewRename extends SqlAlterView {
 
     @Override
     public List<SqlNode> getOperandList() {
-        return ImmutableNullableList.of(oldName, newName);
+        return ImmutableNullableList.of( oldName, newName );
     }
 
 
@@ -69,8 +70,9 @@ public class SqlAlterViewRename extends SqlAlterView {
         newName.unparse( writer, leftPrec, rightPrec );
     }
 
+
     @Override
-    public void execute(Context context, Statement statement){
+    public void execute( Context context, Statement statement ) {
         CatalogView view = (CatalogView) getCatalogTable( context, oldName );
 
         if ( newName.names.size() != 1 ) {

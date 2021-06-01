@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,7 +74,7 @@ public class InformationGroup extends Refreshable implements Serializable {
     /**
      * Constructor
      *
-     * @param id     Id of this group
+     * @param id Id of this group
      * @param pageId Id of the page this group belongs to
      */
     public InformationGroup( final String id, final String pageId, final String name ) {

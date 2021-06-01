@@ -21,7 +21,6 @@ import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.sql.SqlIntervalQualifier;
-import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.parser.SqlParserPos;
 
 public class PolyIntervalQualifier implements Serializable {

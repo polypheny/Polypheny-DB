@@ -188,6 +188,7 @@ public class CatalogView extends CatalogTable {
 
     }
 
+
     public RelRoot prepareView( RelOptCluster cluster, RelCollation relCollation ) {
         RelRoot viewLogicalRoot = definition;
         prepareView( viewLogicalRoot.rel, cluster, relCollation );
@@ -203,7 +204,7 @@ public class CatalogView extends CatalogTable {
             relCollationList.add( relCollation );
             RelTraitSet traitSetTest =
                     relOptCluster.traitSetOf( Convention.NONE )
-                            .replaceIfs(RelCollationTraitDef.INSTANCE,
+                            .replaceIfs( RelCollationTraitDef.INSTANCE,
                                     () -> {
                                         if ( relCollation != null ) {
                                             return relCollationList;

@@ -336,7 +336,7 @@ public class CatalogImpl extends Catalog {
             List<CatalogColumnPlacement> placements = getColumnPlacements( c.id );
             CatalogTable catalogTable = getTable( c.tableId );
 
-            if(!catalogTable.isView()){
+            if ( !catalogTable.isView() ) {
                 if ( placements.size() == 0 ) {
                     // no placements shouldn't happen
                     throw new RuntimeException( "There seems to be no placement for the column with the id " + c.id );
@@ -1325,7 +1325,7 @@ public class CatalogImpl extends Catalog {
 
         synchronized ( this ) {
             tables.put( id, table );
-             tableChildren.put( id, ImmutableList.<Long>builder().build() );
+            tableChildren.put( id, ImmutableList.<Long>builder().build() );
             tableNames.put( new Object[]{ schema.databaseId, schemaId, name }, table );
             List<Long> children = new ArrayList<>( Objects.requireNonNull( schemaChildren.get( schemaId ) ) );
             children.add( id );
@@ -1474,7 +1474,7 @@ public class CatalogImpl extends Catalog {
                 old.partitionIds,
                 old.partitionColumnId,
                 old.isPartitioned,
-                old.connectedViews);
+                old.connectedViews );
         synchronized ( this ) {
             tables.replace( tableId, table );
             tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
@@ -1509,7 +1509,7 @@ public class CatalogImpl extends Catalog {
                 old.partitionIds,
                 old.partitionColumnId,
                 old.isPartitioned,
-                old.connectedViews);
+                old.connectedViews );
         synchronized ( this ) {
             tables.replace( tableId, table );
             tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
@@ -1587,7 +1587,7 @@ public class CatalogImpl extends Catalog {
                         old.partitionType,
                         old.partitionIds,
                         old.partitionColumnId,
-                        old.connectedViews);
+                        old.connectedViews );
 
                 // If table is partitioned and no concrete partitions are defined place all partitions on columnPlacement
                 if ( partitionIds == null ) {
@@ -1630,7 +1630,7 @@ public class CatalogImpl extends Catalog {
                         old.partitionIds,
                         old.partitionColumnId,
                         old.isPartitioned,
-                        old.connectedViews);
+                        old.connectedViews );
             }
 
             tables.replace( column.tableId, table );
@@ -1693,7 +1693,7 @@ public class CatalogImpl extends Catalog {
                         oldTable.partitionType,
                         oldTable.partitionIds,
                         oldTable.partitionColumnId,
-                        oldTable.connectedViews);
+                        oldTable.connectedViews );
 
                 //Check if this is the last placement on store. If so remove dataPartitionPlacement
                 if ( lastPlacementOnStore ) {
@@ -1724,7 +1724,8 @@ public class CatalogImpl extends Catalog {
                         oldTable.partitionIds,
                         oldTable.partitionColumnId,
                         oldTable.isPartitioned,
-                        oldTable.connectedViews);          }
+                        oldTable.connectedViews );
+            }
 
             tables.replace( table.id, table );
             tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
@@ -2102,7 +2103,7 @@ public class CatalogImpl extends Catalog {
         if ( type.getFamily() == PolyTypeFamily.CHARACTER && collation == null ) {
             throw new RuntimeException( "Collation is not allowed to be null for char types." );
         }
-        if(scale != null && length != null){
+        if ( scale != null && length != null ) {
             if ( scale > length ) {
                 throw new RuntimeException( "Invalid scale! Scale can not be larger than length." );
             }
@@ -2350,7 +2351,7 @@ public class CatalogImpl extends Catalog {
                 old.partitionIds,
                 old.partitionColumnId,
                 old.isPartitioned,
-                old.connectedViews);
+                old.connectedViews );
 
         synchronized ( this ) {
             columnNames.remove( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name } );
@@ -3311,7 +3312,7 @@ public class CatalogImpl extends Catalog {
                 partitionType,
                 ImmutableList.copyOf( partitionIds ),
                 partitionColumnId,
-                old.connectedViews);
+                old.connectedViews );
 
         synchronized ( this ) {
             tables.replace( tableId, table );

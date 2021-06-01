@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ import org.polypheny.db.util.Util;
 /**
  * <code>SqlBinaryOperator</code> is a binary operator.
  */
-public class SqlBinaryOperator extends SqlOperator  {
+public class SqlBinaryOperator extends SqlOperator {
 
 
     /**
@@ -208,7 +208,7 @@ public class SqlBinaryOperator extends SqlOperator  {
             if ( (this == SqlStdOperatorTable.AND || this == SqlStdOperatorTable.OR) && count > 2 ) {
                 return true;
 
-            // added SqlKind.ANDOR because SqlStdOperatorTable.AND is false within Views
+                // added SqlKind.ANDOR because SqlStdOperatorTable.AND is false within Views
             } else if ( (this.kind.belongsTo( SqlKind.ANDOR )) && count > 2 ) {
                 return true;
             }
@@ -216,5 +216,6 @@ public class SqlBinaryOperator extends SqlOperator  {
         }
         return litmus.succeed();
     }
+
 }
 

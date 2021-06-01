@@ -37,14 +37,14 @@ Table and Queries from https://github.com/polypheny/OLTPBench/tree/polypheny/src
 public class ComplexViewTest {
 
 
-    private final static String DROP_TABLES_NATION = "DROP TABLE IF EXISTS nation ";
-    private final static String DROP_TABLES_REGION = "DROP TABLE IF EXISTS region ";
-    private final static String DROP_TABLES_PART = "DROP TABLE IF EXISTS part ";
-    private final static String DROP_TABLES_SUPPLIER = "DROP TABLE IF EXISTS supplier ";
-    private final static String DROP_TABLES_PARTSUPP =  "DROP TABLE IF EXISTS partsupp ";
-    private final static String DROP_TABLES_ORDERS =  "DROP TABLE IF EXISTS orders ";
-    private final static String DROP_TABLES_CUSTOMER = "DROP TABLE IF EXISTS customer ";
-    private final static String DROP_TABLES_LINEITEM = "DROP TABLE IF EXISTS lineitem ";
+    private final static String DROP_TABLES_NATION = "DROP TABLE IF EXISTS nation";
+    private final static String DROP_TABLES_REGION = "DROP TABLE IF EXISTS region";
+    private final static String DROP_TABLES_PART = "DROP TABLE IF EXISTS part";
+    private final static String DROP_TABLES_SUPPLIER = "DROP TABLE IF EXISTS supplier";
+    private final static String DROP_TABLES_PARTSUPP = "DROP TABLE IF EXISTS partsupp";
+    private final static String DROP_TABLES_ORDERS = "DROP TABLE IF EXISTS orders";
+    private final static String DROP_TABLES_CUSTOMER = "DROP TABLE IF EXISTS customer";
+    private final static String DROP_TABLES_LINEITEM = "DROP TABLE IF EXISTS lineitem";
 
     private final static String NATION_TABLE = "CREATE TABLE nation  ( "
             + "n_nationkey  INTEGER NOT NULL,"
@@ -331,26 +331,26 @@ public class ComplexViewTest {
             1L };
 
     private final static Object[] q6_TEST_DATA = new Object[]{
-            new BigDecimal( "1010.5225" )};
+            new BigDecimal( "1010.5225" ) };
 
     private final static Object[] q7_TEST_DATA = new Object[]{
             "Switzerland",
             "Switzerland",
-            2020L ,
-            new BigDecimal( "-960.3725" )};
+            2020L,
+            new BigDecimal( "-960.3725" ) };
 
     private final static Object[] q8_TEST_DATA = new Object[]{
-            2020L ,
-            new BigDecimal( "1.0000" )};
+            2020L,
+            new BigDecimal( "1.0000" ) };
 
     private final static Object[] q8_TEST_DATA_VIEW = new Object[]{
-            2020L ,
-            new BigDecimal( "1" )};
+            2020L,
+            new BigDecimal( "1" ) };
 
     private final static Object[] q9_TEST_DATA = new Object[]{
             "Switzerland",
-            2020L ,
-            new BigDecimal( "-1467.1450" )};
+            2020L,
+            new BigDecimal( "-1467.1450" ) };
 
     private final static Object[] q10_TEST_DATA = new Object[]{
             1,
@@ -375,8 +375,8 @@ public class ComplexViewTest {
             1,
             "SupplierName",
             "SupplierAddress",
-            "phone" ,
-            new BigDecimal( "-960.3725" )};
+            "phone",
+            new BigDecimal( "-960.3725" ) };
 
     private final static Object[] q17_TEST_DATA = new Object[]{
             new BigDecimal( "7.164285714285714" )
@@ -387,7 +387,6 @@ public class ComplexViewTest {
     };
 
 
-
     @BeforeClass
     public static void start() {
         // Ensures that Polypheny-DB is running
@@ -396,7 +395,7 @@ public class ComplexViewTest {
     }
 
 
-    public void initTables(Statement statement) throws SQLException {
+    public void initTables( Statement statement ) throws SQLException {
         statement.executeUpdate( NATION_TABLE );
         statement.executeUpdate( NATION_TABLE_DATA );
         statement.executeUpdate( REGION_TABLE );
@@ -415,7 +414,8 @@ public class ComplexViewTest {
         statement.executeUpdate( LINEITEM_TABLE_DATA );
     }
 
-    public void dropTables(Statement statement) throws SQLException {
+
+    public void dropTables( Statement statement ) throws SQLException {
         statement.executeUpdate( DROP_TABLES_NATION );
         statement.executeUpdate( DROP_TABLES_REGION );
         statement.executeUpdate( DROP_TABLES_PART );
@@ -474,7 +474,7 @@ public class ComplexViewTest {
 
                     connection.commit();
                 } finally {
-                    dropTables(statement);
+                    dropTables( statement );
                 }
             }
         }
@@ -511,7 +511,7 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW date_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables(statement);
+                    dropTables( statement );
 
                 }
             }
@@ -550,7 +550,7 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW decimal_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables(statement);
+                    dropTables( statement );
 
                 }
             }
@@ -591,7 +591,7 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW decimalDate_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables(statement);
+                    dropTables( statement );
                 }
             }
         }
@@ -633,11 +633,12 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW decimalDateInt_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables(statement);
+                    dropTables( statement );
                 }
             }
         }
     }
+
 
     @Test
     public void testDateOrderby() throws SQLException {
@@ -659,9 +660,8 @@ public class ComplexViewTest {
                             ImmutableList.of( new Object[]{
                                     new BigDecimal( "-990.3725" ),
                                     Date.valueOf( "2020-07-03" )
-                            })
+                            } )
                     );
-
 
                     statement.executeUpdate( "CREATE VIEW dateOrderby_VIEW AS "
                             + "select sum(l_extendedprice * (1 - l_discount)) as revenue, o_orderdate "
@@ -680,7 +680,7 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW dateOrderby_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables(statement);
+                    dropTables( statement );
                 }
             }
         }
@@ -701,9 +701,8 @@ public class ComplexViewTest {
                                     + "from orders where o_orderdate < date '2020-07-03' + interval '3' month " ),
                             ImmutableList.of( new Object[]{
                                     "orderPriority"
-                            })
+                            } )
                     );
-
 
                     statement.executeUpdate( "CREATE VIEW timeIntervall_VIEW AS "
                             + "select o_orderpriority from orders where o_orderdate < date '2020-07-03' + interval '3' month" );
@@ -717,12 +716,11 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW timeIntervall_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables(statement);
+                    dropTables( statement );
                 }
             }
         }
     }
-
 
 
     @Test
@@ -731,7 +729,7 @@ public class ComplexViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                initTables(statement);
+                initTables( statement );
 
                 try {
 
@@ -750,7 +748,6 @@ public class ComplexViewTest {
                                     + "group by l_returnflag, l_linestatus order by l_returnflag, l_linestatus" ),
                             ImmutableList.of( q1_TEST_DATA )
                     );
-
 
                     statement.executeUpdate( "CREATE VIEW q1_VIEW AS "
                             + "select l_returnflag, l_linestatus, "
@@ -773,11 +770,12 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW q1_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables(statement);
+                    dropTables( statement );
                 }
             }
         }
     }
+
 
     //SELECT NOT POSSIBLE
     //java.lang.AssertionError: type mismatch: ref: VARCHAR(55) NOT NULL input: INTEGER NOT NULL
@@ -795,55 +793,55 @@ public class ComplexViewTest {
 
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select "
-                                    +     "s_acctbal, "
-                                    +     "s_name, "
-                                    +     "n_name, "
-                                    +     "p_partkey, "
-                                    +     "p_mfgr, "
-                                    +     "s_address, "
-                                    +     "s_phone, "
-                                    +     "s_comment "
+                                    + "s_acctbal, "
+                                    + "s_name, "
+                                    + "n_name, "
+                                    + "p_partkey, "
+                                    + "p_mfgr, "
+                                    + "s_address, "
+                                    + "s_phone, "
+                                    + "s_comment "
                                     + "from "
-                                    +     "part, "
-                                    +     "supplier, "
-                                    +     "partsupp, "
-                                    +     "nation, "
-                                    +     "region "
+                                    + "part, "
+                                    + "supplier, "
+                                    + "partsupp, "
+                                    + "nation, "
+                                    + "region "
                                     + "where "
-                                    +     "p_partkey = ps_partkey "
-                                    +     "and s_suppkey = ps_suppkey "
-                                    +     "and p_size = 5 "
-                                    +     "and p_type like 'Wireless' "
-                                    +     "and s_nationkey = n_nationkey "
-                                    +     "and n_regionkey = r_regionkey "
-                                    +     "and r_name = 'Basel' "
-                                    +     "and ps_supplycost = ( "
-                                    +         "select "
-                                    +             "min(ps_supplycost) "
-                                    +         "from "
-                                    +             "partsupp, "
-                                    +             "supplier, "
-                                    +             "nation, "
-                                    +             "region "
-                                    +         "where "
-                                    +             "p_partkey = ps_partkey "
-                                    +             "and s_suppkey = ps_suppkey "
-                                    +             "and s_nationkey = n_nationkey "
-                                    +             "and n_regionkey = r_regionkey "
-                                    +             "and r_name = 'Basel' "
-                                    +     ") "
+                                    + "p_partkey = ps_partkey "
+                                    + "and s_suppkey = ps_suppkey "
+                                    + "and p_size = 5 "
+                                    + "and p_type like 'Wireless' "
+                                    + "and s_nationkey = n_nationkey "
+                                    + "and n_regionkey = r_regionkey "
+                                    + "and r_name = 'Basel' "
+                                    + "and ps_supplycost = ( "
+                                    + "select "
+                                    + "min(ps_supplycost) "
+                                    + "from "
+                                    + "partsupp, "
+                                    + "supplier, "
+                                    + "nation, "
+                                    + "region "
+                                    + "where "
+                                    + "p_partkey = ps_partkey "
+                                    + "and s_suppkey = ps_suppkey "
+                                    + "and s_nationkey = n_nationkey "
+                                    + "and n_regionkey = r_regionkey "
+                                    + "and r_name = 'Basel' "
+                                    + ") "
                                     + "order by "
-                                    +     "s_acctbal desc, "
-                                    +     "n_name, "
-                                    +     "s_name, "
-                                    +     "p_partkey "
+                                    + "s_acctbal desc, "
+                                    + "n_name, "
+                                    + "s_name, "
+                                    + "p_partkey "
                                     + "limit 100" ),
                             ImmutableList.of( new Object[]{} )
                     );
 
                     connection.commit();
                 } finally {
-                    dropTables(statement);
+                    dropTables( statement );
                 }
             }
         }
@@ -862,56 +860,55 @@ public class ComplexViewTest {
 
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select "
-                                    +     "l_orderkey, "
-                                    +     "sum(l_extendedprice * (1 - l_discount)) as revenue, "
-                                    +     "o_orderdate, "
-                                    +     "o_shippriority "
+                                    + "l_orderkey, "
+                                    + "sum(l_extendedprice * (1 - l_discount)) as revenue, "
+                                    + "o_orderdate, "
+                                    + "o_shippriority "
                                     + "from "
-                                    +     "customer, "
-                                    +     "orders, "
-                                    +     "lineitem "
+                                    + "customer, "
+                                    + "orders, "
+                                    + "lineitem "
                                     + "where "
-                                    +     "c_mktsegment = 'CSegment' "
-                                    +     "and c_custkey = o_custkey "
-                                    +     "and l_orderkey = o_orderkey "
-                                    +     "and o_orderdate < date '2020-08-03' "
-                                    +     "and l_shipdate > date '2020-06-03' "
+                                    + "c_mktsegment = 'CSegment' "
+                                    + "and c_custkey = o_custkey "
+                                    + "and l_orderkey = o_orderkey "
+                                    + "and o_orderdate < date '2020-08-03' "
+                                    + "and l_shipdate > date '2020-06-03' "
                                     + "group by "
-                                    +     "l_orderkey, "
-                                    +     "o_orderdate, "
-                                    +     "o_shippriority "
+                                    + "l_orderkey, "
+                                    + "o_orderdate, "
+                                    + "o_shippriority "
                                     + "order by "
-                                    +     "revenue desc, "
-                                    +     "o_orderdate "
+                                    + "revenue desc, "
+                                    + "o_orderdate "
                                     + "limit 10" ),
                             ImmutableList.of( q3_TEST_DATA )
                     );
 
-
                     statement.executeUpdate( "CREATE VIEW q3_VIEW AS "
-                                    + "select "
-                                    +     "l_orderkey, "
-                                    +     "sum(l_extendedprice * (1 - l_discount)) as revenue, "
-                                    +     "o_orderdate, "
-                                    +     "o_shippriority "
-                                    + "from "
-                                    +     "customer, "
-                                    +     "orders, "
-                                    +     "lineitem "
-                                    + "where "
-                                    +     "c_mktsegment = 'CSegment' "
-                                    +     "and c_custkey = o_custkey "
-                                    +     "and l_orderkey = o_orderkey "
-                                    +     "and o_orderdate < date '2020-08-03' "
-                                    +     "and l_shipdate > date '2020-06-03' "
-                                    + "group by "
-                                    +     "l_orderkey, "
-                                    +     "o_orderdate, "
-                                    +     "o_shippriority "
-                                    + "order by "
-                                    +     "revenue desc, "
-                                    +     "o_orderdate "
-                                    + "limit 10"  );
+                            + "select "
+                            + "l_orderkey, "
+                            + "sum(l_extendedprice * (1 - l_discount)) as revenue, "
+                            + "o_orderdate, "
+                            + "o_shippriority "
+                            + "from "
+                            + "customer, "
+                            + "orders, "
+                            + "lineitem "
+                            + "where "
+                            + "c_mktsegment = 'CSegment' "
+                            + "and c_custkey = o_custkey "
+                            + "and l_orderkey = o_orderkey "
+                            + "and o_orderdate < date '2020-08-03' "
+                            + "and l_shipdate > date '2020-06-03' "
+                            + "group by "
+                            + "l_orderkey, "
+                            + "o_orderdate, "
+                            + "o_shippriority "
+                            + "order by "
+                            + "revenue desc, "
+                            + "o_orderdate "
+                            + "limit 10" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM q3_VIEW" ),
                             ImmutableList.of( q3_TEST_DATA )
@@ -920,7 +917,7 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW q3_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables(statement);
+                    dropTables( statement );
                 }
             }
         }
@@ -940,64 +937,61 @@ public class ComplexViewTest {
 
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select "
-                                    +     "o_orderpriority, "
-                                    +     "count(*) as order_count "
+                                    + "o_orderpriority, "
+                                    + "count(*) as order_count "
                                     + "from "
-                                    +     "orders "
+                                    + "orders "
                                     + "where "
-                                    +     "o_orderdate >= date '2020-07-03' "
-                                    +     "and o_orderdate < date '2020-07-03' + interval '3' month "
-                                    +     "and exists ( "
-                                    +         "select "
-                                    +             "* "
-                                    +         "from "
-                                    +             "lineitem "
-                                    +         "where "
-                                    +             "l_orderkey = o_orderkey "
-                                    +             "and l_commitdate < l_receiptdate "
-                                    +     ") "
+                                    + "o_orderdate >= date '2020-07-03' "
+                                    + "and o_orderdate < date '2020-07-03' + interval '3' month "
+                                    + "and exists ( "
+                                    + "select "
+                                    + "* "
+                                    + "from "
+                                    + "lineitem "
+                                    + "where "
+                                    + "l_orderkey = o_orderkey "
+                                    + "and l_commitdate < l_receiptdate "
+                                    + ") "
                                     + "group by "
-                                    +     "o_orderpriority "
+                                    + "o_orderpriority "
                                     + "order by "
-                                    +     "o_orderpriority" ),
+                                    + "o_orderpriority" ),
                             ImmutableList.of( q4_TEST_DATA )
                     );
 
-
-
                     statement.executeUpdate( "CREATE VIEW q4_VIEW AS "
                             + "select "
-                            +     "o_orderpriority, "
-                            +     "count(*) as order_count "
+                            + "o_orderpriority, "
+                            + "count(*) as order_count "
                             + "from "
-                            +     "orders "
+                            + "orders "
                             + "where "
-                            +     "o_orderdate >= date '2020-07-03' "
-                            +     "and o_orderdate < date '2020-07-03' + interval '3' month "
-                            +     "and exists ( "
-                            +         "select "
-                            +             "* "
-                            +         "from "
-                            +             "lineitem "
-                            +         "where "
-                            +             "l_orderkey = o_orderkey "
-                            +             "and l_commitdate < l_receiptdate "
-                            +     ") "
+                            + "o_orderdate >= date '2020-07-03' "
+                            + "and o_orderdate < date '2020-07-03' + interval '3' month "
+                            + "and exists ( "
+                            + "select "
+                            + "* "
+                            + "from "
+                            + "lineitem "
+                            + "where "
+                            + "l_orderkey = o_orderkey "
+                            + "and l_commitdate < l_receiptdate "
+                            + ") "
                             + "group by "
-                            +     "o_orderpriority "
+                            + "o_orderpriority "
                             + "order by "
-                            +     "o_orderpriority"  );
+                            + "o_orderpriority" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM q4_VIEW" ),
                             ImmutableList.of( q4_TEST_DATA )
                     );
 
-
-                   // statement.executeUpdate( "DROP VIEW q4_VIEW" );
+                    // statement.executeUpdate( "DROP VIEW q4_VIEW" );
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP VIEW q4_VIEW" );
-                    dropTables(statement);
+                    dropTables( statement );
                 }
             }
         }
@@ -1017,28 +1011,28 @@ public class ComplexViewTest {
                 try {
 
                     TestHelper.checkResultSet(
-                            statement.executeQuery("select "
-                                    +     "sum(l_extendedprice * l_discount) as revenue "
+                            statement.executeQuery( "select "
+                                    + "sum(l_extendedprice * l_discount) as revenue "
                                     + "from "
-                                    +     "lineitem "
+                                    + "lineitem "
                                     + "where "
-                                    +     "l_shipdate >= date '2020-07-03' "
-                                    +     "and l_shipdate < date '2020-07-03' + interval '1' year "
-                                    +     "and l_discount between 20.14 and 20.16 "
-                                    +     "and l_quantity < 20.20" ),
+                                    + "l_shipdate >= date '2020-07-03' "
+                                    + "and l_shipdate < date '2020-07-03' + interval '1' year "
+                                    + "and l_discount between 20.14 and 20.16 "
+                                    + "and l_quantity < 20.20" ),
                             ImmutableList.of( q6_TEST_DATA )
                     );
 
                     statement.executeUpdate( "CREATE VIEW q6_VIEW AS "
                             + "select "
-                            +     "sum(l_extendedprice * l_discount) as revenue "
+                            + "sum(l_extendedprice * l_discount) as revenue "
                             + "from "
-                            +     "lineitem "
+                            + "lineitem "
                             + "where "
-                            +     "l_shipdate >= date '2020-07-03' "
-                            +     "and l_shipdate < date '2020-07-03' + interval '1' year "
-                            +     "and l_discount between 20.14 and 20.16 "
-                            +     "and l_quantity < 20.20" );
+                            + "l_shipdate >= date '2020-07-03' "
+                            + "and l_shipdate < date '2020-07-03' + interval '1' year "
+                            + "and l_discount between 20.14 and 20.16 "
+                            + "and l_quantity < 20.20" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM q6_VIEW" ),
                             ImmutableList.of( q6_TEST_DATA )
@@ -1048,11 +1042,12 @@ public class ComplexViewTest {
                     connection.commit();
                 } finally {
 
-                    dropTables(statement);
+                    dropTables( statement );
                 }
             }
         }
     }
+
 
     // deleted "or (n1.n_name = ? and n2.n_name = ?) " because there is only one nation in this table
     //java.lang.ClassCastException: class org.apache.calcite.linq4j.EnumerableDefaults$LookupResultEnumerable$1 cannot be cast to class java.lang.AutoCloseable
@@ -1067,84 +1062,82 @@ public class ComplexViewTest {
                 try {
 
                     TestHelper.checkResultSet(
-                            statement.executeQuery("select "
-                                    +     "supp_nation, "
-                                    +     "cust_nation, "
-                                    +     "l_year, "
-                                    +     "sum(volume) as revenue "
+                            statement.executeQuery( "select "
+                                    + "supp_nation, "
+                                    + "cust_nation, "
+                                    + "l_year, "
+                                    + "sum(volume) as revenue "
                                     + "from "
-                                    +     "( "
-                                    +         "select "
-                                    +             "n1.n_name as supp_nation, "
-                                    +             "n2.n_name as cust_nation, "
-                                    +             "extract(year from l_shipdate) as l_year, "
-                                    +             "l_extendedprice * (1 - l_discount) as volume "
-                                    +         "from "
-                                    +             "supplier, "
-                                    +             "lineitem, "
-                                    +             "orders, "
-                                    +             "customer, "
-                                    +             "nation n1, "
-                                    +             "nation n2 "
-                                    +         "where "
-                                    +             "s_suppkey = l_suppkey "
-                                    +             "and o_orderkey = l_orderkey "
-                                    +             "and c_custkey = o_custkey "
-                                    +             "and s_nationkey = n1.n_nationkey "
-                                    +             "and c_nationkey = n2.n_nationkey "
-                                    +             "and (n1.n_name = 'Switzerland' and n2.n_name = 'Switzerland') "
-                                    +             "and l_shipdate between date '2020-06-03' and date '2020-08-03' "
-                                    +     ") as shipping "
+                                    + "( "
+                                    + "select "
+                                    + "n1.n_name as supp_nation, "
+                                    + "n2.n_name as cust_nation, "
+                                    + "extract(year from l_shipdate) as l_year, "
+                                    + "l_extendedprice * (1 - l_discount) as volume "
+                                    + "from "
+                                    + "supplier, "
+                                    + "lineitem, "
+                                    + "orders, "
+                                    + "customer, "
+                                    + "nation n1, "
+                                    + "nation n2 "
+                                    + "where "
+                                    + "s_suppkey = l_suppkey "
+                                    + "and o_orderkey = l_orderkey "
+                                    + "and c_custkey = o_custkey "
+                                    + "and s_nationkey = n1.n_nationkey "
+                                    + "and c_nationkey = n2.n_nationkey "
+                                    + "and (n1.n_name = 'Switzerland' and n2.n_name = 'Switzerland') "
+                                    + "and l_shipdate between date '2020-06-03' and date '2020-08-03' "
+                                    + ") as shipping "
                                     + "group by "
-                                    +     "supp_nation, "
-                                    +     "cust_nation, "
-                                    +     "l_year "
+                                    + "supp_nation, "
+                                    + "cust_nation, "
+                                    + "l_year "
                                     + "order by "
-                                    +     "supp_nation, "
-                                    +     "cust_nation, "
-                                    +     "l_year" ),
+                                    + "supp_nation, "
+                                    + "cust_nation, "
+                                    + "l_year" ),
                             ImmutableList.of( q7_TEST_DATA )
                     );
 
-
-
                     statement.executeUpdate( "CREATE VIEW q7_VIEW AS "
                             + "select "
-                            +     "supp_nation, "
-                            +     "cust_nation, "
-                            +     "l_year, "
-                            +     "sum(volume) as revenue "
+                            + "supp_nation, "
+                            + "cust_nation, "
+                            + "l_year, "
+                            + "sum(volume) as revenue "
                             + "from "
-                            +     "( "
-                            +         "select "
-                            +             "n1.n_name as supp_nation, "
-                            +             "n2.n_name as cust_nation, "
-                            +             "extract(year from l_shipdate) as l_year, "
-                            +             "l_extendedprice * (1 - l_discount) as volume "
-                            +         "from "
-                            +             "supplier, "
-                            +             "lineitem, "
-                            +             "orders, "
-                            +             "customer, "
-                            +             "nation n1, "
-                            +             "nation n2 "
-                            +         "where "
-                            +             "s_suppkey = l_suppkey "
-                            +             "and o_orderkey = l_orderkey "
-                            +             "and c_custkey = o_custkey "
-                            +             "and s_nationkey = n1.n_nationkey "
-                            +             "and c_nationkey = n2.n_nationkey "
-                            +             "and (n1.n_name = 'Switzerland' and n2.n_name = 'Switzerland') "
-                            +             "and l_shipdate between date '2020-06-03' and date '2020-08-03' "
-                            +     ") as shipping "
+                            + "( "
+                            + "select "
+                            + "n1.n_name as supp_nation, "
+                            + "n2.n_name as cust_nation, "
+                            + "extract(year from l_shipdate) as l_year, "
+                            + "l_extendedprice * (1 - l_discount) as volume "
+                            + "from "
+                            + "supplier, "
+                            + "lineitem, "
+                            + "orders, "
+                            + "customer, "
+                            + "nation n1, "
+                            + "nation n2 "
+                            + "where "
+                            + "s_suppkey = l_suppkey "
+                            + "and o_orderkey = l_orderkey "
+                            + "and c_custkey = o_custkey "
+                            + "and s_nationkey = n1.n_nationkey "
+                            + "and c_nationkey = n2.n_nationkey "
+                            + "and (n1.n_name = 'Switzerland' and n2.n_name = 'Switzerland') "
+                            + "and l_shipdate between date '2020-06-03' and date '2020-08-03' "
+                            + ") as shipping "
                             + "group by "
-                            +     "supp_nation, "
-                            +     "cust_nation, "
-                            +     "l_year "
+                            + "supp_nation, "
+                            + "cust_nation, "
+                            + "l_year "
                             + "order by "
-                            +     "supp_nation, "
-                            +     "cust_nation, "
-                            +     "l_year" );
+                            + "supp_nation, "
+                            + "cust_nation, "
+                            + "l_year" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM q7_VIEW" ),
                             ImmutableList.of( q7_TEST_DATA )
@@ -1153,7 +1146,7 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW q7_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables(statement);
+                    dropTables( statement );
 
                 }
             }
@@ -1174,84 +1167,84 @@ public class ComplexViewTest {
 
                 try {
                     TestHelper.checkResultSet(
-                            statement.executeQuery("select "
-                                    +     "o_year, "
-                                    +     "sum(case "
-                                    +         "when nation = 'Switzerland' then volume "
-                                    +         "else 0 "
-                                    +     "end) / sum(volume) as mkt_share "
+                            statement.executeQuery( "select "
+                                    + "o_year, "
+                                    + "sum(case "
+                                    + "when nation = 'Switzerland' then volume "
+                                    + "else 0 "
+                                    + "end) / sum(volume) as mkt_share "
                                     + "from "
-                                    +     "( "
-                                    +         "select "
-                                    +             "extract(year from o_orderdate) as o_year, "
-                                    +             "l_extendedprice * (1 - l_discount) as volume, "
-                                    +             "n2.n_name as nation "
-                                    +         "from "
-                                    +             "part, "
-                                    +             "supplier, "
-                                    +             "lineitem, "
-                                    +             "orders, "
-                                    +             "customer, "
-                                    +             "nation n1, "
-                                    +             "nation n2, "
-                                    +             "region "
-                                    +         "where "
-                                    +             "p_partkey = l_partkey "
-                                    +             "and s_suppkey = l_suppkey "
-                                    +             "and l_orderkey = o_orderkey "
-                                    +             "and o_custkey = c_custkey "
-                                    +             "and c_nationkey = n1.n_nationkey "
-                                    +             "and n1.n_regionkey = r_regionkey "
-                                    +             "and r_name = 'Basel' "
-                                    +             "and s_nationkey = n2.n_nationkey "
-                                    +             "and o_orderdate between date '2020-06-03' and date '2020-08-03' "
-                                    +             "and p_type = 'Wireless' "
-                                    +     ") as all_nations "
+                                    + "( "
+                                    + "select "
+                                    + "extract(year from o_orderdate) as o_year, "
+                                    + "l_extendedprice * (1 - l_discount) as volume, "
+                                    + "n2.n_name as nation "
+                                    + "from "
+                                    + "part, "
+                                    + "supplier, "
+                                    + "lineitem, "
+                                    + "orders, "
+                                    + "customer, "
+                                    + "nation n1, "
+                                    + "nation n2, "
+                                    + "region "
+                                    + "where "
+                                    + "p_partkey = l_partkey "
+                                    + "and s_suppkey = l_suppkey "
+                                    + "and l_orderkey = o_orderkey "
+                                    + "and o_custkey = c_custkey "
+                                    + "and c_nationkey = n1.n_nationkey "
+                                    + "and n1.n_regionkey = r_regionkey "
+                                    + "and r_name = 'Basel' "
+                                    + "and s_nationkey = n2.n_nationkey "
+                                    + "and o_orderdate between date '2020-06-03' and date '2020-08-03' "
+                                    + "and p_type = 'Wireless' "
+                                    + ") as all_nations "
                                     + "group by "
-                                    +     "o_year "
+                                    + "o_year "
                                     + "order by "
-                                    +     "o_year" ),
+                                    + "o_year" ),
                             ImmutableList.of( q8_TEST_DATA )
                     );
 
                     statement.executeUpdate( "CREATE VIEW q8_VIEW AS "
                             + "select "
-                            +     "o_year, "
-                            +     "sum(case "
-                            +         "when nation = 'Switzerland' then volume "
-                            +         "else 0 "
-                            +     "end) / sum(volume) as mkt_share "
+                            + "o_year, "
+                            + "sum(case "
+                            + "when nation = 'Switzerland' then volume "
+                            + "else 0 "
+                            + "end) / sum(volume) as mkt_share "
                             + "from "
-                            +     "( "
-                            +         "select "
-                            +             "extract(year from o_orderdate) as o_year, "
-                            +             "l_extendedprice * (1 - l_discount) as volume, "
-                            +             "n2.n_name as nation "
-                            +         "from "
-                            +             "part, "
-                            +             "supplier, "
-                            +             "lineitem, "
-                            +             "orders, "
-                            +             "customer, "
-                            +             "nation n1, "
-                            +             "nation n2, "
-                            +             "region "
-                            +         "where "
-                            +             "p_partkey = l_partkey "
-                            +             "and s_suppkey = l_suppkey "
-                            +             "and l_orderkey = o_orderkey "
-                            +             "and o_custkey = c_custkey "
-                            +             "and c_nationkey = n1.n_nationkey "
-                            +             "and n1.n_regionkey = r_regionkey "
-                            +             "and r_name = 'Basel' "
-                            +             "and s_nationkey = n2.n_nationkey "
-                            +             "and o_orderdate between date '2020-06-03' and date '2020-08-03' "
-                            +             "and p_type = 'Wireless' "
-                            +     ") as all_nations "
+                            + "( "
+                            + "select "
+                            + "extract(year from o_orderdate) as o_year, "
+                            + "l_extendedprice * (1 - l_discount) as volume, "
+                            + "n2.n_name as nation "
+                            + "from "
+                            + "part, "
+                            + "supplier, "
+                            + "lineitem, "
+                            + "orders, "
+                            + "customer, "
+                            + "nation n1, "
+                            + "nation n2, "
+                            + "region "
+                            + "where "
+                            + "p_partkey = l_partkey "
+                            + "and s_suppkey = l_suppkey "
+                            + "and l_orderkey = o_orderkey "
+                            + "and o_custkey = c_custkey "
+                            + "and c_nationkey = n1.n_nationkey "
+                            + "and n1.n_regionkey = r_regionkey "
+                            + "and r_name = 'Basel' "
+                            + "and s_nationkey = n2.n_nationkey "
+                            + "and o_orderdate between date '2020-06-03' and date '2020-08-03' "
+                            + "and p_type = 'Wireless' "
+                            + ") as all_nations "
                             + "group by "
-                            +     "o_year "
+                            + "o_year "
                             + "order by "
-                            +     "o_year" );
+                            + "o_year" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM q8_VIEW" ),
                             ImmutableList.of( q8_TEST_DATA_VIEW )
@@ -1260,12 +1253,13 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW q8_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables(statement);
+                    dropTables( statement );
 
                 }
             }
         }
     }
+
 
     @Test
     public void testQ9() throws SQLException {
@@ -1278,74 +1272,74 @@ public class ComplexViewTest {
                 try {
 
                     TestHelper.checkResultSet(
-                            statement.executeQuery("select "
-                                    +     "nation, "
-                                    +     "o_year, "
-                                    +     "sum(amount) as sum_profit "
+                            statement.executeQuery( "select "
+                                    + "nation, "
+                                    + "o_year, "
+                                    + "sum(amount) as sum_profit "
                                     + "from "
-                                    +     "( "
-                                    +         "select "
-                                    +             "n_name as nation, "
-                                    +             "extract(year from o_orderdate) as o_year, "
-                                    +             "l_extendedprice * (1 - l_discount) - ps_supplycost * l_quantity as amount "
-                                    +         "from "
-                                    +             "part, "
-                                    +             "supplier, "
-                                    +             "lineitem, "
-                                    +             "partsupp, "
-                                    +             "orders, "
-                                    +             "nation "
-                                    +         "where "
-                                    +             "s_suppkey = l_suppkey "
-                                    +             "and ps_suppkey = l_suppkey "
-                                    +             "and ps_partkey = l_partkey "
-                                    +             "and p_partkey = l_partkey "
-                                    +             "and o_orderkey = l_orderkey "
-                                    +             "and s_nationkey = n_nationkey "
-                                    +             "and p_name like 'Mouse' "
-                                    +     ") as profit "
+                                    + "( "
+                                    + "select "
+                                    + "n_name as nation, "
+                                    + "extract(year from o_orderdate) as o_year, "
+                                    + "l_extendedprice * (1 - l_discount) - ps_supplycost * l_quantity as amount "
+                                    + "from "
+                                    + "part, "
+                                    + "supplier, "
+                                    + "lineitem, "
+                                    + "partsupp, "
+                                    + "orders, "
+                                    + "nation "
+                                    + "where "
+                                    + "s_suppkey = l_suppkey "
+                                    + "and ps_suppkey = l_suppkey "
+                                    + "and ps_partkey = l_partkey "
+                                    + "and p_partkey = l_partkey "
+                                    + "and o_orderkey = l_orderkey "
+                                    + "and s_nationkey = n_nationkey "
+                                    + "and p_name like 'Mouse' "
+                                    + ") as profit "
                                     + "group by "
-                                    +     "nation, "
-                                    +     "o_year "
+                                    + "nation, "
+                                    + "o_year "
                                     + "order by "
-                                    +     "nation, "
-                                    +     "o_year desc" ),
+                                    + "nation, "
+                                    + "o_year desc" ),
                             ImmutableList.of( q9_TEST_DATA )
                     );
 
                     statement.executeUpdate( "CREATE VIEW q9_VIEW AS "
                             + "select "
-                            +     "nation, "
-                            +     "o_year, "
-                            +     "sum(amount) as sum_profit "
+                            + "nation, "
+                            + "o_year, "
+                            + "sum(amount) as sum_profit "
                             + "from "
-                            +     "( "
-                            +         "select "
-                            +             "n_name as nation, "
-                            +             "extract(year from o_orderdate) as o_year, "
-                            +             "l_extendedprice * (1 - l_discount) - ps_supplycost * l_quantity as amount "
-                            +         "from "
-                            +             "part, "
-                            +             "supplier, "
-                            +             "lineitem, "
-                            +             "partsupp, "
-                            +             "orders, "
-                            +             "nation "
-                            +         "where "
-                            +             "s_suppkey = l_suppkey "
-                            +             "and ps_suppkey = l_suppkey "
-                            +             "and ps_partkey = l_partkey "
-                            +             "and p_partkey = l_partkey "
-                            +             "and o_orderkey = l_orderkey "
-                            +             "and s_nationkey = n_nationkey "
-                            +             "and p_name like 'Mouse' "
-                            +     ") as profit "
+                            + "( "
+                            + "select "
+                            + "n_name as nation, "
+                            + "extract(year from o_orderdate) as o_year, "
+                            + "l_extendedprice * (1 - l_discount) - ps_supplycost * l_quantity as amount "
+                            + "from "
+                            + "part, "
+                            + "supplier, "
+                            + "lineitem, "
+                            + "partsupp, "
+                            + "orders, "
+                            + "nation "
+                            + "where "
+                            + "s_suppkey = l_suppkey "
+                            + "and ps_suppkey = l_suppkey "
+                            + "and ps_partkey = l_partkey "
+                            + "and p_partkey = l_partkey "
+                            + "and o_orderkey = l_orderkey "
+                            + "and s_nationkey = n_nationkey "
+                            + "and p_name like 'Mouse' "
+                            + ") as profit "
                             + "group by "
-                            +     "nation, "
-                            +     "o_year "
+                            + "nation, "
+                            + "o_year "
                             + "order by "
-                            +     "nation, "
-                            +     "o_year desc" );
+                            + "nation, "
+                            + "o_year desc" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM q9_VIEW" ),
                             ImmutableList.of( q9_TEST_DATA )
@@ -1353,14 +1347,14 @@ public class ComplexViewTest {
 
                     statement.executeUpdate( "DROP VIEW q9_VIEW" );
 
-
                     connection.commit();
                 } finally {
-                    dropTables(statement);
+                    dropTables( statement );
                 }
             }
         }
     }
+
 
     @Test
     public void testQ10() throws SQLException {
@@ -1373,74 +1367,74 @@ public class ComplexViewTest {
                 try {
 
                     TestHelper.checkResultSet(
-                            statement.executeQuery("select "
-                                    +     "c_custkey, "
-                                    +     "c_name, "
-                                    +     "sum(l_extendedprice * (1 - l_discount)) as revenue, "
-                                    +     "c_acctbal, "
-                                    +     "n_name, "
-                                    +     "c_address, "
-                                    +     "c_phone, "
-                                    +     "c_comment "
+                            statement.executeQuery( "select "
+                                    + "c_custkey, "
+                                    + "c_name, "
+                                    + "sum(l_extendedprice * (1 - l_discount)) as revenue, "
+                                    + "c_acctbal, "
+                                    + "n_name, "
+                                    + "c_address, "
+                                    + "c_phone, "
+                                    + "c_comment "
                                     + "from "
-                                    +     "customer, "
-                                    +     "orders, "
-                                    +     "lineitem, "
-                                    +     "nation "
+                                    + "customer, "
+                                    + "orders, "
+                                    + "lineitem, "
+                                    + "nation "
                                     + "where "
-                                    +     "c_custkey = o_custkey "
-                                    +     "and l_orderkey = o_orderkey "
-                                    +     "and o_orderdate >= date '2020-07-03' "
-                                    +     "and o_orderdate < date '2020-07-03' + interval '3' month "
-                                    +     "and l_returnflag = 'R' "
-                                    +     "and c_nationkey = n_nationkey "
+                                    + "c_custkey = o_custkey "
+                                    + "and l_orderkey = o_orderkey "
+                                    + "and o_orderdate >= date '2020-07-03' "
+                                    + "and o_orderdate < date '2020-07-03' + interval '3' month "
+                                    + "and l_returnflag = 'R' "
+                                    + "and c_nationkey = n_nationkey "
                                     + "group by "
-                                    +     "c_custkey, "
-                                    +     "c_name, "
-                                    +     "c_acctbal, "
-                                    +     "c_phone, "
-                                    +     "n_name, "
-                                    +     "c_address, "
-                                    +     "c_comment "
+                                    + "c_custkey, "
+                                    + "c_name, "
+                                    + "c_acctbal, "
+                                    + "c_phone, "
+                                    + "n_name, "
+                                    + "c_address, "
+                                    + "c_comment "
                                     + "order by "
-                                    +     "revenue desc "
+                                    + "revenue desc "
                                     + "limit 20" ),
                             ImmutableList.of( q10_TEST_DATA )
                     );
 
                     statement.executeUpdate( "CREATE VIEW q10_VIEW AS "
                             + "select "
-                            +     "c_custkey, "
-                            +     "c_name, "
-                            +     "sum(l_extendedprice * (1 - l_discount)) as revenue, "
-                            +     "c_acctbal, "
-                            +     "n_name, "
-                            +     "c_address, "
-                            +     "c_phone, "
-                            +     "c_comment "
+                            + "c_custkey, "
+                            + "c_name, "
+                            + "sum(l_extendedprice * (1 - l_discount)) as revenue, "
+                            + "c_acctbal, "
+                            + "n_name, "
+                            + "c_address, "
+                            + "c_phone, "
+                            + "c_comment "
                             + "from "
-                            +     "customer, "
-                            +     "orders, "
-                            +     "lineitem, "
-                            +     "nation "
+                            + "customer, "
+                            + "orders, "
+                            + "lineitem, "
+                            + "nation "
                             + "where "
-                            +     "c_custkey = o_custkey "
-                            +     "and l_orderkey = o_orderkey "
-                            +     "and o_orderdate >= date '2020-07-03' "
-                            +     "and o_orderdate < date '2020-07-03' + interval '3' month "
-                            +     "and l_returnflag = 'R' "
-                            +     "and c_nationkey = n_nationkey "
+                            + "c_custkey = o_custkey "
+                            + "and l_orderkey = o_orderkey "
+                            + "and o_orderdate >= date '2020-07-03' "
+                            + "and o_orderdate < date '2020-07-03' + interval '3' month "
+                            + "and l_returnflag = 'R' "
+                            + "and c_nationkey = n_nationkey "
                             + "group by "
-                            +     "c_custkey, "
-                            +     "c_name, "
-                            +     "c_acctbal, "
-                            +     "c_phone, "
-                            +     "n_name, "
-                            +     "c_address, "
-                            +     "c_comment "
+                            + "c_custkey, "
+                            + "c_name, "
+                            + "c_acctbal, "
+                            + "c_phone, "
+                            + "n_name, "
+                            + "c_address, "
+                            + "c_comment "
                             + "order by "
-                            +     "revenue desc "
-                            + "limit 20"  );
+                            + "revenue desc "
+                            + "limit 20" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM q10_VIEW" ),
                             ImmutableList.of( q10_TEST_DATA )
@@ -1450,11 +1444,12 @@ public class ComplexViewTest {
 
                     connection.commit();
                 } finally {
-                    dropTables(statement);
+                    dropTables( statement );
                 }
             }
         }
     }
+
 
     //SELECT NOT POSSIBLE
     //Not possible to Select java.lang.AssertionError: type mismatch: ref: DECIMAL(19, 2) NOT NULL input: INTEGER NOT NULL
@@ -1471,43 +1466,44 @@ public class ComplexViewTest {
                 try {
 
                     TestHelper.checkResultSet(
-                            statement.executeQuery("select "
-                                    +     "ps_partkey, "
-                                    +     "sum(ps_supplycost * ps_availqty) as valueAA "
+                            statement.executeQuery( "select "
+                                    + "ps_partkey, "
+                                    + "sum(ps_supplycost * ps_availqty) as valueAA "
                                     + "from "
-                                    +     "partsupp, "
-                                    +     "supplier, "
-                                    +     "nation "
+                                    + "partsupp, "
+                                    + "supplier, "
+                                    + "nation "
                                     + "where "
-                                    +     "ps_suppkey = s_suppkey "
-                                    +     "and s_nationkey = n_nationkey "
-                                    +     "and n_name = 'Switzerland' "
+                                    + "ps_suppkey = s_suppkey "
+                                    + "and s_nationkey = n_nationkey "
+                                    + "and n_name = 'Switzerland' "
                                     + "group by "
-                                    +     "ps_partkey having "
-                                    +         "sum(ps_supplycost * ps_availqty) > ( "
-                                    +             "select "
-                                    +                 "sum(ps_supplycost * ps_availqty) * 0.00001 "
-                                    +             "from "
-                                    +                 "partsupp, "
-                                    +                 "supplier, "
-                                    +                 "nation "
-                                    +             "where "
-                                    +                 "ps_suppkey = s_suppkey "
-                                    +                 "and s_nationkey = n_nationkey "
-                                    +                 "and n_name = 'Switzerland' "
-                                    +         ") "
+                                    + "ps_partkey having "
+                                    + "sum(ps_supplycost * ps_availqty) > ( "
+                                    + "select "
+                                    + "sum(ps_supplycost * ps_availqty) * 0.00001 "
+                                    + "from "
+                                    + "partsupp, "
+                                    + "supplier, "
+                                    + "nation "
+                                    + "where "
+                                    + "ps_suppkey = s_suppkey "
+                                    + "and s_nationkey = n_nationkey "
+                                    + "and n_name = 'Switzerland' "
+                                    + ") "
                                     + "order by "
-                                    +     "valueAA desc" ),
+                                    + "valueAA desc" ),
                             ImmutableList.of( new Object[]{} )
                     );
 
                     connection.commit();
                 } finally {
-                    dropTables(statement);
+                    dropTables( statement );
                 }
             }
         }
     }
+
 
     //Select not possible
     // Caused by: java.sql.SQLSyntaxErrorException: data type cast needed for parameter or null literal in statement [SELECT "t0"."l_shipmode", COALESCE(SUM(CASE WHEN "t1"."o_orderpriority" = ? OR "t1"."o_orderpriority" = ? THEN ? ELSE ? END), 0) AS "high_line_count", COALESCE(SUM(CASE WHEN "t1"."o_orderpriority" <> ? AND "t1"."o_orderpriority" <> ? THEN ? ELSE ? END), 0) AS "low_line_count"
@@ -1524,45 +1520,45 @@ public class ComplexViewTest {
                 try {
 
                     TestHelper.checkResultSet(
-                            statement.executeQuery("select "
-                                    +     "l_shipmode, "
-                                    +     "sum(case "
-                                    +         "when o_orderpriority = 'orderPriority' "
-                                    +             "or o_orderpriority = 'orderPriority1' "
-                                    +             "then 1 "
-                                    +         "else 0 "
-                                    +     "end) as high_line_count, "
-                                    +     "sum(case "
-                                    +         "when o_orderpriority <> 'orderPriority' "
-                                    +             "and o_orderpriority <> 'orderPriority1' "
-                                    +             "then 1 "
-                                    +         "else 0 "
-                                    +     "end) as low_line_count "
+                            statement.executeQuery( "select "
+                                    + "l_shipmode, "
+                                    + "sum(case "
+                                    + "when o_orderpriority = 'orderPriority' "
+                                    + "or o_orderpriority = 'orderPriority1' "
+                                    + "then 1 "
+                                    + "else 0 "
+                                    + "end) as high_line_count, "
+                                    + "sum(case "
+                                    + "when o_orderpriority <> 'orderPriority' "
+                                    + "and o_orderpriority <> 'orderPriority1' "
+                                    + "then 1 "
+                                    + "else 0 "
+                                    + "end) as low_line_count "
                                     + "from "
-                                    +     "orders, "
-                                    +     "lineitem "
+                                    + "orders, "
+                                    + "lineitem "
                                     + "where "
-                                    +     "o_orderkey = l_orderkey "
-                                    +     "and l_shipmode = 'mode' "
-                                    +     "and l_commitdate < l_receiptdate "
-                                    +     "and l_shipdate < l_commitdate "
-                                    +     "and l_receiptdate >= date '2020-07-03'  "
-                                    +     "and l_receiptdate < date '2020-07-03'  + interval '1' year "
+                                    + "o_orderkey = l_orderkey "
+                                    + "and l_shipmode = 'mode' "
+                                    + "and l_commitdate < l_receiptdate "
+                                    + "and l_shipdate < l_commitdate "
+                                    + "and l_receiptdate >= date '2020-07-03'  "
+                                    + "and l_receiptdate < date '2020-07-03'  + interval '1' year "
                                     + "group by "
-                                    +     "l_shipmode "
+                                    + "l_shipmode "
                                     + "order by "
-                                    +     "l_shipmode" ),
+                                    + "l_shipmode" ),
                             ImmutableList.of( new Object[]{} )
                     );
 
-
                     connection.commit();
                 } finally {
-                    dropTables(statement);
+                    dropTables( statement );
                 }
             }
         }
     }
+
 
     // only with JAVA 8
     // java.lang.OutOfMemoryError: Java heap space
@@ -1579,49 +1575,49 @@ public class ComplexViewTest {
 
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select "
-                                    +     "c_count, "
-                                    +     "count(*) as custdist "
+                                    + "c_count, "
+                                    + "count(*) as custdist "
                                     + "from "
-                                    +     "( "
-                                    +         "select "
-                                    +             "c_custkey, "
-                                    +             "count(o_orderkey) as c_count "
-                                    +         "from "
-                                    +             "customer left outer join orders on "
-                                    +                 "c_custkey = o_custkey "
-                                    +                 "and o_comment not like 'fast' "
-                                    +         "group by "
-                                    +             "c_custkey "
-                                    +     ") as c_orders "
+                                    + "( "
+                                    + "select "
+                                    + "c_custkey, "
+                                    + "count(o_orderkey) as c_count "
+                                    + "from "
+                                    + "customer left outer join orders on "
+                                    + "c_custkey = o_custkey "
+                                    + "and o_comment not like 'fast' "
                                     + "group by "
-                                    +     "c_count "
+                                    + "c_custkey "
+                                    + ") as c_orders "
+                                    + "group by "
+                                    + "c_count "
                                     + "order by "
-                                    +     "custdist desc, "
-                                    +     "c_count desc" ),
+                                    + "custdist desc, "
+                                    + "c_count desc" ),
                             ImmutableList.of( q13_TEST_DATA )
                     );
 
                     statement.executeUpdate( "CREATE VIEW q13_VIEW AS "
                             + "select "
-                            +     "c_count, "
-                            +     "count(*) as custdist "
+                            + "c_count, "
+                            + "count(*) as custdist "
                             + "from "
-                            +     "( "
-                            +         "select "
-                            +             "c_custkey, "
-                            +             "count(o_orderkey) as c_count "
-                            +         "from "
-                            +             "customer left outer join orders on "
-                            +                 "c_custkey = o_custkey "
-                            +                 "and o_comment not like 'fast' "
-                            +         "group by "
-                            +             "c_custkey "
-                            +     ") as c_orders "
+                            + "( "
+                            + "select "
+                            + "c_custkey, "
+                            + "count(o_orderkey) as c_count "
+                            + "from "
+                            + "customer left outer join orders on "
+                            + "c_custkey = o_custkey "
+                            + "and o_comment not like 'fast' "
                             + "group by "
-                            +     "c_count "
+                            + "c_custkey "
+                            + ") as c_orders "
+                            + "group by "
+                            + "c_count "
                             + "order by "
-                            +     "custdist desc, "
-                            +     "c_count desc"  );
+                            + "custdist desc, "
+                            + "c_count desc" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM q13_VIEW" ),
                             ImmutableList.of( q13_TEST_DATA )
@@ -1631,7 +1627,7 @@ public class ComplexViewTest {
 
                     connection.commit();
                 } finally {
-                    dropTables(statement);
+                    dropTables( statement );
                 }
             }
         }
@@ -1649,36 +1645,36 @@ public class ComplexViewTest {
                 try {
 
                     TestHelper.checkResultSet(
-                            statement.executeQuery("select "
-                                    +     "100.00 * sum(case "
-                                    +         "when p_type like 'Wireless' "
-                                    +             "then l_extendedprice * (1 - l_discount) "
-                                    +         "else 0 "
-                                    +     "end) / sum(l_extendedprice * (1 - l_discount)) as promo_revenue "
+                            statement.executeQuery( "select "
+                                    + "100.00 * sum(case "
+                                    + "when p_type like 'Wireless' "
+                                    + "then l_extendedprice * (1 - l_discount) "
+                                    + "else 0 "
+                                    + "end) / sum(l_extendedprice * (1 - l_discount)) as promo_revenue "
                                     + "from "
-                                    +     "lineitem, "
-                                    +     "part "
+                                    + "lineitem, "
+                                    + "part "
                                     + "where "
-                                    +     "l_partkey = p_partkey "
-                                    +     "and l_shipdate >= date '2020-07-03' "
-                                    +     "and l_shipdate < date '2020-07-03' + interval '1' month" ),
+                                    + "l_partkey = p_partkey "
+                                    + "and l_shipdate >= date '2020-07-03' "
+                                    + "and l_shipdate < date '2020-07-03' + interval '1' month" ),
                             ImmutableList.of( q14_TEST_DATA )
                     );
 
                     statement.executeUpdate( "CREATE VIEW q14_VIEW AS "
                             + "select "
-                            +     "100.00 * sum(case "
-                            +         "when p_type like 'Wireless' "
-                            +             "then l_extendedprice * (1 - l_discount) "
-                            +         "else 0 "
-                            +     "end) / sum(l_extendedprice * (1 - l_discount)) as promo_revenue "
+                            + "100.00 * sum(case "
+                            + "when p_type like 'Wireless' "
+                            + "then l_extendedprice * (1 - l_discount) "
+                            + "else 0 "
+                            + "end) / sum(l_extendedprice * (1 - l_discount)) as promo_revenue "
                             + "from "
-                            +     "lineitem, "
-                            +     "part "
+                            + "lineitem, "
+                            + "part "
                             + "where "
-                            +     "l_partkey = p_partkey "
-                            +     "and l_shipdate >= date '2020-07-03' "
-                            +     "and l_shipdate < date '2020-07-03' + interval '1' month"  );
+                            + "l_partkey = p_partkey "
+                            + "and l_shipdate >= date '2020-07-03' "
+                            + "and l_shipdate < date '2020-07-03' + interval '1' month" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM q14_VIEW" ),
                             ImmutableList.of( q14_TEST_DATA )
@@ -1688,7 +1684,7 @@ public class ComplexViewTest {
 
                     connection.commit();
                 } finally {
-                    dropTables(statement);
+                    dropTables( statement );
                 }
             }
         }
@@ -1706,37 +1702,37 @@ public class ComplexViewTest {
 
                 try {
                     statement.executeUpdate( "create view revenue0 (supplier_no, total_revenue) as "
-                            +     "select "
-                            +         "l_suppkey, "
-                            +         "sum(l_extendedprice * (1 - l_discount)) "
-                            +     "from "
-                            +         "lineitem "
-                            +     "where "
-                            +         "l_shipdate >= date '2020-07-03' "
-                            +         "and l_shipdate < date '2020-07-03' + interval '3' month "
-                            +     "group by "
-                            +         "l_suppkey" );
+                            + "select "
+                            + "l_suppkey, "
+                            + "sum(l_extendedprice * (1 - l_discount)) "
+                            + "from "
+                            + "lineitem "
+                            + "where "
+                            + "l_shipdate >= date '2020-07-03' "
+                            + "and l_shipdate < date '2020-07-03' + interval '3' month "
+                            + "group by "
+                            + "l_suppkey" );
 
                     TestHelper.checkResultSet(
-                            statement.executeQuery("select "
-                                    +     "s_suppkey, "
-                                    +     "s_name, "
-                                    +     "s_address, "
-                                    +     "s_phone, "
-                                    +     "total_revenue "
+                            statement.executeQuery( "select "
+                                    + "s_suppkey, "
+                                    + "s_name, "
+                                    + "s_address, "
+                                    + "s_phone, "
+                                    + "total_revenue "
                                     + "from "
-                                    +     "supplier, "
-                                    +     "revenue0 "
+                                    + "supplier, "
+                                    + "revenue0 "
                                     + "where "
-                                    +     "s_suppkey = supplier_no "
-                                    +     "and total_revenue = ( "
-                                    +         "select "
-                                    +             "total_revenue "
-                                    +         "from "
-                                    +             "revenue0 "
-                                    +     ") "
+                                    + "s_suppkey = supplier_no "
+                                    + "and total_revenue = ( "
+                                    + "select "
+                                    + "total_revenue "
+                                    + "from "
+                                    + "revenue0 "
+                                    + ") "
                                     + "order by "
-                                    +     "s_suppkey" ),
+                                    + "s_suppkey" ),
                             ImmutableList.of( q15_TEST_DATA )
                     );
 
@@ -1744,11 +1740,12 @@ public class ComplexViewTest {
 
                     connection.commit();
                 } finally {
-                    dropTables(statement);
+                    dropTables( statement );
                 }
             }
         }
     }
+
 
     //Select not possible
     //Caused by: org.hsqldb.HsqlException: data type cast needed for parameter or null literal
@@ -1763,43 +1760,42 @@ public class ComplexViewTest {
                 try {
 
                     TestHelper.checkResultSet(
-                            statement.executeQuery("select "
-                                            +     "p_brand, "
-                                            +     "p_type, "
-                                            +     "p_size, "
-                                            +     "count(distinct ps_suppkey) as supplier_cnt "
-                                            + "from "
-                                            +     "partsupp, "
-                                            +     "part "
-                                            + "where "
-                                            +     "p_partkey = ps_partkey "
-                                            +     "and p_brand <> 'Logitec' "
-                                            +     "and p_type not like 'Wireless' "
-                                            +     "and p_size in (5, 10, 20, 100, 1, 7, 4, 2)  "
-                                            +     "and ps_suppkey not in ( "
-                                            +         "select "
-                                            +             "s_suppkey "
-                                            +         "from "
-                                            +             "supplier "
-                                            +         "where "
-                                            +             "s_comment like 'SupplierComment' "
-                                            +     ") "
-                                            + "group by "
-                                            +     "p_brand, "
-                                            +     "p_type, "
-                                            +     "p_size "
-                                            + "order by "
-                                            +     "supplier_cnt desc, "
-                                            +     "p_brand, "
-                                            +     "p_type, "
-                                            +     "p_size" ),
+                            statement.executeQuery( "select "
+                                    + "p_brand, "
+                                    + "p_type, "
+                                    + "p_size, "
+                                    + "count(distinct ps_suppkey) as supplier_cnt "
+                                    + "from "
+                                    + "partsupp, "
+                                    + "part "
+                                    + "where "
+                                    + "p_partkey = ps_partkey "
+                                    + "and p_brand <> 'Logitec' "
+                                    + "and p_type not like 'Wireless' "
+                                    + "and p_size in (5, 10, 20, 100, 1, 7, 4, 2)  "
+                                    + "and ps_suppkey not in ( "
+                                    + "select "
+                                    + "s_suppkey "
+                                    + "from "
+                                    + "supplier "
+                                    + "where "
+                                    + "s_comment like 'SupplierComment' "
+                                    + ") "
+                                    + "group by "
+                                    + "p_brand, "
+                                    + "p_type, "
+                                    + "p_size "
+                                    + "order by "
+                                    + "supplier_cnt desc, "
+                                    + "p_brand, "
+                                    + "p_type, "
+                                    + "p_size" ),
                             ImmutableList.of( new Object[]{} )
                     );
 
-
                     connection.commit();
                 } finally {
-                    dropTables(statement);
+                    dropTables( statement );
                 }
             }
         }
@@ -1822,23 +1818,23 @@ public class ComplexViewTest {
                 try {
 
                     TestHelper.checkResultSet(
-                            statement.executeQuery("select "
-                                    +     "sum(l_extendedprice) / 7.0 as avg_yearly "
+                            statement.executeQuery( "select "
+                                    + "sum(l_extendedprice) / 7.0 as avg_yearly "
                                     + "from "
-                                    +     "lineitem, "
-                                    +     "part "
+                                    + "lineitem, "
+                                    + "part "
                                     + "where "
-                                    +     "p_partkey = l_partkey "
-                                    +     "and p_brand = 'Logitec'  "
-                                    +     "and p_container = 'container' "
-                                    +     "and l_quantity > ( "
-                                    +         "select "
-                                    +             "0.2 * avg(l_quantity) "
-                                    +         "from "
-                                    +             "lineitem "
-                                    +         "where "
-                                    +             "l_partkey = p_partkey "
-                                    +     ")" ),
+                                    + "p_partkey = l_partkey "
+                                    + "and p_brand = 'Logitec'  "
+                                    + "and p_container = 'container' "
+                                    + "and l_quantity > ( "
+                                    + "select "
+                                    + "0.2 * avg(l_quantity) "
+                                    + "from "
+                                    + "lineitem "
+                                    + "where "
+                                    + "l_partkey = p_partkey "
+                                    + ")" ),
                             ImmutableList.of( q17_TEST_DATA )
                     );
 /*
@@ -1871,11 +1867,12 @@ public class ComplexViewTest {
 
                     connection.commit();
                 } finally {
-                    dropTables(statement);
+                    dropTables( statement );
                 }
             }
         }
     }
+
 
     //Select not possible
     //Caused by: org.hsqldb.HsqlException: data type of expression is not boolean
@@ -1892,45 +1889,44 @@ public class ComplexViewTest {
 
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select "
-                                    +     "c_name, "
-                                    +     "c_custkey, "
-                                    +     "o_orderkey, "
-                                    +     "o_orderdate, "
-                                    +     "o_totalprice, "
-                                    +     "sum(l_quantity) "
+                                    + "c_name, "
+                                    + "c_custkey, "
+                                    + "o_orderkey, "
+                                    + "o_orderdate, "
+                                    + "o_totalprice, "
+                                    + "sum(l_quantity) "
                                     + "from "
-                                    +     "customer, "
-                                    +     "orders, "
-                                    +     "lineitem "
+                                    + "customer, "
+                                    + "orders, "
+                                    + "lineitem "
                                     + "where "
-                                    +     "o_orderkey in ( "
-                                    +         "select "
-                                    +             "l_orderkey "
-                                    +         "from "
-                                    +             "lineitem "
-                                    +         "group by "
-                                    +             "l_orderkey having "
-                                    +                 "sum(l_quantity) > 0 "
-                                    +     ") "
-                                    +     "and c_custkey = o_custkey "
-                                    +     "and o_orderkey = l_orderkey "
+                                    + "o_orderkey in ( "
+                                    + "select "
+                                    + "l_orderkey "
+                                    + "from "
+                                    + "lineitem "
                                     + "group by "
-                                    +     "c_name, "
-                                    +     "c_custkey, "
-                                    +     "o_orderkey, "
-                                    +     "o_orderdate, "
-                                    +     "o_totalprice "
+                                    + "l_orderkey having "
+                                    + "sum(l_quantity) > 0 "
+                                    + ") "
+                                    + "and c_custkey = o_custkey "
+                                    + "and o_orderkey = l_orderkey "
+                                    + "group by "
+                                    + "c_name, "
+                                    + "c_custkey, "
+                                    + "o_orderkey, "
+                                    + "o_orderdate, "
+                                    + "o_totalprice "
                                     + "order by "
-                                    +     "o_totalprice desc, "
-                                    +     "o_orderdate "
+                                    + "o_totalprice desc, "
+                                    + "o_orderdate "
                                     + "limit 100" ),
                             ImmutableList.of( new Object[]{} )
                     );
 
-
                     connection.commit();
                 } finally {
-                    dropTables(statement);
+                    dropTables( statement );
                 }
             }
         }
@@ -1948,7 +1944,7 @@ public class ComplexViewTest {
                 try {
 
                     TestHelper.checkResultSet(
-                            statement.executeQuery("select sum(l_extendedprice* (1 - l_discount)) as revenue "
+                            statement.executeQuery( "select sum(l_extendedprice* (1 - l_discount)) as revenue "
                                     + "from lineitem, part "
                                     + "where (p_partkey = l_partkey and p_brand = 'Logitec' "
                                     + "and p_container in ( 'container')  "
@@ -1974,28 +1970,28 @@ public class ComplexViewTest {
                     );
 
                     statement.executeUpdate( "CREATE VIEW q19_VIEW AS "
-                            +       "select sum(l_extendedprice* (1 - l_discount)) as revenue "
-                                    + "from lineitem, part "
-                                    + "where (p_partkey = l_partkey and p_brand = 'Logitec' "
-                                    + "and p_container in ( 'container')  "
-                                    + "and l_quantity >= 1 "
-                                    + "and p_size between 1 and 6 "
-                                    + "and l_shipmode in ('mode') "
-                                    + "and l_shipinstruct = 'shipingstruct') "
-                                    + "or ( p_partkey = l_partkey "
-                                    + "and p_brand = 'Logitec' "
-                                    + "and p_container in ('MED BAG', 'MED BOX', 'MED PKG', 'container') "
-                                    + "and l_quantity >= 1 and l_quantity <=  10 "
-                                    + "and p_size between 1 and 10 "
-                                    + "and l_shipmode in ('mode', 'AIR REG') "
-                                    + "and l_shipinstruct = 'shipingstruct' ) or "
-                                    + "( p_partkey = l_partkey "
-                                    + "and p_brand = 'Logitec' "
-                                    + "and p_container in ('LG CASE', 'LG BOX', 'LG PACK', 'container') "
-                                    + "and l_quantity >= 1 and l_quantity <= 10 "
-                                    + "and p_size between 1 and 15 "
-                                    + "and l_shipmode in ('mode', 'AIR REG') "
-                                    + "and l_shipinstruct = 'shipingstruct' )"  );
+                            + "select sum(l_extendedprice* (1 - l_discount)) as revenue "
+                            + "from lineitem, part "
+                            + "where (p_partkey = l_partkey and p_brand = 'Logitec' "
+                            + "and p_container in ( 'container')  "
+                            + "and l_quantity >= 1 "
+                            + "and p_size between 1 and 6 "
+                            + "and l_shipmode in ('mode') "
+                            + "and l_shipinstruct = 'shipingstruct') "
+                            + "or ( p_partkey = l_partkey "
+                            + "and p_brand = 'Logitec' "
+                            + "and p_container in ('MED BAG', 'MED BOX', 'MED PKG', 'container') "
+                            + "and l_quantity >= 1 and l_quantity <=  10 "
+                            + "and p_size between 1 and 10 "
+                            + "and l_shipmode in ('mode', 'AIR REG') "
+                            + "and l_shipinstruct = 'shipingstruct' ) or "
+                            + "( p_partkey = l_partkey "
+                            + "and p_brand = 'Logitec' "
+                            + "and p_container in ('LG CASE', 'LG BOX', 'LG PACK', 'container') "
+                            + "and l_quantity >= 1 and l_quantity <= 10 "
+                            + "and p_size between 1 and 15 "
+                            + "and l_shipmode in ('mode', 'AIR REG') "
+                            + "and l_shipinstruct = 'shipingstruct' )" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM q19_VIEW" ),
                             ImmutableList.of( q19_TEST_DATA )
@@ -2003,14 +1999,14 @@ public class ComplexViewTest {
 
                     statement.executeUpdate( "DROP VIEW q19_VIEW" );
 
-
                     connection.commit();
                 } finally {
-                    dropTables(statement);
+                    dropTables( statement );
                 }
             }
         }
     }
+
 
     //SELECT NOT POSSIBLE
     // java.lang.AssertionError: type mismatch: ref: VARCHAR(25) NOT NULL input: INTEGER NOT NULL
@@ -2026,42 +2022,42 @@ public class ComplexViewTest {
 
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select "
-                                    +     "s_name, "
-                                    +     "s_address "
+                                    + "s_name, "
+                                    + "s_address "
                                     + "from "
-                                    +     "supplier, "
-                                    +     "nation "
+                                    + "supplier, "
+                                    + "nation "
                                     + "where "
-                                    +     "s_suppkey in ( "
-                                    +         "select "
-                                    +             "ps_suppkey "
-                                    +         "from "
-                                    +             "partsupp "
-                                    +         "where "
-                                    +             "ps_partkey in ( "
-                                    +                 "select "
-                                    +                     "p_partkey "
-                                    +                 "from "
-                                    +                     "part "
-                                    +                 "where "
-                                    +                     "p_name like ? "
-                                    +             ") "
-                                    +             "and ps_availqty > ( "
-                                    +                 "select "
-                                    +                     "0.5 * sum(l_quantity) "
-                                    +                 "from "
-                                    +                     "lineitem "
-                                    +                 "where "
-                                    +                     "l_partkey = ps_partkey "
-                                    +                     "and l_suppkey = ps_suppkey "
-                                    +                     "and l_shipdate >= date ? "
-                                    +                     "and l_shipdate < date ? + interval '1' year "
-                                    +             ") "
-                                    +     ") "
-                                    +     "and s_nationkey = n_nationkey "
-                                    +     "and n_name = ? "
+                                    + "s_suppkey in ( "
+                                    + "select "
+                                    + "ps_suppkey "
+                                    + "from "
+                                    + "partsupp "
+                                    + "where "
+                                    + "ps_partkey in ( "
+                                    + "select "
+                                    + "p_partkey "
+                                    + "from "
+                                    + "part "
+                                    + "where "
+                                    + "p_name like ? "
+                                    + ") "
+                                    + "and ps_availqty > ( "
+                                    + "select "
+                                    + "0.5 * sum(l_quantity) "
+                                    + "from "
+                                    + "lineitem "
+                                    + "where "
+                                    + "l_partkey = ps_partkey "
+                                    + "and l_suppkey = ps_suppkey "
+                                    + "and l_shipdate >= date ? "
+                                    + "and l_shipdate < date ? + interval '1' year "
+                                    + ") "
+                                    + ") "
+                                    + "and s_nationkey = n_nationkey "
+                                    + "and n_name = ? "
                                     + "order by "
-                                    +     "s_name" ),
+                                    + "s_name" ),
                             ImmutableList.of( new Object[]{} )
                     );
 
@@ -2088,44 +2084,44 @@ public class ComplexViewTest {
 
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select "
-                                    +     "s_name, "
-                                    +     "count(*) as numwait "
+                                    + "s_name, "
+                                    + "count(*) as numwait "
                                     + "from "
-                                    +     "supplier, "
-                                    +     "lineitem l1, "
-                                    +     "orders, "
-                                    +     "nation "
+                                    + "supplier, "
+                                    + "lineitem l1, "
+                                    + "orders, "
+                                    + "nation "
                                     + "where "
-                                    +     "s_suppkey = l1.l_suppkey "
-                                    +     "and o_orderkey = l1.l_orderkey "
-                                    +     "and o_orderstatus = 'A' "
-                                    +     "and l1.l_receiptdate > l1.l_commitdate "
-                                    +     "and exists ( "
-                                    +         "select "
-                                    +             "* "
-                                    +         "from "
-                                    +             "lineitem l2 "
-                                    +         "where "
-                                    +             "l2.l_orderkey = l1.l_orderkey "
-                                    +             "and l2.l_suppkey <> l1.l_suppkey "
-                                    +     ") "
-                                    +     "and not exists ( "
-                                    +         "select "
-                                    +             "* "
-                                    +         "from "
-                                    +             "lineitem l3 "
-                                    +         "where "
-                                    +             "l3.l_orderkey = l1.l_orderkey "
-                                    +             "and l3.l_suppkey <> l1.l_suppkey "
-                                    +             "and l3.l_receiptdate > l3.l_commitdate "
-                                    +     ") "
-                                    +     "and s_nationkey = n_nationkey "
-                                    +     "and n_name = 'Switzerland' "
+                                    + "s_suppkey = l1.l_suppkey "
+                                    + "and o_orderkey = l1.l_orderkey "
+                                    + "and o_orderstatus = 'A' "
+                                    + "and l1.l_receiptdate > l1.l_commitdate "
+                                    + "and exists ( "
+                                    + "select "
+                                    + "* "
+                                    + "from "
+                                    + "lineitem l2 "
+                                    + "where "
+                                    + "l2.l_orderkey = l1.l_orderkey "
+                                    + "and l2.l_suppkey <> l1.l_suppkey "
+                                    + ") "
+                                    + "and not exists ( "
+                                    + "select "
+                                    + "* "
+                                    + "from "
+                                    + "lineitem l3 "
+                                    + "where "
+                                    + "l3.l_orderkey = l1.l_orderkey "
+                                    + "and l3.l_suppkey <> l1.l_suppkey "
+                                    + "and l3.l_receiptdate > l3.l_commitdate "
+                                    + ") "
+                                    + "and s_nationkey = n_nationkey "
+                                    + "and n_name = 'Switzerland' "
                                     + "group by "
-                                    +     "s_name "
+                                    + "s_name "
                                     + "order by "
-                                    +     "numwait desc, "
-                                    +     "s_name "
+                                    + "numwait desc, "
+                                    + "s_name "
                                     + "limit 100" ),
                             ImmutableList.of( new Object[]{} )
                     );
@@ -2152,43 +2148,43 @@ public class ComplexViewTest {
                 try {
 
                     TestHelper.checkResultSet(
-                            statement.executeQuery("select "
-                                    +     "cntrycode, "
-                                    +     "count(*) as numcust, "
-                                    +     "sum(c_acctbal) as totacctbal "
+                            statement.executeQuery( "select "
+                                    + "cntrycode, "
+                                    + "count(*) as numcust, "
+                                    + "sum(c_acctbal) as totacctbal "
                                     + "from "
-                                    +     "( "
-                                    +         "select "
-                                    +             "substring(c_phone from 1 for 2) as cntrycode, "
-                                    +             "c_acctbal "
-                                    +         "from "
-                                    +             "customer "
-                                    +         "where "
-                                    +             "substring(c_phone from 1 for 2) in "
-                                    +                 "(?, ?, ?, ?, ?, ?, ?) "
-                                    +             "and c_acctbal > ( "
-                                    +                 "select "
-                                    +                     "avg(c_acctbal) "
-                                    +                 "from "
-                                    +                     "customer "
-                                    +                 "where "
-                                    +                     "c_acctbal > 0.00 "
-                                    +                     "and substring(c_phone from 1 for 2) in "
-                                    +                         "(?, ?, ?, ?, ?, ?, ?) "
-                                    +             ") "
-                                    +             "and not exists ( "
-                                    +                 "select "
-                                    +                     "* "
-                                    +                 "from "
-                                    +                     "orders "
-                                    +                 "where "
-                                    +                     "o_custkey = c_custkey "
-                                    +             ") "
-                                    +     ") as custsale "
+                                    + "( "
+                                    + "select "
+                                    + "substring(c_phone from 1 for 2) as cntrycode, "
+                                    + "c_acctbal "
+                                    + "from "
+                                    + "customer "
+                                    + "where "
+                                    + "substring(c_phone from 1 for 2) in "
+                                    + "(?, ?, ?, ?, ?, ?, ?) "
+                                    + "and c_acctbal > ( "
+                                    + "select "
+                                    + "avg(c_acctbal) "
+                                    + "from "
+                                    + "customer "
+                                    + "where "
+                                    + "c_acctbal > 0.00 "
+                                    + "and substring(c_phone from 1 for 2) in "
+                                    + "(?, ?, ?, ?, ?, ?, ?) "
+                                    + ") "
+                                    + "and not exists ( "
+                                    + "select "
+                                    + "* "
+                                    + "from "
+                                    + "orders "
+                                    + "where "
+                                    + "o_custkey = c_custkey "
+                                    + ") "
+                                    + ") as custsale "
                                     + "group by "
-                                    +     "cntrycode "
+                                    + "cntrycode "
                                     + "order by "
-                                    +     "cntrycode" ),
+                                    + "cntrycode" ),
                             ImmutableList.of( new Object[]{} )
                     );
 
@@ -2199,9 +2195,6 @@ public class ComplexViewTest {
             }
         }
     }
-
-
-
 
 
 }

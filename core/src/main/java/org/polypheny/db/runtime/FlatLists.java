@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -315,6 +315,7 @@ public class FlatLists implements Serializable {
          * Returns a list that consists of a this list's elements plus a given element.
          */
         public abstract List<T> append( T e );
+
     }
 
 
@@ -446,6 +447,7 @@ public class FlatLists implements Serializable {
         public List<T> append( T e ) {
             return new Flat2List<>( t0, e );
         }
+
     }
 
 
@@ -597,6 +599,7 @@ public class FlatLists implements Serializable {
         public List<T> append( T e ) {
             return new Flat3List<>( t0, t1, e );
         }
+
     }
 
 
@@ -766,6 +769,7 @@ public class FlatLists implements Serializable {
         public List<T> append( T e ) {
             return new Flat4List<>( t0, t1, t2, e );
         }
+
     }
 
 
@@ -954,6 +958,7 @@ public class FlatLists implements Serializable {
         public List<T> append( T e ) {
             return new Flat5List<>( t0, t1, t2, t3, e );
         }
+
     }
 
 
@@ -1161,6 +1166,7 @@ public class FlatLists implements Serializable {
         public List<T> append( T e ) {
             return new Flat6List<>( t0, t1, t2, t3, t4, e );
         }
+
     }
 
 
@@ -1387,6 +1393,7 @@ public class FlatLists implements Serializable {
         public List<T> append( T e ) {
             return ImmutableList.of( t0, t1, t2, t3, t5, e );
         }
+
     }
 
 
@@ -1427,6 +1434,7 @@ public class FlatLists implements Serializable {
         public int compareTo( List o ) {
             return ComparableListImpl.compare( (List) this, o );
         }
+
     }
 
 
@@ -1515,6 +1523,7 @@ public class FlatLists implements Serializable {
             }
             return a.compareTo( b );
         }
+
     }
 
 }

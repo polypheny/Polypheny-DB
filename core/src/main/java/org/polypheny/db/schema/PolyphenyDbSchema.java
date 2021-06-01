@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,7 +103,6 @@ public interface PolyphenyDbSchema extends Serializable {
     boolean removeType( String name );
 
 
-
     /**
      * Entry in a schema, such as a table or sub-schema.
      *
@@ -130,6 +129,7 @@ public interface PolyphenyDbSchema extends Serializable {
         public final List<String> path() {
             return schema.path( name );
         }
+
     }
 
 
@@ -148,6 +148,7 @@ public interface PolyphenyDbSchema extends Serializable {
 
 
         public abstract Table getTable();
+
     }
 
 
@@ -162,6 +163,7 @@ public interface PolyphenyDbSchema extends Serializable {
 
 
         public abstract RelProtoDataType getType();
+
     }
 
 
@@ -201,6 +203,7 @@ public interface PolyphenyDbSchema extends Serializable {
         public Table getTable() {
             return table;
         }
+
     }
 
 
@@ -225,6 +228,7 @@ public interface PolyphenyDbSchema extends Serializable {
         public RelProtoDataType getType() {
             return protoDataType;
         }
+
     }
 
 
@@ -267,5 +271,7 @@ public interface PolyphenyDbSchema extends Serializable {
         public Expression getExpression( SchemaPlus parentSchema, String name ) {
             return Expressions.call( DataContext.ROOT, BuiltInMethod.DATA_CONTEXT_GET_ROOT_SCHEMA.method );
         }
+
     }
+
 }

@@ -118,7 +118,7 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
             final PartitionType partitionType,
             final ImmutableList<Long> partitionIds,
             final long partitionColumnId,
-            ImmutableList<Long> connectedViews) {
+            ImmutableList<Long> connectedViews ) {
         this.id = id;
         this.name = name;
         this.columnIds = columnIds;
@@ -144,8 +144,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
         }
 
     }
-
-
 
 
     public CatalogTable(
@@ -280,7 +278,7 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
                 partitionIds,
                 partitionColumnId,
                 isPartitioned,
-                connectedViews);
+                connectedViews );
     }
 
 
@@ -326,7 +324,7 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
                 partitionIds,
                 partitionColumnId,
                 isPartitioned,
-                connectedViews);
+                connectedViews );
     }
 
 

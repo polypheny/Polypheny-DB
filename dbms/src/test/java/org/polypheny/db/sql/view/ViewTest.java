@@ -221,8 +221,8 @@ public class ViewTest {
 
     //SELECT not possible if inner Select with MAX()
     @Ignore
-    public void selectAggregateInnerSelectTest() throws  SQLException{
-        try(JdbcConnection polyphenyDbConnection = new JdbcConnection( true )) {
+    public void selectAggregateInnerSelectTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
@@ -234,11 +234,11 @@ public class ViewTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT viewTestLocTable.postcode FROM viewTestLocTable, viewTestDepTable WHERE viewTestLocTable.postcode = (SELECT max(postcode) FROM viewTestLocTable)" ),
                             ImmutableList.of(
-                                    new Object[]{99900}
+                                    new Object[]{ 99900 }
                             )
                     );
                     connection.commit();
-                }finally {
+                } finally {
                     statement.executeUpdate( "DROP TABLE viewTestDepTable" );
                     statement.executeUpdate( "DROP TABLE viewTestLocTable" );
 
@@ -283,7 +283,7 @@ public class ViewTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT avg(postcode) FROM viewTestLocTable" ),
                             ImmutableList.of(
-                                    new Object[]{37986}
+                                    new Object[]{ 37986 }
                             )
                     );
                     /*

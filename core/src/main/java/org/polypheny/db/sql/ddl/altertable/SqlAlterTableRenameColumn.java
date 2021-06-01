@@ -21,7 +21,6 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.ddl.DdlManager;
@@ -78,15 +77,14 @@ public class SqlAlterTableRenameColumn extends SqlAlterTable {
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
 
+        try {
+            DdlManager.getInstance().renameColumn( catalogTable, columnOldName.getSimple(), columnNewName.getSimple(), statement );
+        } catch ( ColumnAlreadyExistsException e ) {
+            throw SqlUtil.newContextException( columnNewName.getParserPosition(), RESOURCE.columnExists( columnNewName.getSimple() ) );
+        } catch ( ColumnNotExistsException e ) {
+            throw SqlUtil.newContextException( columnOldName.getParserPosition(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
+        }
 
-            try {
-                DdlManager.getInstance().renameColumn( catalogTable, columnOldName.getSimple(), columnNewName.getSimple(), statement );
-            } catch ( ColumnAlreadyExistsException e ) {
-                throw SqlUtil.newContextException( columnNewName.getParserPosition(), RESOURCE.columnExists( columnNewName.getSimple() ) );
-            } catch ( ColumnNotExistsException e ) {
-                throw SqlUtil.newContextException( columnOldName.getParserPosition(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
-            }
-        
 
     }
 

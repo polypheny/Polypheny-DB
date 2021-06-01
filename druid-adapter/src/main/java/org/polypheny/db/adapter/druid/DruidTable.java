@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,11 +88,11 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
     /**
      * Creates a Druid table.
      *
-     * @param schema             Druid schema that contains this table
-     * @param dataSource         Druid data source name
-     * @param protoRowType       Field names and types
-     * @param metricFieldNames   Names of fields that are metrics
-     * @param intervals          Default interval if query does not constrain the time, or null
+     * @param schema Druid schema that contains this table
+     * @param dataSource Druid data source name
+     * @param protoRowType Field names and types
+     * @param metricFieldNames Names of fields that are metrics
+     * @param intervals Default interval if query does not constrain the time, or null
      * @param timestampFieldName Name of the column that contains the time
      */
     public DruidTable( DruidSchema schema, String dataSource, RelProtoDataType protoRowType, Set<String> metricFieldNames, String timestampFieldName, List<Interval> intervals, Map<String, List<ComplexMetric>> complexMetrics, Map<String, PolyType> allFields ) {
@@ -282,6 +282,8 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
             }
             return builder.build();
         }
+
     }
+
 }
 

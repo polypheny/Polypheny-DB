@@ -95,6 +95,7 @@ public class JdbcArrayTest {
         }
     }
 
+
     @Test
     public void basicViewTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -184,7 +185,6 @@ public class JdbcArrayTest {
                 statement.executeUpdate( "CREATE VIEW arrayTypesViewTest AS SELECT * FROM arraytest" );
                 try {
 
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT id FROM arrayTypesViewTest" ),
                             ImmutableList.of( new Object[]{ ARRAYTEST_DATA[0] } ) );
@@ -234,6 +234,7 @@ public class JdbcArrayTest {
             }
         }
     }
+
 
     @Test
     public void itemOperatorTest() throws SQLException {

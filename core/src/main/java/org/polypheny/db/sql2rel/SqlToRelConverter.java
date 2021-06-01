@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -566,8 +566,8 @@ public class SqlToRelConverter {
         if ( r instanceof Delta ) {
             return requiredCollation( ((Delta) r).getInput() );
         }
-        if (r instanceof ViewTableScan){
-            return ((ViewTableScan)r).getRelRoot().collation;
+        if ( r instanceof ViewTableScan ) {
+            return ((ViewTableScan) r).getRelRoot().collation;
         }
         throw new AssertionError();
     }
@@ -2087,7 +2087,7 @@ public class SqlToRelConverter {
         final RelNode tableRel;
         if ( config.isConvertTableAccess() ) {
             tableRel = toRel( table );
-        } else if ( table instanceof RelOptTableImpl &&  (((RelOptTableImpl) table).getTable()) instanceof LogicalView ) {
+        } else if ( table instanceof RelOptTableImpl && (((RelOptTableImpl) table).getTable()) instanceof LogicalView ) {
             tableRel = ViewTableScan.create( cluster, table );
         } else {
             tableRel = LogicalTableScan.create( cluster, table );
@@ -4327,6 +4327,7 @@ public class SqlToRelConverter {
         public String getOriginalRelName() {
             return originalRelName;
         }
+
     }
 
 
@@ -4345,6 +4346,7 @@ public class SqlToRelConverter {
         public RexNode convertSubQuery( SqlCall subQuery, SqlToRelConverter parentConverter, boolean isExists, boolean isExplain ) {
             throw new IllegalArgumentException();
         }
+
     }
 
 
@@ -4750,6 +4752,7 @@ public class SqlToRelConverter {
         public RelDataTypeFactory getTypeFactory() {
             return typeFactory;
         }
+
     }
 
 
@@ -4784,6 +4787,7 @@ public class SqlToRelConverter {
         Pair<RelNode, Integer> findRel( int offset ) {
             return relOffsetList.get( offset );
         }
+
     }
 
 
@@ -4961,6 +4965,7 @@ public class SqlToRelConverter {
                 return type;
             }
         }
+
     }
 
 
@@ -4978,6 +4983,7 @@ public class SqlToRelConverter {
             this.node = node;
             this.logic = logic;
         }
+
     }
 
 
@@ -5028,6 +5034,7 @@ public class SqlToRelConverter {
 
             return call.getOperator().acceptCall( this, call );
         }
+
     }
 
 
@@ -5049,6 +5056,7 @@ public class SqlToRelConverter {
             this.requiredColumns = requiredColumns;
             this.r = r;
         }
+
     }
 
 
@@ -5117,6 +5125,7 @@ public class SqlToRelConverter {
          * Returns the factory to create {@link RelBuilder}, never null. Default is {@link RelFactories#LOGICAL_BUILDER}.
          */
         RelBuilderFactory getRelBuilderFactory();
+
     }
 
 
@@ -5209,6 +5218,7 @@ public class SqlToRelConverter {
         public Config build() {
             return new ConfigImpl( convertTableAccess, decorrelationEnabled, trimUnusedFields, createValuesRel, explain, expand, inSubQueryThreshold, relBuilderFactory );
         }
+
     }
 
 
@@ -5286,6 +5296,8 @@ public class SqlToRelConverter {
         public RelBuilderFactory getRelBuilderFactory() {
             return relBuilderFactory;
         }
+
     }
+
 }
 

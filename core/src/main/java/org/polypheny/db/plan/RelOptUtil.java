@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1449,7 +1449,7 @@ public abstract class RelOptUtil {
             ArrayType arrayType1 = (ArrayType) type1;
             ArrayType arrayType2 = (ArrayType) type2;
 
-            if ( arrayType1.getComponentType().equals(arrayType2.getComponentType())
+            if ( arrayType1.getComponentType().equals( arrayType2.getComponentType() )
                     && arrayType1.getCardinality() == arrayType2.getCardinality()
                     && arrayType1.getDimension() == arrayType2.getDimension()
             ) {
@@ -2289,6 +2289,7 @@ public abstract class RelOptUtil {
                 go( node );
                 return joinCount;
             }
+
         }
 
         return new JoinCounter().run( rootRel );
@@ -2838,6 +2839,7 @@ public abstract class RelOptUtil {
             // Important! Remove stopped variables AFTER we visit children (which what super.visit() does)
             variables.removeAll( p.getVariablesSet() );
         }
+
     }
 
 
@@ -2881,6 +2883,7 @@ public abstract class RelOptUtil {
             }
             return super.visitSubQuery( subQuery );
         }
+
     }
 
 
@@ -2897,6 +2900,7 @@ public abstract class RelOptUtil {
             inputPosReferenced.add( inputRef.getIndex() );
             return inputRef;
         }
+
     }
 
 
@@ -2958,6 +2962,7 @@ public abstract class RelOptUtil {
                 accept( field.getType() );
             }
         }
+
     }
 
 
@@ -3025,6 +3030,7 @@ public abstract class RelOptUtil {
             }
             return super.visitCall( call );
         }
+
     }
 
 
@@ -3104,6 +3110,7 @@ public abstract class RelOptUtil {
                 return var;
             }
         }
+
     }
 
 
@@ -3157,6 +3164,7 @@ public abstract class RelOptUtil {
             vuv.variables.removeAll( other.getVariablesSet() );
             return result;
         }
+
     }
 
 
@@ -3175,6 +3183,8 @@ public abstract class RelOptUtil {
             this.indicator = indicator;
             this.outerJoin = outerJoin;
         }
+
     }
+
 }
 

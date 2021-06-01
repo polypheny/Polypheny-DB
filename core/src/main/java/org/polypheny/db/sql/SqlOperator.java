@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -582,7 +582,7 @@ public abstract class SqlOperator implements Serializable {
     /**
      * Checks that the operand values in a {@link SqlCall} to this operator are valid. Subclasses must either override this method or supply an instance of {@link PolyOperandTypeChecker} to the constructor.
      *
-     * @param callBinding    description of call
+     * @param callBinding description of call
      * @param throwOnFailure whether to throw an exception if check fails (otherwise returns false in that case)
      * @return whether check succeeded
      */
@@ -834,4 +834,5 @@ public abstract class SqlOperator implements Serializable {
     public boolean argumentMustBeScalar( int ordinal ) {
         return true;
     }
+
 }

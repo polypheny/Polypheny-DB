@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -360,9 +360,9 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory, Seri
      */
     protected RelDataType canonize( final RelDataType type ) {
         //skip canonize step for ArrayTypes, to not cache cardinality or dimension
-        if( ! (type instanceof ArrayType) ) {
+        if ( !(type instanceof ArrayType) ) {
             return CACHE.getUnchecked( type );
-        } else if ( ((ArrayType)type).getDimension() == -1 && ((ArrayType)type).getCardinality() == -1 ) {
+        } else if ( ((ArrayType) type).getDimension() == -1 && ((ArrayType) type).getCardinality() == -1 ) {
             return CACHE.getUnchecked( type );
         }
         return type;
@@ -378,9 +378,9 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory, Seri
     protected RelDataType canonize( final StructKind kind, final List<String> names, final List<String> physicalNames, final List<RelDataType> types ) {
         // skip canonize step for ArrayTypes, to not cache cardinality or dimension
         boolean skipCache = false;
-        for( RelDataType t: types ) {
-            if( t instanceof ArrayType ) {
-                if( ((ArrayType)t).getDimension() == -1 && ((ArrayType)t).getCardinality() == -1 ) {
+        for ( RelDataType t : types ) {
+            if ( t instanceof ArrayType ) {
+                if ( ((ArrayType) t).getDimension() == -1 && ((ArrayType) t).getCardinality() == -1 ) {
                     //coming from catalog.Fixture
                     continue;
                 }
@@ -389,7 +389,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory, Seri
             }
         }
 
-        if( !skipCache ) {
+        if ( !skipCache ) {
             final RelDataType type = CACHE.getIfPresent( new Key( kind, names, physicalNames, types ) );
             if ( type != null ) {
                 return type;
@@ -399,7 +399,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory, Seri
         final ImmutableList<String> names2 = ImmutableList.copyOf( names );
         final List<String> physicalNames2 = physicalNames;
         final ImmutableList<RelDataType> types2 = ImmutableList.copyOf( types );
-        if( skipCache ) {
+        if ( skipCache ) {
             return keyToType( new Key( kind, names2, physicalNames2, types2 ) );
         } else {
             return CACHE.getUnchecked( new Key( kind, names2, physicalNames2, types2 ) );
@@ -680,6 +680,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory, Seri
             }
             return typeName;
         }
+
     }
 
 
@@ -717,6 +718,8 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory, Seri
                     && physicalNames.equals( ((Key) obj).physicalNames )
                     && types.equals( ((Key) obj).types );
         }
+
     }
+
 }
 
