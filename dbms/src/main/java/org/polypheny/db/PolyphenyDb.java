@@ -25,6 +25,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.index.IndexManager;
+import org.polypheny.db.catalog.ADAPTER;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.CatalogImpl;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -73,6 +74,12 @@ public class PolyphenyDb {
 
     @Option(name = { "-testMode" }, description = "Special catalog configuration for running tests")
     public boolean testMode = false;
+
+    @Option(name = { "-defaultStore" }, description = "Type of default store")
+    public String defaultStoreName = "hsqldb";
+
+    @Option(name = { "-defaultSource" }, description = "Type of default source")
+    public String defaultSourceName = "csv";
 
     // required for unit tests to determine when the system is ready to process queries
     @Getter
@@ -207,6 +214,8 @@ public class PolyphenyDb {
             Catalog.resetCatalog = resetCatalog;
             Catalog.memoryCatalog = memoryCatalog;
             Catalog.testMode = testMode;
+            Catalog.defaultStore = ADAPTER.fromString( defaultStoreName );
+            Catalog.defaultSource = ADAPTER.fromString( defaultSourceName );
             catalog = Catalog.setAndGetInstance( new CatalogImpl() );
             trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );
             AdapterManager.getInstance().restoreAdapters();

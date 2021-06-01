@@ -75,6 +75,8 @@ import org.polypheny.db.type.PolyType;
 
 public abstract class Catalog {
 
+    public static ADAPTER defaultStore;
+    public static ADAPTER defaultSource;
     protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
     public boolean isPersistent = false;
     public static Catalog INSTANCE = null;

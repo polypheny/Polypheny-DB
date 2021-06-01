@@ -80,6 +80,7 @@ allprojects {
         group = 'verification'
         useJUnit {
             includeCategories 'org.polypheny.db.docker.DockerManagerTest'
+            includeCategories 'org.polypheny.db.AdapterTestSuite'
         }
         shouldRunAfter(tasks.named('test'))
     }

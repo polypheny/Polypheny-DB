@@ -605,29 +605,11 @@ public class CatalogImpl extends Catalog {
         //////////////
         // init adapters
         if ( adapterNames.size() == 0 ) {
-            // Deploy default hsqldb store
-            /*Map<String, String> hsqldbSettings = new HashMap<>();
-            hsqldbSettings.put( "type", "Memory" );
-            hsqldbSettings.put( "mode", "embedded" );
-            hsqldbSettings.put( "tableType", "Memory" );
-            hsqldbSettings.put( "maxConnections", "25" );
-            hsqldbSettings.put( "trxControlMode", "mvcc" );
-            hsqldbSettings.put( "trxIsolationLevel", "read_committed" );
-            addAdapter( "hsqldb", "org.polypheny.db.adapter.jdbc.stores.HsqldbStore", AdapterType.STORE, hsqldbSettings );*/
-            Map<String, String> mongoSettings = new HashMap<>();
-            mongoSettings.put( "persistent", "true" );
-            mongoSettings.put( "port", "27017" );
-            mongoSettings.put( "type", "mongo" );
-            mongoSettings.put( "instanceId", "0" );
-            mongoSettings.put( "mode", "docker" );
-            addAdapter( "hsqldb", "org.polypheny.db.adapter.mongodb.MongoStore", AdapterType.STORE, mongoSettings );
+            // Deploy default store
+            addAdapter( "hsqldb", defaultStore.getPath(), AdapterType.STORE, defaultStore.getDefaultSettings() );
 
             // Deploy default CSV view
-            Map<String, String> csvSettings = new HashMap<>();
-            csvSettings.put( "mode", "embedded" );
-            csvSettings.put( "directory", "classpath://hr" );
-            csvSettings.put( "maxStringLength", "255" );
-            addAdapter( "hr", "org.polypheny.db.adapter.csv.CsvSource", AdapterType.SOURCE, csvSettings );
+            addAdapter( "hr", defaultSource.getPath(), AdapterType.SOURCE, defaultSource.getDefaultSettings() );
 
             // init schema
             CatalogAdapter csv = getAdapter( "hr" );
