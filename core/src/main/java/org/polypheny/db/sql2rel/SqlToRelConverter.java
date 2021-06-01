@@ -2087,8 +2087,7 @@ public class SqlToRelConverter {
         final RelNode tableRel;
         if ( config.isConvertTableAccess() ) {
             tableRel = toRel( table );
-            //TODO IG: ViewTableScan needed??
-        } else if ( (((RelOptTableImpl) table).getTable()) instanceof LogicalView ) {
+        } else if ( table instanceof RelOptTableImpl &&  (((RelOptTableImpl) table).getTable()) instanceof LogicalView ) {
             tableRel = ViewTableScan.create( cluster, table );
         } else {
             tableRel = LogicalTableScan.create( cluster, table );
@@ -3855,7 +3854,6 @@ public class SqlToRelConverter {
 
             // Found in current query's from list.  Find which from item.
             // We assume that the order of the from clause items has been preserved.
-            //TODO IG: Order has not peen preserved....
             final SqlValidatorScope ancestorScope = resolve.scope;
             boolean isParent = ancestorScope != scope;
             if ( (inputs != null) && !isParent ) {

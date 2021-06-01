@@ -100,6 +100,7 @@ public abstract class AbstractRelNode implements RelNode {
      */
     protected String digest;
 
+    //Setter is used to set the cluster in Views
     @Setter
     private transient RelOptCluster cluster;
 
@@ -110,6 +111,7 @@ public abstract class AbstractRelNode implements RelNode {
 
     /**
      * The RelTraitSet that describes the traits of this RelNode.
+     * Setter is used to set the traitSet withinViews
      */
     @Setter
     protected RelTraitSet traitSet;

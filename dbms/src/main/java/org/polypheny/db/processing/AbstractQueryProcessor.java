@@ -1008,9 +1008,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
 
     private static int getScale( RelDataType type ) {
-        return type.getScale() == RelDataType.SCALE_NOT_SPECIFIED
+        /*return type.getScale() == RelDataType.SCALE_NOT_SPECIFIED
                 ? 0
-                : type.getScale();
+                : type.getScale();*/
+        return 0;
     }
 
 
