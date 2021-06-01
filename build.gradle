@@ -75,11 +75,21 @@ allprojects {
         options.memberLevel = JavadocMemberLevel.PRIVATE
     }
 
-    task integrationTests(type: Test) {
-        description = 'Runs integration tests.'
+    task dockerTests(type: Test) {
+        description = 'Runs docker tests.'
         group = 'verification'
         useJUnit {
             includeCategories 'org.polypheny.db.docker.DockerManagerTest'
+        }
+        shouldRunAfter(tasks.named('test'))
+    }
+    dockerTests.dependsOn(testClasses)
+
+    task integrationTests(type: Test) {
+        description = 'Runs integration tests.'
+        group = 'verification'
+        systemProperty 'store.default', System.getProperty("store.default")
+        useJUnit {
             includeCategories 'org.polypheny.db.AdapterTestSuite'
         }
         shouldRunAfter(tasks.named('test'))
