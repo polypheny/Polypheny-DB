@@ -90,10 +90,6 @@ public class CottontailTypeUtil {
             Object.class, Object.class, Object.class, Object.class, Object.class );
 
 
-    /**
-     * @param map
-     * @return
-     */
     public static Projection.Builder mapToProjection( Map<String, String> map ) {
         final Projection.Builder proj = Projection.newBuilder();
         for ( Entry<String, String> p : map.entrySet() ) {
