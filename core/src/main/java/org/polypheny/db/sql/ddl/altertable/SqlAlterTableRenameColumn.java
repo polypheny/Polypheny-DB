@@ -84,8 +84,6 @@ public class SqlAlterTableRenameColumn extends SqlAlterTable {
         } catch ( ColumnNotExistsException e ) {
             throw SqlUtil.newContextException( columnOldName.getParserPosition(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
         }
-
-
     }
 
 }
