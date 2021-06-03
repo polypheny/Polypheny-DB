@@ -3,21 +3,21 @@ name: Polypheny-DB CI
 on: [ push, pull_request ]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    name: Integration Tests (Java 11)
-    steps:
-        -   name: Checkout
-            uses: actions/checkout@v2
-        -   name: Set up JDK
-            uses: actions/setup-java@v1
-            with:
-                java-version: 11
-        -   name: Start Docker container
-            run: docker-compose up -d
-        -   name: Assemble
-            run: ./gradlew assemble
-        -   name: Execute integration tests MongoDB
-            run: ./gradlew integrationTests -Dstore.default=hsqldb
-        -   name: Execute integration tests MongoDB
-            run: ./gradlew integrationTests -Dstore.default=mongodb
+    build:
+        runs-on: ubuntu-latest
+        name: Integration Tests (Java 11)
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v2
+            -   name: Set up JDK
+                uses: actions/setup-java@v1
+                with:
+                    java-version: 11
+            -   name: Start Docker container
+                run: docker-compose up -d
+            -   name: Assemble
+                run: ./gradlew assemble
+            -   name: Execute integration tests HSQLDB
+                run: ./gradlew integrationTests -Dstore.default=hsqldb
+            -   name: Execute integration tests MongoDB
+                run: ./gradlew integrationTests -Dstore.default=mongodb
