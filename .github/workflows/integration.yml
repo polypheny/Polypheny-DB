@@ -1,10 +1,14 @@
-name: Polypheny-DB Adapter CI
+name: Polypheny-DB Adapter MongoDB CI
 
 on: [ push, pull_request ]
 
 jobs:
     build:
         runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                adapter: [ mongodb, hsqldb ]
         name: Integration Tests (Java 11)
         steps:
             -   name: Checkout
@@ -18,14 +22,5 @@ jobs:
             -   name: Assemble
                 run: ./gradlew assemble
 
-            -   name: Execute integration tests for MongoDB
-                run: ./gradlew integrationTests -Dstore.default=mongodb
-
-            -   name: Clean previous instance
-                run: ./gradlew clean
-
-            -   name: Assemble
-                run: ./gradlew assemble
-
-            -   name: Execute integration tests for MongoDB
-                run: ./gradlew integrationTests -Dstore.default=mongodb
+            -   name: Execute integration tests for ${{ matrix.adapter }}
+                run: ./gradlew integrationTests -Dstore.default=${{ matrix.adapter }}
