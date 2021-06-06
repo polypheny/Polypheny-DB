@@ -134,9 +134,11 @@ public class MongoTypeUtil {
             case TIMESTAMP:
                 return ( o ) -> {
                     if ( o instanceof Timestamp ) {
-                        return new BsonInt64( ((Timestamp) o).toInstant().toEpochMilli() + 3600000 );
+                        // we have to adjust the timezone and add it to the time, as we lose it on retrieval
+                        int offset = Calendar.getInstance().getTimeZone().getRawOffset();
+                        return new BsonInt64( ((Timestamp) o).getTime() + offset );
                     } else if ( o instanceof Calendar ) {
-                        return new BsonInt64( ((Calendar) o).toInstant().getEpochSecond() + 3600000 );
+                        return new BsonInt64( ((Calendar) o).getTime().getTime() );
                     } else {
                         return new BsonInt64( (Long) o );
                     }
@@ -162,7 +164,7 @@ public class MongoTypeUtil {
 
 
     public static BsonValue getAsBson( Object obj, PolyType type, GridFSBucket bucket ) {
-        if ( obj instanceof List ) { // TODO DL: reevaluate
+        if ( obj instanceof List ) {
             BsonArray array = new BsonArray();
             ((List<?>) obj).forEach( el -> array.add( getAsBson( el, type, bucket ) ) );
             return array;
@@ -216,18 +218,17 @@ public class MongoTypeUtil {
                     return new BsonInt64( new Date( ((Time) obj).getTime() ).toLocalDate().toEpochDay() );
                 }
             case TIME:
-                //value = new BsonTimestamp( ((Time) obj).getTime() );
                 if ( obj instanceof Integer ) {
                     return new BsonInt64( ((Integer) obj) );
                 } else {
-                    return new BsonInt64( ((Time) obj).toLocalTime().toNanoOfDay() / 1000000 ); // TODO DL: why not getEpoch?
+                    return new BsonInt64( ((Time) obj).toLocalTime().toNanoOfDay() / 1000000 );
                 }
             case TIMESTAMP:
                 if ( obj instanceof Timestamp ) {
-                    //value = new BsonTimestamp( ((Timestamp) obj).getTime() );
-                    return new BsonInt64( ((Timestamp) obj).toInstant().toEpochMilli() + 3600000 ); // todo dl fix
+                    int offset = Calendar.getInstance().getTimeZone().getRawOffset();
+                    return new BsonInt64( ((Timestamp) obj).getTime() + offset );
                 } else if ( obj instanceof Calendar ) {
-                    return new BsonInt64( ((Calendar) obj).toInstant().getEpochSecond() + 3600000 );
+                    return new BsonInt64( ((Calendar) obj).getTime().getTime() );
                 } else {
                     return new BsonInt64( (Long) obj );
                 }

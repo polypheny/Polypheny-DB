@@ -1,3 +1,4 @@
+import jdk.internal.reflect.Reflection
 import org.jetbrains.gradle.ext.*
 
 buildscript {
@@ -97,10 +98,13 @@ allprojects {
     }
     dockerTests.dependsOn(testClasses)
 
+    String storeName = System.hasProperty("store.default") ? System.getProperty("store.default"): "mongodb"
+
+
     task integrationTests(type: Test) {
         description = 'Runs integration tests.'
         group = 'verification'
-        systemProperty 'store.default', System.getProperty("store.default")
+        systemProperty 'store.default', storeName
         useJUnit {
             includeCategories 'org.polypheny.db.AdapterTestSuite'
         }

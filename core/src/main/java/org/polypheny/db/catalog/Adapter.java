@@ -22,7 +22,7 @@ import java.util.Locale;
 import java.util.Map;
 import lombok.Getter;
 
-public enum ADAPTER {
+public enum Adapter {
     MONGODB( "org.polypheny.db.adapter.mongodb.MongoStore" ),
     HSQLDB( "org.polypheny.db.adapter.jdbc.stores.HsqldbStore" ),
     CSV( "org.polypheny.db.adapter.csv.CsvSource" );
@@ -33,7 +33,7 @@ public enum ADAPTER {
     private final Class<?> clazz;
 
 
-    ADAPTER( String path ) {
+    Adapter( String path ) {
         this.path = path;
         try {
             this.clazz = Class.forName( path );
@@ -43,11 +43,11 @@ public enum ADAPTER {
     }
 
 
-    public static EnumSet<ADAPTER> store = EnumSet.of( MONGODB, HSQLDB );
+    public static EnumSet<Adapter> store = EnumSet.of( MONGODB, HSQLDB );
 
 
-    public static ADAPTER fromString( String defaultStore ) {
-        return ADAPTER.valueOf( defaultStore.toUpperCase( Locale.ROOT ) );
+    public static Adapter fromString( String defaultStore ) {
+        return Adapter.valueOf( defaultStore.toUpperCase( Locale.ROOT ) );
     }
 
 

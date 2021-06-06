@@ -5,7 +5,7 @@ on: [ push, pull_request ]
 jobs:
     build:
         runs-on: ubuntu-latest
-        name: Integration Tests (Java 11)
+        name: Docker Tests (Java 11)
         steps:
             -   name: Checkout
                 uses: actions/checkout@v2
@@ -17,9 +17,5 @@ jobs:
                 run: docker-compose up -d
             -   name: Assemble
                 run: ./gradlew assemble
-            -   name: Execute integration tests for HsqlDB
-                run: ./gradlew integrationTests -Dstore.default=hsqldb
-
-
-            -   name: Execute integration tests for MongoDB
-                run: ./gradlew integrationTests -Dstore.default=mongodb
+            -   name: Execute Docker tests
+                run: ./gradlew dockerTests
