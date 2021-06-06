@@ -24,11 +24,14 @@ import org.apache.calcite.avatica.AvaticaSqlException;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
 
 @SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
+@Category(AdapterTestSuite.class)
 public class HorizontalPartitioningTest {
 
     @BeforeClass

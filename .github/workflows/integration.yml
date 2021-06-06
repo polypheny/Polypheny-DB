@@ -1,4 +1,4 @@
-name: Polypheny-DB CI
+name: Polypheny-DB Adapter CI
 
 on: [ push, pull_request ]
 
@@ -17,9 +17,15 @@ jobs:
                 run: docker-compose up -d
             -   name: Assemble
                 run: ./gradlew assemble
-            -   name: Execute integration tests for HsqlDB
-                run: ./gradlew integrationTests -Dstore.default=hsqldb
 
+            -   name: Execute integration tests for MongoDB
+                run: ./gradlew integrationTests -Dstore.default=mongodb
+
+            -   name: Clean previous instance
+                run: ./gradlew clean
+
+            -   name: Assemble
+                run: ./gradlew assemble
 
             -   name: Execute integration tests for MongoDB
                 run: ./gradlew integrationTests -Dstore.default=mongodb
