@@ -1,4 +1,4 @@
-name: Polypheny-DB CI
+name: Polypheny-DB Docker CI
 
 on: [ push, pull_request ]
 
