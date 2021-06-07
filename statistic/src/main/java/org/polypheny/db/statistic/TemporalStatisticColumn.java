@@ -46,14 +46,21 @@ public class TemporalStatisticColumn<T extends Comparable<T>> extends StatisticC
     @Setter
     private T max;
 
+    @Expose
+    @Getter
+    @Setter
+    private String temporalType;
+
 
     public TemporalStatisticColumn(String schema, String table, String column, PolyType type ) {
         super( schema, table, column, type );
+        temporalType = type.getFamily().name();
     }
 
 
     public TemporalStatisticColumn(String[] splitColumn, PolyType type ) {
         super( splitColumn, type );
+        temporalType = type.getFamily().name();
     }
 
 
