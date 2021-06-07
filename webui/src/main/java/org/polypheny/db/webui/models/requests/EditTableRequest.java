@@ -31,5 +31,6 @@ public class EditTableRequest {
     public String action; // truncate / drop
     public DbColumn[] columns;
     public String store;
+    public String tableType;
 
 }
