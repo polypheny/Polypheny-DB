@@ -26,6 +26,7 @@ import java.util.concurrent.Executors;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
@@ -150,7 +151,7 @@ public class StatisticsManager<T extends Comparable<T>> {
         } else if ( type.getFamily() == PolyTypeFamily.TIME
                     || type.getFamily() == PolyTypeFamily.DATETIME
                     || type.getFamily() == PolyTypeFamily.DATE
-                    || type.getFamily() == PolyTypeFamily.TIMESTAMP ) {
+                    || type.getFamily() == PolyTypeFamily.TIMESTAMP) {
             put( splits[0], splits[1], splits[2], new TemporalStatisticColumn<>( splits, type ) );
         }
     }
@@ -280,13 +281,23 @@ public class StatisticsManager<T extends Comparable<T>> {
 
         TemporalStatisticColumn<T> statisticColumn = new TemporalStatisticColumn<>( QueryColumn.getSplitColumn( column.getQualifiedColumnName() ), column.getType() );
         if ( min != null ) {
-            //noinspection unchecked
-            statisticColumn.setMin( (T) DateTimeStringUtils.longToAdjustedString(Long.parseLong(min.getData()[0]),column.getType()));
+            if (NumberUtils.isParsable(min.getData()[0])) {
+                //noinspection unchecked
+                statisticColumn.setMin((T) DateTimeStringUtils.longToAdjustedString(Long.parseLong(min.getData()[0]), column.getType()));
+            } else {
+                //noinspection unchecked
+                statisticColumn.setMin((T)min.getData()[0]);
+            }
         }
 
         if ( max != null ) {
-            //noinspection unchecked
-            statisticColumn.setMax( (T) DateTimeStringUtils.longToAdjustedString(Long.parseLong(max.getData()[0]),column.getType()));
+            if (NumberUtils.isParsable(max.getData()[0])) {
+                //noinspection unchecked
+                statisticColumn.setMax((T) DateTimeStringUtils.longToAdjustedString(Long.parseLong(max.getData()[0]), column.getType()));
+            } else {
+                //noinspection unchecked
+                statisticColumn.setMax((T)max.getData()[0]);
+            }
         }
 
         StatisticQueryColumn unique = this.getUniqueValues( column );
