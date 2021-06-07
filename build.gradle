@@ -58,6 +58,18 @@ allprojects {
             // DBIS Nexus
             url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
         }
+        maven {
+            url "https://clojars.org/repo/"
+        }
+        jcenter()
+        mavenCentral()
+        maven {
+            url "https://oss.sonatype.org/content/repositories/snapshots/"
+        }
+    }
+
+    tasks.withType(JavaCompile) {
+        options.encoding = "UTF-8"
     }
 
     configurations.all {

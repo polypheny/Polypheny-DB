@@ -7,12 +7,12 @@ version = versionMajor + "." + versionMinor + versionQualifier
 dependencies {
     implementation project(":core")
 
-    // Cottontail-DB
+    // Cottontail DB
+    implementation group: "org.vitrivr", name: "cottontaildb", version: cottontaildb_version
+    implementation group: "org.vitrivr", name: "cottontaildb-proto", version: cottontaildb_driver_version
+    implementation group: 'io.grpc', name: 'grpc-all', version: cottontaildb_grpc_version
+
     implementation group: "org.slf4j", name: "log4j-over-slf4j", version: slf4j_api_version
-    implementation (group: "org.vitrivr", name: "cottontaildb", version: cottontaildb_version ) {
-        exclude group: "org.apache.logging.log4j"
-        exclude group: "org.slf4j"
-    }
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")

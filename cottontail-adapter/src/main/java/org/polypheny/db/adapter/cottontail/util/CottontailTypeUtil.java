@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ByteString;
@@ -51,15 +52,20 @@ import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.BoolVector;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Data;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnName;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Date;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.DoubleVector;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Entity;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.EntityName;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.FloatVector;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.From;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.IntVector;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Literal;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.LongVector;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Null;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Schema;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Projection;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Projection.ProjectionElement;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Scan;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.SchemaName;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Type;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Vector;
 
@@ -84,6 +90,20 @@ public class CottontailTypeUtil {
             Object.class, Object.class, Object.class, Object.class, Object.class );
 
 
+    public static Projection.Builder mapToProjection( Map<String, String> map ) {
+        final Projection.Builder proj = Projection.newBuilder();
+        for ( Entry<String, String> p : map.entrySet() ) {
+            final ProjectionElement.Builder e = ProjectionElement.newBuilder();
+            e.setColumn( ColumnName.newBuilder().setName( p.getKey() ) );
+            if ( p.getValue() != null && !p.getValue().isEmpty() ) {
+                e.setAlias( ColumnName.newBuilder().setName( p.getValue() ) );
+            }
+            proj.addColumns( e );
+        }
+        return proj;
+    }
+
+
     public static CottontailGrpc.Type getPhysicalTypeRepresentation( RelDataType relDataType ) {
         PolyType type = relDataType.getPolyType();
         PolyType componentType = relDataType.getComponentType().getPolyType();
@@ -105,15 +125,17 @@ public class CottontailTypeUtil {
             }
 
             switch ( logicalType ) {
+                case TINYINT:
+                case SMALLINT:
                 case INTEGER:
                     return Type.INT_VEC;
-                case DOUBLE:
-                    return Type.DOUBLE_VEC;
                 case BIGINT:
                     return Type.LONG_VEC;
                 case FLOAT:
                 case REAL:
                     return Type.FLOAT_VEC;
+                case DOUBLE:
+                    return Type.DOUBLE_VEC;
                 case BOOLEAN:
                     return Type.BOOL_VEC;
                 default:
@@ -140,12 +162,11 @@ public class CottontailTypeUtil {
                 // Types that require special treatment.
                 case TINYINT:
                 case SMALLINT:
-                    return Type.INTEGER;
                 case DATE:
                 case TIME:
                     return Type.INTEGER;
                 case TIMESTAMP:
-                    return Type.LONG;
+                    return Type.DATE;
                 case DECIMAL:
                 case VARBINARY:
                 case BINARY:
@@ -158,7 +179,7 @@ public class CottontailTypeUtil {
             }
         }
 
-        throw new RuntimeException( "Type " + logicalType + " is not supported by the cottontail adapter." );
+        throw new RuntimeException( "Type " + logicalType + " is not supported by the Cottontail DB adapter." );
     }
 
 
@@ -195,12 +216,12 @@ public class CottontailTypeUtil {
                 case CHAR:
                     constantExpression = Expressions.constant( rexLiteral.getValueAs( String.class ) );
                     break;
-                case TIMESTAMP:
-                    constantExpression = Expressions.constant( rexLiteral.getValueAs( Long.class ) );
-                    break;
                 case DATE:
                 case TIME:
                     constantExpression = Expressions.constant( rexLiteral.getValueAs( Integer.class ) );
+                    break;
+                case TIMESTAMP:
+                    constantExpression = Expressions.constant( rexLiteral.getValueAs( Long.class ) );
                     break;
                 case TINYINT:
                     constantExpression = Expressions.constant( rexLiteral.getValueAs( Byte.class ) );
@@ -209,7 +230,6 @@ public class CottontailTypeUtil {
                     constantExpression = Expressions.constant( rexLiteral.getValueAs( Short.class ) );
                     break;
                 case DECIMAL:
-//                constantExpression = Expressions.constant( org.polypheny.db.adapter.cottontail.util.CottontailSerialisation.GSON.toJson( rexLiteral.getValueAs( BigDecimal.class ) ) );
                     BigDecimal bigDecimal = rexLiteral.getValueAs( BigDecimal.class );
                     constantExpression = Expressions.constant( (bigDecimal != null) ? bigDecimal.toString() : null );
                     break;
@@ -231,18 +251,13 @@ public class CottontailTypeUtil {
 
 
     public static Expression rexArrayConstructorToExpression( RexCall rexCall, PolyType innerType ) {
-        Expression constantExpression;
-//        List<Object> objectList = arrayCallToList( rexCall.getOperands(), innerType );
-
-//        constantExpression = Expressions.constant( objectList );
-        constantExpression = arrayListToExpression( rexCall.getOperands(), innerType );
-
+        Expression constantExpression = arrayListToExpression( rexCall.getOperands(), innerType );
         return Expressions.call( COTTONTAIL_SIMPLE_CONSTANT_TO_DATA_METHOD, constantExpression, Expressions.constant( innerType ) );
     }
 
 
-    public static CottontailGrpc.Data toData( Object value, PolyType actualType ) {
-        CottontailGrpc.Data.Builder builder = Data.newBuilder();
+    public static CottontailGrpc.Literal toData( Object value, PolyType actualType ) {
+        final CottontailGrpc.Literal.Builder builder = Literal.newBuilder();
         if ( value == null ) {
             return builder.setNullData( Null.newBuilder().build() ).build();
         }
@@ -252,10 +267,11 @@ public class CottontailTypeUtil {
         if ( value instanceof List ) {
             log.trace( "Attempting to convert an array to data." );
             // TODO js(ct): add list.size() == 0 handling
-            Vector vector = toVectorData( value );
+            final Vector vector = toVectorData( value );
             if ( vector != null ) {
                 return builder.setVectorData( vector ).build();
             } else {
+                /* TODO (RG): BigDecimals are currently handled by this branch, which excludes them from being usable for native NNS. */
                 return builder.setStringData( org.polypheny.db.adapter.cottontail.util.CottontailSerialisation.GSON.toJson( (List<Object>) value ) ).build();
             }
         }
@@ -362,19 +378,19 @@ public class CottontailTypeUtil {
             }
             case TIMESTAMP: {
                 if ( value instanceof TimestampString ) {
-                    return builder.setLongData( ((TimestampString) value).getMillisSinceEpoch() ).build();
+                    return builder.setDateData( Date.newBuilder().setUtcTimestamp( ((TimestampString) value).getMillisSinceEpoch() ) ).build();
                 } else if ( value instanceof java.sql.Timestamp ) {
                     String timeStampString = value.toString();
                     if ( timeStampString.endsWith( ".0" ) ) {
                         timeStampString = timeStampString.substring( 0, timeStampString.length() - 2 );
                     }
                     TimestampString tsString = new TimestampString( timeStampString );
-                    return builder.setLongData( tsString.getMillisSinceEpoch() ).build();
+                    return builder.setDateData( Date.newBuilder().setUtcTimestamp( tsString.getMillisSinceEpoch() ) ).build();
                 } else if ( value instanceof Calendar ) {
                     TimestampString timestampString = TimestampString.fromCalendarFields( (Calendar) value );
-                    return builder.setLongData( timestampString.getMillisSinceEpoch() ).build();
+                    return builder.setDateData( Date.newBuilder().setUtcTimestamp( timestampString.getMillisSinceEpoch() ) ).build();
                 } else if ( value instanceof Long ) {
-                    return builder.setLongData( (Long) value ).build();
+                    return builder.setDateData( Date.newBuilder().setUtcTimestamp( (Long) value ) ).build();
                 }
                 break;
             }
@@ -392,29 +408,55 @@ public class CottontailTypeUtil {
     }
 
 
+    public static Vector toVectorCallData( Object vectorObject ) {
+        Vector vector = toVectorData( vectorObject );
+        if ( vector != null ) {
+            return vector;
+        } else {
+            final Vector.Builder vectorBuilder = Vector.newBuilder();
+            final Object firstItem = ((List) vectorObject).get( 0 );
+            if ( firstItem instanceof BigDecimal ) {
+                return vectorBuilder.setDoubleVector(
+                        DoubleVector.newBuilder().addAllVector( ((List<BigDecimal>) vectorObject).stream().map( BigDecimal::doubleValue ).collect( Collectors.toList() ) ).build() ).build();
+            } else {
+                throw new RuntimeException( "Unsupported type: " + firstItem.getClass().getName() );
+            }
+        }
+    }
+
+
+    /**
+     * Converts list of primitive data types (i.e. {@link Double}, {@link Float}, {@link Long}, {@link Integer} or
+     * {@link Boolean}) to a {@link Vector} usable by Cottontail DB.
+     *
+     * @param vectorObject List of {@link Object}s that need to be converted.
+     * @return Converted object or null if conversion is not possible.
+     */
     public static Vector toVectorData( Object vectorObject ) {
-        Vector.Builder vectorBuilder = Vector.newBuilder();
+        final Vector.Builder vectorBuilder = Vector.newBuilder();
         // TODO js(ct): add list.size() == 0 handling
-        Object firstItem = ((List) vectorObject).get( 0 );
-        if ( firstItem instanceof Integer ) {
+        final Object firstItem = ((List) vectorObject).get( 0 );
+        if ( firstItem instanceof Byte ) {
             return vectorBuilder.setIntVector(
-                    IntVector.newBuilder().addAllVector( (List<Integer>) vectorObject ).build() ).build();
+                    IntVector.newBuilder().addAllVector( ((List<Byte>) vectorObject).stream().map( Byte::intValue ).collect( Collectors.toList() ) ).build() ).build();
+        } else if ( firstItem instanceof Short ) {
+            return vectorBuilder.setIntVector(
+                    IntVector.newBuilder().addAllVector( ((List<Short>) vectorObject).stream().map( Short::intValue ).collect( Collectors.toList() ) ).build() ).build();
+        } else if ( firstItem instanceof Integer ) {
+            return vectorBuilder.setIntVector(
+                    IntVector.newBuilder().addAllVector( (List<Integer>) vectorObject ) ).build();
         } else if ( firstItem instanceof Double ) {
             return vectorBuilder.setDoubleVector(
-                    DoubleVector.newBuilder().addAllVector( (List<Double>) vectorObject ).build() ).build();
+                    DoubleVector.newBuilder().addAllVector( (List<Double>) vectorObject ) ).build();
         } else if ( firstItem instanceof Long ) {
             return vectorBuilder.setLongVector(
-                    LongVector.newBuilder().addAllVector( (List<Long>) vectorObject ).build() ).build();
+                    LongVector.newBuilder().addAllVector( (List<Long>) vectorObject ) ).build();
         } else if ( firstItem instanceof Float ) {
             return vectorBuilder.setFloatVector(
-                    FloatVector.newBuilder().addAllVector( (List<Float>) vectorObject ).build() ).build();
+                    FloatVector.newBuilder().addAllVector( (List<Float>) vectorObject ) ).build();
         } else if ( firstItem instanceof Boolean ) {
             return vectorBuilder.setBoolVector(
-                    BoolVector.newBuilder().addAllVector( (List<Boolean>) vectorObject ).build() ).build();
-        } else if ( firstItem instanceof BigDecimal ) {
-            List<Double> doubleList = ((List<BigDecimal>) vectorObject).stream().map( BigDecimal::doubleValue ).collect( Collectors.toList() );
-            return vectorBuilder.setDoubleVector(
-                    DoubleVector.newBuilder().addAllVector( doubleList ).build() ).build();
+                    BoolVector.newBuilder().addAllVector( (List<Boolean>) vectorObject ) ).build();
         } else {
             return null;
         }
@@ -503,10 +545,7 @@ public class CottontailTypeUtil {
 
 
     public static From fromFromTableAndSchema( String table, String schema ) {
-        return From.newBuilder().setEntity(
-                Entity.newBuilder().setName( table ).setSchema(
-                        Schema.newBuilder().setName( schema )
-                ) ).build();
+        return From.newBuilder().setScan( Scan.newBuilder().setEntity( EntityName.newBuilder().setName( table ).setSchema( SchemaName.newBuilder().setName( schema ) ) ) ).build();
     }
 
 
@@ -534,8 +573,10 @@ public class CottontailTypeUtil {
 
         return Expressions.lambda(
                 Expressions.block(
-                        Expressions.return_( null,
-                                Expressions.call( COTTONTAIL_KNN_BUILDER_METHOD,
+                        Expressions.return_(
+                                null,
+                                Expressions.call(
+                                        COTTONTAIL_KNN_BUILDER_METHOD,
                                         targetColumn,
                                         optimisationFactor,
                                         distance,
@@ -552,8 +593,7 @@ public class CottontailTypeUtil {
             return Expressions.constant( physicalColumnNames.get( inputRef.getIndex() ) );
         } else if ( node instanceof RexDynamicParam ) {
             RexDynamicParam dynamicParam = (RexDynamicParam) node;
-            return Expressions.call( dynamicParamMap, BuiltInMethod.MAP_GET.method,
-                    Expressions.constant( dynamicParam.getIndex() ) );
+            return Expressions.call( dynamicParamMap, BuiltInMethod.MAP_GET.method, Expressions.constant( dynamicParam.getIndex() ) );
         }
 
         throw new RuntimeException( "first argument is neither an input ref nor a dynamic parameter" );
@@ -564,11 +604,13 @@ public class CottontailTypeUtil {
         if ( (node instanceof RexCall) && (((RexCall) node).getOperator() instanceof SqlArrayValueConstructor) ) {
 //            List<Object> arrayList = arrayCallToList( ((RexCall) node).getOperands(), node.getType().getComponentType().getPolyType() );
             Expression arrayList = arrayListToExpression( ((RexCall) node).getOperands(), actualType );
-            return Expressions.call( CottontailTypeUtil.class, "toVectorData", arrayList );
+            return Expressions.call( CottontailTypeUtil.class, "toVectorCallData", arrayList );
         } else if ( node instanceof RexDynamicParam ) {
             RexDynamicParam dynamicParam = (RexDynamicParam) node;
-            return Expressions.call( CottontailTypeUtil.class, "toVectorData", Expressions.call( dynamicParamMap, BuiltInMethod.MAP_GET.method,
-                    Expressions.constant( dynamicParam.getIndex() ) ) );
+            return Expressions.call(
+                    CottontailTypeUtil.class,
+                    "toVectorCallData",
+                    Expressions.call( dynamicParamMap, BuiltInMethod.MAP_GET.method, Expressions.constant( dynamicParam.getIndex() ) ) );
         }
 
         throw new RuntimeException( "argument is neither an array call nor a dynamic parameter" );
@@ -639,7 +681,7 @@ public class CottontailTypeUtil {
     }
 
 
-    public static Object dataToValue( Data data, PolyType type ) {
+    public static Object dataToValue( CottontailGrpc.Literal data, PolyType type ) {
         switch ( type ) {
             case BOOLEAN:
                 return Linq4JFixer.getBooleanData( data );
