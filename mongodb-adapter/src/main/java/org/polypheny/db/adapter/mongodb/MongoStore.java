@@ -142,7 +142,6 @@ public class MongoStore extends DataStore {
     public void createNewSchema( SchemaPlus rootSchema, String name ) {
         String[] splits = name.split( "_" );
         String database = splits[0] + "_" + splits[1];
-        // TODO DL: physical schema name is null here, when no placement exists yet so we cut it
         currentSchema = new MongoSchema( database, this.client, transactionProvider );
     }
 

@@ -1,4 +1,4 @@
-name: Polypheny-DB Adapter MongoDB CI
+name: Polypheny-DB Adapter Matrix CI
 
 on: [ push, pull_request ]
 

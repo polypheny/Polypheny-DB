@@ -65,7 +65,7 @@ public class MongoProject extends Project implements MongoRel {
     public MongoProject( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, List<? extends RexNode> projects, RelDataType rowType ) {
         super( cluster, traitSet, input, projects, rowType );
         assert getConvention() == CONVENTION;
-        //assert getConvention() == input.getConvention(); // TODO DL: check
+        //assert getConvention() == input.getConvention();
     }
 
 

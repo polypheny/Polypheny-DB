@@ -83,23 +83,12 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
 
     @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
-        // TODO DL: on mixed placements this enumerable is us used for wrong tables if cost is not adjusted
         return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
     }
 
 
     @Override
     public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
-        // Generates a call to "find" or "aggregate", depending upon whether
-        // an aggregate is present.
-        //
-        //   ((MongoTable) schema.getTable("zips")).find(
-        //     "{state: 'CA'}",
-        //     "{city: 1, zipcode: 1}")
-        //
-        //   ((MongoTable) schema.getTable("zips")).aggregate(
-        //     "{$filter: {state: 'CA'}}",
-        //     "{$group: {_id: '$city', c: {$sum: 1}, p: {$sum: "$pop"}}")
         final BlockBuilder list = new BlockBuilder();
         final MongoRel.Implementor mongoImplementor = new MongoRel.Implementor();
         mongoImplementor.visitChild( 0, getInput() );

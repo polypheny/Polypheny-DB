@@ -367,9 +367,12 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 
 
         /**
-         * This methods handles direct DMLs(which already have the values) in Mongodb for now TODO DL: reevaluate
+         * This methods handles direct DMLs(which already have the values)
          *
-         * @return
+         * @param operation which defines which kind the DML is
+         * @param filter filter operations
+         * @param operations the collection of values to insert
+         * @return the enumerable which holds the result of the operation
          */
         @SuppressWarnings("UnusedDeclaration")
         public Enumerable<Object> handleDirectDML( Operation operation, String filter, List<String> operations ) {

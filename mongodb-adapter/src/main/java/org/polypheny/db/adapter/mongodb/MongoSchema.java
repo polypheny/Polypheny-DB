@@ -82,7 +82,6 @@ public class MongoSchema extends AbstractSchema {
      * @param tableMap
      * @param transactionProvider
      */
-    //public MongoSchema( String host, String database, List<MongoCredential> credentialsList, MongoClientOptions options ) { // TODO DL: evaluate what options are needed in the end
     public MongoSchema( String database, Map<String, Table> tableMap, MongoClient connection, TransactionProvider transactionProvider ) {
         super();
         this.tableMap = tableMap;

@@ -580,16 +580,6 @@ public class MongoRules {
                     MongoRel.Implementor filterCollector = new Implementor( true );
                     filterCollector.setStaticRowType( implementor.getStaticRowType() );
                     ((MongoRel) input).implement( filterCollector );
-                    List<String> docs = new ArrayList<>();
-                    for ( Pair<String, String> el : filterCollector.list ) {
-                        docs.add( el.right );
-                    }
-                    String docString = "";
-                    if ( docs.size() == 1 ) {
-                        docString = docs.get( 0 );
-                    } else {
-                        // TODO DL: evaluate if this is even possible
-                    }
                     implementor.filter = filterCollector.filter;
                 }
 
@@ -630,15 +620,6 @@ public class MongoRules {
 
         private void handlePreparedInsert( Implementor implementor, MongoProject input ) {
             if ( !(input.getInput() instanceof MongoValues) && input.getInput().getRowType().getFieldList().size() == 1 ) {
-                return;
-            }
-            // TODO DL: REFACTOR
-            MongoValues values = (MongoValues) input.getInput();
-            if ( values.tuples.size() > 0
-                    && values.getRowType().getFieldList().size() != 1
-                    && values.getRowType().getFieldList().get( 0 ).getName().equals( "ZERO" ) ) {
-                // we have a partitioned table
-                handleDirectInsert( implementor, values );
                 return;
             }
 

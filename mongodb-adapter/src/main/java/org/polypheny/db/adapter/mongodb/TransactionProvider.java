@@ -32,6 +32,11 @@ import java.util.Map;
 import lombok.Setter;
 import org.polypheny.db.transaction.PolyXid;
 
+/**
+ * This class handles the MongoDB transaction logic,
+ * it starts new sessions, for transactions and exposes the functionality to
+ * commit or rollback these transactions
+ */
 public class TransactionProvider {
 
     @Setter
@@ -45,6 +50,12 @@ public class TransactionProvider {
     }
 
 
+    /**
+     * Starts a new transaction for a provided PolyXid
+     *
+     * @param xid the PolyXid to which the transaction belongs
+     * @return the corresponding session, which holds the information of the transaction
+     */
     public ClientSession startTransaction( PolyXid xid ) {
         TransactionOptions options = TransactionOptions.builder()
                 .readPreference( ReadPreference.primary() )
@@ -68,6 +79,13 @@ public class TransactionProvider {
     }
 
 
+    /**
+     * Tries to commit the transaction,
+     * if the commit fails the transaction is rollbacked
+     * if the transaction is already commit this is a no-op
+     *
+     * @param xid the corresponding PolyXid for the transaction
+     */
     public void commit( PolyXid xid ) {
         if ( sessions.containsKey( xid ) ) {
             ClientSession session = sessions.get( xid );
@@ -89,21 +107,30 @@ public class TransactionProvider {
     }
 
 
+    /**
+     * Commits open transactions, this is normally called before DDsL as MongoDB
+     * requires this
+     */
     public void commitAll() {
         new ArrayList<>( sessions.keySet() ).forEach( this::commit );
     }
 
 
+    /**
+     * Tries to rollback a transaction,
+     * if the transaction is already rollbacked
+     * this is a no-op
+     *
+     * @param xid the corresponding PolyXid
+     */
     public void rollback( PolyXid xid ) {
         if ( sessions.containsKey( xid ) ) {
-            ClientSession session = sessions.get( xid );
-            try {
+            try ( ClientSession session = sessions.get( xid ) ) {
                 session.abortTransaction();
             } catch ( MongoClientException e ) {
                 // empty on purpose
             } finally {
                 sessions.remove( xid );
-                session.close();
             }
         } else {
             log.info( "No-op rollback" );
