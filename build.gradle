@@ -79,7 +79,7 @@ allprojects {
         if (JavaVersion.current().isJava9Compatible()) {
             options.addBooleanOption("html5", true)
         }
-        // suppress most of the warnings
+        // Suppress most of the warnings
         options.addStringOption("Xdoclint:none", "-quiet")
         // Include private fields in JavaDoc
         options.memberLevel = JavadocMemberLevel.PRIVATE
