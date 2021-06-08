@@ -27,15 +27,21 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.config.ConfigInteger;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.transaction.Statement;
 
 
-public class UniversalRouter extends AbstractRouter {
+public class UnifiedRouting extends AbstractRouter {
 
-    private UniversalRouter() {
+    private static final ConfigInteger MAX_PLACEMENT_SIZE = new ConfigInteger(
+            "universalRouting/maxPlacementSize",
+            "Max size of placement, which will be considered.",
+            4 );
+
+    private UnifiedRouting() {
         // Intentionally left empty
     }
 
@@ -107,7 +113,7 @@ public class UniversalRouter extends AbstractRouter {
 
         @Override
         public Router createInstance() {
-            return new UniversalRouter();
+            return new UnifiedRouting();
         }
 
     }
