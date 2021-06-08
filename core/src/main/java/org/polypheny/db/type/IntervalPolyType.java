@@ -76,7 +76,7 @@ public class IntervalPolyType extends AbstractPolyType {
         writer.setAlwaysUseParentheses( false );
         writer.setSelectListItemsOnSeparateLines( false );
         writer.setIndentation( 0 );
-        intervalQualifier.toSqlIntervalQualifier().unparse( writer, 0, 0 );
+        new SqlIntervalQualifier( intervalQualifier ).unparse( writer, 0, 0 );
         final String sql = writer.toString();
         sb.append( new SqlString( dialect, sql ).getSql() );
     }
@@ -84,7 +84,7 @@ public class IntervalPolyType extends AbstractPolyType {
 
     @Override
     public SqlIntervalQualifier getIntervalQualifier() {
-        return intervalQualifier.toSqlIntervalQualifier();
+        return new SqlIntervalQualifier( intervalQualifier );
     }
 
 

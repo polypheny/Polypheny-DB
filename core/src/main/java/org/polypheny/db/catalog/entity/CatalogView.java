@@ -33,9 +33,8 @@ import org.polypheny.db.rel.BiRel;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollationTraitDef;
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.SingleRel;
-import org.polypheny.db.rel.logical.ViewTableScan;
+import org.polypheny.db.rel.logical.LogicalViewTableScan;
 import org.polypheny.db.rel.type.RelDataType;
 
 public class CatalogView extends CatalogTable {
@@ -46,6 +45,8 @@ public class CatalogView extends CatalogTable {
     private final ImmutableList<Long> underlyingTables;
     @Getter
     private final RelDataType fieldList;
+    @Getter
+    private final RelCollation relCollation;
 
 
     public CatalogView(
@@ -57,13 +58,15 @@ public class CatalogView extends CatalogTable {
             int ownerId,
             @NonNull String ownerName,
             @NonNull Catalog.TableType type,
-            RelRoot definition,
+            RelNode definition,
             Long primaryKey,
             @NonNull ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             boolean modifiable,
+            RelCollation relCollation,
             ImmutableList<Long> underlyingTables,
             RelDataType fieldList ) {
         super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, definition, primaryKey, placementsByAdapter, modifiable );
+        this.relCollation = relCollation;
         this.underlyingTables = underlyingTables;
         this.fieldList = fieldList;
     }
@@ -78,7 +81,7 @@ public class CatalogView extends CatalogTable {
             int ownerId,
             String ownerName,
             TableType tableType,
-            RelRoot definition,
+            RelNode definition,
             Long primaryKey,
             ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             boolean modifiable,
@@ -87,10 +90,12 @@ public class CatalogView extends CatalogTable {
             ImmutableList<Long> partitionIds,
             long partitionColumnId,
             boolean isPartitioned,
+            RelCollation relCollation,
             ImmutableList<Long> connectedViews,
             ImmutableList<Long> underlyingTables,
             RelDataType fieldList ) {
         super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, definition, primaryKey, placementsByAdapter, modifiable, numPartitions, partitionType, partitionIds, partitionColumnId, isPartitioned, connectedViews );
+        this.relCollation = relCollation;
         this.underlyingTables = underlyingTables;
         this.fieldList = fieldList;
     }
@@ -116,6 +121,7 @@ public class CatalogView extends CatalogTable {
                 partitionIds,
                 partitionColumnId,
                 isPartitioned,
+                relCollation,
                 newConnectedViews,
                 underlyingTables,
                 fieldList );
@@ -142,13 +148,14 @@ public class CatalogView extends CatalogTable {
                 partitionIds,
                 partitionColumnId,
                 isPartitioned,
+                relCollation,
                 connectedViews,
                 underlyingTables,
                 fieldList );
     }
 
 
-    public static CatalogView generateView( CatalogTable table, ImmutableList<Long> underlyingTables, RelDataType fieldList ) {
+    public static CatalogView generateView( CatalogTable table, RelCollation relCollation, ImmutableList<Long> underlyingTables, RelDataType fieldList ) {
 
         return new CatalogView(
                 table.id,
@@ -163,6 +170,7 @@ public class CatalogView extends CatalogTable {
                 table.primaryKey,
                 table.placementsByAdapter,
                 table.modifiable,
+                relCollation,
                 underlyingTables,
                 fieldList );
     }
@@ -183,15 +191,16 @@ public class CatalogView extends CatalogTable {
                 primaryKey,
                 placementsByAdapter,
                 modifiable,
+                relCollation,
                 underlyingTables,
                 fieldList );
 
     }
 
 
-    public RelRoot prepareView( RelOptCluster cluster, RelCollation relCollation ) {
-        RelRoot viewLogicalRoot = definition;
-        prepareView( viewLogicalRoot.rel, cluster, relCollation );
+    public RelNode prepareView( RelOptCluster cluster, RelCollation relCollation ) {
+        RelNode viewLogicalRoot = definition;
+        prepareView( viewLogicalRoot, cluster, relCollation );
         return viewLogicalRoot;
     }
 
@@ -220,8 +229,8 @@ public class CatalogView extends CatalogTable {
         } else if ( viewLogicalRoot instanceof SingleRel ) {
             prepareView( ((SingleRel) viewLogicalRoot).getInput(), relOptCluster, relCollation );
         }
-        if ( viewLogicalRoot instanceof ViewTableScan ) {
-            prepareView( ((ViewTableScan) viewLogicalRoot).getRelRoot().rel, relOptCluster, relCollation );
+        if ( viewLogicalRoot instanceof LogicalViewTableScan ) {
+            prepareView( ((LogicalViewTableScan) viewLogicalRoot).getRelNode(), relOptCluster, relCollation );
         }
     }
 

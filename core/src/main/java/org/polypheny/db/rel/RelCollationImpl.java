@@ -37,7 +37,6 @@ package org.polypheny.db.rel;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.UnmodifiableIterator;
-import java.io.Serializable;
 import java.util.Iterator;
 import java.util.List;
 import javax.annotation.Nonnull;
@@ -52,7 +51,7 @@ import org.polypheny.db.util.Util;
 /**
  * Simple implementation of {@link RelCollation}.
  */
-public class RelCollationImpl implements RelCollation, Serializable {
+public class RelCollationImpl implements RelCollation {
 
 
     private final ImmutableList<RelFieldCollation> fieldCollations;

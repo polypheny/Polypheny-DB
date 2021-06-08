@@ -53,7 +53,8 @@ import org.polypheny.db.ddl.exception.PlacementIsPrimaryException;
 import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
-import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -437,10 +438,10 @@ public abstract class DdlManager {
      *
      * @param viewName the name of the new view
      * @param schemaId the id of the schema to which the view belongs
-     * @param relRoot the relNode which was built form the Select part of the view
+     * @param relNode the relNode which was built form the Select part of the view
      * @param statement the used Statement
      */
-    public abstract void createView( String viewName, long schemaId, RelRoot relRoot, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException;
+    public abstract void createView( String viewName, long schemaId, RelNode relNode, RelCollation relCollation, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException;
 
     /**
      * Add new partitions for the column

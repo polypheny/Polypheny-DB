@@ -70,7 +70,8 @@ import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
@@ -363,7 +364,7 @@ public abstract class Catalog {
      * @param definition The definition of this table (e.g. a SQL string; null if not applicable)
      * @return The id of the inserted table
      */
-    public abstract long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelRoot definition );
+    public abstract long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition );
 
     /**
      * Adds a table to a specified schema.
@@ -378,7 +379,7 @@ public abstract class Catalog {
      * @param fieldList all columns selected within the viewTable
      * @return The id of the inserted table
      */
-    public abstract long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelRoot definition, List<Long> underlyingTables, RelDataType fieldList );
+    public abstract long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, List<Long> underlyingTables, RelDataType fieldList );
 
     /**
      * Checks if there is a table with the specified name in the specified schema.

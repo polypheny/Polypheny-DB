@@ -37,7 +37,7 @@ package org.polypheny.db.rel;
 import java.util.List;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.logical.ViewTableScan;
+import org.polypheny.db.rel.logical.LogicalViewTableScan;
 import org.polypheny.db.runtime.FlatLists;
 
 
@@ -114,10 +114,10 @@ public abstract class BiRel extends AbstractRelNode {
 
     @Override
     public void tryExpandView( RelNode node ) {
-        if ( left instanceof ViewTableScan ) {
-            left = ((ViewTableScan) left).expandViewNode();
-        } else if ( right instanceof ViewTableScan ) {
-            right = (((ViewTableScan) right).expandViewNode());
+        if ( left instanceof LogicalViewTableScan ) {
+            left = ((LogicalViewTableScan) left).expandViewNode();
+        } else if ( right instanceof LogicalViewTableScan ) {
+            right = (((LogicalViewTableScan) right).expandViewNode());
         } else {
             left.tryExpandView( this );
             right.tryExpandView( this );

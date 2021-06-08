@@ -19,7 +19,6 @@ package org.polypheny.db.schema;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -48,7 +47,7 @@ import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.BuiltInMethod;
 
 
-public class PolySchemaBuilder implements PropertyChangeListener, Serializable {
+public class PolySchemaBuilder implements PropertyChangeListener {
 
     private final static PolySchemaBuilder INSTANCE = new PolySchemaBuilder();
 

@@ -17,7 +17,6 @@
 package org.polypheny.db.information;
 
 
-import java.io.Serializable;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -27,7 +26,7 @@ import org.polypheny.db.information.exception.InformationRuntimeException;
 /**
  * An InformationGroup contains multiple Information object that will be rendered together in the UI.
  */
-public class InformationGroup extends Refreshable implements Serializable {
+public class InformationGroup extends Refreshable {
 
     /**
      * Unique id for an InformationGroup.

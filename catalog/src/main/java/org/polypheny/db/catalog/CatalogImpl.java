@@ -87,7 +87,8 @@ import org.polypheny.db.catalog.exceptions.UnknownUserIdRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
-import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
@@ -1281,8 +1282,8 @@ public class CatalogImpl extends Catalog {
      * @return The id of the inserted table
      */
     @Override
-    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelRoot definition ) {
-        return addTable( name, schemaId, ownerId, tableType, modifiable, definition, null, null );
+    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition ) {
+        return addTable( name, schemaId, ownerId, tableType, modifiable, definition, null, null, null );
     }
 
 
@@ -1300,7 +1301,7 @@ public class CatalogImpl extends Catalog {
      * @return The id of the inserted table
      */
     @Override
-    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelRoot definition, List<Long> underlyingTables, RelDataType fieldList ) {
+    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, List<Long> underlyingTables, RelDataType fieldList ) {
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( schemaId );
         CatalogUser owner = getUser( ownerId );
@@ -1319,7 +1320,7 @@ public class CatalogImpl extends Catalog {
                 modifiable );
 
         if ( tableType == TableType.VIEW ) {
-            table = CatalogView.generateView( table, ImmutableList.copyOf( underlyingTables ), fieldList );
+            table = CatalogView.generateView( table, relCollation, ImmutableList.copyOf( underlyingTables ), fieldList );
             addConnectedViews( underlyingTables, table.id );
         }
 

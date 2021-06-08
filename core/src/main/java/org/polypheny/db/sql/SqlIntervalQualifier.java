@@ -50,6 +50,7 @@ import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.util.SqlVisitor;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.type.PolyIntervalQualifier;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Util;
@@ -157,6 +158,11 @@ public class SqlIntervalQualifier extends SqlNode {
         this.timeUnitRange = timeUnitRange;
         this.startPrecision = startPrecision;
         this.fractionalSecondPrecision = fractionalSecondPrecision;
+    }
+
+
+    public SqlIntervalQualifier( PolyIntervalQualifier polyIntervalQualifier ) {
+        this( polyIntervalQualifier.startPrecision, polyIntervalQualifier.fractionalSecondPrecision, polyIntervalQualifier.timeUnitRange, SqlParserPos.ZERO );
     }
 
     //~ Methods ----------------------------------------------------------------

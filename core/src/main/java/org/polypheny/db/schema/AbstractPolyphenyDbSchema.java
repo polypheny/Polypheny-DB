@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Lists;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -46,7 +45,7 @@ import org.polypheny.db.util.Pair;
  *
  * Wrapper around user-defined schema used internally.
  */
-public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema, Serializable {
+public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
 
     @Getter
     private final AbstractPolyphenyDbSchema parent;

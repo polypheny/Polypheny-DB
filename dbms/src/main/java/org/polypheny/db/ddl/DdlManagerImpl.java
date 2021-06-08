@@ -93,11 +93,11 @@ import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.rel.AbstractRelNode;
 import org.polypheny.db.rel.BiRel;
+import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.SingleRel;
 import org.polypheny.db.rel.logical.LogicalTableScan;
-import org.polypheny.db.rel.logical.ViewTableScan;
+import org.polypheny.db.rel.logical.LogicalViewTableScan;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
@@ -1314,10 +1314,18 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createView( String viewName, long schemaId, RelRoot relRoot, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns ) throws TableAlreadyExistsException {
+    public void createView( String viewName, long schemaId, RelNode relNode, RelCollation relCollation, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns ) throws TableAlreadyExistsException {
 
         if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
-            throw new TableAlreadyExistsException();
+            if ( replace ) {
+                try {
+                    dropView( catalog.getTable( schemaId, viewName ), statement );
+                } catch ( UnknownTableException | DdlOnSourceException e ) {
+                    throw new RuntimeException( "Not possible to Drop View in order tu use CREATE OR REPLACE VIEW." );
+                }
+            } else {
+                throw new TableAlreadyExistsException();
+            }
         }
 
         if ( stores == null ) {
@@ -1325,8 +1333,8 @@ public class DdlManagerImpl extends DdlManager {
             stores = statement.getRouter().createTable( schemaId, statement );
         }
 
-        prepareView( relRoot.rel );
-        RelDataType fieldList = relRoot.rel.getRowType();
+        prepareView( relNode );
+        RelDataType fieldList = relNode.getRowType();
 
         List<ColumnInformation> columns = new ArrayList<>();
 
@@ -1363,8 +1371,9 @@ public class DdlManagerImpl extends DdlManager {
                 statement.getPrepareContext().getCurrentUserId(),
                 TableType.VIEW,
                 false,
-                relRoot,
-                findUnderlyingTablesOfView( relRoot.rel, underlyingTables ),
+                relNode,
+                relCollation,
+                findUnderlyingTablesOfView( relNode, underlyingTables ),
                 fieldList
         );
 
@@ -1403,7 +1412,7 @@ public class DdlManagerImpl extends DdlManager {
     private List<Long> findUnderlyingTablesOfView( RelNode relNode, List<Long> underlyingTables ) {
         if ( relNode instanceof LogicalTableScan ) {
             underlyingTables.add( ((LogicalTable) ((RelOptTableImpl) relNode.getTable()).getTable()).getTableId() );
-        } else if ( relNode instanceof ViewTableScan ) {
+        } else if ( relNode instanceof LogicalViewTableScan ) {
             underlyingTables.add( ((LogicalView) ((RelOptTableImpl) relNode.getTable()).getTable()).getTableId() );
         }
         if ( relNode instanceof BiRel ) {

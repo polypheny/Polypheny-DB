@@ -108,7 +108,7 @@ import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalUnion;
 import org.polypheny.db.rel.logical.LogicalValues;
-import org.polypheny.db.rel.logical.ViewTableScan;
+import org.polypheny.db.rel.logical.LogicalViewTableScan;
 import org.polypheny.db.rel.metadata.JaninoRelMetadataProvider;
 import org.polypheny.db.rel.metadata.RelColumnMapping;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
@@ -566,8 +566,8 @@ public class SqlToRelConverter {
         if ( r instanceof Delta ) {
             return requiredCollation( ((Delta) r).getInput() );
         }
-        if ( r instanceof ViewTableScan ) {
-            return ((ViewTableScan) r).getRelRoot().collation;
+        if ( r instanceof LogicalViewTableScan ) {
+            return ((LogicalViewTableScan) r).getRelCollation();
         }
         throw new AssertionError();
     }
@@ -2088,7 +2088,7 @@ public class SqlToRelConverter {
         if ( config.isConvertTableAccess() ) {
             tableRel = toRel( table );
         } else if ( table instanceof RelOptTableImpl && (((RelOptTableImpl) table).getTable()) instanceof LogicalView ) {
-            tableRel = ViewTableScan.create( cluster, table );
+            tableRel = LogicalViewTableScan.create( cluster, table );
         } else {
             tableRel = LogicalTableScan.create( cluster, table );
         }

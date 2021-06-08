@@ -50,7 +50,7 @@ import org.polypheny.db.util.Util;
 /**
  * Helpers for {@link SqlNameMatcher}.
  */
-public class SqlNameMatchers implements Serializable {
+public class SqlNameMatchers {
 
     private static final BaseMatcher CASE_SENSITIVE = new BaseMatcher( true );
     private static final BaseMatcher CASE_INSENSITIVE = new BaseMatcher( false );

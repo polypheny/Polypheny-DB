@@ -21,7 +21,6 @@ import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.sql.SqlIntervalQualifier;
-import org.polypheny.db.sql.parser.SqlParserPos;
 
 public class PolyIntervalQualifier implements Serializable {
 
@@ -32,9 +31,9 @@ public class PolyIntervalQualifier implements Serializable {
     }
 
 
-    private final int startPrecision;
+    public final int startPrecision;
     public final TimeUnitRange timeUnitRange;
-    private final int fractionalSecondPrecision;
+    public final int fractionalSecondPrecision;
 
 
     public static PolyIntervalQualifier fromSqlQualifier( SqlIntervalQualifier intervalQualifier ) {
@@ -192,11 +191,6 @@ public class PolyIntervalQualifier implements Serializable {
             default:
                 throw new AssertionError( timeUnitRange );
         }
-    }
-
-
-    public SqlIntervalQualifier toSqlIntervalQualifier() {
-        return new SqlIntervalQualifier( startPrecision, fractionalSecondPrecision, timeUnitRange, SqlParserPos.ZERO );
     }
 
 }

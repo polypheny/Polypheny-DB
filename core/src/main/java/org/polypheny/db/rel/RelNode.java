@@ -45,7 +45,7 @@ import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.core.Correlate;
 import org.polypheny.db.rel.core.CorrelationId;
-import org.polypheny.db.rel.logical.ViewTableScan;
+import org.polypheny.db.rel.logical.LogicalViewTableScan;
 import org.polypheny.db.rel.metadata.Metadata;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
@@ -350,8 +350,8 @@ public interface RelNode extends RelOptNode, Cloneable {
      * Expands View and if a part of RelNode is a ViewTableScan in order to replace this part within expandViewNode()
      */
     default void tryExpandView( RelNode input ) {
-        if ( input instanceof ViewTableScan ) {
-            input = ((ViewTableScan) input).expandViewNode();
+        if ( input instanceof LogicalViewTableScan ) {
+            input = ((LogicalViewTableScan) input).expandViewNode();
         } else {
             input.tryExpandView( input );
         }

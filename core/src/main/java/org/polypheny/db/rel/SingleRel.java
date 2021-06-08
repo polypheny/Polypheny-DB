@@ -38,7 +38,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.logical.ViewTableScan;
+import org.polypheny.db.rel.logical.LogicalViewTableScan;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
 
@@ -116,8 +116,8 @@ public abstract class SingleRel extends AbstractRelNode {
 
     @Override
     public void tryExpandView( RelNode node ) {
-        if ( input instanceof ViewTableScan ) {
-            input = ((ViewTableScan) input).expandViewNode();
+        if ( input instanceof LogicalViewTableScan ) {
+            input = ((LogicalViewTableScan) input).expandViewNode();
         } else {
             input.tryExpandView( this );
         }

@@ -31,7 +31,6 @@ import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollationTraitDef;
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.TableScan;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
@@ -39,15 +38,18 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.Table;
 
-public class ViewTableScan extends TableScan {
+public class LogicalViewTableScan extends TableScan {
 
     @Getter
-    RelRoot relRoot;
+    RelNode relNode;
+    @Getter
+    RelCollation relCollation;
 
 
-    public ViewTableScan( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table, RelRoot relRoot ) {
+    public LogicalViewTableScan( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table, RelNode relNode, RelCollation relCollation ) {
         super( cluster, traitSet, table );
-        this.relRoot = relRoot;
+        this.relNode = relNode;
+        this.relCollation = relCollation;
     }
 
 
@@ -66,15 +68,12 @@ public class ViewTableScan extends TableScan {
                                 } );
 
         Catalog catalog = Catalog.getInstance();
-        CatalogTable catalogTable;
 
         long idLogical = ((LogicalTable) ((RelOptTableImpl) relOptTable).getTable()).getTableId();
-        catalogTable = catalog.getTable( idLogical );
+        CatalogTable catalogTable = catalog.getTable( idLogical );
+        RelCollation relCollation = ((CatalogView) catalogTable).getRelCollation();
 
-        RelCollation relCollation = catalogTable.definition.collation;
-
-        return new ViewTableScan( cluster, traitSet, relOptTable, ((CatalogView) catalogTable).prepareView( cluster, relCollation ) );
-
+        return new LogicalViewTableScan( cluster, traitSet, relOptTable, ((CatalogView) catalogTable).prepareView( cluster, relCollation ), relCollation );
     }
 
 
@@ -92,7 +91,7 @@ public class ViewTableScan extends TableScan {
         for ( int i = 0; i < fieldCount; i++ ) {
             exprs.add( rexBuilder.makeInputRef( this, i ) );
         }
-        LogicalProject logicalProject = LogicalProject.create( relRoot.rel, exprs, this.getRowType().getFieldNames() );
+        LogicalProject logicalProject = LogicalProject.create( relNode, exprs, this.getRowType().getFieldNames() );
         if ( logicalProject.hasView() ) {
             tryExpandView( logicalProject );
         }

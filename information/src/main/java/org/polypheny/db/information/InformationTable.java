@@ -17,13 +17,12 @@
 package org.polypheny.db.information;
 
 
-import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
 
-public class InformationTable extends InformationHtml implements Serializable {
+public class InformationTable extends InformationHtml {
 
     @SuppressWarnings({ "unused" })
     private List<String> labels;

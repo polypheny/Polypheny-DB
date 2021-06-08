@@ -25,6 +25,15 @@ boolean IfNotExistsOpt() :
     { return false; }
 }
 
+boolean OrReplace() :
+{
+}
+{
+<OR> <REPLACE> { return true; }
+            |
+            { return false; }
+            }
+
 boolean IfExistsOpt() :
 {
 }

@@ -243,7 +243,6 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
             for ( final CatalogForeignKey foreignKey : foreignKeys ) {
                 final RelOptSchema relOptSchema = root.getCatalogReader();
                 final RelOptTable relOptTable = relOptSchema.getTableForMember( Collections.singletonList( foreignKey.getReferencedKeyTableName() ) );
-                //TODO IG: ViewTableScan needed??
                 final LogicalTableScan scan = LogicalTableScan.create( root.getCluster(), relOptTable );
                 RexNode joinCondition = rexBuilder.makeLiteral( true );
                 builder.push( input );

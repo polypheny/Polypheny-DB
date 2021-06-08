@@ -48,7 +48,8 @@ import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
@@ -219,13 +220,13 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelRoot definition ) {
+    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelRoot definition, List<Long> underlyingTables, RelDataType fieldList ) {
+    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, List<Long> underlyingTables, RelDataType fieldList ) {
         throw new NotImplementedException();
     }
 
