@@ -239,7 +239,7 @@ public class MongoFilter extends Filter implements MongoRel {
                 case LITERAL:
 
                     this.dynamics.add( new BsonDocument(
-                            getPhysicalName( (RexInputRef) left ), MongoTypeUtil.replaceRegex( ((RexLiteral) right).getValueAs( String.class ) ) ) );
+                            getPhysicalName( (RexInputRef) left ), MongoTypeUtil.replaceLikeWithRegex( ((RexLiteral) right).getValueAs( String.class ) ) ) );
                     return null;
                 default:
                     throw new IllegalStateException( "Unexpected value: " + right.getKind() );

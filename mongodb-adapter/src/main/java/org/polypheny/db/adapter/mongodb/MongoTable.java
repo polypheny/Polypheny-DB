@@ -65,7 +65,7 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.adapter.mongodb.MongoEnumerator.IterWrapper;
-import org.polypheny.db.adapter.mongodb.util.MongoDynamicUtil;
+import org.polypheny.db.adapter.mongodb.util.MongoDynamic;
 import org.polypheny.db.adapter.mongodb.util.MongoTypeUtil;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.Convention;
@@ -209,14 +209,14 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
         } else {
             // prepared
             preOps.stream()
-                    .map( op -> new MongoDynamicUtil( new BsonDocument( "$addFields", op ), mongoSchema.getBucket() ) )
+                    .map( op -> new MongoDynamic( new BsonDocument( "$addFields", op ), mongoSchema.getBucket() ) )
                     .forEach( util -> list.add( util.insert( parameterValues ) ) );
 
-            MongoDynamicUtil util = new MongoDynamicUtil( filter, getMongoSchema().getBucket() );
+            MongoDynamic util = new MongoDynamic( filter, getMongoSchema().getBucket() );
             list.add( new BsonDocument( "$match", util.insert( parameterValues ) ) );
 
             for ( String operation : operations ) {
-                MongoDynamicUtil opUtil = new MongoDynamicUtil( BsonDocument.parse( operation ), getMongoSchema().getBucket() );
+                MongoDynamic opUtil = new MongoDynamic( BsonDocument.parse( operation ), getMongoSchema().getBucket() );
                 list.add( opUtil.insert( parameterValues ) );
             }
 
@@ -387,7 +387,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                     if ( dataContext.getParameterValues().size() != 0 ) {
                         assert operations.size() == 1;
                         // prepared
-                        MongoDynamicUtil util = new MongoDynamicUtil( BsonDocument.parse( operations.get( 0 ) ), bucket );
+                        MongoDynamic util = new MongoDynamic( BsonDocument.parse( operations.get( 0 ) ), bucket );
 
                         List<Document> inserts = util.getAll( dataContext.getParameterValues() );
 
@@ -405,8 +405,8 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                     assert operations.size() == 1;
                     if ( dataContext.getParameterValues().size() != 0 ) {
                         // prepared
-                        MongoDynamicUtil filterUtil = new MongoDynamicUtil( BsonDocument.parse( filter ), bucket );
-                        MongoDynamicUtil docUtil = new MongoDynamicUtil( BsonDocument.parse( operations.get( 0 ) ), bucket );
+                        MongoDynamic filterUtil = new MongoDynamic( BsonDocument.parse( filter ), bucket );
+                        MongoDynamic docUtil = new MongoDynamic( BsonDocument.parse( operations.get( 0 ) ), bucket );
                         for ( Map<Long, Object> parameterValue : dataContext.getParameterValues() ) {
                             changes += mongoTable.getCollection().updateMany( session, filterUtil.insert( parameterValue ), Collections.singletonList( docUtil.insert( parameterValue ) ) ).getModifiedCount();
                         }
@@ -420,7 +420,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                 case DELETE:
                     if ( dataContext.getParameterValues().size() != 0 ) {
                         // prepared
-                        MongoDynamicUtil filterUtil = new MongoDynamicUtil( BsonDocument.parse( filter ), bucket );
+                        MongoDynamic filterUtil = new MongoDynamic( BsonDocument.parse( filter ), bucket );
                         List<? extends WriteModel<Document>> filters = filterUtil.getAll( dataContext.getParameterValues(), DeleteManyModel::new );
 
                         changes = mongoTable.getCollection().bulkWrite( session, filters ).getDeletedCount();

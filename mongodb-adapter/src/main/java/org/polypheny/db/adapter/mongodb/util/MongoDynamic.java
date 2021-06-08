@@ -17,7 +17,6 @@
 package org.polypheny.db.adapter.mongodb.util;
 
 import com.mongodb.client.gridfs.GridFSBucket;
-import com.mongodb.client.model.UpdateManyModel;
 import com.mongodb.client.model.WriteModel;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,7 +34,12 @@ import org.bson.Document;
 import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
 import org.polypheny.db.type.PolyType;
 
-public class MongoDynamicUtil {
+/**
+ * Objects of this class represent a blueprint of a dynamic/prepared BsonValue,
+ * they initial prepare the correct places to insert later provided dynamic parameters according to the
+ * initial provided BsonDocument
+ */
+public class MongoDynamic {
 
 
     private final HashMap<Long, List<DocWrapper>> docHandles = new HashMap<>(); // parent, key,
@@ -47,13 +51,24 @@ public class MongoDynamicUtil {
     private final HashMap<Long, Boolean> isFuncMap = new HashMap<>();
 
 
-    public MongoDynamicUtil( BsonDocument preDocument, GridFSBucket bucket ) {
+    public MongoDynamic( BsonDocument preDocument, GridFSBucket bucket ) {
         this.document = preDocument.clone();
         this.bucket = bucket;
         this.document.forEach( ( k, bsonValue ) -> replaceDynamic( bsonValue, this.document, k, true ) );
     }
 
 
+    /**
+     * Recursively steps through the BsonDocument and stores parent of dynamic/prepared parameters
+     * in the corresponding maps
+     * This can later be used to effiecntly insert multiple paramters, without the need to traverse the tree
+     * every time
+     *
+     * @param preDocument the BsonDocument, which holds BsonDynamics
+     * @param parent the parent of the momentarily observer preDocument
+     * @param key the key (BsonDocument) or index (BsonArray) under which the preDocument is retrievable from the parent
+     * @param isDoc flag if parent is Document
+     */
     public void replaceDynamic( BsonValue preDocument, BsonValue parent, Object key, boolean isDoc ) {
         if ( preDocument.getBsonType() == BsonType.DOCUMENT ) {
             if ( ((BsonDocument) preDocument).containsKey( "_dyn" ) ) {
@@ -89,6 +104,16 @@ public class MongoDynamicUtil {
     }
 
 
+    /**
+     * Stores the information needed to replace a BsonDynamic later on
+     *
+     * @param index of the corresponding prepared parameter (?3 -> 3)
+     * @param doc parent of dynamic
+     * @param key key where object is found from parent ( parent is BsonDocument )
+     * @param type type of the object itself, to retrieve the correct MongoDB type
+     * @param isRegex flag if the BsonDynamic is a regex, which needs to adjusted
+     * @param isFunction flag if the BsonDynamic is defined function, which has to be retrieved uniquely
+     */
     public void addHandle( long index, BsonDocument doc, String key, PolyType type, Boolean isRegex, Boolean isFunction ) {
 
         if ( !arrayHandles.containsKey( index ) ) {
@@ -102,6 +127,16 @@ public class MongoDynamicUtil {
     }
 
 
+    /**
+     * Stores the information needed to replace a BsonDynamic later on
+     *
+     * @param index of the corresponding prepared parameter (?3 -> 3)
+     * @param array parent of dynamic
+     * @param pos position where object is found from parent ( parent is BsonArray )
+     * @param type type of the object itself, to retrieve the correct MongoDB type
+     * @param isRegex flag if the BsonDynamic is a regex, which needs to adjusted
+     * @param isFunction flag if the BsonDynamic is defined function, which has to be retrieved uniquely
+     */
     public void addHandle( long index, BsonArray array, int pos, PolyType type, Boolean isRegex, Boolean isFunction ) {
         if ( !arrayHandles.containsKey( index ) ) {
             this.transformerMap.put( index, MongoTypeUtil.getBsonTransformer( type, bucket ) );
@@ -114,6 +149,12 @@ public class MongoDynamicUtil {
     }
 
 
+    /**
+     * Insert operation, which replaces the initially defined dynamic/prepared objects the provided values
+     *
+     * @param parameterValues the dynamic parameters
+     * @return a final BsonObject with the correct values inserted
+     */
     public BsonDocument insert( Map<Long, Object> parameterValues ) {
         for ( Entry<Long, Object> entry : parameterValues.entrySet() ) {
             if ( arrayHandles.containsKey( entry.getKey() ) ) {
@@ -121,8 +162,8 @@ public class MongoDynamicUtil {
                 Boolean isFuntion = isFuncMap.get( entry.getKey() );
 
                 if ( isRegex ) {
-                    arrayHandles.get( entry.getKey() ).forEach( el -> el.insert( MongoTypeUtil.replaceRegex( (String) entry.getValue() ) ) );
-                    docHandles.get( entry.getKey() ).forEach( el -> el.insert( MongoTypeUtil.replaceRegex( (String) entry.getValue() ) ) );
+                    arrayHandles.get( entry.getKey() ).forEach( el -> el.insert( MongoTypeUtil.replaceLikeWithRegex( (String) entry.getValue() ) ) );
+                    docHandles.get( entry.getKey() ).forEach( el -> el.insert( MongoTypeUtil.replaceLikeWithRegex( (String) entry.getValue() ) ) );
                 } else if ( isFuntion ) {
                     // function is always part of a document
                     docHandles.get( entry.getKey() ).forEach( el -> el.insert( new BsonString( BsonFunctionHelper.getUsedFunction( entry.getValue() ) ) ) );
@@ -137,6 +178,13 @@ public class MongoDynamicUtil {
     }
 
 
+    /**
+     * Fully prepare a batch of multiple prepared rows and transform them into BsonDocuments
+     *
+     * @param parameterValues multiple rows of dynamic parameters
+     * @param constructor the initial constructor, which holds the blueprint to replace the dynamic parameter
+     * @return a list of rows, which can directly be inserted
+     */
     public List<? extends WriteModel<Document>> getAll( List<Map<Long, Object>> parameterValues, Function<Document, ? extends WriteModel<Document>> constructor ) {
         return parameterValues.stream().map( value -> constructor.apply( MongoTypeUtil.asDocument( insert( value ) ) ) ).collect( Collectors.toList() );
     }
@@ -147,6 +195,10 @@ public class MongoDynamicUtil {
     }
 
 
+    /**
+     * Helper class which holds replace information for a BsonDocument, which has one or multiple dynamic children
+     * and defines how the child can be replaced
+     */
     static class DocWrapper {
 
         final String key;
@@ -166,6 +218,10 @@ public class MongoDynamicUtil {
     }
 
 
+    /**
+     * Helper class which holds replace information for a BsonDocument, which has one or multiple dynamic children
+     * and defines how the child can be replaced
+     */
     static class ArrayWrapper {
 
         final int index;
@@ -182,18 +238,6 @@ public class MongoDynamicUtil {
             array.set( index, value );
         }
 
-    }
-
-
-    public static List<UpdateManyModel<Document>> zipUpdate( List<Document> left, List<Document> right ) {
-        assert left.size() == right.size();
-        ArrayList<UpdateManyModel<Document>> res = new ArrayList<>();
-        int pos = 0;
-        for ( Document document : left ) {
-            res.add( new UpdateManyModel<>( document, right.get( pos ) ) );
-            pos++;
-        }
-        return res;
     }
 
 }
