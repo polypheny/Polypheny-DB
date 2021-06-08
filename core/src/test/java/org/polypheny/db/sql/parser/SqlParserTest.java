@@ -207,6 +207,7 @@ public class SqlParserTest {
             "DISTANCE", "92", "99", "2003", "2011", "2014", "c",          // JS: Added for DISTANCE functions
             "DISTINCT", "92", "99", "2003", "2011", "2014", "c",
             "DO", "92", "99", "2003",
+            "DOCUMENT", "92", "99", "2003", "2011", "2014", "c", // DL: added for document support
             "DOMAIN", "92", "99",
             "DOUBLE", "92", "99", "2003", "2011", "2014", "c",
             "DROP", "92", "99", "2003", "2011", "2014", "c",

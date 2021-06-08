@@ -30,8 +30,6 @@ import org.apache.calcite.avatica.AvaticaSqlException;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.type.PolyType;
@@ -39,7 +37,6 @@ import org.polypheny.db.type.PolyType;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-@Category(AdapterTestSuite.class)
 public class JdbcDdlTest {
 
 
@@ -102,7 +99,7 @@ public class JdbcDdlTest {
     @Test
     public void testTypes() throws SQLException {
         // Check if there are new types missing in this test
-        Assert.assertEquals( "Unexpected number of available types", PolyType.availableTypes().size(), 16 );
+        Assert.assertEquals( "Unexpected number of available types", PolyType.availableTypes().size(), 17 );
 
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -166,7 +163,7 @@ public class JdbcDdlTest {
     @Test
     public void nullTest() throws SQLException {
         // Check if there are new types missing in this test
-        Assert.assertEquals( "Unexpected number of available types", PolyType.availableTypes().size(), 16 );
+        Assert.assertEquals( "Unexpected number of available types", PolyType.availableTypes().size(), 17 );
 
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

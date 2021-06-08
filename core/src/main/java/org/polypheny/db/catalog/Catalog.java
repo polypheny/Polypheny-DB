@@ -1231,7 +1231,13 @@ public abstract class Catalog {
         }
 
 
-        public static SchemaType getById( final int id ) {
+        public static SchemaType getDefault() {
+            //return (SchemaType) ConfigManager.getInstance().getConfig( "runtime/defaultSchemaModel" ).getEnum();
+            return SchemaType.RELATIONAL;
+        }
+
+
+        public static SchemaType getById( final int id ) throws UnknownSchemaTypeException {
             for ( SchemaType t : values() ) {
                 if ( t.id == id ) {
                     return t;

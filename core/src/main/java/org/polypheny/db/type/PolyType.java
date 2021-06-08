@@ -364,6 +364,12 @@ public enum PolyType {
             true,
             Types.BINARY,
             PolyTypeFamily.MULTIMEDIA
+    ),
+    JSON(
+            PrecScale.NO_NO | PrecScale.YES_NO,
+            true,
+            Types.VARCHAR,
+            PolyTypeFamily.CHARACTER
     );
 
 
@@ -387,7 +393,7 @@ public enum PolyType {
     // SqlTypeFamily.ANY
     public static final List<PolyType> ALL_TYPES =
             ImmutableList.of(
-                    BOOLEAN, INTEGER, VARCHAR, DATE, TIME, TIMESTAMP, NULL, DECIMAL, ANY, CHAR, BINARY, VARBINARY, FILE, IMAGE, VIDEO, SOUND,
+                    BOOLEAN, INTEGER, VARCHAR, JSON, DATE, TIME, TIMESTAMP, NULL, DECIMAL, ANY, CHAR, BINARY, VARBINARY, FILE, IMAGE, VIDEO, SOUND,
                     TINYINT, SMALLINT, BIGINT, REAL, DOUBLE, SYMBOL, INTERVAL_YEAR, INTERVAL_YEAR_MONTH, INTERVAL_MONTH, INTERVAL_DAY,
                     INTERVAL_DAY_HOUR, INTERVAL_DAY_MINUTE, INTERVAL_DAY_SECOND, INTERVAL_HOUR, INTERVAL_HOUR_MINUTE,
                     INTERVAL_HOUR_SECOND, INTERVAL_MINUTE, INTERVAL_MINUTE_SECOND, INTERVAL_SECOND, TIME_WITH_LOCAL_TIME_ZONE,
@@ -407,7 +413,7 @@ public enum PolyType {
 
     public static final List<PolyType> FRACTIONAL_TYPES = combine( APPROX_TYPES, ImmutableList.of( DECIMAL ) );
 
-    public static final List<PolyType> CHAR_TYPES = ImmutableList.of( CHAR, VARCHAR );
+    public static final List<PolyType> CHAR_TYPES = ImmutableList.of( CHAR, VARCHAR, JSON );
 
     public static final List<PolyType> STRING_TYPES = combine( CHAR_TYPES, BINARY_TYPES );
 
@@ -759,6 +765,7 @@ public enum PolyType {
                 return decimal;
 
             case CHAR:
+            case JSON:
             case VARCHAR:
                 if ( !sign ) {
                     return null; // this type does not have negative values
@@ -949,6 +956,7 @@ public enum PolyType {
     public int getMinPrecision() {
         switch ( this ) {
             case DECIMAL:
+            case JSON:
             case VARCHAR:
             case CHAR:
             case VARBINARY:
@@ -1128,6 +1136,7 @@ public enum PolyType {
             case BIGINT:
             case DECIMAL:
                 return SqlLiteral.createExactNumeric( o.toString(), pos );
+            case JSON:
             case VARCHAR:
             case CHAR:
                 return SqlLiteral.createCharString( (String) o, pos );
@@ -1169,7 +1178,7 @@ public enum PolyType {
 
 
     public static Set<PolyType> availableTypes() {
-        return ImmutableSet.of( BOOLEAN, TINYINT, SMALLINT, INTEGER, BIGINT, DECIMAL, REAL, DOUBLE, DATE, TIME, TIMESTAMP, VARCHAR, FILE, IMAGE, VIDEO, SOUND );
+        return ImmutableSet.of( BOOLEAN, TINYINT, SMALLINT, INTEGER, JSON, BIGINT, DECIMAL, REAL, DOUBLE, DATE, TIME, TIMESTAMP, VARCHAR, FILE, IMAGE, VIDEO, SOUND );
     }
 
 

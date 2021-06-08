@@ -67,6 +67,7 @@ import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.function.Functions;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.prepare.Prepare;
@@ -4001,6 +4002,11 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    protected RelDataType createTargetRowType( SqlValidatorTable table, SqlNodeList targetColumnList, boolean append ) {
+        return createTargetRowType( table, targetColumnList, append, false );
+    }
+
+
     /**
      * Derives a row-type for INSERT and UPDATE operations.
      *
@@ -4009,7 +4015,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @param append Whether to append fields to those in <code>baseRowType</code>
      * @return Rowtype
      */
-    protected RelDataType createTargetRowType( SqlValidatorTable table, SqlNodeList targetColumnList, boolean append ) {
+    protected RelDataType createTargetRowType( SqlValidatorTable table, SqlNodeList targetColumnList, boolean append, boolean allowDynamic ) {
         RelDataType baseRowType = table.getRowType();
         if ( targetColumnList == null ) {
             return baseRowType;
@@ -4031,11 +4037,16 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                             typeFactory,
                             id,
                             catalogReader,
-                            relOptTable );
+                            relOptTable,
+                            allowDynamic );
+
             if ( targetField == null ) {
+
                 throw newValidationError( id, RESOURCE.unknownTargetColumn( id.toString() ) );
+
             }
-            if ( !assignedFields.add( targetField.getIndex() ) ) {
+            // skipping this validation for document for now TODO DL: reevaluate
+            if ( !allowDynamic && !assignedFields.add( targetField.getIndex() ) ) {
                 throw newValidationError( id, RESOURCE.duplicateTargetColumn( targetField.getName() ) );
             }
             fields.add( targetField );
@@ -4059,8 +4070,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                         ? targetNamespace.getTable()
                         : relOptTable.unwrap( SqlValidatorTable.class );
 
+        boolean allowDynamic = false;
+        if ( insert.getSchemaType() == SchemaType.DOCUMENT ) {
+            allowDynamic = true;
+        }
+
         // INSERT has an optional column name list.  If present then reduce the rowtype to the columns specified.  If not present then the entire target rowtype is used.
-        final RelDataType targetRowType = createTargetRowType( table, insert.getTargetColumnList(), false );
+        final RelDataType targetRowType = createTargetRowType( table, insert.getTargetColumnList(), false, allowDynamic );
 
         final SqlNode source = insert.getSource();
         if ( source instanceof SqlSelect ) {

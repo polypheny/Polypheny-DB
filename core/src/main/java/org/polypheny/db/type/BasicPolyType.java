@@ -120,7 +120,13 @@ public class BasicPolyType extends AbstractPolyType {
         this.typeSystem = Objects.requireNonNull( typeSystem );
         this.precision = precision;
         this.scale = scale;
-        this.collation = collation;
+
+        if ( typeName == PolyType.JSON ) {
+            this.collation = SqlCollation.IMPLICIT;
+        } else {
+            this.collation = collation;
+        }
+
         this.wrappedCharset = wrappedCharset;
         computeDigest();
     }

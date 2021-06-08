@@ -59,8 +59,8 @@ public class SqlDdlNodes {
     /**
      * Creates a CREATE SCHEMA.
      */
-    public static SqlCreateSchema createSchema( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name ) {
-        return new SqlCreateSchema( pos, replace, ifNotExists, name, SchemaType.RELATIONAL );
+    public static SqlCreateSchema createSchema( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SchemaType schemaType ) {
+        return new SqlCreateSchema( pos, replace, ifNotExists, name, schemaType );
     }
 
 

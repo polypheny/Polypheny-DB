@@ -62,6 +62,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptSamplingParameters;
@@ -390,13 +391,19 @@ public class SqlToRelConverter {
         // Verify that conversion from SQL to relational algebra did not perturb any type information.
         // (We can't do this if the SQL statement is something like an INSERT which has no
         // validator type information associated with its result, hence the namespace check above.)
-        final List<RelDataTypeField> validatedFields = validator.getValidatedNodeType( query ).getFieldList();
+        List<RelDataTypeField> validatedFields = validator.getValidatedNodeType( query ).getFieldList(); // TODO DL readd final
         final RelDataType validatedRowType =
                 validator.getTypeFactory().createStructType(
                         Pair.right( validatedFields ),
                         SqlValidatorUtil.uniquify(
                                 Pair.left( validatedFields ),
                                 catalogReader.nameMatcher().isCaseSensitive() ) );
+        /*int diff = validatedFields.size() - result.getRowType().getFieldList().size();
+        if ( diff > 0 ) {
+            for ( int i = 0; i < diff; i++ ) {
+                validatedFields.remove( i + 1 );
+            }
+        }*/
 
         final List<RelDataTypeField> convertedFields = result.getRowType().getFieldList().subList( 0, validatedFields.size() );
         final RelDataType convertedRowType = validator.getTypeFactory().createStructType( convertedFields );
@@ -2973,16 +2980,30 @@ public class SqlToRelConverter {
         final RelOptTable targetTable = getTargetTable( call );
         final RelDataType targetRowType = RelOptTableImpl.realRowType( targetTable );
         final List<RelDataTypeField> targetFields = targetRowType.getFieldList();
-        final List<RexNode> sourceExps = new ArrayList<>( Collections.nCopies( targetFields.size(), null ) );
-        final List<String> fieldNames = new ArrayList<>( Collections.nCopies( targetFields.size(), null ) );
+        boolean isDocument = call.getSchemaType() == SchemaType.DOCUMENT;
+
+        List<RexNode> sourceExps = new ArrayList<>( Collections.nCopies( targetFields.size(), null ) );
+        List<String> fieldNames = new ArrayList<>( Collections.nCopies( targetFields.size(), null ) ); // TODO DL: reevaluate and make final again?
+        if ( isDocument ) {
+            int size = (int) (targetFields.size() + targetColumnNames.stream().filter( name -> !targetFields.stream().map( RelDataTypeField::getName ).collect( Collectors.toList() ).contains( name ) ).count());
+            sourceExps = new ArrayList<>( Collections.nCopies( size, null ) );
+            fieldNames = new ArrayList<>( Collections.nCopies( size, null ) );
+        }
 
         final InitializerExpressionFactory initializerFactory = getInitializerFactory( validator.getNamespace( call ).getTable() );
 
         // Walk the name list and place the associated value in the expression list according to the ordinal value returned from the table construct, leaving nulls in the list for columns
         // that are not referenced.
         final SqlNameMatcher nameMatcher = catalogReader.nameMatcher();
+        int dynamicCount = 0;
         for ( Pair<String, RexNode> p : Pair.zip( targetColumnNames, columnExprs ) ) {
             RelDataTypeField field = nameMatcher.field( targetRowType, p.left );
+
+            if ( field.isDynamic() ) {
+                field.setIndex( targetRowType.getFieldCount() + dynamicCount );
+                dynamicCount++;
+            }
+
             assert field != null : "column " + p.left + " not found";
             sourceExps.set( field.getIndex(), p.right );
         }
@@ -3021,12 +3042,16 @@ public class SqlToRelConverter {
         final List<String> targetFields = targetTable.getRowType().getFieldNames();
         for ( String targetColumnName : targetColumnNames ) {
             final int i = targetFields.indexOf( targetColumnName );
-            switch ( strategies.get( i ) ) {
-                case STORED:
-                case VIRTUAL:
-                    break;
-                default:
-                    nameToNodeMap.put( targetColumnName, rexBuilder.makeFieldAccess( sourceRef, j++ ) );
+            if ( i != -1 ) { // TODO DL: change
+                switch ( strategies.get( i ) ) {
+                    case STORED:
+                    case VIRTUAL:
+                        break;
+                    default:
+                        nameToNodeMap.put( targetColumnName, rexBuilder.makeFieldAccess( sourceRef, j++ ) );
+                }
+            } else {
+                nameToNodeMap.put( targetColumnName, rexBuilder.makeFieldAccess( sourceRef, j++ ) );
             }
         }
         return createBlackboard( null, nameToNodeMap, false );
@@ -3085,6 +3110,12 @@ public class SqlToRelConverter {
                 targetColumnNames.addAll( tableRowType.getFieldNames() );
             }
         } else {
+
+            boolean allowDynamic = false;
+            if ( call.getSchemaType() == SchemaType.DOCUMENT ) {
+                allowDynamic = true;
+            }
+
             for ( int i = 0; i < targetColumnList.size(); i++ ) {
                 SqlIdentifier id = (SqlIdentifier) targetColumnList.get( i );
                 RelDataTypeField field =
@@ -3093,8 +3124,10 @@ public class SqlToRelConverter {
                                 typeFactory,
                                 id,
                                 catalogReader,
-                                targetTable );
+                                targetTable,
+                                allowDynamic );
                 assert field != null : "column " + id.toString() + " not found";
+
                 targetColumnNames.add( field.getName() );
             }
         }
@@ -3106,16 +3139,20 @@ public class SqlToRelConverter {
         for ( String columnName : targetColumnNames ) {
             final int i = tableRowType.getFieldNames().indexOf( columnName );
             final RexNode expr;
-            switch ( strategies.get( i ) ) {
-                case STORED:
-                    final InitializerExpressionFactory f = Util.first( targetTable.unwrap( InitializerExpressionFactory.class ), NullInitializerExpressionFactory.INSTANCE );
-                    expr = f.newColumnDefaultValue( targetTable, i, bb );
-                    break;
-                case VIRTUAL:
-                    expr = null;
-                    break;
-                default:
-                    expr = bb.nameToNodeMap.get( columnName );
+            if ( i != -1 ) {
+                switch ( strategies.get( i ) ) {
+                    case STORED:
+                        final InitializerExpressionFactory f = Util.first( targetTable.unwrap( InitializerExpressionFactory.class ), NullInitializerExpressionFactory.INSTANCE );
+                        expr = f.newColumnDefaultValue( targetTable, i, bb );
+                        break;
+                    case VIRTUAL:
+                        expr = null;
+                        break;
+                    default:
+                        expr = bb.nameToNodeMap.get( columnName );
+                }
+            } else {
+                expr = bb.nameToNodeMap.get( columnName );
             }
             columnExprs.add( expr );
         }
@@ -3282,7 +3319,11 @@ public class SqlToRelConverter {
         RexNode e = e0.left;
         for ( String name : qualified.suffix() ) {
             if ( e == e0.left && e0.right != null ) {
-                int i = e0.right.get( name );
+                int i = 2; // TODO DL: remove
+                if ( e0.right.containsKey( name ) || !e0.right.containsKey( "_hidden" ) ) {
+                    i = e0.right.get( name );
+                }
+
                 e = rexBuilder.makeFieldAccess( e, i );
             } else {
                 final boolean caseSensitive = true; // name already fully-qualified

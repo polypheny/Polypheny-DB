@@ -597,7 +597,7 @@ public class CatalogImpl extends Catalog {
 
         long schemaId;
         if ( !schemaNames.containsKey( new Object[]{ databaseId, "public" } ) ) {
-            schemaId = addSchema( "public", databaseId, 1, SchemaType.RELATIONAL );
+            schemaId = addSchema( "public", databaseId, 1, SchemaType.getDefault() );
         } else {
             schemaId = getSchema( "APP", "public" ).id;
         }
@@ -1972,6 +1972,14 @@ public class CatalogImpl extends Catalog {
             throw new RuntimeException( "Invalid scale! Scale can not be larger than length." );
         }
 
+        // TODO DL: remove
+        Integer fixedLength = length;
+        Collation fixedCollation = collation;
+        if ( type == PolyType.JSON ) {
+            fixedLength = scale == null ? 300 : scale;
+            fixedCollation = Collation.CASE_INSENSITIVE;
+        }
+
         long id = columnIdBuilder.getAndIncrement();
         CatalogColumn column = new CatalogColumn(
                 id,
@@ -1982,12 +1990,12 @@ public class CatalogImpl extends Catalog {
                 position,
                 type,
                 collectionsType,
-                length,
+                fixedLength,
                 scale,
                 dimension,
                 cardinality,
                 nullable,
-                collation,
+                fixedCollation,
                 null );
 
         synchronized ( this ) {

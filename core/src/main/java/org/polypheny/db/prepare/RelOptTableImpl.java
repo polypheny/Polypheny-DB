@@ -44,6 +44,7 @@ import java.util.function.Function;
 import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.enumerable.EnumerableTableScan;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptSchema;
 import org.polypheny.db.plan.RelOptTable;
@@ -511,7 +512,7 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
 
 
         @Override
-        public SchemaPlus add( String name, Schema schema ) {
+        public SchemaPlus add( String name, Schema schema, SchemaType schemaType ) {
             throw new UnsupportedOperationException();
         }
 

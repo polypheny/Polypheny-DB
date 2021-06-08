@@ -195,6 +195,7 @@ public class HsqldbStore extends AbstractJdbcStore {
             case DECIMAL:
                 return "DECIMAL";
             case VARCHAR:
+            case JSON:
                 return "VARCHAR";
             case DATE:
                 return "DATE";

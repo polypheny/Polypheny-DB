@@ -92,6 +92,8 @@ public class HttpServer implements Runnable {
     private void crudRoutes( Service webuiServer, Crud crud ) {
         webuiServer.post( "/getSchemaTree", crud::getSchemaTree, gson::toJson );
 
+        webuiServer.get( "/getTypeSchemas", crud::getTypeSchemas, gson::toJson );
+
         webuiServer.post( "/insertRow", "multipart/form-data", crud::insertRow, gson::toJson );
 
         webuiServer.post( "/deleteRow", crud::deleteRow, gson::toJson );

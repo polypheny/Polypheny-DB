@@ -307,6 +307,7 @@ public abstract class SqlImplementor {
                     final RexNode o0b = ((RexCall) o0).getOperands().get( 0 );
                     switch ( o0b.getType().getPolyType() ) {
                         case CHAR:
+                        case JSON:
                         case VARCHAR:
                             return call.clone( call.getType(), ImmutableList.of( o0b, o1 ) );
                     }
@@ -315,6 +316,7 @@ public abstract class SqlImplementor {
                     final RexNode o1b = ((RexCall) o1).getOperands().get( 0 );
                     switch ( o1b.getType().getPolyType() ) {
                         case CHAR:
+                        case JSON:
                         case VARCHAR:
                             return call.clone( call.getType(), ImmutableList.of( o0, o1b ) );
                     }

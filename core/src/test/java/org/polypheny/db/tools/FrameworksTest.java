@@ -39,6 +39,7 @@ import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableTableScan;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
@@ -231,7 +232,7 @@ public class FrameworksTest {
     public void testFrameworksValidatorWithIdentifierExpansion() throws Exception {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "hr", new ReflectiveSchema( new HrSchema() ) );
+                .add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .defaultSchema( schema )
@@ -266,7 +267,7 @@ public class FrameworksTest {
     public void testSchemaPath() {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "hr", new ReflectiveSchema( new HrSchema() ) );
+                .add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .defaultSchema( schema )
@@ -302,7 +303,7 @@ public class FrameworksTest {
     public void testUpdate() throws Exception {
         Table table = new TableImpl();
         final SchemaPlus rootSchema = Frameworks.createRootSchema( true );
-        SchemaPlus schema = rootSchema.add( "x", new AbstractSchema() );
+        SchemaPlus schema = rootSchema.add( "x", new AbstractSchema(), SchemaType.RELATIONAL );
         schema.add( "MYTABLE", table );
         List<RelTraitDef> traitDefs = new ArrayList<>();
         traitDefs.add( ConventionTraitDef.INSTANCE );

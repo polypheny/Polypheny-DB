@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.util.background.BackgroundTask;
 
@@ -313,7 +314,12 @@ public enum RuntimeConfig {
             "Size (in Bytes) up to which media files are cached in-memory instead of creating a temporary file. Needs to be >= 0 and smaller than Integer.MAX_SIZE. Setting to zero disables caching of media files.",
             0,
             ConfigType.INTEGER,
-            "runtimExecutionGroup" );
+            "runtimExecutionGroup" ),
+
+    DEFAULT_SCHEMA_MODEL( "runtime/defaultSchemaModel",
+            "Define default schema model, which is used when none is provided.",
+            SchemaType.RELATIONAL,
+            ConfigType.ENUM );
 
 
     private final String key;

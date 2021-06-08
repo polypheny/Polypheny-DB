@@ -113,6 +113,10 @@ public class InformationServer implements InformationObserver {
             }
             return "";
         } );
+
+        http.post( "/testDockerInstance/:dockerId", ( req, res ) -> {
+            return true;
+        } );
     }
 
 

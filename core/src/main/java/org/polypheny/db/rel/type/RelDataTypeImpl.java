@@ -125,6 +125,11 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
             }
         }
 
+        // a document field kind of a awkward test TODO DL: evaluate
+        if ( fieldList.stream().anyMatch( field -> field.getName().equals( "_hidden" ) ) ) {
+            return new RelDataTypeFieldImpl( fieldName, 0, new BasicPolyType( RelDataTypeSystem.DEFAULT, PolyType.JSON, 300 ) ).buildDynamic();
+        }
+
         return null;
     }
 

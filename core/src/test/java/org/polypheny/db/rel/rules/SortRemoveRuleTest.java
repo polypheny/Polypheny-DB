@@ -45,6 +45,7 @@ import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.plan.ConventionTraitDef;
@@ -80,7 +81,7 @@ public final class SortRemoveRuleTest {
      */
     private RelNode transform( String sql, RuleSet prepareRules ) throws Exception {
         final SchemaPlus rootSchema = Frameworks.createRootSchema( true );
-        final SchemaPlus defSchema = rootSchema.add( "hr", new HrClusteredSchema() );
+        final SchemaPlus defSchema = rootSchema.add( "hr", new HrClusteredSchema(), SchemaType.RELATIONAL );
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( SqlParserConfig.DEFAULT )
                 .defaultSchema( defSchema )

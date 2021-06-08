@@ -27,6 +27,7 @@ import java.util.Arrays;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.AggregateCall;
@@ -96,7 +97,7 @@ public class RelWriterTest {
     public void testWriter() {
         String s =
                 Frameworks.withPlanner( ( cluster, relOptSchema, rootSchema ) -> {
-                    rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ) );
+                    rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
                     LogicalTableScan scan =
                             LogicalTableScan.create( cluster,
                                     relOptSchema.getTableForMember( Arrays.asList( "hr", "emps" ) ) );
@@ -129,7 +130,7 @@ public class RelWriterTest {
     public void testReader() {
         String s =
                 Frameworks.withPlanner( ( cluster, relOptSchema, rootSchema ) -> {
-                    rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ) );
+                    rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
                     final RelJsonReader reader = new RelJsonReader( cluster, relOptSchema, rootSchema );
                     RelNode node;
                     try {

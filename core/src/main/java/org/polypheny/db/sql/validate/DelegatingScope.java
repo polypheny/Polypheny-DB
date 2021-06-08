@@ -45,6 +45,8 @@ import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.rel.type.DynamicRecordType;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rel.type.RelDataTypeFieldImpl;
+import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.rel.type.StructKind;
 import org.polypheny.db.schema.CustomColumnResolvingTable;
 import org.polypheny.db.schema.Table;
@@ -55,6 +57,8 @@ import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlSelect;
 import org.polypheny.db.sql.SqlWindow;
 import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.type.BasicPolyType;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
@@ -461,7 +465,13 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                     if ( step.i < 0 ) {
                         throw validator.newValidationError( identifier, Static.RESOURCE.columnNotFound( name ) );
                     }
-                    final RelDataTypeField field0 = step.rowType.getFieldList().get( step.i );
+                    RelDataTypeField field0 = step.rowType.getFieldList().get( step.i ); // TODO DL: make final again
+
+                    // need to correct here cause of index
+                    if ( field0.getName().equals( "_hidden" ) && !name.equals( field0.getName() ) ) {
+                        field0 = new RelDataTypeFieldImpl( name, 0, new BasicPolyType( RelDataTypeSystem.DEFAULT, PolyType.JSON, 300 ) );
+                    }
+
                     final String fieldName = field0.getName();
                     switch ( step.kind ) {
                         case PEEK_FIELDS:

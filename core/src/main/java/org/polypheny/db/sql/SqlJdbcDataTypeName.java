@@ -78,7 +78,8 @@ public enum SqlJdbcDataTypeName {
     SQL_INTERVAL_HOUR_TO_SECOND( TimeUnitRange.HOUR_TO_SECOND ),
     SQL_INTERVAL_MINUTE( TimeUnitRange.MINUTE ),
     SQL_INTERVAL_MINUTE_TO_SECOND( TimeUnitRange.MINUTE_TO_SECOND ),
-    SQL_INTERVAL_SECOND( TimeUnitRange.SECOND );
+    SQL_INTERVAL_SECOND( TimeUnitRange.SECOND ),
+    SQL_JSON( PolyType.JSON );
 
     private final TimeUnitRange range;
     private final PolyType typeName;

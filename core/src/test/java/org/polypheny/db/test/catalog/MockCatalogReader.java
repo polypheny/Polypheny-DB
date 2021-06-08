@@ -32,6 +32,7 @@ import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.jdbc.PolyphenyDbPrepare.AnalyzeViewResult;
 import org.polypheny.db.plan.RelOptSchema;
 import org.polypheny.db.plan.RelOptTable;
@@ -206,12 +207,12 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
     protected void registerSchema( MockSchema schema ) {
-        rootSchema.add( schema.name, new AbstractSchema() );
+        rootSchema.add( schema.name, new AbstractSchema(), SchemaType.RELATIONAL );
     }
 
 
     private void registerNestedSchema( MockSchema parentSchema, MockSchema schema ) {
-        rootSchema.getSubSchema( parentSchema.getName(), true ).add( schema.name, new AbstractSchema() );
+        rootSchema.getSubSchema( parentSchema.getName(), true ).add( schema.name, new AbstractSchema(), SchemaType.RELATIONAL );
     }
 
 

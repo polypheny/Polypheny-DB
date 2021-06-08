@@ -61,6 +61,7 @@ import org.polypheny.db.adapter.jdbc.JdbcConvention;
 import org.polypheny.db.adapter.jdbc.JdbcImplementor;
 import org.polypheny.db.adapter.jdbc.JdbcRel;
 import org.polypheny.db.adapter.jdbc.JdbcRules;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.rel.RelCollationTraitDef;
@@ -225,7 +226,7 @@ public class PlannerTest {
     public void testValidateUserDefinedAggregate() throws Exception {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "hr", new ReflectiveSchema( new HrSchema() ) );
+                .add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
 
         final SqlStdOperatorTable stdOpTab = SqlStdOperatorTable.instance();
         SqlOperatorTable opTab = ChainedSqlOperatorTable.of( stdOpTab, new ListSqlOperatorTable( ImmutableList.of( new MyCountAggFunction() ) ) );
@@ -279,7 +280,7 @@ public class PlannerTest {
     private Planner getPlanner( List<RelTraitDef> traitDefs, SqlParserConfig parserConfig, Program... programs ) {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "hr", new ReflectiveSchema( new HrSchema() ) );
+                .add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
@@ -1012,7 +1013,7 @@ public class PlannerTest {
      * Checks that a query returns a particular plan, using a planner with MultiJoinOptimizeBushyRule enabled.
      */
     private void checkBushy( String sql, String expected ) throws Exception {
-        final SchemaPlus schema = Frameworks.createRootSchema( false ).add( "foodmart", new ReflectiveSchema( new FoodmartSchema() ) );
+        final SchemaPlus schema = Frameworks.createRootSchema( false ).add( "foodmart", new ReflectiveSchema( new FoodmartSchema() ), SchemaType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( SqlParserConfig.DEFAULT )
@@ -1141,7 +1142,7 @@ public class PlannerTest {
 
 
     public String checkTpchQuery( String tpchTestQuery ) throws Exception {
-        final SchemaPlus schema = Frameworks.createRootSchema( false ).add( "tpch", new ReflectiveSchema( new TpchSchema() ) );
+        final SchemaPlus schema = Frameworks.createRootSchema( false ).add( "tpch", new ReflectiveSchema( new TpchSchema() ), SchemaType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( SqlParser.configBuilder().setLex( Lex.MYSQL ).build() )
@@ -1200,7 +1201,7 @@ public class PlannerTest {
     public void testOrderByNonSelectColumn() throws Exception {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "tpch", new ReflectiveSchema( new TpchSchema() ) );
+                .add( "tpch", new ReflectiveSchema( new TpchSchema() ), SchemaType.RELATIONAL );
 
         String query = "select t.psPartkey from \n"
                 + "(select ps.psPartkey from `tpch`.`partsupp` ps \n"
@@ -1283,7 +1284,7 @@ public class PlannerTest {
     private void checkView( String sql, Matcher<String> matcher ) throws SqlParseException, ValidationException, RelConversionException {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "hr", new ReflectiveSchema( new HrSchema() ) );
+                .add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .defaultSchema( schema )

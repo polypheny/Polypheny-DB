@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 import java.util.Collection;
 import java.util.List;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.rel.type.RelProtoDataType;
 import org.polypheny.db.util.NameMap;
 import org.polypheny.db.util.NameMultimap;
@@ -38,11 +39,12 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
      *
      * Use {@link AbstractPolyphenyDbSchema#createRootSchema(boolean)} or {@link #add(String, Schema)}.
      */
-    SimplePolyphenyDbSchema( AbstractPolyphenyDbSchema parent, Schema schema, String name ) {
+    SimplePolyphenyDbSchema( AbstractPolyphenyDbSchema parent, Schema schema, String name, SchemaType schemaType ) {
         this(
                 parent,
                 schema,
                 name,
+                schemaType,
                 null,
                 null,
                 null,
@@ -57,6 +59,7 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
             AbstractPolyphenyDbSchema parent,
             Schema schema,
             String name,
+            SchemaType schemaType,
             NameMap<PolyphenyDbSchema> subSchemaMap,
             NameMap<TableEntry> tableMap,
             NameMap<TypeEntry> typeMap,
@@ -64,7 +67,7 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
             NameSet functionNames,
             NameMap<FunctionEntry> nullaryFunctionMap,
             List<? extends List<String>> path ) {
-        super( parent, schema, name, subSchemaMap, tableMap, typeMap, functionMap, functionNames, nullaryFunctionMap, path );
+        super( parent, schema, name, schemaType, subSchemaMap, tableMap, typeMap, functionMap, functionNames, nullaryFunctionMap, path );
     }
 
 
@@ -75,8 +78,8 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
 
 
     @Override
-    public PolyphenyDbSchema add( String name, Schema schema ) {
-        final PolyphenyDbSchema polyphenyDbSchema = new SimplePolyphenyDbSchema( this, schema, name );
+    public PolyphenyDbSchema add( String name, Schema schema, SchemaType schemaType ) {
+        final PolyphenyDbSchema polyphenyDbSchema = new SimplePolyphenyDbSchema( this, schema, name, schemaType );
         subSchemaMap.put( name, polyphenyDbSchema );
         return polyphenyDbSchema;
     }
@@ -87,7 +90,7 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
         // Check implicit schemas.
         Schema s = schema.getSubSchema( schemaName );
         if ( s != null ) {
-            return new SimplePolyphenyDbSchema( this, s, schemaName );
+            return new SimplePolyphenyDbSchema( this, s, schemaName, schemaType );
         }
         return null;
     }
@@ -125,7 +128,7 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
             }
             Schema s = schema.getSubSchema( schemaName );
             if ( s != null ) {
-                PolyphenyDbSchema polyphenyDbSchema = new SimplePolyphenyDbSchema( this, s, schemaName );
+                PolyphenyDbSchema polyphenyDbSchema = new SimplePolyphenyDbSchema( this, s, schemaName, schemaType );
                 builder.put( schemaName, polyphenyDbSchema );
             }
         }
@@ -199,6 +202,7 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
                 parent,
                 schema.snapshot( version ),
                 name,
+                schemaType,
                 null,
                 tableMap,
                 typeMap,

@@ -281,6 +281,7 @@ data: {
             "SQL_DECIMAL"
             "SQL_DOUBLE"
             "SQL_FLOAT"
+            "SQL_JSON"
             "SQL_INTEGER"
             "SQL_INTERVAL_DAY"
             "SQL_INTERVAL_DAY_TO_HOUR"

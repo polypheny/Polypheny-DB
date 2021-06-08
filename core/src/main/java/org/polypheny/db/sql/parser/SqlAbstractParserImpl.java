@@ -185,6 +185,7 @@ public abstract class SqlAbstractParserImpl {
                     "IS",
                     "ISOLATION",
                     "JOIN",
+                    "JSON",
                     "KEY",
                     "LANGUAGE",
                     "LAST",

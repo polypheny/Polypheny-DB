@@ -335,6 +335,7 @@ public class RelMdSize implements MetadataHandler<BuiltInMetadata.Size> {
                 return Math.min( (double) type.getPrecision(), 100d );
             case CHAR:
                 return (double) type.getPrecision() * BYTES_PER_CHARACTER;
+            case JSON:
             case VARCHAR:
                 // Even in large (say VARCHAR(2000)) columns most strings are small
                 return Math.min( (double) type.getPrecision() * BYTES_PER_CHARACTER, 100d );
@@ -394,6 +395,7 @@ public class RelMdSize implements MetadataHandler<BuiltInMetadata.Size> {
             case VARBINARY:
                 return ((ByteString) value).length();
             case CHAR:
+            case JSON:
             case VARCHAR:
                 return ((NlsString) value).getValue().length() * BYTES_PER_CHARACTER;
             default:

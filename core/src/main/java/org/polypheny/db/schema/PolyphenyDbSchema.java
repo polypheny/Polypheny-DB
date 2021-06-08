@@ -27,6 +27,7 @@ import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.rel.type.RelProtoDataType;
 import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.util.BuiltInMethod;
@@ -57,7 +58,7 @@ public interface PolyphenyDbSchema {
     /**
      * Adds a child schema of this schema.
      */
-    PolyphenyDbSchema add( String name, Schema schema );
+    PolyphenyDbSchema add( String name, Schema schema, SchemaType type );
 
     TableEntry getTable( String tableName, boolean caseSensitive );
 

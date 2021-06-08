@@ -154,7 +154,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
     SqlString generateSql() {
         List<SqlNode> pcnl = Expressions.list();
         for ( String str : physicalColumnNames ) {
-            pcnl.add( new SqlIdentifier( Arrays.asList( physicalSchemaName, physicalTableName, str ), SqlParserPos.ZERO ) );
+            pcnl.add( new SqlIdentifier( Arrays.asList( physicalTableName, str ), SqlParserPos.ZERO ) );
         }
         //final SqlNodeList selectList = new SqlNodeList( Collections.singletonList( SqlIdentifier.star( SqlParserPos.ZERO ) ), SqlParserPos.ZERO );
         final SqlNodeList selectList = new SqlNodeList( pcnl, SqlParserPos.ZERO );
@@ -185,6 +185,11 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
     public SqlIdentifier physicalColumnName( String logicalColumnName ) {
         String physicalName = physicalColumnNames.get( logicalColumnNames.indexOf( logicalColumnName ) );
         return new SqlIdentifier( Arrays.asList( physicalName ), SqlParserPos.ZERO );
+    }
+
+
+    public boolean hasPhysicalColumnName( String logicalColumnName ) {
+        return logicalColumnNames.contains( logicalColumnName );
     }
 
 
