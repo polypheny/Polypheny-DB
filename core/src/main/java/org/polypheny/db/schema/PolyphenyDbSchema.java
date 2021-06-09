@@ -33,7 +33,7 @@ import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.util.BuiltInMethod;
 
 
-public interface PolyphenyDbSchema extends Serializable {
+public interface PolyphenyDbSchema {
 
     static PolyphenyDbSchema from( SchemaPlus plus ) {
         return plus.polyphenyDbSchema();

@@ -37,7 +37,6 @@ package org.polypheny.db.prepare;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -92,7 +91,7 @@ import org.polypheny.db.util.Util;
  * Implementation of {@link org.polypheny.db.prepare.Prepare.CatalogReader} and also {@link SqlOperatorTable} based on
  * tables and functions defined schemas.
  */
-public class PolyphenyDbCatalogReader implements Prepare.CatalogReader, Serializable {
+public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
     protected final PolyphenyDbSchema rootSchema;
     protected final RelDataTypeFactory typeFactory;

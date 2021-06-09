@@ -92,11 +92,11 @@ import org.polypheny.db.util.Util;
  */
 public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
 
-    private final RelOptSchema schema;
+    private final transient RelOptSchema schema;
     private final RelDataType rowType;
     @Getter
     private final Table table;
-    private final Function<Class, Expression> expressionFunction;
+    private final transient Function<Class, Expression> expressionFunction;
     private final ImmutableList<String> names;
 
     /**
