@@ -77,5 +77,10 @@ public class MonitoringServiceImpl implements MonitoringService {
         return this.repository.getDataPointsAfter( dataPointClass, timestamp );
     }
 
+    @Override
+    public List<MonitoringDataPoint> getRoutingDataPoints( @NonNull String queryClassString ){
+        return this.repository.getRoutingDataPoints( queryClassString );
+    }
+
     // endregion
 }

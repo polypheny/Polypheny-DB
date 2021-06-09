@@ -62,5 +62,8 @@ public interface MonitoringService {
      */
     <T extends MonitoringDataPoint> List<T> getDataPointsAfter( Class<T> dataPointClass, Timestamp timestamp );
 
+
+    <T extends MonitoringDataPoint> List<T> getRoutingDataPoints( String queryClassString );
+
 }
 

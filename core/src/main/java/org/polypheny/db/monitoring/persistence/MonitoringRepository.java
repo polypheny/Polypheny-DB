@@ -18,6 +18,7 @@ package org.polypheny.db.monitoring.persistence;
 
 import java.sql.Timestamp;
 import java.util.List;
+import lombok.NonNull;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 
 /**
@@ -63,5 +64,7 @@ public interface MonitoringRepository {
      * @return
      */
     <T extends MonitoringDataPoint> List<T> getDataPointsAfter( Class<T> dataPointClass, Timestamp timestamp );
+
+    List<MonitoringDataPoint> getRoutingDataPoints( @NonNull String queryClassString );
 
 }

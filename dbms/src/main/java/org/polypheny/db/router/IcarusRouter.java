@@ -27,20 +27,16 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Queue;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.stat.StatUtils;
 import org.polypheny.db.adapter.AdapterManager;
@@ -58,7 +54,10 @@ import org.polypheny.db.information.InformationHtml;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
-import org.polypheny.db.information.InformationText;
+import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
+import org.polypheny.db.monitoring.events.MonitoringDataPoint;
+import org.polypheny.db.monitoring.events.RoutingEvent;
+import org.polypheny.db.monitoring.events.metrics.RoutingDataPoint;
 import org.polypheny.db.processing.QueryParameterizer;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
@@ -127,8 +126,21 @@ public class IcarusRouter extends AbstractRouter {
 
     private IcarusRouter() {
         // Intentionally left empty
+        //MonitoringServiceProvider.getInstance()
     }
 
+    private Map<Set<Integer>, List<Long>> getExecutionTimes(String queryClassString){
+        return  MonitoringServiceProvider.getInstance().getRoutingDataPoints( queryClassString )
+                .stream()
+                .map( elem -> (RoutingDataPoint)elem )
+                .filter( elem -> elem.getQueryClassString() == queryClassString )
+                .collect(
+                        Collectors.groupingBy(
+                                elem -> elem.getAdapterId() ,
+                                Collectors.mapping(elem -> elem.getNanoTime(), Collectors.toList())
+                        )
+                );
+    }
 
     @Override
     protected void analyze( Statement statement, RelRoot logicalRoot ) {
@@ -159,7 +171,12 @@ public class IcarusRouter extends AbstractRouter {
                     statement.getTransaction().getQueryAnalyzer().addGroup( group );
                     InformationTable table = new InformationTable( group, ImmutableList.copyOf( routingTable.knownAdapters.values() ) );
                     Map<Set<Integer>, Integer> entry = routingTable.get( queryClassString );
-                    Map<Set<Integer>, CircularFifoQueue<Double>> timesEntry = routingTable.times.get( queryClassString );
+
+                    // TODO: get from Monitoring
+
+                    Map<Set<Integer>, List<Long>> timesEntry = this.getExecutionTimes( queryClassString );
+
+
                     List<String> row1 = new LinkedList<>();
                     List<String> row2 = new LinkedList<>();
                     for ( Entry<Set<Integer>, Integer> e : entry.entrySet() ) {
@@ -298,30 +315,6 @@ public class IcarusRouter extends AbstractRouter {
         throw new RuntimeException( "The previously selected store does not contain a placement of this table. Store ID: " + selectedAdapterIds );
      }
 
-    protected List<CatalogColumnPlacement> selectSimplePlacement( RelNode node, CatalogTable table ) {
-        // Find the adapter with the most column placements
-        int adapterIdWithMostPlacements = -1;
-        int numOfPlacements = 0;
-        for ( Entry<Integer, ImmutableList<Long>> entry : table.placementsByAdapter.entrySet() ) {
-            if ( entry.getValue().size() > numOfPlacements ) {
-                adapterIdWithMostPlacements = entry.getKey();
-                numOfPlacements = entry.getValue().size();
-            }
-        }
-
-        // Take the adapter with most placements as base and add missing column placements
-        List<CatalogColumnPlacement> placementList = new LinkedList<>();
-        for ( long cid : table.columnIds ) {
-            if ( table.placementsByAdapter.get( adapterIdWithMostPlacements ).contains( cid ) ) {
-                placementList.add( Catalog.getInstance().getColumnPlacement( adapterIdWithMostPlacements, cid ) );
-            } else {
-                placementList.add( Catalog.getInstance().getColumnPlacements( cid ).get( 0 ) );
-            }
-        }
-
-        return placementList;
-    }
-
     public List<HashSet<Integer>> updateKnownAdapters( CatalogTable table ) {
 
         // get adapter full placements
@@ -409,11 +402,9 @@ public class IcarusRouter extends AbstractRouter {
         public static final int NO_PLACEMENT = -2;
 
         private final Map<String, Map<Set<Integer>, Integer>> routingTable = new ConcurrentHashMap<>();  // QueryClassStr -> (Adapter -> Percentage)
-        private final Map<String, Map<Set<Integer>, CircularFifoQueue<Double>>> times = new ConcurrentHashMap<>();  // QueryClassStr -> (Adapter -> Time)
-
         private final Map<Set<Integer>, String> knownAdapters = new HashMap<>(); // Adapter Id -> Adapter Name
+        //private final Map<String, Map<Set<Integer>, CircularFifoQueue<Double>>> times = new ConcurrentHashMap<>();  // QueryClassStr -> (Adapter -> Time)
 
-        private final Queue<ExecutionTime> processingQueue = new ConcurrentLinkedQueue<>();
         private final Lock processingQueueLock = new ReentrantLock();
 
 
@@ -430,13 +421,7 @@ public class IcarusRouter extends AbstractRouter {
                     routingTableGroup,
                     Arrays.asList( "Query Class" ) );
             im.registerInformation( routingTableElement );
-            // Processing queue size
-            InformationGroup processingQueueGroup = new InformationGroup( page, "Processing Queue" );
-            im.addGroup( processingQueueGroup );
-            InformationText processingQueueSize = new InformationText(
-                    processingQueueGroup,
-                    "Processing queue size: " + processingQueue.size() );
-            im.registerInformation( processingQueueSize );
+
             // update
             page.setRefreshFunction( () -> {
                 // Update labels
@@ -462,8 +447,6 @@ public class IcarusRouter extends AbstractRouter {
                     }
                     routingTableElement.addRow( row );
                 } );
-                // Update processing queue size
-                processingQueueSize.setText( "Processing queue size: " + processingQueue.size() );
             } );
 
             // Background Task
@@ -485,26 +468,44 @@ public class IcarusRouter extends AbstractRouter {
             return routingTable.get( queryClassStr );
         }
 
+        private Map<Set<Integer>, List<Long>> getExecutionTimes(String queryClassString){
+            val points = MonitoringServiceProvider.getInstance().getRoutingDataPoints( queryClassString );
 
-        private void process() {
-            processingQueueLock.lock();
-            // Add to times map
-            while ( processingQueue.size() > 0 ) {
-                ExecutionTime executionTime = processingQueue.poll();
-                Map<Set<Integer>, CircularFifoQueue<Double>> row = times.get( executionTime.queryClassString );
-                if ( row.containsKey( executionTime.adapterId ) ) {
-                    row.get( executionTime.adapterId ).offer( (double) executionTime.nanoTime );
-                } else {
-                    CircularFifoQueue<Double> queue = new CircularFifoQueue<>( WINDOW_SIZE.getInt() );
-                    queue.offer( (double) executionTime.nanoTime );
-                    row.put( executionTime.adapterId, queue );
+            val mapped = points.stream()
+                    .map( elem -> (RoutingDataPoint)elem ).collect( Collectors.toList());
+
+            val filtered = mapped.stream()
+                .filter( elem -> elem.getQueryClassString().equals( queryClassString ) )
+                .collect( Collectors.toList());
+
+            for ( MonitoringDataPoint p : points) {
+                if(((RoutingDataPoint)p).getQueryClassString().equals( queryClassString )){
+                    System.out.println("blub");
                 }
             }
 
+            val group =   filtered.stream()
+                    .collect(
+                            Collectors.groupingBy(
+                                    elem -> elem.getAdapterId() ,
+                                    Collectors.mapping(elem -> elem.getNanoTime(), Collectors.toList())
+                            )
+                    );
+
+            return group;
+        }
+
+
+        private void process() {
+            processingQueueLock.lock();
+
             // Update routing table
+            // get values from monitoring
             for ( String queryClass : routingTable.keySet() ) {
                 Map<Set<Integer>, Double> meanTimeRow = new HashMap<>();
-                for ( Map.Entry<Set<Integer>, CircularFifoQueue<Double>> entry : times.get( queryClass ).entrySet() ) {
+
+                // TODO: get from Monitoring
+                for ( Map.Entry<Set<Integer>, List<Long>> entry : this.getExecutionTimes( queryClass ).entrySet() ) {
                     double mean = StatUtils.mean(
                             ArrayUtils.toPrimitive( entry.getValue().toArray( new Double[0] ) ),
                             0,
@@ -532,7 +533,6 @@ public class IcarusRouter extends AbstractRouter {
             processingQueueLock.unlock();
         }
 
-
         // called by execution monitor to inform about execution time
         @Override
         public void executionTime( String reference, long nanoTime ) {
@@ -549,7 +549,7 @@ public class IcarusRouter extends AbstractRouter {
                     .collect( Collectors.toSet());
 
             String queryClassString = reference.substring( adapterIdStr.length() + 3 );
-            processingQueue.add( new ExecutionTime( queryClassString, adapters, nanoTime ) );
+            MonitoringServiceProvider.getInstance().monitorEvent( new RoutingEvent(queryClassString, adapters, nanoTime) );
         }
 
 
@@ -558,9 +558,6 @@ public class IcarusRouter extends AbstractRouter {
             processingQueueLock.lock();
             for ( CatalogColumnPlacement placement : placements ) {
                 knownAdapters.remove( placement.adapterId );
-                for ( Map<Set<Integer>, CircularFifoQueue<Double>> entry : times.values() ) {
-                    entry.remove( placement.adapterId );
-                }
                 for ( Map<Set<Integer>, Integer> entry : routingTable.values() ) {
                     entry.remove( placement.adapterId );
                 }
@@ -580,7 +577,6 @@ public class IcarusRouter extends AbstractRouter {
             row.replace( adapters, MISSING_VALUE );
 
             routingTable.put( queryClassString, row );
-            times.put( queryClassString, new HashMap<>() );
         }
 
 
@@ -681,16 +677,6 @@ public class IcarusRouter extends AbstractRouter {
             return sortedEntries;
         }
     }
-
-
-    @AllArgsConstructor
-    private static class ExecutionTime {
-
-        private final String queryClassString;
-        private final Set<Integer> adapterId;
-        private final long nanoTime;
-    }
-
 
     public static class IcarusRouterFactory extends RouterFactory {
 

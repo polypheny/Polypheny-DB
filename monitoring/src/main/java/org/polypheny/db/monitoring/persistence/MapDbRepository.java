@@ -32,6 +32,7 @@ import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.Serializer;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
+import org.polypheny.db.monitoring.events.metrics.RoutingDataPoint;
 import org.polypheny.db.util.FileSystemManager;
 
 @Slf4j
@@ -130,6 +131,20 @@ public class MapDbRepository implements MonitoringRepository {
                     .map( monitoringPersistentData -> (T) monitoringPersistentData )
                     .sorted( Comparator.comparing( MonitoringDataPoint::timestamp ).reversed() )
                     .filter( elem -> elem.timestamp().after( timestamp ) )
+                    .collect( Collectors.toList() );
+        }
+
+        return Collections.emptyList();
+    }
+
+
+    @Override
+    public  List<MonitoringDataPoint> getRoutingDataPoints( @NonNull String queryClassString ) {
+        val table = this.data.get( RoutingDataPoint.class );
+        if ( table != null ) {
+            return table.values()
+                    .stream()
+                    .map( monitoringPersistentData ->  (RoutingDataPoint) monitoringPersistentData )
                     .collect( Collectors.toList() );
         }
 
