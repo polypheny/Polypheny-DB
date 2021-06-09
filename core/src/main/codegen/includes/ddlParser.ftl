@@ -29,10 +29,10 @@ boolean OrReplace() :
 {
 }
 {
-<OR> <REPLACE> { return true; }
-            |
-            { return false; }
-            }
+    <OR> <REPLACE> { return true; }
+    |
+    { return false; }
+}
 
 boolean IfExistsOpt() :
 {
