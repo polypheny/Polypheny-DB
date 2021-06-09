@@ -368,7 +368,7 @@ public class ComplexViewTest {
     };
 
     private final static Object[] q14_TEST_DATA = new Object[]{
-            new BigDecimal( "100.00" )
+            new BigDecimal( "100.00000000" )
     };
 
     private final static Object[] q15_TEST_DATA = new Object[]{
@@ -1660,6 +1660,7 @@ public class ComplexViewTest {
                                     + "and l_shipdate < date '2020-07-03' + interval '1' month" ),
                             ImmutableList.of( q14_TEST_DATA )
                     );
+
 
                     statement.executeUpdate( "CREATE VIEW q14_VIEW AS "
                             + "select "
