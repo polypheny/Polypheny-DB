@@ -38,6 +38,7 @@ import org.polypheny.db.adapter.cottontail.enumberable.CottontailInsertEnumerabl
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailQueryEnumerable;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailUpdateEnumerable;
 import org.polypheny.db.adapter.cottontail.rel.CottontailRel.CottontailImplementContext;
+import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.adapter.cottontail.util.Linq4JFixer;
 import org.polypheny.db.adapter.enumerable.EnumerableRel;
 import org.polypheny.db.adapter.enumerable.EnumerableRelImplementor;
@@ -62,20 +63,21 @@ import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.BatchedQueryMessage;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Entity;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.From;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnName;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Knn;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Projection;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Projection.ProjectionElement;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Query;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryResponseMessage;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Schema;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
 
 
 public class CottontailToEnumerableConverter extends ConverterImpl implements EnumerableRel {
 
     public static final List<PolyType> SUPPORTED_ARRAY_COMPONENT_TYPES = ImmutableList.of(
+            PolyType.TINYINT,
+            PolyType.SMALLINT,
             PolyType.INTEGER,
             PolyType.DOUBLE,
             PolyType.FLOAT,
@@ -135,8 +137,9 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                 BlockBuilder builder = new BlockBuilder();
 
                 final ParameterExpression resultMap_ = Expressions.parameter(
-                        TypeUtils.parameterize( Map.class, String.class, CottontailGrpc.Data.class ),
-                        builder.newName( "resultDataMap" ) );
+                        TypeUtils.parameterize( Map.class, String.class, CottontailGrpc.Literal.class ),
+                        builder.newName( "resultDataMap" )
+                );
 
                 if ( fieldCount == 1 ) {
                     final ParameterExpression value_ = Expressions.parameter( Object.class, builder.newName( "value" ) );
@@ -187,10 +190,11 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
 
                 if ( cottontailContext.valuesHashMapList != null ) {
                     enumerable = list.append( "enumerable",
-                            Expressions.call( Types.lookupMethod( CottontailInsertEnumerable.class, "fromValues", String.class, String.class, List.class, CottontailWrapper.class ),
+                            Expressions.call( CottontailInsertEnumerable.CREATE_INSERT_VALUES,
                                     Expressions.constant( cottontailContext.tableName ),
                                     Expressions.constant( cottontailContext.schemaName ),
                                     cottontailContext.valuesHashMapList,
+                                    DataContext.ROOT,
                                     Expressions.call( Schemas.unwrap( convention.expression, CottontailSchema.class ), "getWrapper" )
                             )
                     );
@@ -356,6 +360,10 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         switch ( polyType ) {
             case BOOLEAN:
                 return Types.lookupMethod( Linq4JFixer.class, "getBooleanData", Object.class );
+            case TINYINT:
+                return Types.lookupMethod( Linq4JFixer.class, "getTinyIntData", Object.class );
+            case SMALLINT:
+                return Types.lookupMethod( Linq4JFixer.class, "getSmallIntData", Object.class );
             case INTEGER:
                 return Types.lookupMethod( Linq4JFixer.class, "getIntData", Object.class );
             case BIGINT:
@@ -385,10 +393,6 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                 return Types.lookupMethod( Linq4JFixer.class, "getDateData", Object.class );
             case TIMESTAMP:
                 return Types.lookupMethod( Linq4JFixer.class, "getTimestampData", Object.class );
-            case TINYINT:
-                return Types.lookupMethod( Linq4JFixer.class, "getTinyIntData", Object.class );
-            case SMALLINT:
-                return Types.lookupMethod( Linq4JFixer.class, "getSmallIntData", Object.class );
             case ANY:
             default:
                 throw new AssertionError( "No primitive access method for type: " + polyType );
@@ -400,6 +404,10 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         switch ( polyType ) {
             case BOOLEAN:
                 return Types.lookupMethod( Linq4JFixer.class, "getBoolVector", Object.class );
+            case SMALLINT:
+                return Types.lookupMethod( Linq4JFixer.class, "getSmallIntVector", Object.class );
+            case TINYINT:
+                return Types.lookupMethod( Linq4JFixer.class, "getTinyIntVector", Object.class );
             case INTEGER:
                 return Types.lookupMethod( Linq4JFixer.class, "getIntVector", Object.class );
             case FLOAT:
@@ -436,26 +444,26 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         if ( dataContext.getParameterValues().size() == 0 ) {
             Query query = Query.newBuilder()
 //                    .setFrom( From.newBuilder().setEntity( Entity.newBuilder().setName( "tab4" ).setSchema( Schema.newBuilder().setName( "cottontail" ) ) ) )
-                    .setFrom( From.newBuilder().setEntity( Entity.newBuilder().setName( from ).setSchema( Schema.newBuilder().setName( schema ).build() ).build() ).build() )
+                    .setFrom( CottontailTypeUtil.fromFromTableAndSchema( from, schema ) )
 //                    .setKnn( (Knn) knn )
                     .setLimit( 6 )
 //                    .setSkip( offset )
-                    .setProjection( Projection.newBuilder().putAttributes( "*", "" ) )
+                    .setProjection( Projection.newBuilder().addColumns( ProjectionElement.newBuilder().setColumn( ColumnName.newBuilder().setName( "*" ) ) ) )
 //                    .setProjection( Projection.newBuilder().putAllAttributes( (Map<String, String>) ghettoProjection ) )
 //                    .setWhere( (Where) whereBuilder.apply( parameterValues ) )
                     .build();
-            queryResponseIterator = wrapper.query(
-                    QueryMessage.newBuilder().setQuery( query ).build() );
+
+            queryResponseIterator = wrapper.query( QueryMessage.newBuilder().setQuery( query ).build() );
 
         } else if ( dataContext.getParameterValues().size() == 1 ) {
             Map parameterValues = dataContext.getParameterValues().get( 0 );
             // Single query case!
-            Query query = Query.newBuilder()
-                    .setFrom( From.newBuilder().setEntity( Entity.newBuilder().setName( from ).setSchema( Schema.newBuilder().setName( schema ).build() ).build() ).build() )
+            final Query query = Query.newBuilder()
+                    .setFrom( CottontailTypeUtil.fromFromTableAndSchema( from, schema ) )
                     .setKnn( (Knn) knn )
                     .setLimit( limit )
                     .setSkip( offset )
-                    .setProjection( Projection.newBuilder().putAllAttributes( (Map<String, String>) projection ).build() )
+                    .setProjection( CottontailTypeUtil.mapToProjection( (Map<String, String>) projection ) )
                     .setWhere( (Where) whereBuilder.apply( parameterValues ) )
                     .build();
             queryResponseIterator = wrapper.query(
@@ -464,15 +472,15 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         } else {
             BatchedQueryMessage.Builder batchedQueryMessageBuilder = BatchedQueryMessage.newBuilder();
             for ( Map parameterValues : dataContext.getParameterValues() ) {
-                Query query = Query.newBuilder()
-                        .setFrom( From.newBuilder().setEntity( Entity.newBuilder().setName( from ).build() ).build() )
+                final Query query = Query.newBuilder()
+                        .setFrom( CottontailTypeUtil.fromFromTableAndSchema( from, schema ) )
                         .setKnn( (Knn) knn )
                         .setLimit( limit )
                         .setSkip( offset )
-                        .setProjection( Projection.newBuilder().putAllAttributes( (Map<String, String>) projection ).build() )
+                        .setProjection( CottontailTypeUtil.mapToProjection( (Map<String, String>) projection ) )
                         .setWhere( (Where) whereBuilder.apply( parameterValues ) )
                         .build();
-                batchedQueryMessageBuilder.addQueries( query );
+                batchedQueryMessageBuilder.addQuery( query );
             }
 
             queryResponseIterator = wrapper.batchedQuery( batchedQueryMessageBuilder.build() );

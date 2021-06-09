@@ -29,10 +29,9 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.CottontailWrapper;
+import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.DeleteMessage;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Entity;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.From;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Schema;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.TransactionId;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
 
 
@@ -66,6 +65,10 @@ public class CottontailDeleteEnumerable<T> extends AbstractEnumerable<T> {
             DataContext dataContext,
             CottontailWrapper wrapper
     ) {
+        /* Begin or continue Cottontail DB transaction. */
+        final TransactionId txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
+
+        /* Build DELETE messages and create enumerable. */
         List<DeleteMessage> deleteMessages;
         if ( dataContext.getParameterValues().size() < 2 ) {
             Map<Long, Object> parameterValues;
@@ -75,11 +78,11 @@ public class CottontailDeleteEnumerable<T> extends AbstractEnumerable<T> {
                 parameterValues = dataContext.getParameterValues().get( 0 );
             }
             deleteMessages = new ArrayList<>( 1 );
-            deleteMessages.add( buildSingleDelete( entity, schema, whereBuilder, parameterValues ) );
+            deleteMessages.add( buildSingleDelete( entity, schema, txId, whereBuilder, parameterValues ) );
         } else {
             deleteMessages = new ArrayList<>();
             for ( Map<Long, Object> parameterValues : dataContext.getParameterValues() ) {
-                deleteMessages.add( buildSingleDelete( entity, schema, whereBuilder, parameterValues ) );
+                deleteMessages.add( buildSingleDelete( entity, schema, txId, whereBuilder, parameterValues ) );
             }
         }
 
@@ -90,17 +93,13 @@ public class CottontailDeleteEnumerable<T> extends AbstractEnumerable<T> {
     private static DeleteMessage buildSingleDelete(
             String entity,
             String schema,
+            TransactionId txId,
             Function1<Map<Long, Object>, Where> whereBuilder,
             Map<Long, Object> parameterValues
     ) {
-        DeleteMessage.Builder builder = DeleteMessage.newBuilder();
-
-        builder.setFrom(
-                From.newBuilder().setEntity( Entity.newBuilder().setName( entity ).setSchema(
-                        Schema.newBuilder().setName( schema ) ) ) );
-
+        final DeleteMessage.Builder builder = DeleteMessage.newBuilder().setTxId( txId );
+        builder.setFrom( CottontailTypeUtil.fromFromTableAndSchema( entity, schema ) );
         builder.setWhere( whereBuilder.apply( parameterValues ) );
-
         return builder.build();
     }
 

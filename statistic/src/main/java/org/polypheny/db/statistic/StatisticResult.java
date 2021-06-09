@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ public class StatisticResult {
             String[][] rotated = rotate2dArray( data );
 
             for ( int i = 0; i < rotated.length; i++ ) {
-                this.columns[i] = new StatisticQueryColumn( names.get( i ), type.get( i ), rotated[i] );
+                this.columns[i] = new StatisticQueryColumn( names.get( i ), type.get( i ), null, rotated[i] );
             }
         }
 
@@ -84,7 +84,6 @@ public class StatisticResult {
     }
 
 
-
     /**
      * Transforms an StatisticResult, which has to consist of <b>value</b> and <b>occurrence</b> of a column, into a map
      *
@@ -100,4 +99,5 @@ public class StatisticResult {
         }
         return map;
     }
+
 }

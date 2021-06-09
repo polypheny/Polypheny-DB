@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -32,8 +33,11 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.CottontailWrapper;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Tuple;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnName;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Literal;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.TransactionId;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.UpdateMessage;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.UpdateMessage.UpdateElement;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
 
 
@@ -59,10 +63,14 @@ public class CottontailUpdateEnumerable<T> extends AbstractEnumerable<T> {
             String entity,
             String schema,
             Function1<Map<Long, Object>, Where> whereBuilder,
-            Function1<Map<Long, Object>, Map<String, CottontailGrpc.Data>> tupleBuilder,
+            Function1<Map<Long, Object>, Map<String, CottontailGrpc.Literal>> tupleBuilder,
             DataContext dataContext,
             CottontailWrapper wrapper
     ) {
+        /* Begin or continue Cottontail DB transaction. */
+        final TransactionId txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
+
+        /* Build UPDATE messages and create enumerable. */
         List<UpdateMessage> updateMessages;
         if ( dataContext.getParameterValues().size() < 2 ) {
             Map<Long, Object> parameterValues;
@@ -72,11 +80,11 @@ public class CottontailUpdateEnumerable<T> extends AbstractEnumerable<T> {
                 parameterValues = dataContext.getParameterValues().get( 0 );
             }
             updateMessages = new ArrayList<>( 1 );
-            updateMessages.add( buildSingleUpdate( entity, schema, whereBuilder, tupleBuilder, parameterValues ) );
+            updateMessages.add( buildSingleUpdate( entity, schema, txId, whereBuilder, tupleBuilder, parameterValues ) );
         } else {
             updateMessages = new ArrayList<>();
             for ( Map<Long, Object> parameterValues : dataContext.getParameterValues() ) {
-                updateMessages.add( buildSingleUpdate( entity, schema, whereBuilder, tupleBuilder, parameterValues ) );
+                updateMessages.add( buildSingleUpdate( entity, schema, txId, whereBuilder, tupleBuilder, parameterValues ) );
             }
         }
 
@@ -87,11 +95,12 @@ public class CottontailUpdateEnumerable<T> extends AbstractEnumerable<T> {
     private static UpdateMessage buildSingleUpdate(
             String entity,
             String schema,
+            TransactionId txId,
             Function1<Map<Long, Object>, Where> whereBuilder,
-            Function1<Map<Long, Object>, Map<String, CottontailGrpc.Data>> tupleBuilder,
+            Function1<Map<Long, Object>, Map<String, CottontailGrpc.Literal>> tupleBuilder,
             Map<Long, Object> parameterValues
     ) {
-        UpdateMessage.Builder builder = UpdateMessage.newBuilder();
+        UpdateMessage.Builder builder = UpdateMessage.newBuilder().setTxId( txId );
 
         CottontailGrpc.From from_ = CottontailTypeUtil.fromFromTableAndSchema( entity, schema );
 
@@ -100,7 +109,12 @@ public class CottontailUpdateEnumerable<T> extends AbstractEnumerable<T> {
         }
 
         try {
-            builder.setTuple( Tuple.newBuilder().putAllData( tupleBuilder.apply( parameterValues ) ).build() );
+            for ( Entry<String, Literal> e : tupleBuilder.apply( parameterValues ).entrySet() ) {
+                builder.addUpdates( UpdateElement.newBuilder()
+                        .setColumn( ColumnName.newBuilder().setName( e.getKey() ) )
+                        .setValue( e.getValue() )
+                        .build() );
+            }
         } catch ( RuntimeException e ) {
             log.error( "Something went wrong here!", e );
             throw new RuntimeException( e );

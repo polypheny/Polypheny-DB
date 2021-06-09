@@ -47,6 +47,7 @@ public class TestHelper {
 
     private static final TestHelper INSTANCE = new TestHelper();
     private static final double EPSILON = 0.0001;
+
     private final PolyphenyDb polyphenyDb;
 
     @Getter
@@ -140,15 +141,21 @@ public class TestHelper {
                     } else if ( columnType != Types.ARRAY ) {
                         if ( expectedRow[j] != null ) {
                             if ( columnType == Types.FLOAT ) {
-                                Assert.assertTrue( Math.abs( (float) expectedRow[j] - resultSet.getFloat( j + 1 ) ) < EPSILON );
+                                Assert.assertTrue(
+                                        "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "': The difference between the expected float and the received float exceeds the epsilon.",
+                                        Math.abs( (float) expectedRow[j] - resultSet.getFloat( j + 1 ) ) < EPSILON );
                             } else if ( columnType == Types.DOUBLE ) {
-                                Assert.assertTrue( Math.abs( (double) expectedRow[j] - resultSet.getDouble( j + 1 ) ) < EPSILON );
-                            } else if ( columnType == Types.DECIMAL ) {
+                                Assert.assertTrue(
+                                        "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "': The difference between the expected double and the received double exceeds the epsilon.",
+                                        Math.abs( (double) expectedRow[j] - resultSet.getDouble( j + 1 ) ) < EPSILON );
+                            } else if ( columnType == Types.DECIMAL ) { // Decimals are exact
                                 BigDecimal expectedResult = (BigDecimal) expectedRow[j];
                                 BigDecimal result = resultSet.getBigDecimal( j + 1 );
-                                Assert.assertEquals( expectedResult.subtract( result ).abs().compareTo( BigDecimal.valueOf( EPSILON ) ), -1 );
+                                Assert.assertEquals(
+                                        "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "'",
+                                        expectedResult,
+                                        result );
                             }
-
                         } else {
                             Assert.assertEquals(
                                     "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "'",
