@@ -628,6 +628,8 @@ public class CatalogImpl extends Catalog {
                     addDefaultCsvColumns( csv );
                 }
             }
+
+            initDocumentDefaultDocumentData( databaseId );
         }
 
         ////////////////////////
@@ -652,6 +654,19 @@ public class CatalogImpl extends Catalog {
             throw new RuntimeException( e );
         }
 
+    }
+
+
+    private void initDocumentDefaultDocumentData( long databaseId ) throws UnknownDatabaseException, UnknownSchemaException {
+        //////////////
+        // init schema
+
+        long schemaId;
+        if ( !schemaNames.containsKey( new Object[]{ databaseId, "private" } ) ) {
+            schemaId = addSchema( "private", databaseId, 1, SchemaType.DOCUMENT );
+        } else {
+            schemaId = getSchema( "APP", "private" ).id;
+        }
     }
 
 

@@ -393,7 +393,7 @@ public class Crud implements InformationObserver {
 
         List<CatalogSchema> schemas = catalog.getSchemas( new Catalog.Pattern( databaseName ), null );
         for ( CatalogSchema schema : schemas ) {
-            SidebarElement schemaTree = new SidebarElement( schema.name, schema.name, "", "cui-layers" );
+            SidebarElement schemaTree = new SidebarElement( schema.name, schema.name, "", schema.schemaType == SchemaType.RELATIONAL ? "cui-layers" : "cui-folder" );
 
             if ( request.depth > 1 ) {
                 ArrayList<SidebarElement> tableTree = new ArrayList<>();
@@ -406,6 +406,10 @@ public class Crud implements InformationObserver {
                     } else if ( table.tableType == TableType.VIEW ) {
                         icon = "icon-eye";
                     }
+                    if ( schema.schemaType == SchemaType.DOCUMENT ) {
+                        icon = "cui-description";
+                    }
+
                     SidebarElement tableElement = new SidebarElement( schema.name + "." + table.name, table.name, request.routerLinkRoot, icon );
 
                     if ( request.depth > 2 ) {
@@ -421,7 +425,9 @@ public class Crud implements InformationObserver {
                     }
                 }
                 if ( request.showTable ) {
-                    schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tableTree ).setRouterLink( "" ) );
+                    String collection = schema.schemaType == SchemaType.RELATIONAL ? "tables" : "collections";
+
+                    schemaTree.addChild( new SidebarElement( schema.name + ".tables", collection, request.routerLinkRoot, "fa fa-table" ).addChildren( tableTree ).setRouterLink( "" ) );
                 } else {
                     schemaTree.addChildren( tableTree ).setRouterLink( "" );
                 }
