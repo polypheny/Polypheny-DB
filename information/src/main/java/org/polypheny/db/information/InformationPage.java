@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2020 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,7 +100,7 @@ public class InformationPage extends Refreshable {
     /**
      * Constructor
      *
-     * @param title Title of this page
+     * @param title       Title of this page
      * @param description Description of this page, will be displayed in the UI
      */
     public InformationPage( final String title, final String description ) {
@@ -113,8 +113,8 @@ public class InformationPage extends Refreshable {
     /**
      * Constructor
      *
-     * @param id Id of this page
-     * @param title Title of this page
+     * @param id          Id of this page
+     * @param title       Title of this page
      * @param description Description of this page, will be displayed in the UI
      */
     public InformationPage( final String id, final String title, final String description ) {
@@ -173,5 +173,4 @@ public class InformationPage extends Refreshable {
                 .create();
         return gson.toJson( this );
     }
-
 }
