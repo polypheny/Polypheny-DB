@@ -201,6 +201,7 @@ import org.polypheny.db.webui.models.requests.BatchUpdateRequest.Update;
 import org.polypheny.db.webui.models.requests.ClassifyAllData;
 import org.polypheny.db.webui.models.requests.ColumnRequest;
 import org.polypheny.db.webui.models.requests.ConstraintRequest;
+import org.polypheny.db.webui.models.requests.EditCollectionRequest;
 import org.polypheny.db.webui.models.requests.EditTableRequest;
 import org.polypheny.db.webui.models.requests.ExploreData;
 import org.polypheny.db.webui.models.requests.ExploreTables;
@@ -565,6 +566,42 @@ public class Crud implements InformationObserver {
             colJoiner.add( primaryKeys.toString() );
         }
         query.append( colJoiner.toString() );
+        query.append( ")" );
+        if ( request.store != null && !request.store.equals( "" ) ) {
+            query.append( String.format( " ON STORE \"%s\"", request.store ) );
+        }
+
+        try {
+            int a = executeSqlUpdate( transaction, query.toString() );
+            result = new Result( a ).setGeneratedQuery( query.toString() );
+            transaction.commit();
+        } catch ( QueryExecutionException | TransactionException e ) {
+            log.error( "Caught exception while creating a table", e );
+            result = new Result( e ).setGeneratedQuery( query.toString() );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback CREATE TABLE statement: {}", ex.getMessage(), ex );
+            }
+        }
+        return result;
+    }
+
+
+    Result createCollection( final Request req, final Response res ) {
+        EditCollectionRequest request = this.gson.fromJson( req.body(), EditCollectionRequest.class );
+        Transaction transaction = getTransaction();
+        StringBuilder query = new StringBuilder();
+        StringJoiner colBuilder = new StringJoiner( "," );
+        String tableId = String.format( "\"%s\".\"%s\"", request.database, request.collection );
+        query.append( "CREATE TABLE " ).append( tableId ).append( "(" );
+        Result result;
+        colBuilder.add( "\"_id\" VARCHAR(12) NOT NULL" );
+        //colBuilder.add( "\"_data\" JSON" );
+        StringJoiner primaryKeys = new StringJoiner( ",", "PRIMARY KEY (", ")" );
+        primaryKeys.add( "\"_id\"" );
+        colBuilder.add( primaryKeys.toString() );
+        query.append( colBuilder );
         query.append( ")" );
         if ( request.store != null && !request.store.equals( "" ) ) {
             query.append( String.format( " ON STORE \"%s\"", request.store ) );

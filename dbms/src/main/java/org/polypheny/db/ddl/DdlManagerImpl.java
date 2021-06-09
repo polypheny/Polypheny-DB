@@ -1296,15 +1296,8 @@ public class DdlManagerImpl extends DdlManager {
                     true,
                     null );
 
-            int offset = 0;
-            if ( catalog.getSchema( schemaId ).schemaType == SchemaType.DOCUMENT ) {
-                ColumnTypeInformation dataType = new ColumnTypeInformation( PolyType.JSON, null, 300, -1, -1, -1, true );
-                columns.add( new ColumnInformation( "_hidden", dataType, Collation.getDefaultCollation(), null, 0 ) );
-                offset++;
-            }
-
             for ( ColumnInformation column : columns ) {
-                addColumn( column.name, column.typeInformation, column.collation, column.defaultValue, tableId, column.position + offset, stores, placementType );
+                addColumn( column.name, column.typeInformation, column.collation, column.defaultValue, tableId, column.position, stores, placementType );
             }
 
             for ( ConstraintInformation constraint : constraints ) {

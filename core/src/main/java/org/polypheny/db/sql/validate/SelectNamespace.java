@@ -34,19 +34,9 @@
 package org.polypheny.db.sql.validate;
 
 
-import java.util.ArrayList;
-import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rel.type.RelDataTypeFieldImpl;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.rel.type.RelRecordType;
-import org.polypheny.db.sql.SqlBasicCall;
-import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlSelect;
-import org.polypheny.db.type.BasicPolyType;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 
 
@@ -84,19 +74,7 @@ public class SelectNamespace extends AbstractNamespace {
     @Override
     public RelDataType validateImpl( RelDataType targetRowType ) {
         validator.validateSelect( select, targetRowType );
-        // skewed test to generate dynamic rowtype as we need a correctly ordered rowtype with the dynamic columns TODO DL change
-        if ( rowType.getFieldList().stream().anyMatch( field -> field.getName().equals( "_hidden" ) ) ) {
-            List<RelDataTypeField> cheatTypes = new ArrayList<>( rowType.getFieldList() );
-            SqlIdentifier field = (SqlIdentifier) ((SqlBasicCall) select.getWhere()).getOperands()[0];
-            int i = cheatTypes.size();
-            String name = field.names.size() == 2 ? field.names.get( 1 ) : field.names.get( 0 );
 
-            if ( rowType.getFieldList().stream().noneMatch( f -> f.getName().equals( name ) ) ) {
-                cheatTypes.add( new RelDataTypeFieldImpl( name, i, new BasicPolyType( RelDataTypeSystem.DEFAULT, PolyType.JSON, 300 ) ) );
-            }
-
-            return new RelRecordType( cheatTypes );
-        }
 
         return rowType;
     }

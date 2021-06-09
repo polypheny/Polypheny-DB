@@ -3319,11 +3319,7 @@ public class SqlToRelConverter {
         RexNode e = e0.left;
         for ( String name : qualified.suffix() ) {
             if ( e == e0.left && e0.right != null ) {
-                int i = 2; // TODO DL: remove
-                if ( e0.right.containsKey( name ) || !e0.right.containsKey( "_hidden" ) ) {
-                    i = e0.right.get( name );
-                }
-
+                int i = e0.right.get( name );
                 e = rexBuilder.makeFieldAccess( e, i );
             } else {
                 final boolean caseSensitive = true; // name already fully-qualified

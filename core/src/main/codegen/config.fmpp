@@ -25,6 +25,7 @@ data: {
             "org.polypheny.db.schema.ColumnStrategy"
             "org.polypheny.db.sql.SqlCreate"
             "org.polypheny.db.sql.SqlDrop"
+            "org.polypheny.db.catalog.Catalog.SchemaType"
             "org.polypheny.db.sql.ddl.SqlDdlNodes"
             "org.polypheny.db.sql.ddl.SqlTruncate"
             "org.polypheny.db.sql.ddl.SqlAlterConfig"
