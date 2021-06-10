@@ -38,8 +38,8 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlBinaryOperator;
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.type.MultisetPolyType;
+import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -95,7 +95,7 @@ public class SqlMultisetMemberOfOperator extends SqlBinaryOperator {
 
 
     @Override
-    public SqlOperandCountRange getOperandCountRange() {
+    public OperandCountRange getOperandCountRange() {
         return PolyOperandCountRanges.of( 2 );
     }
 }

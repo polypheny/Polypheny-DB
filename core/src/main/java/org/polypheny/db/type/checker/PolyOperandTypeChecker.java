@@ -19,8 +19,8 @@ package org.polypheny.db.type.checker;
 
 import java.io.Serializable;
 import org.polypheny.db.sql.SqlCallBinding;
-import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.type.OperandCountRange;
 
 
 /**
@@ -42,7 +42,7 @@ public interface PolyOperandTypeChecker extends Serializable {
     /**
      * @return range of operand counts allowed in a call
      */
-    SqlOperandCountRange getOperandCountRange();
+    OperandCountRange getOperandCountRange();
 
     /**
      * Returns a string describing the allowed formal signatures of a call, e.g. "SUBSTR(VARCHAR, INTEGER, INTEGER)".

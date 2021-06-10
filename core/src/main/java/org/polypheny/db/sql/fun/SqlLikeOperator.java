@@ -38,12 +38,12 @@ import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.parser.SqlParserUtil;
+import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.OperandTypes;
@@ -100,7 +100,7 @@ public class SqlLikeOperator extends SqlSpecialOperator {
 
 
     @Override
-    public SqlOperandCountRange getOperandCountRange() {
+    public OperandCountRange getOperandCountRange() {
         return PolyOperandCountRanges.between( 2, 3 );
     }
 

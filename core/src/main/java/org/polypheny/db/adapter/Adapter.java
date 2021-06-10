@@ -23,7 +23,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import java.io.InputStream;
-import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
@@ -67,7 +66,7 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
 
-public abstract class Adapter implements Serializable {
+public abstract class Adapter {
 
     private final AdapterProperties properties;
     protected final DeployMode deployMode;

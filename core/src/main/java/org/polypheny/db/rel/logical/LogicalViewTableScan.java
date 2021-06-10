@@ -41,9 +41,9 @@ import org.polypheny.db.schema.Table;
 public class LogicalViewTableScan extends TableScan {
 
     @Getter
-    RelNode relNode;
+    private final RelNode relNode;
     @Getter
-    RelCollation relCollation;
+    private final RelCollation relCollation;
 
 
     public LogicalViewTableScan( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table, RelNode relNode, RelCollation relCollation ) {

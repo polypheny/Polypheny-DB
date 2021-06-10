@@ -23,11 +23,11 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSelect;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.util.Static;
 
@@ -117,7 +117,7 @@ public class SetopOperandTypeChecker implements PolyOperandTypeChecker {
 
 
     @Override
-    public SqlOperandCountRange getOperandCountRange() {
+    public OperandCountRange getOperandCountRange() {
         return PolyOperandCountRanges.of( 2 );
     }
 

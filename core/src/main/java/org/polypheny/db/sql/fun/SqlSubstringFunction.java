@@ -45,13 +45,13 @@ import org.polypheny.db.sql.SqlFunction;
 import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -165,7 +165,7 @@ public class SqlSubstringFunction extends SqlFunction {
 
 
     @Override
-    public SqlOperandCountRange getOperandCountRange() {
+    public OperandCountRange getOperandCountRange() {
         return PolyOperandCountRanges.between( 2, 3 );
     }
 

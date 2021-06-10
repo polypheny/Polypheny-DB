@@ -48,11 +48,11 @@ import org.polypheny.db.sql.SqlJsonValueEmptyOrErrorBehavior;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -123,7 +123,7 @@ public class SqlJsonValueFunction extends SqlFunction {
 
 
     @Override
-    public SqlOperandCountRange getOperandCountRange() {
+    public OperandCountRange getOperandCountRange() {
         return PolyOperandCountRanges.between( 5, 6 );
     }
 

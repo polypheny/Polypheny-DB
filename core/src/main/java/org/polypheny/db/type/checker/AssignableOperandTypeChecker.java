@@ -23,8 +23,8 @@ import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Pair;
@@ -59,7 +59,7 @@ public class AssignableOperandTypeChecker implements PolyOperandTypeChecker {
 
 
     @Override
-    public SqlOperandCountRange getOperandCountRange() {
+    public OperandCountRange getOperandCountRange() {
         return PolyOperandCountRanges.of( paramTypes.size() );
     }
 

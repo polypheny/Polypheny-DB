@@ -19,9 +19,9 @@ package org.polypheny.db.type.checker;
 
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlUtil;
+import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
@@ -82,7 +82,7 @@ public class LiteralOperandTypeChecker implements PolySingleOperandTypeChecker {
 
 
     @Override
-    public SqlOperandCountRange getOperandCountRange() {
+    public OperandCountRange getOperandCountRange() {
         return PolyOperandCountRanges.of( 1 );
     }
 

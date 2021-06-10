@@ -57,7 +57,6 @@ import org.polypheny.db.sql.SqlJdbcFunctionCall;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
-import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
@@ -74,6 +73,7 @@ import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.test.PolyphenyDbAssert;
 import org.polypheny.db.test.SqlTestFactory;
 import org.polypheny.db.type.BasicPolyType;
+import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.util.Bug;
@@ -7776,7 +7776,7 @@ public abstract class SqlOperatorBaseTest {
             if ( typeChecker == null ) {
                 continue;
             }
-            final SqlOperandCountRange range = typeChecker.getOperandCountRange();
+            final OperandCountRange range = typeChecker.getOperandCountRange();
             for ( int n = range.getMin(), max = range.getMax(); n <= max; n++ ) {
                 final List<List<ValueType>> argValues = Collections.nCopies( n, builder.values );
                 for ( final List<ValueType> args : Linq4j.product( argValues ) ) {

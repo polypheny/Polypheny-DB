@@ -52,6 +52,7 @@ import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
@@ -192,7 +193,7 @@ public abstract class SqlOperator implements Serializable {
      *
      * @return acceptable range
      */
-    public SqlOperandCountRange getOperandCountRange() {
+    public OperandCountRange getOperandCountRange() {
         if ( operandTypeChecker != null ) {
             return operandTypeChecker.getOperandCountRange();
         }
@@ -608,7 +609,7 @@ public abstract class SqlOperator implements Serializable {
 
 
     protected void checkOperandCount( SqlValidator validator, PolyOperandTypeChecker argType, SqlCall call ) {
-        SqlOperandCountRange od = call.getOperator().getOperandCountRange();
+        OperandCountRange od = call.getOperator().getOperandCountRange();
         if ( od.isValidCount( call.operandCount() ) ) {
             return;
         }

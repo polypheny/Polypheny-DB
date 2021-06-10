@@ -29,9 +29,9 @@ import org.polypheny.db.rel.type.RelDataTypeComparability;
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlUtil;
+import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -182,7 +182,7 @@ public abstract class OperandTypes implements Serializable {
     /**
      * Creates a checker that passes if all of the rules pass for each operand, using a given operand count strategy.
      */
-    public static PolyOperandTypeChecker repeat( SqlOperandCountRange range, PolySingleOperandTypeChecker... rules ) {
+    public static PolyOperandTypeChecker repeat( OperandCountRange range, PolySingleOperandTypeChecker... rules ) {
         return new CompositeOperandTypeChecker(
                 CompositeOperandTypeChecker.Composition.REPEAT,
                 ImmutableList.copyOf( rules ),
@@ -210,7 +210,7 @@ public abstract class OperandTypes implements Serializable {
     public static final PolyOperandTypeChecker ONE_OR_MORE = variadic( PolyOperandCountRanges.from( 1 ) );
 
 
-    public static PolyOperandTypeChecker variadic( final SqlOperandCountRange range ) {
+    public static PolyOperandTypeChecker variadic( final OperandCountRange range ) {
         return new PolyOperandTypeChecker() {
             @Override
             public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
@@ -219,7 +219,7 @@ public abstract class OperandTypes implements Serializable {
 
 
             @Override
-            public SqlOperandCountRange getOperandCountRange() {
+            public OperandCountRange getOperandCountRange() {
                 return range;
             }
 
@@ -473,7 +473,7 @@ public abstract class OperandTypes implements Serializable {
 
 
                 @Override
-                public SqlOperandCountRange getOperandCountRange() {
+                public OperandCountRange getOperandCountRange() {
                     return PolyOperandCountRanges.of( 1 );
                 }
 
@@ -541,7 +541,7 @@ public abstract class OperandTypes implements Serializable {
 
 
                 @Override
-                public SqlOperandCountRange getOperandCountRange() {
+                public OperandCountRange getOperandCountRange() {
                     return PolyOperandCountRanges.of( 1 );
                 }
 
@@ -608,7 +608,7 @@ public abstract class OperandTypes implements Serializable {
 
 
         @Override
-        public SqlOperandCountRange getOperandCountRange() {
+        public OperandCountRange getOperandCountRange() {
             return PolyOperandCountRanges.of( 1 );
         }
 
