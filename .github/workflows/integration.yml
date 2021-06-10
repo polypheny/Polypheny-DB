@@ -8,7 +8,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                adapter: [ mongodb, hsqldb ]
+                adapter: [ mongodb, hsqldb, cassandra, monetdb, cottontaildb, postgresql, file ]
         name: Integration Tests (Java 11)
         steps:
             -   name: Checkout
