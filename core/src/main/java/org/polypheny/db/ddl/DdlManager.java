@@ -502,16 +502,6 @@ public abstract class DdlManager {
     public abstract void dropType();
 
     /**
-     * Create a new view
-     */
-    public abstract void createView();
-
-    /**
-     * Drop a view
-     */
-    public abstract void dropView();
-
-    /**
      * Drop a function
      */
     public abstract void dropFunction();

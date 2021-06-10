@@ -1315,7 +1315,6 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void createView( String viewName, long schemaId, RelNode relNode, RelCollation relCollation, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns ) throws TableAlreadyExistsException {
-
         if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
             if ( replace ) {
                 try {
@@ -1378,7 +1377,6 @@ public class DdlManagerImpl extends DdlManager {
         );
 
         for ( ColumnInformation column : columns ) {
-
             //addColumn( column.name, column.typeInformation, column.collation, column.defaultValue, tableId, column.position, stores, placementType );
             long columnId = catalog.addColumn(
                     column.name,
@@ -1577,7 +1575,6 @@ public class DdlManagerImpl extends DdlManager {
         for ( CatalogColumnPlacement ccp : catalog.getColumnPlacements( pkColumn.id ) ) {
             catalog.updatePartitionsOnDataPlacement( ccp.adapterId, ccp.tableId, partitionIds );
         }
-
     }
 
 
@@ -1680,7 +1677,6 @@ public class DdlManagerImpl extends DdlManager {
 
         // Rest plan cache and implementation cache
         statement.getQueryProcessor().resetCaches();
-
     }
 
 
@@ -1704,7 +1700,6 @@ public class DdlManagerImpl extends DdlManager {
                     throw new PolyphenyDbException( "Cannot drop table '" + catalogTable.getSchemaName() + "." + catalogTable.name + "' because it is being referenced by '" + exportedKeys.get( 0 ).getSchemaName() + "." + exportedKeys.get( 0 ).getTableName() + "'." );
                 }
             }
-
         }
 
         // Make sure that all adapters are of type store (and not source)
@@ -1803,12 +1798,6 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void dropView() {
-        throw new RuntimeException( "Not supported yet" );
-    }
-
-
-    @Override
     public void dropFunction() {
         throw new RuntimeException( "Not supported yet" );
     }
@@ -1828,12 +1817,6 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropType() {
-        throw new RuntimeException( "Not supported yet" );
-    }
-
-
-    @Override
-    public void createView() {
         throw new RuntimeException( "Not supported yet" );
     }
 
