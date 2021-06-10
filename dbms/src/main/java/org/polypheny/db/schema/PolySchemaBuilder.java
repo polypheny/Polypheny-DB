@@ -110,7 +110,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                             RelDataTypeImpl.proto( fieldInfo.build() ) );
                     s.add( catalogTable.name, view );
                     tableMap.put( catalogTable.name, view );
-                } else {
+                } else if ( catalogTable.tableType == TableType.TABLE || catalogTable.tableType == TableType.SOURCE ) {
                     LogicalTable table = new LogicalTable(
                             catalogTable.id,
                             catalogTable.getSchemaName(),
@@ -120,10 +120,11 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                             RelDataTypeImpl.proto( fieldInfo.build() ) );
                     s.add( catalogTable.name, table );
                     tableMap.put( catalogTable.name, table );
+                } else {
+                    throw new RuntimeException( "Unhandled table type: " + catalogTable.tableType.name() );
                 }
-
-
             }
+
             rootSchema.add( catalogSchema.name, s );
             tableMap.forEach( rootSchema.getSubSchema( catalogSchema.name )::add );
             if ( catalogDatabase.defaultSchemaId != null && catalogSchema.id == catalogDatabase.defaultSchemaId ) {

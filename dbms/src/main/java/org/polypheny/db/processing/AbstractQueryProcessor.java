@@ -818,7 +818,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                     new AvaticaParameter(
                             false,
                             getPrecision( type ),
-                            getScale( type ),
+                            0, // This is a workaround for a bug in Avatica with Decimals. There is no need to change the scale //getScale( type ),
                             getTypeOrdinal( type ),
                             type.getPolyType().getTypeName(),
                             getClassName( type ),
@@ -1008,10 +1008,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
 
     private static int getScale( RelDataType type ) {
-        /*return type.getScale() == RelDataType.SCALE_NOT_SPECIFIED
+        return type.getScale() == RelDataType.SCALE_NOT_SPECIFIED
                 ? 0
-                : type.getScale();*/
-        return 0;
+                : type.getScale();
     }
 
 
@@ -1117,7 +1116,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 origin( origins, 0 ),
                 origin( origins, 2 ),
                 getPrecision( type ),
-                getScale( type ),
+                0, // This is a workaround for a bug in Avatica with Decimals. There is no need to change the scale //getScale( type ),
                 origin( origins, 1 ),
                 null,
                 avaticaType,
