@@ -78,7 +78,6 @@ public class ViewTest {
 
     @Test
     public void testSelect() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -221,6 +220,7 @@ public class ViewTest {
 
     //SELECT not possible if inner Select with MAX()
     @Ignore
+    @Test
     public void selectAggregateInnerSelectTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -241,9 +241,7 @@ public class ViewTest {
                 } finally {
                     statement.executeUpdate( "DROP TABLE viewTestDepTable" );
                     statement.executeUpdate( "DROP TABLE viewTestLocTable" );
-
                 }
-
             }
         }
     }
@@ -286,16 +284,7 @@ public class ViewTest {
                                     new Object[]{ 37986 }
                             )
                     );
-                    /*
-                    Not possible to do this in SELECT without View
-                    TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT viewTestLoc.postcode FROM viewTestLoc, viewTestDep WHERE viewTestLoc.postcode = (SELECT max(postcode) FROM viewTestLoc)" ),
-                            ImmutableList.of(
-                                    new Object[]{99900}
-                            )
-                    );
 
-                     */
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP VIEW viewTestEmp" );
@@ -308,6 +297,5 @@ public class ViewTest {
             }
         }
     }
-
 
 }
