@@ -97,7 +97,7 @@ allprojects {
     }
     dockerTests.dependsOn(testClasses)
 
-    String storeName = System.hasProperty("store.default") ? System.getProperty("store.default"): "mongodb"
+    String storeName = System.getProperty("store.default") != null ? System.getProperty("store.default") : "hsqldb" ;
 
 
     task integrationTests(type: Test) {
