@@ -23,6 +23,7 @@ import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -1130,7 +1131,7 @@ public class ComplexViewTest {
 
     @Test
     public void testQ8() throws SQLException {
-        org.junit.Assume.assumeTrue( "9".compareTo( System.getProperty( "java.version" ) ) >= 0 ); // Out of memory error on Java 8
+        Assume.assumeFalse( System.getProperty( "java.version" ).startsWith( "1.8" ) ); // Out of memory error on Java 8
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -1523,7 +1524,7 @@ public class ComplexViewTest {
 
     @Test
     public void testQ13() throws SQLException {
-        org.junit.Assume.assumeTrue( "9".compareTo( System.getProperty( "java.version" ) ) >= 0 ); // Out of memory error on Java 8
+        Assume.assumeTrue( "9".compareTo( System.getProperty( "java.version" ) ) >= 0 ); // Out of memory error on Java 8
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
