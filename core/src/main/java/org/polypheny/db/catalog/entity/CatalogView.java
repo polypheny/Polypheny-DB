@@ -156,7 +156,6 @@ public class CatalogView extends CatalogTable {
 
 
     public static CatalogView generateView( CatalogTable table, RelCollation relCollation, ImmutableList<Long> underlyingTables, RelDataType fieldList ) {
-
         return new CatalogView(
                 table.id,
                 table.name,
@@ -194,7 +193,6 @@ public class CatalogView extends CatalogTable {
                 relCollation,
                 underlyingTables,
                 fieldList );
-
     }
 
 

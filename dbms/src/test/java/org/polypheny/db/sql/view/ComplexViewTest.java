@@ -30,12 +30,11 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
 /*
-Table and Queries from https://github.com/polypheny/OLTPBench/tree/polypheny/src/com/oltpbenchmark/benchmarks/tpch
+ * Table and Queries from https://github.com/polypheny/OLTPBench/tree/polypheny/src/com/oltpbenchmark/benchmarks/tpch
  */
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 public class ComplexViewTest {
-
 
     private final static String DROP_TABLES_NATION = "DROP TABLE IF EXISTS nation";
     private final static String DROP_TABLES_REGION = "DROP TABLE IF EXISTS region";
@@ -46,7 +45,7 @@ public class ComplexViewTest {
     private final static String DROP_TABLES_CUSTOMER = "DROP TABLE IF EXISTS customer";
     private final static String DROP_TABLES_LINEITEM = "DROP TABLE IF EXISTS lineitem";
 
-    private final static String NATION_TABLE = "CREATE TABLE nation  ( "
+    private final static String NATION_TABLE = "CREATE TABLE nation ( "
             + "n_nationkey  INTEGER NOT NULL,"
             + "n_name VARCHAR(25) NOT NULL,"
             + "n_regionkey INTEGER NOT NULL,"
@@ -83,7 +82,7 @@ public class ComplexViewTest {
             "Basel",
             "nice" };
 
-    private final static String PART_TABLE = "CREATE TABLE part  ( "
+    private final static String PART_TABLE = "CREATE TABLE part ( "
             + "p_partkey INTEGER NOT NULL,"
             + "p_name VARCHAR(55) NOT NULL,"
             + "p_mfgr VARCHAR(25) NOT NULL,"
@@ -202,7 +201,7 @@ public class ComplexViewTest {
             "CSegment",
             "nice" };
 
-    private final static String ORDERS_TABLE = "CREATE TABLE orders  ( "
+    private final static String ORDERS_TABLE = "CREATE TABLE orders ( "
             + "o_orderkey INTEGER NOT NULL,"
             + "o_custkey INTEGER NOT NULL,"
             + "o_orderstatus VARCHAR(1) NOT NULL,"
@@ -429,14 +428,11 @@ public class ComplexViewTest {
 
     @Test
     public void testPreparations() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 initTables( statement );
-
                 try {
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM nation" ),
                             ImmutableList.of( NATION_TEST_DATA )
@@ -483,7 +479,6 @@ public class ComplexViewTest {
 
     @Test
     public void testDate() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -512,7 +507,6 @@ public class ComplexViewTest {
                     connection.commit();
                 } finally {
                     dropTables( statement );
-
                 }
             }
         }
@@ -521,7 +515,6 @@ public class ComplexViewTest {
 
     @Test
     public void testDecimal() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -551,7 +544,6 @@ public class ComplexViewTest {
                     connection.commit();
                 } finally {
                     dropTables( statement );
-
                 }
             }
         }
@@ -560,7 +552,6 @@ public class ComplexViewTest {
 
     @Test
     public void testDecimalDate() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -600,7 +591,6 @@ public class ComplexViewTest {
 
     @Test
     public void testDecimalDateInt() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -641,15 +631,15 @@ public class ComplexViewTest {
 
 
     @Test
-    public void testDateOrderby() throws SQLException {
-
+    public void testDateOrderBy() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( "CREATE TABLE orders ( o_orderkey INTEGER NOT NULL, o_orderdate  DATE NOT NULL, PRIMARY KEY (o_orderkey) )" );
-                statement.executeUpdate( "CREATE TABLE lineitem ( l_extendedprice  DECIMAL(15,2) NOT NULL, l_discount    DECIMAL(15,2) NOT NULL, PRIMARY KEY (l_extendedprice) )" );
+                statement.executeUpdate( "CREATE TABLE lineitem ( l_extendedprice  DECIMAL(15,2) NOT NULL, l_discount DECIMAL(15,2) NOT NULL, PRIMARY KEY (l_extendedprice) )" );
                 statement.executeUpdate( "INSERT INTO orders VALUES (1,date '2020-07-03')" );
                 statement.executeUpdate( "INSERT INTO lineitem VALUES (20.15,50.15)" );
+
                 try {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select sum(l_extendedprice * (1 - l_discount)) as revenue, o_orderdate "
@@ -688,8 +678,7 @@ public class ComplexViewTest {
 
 
     @Test
-    public void testTimeIntervall() throws SQLException {
-
+    public void testTimeInterval() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -725,14 +714,12 @@ public class ComplexViewTest {
 
     @Test
     public void testQ1() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 initTables( statement );
 
                 try {
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select l_returnflag, l_linestatus, "
                                     + "sum(l_quantity) as sum_qty, "
@@ -777,20 +764,18 @@ public class ComplexViewTest {
     }
 
 
-    //SELECT NOT POSSIBLE
-    //java.lang.AssertionError: type mismatch: ref: VARCHAR(55) NOT NULL input: INTEGER NOT NULL
-    //new Object for result must be created correctly
+    // SELECT NOT POSSIBLE
+    // java.lang.AssertionError: type mismatch: ref: VARCHAR(55) NOT NULL input: INTEGER NOT NULL
+    // new Object for result must be created correctly
     @Ignore
     @Test
     public void testQ2() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 initTables( statement );
 
                 try {
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select "
                                     + "s_acctbal, "
@@ -838,7 +823,6 @@ public class ComplexViewTest {
                                     + "limit 100" ),
                             ImmutableList.of( new Object[]{} )
                     );
-
                     connection.commit();
                 } finally {
                     dropTables( statement );
@@ -850,14 +834,12 @@ public class ComplexViewTest {
 
     @Test
     public void testQ3() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 initTables( statement );
 
                 try {
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select "
                                     + "l_orderkey, "
@@ -927,14 +909,12 @@ public class ComplexViewTest {
     //java.lang.ClassCastException: class org.apache.calcite.linq4j.EnumerableDefaults$LookupResultEnumerable$1 cannot be cast to class java.lang.AutoCloseable (org.apache.calcite.linq4j.EnumerableDefaults$LookupResultEnumerable$1 is in unnamed module of loader 'app'; java.lang.AutoCloseable is in module java.base of loader 'bootstrap')
     @Test
     public void testQ4() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 initTables( statement );
 
                 try {
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select "
                                     + "o_orderpriority, "
@@ -998,18 +978,16 @@ public class ComplexViewTest {
     }
 
 
-    //original query with l_discount between 20.15 - 0.01 and ? + 0.01 does not return a result
-    //changed to and l_discount between 20.14 and 20.16
+    // Original TPC-H query with l_discount between 20.15 - 0.01 and ? + 0.01 does not return a result
+    // changed to and l_discount between 20.14 and 20.16
     @Test
     public void testQ6() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 initTables( statement );
 
                 try {
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select "
                                     + "sum(l_extendedprice * l_discount) as revenue "
@@ -1041,7 +1019,6 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW q6_VIEW" );
                     connection.commit();
                 } finally {
-
                     dropTables( statement );
                 }
             }
@@ -1053,14 +1030,12 @@ public class ComplexViewTest {
     //java.lang.ClassCastException: class org.apache.calcite.linq4j.EnumerableDefaults$LookupResultEnumerable$1 cannot be cast to class java.lang.AutoCloseable
     @Test
     public void testQ7() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 initTables( statement );
 
                 try {
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select "
                                     + "supp_nation, "
@@ -1147,19 +1122,15 @@ public class ComplexViewTest {
                     connection.commit();
                 } finally {
                     dropTables( statement );
-
                 }
             }
         }
     }
 
 
-    // only with JAVA 8
-    // java.lang.OutOfMemoryError: Java heap space
-    @Ignore
     @Test
     public void testQ8() throws SQLException {
-
+        org.junit.Assume.assumeTrue( "9".compareTo( System.getProperty( "java.version" ) ) >= 0 ); // Out of memory error on Java 8
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -1263,14 +1234,12 @@ public class ComplexViewTest {
 
     @Test
     public void testQ9() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 initTables( statement );
 
                 try {
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select "
                                     + "nation, "
@@ -1346,7 +1315,6 @@ public class ComplexViewTest {
                     );
 
                     statement.executeUpdate( "DROP VIEW q9_VIEW" );
-
                     connection.commit();
                 } finally {
                     dropTables( statement );
@@ -1358,14 +1326,12 @@ public class ComplexViewTest {
 
     @Test
     public void testQ10() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 initTables( statement );
 
                 try {
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select "
                                     + "c_custkey, "
@@ -1441,7 +1407,6 @@ public class ComplexViewTest {
                     );
 
                     statement.executeUpdate( "DROP VIEW q10_VIEW" );
-
                     connection.commit();
                 } finally {
                     dropTables( statement );
@@ -1451,20 +1416,18 @@ public class ComplexViewTest {
     }
 
 
-    //SELECT NOT POSSIBLE
-    //Not possible to Select java.lang.AssertionError: type mismatch: ref: DECIMAL(19, 2) NOT NULL input: INTEGER NOT NULL
-    //renamed value to valueAA
+    // SELECT NOT POSSIBLE
+    // Not possible to Select java.lang.AssertionError: type mismatch: ref: DECIMAL(19, 2) NOT NULL input: INTEGER NOT NULL
+    // renamed value to valueAA
     @Ignore
     @Test
     public void testQ11() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 initTables( statement );
 
                 try {
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select "
                                     + "ps_partkey, "
@@ -1505,20 +1468,18 @@ public class ComplexViewTest {
     }
 
 
-    //Select not possible
+    // Select not possible
     // Caused by: java.sql.SQLSyntaxErrorException: data type cast needed for parameter or null literal in statement [SELECT "t0"."l_shipmode", COALESCE(SUM(CASE WHEN "t1"."o_orderpriority" = ? OR "t1"."o_orderpriority" = ? THEN ? ELSE ? END), 0) AS "high_line_count", COALESCE(SUM(CASE WHEN "t1"."o_orderpriority" <> ? AND "t1"."o_orderpriority" <> ? THEN ? ELSE ? END), 0) AS "low_line_count"
     // changed and l_shipmode in (?,?) to and l_shipmode = 'mode'
     @Ignore
     @Test
     public void testQ12() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 initTables( statement );
 
                 try {
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select "
                                     + "l_shipmode, "
@@ -1560,19 +1521,15 @@ public class ComplexViewTest {
     }
 
 
-    // only with JAVA 8
-    // java.lang.OutOfMemoryError: Java heap space
-    @Ignore
     @Test
     public void testQ13() throws SQLException {
-
+        org.junit.Assume.assumeTrue( "9".compareTo( System.getProperty( "java.version" ) ) >= 0 ); // Out of memory error on Java 8
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 initTables( statement );
 
                 try {
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select "
                                     + "c_count, "
@@ -1624,7 +1581,6 @@ public class ComplexViewTest {
                     );
 
                     statement.executeUpdate( "DROP VIEW q13_VIEW" );
-
                     connection.commit();
                 } finally {
                     dropTables( statement );
@@ -1636,14 +1592,12 @@ public class ComplexViewTest {
 
     @Test
     public void testQ14() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 initTables( statement );
 
                 try {
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select "
                                     + "100.00 * sum(case "
@@ -1660,7 +1614,6 @@ public class ComplexViewTest {
                                     + "and l_shipdate < date '2020-07-03' + interval '1' month" ),
                             ImmutableList.of( q14_TEST_DATA )
                     );
-
 
                     statement.executeUpdate( "CREATE VIEW q14_VIEW AS "
                             + "select "
@@ -1682,7 +1635,6 @@ public class ComplexViewTest {
                     );
 
                     statement.executeUpdate( "DROP VIEW q14_VIEW" );
-
                     connection.commit();
                 } finally {
                     dropTables( statement );
@@ -1695,7 +1647,6 @@ public class ComplexViewTest {
     // changed max(total_revenue) to total_revenue // Not possible in normal to SELECT aggregate within inner query
     @Test
     public void testQ15() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -1738,7 +1689,6 @@ public class ComplexViewTest {
                     );
 
                     statement.executeUpdate( "DROP VIEW revenue0" );
-
                     connection.commit();
                 } finally {
                     dropTables( statement );
@@ -1748,18 +1698,17 @@ public class ComplexViewTest {
     }
 
 
-    //Select not possible
-    //Caused by: org.hsqldb.HsqlException: data type cast needed for parameter or null literal
+    // Select not possible
+    // Caused by: org.hsqldb.HsqlException: data type cast needed for parameter or null literal
     @Ignore
+    @Test
     public void testQ16() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 initTables( statement );
 
                 try {
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select "
                                     + "p_brand, "
@@ -1803,21 +1752,14 @@ public class ComplexViewTest {
     }
 
 
-    //SELECT Possible in UI but error in Test: Rounding necessary
-    //java.lang.ArithmeticException: Rounding necessary
-    // changed and l_quantity < to and l_quantity >
-    //Rounding necessary
-    //java.lang.ArithmeticException: Rounding necessary
     @Test
     public void testQ17() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 initTables( statement );
 
                 try {
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select "
                                     + "sum(l_extendedprice) / 7.0 as avg_yearly "
@@ -1838,7 +1780,7 @@ public class ComplexViewTest {
                                     + ")" ),
                             ImmutableList.of( q17_TEST_DATA )
                     );
-/*
+
                     statement.executeUpdate( "CREATE VIEW q17_VIEW AS "
                             +"select "
                             +     "sum(l_extendedprice) / 7.0 as avg_yearly "
@@ -1863,9 +1805,6 @@ public class ComplexViewTest {
                     );
 
                     statement.executeUpdate( "DROP VIEW q17_VIEW" );
-
- */
-
                     connection.commit();
                 } finally {
                     dropTables( statement );
@@ -1875,19 +1814,18 @@ public class ComplexViewTest {
     }
 
 
-    //Select not possible
-    //Caused by: org.hsqldb.HsqlException: data type of expression is not boolean
+    // Select not possible
+    // Caused by: org.hsqldb.HsqlException: data type of expression is not boolean
     // java.lang.RuntimeException: While executing SQL [SELECT "t8"."c_name", "t8"."c_custkey", "t8"."o_orderkey", "t8"."o_orderdate", "t8"."o_totalprice", COALESCE(SUM("t"."l_quantity"), 0) FROM (SELECT "t6"."c_custkey", "t6"."c_name", "t6"."o_orderkey", "t6"."o_totalprice", "t6"."o_orderdate", COALESCE(SUM("t"."l_quantity"), 0) FROM (SELECT "col72" AS "l_orderkey", "col76" AS "l_quantity" FROM "PUBLIC"."tab12") AS "t" INNER JOIN (SELECT "t5"."c_custkey", "t5"."c_name", "t4"."o_orderkey", "t4"."o_custkey", "t4"."o_totalprice", "t4"."o_orderdate", "t2"."col72" AS "l_orderkey" FROM (SELECT "col72" FROM (SELECT "col72", "col76" FROM "PUBLIC"."tab12" GROUP BY "col72", "col76" HAVING "col76" > ?) AS "t1" GROUP BY "col72") AS "t2" INNER JOIN (SELECT "col63" AS "o_orderkey", "col64" AS "o_custkey", "col66" AS "o_totalprice", "col67" AS "o_orderdate" FROM "PUBLIC"."tab11" WHERE ?) AS "t4" ON "t2"."col72" = "t4"."o_orderkey" INNER JOIN (SELECT "col55" AS "c_custkey", "col56" AS "c_name" FROM "PUBLIC"."tab10") AS "t5" ON "t4"."o_custkey" = "t5"."c_custkey") AS "t6" ON "t"."l_orderkey" = "t6"."o_orderkey" GROUP BY "t6"."c_custkey", "t6"."c_name", "t6"."o_orderkey", "t6"."o_totalprice", "t6"."o_orderdate" ORDER BY "t6"."o_totalprice" DESC, "t6"."o_orderdate") AS "t8"] on JDBC sub-schema
     @Ignore
+    @Test
     public void testQ18() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 initTables( statement );
 
                 try {
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select "
                                     + "c_name, "
@@ -1936,14 +1874,12 @@ public class ComplexViewTest {
 
     @Test
     public void testQ19() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 initTables( statement );
 
                 try {
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select sum(l_extendedprice* (1 - l_discount)) as revenue "
                                     + "from lineitem, part "
@@ -1999,7 +1935,6 @@ public class ComplexViewTest {
                     );
 
                     statement.executeUpdate( "DROP VIEW q19_VIEW" );
-
                     connection.commit();
                 } finally {
                     dropTables( statement );
@@ -2009,18 +1944,17 @@ public class ComplexViewTest {
     }
 
 
-    //SELECT NOT POSSIBLE
+    // SELECT NOT POSSIBLE
     // java.lang.AssertionError: type mismatch: ref: VARCHAR(25) NOT NULL input: INTEGER NOT NULL
     @Ignore
+    @Test
     public void testQ20() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 initTables( statement );
 
                 try {
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select "
                                     + "s_name, "
@@ -2071,59 +2005,33 @@ public class ComplexViewTest {
     }
 
 
-    //SELECT NOT POSSIBLE
+    // SELECT NOT POSSIBLE
     // java.lang.AssertionError: type mismatch: ref: INTEGER NOT NULL input: VARCHAR(1) NOT NULL
     @Ignore
+    @Test
     public void testQ21() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 initTables( statement );
 
                 try {
-
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "select "
-                                    + "s_name, "
-                                    + "count(*) as numwait "
-                                    + "from "
-                                    + "supplier, "
-                                    + "lineitem l1, "
-                                    + "orders, "
-                                    + "nation "
-                                    + "where "
-                                    + "s_suppkey = l1.l_suppkey "
-                                    + "and o_orderkey = l1.l_orderkey "
-                                    + "and o_orderstatus = 'A' "
-                                    + "and l1.l_receiptdate > l1.l_commitdate "
-                                    + "and exists ( "
-                                    + "select "
-                                    + "* "
-                                    + "from "
-                                    + "lineitem l2 "
-                                    + "where "
-                                    + "l2.l_orderkey = l1.l_orderkey "
-                                    + "and l2.l_suppkey <> l1.l_suppkey "
-                                    + ") "
-                                    + "and not exists ( "
-                                    + "select "
-                                    + "* "
-                                    + "from "
-                                    + "lineitem l3 "
-                                    + "where "
-                                    + "l3.l_orderkey = l1.l_orderkey "
-                                    + "and l3.l_suppkey <> l1.l_suppkey "
-                                    + "and l3.l_receiptdate > l3.l_commitdate "
-                                    + ") "
-                                    + "and s_nationkey = n_nationkey "
-                                    + "and n_name = 'Switzerland' "
-                                    + "group by "
-                                    + "s_name "
-                                    + "order by "
-                                    + "numwait desc, "
-                                    + "s_name "
-                                    + "limit 100" ),
+                            statement.executeQuery(
+                                    "select s_name, count(*) as numwait "
+                                            + "from supplier, lineitem l1, orders, nation "
+                                            + "where s_suppkey = l1.l_suppkey "
+                                            + "and o_orderkey = l1.l_orderkey "
+                                            + "and o_orderstatus = 'A' "
+                                            + "and l1.l_receiptdate > l1.l_commitdate "
+                                            + "and exists ( select * from lineitem l2 where l2.l_orderkey = l1.l_orderkey and l2.l_suppkey <> l1.l_suppkey ) "
+                                            + "and not exists ( select * from lineitem l3 where l3.l_orderkey = l1.l_orderkey and l3.l_suppkey <> l1.l_suppkey and l3.l_receiptdate > l3.l_commitdate ) "
+                                            + "and s_nationkey = n_nationkey "
+                                            + "and n_name = 'Switzerland' "
+                                            + "group by s_name "
+                                            + "order by numwait desc, s_name "
+                                            + "limit 100"
+                            ),
                             ImmutableList.of( new Object[]{} )
                     );
 
@@ -2136,18 +2044,17 @@ public class ComplexViewTest {
     }
 
 
-    //SELECT NOT POSSIBLE
+    // SELECT NOT POSSIBLE
     // Caused by: java.sql.SQLException: General error
     @Ignore
+    @Test
     public void testQ22() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 initTables( statement );
 
                 try {
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select "
                                     + "cntrycode, "
@@ -2196,6 +2103,5 @@ public class ComplexViewTest {
             }
         }
     }
-
 
 }
