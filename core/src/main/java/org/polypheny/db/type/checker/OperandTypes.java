@@ -93,9 +93,11 @@ public abstract class OperandTypes implements Serializable {
                 }
 
 
-                /** Returns whether a number has any fractional part.
+                /**
+                 * Returns whether a number has any fractional part.
                  *
-                 * @see BigDecimal#longValueExact() */
+                 * @see BigDecimal#longValueExact()
+                 */
                 private boolean hasFractionalPart( BigDecimal bd ) {
                     return bd.precision() - bd.scale() <= 0;
                 }
@@ -631,4 +633,3 @@ public abstract class OperandTypes implements Serializable {
     }
 
 }
-
