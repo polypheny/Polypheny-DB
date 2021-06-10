@@ -36,11 +36,12 @@ import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.excluded.FileExcluded;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-@Category(AdapterTestSuite.class)
+@Category({ AdapterTestSuite.class, FileExcluded.class })
 public class SqlDistanceFunctionTest {
 
 

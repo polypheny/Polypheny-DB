@@ -28,7 +28,7 @@ public enum Adapter {
     CSV( "org.polypheny.db.adapter.csv.CsvSource" ),
     CASSANDRA( "org.polypheny.db.adapter.cassandra.CassandraStore" ),
     MONETDB( "org.polypheny.db.adapter.jdbc.stores.MonetdbStore" ),
-    COTTONTAILDB( "org.polypheny.db.adapter.cottontail.CottontailStore" ),
+    COTTONTAIL( "org.polypheny.db.adapter.cottontail.CottontailStore" ),
     POSTGRESQL( "org.polypheny.db.adapter.jdbc.stores.PostgresqlStore" ),
     FILE( "org.polypheny.db.adapter.file.FileStore" );
 
@@ -92,7 +92,7 @@ public enum Adapter {
                 settings.put( "maxConnections", "25" );
                 settings.put( "port", "5000" );
                 break;
-            case COTTONTAILDB:
+            case COTTONTAIL:
                 settings.put( "mode", "embedded" );
                 settings.put( "database", "cottontail" );
                 settings.put( "port", "1865" );

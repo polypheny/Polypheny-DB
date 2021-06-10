@@ -33,11 +33,15 @@ import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.excluded.CottontailExcluded;
+import org.polypheny.db.excluded.FileExcluded;
+import org.polypheny.db.excluded.MonetdbExcluded;
+import org.polypheny.db.excluded.PostgresqlExcluded;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-@Category(AdapterTestSuite.class)
+@Category({ AdapterTestSuite.class, PostgresqlExcluded.class, MonetdbExcluded.class, CottontailExcluded.class, FileExcluded.class })
 public class JdbcMetaTest {
 
 

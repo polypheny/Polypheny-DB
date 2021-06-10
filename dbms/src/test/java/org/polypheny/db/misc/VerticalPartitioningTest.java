@@ -27,9 +27,10 @@ import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.excluded.MonetdbExcluded;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
-@Category(AdapterTestSuite.class)
+@Category({ AdapterTestSuite.class, MonetdbExcluded.class })
 public class VerticalPartitioningTest {
 
 

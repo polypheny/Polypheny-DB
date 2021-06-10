@@ -28,6 +28,7 @@ import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.excluded.MonetdbExcluded;
 
 
 @SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
@@ -95,6 +96,7 @@ public class HorizontalPartitioningTest {
 
 
     @Test
+    @Category(MonetdbExcluded.class)
     public void modifyPartitionTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -223,6 +225,7 @@ public class HorizontalPartitioningTest {
 
 
     @Test
+    @Category(MonetdbExcluded.class)
     public void hashPartitioningTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
