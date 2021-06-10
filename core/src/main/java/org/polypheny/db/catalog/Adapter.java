@@ -29,7 +29,7 @@ public enum Adapter {
     CASSANDRA( "org.polypheny.db.adapter.cassandra.CassandraStore" ),
     MONETDB( "org.polypheny.db.adapter.jdbc.stores.MonetdbStore" ),
     COTTONTAILDB( "org.polypheny.db.adapter.cottontail.CottontailStore" ),
-    POSTGRESQL( "org.polypheny.db.adapter.jdbc.store.PostgresqlStore" ),
+    POSTGRESQL( "org.polypheny.db.adapter.jdbc.stores.PostgresqlStore" ),
     FILE( "org.polypheny.db.adapter.file.FileStore" );
 
     @Getter
