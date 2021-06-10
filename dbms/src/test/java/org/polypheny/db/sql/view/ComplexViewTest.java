@@ -1524,7 +1524,7 @@ public class ComplexViewTest {
 
     @Test
     public void testQ13() throws SQLException {
-        Assume.assumeTrue( "9".compareTo( System.getProperty( "java.version" ) ) >= 0 ); // Out of memory error on Java 8
+        Assume.assumeFalse( System.getProperty( "java.version" ).startsWith( "1.8" ) ); // Out of memory error on Java 8
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
