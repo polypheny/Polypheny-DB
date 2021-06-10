@@ -16,7 +16,7 @@ configurations {
 buildscript {
     dependencies {
         // JavaCC (https://github.com/johnmartel/javaccPlugin)
-        classpath group: "ca.coglinc2.javacc", name: "ca.coglinc2.javacc.gradle.plugin", version: javacc_plugin_version
+        classpath group: "gradle.plugin.ca.coglinc2", name: "javacc-gradle-plugin", version: javacc_plugin_version
         // Fmpp
         classpath group: "net.sourceforge.fmpp", name: "fmpp", version: fmpp_plugin_version
     }

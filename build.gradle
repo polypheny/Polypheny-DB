@@ -23,7 +23,6 @@ allprojects {
     buildscript {
         repositories {
             mavenCentral()
-            jcenter()
             maven {
                 url "https://plugins.gradle.org/m2/"
             }
@@ -61,7 +60,6 @@ allprojects {
         maven {
             url "https://clojars.org/repo/"
         }
-        jcenter()
         mavenCentral()
         maven {
             url "https://oss.sonatype.org/content/repositories/snapshots/"
@@ -77,11 +75,11 @@ allprojects {
         resolutionStrategy.cacheChangingModulesFor 0, "seconds"
     }
 
-    javadoc {
+    tasks.withType(Javadoc) {
         if (JavaVersion.current().isJava9Compatible()) {
             options.addBooleanOption("html5", true)
         }
-        // suppress most of the warnings
+        // Suppress most of the warnings
         options.addStringOption("Xdoclint:none", "-quiet")
         // Include private fields in JavaDoc
         options.memberLevel = JavadocMemberLevel.PRIVATE
