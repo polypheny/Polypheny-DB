@@ -298,7 +298,6 @@ public abstract class Adapter {
         return properties.name();
     }
 
-
     public abstract void createNewSchema( SchemaPlus rootSchema, String name );
 
     public abstract Table createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore );
