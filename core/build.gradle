@@ -102,6 +102,25 @@ sourceSets {
     }
 }
 
+/**
+ * Additional MongoDB query language Compile Pipeline
+ */
+task generateFmppSourcesDocument {
+    inputs.dir("src/main/codegen/templates")
+    outputs.dir(project.buildDir.absolutePath + "/generated-sources/fmpp")
+    doLast {
+        ant.fmpp(configuration: "src/main/codegen/config_doc.fmpp",
+                sourceRoot: "src/main/codegen/templates",
+                outputRoot: project.buildDir.absolutePath + "/generated-sources/fmpp")
+    }
+}
+task generateParserDocument (type: CompileJavaccTask) {
+    dependsOn("generateFmppSources")
+    getConventionMapping().map("classpath", { configurations.javacc })
+    arguments = [static: "false", lookahead: "2"]
+    inputDirectory = file(project.buildDir.absolutePath + "/generated-sources/fmpp/javacc")
+    outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/org/polypheny/db/mql/parser/impl")
+}
 
 /**
  * Compile Pipeline

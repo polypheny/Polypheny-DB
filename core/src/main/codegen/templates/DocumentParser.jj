@@ -1,0 +1,274 @@
+
+<@pp.dropOutputFile />
+
+<@pp.changeOutputFile name="javacc/DocumentParser.jj" />
+
+options {
+    STATIC = false;
+    IGNORE_CASE = true;
+    UNICODE_INPUT = true;
+}
+
+PARSER_BEGIN(${parser.class})
+
+package ${parser.package};
+
+<#list parser.imports as importStr>
+import ${importStr};
+</#list>
+
+import org.polypheny.db.mql.BsonDocument;
+import org.polypheny.db.mql.MqlAggregate;
+import org.polypheny.db.mql.MqlCollectionStatement;
+import org.polypheny.db.mql.MqlCount;
+import org.polypheny.db.mql.MqlCreateCollection;
+import org.polypheny.db.mql.MqlCreateView;
+import org.polypheny.db.mql.MqlDelete;
+import org.polypheny.db.mql.MqlDrop;
+import org.polypheny.db.mql.MqlFind;
+import org.polypheny.db.mql.MqlInsert;
+import org.polypheny.db.mql.MqlNode;
+import org.polypheny.db.mql.MqlRemove;
+import org.polypheny.db.mql.MqlReplace;
+import org.polypheny.db.mql.MqlSave;
+import org.polypheny.db.mql.MqlSelectCollection;
+import org.polypheny.db.mql.MqlUpdate;
+
+/**
+ * Simple brace matcher.
+ */
+public class ${parser.class} extends MqlAbstractParserImpl {
+  /**
+       * {@link MqlParserImplFactory} implementation for creating parser.
+       */
+      public static final MqlParserImplFactory FACTORY = new MqlParserImplFactory() {
+          public MqlAbstractParserImpl getParser(Reader reader) {
+              final ${parser.class} parser = new ${parser.class}(reader);
+              if (reader instanceof SourceStringReader) {
+                  final String Mql = ((SourceStringReader) reader).getSourceString();
+                  parser.setOriginalMql(Mql);
+              }
+            return parser;
+          }
+      };
+
+}
+
+PARSER_END(${parser.class})
+
+SKIP : {
+" "
+| "\t"
+| "\r"
+}
+
+TOKEN : /* IDENTIFIERS */
+{
+  < IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>)* >
+|
+  < #LETTER: ["_","a"-"z","A"-"Z"] >
+|
+  < #DIGIT: ["0"-"9"] >
+|
+  < EOL: "\n" >
+}
+
+/** Root production. */
+void Input() :
+{
+ MqlNode n;
+}
+{
+  (
+    n = Statement() <EOL>
+  )* <EOF>
+}
+
+/** Brace matching production. */
+MqlNode Statement() :
+{
+ MqlNode n;
+}
+{
+    "db." n=Db_Statement()
+    {return n;}
+}
+
+MqlNode Db_Statement():
+{
+    MqlNode n;
+    String name;
+    String source;
+    BsonDocument doc = null;
+}
+{
+    (
+        "createCollection("
+        name = Literal() ")"
+        {n = new MqlCreateCollection(name);}
+
+    |
+        "getCollection("
+        name = Literal() ")"
+        {n = new MqlSelectCollection(name);}
+
+    |
+        "createView("
+        name = Literal() "," source = Literal()
+        ("," doc=Document() )? ")"
+        {n = new MqlCreateView(name, source, doc);}
+    |
+        n = Collection_Statement(null)
+    |
+        name=Literal() "." n=Collection_Statement(name)
+
+    )
+    {return n;}
+}
+
+MqlNode Collection_Statement(String collection):
+{
+    MqlNode n;
+}
+{
+    (
+        n = Find_Statement(collection)
+    |
+        n = Insert_Statement(collection)
+    |
+        n = Count_Statement(collection)
+    |
+        n = Aggregate_Statement(collection)
+    |
+        n = Update_Statement(collection)
+    |
+        n = Replace_Statement(collection)
+    |
+        n = Drop_Statement(collection)
+    |
+        n = Delete_Statement(collection)
+    |
+        n = Save_Statement(collection)
+    |
+        n = Remove_Statement(collection)
+    )
+    {return n;}
+
+}
+
+MqlNode Delete_Statement(String collection):
+{
+    BsonDocument doc;
+}
+{
+    "deleteMany(" doc=Document() ")"
+    { return new MqlDelete(collection, doc);}
+}
+
+MqlNode Drop_Statement(String collection): {}
+{
+    "drop()"
+    {return new MqlDrop(collection);}
+}
+
+MqlNode Remove_Statement(String collection):
+{
+    BsonDocument doc;
+}
+{
+    "remove(" doc=Document() ")"
+    {return new MqlRemove(collection, doc);}
+}
+
+
+MqlNode Save_Statement(String collection):
+{
+    BsonDocument doc;
+}
+{
+    "save(" doc=Document() ")"
+    {return new MqlSave(collection, doc);}
+}
+
+
+MqlNode Replace_Statement(String collection):
+{
+    BsonDocument doc;
+}
+{
+    "replaceOne(" doc=Document() ")"
+    {return new MqlReplace(collection, doc);}
+}
+
+MqlNode Update_Statement(String collection):
+{
+    BsonDocument doc;
+}
+{
+    ("update("|"updateMany(") doc=Document() ")"
+    {return new MqlUpdate(collection, doc);}
+}
+
+MqlNode Aggregate_Statement(String collection):
+{
+    BsonDocument doc;
+}
+{
+    "aggregate(" doc=Document() ")"
+    {return new MqlAggregate(collection, doc);}
+}
+
+MqlNode Count_Statement(String collection):
+{
+    BsonDocument doc;
+}
+{
+    "count(" doc=Document() ")"
+    {return new MqlCount(collection, doc, true);}
+|
+    "countDocuments(" doc=Document() ")"
+    {return new MqlCount(collection, doc);}
+}
+
+MqlNode Find_Statement(String collection):
+{
+    BsonDocument doc;
+}
+{
+     "find(" doc=Document() ")"
+    {return new MqlCollectionStatement(collection, doc);}
+}
+
+MqlNode Insert_Statement(String collection):
+{
+    BsonDocument doc;
+}
+{
+    ("insertOne(" | "insert(" | "insertMany(") doc=Document() ")"
+    {return new MqlInsert(collection, doc);}
+}
+
+BsonDocument Document():
+{
+    String key;
+    String value;
+}
+{
+    "{" key=Literal() ":" value=Literal() "}"
+    {
+        return new BsonDocument( key, value);
+    }
+}
+
+String Literal():
+{
+    Token t;
+}
+{
+    (
+    "\"" t=<IDENTIFIER> "\""
+    |
+    t=<IDENTIFIER>
+    )
+    {return t.image;}
+}
