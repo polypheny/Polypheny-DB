@@ -21,9 +21,9 @@ import org.polypheny.db.mql.MqlNode;
 import org.polypheny.db.processing.MqlProcessor;
 import org.polypheny.db.transaction.Statement;
 
-public class Document {
+public class DocumentCrud {
 
-    private PolyphenyDbSignature processQuery( Statement statement, String mql ) {
+    public PolyphenyDbSignature anyQuery( Statement statement, String mql ) {
         PolyphenyDbSignature signature;
         MqlProcessor mqlProcessor = statement.getTransaction().getMqlProcessor();
 

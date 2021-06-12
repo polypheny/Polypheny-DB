@@ -17,16 +17,32 @@
 package org.polypheny.db.processing;
 
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.mql.MqlNode;
+import org.polypheny.db.mql.parser.MqlParseException;
+import org.polypheny.db.mql.parser.MqlParser;
+import org.polypheny.db.mql.parser.MqlParser.MqlParserConfig;
 import org.polypheny.db.plan.RelOptTable.ViewExpander;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.SourceStringReader;
 
+@Slf4j
 public class MqlProcessorImpl implements MqlProcessor, ViewExpander {
+
+    private static final MqlParserConfig parserConfig;
+
+
+    static {
+        MqlParser.ConfigBuilder configConfigBuilder = MqlParser.configBuilder();
+        parserConfig = configConfigBuilder.build();
+    }
+
 
     @Override
     public RelRoot expandView( RelDataType rowType, String queryString, List<String> schemaPath, List<String> viewPath ) {
@@ -35,8 +51,30 @@ public class MqlProcessorImpl implements MqlProcessor, ViewExpander {
 
 
     @Override
-    public MqlNode parse( String sql ) {
-        return null;
+    public MqlNode parse( String mql ) {
+        final StopWatch stopWatch = new StopWatch();
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Parsing PolyMQL statement ..." );
+        }
+        stopWatch.start();
+        MqlNode parsed;
+        log.debug( "MQL: {}", mql );
+
+        try {
+            final MqlParser parser = MqlParser.create( new SourceStringReader( mql ), parserConfig );
+            parsed = parser.parseStmt();
+        } catch ( MqlParseException e ) {
+            log.error( "Caught exception", e );
+            throw new RuntimeException( e );
+        }
+        stopWatch.stop();
+        if ( log.isTraceEnabled() ) {
+            log.trace( "Parsed query: [{}]", parsed );
+        }
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Parsing PolyMQL statement ... done. [{}]", stopWatch );
+        }
+        return parsed;
     }
 
 

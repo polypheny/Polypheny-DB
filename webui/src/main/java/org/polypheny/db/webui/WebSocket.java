@@ -106,6 +106,11 @@ public class WebSocket {
             case "QueryRequest":
                 QueryRequest queryRequest = gson.fromJson( message, QueryRequest.class );
                 ArrayList<Result> results;
+                if ( queryRequest.language.equals( "mql" ) ) {
+                    crud.documentCrud.anyQuery( crud.getTransaction( queryRequest.analyze ).createStatement(), queryRequest.query );
+                    break;
+                }
+
                 try {
                     results = crud.anyQuery( queryRequest, session );
                 } catch ( Throwable t ) {

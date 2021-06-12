@@ -29,4 +29,9 @@ public class QueryRequest extends UIRequest {
      */
     public boolean analyze;
 
+    /**
+     * This flag defines which language was used for this query
+     */
+    public String language;
+
 }

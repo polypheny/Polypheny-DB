@@ -291,7 +291,7 @@ MqlNode Input() :
 }
 {
     /** only one statement for now **/
-    n = Statement() <EOL> <EOF>
+    n = Statement() (<EOL> | <EOF>)
     {return n;}
 }
 
@@ -447,7 +447,7 @@ MqlNode Find_Statement(String collection):
 }
 {
      "find(" doc=Document() ")"
-    {return new MqlCollectionStatement(collection, doc);}
+    {return new MqlFind(collection, doc);}
 }
 
 MqlNode Insert_Statement(String collection):
