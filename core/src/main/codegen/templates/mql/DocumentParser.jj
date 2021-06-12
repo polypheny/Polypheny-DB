@@ -1,0 +1,485 @@
+
+<@pp.dropOutputFile />
+
+<@pp.changeOutputFile name="javacc/DocumentParser.jj" />
+
+options {
+    STATIC = false;
+    IGNORE_CASE = true;
+    UNICODE_INPUT = true;
+}
+
+PARSER_BEGIN(${parser.class})
+
+package ${parser.package};
+
+<#list parser.imports as importStr>
+import ${importStr};
+</#list>
+
+import org.polypheny.db.mql.BsonDocument;
+import org.polypheny.db.runtime.PolyphenyDbContextException;
+import org.polypheny.db.mql.MqlAggregate;
+import org.polypheny.db.mql.MqlCollectionStatement;
+import org.polypheny.db.mql.MqlCount;
+import org.polypheny.db.mql.MqlCreateCollection;
+import org.polypheny.db.mql.MqlCreateView;
+import org.polypheny.db.mql.MqlDelete;
+import org.polypheny.db.mql.MqlDrop;
+import org.polypheny.db.mql.MqlFind;
+import org.polypheny.db.mql.MqlInsert;
+import org.polypheny.db.mql.MqlNode;
+import org.polypheny.db.mql.MqlRemove;
+import org.polypheny.db.mql.MqlReplace;
+import org.polypheny.db.mql.MqlSave;
+import org.polypheny.db.mql.MqlSelectCollection;
+import org.polypheny.db.mql.MqlUpdate;
+import org.polypheny.db.mql.parser.MqlAbstractParserImpl;
+import org.polypheny.db.mql.parser.MqlParserImplFactory;
+import org.polypheny.db.mql.parser.MqlParseException;
+import org.polypheny.db.mql.parser.MqlParserPos;
+import org.polypheny.db.mql.parser.MqlParserUtil;
+
+import org.polypheny.db.util.SourceStringReader;
+
+import java.io.Reader;
+import java.util.Arrays;
+import java.util.List;
+import java.util.ArrayList;
+
+/**
+ * MongoDB query language (MQL) parser, generated from Parser.jj by JavaCC.
+ *
+ * The public wrapper for this parser is {@link MqlParser}.
+**/
+public class ${parser.class} extends MqlAbstractParserImpl {
+
+private static Metadata metadata;
+
+
+      /**
+       * {@link MqlParserImplFactory} implementation for creating parser.
+       */
+      public static final MqlParserImplFactory FACTORY = new MqlParserImplFactory() {
+          public MqlAbstractParserImpl getParser(Reader reader) {
+              final ${parser.class} parser = new ${parser.class}(reader);
+              if (reader instanceof SourceStringReader) {
+                  final String mql = ((SourceStringReader) reader).getSourceString();
+                  parser.setOriginalMql(mql);
+              }
+            return parser;
+          }
+      };
+
+      public MqlParseException normalizeException(Throwable ex)
+      {
+          try {
+              if (ex instanceof ParseException) {
+                  ex = cleanupParseException((ParseException) ex);
+              }
+              return convertException(ex);
+          } catch (ParseException e) {
+              throw new AssertionError(e);
+          }
+      }
+
+      public Metadata getMetadata()
+      {
+          synchronized (${parser.class}.class) {
+              if (metadata == null) {
+                  metadata = new MetadataImpl(new ${parser.class}(new java.io.StringReader("")));
+              }
+              return metadata;
+          }
+      }
+
+      public MqlNode parseMqlExpressionEof() throws Exception
+      {
+          return Input();
+      }
+
+      public MqlNode parseMqlStmtEof() throws Exception
+      {
+          return Input();
+      }
+
+
+}
+
+PARSER_END(${parser.class})
+
+SKIP : {
+" "
+| "\t"
+| "\r"
+}
+
+TOKEN : /* IDENTIFIERS */
+{
+  < IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>)* >
+|
+  < #LETTER: ["_","a"-"z","A"-"Z"] >
+|
+  < #DIGIT: ["0"-"9"] >
+|
+  < EOL: "\n" >
+}
+
+////////////////////////////////////////
+////* copied from Parser.jj start */////
+////////////////////////////////////////
+
+
+/**
+ * Converts a ParseException (local to this particular instantiation
+ * of the parser) into a SqlParseException (common to all parsers).
+ */
+JAVACODE MqlParseException convertException(Throwable ex)
+{
+    if (ex instanceof MqlParseException) {
+        return (MqlParseException) ex;
+    }
+    MqlParserPos pos = null;
+    int[][] expectedTokenSequences = null;
+    String[] tokenImage = null;
+    if (ex instanceof ParseException) {
+        ParseException pex = (ParseException) ex;
+        expectedTokenSequences = pex.expectedTokenSequences;
+        tokenImage = pex.tokenImage;
+        if (pex.currentToken != null) {
+            final Token token = pex.currentToken.next;
+            pos = new MqlParserPos(
+                token.beginLine,
+                token.beginColumn,
+                token.endLine,
+                token.endColumn);
+        }
+    } else if (ex instanceof TokenMgrError) {
+        TokenMgrError tme = (TokenMgrError) ex;
+        expectedTokenSequences = null;
+        tokenImage = null;
+        // Example:
+        //    Lexical error at line 3, column 24.  Encountered "#" after "a".
+        final java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(
+            "(?s)Lexical error at line ([0-9]+), column ([0-9]+).*");
+        java.util.regex.Matcher matcher = pattern.matcher(ex.getMessage());
+        if (matcher.matches()) {
+            int line = Integer.parseInt(matcher.group(1));
+            int column = Integer.parseInt(matcher.group(2));
+            pos = new MqlParserPos(line, column, line, column);
+        }
+    } else if (ex instanceof PolyphenyDbContextException) {
+        // PolyphenyDbContextException is the standard wrapper for exceptions
+        // produced by the validator, but in the parser, the standard is
+        // SqlParseException; so, strip it away. In case you were wondering,
+        // the PolyphenyDbContextException appears because the parser
+        // occasionally calls into validator-style code such as
+        // SqlSpecialOperator.reduceExpr.
+        PolyphenyDbContextException ece =
+            (PolyphenyDbContextException) ex;
+        pos = new MqlParserPos(
+            ece.getPosLine(),
+            ece.getPosColumn(),
+            ece.getEndPosLine(),
+            ece.getEndPosColumn());
+        ex = ece.getCause();
+    }
+
+    return new MqlParseException(
+        ex.getMessage(), pos, expectedTokenSequences, tokenImage, ex);
+}
+
+/**
+ * Removes or transforms misleading information from a parse exception.
+ *
+ * @param e dirty excn
+ *
+ * @return clean excn
+ */
+JAVACODE ParseException cleanupParseException(ParseException ex)
+{
+    if (ex.expectedTokenSequences == null) {
+        return ex;
+    }
+    int iIdentifier = Arrays.asList(ex.tokenImage).indexOf("<IDENTIFIER>");
+
+    // Find all sequences in the error which contain identifier. For
+    // example,
+    //       {<IDENTIFIER>}
+    //       {A}
+    //       {B, C}
+    //       {D, <IDENTIFIER>}
+    //       {D, A}
+    //       {D, B}
+    //
+    // would yield
+    //       {}
+    //       {D}
+    boolean id = false;
+    final List<int[]> prefixList = new ArrayList<int[]>();
+    for (int i = 0; i < ex.expectedTokenSequences.length; ++i) {
+        int[] seq = ex.expectedTokenSequences[i];
+        int j = seq.length - 1;
+        int i1 = seq[j];
+        if (i1 == iIdentifier) {
+            int[] prefix = new int[j];
+            System.arraycopy(seq, 0, prefix, 0, j);
+            prefixList.add(prefix);
+        }
+    }
+
+    if (prefixList.isEmpty()) {
+        return ex;
+    }
+
+    int[][] prefixes = (int[][])
+        prefixList.toArray(new int[prefixList.size()][]);
+
+    // Since <IDENTIFIER> was one of the possible productions,
+    // we know that the parser will also have included all
+    // of the non-reserved keywords (which are treated as
+    // identifiers in non-keyword contexts).  So, now we need
+    // to clean those out, since they're totally irrelevant.
+
+    final List<int[]> list = new ArrayList<int[]>();
+    Metadata metadata = getMetadata();
+    for (int i = 0; i < ex.expectedTokenSequences.length; ++i) {
+        int [] seq = ex.expectedTokenSequences[i];
+        String tokenImage = ex.tokenImage[seq[seq.length - 1]];
+        String token = MqlParserUtil.getTokenVal(tokenImage);
+        if (token == null  || !metadata.isNonReservedKeyword(token)) {
+            list.add(seq);
+            continue;
+        }
+        boolean match = matchesPrefix(seq, prefixes);
+        if (!match) {
+            list.add(seq);
+        }
+    }
+
+    ex.expectedTokenSequences =
+        (int [][]) list.toArray(new int [list.size()][]);
+    return ex;
+}
+
+JAVACODE boolean matchesPrefix(int[] seq, int[][] prefixes)
+{
+    nextPrefix:
+    for (int[] prefix : prefixes) {
+        if (seq.length == prefix.length + 1) {
+            for (int k = 0; k < prefix.length; k++) {
+                if (prefix[k] != seq[k]) {
+                    continue nextPrefix;
+                }
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+//////////////////////////////////////
+////* copied from Parser.jj end */////
+//////////////////////////////////////
+
+
+
+/** Root production. */
+MqlNode Input() :
+{
+ MqlNode n;
+}
+{
+    /** only one statement for now **/
+    n = Statement() <EOL> <EOF>
+    {return n;}
+}
+
+/** Brace matching production. */
+MqlNode Statement() :
+{
+ MqlNode n;
+}
+{
+    "db." n=Db_Statement()
+    {return n;}
+}
+
+MqlNode Db_Statement():
+{
+    MqlNode n;
+    String name;
+    String source;
+    BsonDocument doc = null;
+}
+{
+    (
+        "createCollection("
+        name = Literal() ")"
+        {n = new MqlCreateCollection(name);}
+
+    |
+        "getCollection("
+        name = Literal() ")"
+        {n = new MqlSelectCollection(name);}
+
+    |
+        "createView("
+        name = Literal() "," source = Literal()
+        ("," doc=Document() )? ")"
+        {n = new MqlCreateView(name, source, doc);}
+    |
+        n = Collection_Statement(null)
+    |
+        name=Literal() "." n=Collection_Statement(name)
+
+    )
+    {return n;}
+}
+
+MqlNode Collection_Statement(String collection):
+{
+    MqlNode n;
+}
+{
+    (
+        n = Find_Statement(collection)
+    |
+        n = Insert_Statement(collection)
+    |
+        n = Count_Statement(collection)
+    |
+        n = Aggregate_Statement(collection)
+    |
+        n = Update_Statement(collection)
+    |
+        n = Replace_Statement(collection)
+    |
+        n = Drop_Statement(collection)
+    |
+        n = Delete_Statement(collection)
+    |
+        n = Save_Statement(collection)
+    |
+        n = Remove_Statement(collection)
+    )
+    {return n;}
+
+}
+
+MqlNode Delete_Statement(String collection):
+{
+    BsonDocument doc;
+}
+{
+    "deleteMany(" doc=Document() ")"
+    { return new MqlDelete(collection, doc);}
+}
+
+MqlNode Drop_Statement(String collection): {}
+{
+    "drop()"
+    {return new MqlDrop(collection);}
+}
+
+MqlNode Remove_Statement(String collection):
+{
+    BsonDocument doc;
+}
+{
+    "remove(" doc=Document() ")"
+    {return new MqlRemove(collection, doc);}
+}
+
+
+MqlNode Save_Statement(String collection):
+{
+    BsonDocument doc;
+}
+{
+    "save(" doc=Document() ")"
+    {return new MqlSave(collection, doc);}
+}
+
+
+MqlNode Replace_Statement(String collection):
+{
+    BsonDocument doc;
+}
+{
+    "replaceOne(" doc=Document() ")"
+    {return new MqlReplace(collection, doc);}
+}
+
+MqlNode Update_Statement(String collection):
+{
+    BsonDocument doc;
+}
+{
+    ("update("|"updateMany(") doc=Document() ")"
+    {return new MqlUpdate(collection, doc);}
+}
+
+MqlNode Aggregate_Statement(String collection):
+{
+    BsonDocument doc;
+}
+{
+    "aggregate(" doc=Document() ")"
+    {return new MqlAggregate(collection, doc);}
+}
+
+MqlNode Count_Statement(String collection):
+{
+    BsonDocument doc;
+}
+{
+    "count(" doc=Document() ")"
+    {return new MqlCount(collection, doc, true);}
+|
+    "countDocuments(" doc=Document() ")"
+    {return new MqlCount(collection, doc);}
+}
+
+MqlNode Find_Statement(String collection):
+{
+    BsonDocument doc;
+}
+{
+     "find(" doc=Document() ")"
+    {return new MqlCollectionStatement(collection, doc);}
+}
+
+MqlNode Insert_Statement(String collection):
+{
+    BsonDocument doc;
+}
+{
+    ("insertOne(" | "insert(" | "insertMany(") doc=Document() ")"
+    {return new MqlInsert(collection, doc);}
+}
+
+BsonDocument Document():
+{
+    String key;
+    String value;
+}
+{
+    "{" key=Literal() ":" value=Literal() "}"
+    {
+        return new BsonDocument( key, value);
+    }
+}
+
+String Literal():
+{
+    Token t;
+}
+{
+    (
+    "\"" t=<IDENTIFIER> "\""
+    |
+    t=<IDENTIFIER>
+    )
+    {return t.image;}
+}

@@ -106,19 +106,19 @@ sourceSets {
  * Additional MongoDB query language Compile Pipeline
  */
 task generateFmppSourcesDocument {
-    inputs.dir("src/main/codegen/templates")
+    inputs.dir("src/main/codegen/templates/mql")
     outputs.dir(project.buildDir.absolutePath + "/generated-sources/fmpp")
     doLast {
         ant.fmpp(configuration: "src/main/codegen/config_doc.fmpp",
-                sourceRoot: "src/main/codegen/templates",
-                outputRoot: project.buildDir.absolutePath + "/generated-sources/fmpp")
+                sourceRoot: "src/main/codegen/templates/mql",
+                outputRoot: project.buildDir.absolutePath + "/generated-sources/fmpp/mql")
     }
 }
 task generateParserDocument (type: CompileJavaccTask) {
-    dependsOn("generateFmppSources")
+    dependsOn("generateFmppSourcesDocument")
     getConventionMapping().map("classpath", { configurations.javacc })
     arguments = [static: "false", lookahead: "2"]
-    inputDirectory = file(project.buildDir.absolutePath + "/generated-sources/fmpp/javacc")
+    inputDirectory = file(project.buildDir.absolutePath + "/generated-sources/fmpp/mql/javacc")
     outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/org/polypheny/db/mql/parser/impl")
 }
 
@@ -126,19 +126,19 @@ task generateParserDocument (type: CompileJavaccTask) {
  * Compile Pipeline
  */
 task generateFmppSources {
-    inputs.dir("src/main/codegen/templates")
+    inputs.dir("src/main/codegen/templates/sql")
     outputs.dir(project.buildDir.absolutePath + "/generated-sources/fmpp")
     doLast {
         ant.fmpp(configuration: "src/main/codegen/config.fmpp",
-                sourceRoot: "src/main/codegen/templates",
-                outputRoot: project.buildDir.absolutePath + "/generated-sources/fmpp")
+                sourceRoot: "src/main/codegen/templates/sql",
+                outputRoot: project.buildDir.absolutePath + "/generated-sources/fmpp/sql")
     }
 }
 task generateParser (type: CompileJavaccTask) {
     dependsOn("generateFmppSources")
     getConventionMapping().map("classpath", { configurations.javacc })
     arguments = [static: "false", lookahead: "2"]
-    inputDirectory = file(project.buildDir.absolutePath + "/generated-sources/fmpp/javacc")
+    inputDirectory = file(project.buildDir.absolutePath + "/generated-sources/fmpp/sql/javacc")
     outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/org/polypheny/db/sql/parser/impl")
 }
 task generateJdbcVersionProperties(type: Copy) {
@@ -147,7 +147,7 @@ task generateJdbcVersionProperties(type: Copy) {
     expand(version: project.version, versionMajor: versionMajor, versionMinor: versionMinor, buildTimestamp: new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"))
 }
 compileJava {
-    dependsOn("generateParser", "generateJdbcVersionProperties")
+    dependsOn("generateParserDocument", "generateParser", "generateJdbcVersionProperties")
 }
 
 

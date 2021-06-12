@@ -41,6 +41,8 @@ import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
+import org.polypheny.db.processing.MqlProcessor;
+import org.polypheny.db.processing.MqlProcessorImpl;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.processing.SqlProcessorImpl;
 import org.polypheny.db.schema.PolySchemaBuilder;
@@ -220,6 +222,12 @@ public class TransactionImpl implements Transaction, Comparable {
     public SqlProcessor getSqlProcessor() {
         // TODO: This should be cached
         return new SqlProcessorImpl();
+    }
+
+
+    @Override
+    public MqlProcessor getMqlProcessor() {
+        return new MqlProcessorImpl();
     }
 
 
