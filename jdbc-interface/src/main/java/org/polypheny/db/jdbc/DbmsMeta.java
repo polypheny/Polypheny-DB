@@ -287,8 +287,7 @@ public class DbmsMeta implements ProtobufMeta {
                     "SELF_REFERENCING_COL_NAME",    // Name of the designated "identifier" column of a typed table  --> currently always null
                     "REF_GENERATION",               // How values in SELF_REFERENCING_COL_NAME are created. Values are "SYSTEM", "USER", "DERIVED".  --> currently always null
                     // Polypheny-DB specific extensions:
-                    "OWNER",
-                    "DEFINITION"
+                    "OWNER"
             );
         }
     }
@@ -1118,7 +1117,11 @@ public class DbmsMeta implements ProtobufMeta {
                 statementHandle.getExecutionStopWatch().stop();
                 signature.getExecutionTimeMonitor().setExecutionTime( statementHandle.getExecutionStopWatch().getNanoTime() );
                 try {
-                    ((AutoCloseable) iterator).close();
+
+                    // ugly fix for class org.apache.calcite.linq4j.EnumerableDefaults$LookupResultEnumerable$1 cannot be cast to class java.lang.AutoCloseable
+                    if ( iterator instanceof Linq4j ) {
+                        ((AutoCloseable) iterator).close();
+                    }
                 } catch ( Exception e ) {
                     log.error( "Exception while closing result iterator", e );
                 }

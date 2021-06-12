@@ -97,7 +97,6 @@ public class RelWriterTest {
         String s =
                 Frameworks.withPlanner( ( cluster, relOptSchema, rootSchema ) -> {
                     rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ) );
-                    //TODO IG: ViewTableScan needed??
                     LogicalTableScan scan =
                             LogicalTableScan.create( cluster,
                                     relOptSchema.getTableForMember( Arrays.asList( "hr", "emps" ) ) );

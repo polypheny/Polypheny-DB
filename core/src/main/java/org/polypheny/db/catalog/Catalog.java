@@ -361,10 +361,9 @@ public abstract class Catalog {
      * @param ownerId The if of the owner
      * @param tableType The table type
      * @param modifiable Whether the content of the table can be modified
-     * @param definition The definition of this table (e.g. a SQL string; null if not applicable)
      * @return The id of the inserted table
      */
-    public abstract long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition );
+    public abstract long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable );
 
     /**
      * Adds a table to a specified schema.
@@ -379,7 +378,7 @@ public abstract class Catalog {
      * @param fieldList all columns selected within the viewTable
      * @return The id of the inserted table
      */
-    public abstract long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, List<Long> underlyingTables, RelDataType fieldList );
+    public abstract long addViewTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, List<Long> underlyingTables, RelDataType fieldList );
 
     /**
      * Checks if there is a table with the specified name in the specified schema.

@@ -223,7 +223,7 @@ public class DdlManagerImpl extends DdlManager {
                     tableName += i;
                 }
 
-                long tableId = catalog.addTable( tableName, 1, 1, TableType.SOURCE, !((DataSource) adapter).isDataReadOnly(), null );
+                long tableId = catalog.addTable( tableName, 1, 1, TableType.SOURCE, !((DataSource) adapter).isDataReadOnly() );
                 List<Long> primaryKeyColIds = new ArrayList<>();
                 int colPos = 1;
                 for ( ExportedColumn exportedColumn : entry.getValue() ) {
@@ -1364,7 +1364,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         List<Long> underlyingTables = new ArrayList<>();
-        long tableId = catalog.addTable(
+        long tableId = catalog.addViewTable(
                 viewName,
                 schemaId,
                 statement.getPrepareContext().getCurrentUserId(),
@@ -1446,8 +1446,7 @@ public class DdlManagerImpl extends DdlManager {
                     schemaId,
                     statement.getPrepareContext().getCurrentUserId(),
                     TableType.TABLE,
-                    true,
-                    null );
+                    true );
 
             for ( ColumnInformation column : columns ) {
                 addColumn( column.name, column.typeInformation, column.collation, column.defaultValue, tableId, column.position, stores, placementType );

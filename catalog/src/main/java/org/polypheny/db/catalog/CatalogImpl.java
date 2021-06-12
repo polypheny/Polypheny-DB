@@ -634,16 +634,16 @@ public class CatalogImpl extends Catalog {
             CatalogAdapter csv = getAdapter( "hr" );
             if ( !testMode ) {
                 if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "depts" } ) ) {
-                    addTable( "depts", schemaId, systemId, TableType.SOURCE, false, null );
+                    addTable( "depts", schemaId, systemId, TableType.SOURCE, false );
                 }
                 if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "emps" } ) ) {
-                    addTable( "emps", schemaId, systemId, TableType.SOURCE, false, null );
+                    addTable( "emps", schemaId, systemId, TableType.SOURCE, false );
                 }
                 if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "emp" } ) ) {
-                    addTable( "emp", schemaId, systemId, TableType.SOURCE, false, null );
+                    addTable( "emp", schemaId, systemId, TableType.SOURCE, false );
                 }
                 if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "work" } ) ) {
-                    addTable( "work", schemaId, systemId, TableType.SOURCE, false, null );
+                    addTable( "work", schemaId, systemId, TableType.SOURCE, false );
                     addDefaultCsvColumns( csv );
                 }
             }
@@ -1278,12 +1278,30 @@ public class CatalogImpl extends Catalog {
      * @param ownerId The if of the owner
      * @param tableType The table type
      * @param modifiable Whether the content of the table can be modified
-     * @param definition RelNode used to create Views (null if not applicable)
      * @return The id of the inserted table
      */
     @Override
-    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition ) {
-        return addTable( name, schemaId, ownerId, tableType, modifiable, definition, null, null, null );
+    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable ) {
+        long id = tableIdBuilder.getAndIncrement();
+        CatalogSchema schema = getSchema( schemaId );
+        CatalogUser owner = getUser( ownerId );
+        CatalogTable table = new CatalogTable(
+                id,
+                name,
+                ImmutableList.of(),
+                schemaId,
+                schema.databaseId,
+                ownerId,
+                owner.name,
+                tableType,
+                null,
+                ImmutableMap.of(),
+                modifiable );
+
+        updateTableLogistics( name, schemaId, id, schema, table );
+        openTable = id;
+
+        return id;
     }
 
 
@@ -1301,29 +1319,41 @@ public class CatalogImpl extends Catalog {
      * @return The id of the inserted table
      */
     @Override
-    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, List<Long> underlyingTables, RelDataType fieldList ) {
+    public long addViewTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, List<Long> underlyingTables, RelDataType fieldList ) {
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( schemaId );
         CatalogUser owner = getUser( ownerId );
-        CatalogTable table = new CatalogTable(
-                id,
-                name,
-                ImmutableList.of(),
-                schemaId,
-                schema.databaseId,
-                ownerId,
-                owner.name,
-                tableType,
-                definition,
-                null,
-                ImmutableMap.of(),
-                modifiable );
 
         if ( tableType == TableType.VIEW ) {
-            table = CatalogView.generateView( table, relCollation, ImmutableList.copyOf( underlyingTables ), fieldList );
-            addConnectedViews( underlyingTables, table.id );
-        }
+            CatalogView viewTable = new CatalogView(
+                    id,
+                    name,
+                    ImmutableList.of(),
+                    schemaId,
+                    schema.databaseId,
+                    ownerId,
+                    owner.name,
+                    tableType,
+                    definition,
+                    null,
+                    ImmutableMap.of(),
+                    modifiable,
+                    relCollation,
+                    ImmutableList.copyOf( underlyingTables ),
+                    fieldList
+            );
+            addConnectedViews( underlyingTables, viewTable.id );
+            updateTableLogistics( name, schemaId, id, schema, viewTable );
+        } else {
 
+            //Should not happen, addViewTable is only called with TableType.View
+            throw new RuntimeException( "addViewTable is only possible with TableType = VIEW" );
+        }
+        return id;
+    }
+
+
+    private void updateTableLogistics( String name, long schemaId, long id, CatalogSchema schema, CatalogTable table ) {
         synchronized ( this ) {
             tables.put( id, table );
             tableChildren.put( id, ImmutableList.<Long>builder().build() );
@@ -1333,12 +1363,7 @@ public class CatalogImpl extends Catalog {
             schemaChildren.replace( schemaId, ImmutableList.copyOf( children ) );
         }
 
-        if ( tableType != TableType.VIEW ) {
-            openTable = id;
-        }
-
         listeners.firePropertyChange( "table", null, table );
-        return id;
     }
 
 
@@ -1466,7 +1491,6 @@ public class CatalogImpl extends Catalog {
                 ownerId,
                 user.name,
                 old.tableType,
-                old.definition,
                 old.primaryKey,
                 old.placementsByAdapter,
                 old.modifiable,
@@ -1501,7 +1525,6 @@ public class CatalogImpl extends Catalog {
                 old.ownerId,
                 old.ownerName,
                 old.tableType,
-                old.definition,
                 keyId,
                 old.placementsByAdapter,
                 old.modifiable,
@@ -1580,7 +1603,6 @@ public class CatalogImpl extends Catalog {
                         old.ownerId,
                         old.ownerName,
                         old.tableType,
-                        old.definition,
                         old.primaryKey,
                         ImmutableMap.copyOf( placementsByStore ),
                         old.modifiable,
@@ -1622,7 +1644,6 @@ public class CatalogImpl extends Catalog {
                         old.ownerId,
                         old.ownerName,
                         old.tableType,
-                        old.definition,
                         old.primaryKey,
                         ImmutableMap.copyOf( placementsByStore ),
                         old.modifiable,
@@ -1686,7 +1707,6 @@ public class CatalogImpl extends Catalog {
                         oldTable.ownerId,
                         oldTable.ownerName,
                         oldTable.tableType,
-                        oldTable.definition,
                         oldTable.primaryKey,
                         ImmutableMap.copyOf( placementsByStore ),
                         oldTable.modifiable,
@@ -1716,7 +1736,6 @@ public class CatalogImpl extends Catalog {
                         oldTable.ownerId,
                         oldTable.ownerName,
                         oldTable.tableType,
-                        oldTable.definition,
                         oldTable.primaryKey,
                         ImmutableMap.copyOf( placementsByStore ),
                         oldTable.modifiable,
@@ -2343,7 +2362,6 @@ public class CatalogImpl extends Catalog {
                 old.ownerId,
                 old.ownerName,
                 old.tableType,
-                old.definition,
                 old.primaryKey,
                 old.placementsByAdapter,
                 old.modifiable,
@@ -3305,7 +3323,6 @@ public class CatalogImpl extends Catalog {
                 old.ownerId,
                 old.ownerName,
                 old.tableType,
-                old.definition,
                 old.primaryKey,
                 old.placementsByAdapter,
                 old.modifiable,
@@ -3342,7 +3359,6 @@ public class CatalogImpl extends Catalog {
                 old.ownerId,
                 old.ownerName,
                 old.tableType,
-                old.definition,
                 old.primaryKey,
                 old.placementsByAdapter,
                 old.modifiable );

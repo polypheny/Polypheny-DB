@@ -47,6 +47,8 @@ public class CatalogView extends CatalogTable {
     private final RelDataType fieldList;
     @Getter
     private final RelCollation relCollation;
+    @Getter
+    RelNode definition;
 
 
     public CatalogView(
@@ -65,7 +67,8 @@ public class CatalogView extends CatalogTable {
             RelCollation relCollation,
             ImmutableList<Long> underlyingTables,
             RelDataType fieldList ) {
-        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, definition, primaryKey, placementsByAdapter, modifiable );
+        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, primaryKey, placementsByAdapter, modifiable );
+        this.definition = definition;
         this.relCollation = relCollation;
         this.underlyingTables = underlyingTables;
         this.fieldList = fieldList;
@@ -94,7 +97,8 @@ public class CatalogView extends CatalogTable {
             ImmutableList<Long> connectedViews,
             ImmutableList<Long> underlyingTables,
             RelDataType fieldList ) {
-        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, definition, primaryKey, placementsByAdapter, modifiable, numPartitions, partitionType, partitionIds, partitionColumnId, isPartitioned, connectedViews );
+        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, primaryKey, placementsByAdapter, modifiable, numPartitions, partitionType, partitionIds, partitionColumnId, isPartitioned, connectedViews );
+        this.definition = definition;
         this.relCollation = relCollation;
         this.underlyingTables = underlyingTables;
         this.fieldList = fieldList;
@@ -150,26 +154,6 @@ public class CatalogView extends CatalogTable {
                 isPartitioned,
                 relCollation,
                 connectedViews,
-                underlyingTables,
-                fieldList );
-    }
-
-
-    public static CatalogView generateView( CatalogTable table, RelCollation relCollation, ImmutableList<Long> underlyingTables, RelDataType fieldList ) {
-        return new CatalogView(
-                table.id,
-                table.name,
-                table.columnIds,
-                table.schemaId,
-                table.databaseId,
-                table.ownerId,
-                table.ownerName,
-                table.tableType,
-                table.definition,
-                table.primaryKey,
-                table.placementsByAdapter,
-                table.modifiable,
-                relCollation,
                 underlyingTables,
                 fieldList );
     }

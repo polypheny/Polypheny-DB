@@ -56,7 +56,6 @@ public class SchemaToJsonMapperTest {
                 1,
                 "hans",
                 TableType.TABLE,
-                null,
                 23L,
                 ImmutableMap.of(),
                 true );

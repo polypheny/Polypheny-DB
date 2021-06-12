@@ -220,13 +220,13 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition ) {
+    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, List<Long> underlyingTables, RelDataType fieldList ) {
+    public long addViewTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, List<Long> underlyingTables, RelDataType fieldList ) {
         throw new NotImplementedException();
     }
 

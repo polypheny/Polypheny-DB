@@ -89,6 +89,7 @@ import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Linq4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringEscapeUtils;
@@ -3370,7 +3371,10 @@ public class Crud implements InformationObserver {
             return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
         } finally {
             try {
-                ((AutoCloseable) iterator).close();
+                // ugly fix for class org.apache.calcite.linq4j.EnumerableDefaults$LookupResultEnumerable$1 cannot be cast to class java.lang.AutoCloseable
+                if ( iterator instanceof Linq4j ) {
+                    ((AutoCloseable) iterator).close();
+                }
             } catch ( Exception e ) {
                 log.error( "Exception while closing result iterator", e );
             }

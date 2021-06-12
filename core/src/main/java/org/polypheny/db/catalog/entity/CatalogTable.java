@@ -29,7 +29,6 @@ import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.rel.RelNode;
 
 
 @EqualsAndHashCode
@@ -45,7 +44,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
     public final int ownerId;
     public final String ownerName;
     public final TableType tableType;
-    public final RelNode definition;
     public final Long primaryKey;
     public final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter;
     public final boolean modifiable;
@@ -69,7 +67,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
             final int ownerId,
             @NonNull final String ownerName,
             @NonNull final TableType type,
-            final RelNode definition,
             final Long primaryKey,
             @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             boolean modifiable ) {
@@ -81,7 +78,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
         this.ownerId = ownerId;
         this.ownerName = ownerName;
         this.tableType = type;
-        this.definition = definition;
         this.primaryKey = primaryKey;
         this.placementsByAdapter = placementsByAdapter;
         this.modifiable = modifiable;
@@ -110,7 +106,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
             final int ownerId,
             @NonNull final String ownerName,
             @NonNull final TableType type,
-            final RelNode definition,
             final Long primaryKey,
             @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             boolean modifiable,
@@ -127,7 +122,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
         this.ownerId = ownerId;
         this.ownerName = ownerName;
         this.tableType = type;
-        this.definition = definition;
         this.primaryKey = primaryKey;
         this.placementsByAdapter = placementsByAdapter;
         this.modifiable = modifiable;
@@ -155,7 +149,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
             final int ownerId,
             @NonNull final String ownerName,
             @NonNull final TableType type,
-            final RelNode definition,
             final Long primaryKey,
             @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             boolean modifiable,
@@ -173,7 +166,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
         this.ownerId = ownerId;
         this.ownerName = ownerName;
         this.tableType = type;
-        this.definition = definition;
         this.primaryKey = primaryKey;
         this.placementsByAdapter = placementsByAdapter;
         this.modifiable = modifiable;
@@ -229,8 +221,7 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
                 null,
                 null,
                 null,
-                ownerName,
-                definition };
+                ownerName };
     }
 
 
@@ -269,7 +260,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
                 ownerId,
                 ownerName,
                 tableType,
-                definition,
                 primaryKey,
                 placementsByAdapter,
                 modifiable,
@@ -292,7 +282,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
                 ownerId,
                 ownerName,
                 tableType,
-                definition,
                 primaryKey,
                 placementsByAdapter,
                 modifiable,
@@ -315,7 +304,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
                 ownerId,
                 ownerName,
                 tableType,
-                definition,
                 primaryKey,
                 placementsByAdapter,
                 modifiable,
@@ -342,7 +330,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
         public final String selfReferencingColName;
         public final String refGeneration;
         public final String owner;
-        public final String definition;
 
     }
 
