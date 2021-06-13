@@ -19,7 +19,6 @@ import ${importStr};
 
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.mql.MqlAggregate;
-import org.polypheny.db.mql.MqlCollectionStatement;
 import org.polypheny.db.mql.MqlCount;
 import org.polypheny.db.mql.MqlCreateCollection;
 import org.polypheny.db.mql.MqlCreateView;
@@ -31,7 +30,6 @@ import org.polypheny.db.mql.MqlNode;
 import org.polypheny.db.mql.MqlRemove;
 import org.polypheny.db.mql.MqlReplace;
 import org.polypheny.db.mql.MqlSave;
-import org.polypheny.db.mql.MqlSelectCollection;
 import org.polypheny.db.mql.MqlUpdate;
 import org.polypheny.db.mql.parser.MqlAbstractParserImpl;
 import org.polypheny.db.mql.parser.MqlParserImplFactory;
@@ -119,7 +117,7 @@ TOKEN : /* IDENTIFIERS */
 {
   < DOCUMENT: "{" (<LETTER>|<DIGIT>|<SYMBOL>)* "}" >
 |
-  < #SYMBOL: [".", ":", ";", "$", "\"", "'"] >
+  < #SYMBOL: [".", ":", ";", "$", "\"", "'", "{", "}", "(", ")", " ", "\n"] >
 |
   < IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>)* >
 |
@@ -326,7 +324,7 @@ MqlNode Db_Statement():
     |
         "getCollection("
         name = Literal() ")"
-        {n = new MqlSelectCollection(name);}
+        "." n = Collection_Statement(name)
 
     |
         "createView("

@@ -9,6 +9,14 @@ public abstract class MqlNode {
     }
 
 
+    abstract Mql.Type getKind();
+
+
+    Mql.Family getFamily() {
+        return Mql.getFamily( getKind() );
+    }
+
+
     @Override
     public String toString() {
         return this.getClass().getSimpleName() + "{}";

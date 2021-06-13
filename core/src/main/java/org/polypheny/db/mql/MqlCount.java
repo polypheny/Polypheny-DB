@@ -1,6 +1,7 @@
 package org.polypheny.db.mql;
 
 import org.bson.BsonDocument;
+import org.polypheny.db.mql.Mql.Type;
 
 public class MqlCount extends MqlCollectionStatement {
 
@@ -15,6 +16,12 @@ public class MqlCount extends MqlCollectionStatement {
     public MqlCount( String collection, BsonDocument document, boolean isEstimate ) {
         super( collection, document );
         this.isEstimate = isEstimate;
+    }
+
+
+    @Override
+    Type getKind() {
+        return Type.COUNT;
     }
 
 }

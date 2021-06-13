@@ -2,7 +2,7 @@ package org.polypheny.db.mql;
 
 import org.bson.BsonDocument;
 
-public class MqlCollectionStatement extends MqlNode {
+public abstract class MqlCollectionStatement extends MqlNode {
 
     private final BsonDocument document;
     private final String collection;
