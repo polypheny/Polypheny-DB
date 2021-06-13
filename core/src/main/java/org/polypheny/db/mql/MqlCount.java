@@ -1,5 +1,7 @@
 package org.polypheny.db.mql;
 
+import org.bson.BsonDocument;
+
 public class MqlCount extends MqlCollectionStatement {
 
     private final boolean isEstimate;

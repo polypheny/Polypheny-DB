@@ -17,7 +17,6 @@ package ${parser.package};
 import ${importStr};
 </#list>
 
-import org.polypheny.db.mql.BsonDocument;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.mql.MqlAggregate;
 import org.polypheny.db.mql.MqlCollectionStatement;
@@ -39,8 +38,10 @@ import org.polypheny.db.mql.parser.MqlParserImplFactory;
 import org.polypheny.db.mql.parser.MqlParseException;
 import org.polypheny.db.mql.parser.MqlParserPos;
 import org.polypheny.db.mql.parser.MqlParserUtil;
-
 import org.polypheny.db.util.SourceStringReader;
+
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 
 import java.io.Reader;
 import java.util.Arrays;
@@ -116,6 +117,10 @@ SKIP : {
 
 TOKEN : /* IDENTIFIERS */
 {
+  < DOCUMENT: "{" (<LETTER>|<DIGIT>|<SYMBOL>)* "}" >
+|
+  < #SYMBOL: [".", ":", ";", "$", "\"", "'"] >
+|
   < IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>)* >
 |
   < #LETTER: ["_","a"-"z","A"-"Z"] >
@@ -461,13 +466,12 @@ MqlNode Insert_Statement(String collection):
 
 BsonDocument Document():
 {
-    String key;
-    String value;
+    Token t;
 }
 {
-    "{" key=Literal() ":" value=Literal() "}"
+    t=<DOCUMENT>
     {
-        return new BsonDocument( key, value);
+        return BsonDocument.parse( t.image );
     }
 }
 
