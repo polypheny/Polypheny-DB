@@ -372,10 +372,10 @@ MqlNode Collection_Statement(String collection):
 
 MqlNode Delete_Statement(String collection):
 {
-    BsonDocument doc;
+    BsonDocument doc = null;
 }
 {
-    "deleteMany(" doc=Document() ")"
+    "deleteMany(" (doc=Document())? ")"
     { return new MqlDelete(collection, doc);}
 }
 
@@ -387,78 +387,78 @@ MqlNode Drop_Statement(String collection): {}
 
 MqlNode Remove_Statement(String collection):
 {
-    BsonDocument doc;
+    BsonDocument doc = null;
 }
 {
-    "remove(" doc=Document() ")"
+    "remove(" (doc=Document())? ")"
     {return new MqlRemove(collection, doc);}
 }
 
 
 MqlNode Save_Statement(String collection):
 {
-    BsonDocument doc;
+    BsonDocument doc = null;
 }
 {
-    "save(" doc=Document() ")"
+    "save(" (doc=Document())? ")"
     {return new MqlSave(collection, doc);}
 }
 
 
 MqlNode Replace_Statement(String collection):
 {
-    BsonDocument doc;
+    BsonDocument doc = null;
 }
 {
-    "replaceOne(" doc=Document() ")"
+    "replaceOne(" (doc=Document())? ")"
     {return new MqlReplace(collection, doc);}
 }
 
 MqlNode Update_Statement(String collection):
 {
-    BsonDocument doc;
+    BsonDocument doc = null;
 }
 {
-    ("update("|"updateMany(") doc=Document() ")"
+    ("update("|"updateMany(") (doc=Document())? ")"
     {return new MqlUpdate(collection, doc);}
 }
 
 MqlNode Aggregate_Statement(String collection):
 {
-    BsonDocument doc;
+    BsonDocument doc = null;
 }
 {
-    "aggregate(" doc=Document() ")"
+    "aggregate(" (doc=Document())? ")"
     {return new MqlAggregate(collection, doc);}
 }
 
 MqlNode Count_Statement(String collection):
 {
-    BsonDocument doc;
+    BsonDocument doc = null;
 }
 {
-    "count(" doc=Document() ")"
+    "count(" (doc=Document())? ")"
     {return new MqlCount(collection, doc, true);}
 |
-    "countDocuments(" doc=Document() ")"
+    "countDocuments(" (doc=Document())? ")"
     {return new MqlCount(collection, doc);}
 }
 
 MqlNode Find_Statement(String collection):
 {
-    BsonDocument doc;
+    BsonDocument doc = null;
 }
 {
-     "find(" doc=Document() ")"
+     "find(" (doc=Document())? ")"
     {return new MqlFind(collection, doc);}
 }
 
 MqlNode Insert_Statement(String collection):
 {
-    BsonDocument doc;
+    BsonDocument doc = null;
 }
 {
-    ("insertOne(" | "insert(" | "insertMany(") doc=Document() ")"
+    ("insertOne(" | "insert(" | "insertMany(") (doc=Document())? ")"
     {return new MqlInsert(collection, doc);}
 }
 

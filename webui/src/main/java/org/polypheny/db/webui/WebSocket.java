@@ -107,15 +107,20 @@ public class WebSocket {
                 QueryRequest queryRequest = gson.fromJson( message, QueryRequest.class );
                 ArrayList<Result> results;
                 if ( queryRequest.language.equals( "mql" ) ) {
-                    crud.documentCrud.anyQuery( crud.getTransaction( queryRequest.analyze ).createStatement(), queryRequest.query );
-                    break;
-                }
+                    try {
+                        results = crud.documentCrud.anyQuery( crud.getTransaction( queryRequest.analyze ).createStatement(), queryRequest.query );
+                    } catch ( Throwable t ) {
+                        sendMessage( session, new Result[]{ new Result( t ) } );
+                        return;
+                    }
+                } else {
 
-                try {
-                    results = crud.anyQuery( queryRequest, session );
-                } catch ( Throwable t ) {
-                    sendMessage( session, new Result[]{ new Result( t ) } );
-                    return;
+                    try {
+                        results = crud.anyQuery( queryRequest, session );
+                    } catch ( Throwable t ) {
+                        sendMessage( session, new Result[]{ new Result( t ) } );
+                        return;
+                    }
                 }
                 for ( Result result : results ) {
                     if ( result.getXid() != null ) {
@@ -124,6 +129,7 @@ public class WebSocket {
                 }
                 sendMessage( session, results );
                 break;
+
             case "RelAlgRequest":
             case "TableRequest":
                 Result result;

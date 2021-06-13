@@ -11,7 +11,7 @@ public class MqlInsert extends MqlCollectionStatement {
 
 
     @Override
-    Type getKind() {
+    public Type getKind() {
         return Type.INSERT;
     }
 

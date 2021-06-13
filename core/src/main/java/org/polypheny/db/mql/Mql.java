@@ -41,7 +41,7 @@ public class Mql {
     }
 
 
-    enum Family {
+    public enum Family {
         DDL,
         DML,
         DCL,
@@ -49,7 +49,7 @@ public class Mql {
     }
 
 
-    enum Type {
+    public enum Type {
         AGGREGATE,
         COUNT,
         CREATE_VIEW,

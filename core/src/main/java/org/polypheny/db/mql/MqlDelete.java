@@ -11,7 +11,7 @@ public class MqlDelete extends MqlCollectionStatement {
 
 
     @Override
-    Type getKind() {
+    public Type getKind() {
         return Type.DELETE;
     }
 

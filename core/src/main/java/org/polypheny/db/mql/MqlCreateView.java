@@ -15,7 +15,7 @@ public class MqlCreateView extends MqlCollectionStatement {
 
 
     @Override
-    Type getKind() {
+    public Type getKind() {
         return Type.CREATE_VIEW;
     }
 

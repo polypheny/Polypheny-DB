@@ -30,9 +30,9 @@ public interface MqlProcessor {
 
     Pair<MqlNode, RelDataType> validate( Transaction transaction, MqlNode parsed, boolean addDefaultValues );
 
-    RelRoot translate( Statement statement, MqlNode sql );
+    RelRoot translate( Statement statement, MqlNode mql );
 
-    PolyphenyDbSignature<?> prepareDdl( Statement statement, MqlNode parsed );
+    PolyphenyDbSignature<?> prepareDdl( Statement statement, MqlNode parsed, String mql );
 
     RelDataType getParameterRowType( MqlNode left );
 

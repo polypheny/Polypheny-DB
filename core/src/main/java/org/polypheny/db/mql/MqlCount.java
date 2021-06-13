@@ -20,7 +20,7 @@ public class MqlCount extends MqlCollectionStatement {
 
 
     @Override
-    Type getKind() {
+    public Type getKind() {
         return Type.COUNT;
     }
 

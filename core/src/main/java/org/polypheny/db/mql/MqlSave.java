@@ -11,7 +11,7 @@ public class MqlSave extends MqlCollectionStatement {
 
 
     @Override
-    Type getKind() {
+    public Type getKind() {
         return Type.SAVE;
     }
 

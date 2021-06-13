@@ -5,14 +5,11 @@ import org.polypheny.db.mql.parser.MqlParserPos;
 public abstract class MqlNode {
 
 
-    public MqlNode() {
-    }
+
+    public abstract Mql.Type getKind();
 
 
-    abstract Mql.Type getKind();
-
-
-    Mql.Family getFamily() {
+    public Mql.Family getFamily() {
         return Mql.getFamily( getKind() );
     }
 
