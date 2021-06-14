@@ -17,7 +17,7 @@
 package org.polypheny.db.router;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,21 +27,23 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
+import java.util.Queue;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.stat.StatUtils;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.ConfigBoolean;
@@ -54,10 +56,7 @@ import org.polypheny.db.information.InformationHtml;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
-import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
-import org.polypheny.db.monitoring.events.MonitoringDataPoint;
-import org.polypheny.db.monitoring.events.RoutingEvent;
-import org.polypheny.db.monitoring.events.metrics.RoutingDataPoint;
+import org.polypheny.db.information.InformationText;
 import org.polypheny.db.processing.QueryParameterizer;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
@@ -120,27 +119,14 @@ public class IcarusRouter extends AbstractRouter {
 
     private static final IcarusRoutingTable routingTable = new IcarusRoutingTable();
 
-    private Set<Integer> selectedAdapterIds = Sets.newHashSet(-2); // Is set in analyze
+    private int selectedAdapterId = -2; // Is set in analyze
     private String queryClassString;
 
 
     private IcarusRouter() {
         // Intentionally left empty
-        //MonitoringServiceProvider.getInstance()
     }
 
-    private Map<Set<Integer>, List<Long>> getExecutionTimes(String queryClassString){
-        return  MonitoringServiceProvider.getInstance().getRoutingDataPoints( queryClassString )
-                .stream()
-                .map( elem -> (RoutingDataPoint)elem )
-                .filter( elem -> elem.getQueryClassString() == queryClassString )
-                .collect(
-                        Collectors.groupingBy(
-                                elem -> elem.getAdapterId() ,
-                                Collectors.mapping(elem -> elem.getNanoTime(), Collectors.toList())
-                        )
-                );
-    }
 
     @Override
     protected void analyze( Statement statement, RelRoot logicalRoot ) {
@@ -158,28 +144,23 @@ public class IcarusRouter extends AbstractRouter {
             }
 
             if ( routingTable.contains( queryClassString ) && routingTable.get( queryClassString ).size() > 0 ) {
-                selectedAdapterIds.clear();
-                selectedAdapterIds.addAll( routeQuery( routingTable.get( queryClassString ) ) );
-
+                selectedAdapterId = routeQuery( routingTable.get( queryClassString ) );
 
                 // In case the query class is known but the table has been dropped and than recreated with the same name,
                 // the query class is known but only contains information for the adapters with no placement. To handle this
                 // special case (selectedAdapterId == -2) we have to set it to -1.
-                // TODO: where will it be set to -2?, need to handle it in other way
+                if ( selectedAdapterId == -2 ) {
+                    selectedAdapterId = -1;
+                }
                 if ( statement.getTransaction().isAnalyze() ) {
                     InformationGroup group = new InformationGroup( page, "Routing Table Entry" );
                     statement.getTransaction().getQueryAnalyzer().addGroup( group );
                     InformationTable table = new InformationTable( group, ImmutableList.copyOf( routingTable.knownAdapters.values() ) );
-                    Map<Set<Integer>, Integer> entry = routingTable.get( queryClassString );
-
-                    // TODO: get from Monitoring
-
-                    Map<Set<Integer>, List<Long>> timesEntry = this.getExecutionTimes( queryClassString );
-
-
+                    Map<Integer, Integer> entry = routingTable.get( queryClassString );
+                    Map<Integer, CircularFifoQueue<Double>> timesEntry = routingTable.times.get( queryClassString );
                     List<String> row1 = new LinkedList<>();
                     List<String> row2 = new LinkedList<>();
-                    for ( Entry<Set<Integer>, Integer> e : entry.entrySet() ) {
+                    for ( Entry<Integer, Integer> e : entry.entrySet() ) {
                         if ( e.getValue() == IcarusRoutingTable.MISSING_VALUE ) {
                             row1.add( "MISSING VALUE" );
                             row2.add( "" );
@@ -206,7 +187,7 @@ public class IcarusRouter extends AbstractRouter {
                     InformationHtml html = new InformationHtml( group, "Unknown query class" );
                     statement.getTransaction().getQueryAnalyzer().registerInformation( html );
                 }
-                selectedAdapterIds.clear();
+                selectedAdapterId = -1;
             }
         }
         if ( statement.getTransaction().isAnalyze() ) {
@@ -214,16 +195,16 @@ public class IcarusRouter extends AbstractRouter {
             statement.getTransaction().getQueryAnalyzer().addGroup( group );
             InformationHtml informationHtml = new InformationHtml(
                     group,
-                    "<p><b>Selected Store ID:</b> " + selectedAdapterIds + "</p>"
+                    "<p><b>Selected Store ID:</b> " + selectedAdapterId + "</p>"
                             + "<p><b>Query Class:</b> " + queryClassString + "</p>" );
             statement.getTransaction().getQueryAnalyzer().registerInformation( informationHtml );
         }
     }
 
 
-    private Set<Integer> routeQuery( Map<Set<Integer>, Integer> routingTableRow ) {
+    private int routeQuery( Map<Integer, Integer> routingTableRow ) {
         // Check if there is an adapter for which we do not have a execution time
-        for ( Entry<Set<Integer>, Integer> entry : routingTable.get( queryClassString ).entrySet() ) {
+        for ( Entry<Integer, Integer> entry : routingTable.get( queryClassString ).entrySet() ) {
             if ( entry.getValue() == IcarusRoutingTable.MISSING_VALUE ) {
                 // We have no execution time for this adapter.
                 return entry.getKey();
@@ -232,7 +213,7 @@ public class IcarusRouter extends AbstractRouter {
 
         if ( SHORT_RUNNING_SIMILAR_THRESHOLD.getInt() == 0 ) {
             // There should only be exactly one entry in the routing table > 0
-            for ( Entry<Set<Integer>, Integer> entry : routingTable.get( queryClassString ).entrySet() ) {
+            for ( Entry<Integer, Integer> entry : routingTable.get( queryClassString ).entrySet() ) {
                 if ( entry.getValue() == 100 ) {
                     // We have no execution time for this adapter.
                     return entry.getKey();
@@ -241,7 +222,7 @@ public class IcarusRouter extends AbstractRouter {
         } else {
             int p = 0;
             int random = Math.min( (int) (Math.random() * 100) + 1, 100 );
-            for ( Map.Entry<Set<Integer>, Integer> entry : routingTableRow.entrySet() ) {
+            for ( Map.Entry<Integer, Integer> entry : routingTableRow.entrySet() ) {
                 p += Math.max( entry.getValue(), 0 ); // avoid subtracting -2
                 if ( p >= random ) {
                     return entry.getKey();
@@ -255,7 +236,7 @@ public class IcarusRouter extends AbstractRouter {
     @Override
     protected void wrapUp( Statement statement, RelNode routed ) {
         if ( TRAINING.getBoolean() ) {
-            executionTimeMonitor.subscribe( routingTable, selectedAdapterIds + "-" + queryClassString );
+            executionTimeMonitor.subscribe( routingTable, selectedAdapterId + "-" + queryClassString );
         }
         if ( statement.getTransaction().isAnalyze() ) {
             InformationGroup executionTimeGroup = new InformationGroup( page, "Execution Time" );
@@ -265,7 +246,7 @@ public class IcarusRouter extends AbstractRouter {
                         InformationHtml html = new InformationHtml( executionTimeGroup, nanoTime / 1000000.0 + " ms" );
                         statement.getTransaction().getQueryAnalyzer().registerInformation( html );
                     },
-                    selectedAdapterIds + "-" + queryClassString );
+                    selectedAdapterId + "-" + queryClassString );
         }
     }
 
@@ -279,89 +260,34 @@ public class IcarusRouter extends AbstractRouter {
     @Override
     protected List<CatalogColumnPlacement> selectPlacement( RelNode node, CatalogTable table ) {
         // Update known adapters
-        // updateKnownAdapters( table.placementsByAdapter.keySet() );
-        val placements = updateKnownAdapters( table );
+        updateKnownAdapters( table.placementsByAdapter.keySet() );
 
-        if ( selectedAdapterIds.size() == 0  ) {
-            routingTable.initializeRow( queryClassString, Collections.unmodifiableSet( placements.get( 0 ) ) );
-            selectedAdapterIds = placements.get( 0 );
+        // Route
+        if ( selectedAdapterId == -1 ) {
+            routingTable.initializeRow( queryClassString, table.placementsByAdapter.keySet() );
+            selectedAdapterId = table.placementsByAdapter.keySet().asList().get( 0 );
         }
-        if ( selectedAdapterIds.size() > 0) {
-
-            val allPlacements = selectedAdapterIds
-                    .stream()
-                    .map( id ->  Catalog.getInstance().getColumnPlacementsOnAdapter( id, table.id ) )
-                    .flatMap( List::stream )
-                    .collect( Collectors.toList());
-
-            List<CatalogColumnPlacement> result = new LinkedList<>();
-            for ( val colId : table.columnIds) {
-                val firstPlacement = allPlacements
-                        .stream()
-                        .filter( place -> place.columnId == colId )
-                        .findFirst();
-                if(firstPlacement.isPresent()){
-                    result.add( firstPlacement.get() );
-                }
+        if ( table.placementsByAdapter.containsKey( selectedAdapterId ) ) {
+            List<CatalogColumnPlacement> placements = Catalog.getInstance().getColumnPlacementsOnAdapter( selectedAdapterId, table.id );
+            if ( placements.size() != table.columnIds.size() ) {
+                throw new RuntimeException( "The data store '" + selectedAdapterId + "' does not contain a full table placement!" );
             }
-
-
-            if(result.size() == 0){
-                throw new RuntimeException( "The previously selected store does not contain a placement of this table. Store ID: " + selectedAdapterIds );
-            }
-
-            return result;
+            return placements;
         }
-        throw new RuntimeException( "The previously selected store does not contain a placement of this table. Store ID: " + selectedAdapterIds );
-     }
-
-    public List<HashSet<Integer>> updateKnownAdapters( CatalogTable table ) {
-
-        // get adapter full placements
-        val adapterWithFullPlacement = table.placementsByAdapter.entrySet()
-                .stream()
-                .filter( elem -> elem.getValue().size() == table.columnIds.size() )
-                .map( adapter -> Sets.newHashSet(adapter.getKey()) ) // adapterId
-                .collect( Collectors.toList());
-
-        if(adapterWithFullPlacement.size() == 0){
-            int adapterIdWithMostPlacements = -1;
-            int numOfPlacements = 0;
-            for ( Entry<Integer, ImmutableList<Long>> entry : table.placementsByAdapter.entrySet() ) {
-                if ( entry.getValue().size() > numOfPlacements ) {
-                    adapterIdWithMostPlacements = entry.getKey();
-                    numOfPlacements = entry.getValue().size();
-                }
-            }
+        throw new RuntimeException( "The previously selected store does not contain a placement of this table. Store ID: " + selectedAdapterId );
+    }
 
 
-            val placementList = Sets.newHashSet(adapterIdWithMostPlacements);
-            for ( long cid : table.columnIds ) {
-                if ( table.placementsByAdapter.get( adapterIdWithMostPlacements ).contains( cid ) ) {
-                    placementList.add( Catalog.getInstance().getColumnPlacement( adapterIdWithMostPlacements, cid ).adapterId );
-                } else {
-                    placementList.add( Catalog.getInstance().getColumnPlacements( cid ).get( 0 ).adapterId );
-                }
-            }
-
-            adapterWithFullPlacement.add( placementList );
-
-        }
-
-        for ( val placement : adapterWithFullPlacement) {
-            if ( !routingTable.knownAdapters.containsKey( placement ) ) {
-                val uniqueName = placement.stream()
-                        .map( adapterId -> Catalog.getInstance().getAdapter( adapterId ).uniqueName )
-                        .collect( Collectors.joining(","));
-
-                routingTable.knownAdapters.put( Sets.newHashSet(placement ), uniqueName );
-                if ( routingTable.routingTable.get( queryClassString ) != null && !routingTable.routingTable.get( queryClassString ).containsKey( placement ) ) {
-                    routingTable.routingTable.get( queryClassString ).put( placement, IcarusRoutingTable.MISSING_VALUE );
+    public void updateKnownAdapters( ImmutableSet<Integer> stores ) {
+        for ( Integer adapterId : stores ) {
+            if ( !routingTable.knownAdapters.containsKey( adapterId ) ) {
+                CatalogAdapter catalogAdapter = Catalog.getInstance().getAdapter( adapterId );
+                routingTable.knownAdapters.put( adapterId, catalogAdapter.uniqueName );
+                if ( routingTable.routingTable.get( queryClassString ) != null && !routingTable.routingTable.get( queryClassString ).containsKey( adapterId ) ) {
+                    routingTable.routingTable.get( queryClassString ).put( adapterId, IcarusRoutingTable.MISSING_VALUE );
                 }
             }
         }
-
-        return adapterWithFullPlacement;
     }
 
 
@@ -401,10 +327,12 @@ public class IcarusRouter extends AbstractRouter {
         public static final int MISSING_VALUE = -1;
         public static final int NO_PLACEMENT = -2;
 
-        private final Map<String, Map<Set<Integer>, Integer>> routingTable = new ConcurrentHashMap<>();  // QueryClassStr -> (Adapter -> Percentage)
-        private final Map<Set<Integer>, String> knownAdapters = new HashMap<>(); // Adapter Id -> Adapter Name
-        //private final Map<String, Map<Set<Integer>, CircularFifoQueue<Double>>> times = new ConcurrentHashMap<>();  // QueryClassStr -> (Adapter -> Time)
+        private final Map<String, Map<Integer, Integer>> routingTable = new ConcurrentHashMap<>();  // QueryClassStr -> (Adapter -> Percentage)
+        private final Map<String, Map<Integer, CircularFifoQueue<Double>>> times = new ConcurrentHashMap<>();  // QueryClassStr -> (Adapter -> Time)
 
+        private final Map<Integer, String> knownAdapters = new HashMap<>(); // Adapter Id -> Adapter Name
+
+        private final Queue<ExecutionTime> processingQueue = new ConcurrentLinkedQueue<>();
         private final Lock processingQueueLock = new ReentrantLock();
 
 
@@ -421,7 +349,13 @@ public class IcarusRouter extends AbstractRouter {
                     routingTableGroup,
                     Arrays.asList( "Query Class" ) );
             im.registerInformation( routingTableElement );
-
+            // Processing queue size
+            InformationGroup processingQueueGroup = new InformationGroup( page, "Processing Queue" );
+            im.addGroup( processingQueueGroup );
+            InformationText processingQueueSize = new InformationText(
+                    processingQueueGroup,
+                    "Processing queue size: " + processingQueue.size() );
+            im.registerInformation( processingQueueSize );
             // update
             page.setRefreshFunction( () -> {
                 // Update labels
@@ -447,6 +381,8 @@ public class IcarusRouter extends AbstractRouter {
                     }
                     routingTableElement.addRow( row );
                 } );
+                // Update processing queue size
+                processingQueueSize.setText( "Processing queue size: " + processingQueue.size() );
             } );
 
             // Background Task
@@ -464,48 +400,30 @@ public class IcarusRouter extends AbstractRouter {
         }
 
 
-        public Map<Set<Integer>, Integer> get( String queryClassStr ) {
+        public Map<Integer, Integer> get( String queryClassStr ) {
             return routingTable.get( queryClassStr );
-        }
-
-        private Map<Set<Integer>, List<Long>> getExecutionTimes(String queryClassString){
-            val points = MonitoringServiceProvider.getInstance().getRoutingDataPoints( queryClassString );
-
-            val mapped = points.stream()
-                    .map( elem -> (RoutingDataPoint)elem ).collect( Collectors.toList());
-
-            val filtered = mapped.stream()
-                .filter( elem -> elem.getQueryClassString().equals( queryClassString ) )
-                .collect( Collectors.toList());
-
-            for ( MonitoringDataPoint p : points) {
-                if(((RoutingDataPoint)p).getQueryClassString().equals( queryClassString )){
-                    System.out.println("blub");
-                }
-            }
-
-            val group =   filtered.stream()
-                    .collect(
-                            Collectors.groupingBy(
-                                    elem -> elem.getAdapterId() ,
-                                    Collectors.mapping(elem -> elem.getNanoTime(), Collectors.toList())
-                            )
-                    );
-
-            return group;
         }
 
 
         private void process() {
             processingQueueLock.lock();
+            // Add to times map
+            while ( processingQueue.size() > 0 ) {
+                ExecutionTime executionTime = processingQueue.poll();
+                Map<Integer, CircularFifoQueue<Double>> row = times.get( executionTime.queryClassString );
+                if ( row.containsKey( executionTime.adapterId ) ) {
+                    row.get( executionTime.adapterId ).offer( (double) executionTime.nanoTime );
+                } else {
+                    CircularFifoQueue<Double> queue = new CircularFifoQueue<>( WINDOW_SIZE.getInt() );
+                    queue.offer( (double) executionTime.nanoTime );
+                    row.put( executionTime.adapterId, queue );
+                }
+            }
 
             // Update routing table
-            // get values from monitoring
             for ( String queryClass : routingTable.keySet() ) {
-                Map<Set<Integer>, Double> meanTimeRow = new HashMap<>();
-
-                // TODO: get from Monitoring
-                for ( Map.Entry<Set<Integer>, List<Long>> entry : this.getExecutionTimes( queryClass ).entrySet() ) {
+                Map<Integer, Double> meanTimeRow = new HashMap<>();
+                for ( Map.Entry<Integer, CircularFifoQueue<Double>> entry : times.get( queryClass ).entrySet() ) {
                     double mean = StatUtils.mean(
                             ArrayUtils.toPrimitive( entry.getValue().toArray( new Double[0] ) ),
                             0,
@@ -513,13 +431,12 @@ public class IcarusRouter extends AbstractRouter {
                     meanTimeRow.put( entry.getKey(), mean );
                 }
 
-                Map<Set<Integer>, Integer> newRow = new HashMap<>();
-                for ( Set<Integer> adapterIds : knownAdapters.keySet() ) {
-                    newRow.put( adapterIds, IcarusRoutingTable.NO_PLACEMENT );
-
+                Map<Integer, Integer> newRow = new HashMap<>();
+                for ( Integer adapterId : knownAdapters.keySet() ) {
+                    newRow.put( adapterId, IcarusRoutingTable.NO_PLACEMENT );
                 }
-                Map<Set<Integer>, Integer> calculatedRow = generateRow( meanTimeRow );
-                for ( Map.Entry<Set<Integer>, Integer> oldEntry : routingTable.get( queryClass ).entrySet() ) {
+                Map<Integer, Integer> calculatedRow = generateRow( meanTimeRow );
+                for ( Map.Entry<Integer, Integer> oldEntry : routingTable.get( queryClass ).entrySet() ) {
                     if ( oldEntry.getValue() == NO_PLACEMENT ) {
                         newRow.put( oldEntry.getKey(), NO_PLACEMENT );
                     } else if ( calculatedRow.containsKey( oldEntry.getKey() ) ) {
@@ -533,23 +450,18 @@ public class IcarusRouter extends AbstractRouter {
             processingQueueLock.unlock();
         }
 
+
         // called by execution monitor to inform about execution time
         @Override
         public void executionTime( String reference, long nanoTime ) {
-            // TODO: fix it
             String adapterIdStr = reference.split( "-" )[0]; // Reference starts with "ADAPTER_ID-..."
             if ( adapterIdStr.equals( "" ) ) {
                 // No adapterIdStr string. This happens if a query contains no table (e.g. select 1 )
                 return;
             }
-
-            adapterIdStr = adapterIdStr.substring( 1, adapterIdStr.length() - 1 );
-            val adapters = Arrays.stream( adapterIdStr.split( "," ) )
-                    .map( value -> Integer.parseInt( value.trim() ) )
-                    .collect( Collectors.toSet());
-
-            String queryClassString = reference.substring( adapterIdStr.length() + 3 );
-            MonitoringServiceProvider.getInstance().monitorEvent( new RoutingEvent(queryClassString, adapters, nanoTime) );
+            int adapterId = Integer.parseInt( adapterIdStr );
+            String queryClassString = reference.substring( adapterIdStr.length() + 1 );
+            processingQueue.add( new ExecutionTime( queryClassString, adapterId, nanoTime ) );
         }
 
 
@@ -558,7 +470,10 @@ public class IcarusRouter extends AbstractRouter {
             processingQueueLock.lock();
             for ( CatalogColumnPlacement placement : placements ) {
                 knownAdapters.remove( placement.adapterId );
-                for ( Map<Set<Integer>, Integer> entry : routingTable.values() ) {
+                for ( Map<Integer, CircularFifoQueue<Double>> entry : times.values() ) {
+                    entry.remove( placement.adapterId );
+                }
+                for ( Map<Integer, Integer> entry : routingTable.values() ) {
                     entry.remove( placement.adapterId );
                 }
             }
@@ -567,70 +482,70 @@ public class IcarusRouter extends AbstractRouter {
         }
 
 
-        public void initializeRow( String queryClassString, Set<Integer> adapters ) {
-            Map<Set<Integer>, Integer> row = new HashMap<>();
+        public void initializeRow( String queryClassString, ImmutableSet<Integer> adapters ) {
+            Map<Integer, Integer> row = new HashMap<>();
             // Initialize with NO_PLACEMENT
-            for ( val adapterIds : knownAdapters.keySet() ) {
-                row.put( adapterIds, NO_PLACEMENT );
+            for ( int adapterId : knownAdapters.keySet() ) {
+                row.put( adapterId, NO_PLACEMENT );
             }
             // Set missing values entry
-            row.replace( adapters, MISSING_VALUE );
-
+            for ( int adapterId : adapters ) {
+                row.replace( adapterId, MISSING_VALUE );
+            }
             routingTable.put( queryClassString, row );
+            times.put( queryClassString, new HashMap<>() );
         }
 
 
-        protected Map<Set<Integer>, Integer> generateRow( Map<Set<Integer>, Double> map ) {
-            Map<Set<Integer>, Integer> row;
+        protected Map<Integer, Integer> generateRow( Map<Integer, Double> map ) {
+            Map<Integer, Integer> row;
             // find fastest
-            Set<Integer> fastestAdapters = new HashSet<>();
+            int fastestAdapter = -1;
             double fastestTime = Double.MAX_VALUE;
-            for ( Map.Entry<Set<Integer>, Double> entry : map.entrySet() ) {
+            for ( Map.Entry<Integer, Double> entry : map.entrySet() ) {
                 if ( fastestTime > entry.getValue() ) {
-                    fastestAdapters.addAll( entry.getKey() );
+                    fastestAdapter = entry.getKey();
                     fastestTime = entry.getValue();
                 }
             }
             long shortRunningLongRunningThreshold = SHORT_RUNNING_LONG_RUNNING_THRESHOLD.getInt() * 1_000_000L; // multiply with 1000000 to get nanoseconds
             if ( fastestTime < shortRunningLongRunningThreshold && SHORT_RUNNING_SIMILAR_THRESHOLD.getInt() != 0 ) {
-                row = calc( map, SHORT_RUNNING_SIMILAR_THRESHOLD.getInt(), fastestTime, fastestAdapters );
+                row = calc( map, SHORT_RUNNING_SIMILAR_THRESHOLD.getInt(), fastestTime, fastestAdapter );
             } else if ( fastestTime > shortRunningLongRunningThreshold && LONG_RUNNING_SIMILAR_THRESHOLD.getInt() != 0 ) {
-                row = calc( map, LONG_RUNNING_SIMILAR_THRESHOLD.getInt(), fastestTime, fastestAdapters );
+                row = calc( map, LONG_RUNNING_SIMILAR_THRESHOLD.getInt(), fastestTime, fastestAdapter );
             } else {
                 row = new HashMap<>();
                 // init row with 0
-                for ( val adapterIds : map.keySet() ) {
-                    row.put( adapterIds, 0 );
+                for ( Integer adapterId : map.keySet() ) {
+                    row.put( adapterId, 0 );
                 }
-                if ( fastestAdapters.size() != -0&& fastestTime > 0 ) {
-                    row.put( fastestAdapters, 100 );
+                if ( fastestAdapter != -1 && fastestTime > 0 ) {
+                    row.put( fastestAdapter, 100 );
                 }
             }
             return row;
         }
 
 
-        private Map<Set<Integer>, Integer> calc( Map<Set<Integer>, Double> map, int similarThreshold, double fastestTime, Set<Integer> fastestStore ) {
-            HashMap<Set<Integer>, Integer> row = new HashMap<>();
+        private Map<Integer, Integer> calc( Map<Integer, Double> map, int similarThreshold, double fastestTime, int fastestStore ) {
+            HashMap<Integer, Integer> row = new HashMap<>();
             ArrayList<Integer> percents = new ArrayList<>();
-            Map<Set<Integer>, Double> stores = new TreeMap<>();
+            Map<Integer, Double> stores = new TreeMap<>();
             // init row with 0
-            for ( val mapEntry : map.keySet() ) {
-                row.put(mapEntry, 0);
+            for ( Integer storeId : map.keySet() ) {
+                row.put( storeId, 0 );
             }
-
-
             // calc 100%
             int threshold = (int) (fastestTime + (fastestTime * (similarThreshold / 100.0)));
             int hundredPercent = 0;
-            for ( Map.Entry<Set<Integer>, Double> entry : map.entrySet() ) {
+            for ( Map.Entry<Integer, Double> entry : map.entrySet() ) {
                 if ( threshold >= entry.getValue() ) {
                     hundredPercent += entry.getValue();
                 }
             }
             // calc percents
             double onePercent = hundredPercent / 100.0;
-            for ( Map.Entry<Set<Integer>, Double> entry : map.entrySet() ) {
+            for ( Map.Entry<Integer, Double> entry : map.entrySet() ) {
                 if ( threshold >= entry.getValue() ) {
                     double d = entry.getValue().intValue() / onePercent;
                     int t = Math.min( (int) d, 100 ); // This is not nice... But if there is only one entry with 100 percent, it some time happens that we get 101
@@ -641,12 +556,12 @@ public class IcarusRouter extends AbstractRouter {
             // add
             Collections.sort( percents );
             Collections.reverse( percents );
-            for ( Map.Entry<Set<Integer>, Double> entry : entriesSortedByValues( stores ) ) {
+            for ( Map.Entry<Integer, Double> entry : entriesSortedByValues( stores ) ) {
                 row.put( entry.getKey(), percents.remove( 0 ) );
             }
             // normalize to 100
             int sum = 0;
-            for ( Map.Entry<Set<Integer>, Integer> entry : row.entrySet() ) {
+            for ( Map.Entry<Integer, Integer> entry : row.entrySet() ) {
                 sum += entry.getValue();
             }
             if ( sum == 0 ) {
@@ -654,7 +569,7 @@ public class IcarusRouter extends AbstractRouter {
             } else if ( sum > 100 ) {
                 log.error( "Routing table row does sum up to a value greater 100! This should not happen! The value is: " + sum + " | Entries: " + row.values().toString() );
             } else if ( sum < 100 ) {
-                if ( fastestStore.size() == 0 ) {
+                if ( fastestStore == -1 ) {
                     log.error( "Fastest Store is -1! This should not happen!" );
                 } else if ( !row.containsKey( fastestStore ) ) {
                     log.error( "Row does not contain the fastest row! This should not happen!" );
@@ -677,6 +592,16 @@ public class IcarusRouter extends AbstractRouter {
             return sortedEntries;
         }
     }
+
+
+    @AllArgsConstructor
+    private static class ExecutionTime {
+
+        private final String queryClassString;
+        private final int adapterId;
+        private final long nanoTime;
+    }
+
 
     public static class IcarusRouterFactory extends RouterFactory {
 
