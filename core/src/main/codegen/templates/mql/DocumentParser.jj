@@ -317,19 +317,17 @@ MqlNode Db_Statement():
 }
 {
     (
-        "createCollection("
-        name = Literal() ")"
+        "createCollection(" name = Literal() ")"
         {n = new MqlCreateCollection(name);}
+        (Details(n))* (Primary(n))*
 
     |
-        "getCollection("
-        name = Literal() ")"
+        "getCollection(" name = Literal() ")"
         "." n = Collection_Statement(name)
+        (Details(n))* (Primary(n))*
 
     |
-        "createView("
-        name = Literal() "," source = Literal()
-        ("," doc=Document() )? ")"
+        "createView(" name = Literal() "," source = Literal() ("," doc=Document() )? ")"
         {n = new MqlCreateView(name, source, doc);}
     |
         n = Collection_Statement(null)
@@ -473,6 +471,16 @@ BsonDocument Document():
     }
 }
 
+void Literal_List(List<String> cols):
+{
+    String name;
+}
+{
+    name=Literal()
+    {cols.add(name);}
+    ["," Literal_List(cols)]
+}
+
 String Literal():
 {
     Token t;
@@ -484,4 +492,23 @@ String Literal():
     t=<IDENTIFIER>
     )
     {return t.image;}
+}
+
+
+void Details( MqlNode node ):
+{
+    String store;
+}
+{
+    ".store(" store=Literal() ")"
+    {node.store(store);}
+}
+
+void Primary( MqlNode node ):
+{
+    List<String> cols = new ArrayList();
+}
+{
+    ".primary(" Literal_List(cols) ")"
+    {node.primary( cols );}
 }

@@ -1,9 +1,21 @@
 package org.polypheny.db.mql;
 
+import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.polypheny.db.mql.parser.MqlParserPos;
 
+@Accessors(fluent = true)
 public abstract class MqlNode {
 
+    @Getter
+    @Setter
+    String store;
+
+    @Setter
+    @Getter
+    List<String> primary;
 
 
     public abstract Mql.Type getKind();
