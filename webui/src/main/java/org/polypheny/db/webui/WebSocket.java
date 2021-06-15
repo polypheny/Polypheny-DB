@@ -19,9 +19,9 @@ package org.polypheny.db.webui;
 
 import com.google.gson.Gson;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -105,10 +105,10 @@ public class WebSocket {
         switch ( request.requestType ) {
             case "QueryRequest":
                 QueryRequest queryRequest = gson.fromJson( message, QueryRequest.class );
-                ArrayList<Result> results;
+                List<Result> results;
                 if ( queryRequest.language.equals( "mql" ) ) {
                     try {
-                        results = crud.documentCrud.anyQuery( crud.getTransaction( queryRequest.analyze ).createStatement(), queryRequest.query );
+                        results = crud.documentCrud.anyQuery( crud.getTransaction( queryRequest.analyze ).createStatement(), queryRequest.query, queryRequest );
                     } catch ( Throwable t ) {
                         sendMessage( session, new Result[]{ new Result( t ) } );
                         return;

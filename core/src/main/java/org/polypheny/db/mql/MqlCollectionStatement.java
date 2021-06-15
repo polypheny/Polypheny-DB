@@ -1,10 +1,13 @@
 package org.polypheny.db.mql;
 
+import lombok.Getter;
 import org.bson.BsonDocument;
 
 public abstract class MqlCollectionStatement extends MqlNode {
 
+    @Getter
     private final BsonDocument document;
+    @Getter
     private final String collection;
 
 

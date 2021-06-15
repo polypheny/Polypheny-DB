@@ -16,26 +16,27 @@
 
 package org.polypheny.db.mql2rel;
 
+import java.util.Collections;
 import java.util.Objects;
 import org.polypheny.db.mql.Mql;
 import org.polypheny.db.mql.MqlFind;
 import org.polypheny.db.mql.MqlNode;
 import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.MqlProcessor;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.validate.SqlValidatorUtil;
 
 public class MqlToRelConverter {
 
+    private PolyphenyDbCatalogReader catalogReader;
     private final RelOptCluster cluster;
 
 
     public MqlToRelConverter( MqlProcessor mqlProcessor, PolyphenyDbCatalogReader catalogReader, RelOptCluster cluster ) {
+        this.catalogReader = catalogReader;
         this.cluster = Objects.requireNonNull( cluster );
 
     }
@@ -54,9 +55,8 @@ public class MqlToRelConverter {
 
 
     private RelNode convertFind( MqlFind query ) {
-        RelOptTable table = SqlValidatorUtil.getRelOptTable( null, null, null, null );
-
-        return LogicalTableScan.create( cluster, table );
+        //RelOptTable table = SqlValidatorUtil.getRelOptTable( null, null, null, null );
+        return LogicalTableScan.create( cluster, catalogReader.getTable( Collections.singletonList( query.getCollection() ) ) );
     }
 
 }

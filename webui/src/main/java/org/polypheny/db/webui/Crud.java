@@ -241,7 +241,7 @@ public class Crud implements InformationObserver {
         this.transactionManager = transactionManager;
         this.databaseName = databaseName;
         this.userName = userName;
-        this.documentCrud = new DocumentCrud();
+        this.documentCrud = new DocumentCrud( this );
         registerStatisticObserver();
     }
 
@@ -3429,7 +3429,7 @@ public class Crud implements InformationObserver {
      * @param rows Rows from the enumerable iterator
      * @param header Header from the UI-ResultSet
      */
-    ArrayList<String[]> computeResultData( final List<List<Object>> rows, final List<DbColumn> header, final Transaction transaction ) {
+    public ArrayList<String[]> computeResultData( final List<List<Object>> rows, final List<DbColumn> header, final Transaction transaction ) {
         ArrayList<String[]> data = new ArrayList<>();
         for ( List<Object> row : rows ) {
             String[] temp = new String[row.size()];
