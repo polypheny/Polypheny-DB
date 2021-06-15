@@ -20,6 +20,7 @@ import static org.reflections.Reflections.log;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -1363,7 +1364,7 @@ public class DdlManagerImpl extends DdlManager {
             position++;
         }
 
-        List<Long> underlyingTables = new ArrayList<>();
+        Map<Long, List<Long>> underlyingTables = new HashMap<>();
         long tableId = catalog.addViewTable(
                 viewName,
                 schemaId,
@@ -1372,7 +1373,7 @@ public class DdlManagerImpl extends DdlManager {
                 false,
                 relNode,
                 relCollation,
-                findUnderlyingTablesOfView( relNode, underlyingTables ),
+                findUnderlyingTablesOfView( relNode, underlyingTables, fieldList ),
                 fieldList
         );
 
@@ -1407,19 +1408,37 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private List<Long> findUnderlyingTablesOfView( RelNode relNode, List<Long> underlyingTables ) {
+    private Map<Long, List<Long>> findUnderlyingTablesOfView( RelNode relNode, Map<Long, List<Long>> underlyingTables, RelDataType fieldList ) {
         if ( relNode instanceof LogicalTableScan ) {
-            underlyingTables.add( ((LogicalTable) ((RelOptTableImpl) relNode.getTable()).getTable()).getTableId() );
+            List<Long> underlyingColumns = getUnderlyingColumns( relNode, fieldList );
+            underlyingTables.put( ((LogicalTable) ((RelOptTableImpl) relNode.getTable()).getTable()).getTableId(), underlyingColumns );
         } else if ( relNode instanceof LogicalViewTableScan ) {
-            underlyingTables.add( ((LogicalView) ((RelOptTableImpl) relNode.getTable()).getTable()).getTableId() );
+            List<Long> underlyingColumns = getUnderlyingColumns( relNode, fieldList );
+            underlyingTables.put( ((LogicalView) ((RelOptTableImpl) relNode.getTable()).getTable()).getTableId(), underlyingColumns );
         }
         if ( relNode instanceof BiRel ) {
-            findUnderlyingTablesOfView( ((BiRel) relNode).getLeft(), underlyingTables );
-            findUnderlyingTablesOfView( ((BiRel) relNode).getRight(), underlyingTables );
+            findUnderlyingTablesOfView( ((BiRel) relNode).getLeft(), underlyingTables, fieldList );
+            findUnderlyingTablesOfView( ((BiRel) relNode).getRight(), underlyingTables, fieldList );
         } else if ( relNode instanceof SingleRel ) {
-            findUnderlyingTablesOfView( ((SingleRel) relNode).getInput(), underlyingTables );
+            findUnderlyingTablesOfView( ((SingleRel) relNode).getInput(), underlyingTables, fieldList );
         }
         return underlyingTables;
+    }
+
+
+    private List<Long> getUnderlyingColumns( RelNode relNode, RelDataType fieldList ) {
+        List<Long> columnIds = ((LogicalTable) ((RelOptTableImpl) relNode.getTable()).getTable()).getColumnIds();
+        List<String> logicalColumnNames = ((LogicalTable) ((RelOptTableImpl) relNode.getTable()).getTable()).getLogicalColumnNames();
+        List<Long> underlyingColumns = new ArrayList<>();
+        for ( int i = 0; i < columnIds.size(); i++ ) {
+            for ( RelDataTypeField relDataTypeField : fieldList.getFieldList() ) {
+                String name = logicalColumnNames.get( i );
+                if ( relDataTypeField.getName().equals( name ) ) {
+                    underlyingColumns.add( columnIds.get( i ) );
+                }
+            }
+        }
+        return underlyingColumns;
     }
 
 

@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog;
@@ -42,7 +43,7 @@ public class CatalogView extends CatalogTable {
     private static final long serialVersionUID = -4453089531698670528L;
 
     @Getter
-    private final ImmutableList<Long> underlyingTables;
+    private final Map<Long, List<Long>> underlyingTables;
     @Getter
     private final RelDataType fieldList;
     @Getter
@@ -65,7 +66,7 @@ public class CatalogView extends CatalogTable {
             @NonNull ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             boolean modifiable,
             RelCollation relCollation,
-            ImmutableList<Long> underlyingTables,
+            Map<Long, List<Long>> underlyingTables,
             RelDataType fieldList ) {
         super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, primaryKey, placementsByAdapter, modifiable );
         this.definition = definition;
@@ -95,7 +96,7 @@ public class CatalogView extends CatalogTable {
             boolean isPartitioned,
             RelCollation relCollation,
             ImmutableList<Long> connectedViews,
-            ImmutableList<Long> underlyingTables,
+            Map<Long, List<Long>> underlyingTables,
             RelDataType fieldList ) {
         super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, primaryKey, placementsByAdapter, modifiable, numPartitions, partitionType, partitionIds, partitionColumnId, isPartitioned, connectedViews );
         this.definition = definition;

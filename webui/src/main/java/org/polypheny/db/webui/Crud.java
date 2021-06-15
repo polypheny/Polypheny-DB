@@ -121,6 +121,7 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
@@ -1320,29 +1321,60 @@ public class Crud implements InformationObserver {
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
         try {
             CatalogTable catalogTable = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
-            if ( catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).size() != 1 ) {
-                throw new RuntimeException( "The table has an unexpected number of placements!" );
+
+            if ( catalogTable.tableType == TableType.VIEW ) {
+                Map<Long, List<Long>> underlyingTable = ((CatalogView) catalogTable).getUnderlyingTables();
+
+                List<DbColumn> columns = new ArrayList<>();
+                for ( Entry<Long, List<Long>> entry : underlyingTable.entrySet() ) {
+                    int adapterId = catalog.getColumnPlacements( entry.getValue().get( 0 ) ).get( 0 ).adapterId;
+                    for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapter( adapterId, entry.getKey() ) ) {
+                        for ( Long colId : entry.getValue() ) {
+                            if ( colId == ccp.columnId ) {
+                                CatalogColumn col = catalog.getColumn( ccp.columnId );
+                                columns.add( new DbColumn(
+                                        col.name,
+                                        col.type.getName(),
+                                        col.collectionsType == null ? "" : col.collectionsType.getName(),
+                                        col.nullable,
+                                        col.length,
+                                        col.scale,
+                                        col.dimension,
+                                        col.cardinality,
+                                        false,
+                                        col.defaultValue == null ? null : col.defaultValue.value
+                                ).setPhysicalName( ccp.physicalColumnName ) );
+                            }
+                        }
+                    }
+                }
+                return new Result( columns.toArray( new DbColumn[0] ), null ).setType( ResultType.VIEW );
+            } else {
+                if ( catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).size() != 1 ) {
+                    throw new RuntimeException( "The table has an unexpected number of placements!" );
+                }
+
+                int adapterId = catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).get( 0 ).adapterId;
+                CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
+                List<String> pkColumnNames = primaryKey.getColumnNames();
+                List<DbColumn> columns = new ArrayList<>();
+                for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapter( adapterId, catalogTable.id ) ) {
+                    CatalogColumn col = catalog.getColumn( ccp.columnId );
+                    columns.add( new DbColumn(
+                            col.name,
+                            col.type.getName(),
+                            col.collectionsType == null ? "" : col.collectionsType.getName(),
+                            col.nullable,
+                            col.length,
+                            col.scale,
+                            col.dimension,
+                            col.cardinality,
+                            pkColumnNames.contains( col.name ),
+                            col.defaultValue == null ? null : col.defaultValue.value
+                    ).setPhysicalName( ccp.physicalColumnName ) );
+                }
+                return new Result( columns.toArray( new DbColumn[0] ), null ).setType( ResultType.VIEW );
             }
-            int adapterId = catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).get( 0 ).adapterId;
-            CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
-            List<String> pkColumnNames = primaryKey.getColumnNames();
-            List<DbColumn> columns = new ArrayList<>();
-            for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapter( adapterId, catalogTable.id ) ) {
-                CatalogColumn col = catalog.getColumn( ccp.columnId );
-                columns.add( new DbColumn(
-                        col.name,
-                        col.type.getName(),
-                        col.collectionsType == null ? "" : col.collectionsType.getName(),
-                        col.nullable,
-                        col.length,
-                        col.scale,
-                        col.dimension,
-                        col.cardinality,
-                        pkColumnNames.contains( col.name ),
-                        col.defaultValue == null ? null : col.defaultValue.value
-                ).setPhysicalName( ccp.physicalColumnName ) );
-            }
-            return new Result( columns.toArray( new DbColumn[0] ), null ).setType( ResultType.VIEW );
         } catch ( UnknownDatabaseException | UnknownSchemaException | UnknownTableException e ) {
             return new Result( e );
         }
@@ -1947,21 +1979,27 @@ public class Crud implements InformationObserver {
         try {
             CatalogTable table = catalog.getTable( databaseName, schemaName, tableName );
             Placement p = new Placement( table.isPartitioned, catalog.getPartitionNames( table.id ) );
-            long pkid = table.primaryKey;
-            List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
-            CatalogColumn pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );
-            List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacements( pkColumn.id );
-            for ( CatalogColumnPlacement placement : pkPlacements ) {
-                Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
-                p.addAdapter( new Placement.Store(
-                        adapter.getUniqueName(),
-                        adapter.getAdapterName(),
-                        catalog.getColumnPlacementsOnAdapter( adapter.getAdapterId(), table.id ),
-                        catalog.getPartitionsIndexOnDataPlacement( placement.adapterId, placement.tableId ),
-                        table.numPartitions,
-                        table.partitionType ) );
+            if ( table.tableType == TableType.VIEW ) {
+
+                return p;
+            } else {
+                long pkid = table.primaryKey;
+                List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
+                CatalogColumn pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );
+                List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacements( pkColumn.id );
+                for ( CatalogColumnPlacement placement : pkPlacements ) {
+                    Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
+                    p.addAdapter( new Placement.Store(
+                            adapter.getUniqueName(),
+                            adapter.getAdapterName(),
+                            catalog.getColumnPlacementsOnAdapter( adapter.getAdapterId(), table.id ),
+                            catalog.getPartitionsIndexOnDataPlacement( placement.adapterId, placement.tableId ),
+                            table.numPartitions,
+                            table.partitionType ) );
+                }
+                return p;
             }
-            return p;
+
         } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             log.error( "Caught exception while getting placements", e );
             return new Placement( e );

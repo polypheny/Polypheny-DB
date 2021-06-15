@@ -1319,7 +1319,7 @@ public class CatalogImpl extends Catalog {
      * @return The id of the inserted table
      */
     @Override
-    public long addViewTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, List<Long> underlyingTables, RelDataType fieldList ) {
+    public long addViewTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList ) {
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( schemaId );
         CatalogUser owner = getUser( ownerId );
@@ -1339,7 +1339,7 @@ public class CatalogImpl extends Catalog {
                     ImmutableMap.of(),
                     modifiable,
                     relCollation,
-                    ImmutableList.copyOf( underlyingTables ),
+                    ImmutableMap.copyOf( underlyingTables ),
                     fieldList
             );
             addConnectedViews( underlyingTables, viewTable.id );
@@ -1370,8 +1370,8 @@ public class CatalogImpl extends Catalog {
     /**
      * Add additional Information to Table, what Views are connected to table
      */
-    public void addConnectedViews( List<Long> underlyingTables, long viewId ) {
-        for ( long id : underlyingTables ) {
+    public void addConnectedViews( Map<Long, List<Long>> underlyingTables, long viewId ) {
+        for ( long id : underlyingTables.keySet() ) {
             CatalogTable old = getTable( id );
             List<Long> connectedViews;
             connectedViews = new ArrayList<>( old.connectedViews );
@@ -1393,7 +1393,7 @@ public class CatalogImpl extends Catalog {
      * @param catalogView view to be deleted
      */
     public void deleteViewDependencies( CatalogView catalogView ) {
-        for ( long id : catalogView.getUnderlyingTables() ) {
+        for ( long id : catalogView.getUnderlyingTables().keySet() ) {
             CatalogTable old = getTable( id );
             List<Long> connectedViews = old.connectedViews.stream().filter( e -> e != catalogView.id ).collect( Collectors.toList() );
 

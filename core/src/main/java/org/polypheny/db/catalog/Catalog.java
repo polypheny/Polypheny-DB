@@ -378,7 +378,7 @@ public abstract class Catalog {
      * @param fieldList all columns selected within the viewTable
      * @return The id of the inserted table
      */
-    public abstract long addViewTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, List<Long> underlyingTables, RelDataType fieldList );
+    public abstract long addViewTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList );
 
     /**
      * Checks if there is a table with the specified name in the specified schema.
