@@ -28,7 +28,7 @@ public class RoutingEvent extends BaseEvent {
 
     private  String queryClassString;
     private Set<Integer> adapterId;
-    private long nanoTime;
+    private double nanoTime;
 
     @Override
     public <T extends MonitoringDataPoint> List<Class<T>> getMetrics() {

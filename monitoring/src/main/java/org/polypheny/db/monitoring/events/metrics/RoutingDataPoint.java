@@ -36,7 +36,7 @@ import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 public class RoutingDataPoint implements MonitoringDataPoint, Serializable {
     protected  String queryClassString;
     protected Set<Integer> adapterId;
-    protected long nanoTime;
+    protected double nanoTime;
 
     private UUID Id;
     private Timestamp recordedTimestamp;

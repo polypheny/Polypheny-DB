@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
@@ -37,7 +36,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.stat.StatUtils;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
@@ -87,28 +85,28 @@ import org.polypheny.db.util.background.BackgroundTaskManager;
 public class UnifiedRouting extends AbstractRouter {
 
     private static final ConfigBoolean TRAINING = new ConfigBoolean(
-            "icarusRouting/training",
+            "unifiedRouting/training",
             "Whether routing table should be adjusted according to the measured execution times. Setting this to false keeps the routing table in its current state.",
             true );
     private static final ConfigInteger WINDOW_SIZE = new ConfigInteger(
-            "icarusRouting/windowSize",
+            "unifiedRouting/windowSize",
             "Size of the moving average on the execution times per query class used for calculating the routing table.",
             25 );
     private static final ConfigInteger SHORT_RUNNING_SIMILAR_THRESHOLD = new ConfigInteger(
-            "icarusRouting/shortRunningSimilarThreshold",
+            "unifiedRouting/shortRunningSimilarThreshold",
             "The amount of time (specified as percentage of the fastest time) an adapter can be slower than the fastest adapter in order to be still considered for executing queries of a certain query class. Setting this to zero results in only considering the fastest adapter.",
             0 );
     private static final ConfigInteger LONG_RUNNING_SIMILAR_THRESHOLD = new ConfigInteger(
-            "icarusRouting/longRunningSimilarThreshold",
+            "unifiedRouting/longRunningSimilarThreshold",
             "The amount of time (specified as percentage of the fastest time) an adapter can be slower than the fastest adapter in order to be still considered for executing queries of a certain query class. Setting this to zero results in only considering the fastest adapter.",
             0 );
     private static final ConfigInteger SHORT_RUNNING_LONG_RUNNING_THRESHOLD = new ConfigInteger(
-            "icarusRouting/shortRunningLongRunningThreshold",
+            "unifiedRouting/shortRunningLongRunningThreshold",
             "The minimal execution time (in milliseconds) for a query to be considered as long-running. Queries with lower execution times are considered as short-running.",
             1000 );
 
     private static final ConfigEnum QUERY_CLASS_PROVIDER = new ConfigEnum(
-            "icarusRouting/queryClassProvider",
+            "unifiedRouting/queryClassProvider",
             "Which implementation to use for deriving the query class from a query plan.",
             QUERY_CLASS_PROVIDER_METHOD.class,
             QUERY_CLASS_PROVIDER_METHOD.QUERY_PARAMETERIZER );
@@ -117,7 +115,7 @@ public class UnifiedRouting extends AbstractRouter {
     private enum QUERY_CLASS_PROVIDER_METHOD {ICARUS_SHUTTLE, QUERY_PARAMETERIZER}
 
 
-    private static final IcarusRoutingTable routingTable = new IcarusRoutingTable();
+    private static final UnifiedRoutingTable routingTable = new UnifiedRoutingTable();
 
     private Set<Integer> selectedAdapterIds = Sets.newHashSet(-2); // Is set in analyze
     private String queryClassString;
@@ -126,19 +124,6 @@ public class UnifiedRouting extends AbstractRouter {
     private UnifiedRouting() {
         // Intentionally left empty
         //MonitoringServiceProvider.getInstance()
-    }
-
-    private Map<Set<Integer>, List<Long>> getExecutionTimes(String queryClassString){
-        return  MonitoringServiceProvider.getInstance().getRoutingDataPoints( queryClassString )
-                .stream()
-                .map( elem -> (RoutingDataPoint)elem )
-                .filter( elem -> elem.getQueryClassString() == queryClassString )
-                .collect(
-                        Collectors.groupingBy(
-                                elem -> elem.getAdapterId() ,
-                                Collectors.mapping(elem -> elem.getNanoTime(), Collectors.toList())
-                        )
-                );
     }
 
     @Override
@@ -158,7 +143,7 @@ public class UnifiedRouting extends AbstractRouter {
 
             if ( routingTable.contains( queryClassString ) && routingTable.get( queryClassString ).size() > 0 ) {
                 selectedAdapterIds.clear();
-                selectedAdapterIds.addAll( routeQuery( routingTable.get( queryClassString ) ) );
+                selectedAdapterIds = routeQuery( routingTable.get( queryClassString ) ) ;
 
 
                 // In case the query class is known but the table has been dropped and than recreated with the same name,
@@ -172,23 +157,22 @@ public class UnifiedRouting extends AbstractRouter {
                     Map<Set<Integer>, Integer> entry = routingTable.get( queryClassString );
 
                     // TODO: get from Monitoring
-
-                    Map<Set<Integer>, List<Long>> timesEntry = this.getExecutionTimes( queryClassString );
+                    Map<Set<Integer>, List<Double>> timesEntry = routingTable.getExecutionTimes( queryClassString );
 
 
                     List<String> row1 = new LinkedList<>();
                     List<String> row2 = new LinkedList<>();
                     for ( Entry<Set<Integer>, Integer> e : entry.entrySet() ) {
-                        if ( e.getValue() == IcarusRoutingTable.MISSING_VALUE ) {
+                        if ( e.getValue() == UnifiedRoutingTable.MISSING_VALUE ) {
                             row1.add( "MISSING VALUE" );
                             row2.add( "" );
-                        } else if ( e.getValue() == IcarusRoutingTable.NO_PLACEMENT ) {
+                        } else if ( e.getValue() == UnifiedRoutingTable.NO_PLACEMENT ) {
                             row1.add( "NO PLACEMENT" );
                             row2.add( "" );
                         } else {
                             row1.add( e.getValue() + "" );
                             double mean = StatUtils.mean(
-                                    ArrayUtils.toPrimitive( timesEntry.get( e.getKey() ).stream().map( longValue -> (double) longValue / 1_000_000 ).toArray(Double[]::new) ),
+                                    timesEntry.get( e.getKey() ).stream().mapToDouble( d -> d ).toArray(),
                                     0,
                                     timesEntry.get( e.getKey() ).size() );
                             row2.add( mean / 1000000.0 + " ms" );
@@ -209,7 +193,7 @@ public class UnifiedRouting extends AbstractRouter {
             }
         }
         if ( statement.getTransaction().isAnalyze() ) {
-            InformationGroup group = new InformationGroup( page, "Icarus Routing" );
+            InformationGroup group = new InformationGroup( page, "Unified Routing" );
             statement.getTransaction().getQueryAnalyzer().addGroup( group );
             InformationHtml informationHtml = new InformationHtml(
                     group,
@@ -223,7 +207,7 @@ public class UnifiedRouting extends AbstractRouter {
     private Set<Integer> routeQuery( Map<Set<Integer>, Integer> routingTableRow ) {
         // Check if there is an adapter for which we do not have an execution time
         for ( Entry<Set<Integer>, Integer> entry : routingTable.get( queryClassString ).entrySet() ) {
-            if ( entry.getValue() == IcarusRoutingTable.MISSING_VALUE ) {
+            if ( entry.getValue() == UnifiedRoutingTable.MISSING_VALUE ) {
                 // We have no execution time for this adapter.
                 return entry.getKey();
             }
@@ -282,7 +266,7 @@ public class UnifiedRouting extends AbstractRouter {
         val placements = updateKnownAdapters( table );
 
         if ( selectedAdapterIds.size() == 0  ) {
-            routingTable.initializeRow( queryClassString, Collections.unmodifiableSet( placements.get( 0 ) ) );
+            routingTable.initializeRow( queryClassString, placements );
             selectedAdapterIds = placements.get( 0 );
         }
         if ( selectedAdapterIds.size() > 0) {
@@ -333,17 +317,17 @@ public class UnifiedRouting extends AbstractRouter {
                 }
             }
 
-
-            val placementList = Sets.newHashSet(adapterIdWithMostPlacements);
+            // get combined adapters for query, non available with full placements
+            val adapterIds = new HashSet<Integer>();
             for ( long cid : table.columnIds ) {
                 if ( table.placementsByAdapter.get( adapterIdWithMostPlacements ).contains( cid ) ) {
-                    placementList.add( Catalog.getInstance().getColumnPlacement( adapterIdWithMostPlacements, cid ).adapterId );
+                    adapterIds.add( Catalog.getInstance().getColumnPlacement( adapterIdWithMostPlacements, cid ).adapterId );
                 } else {
-                    placementList.add( Catalog.getInstance().getColumnPlacements( cid ).get( 0 ).adapterId );
+                    adapterIds.add( Catalog.getInstance().getColumnPlacements( cid ).get( 0 ).adapterId );
                 }
             }
 
-            adapterWithFullPlacement.add( placementList );
+            adapterWithFullPlacement.add( adapterIds );
 
         }
 
@@ -353,9 +337,9 @@ public class UnifiedRouting extends AbstractRouter {
                         .map( adapterId -> Catalog.getInstance().getAdapter( adapterId ).uniqueName )
                         .collect( Collectors.joining(","));
 
-                routingTable.knownAdapters.put( Sets.newHashSet(placement ), uniqueName );
+                routingTable.knownAdapters.put( placement, uniqueName );
                 if ( routingTable.routingTable.get( queryClassString ) != null && !routingTable.routingTable.get( queryClassString ).containsKey( placement ) ) {
-                    routingTable.routingTable.get( queryClassString ).put( placement, IcarusRoutingTable.MISSING_VALUE );
+                    routingTable.routingTable.get( queryClassString ).put( placement, UnifiedRoutingTable.MISSING_VALUE );
                 }
             }
         }
@@ -395,7 +379,7 @@ public class UnifiedRouting extends AbstractRouter {
     }
 
 
-    private static class IcarusRoutingTable implements ExecutionTimeObserver {
+    private static class UnifiedRoutingTable implements ExecutionTimeObserver {
 
         public static final int MISSING_VALUE = -1;
         public static final int NO_PLACEMENT = -2;
@@ -407,10 +391,10 @@ public class UnifiedRouting extends AbstractRouter {
         private final Lock processingQueueLock = new ReentrantLock();
 
 
-        private IcarusRoutingTable() {
+        private UnifiedRoutingTable() {
             // Information
             InformationManager im = InformationManager.getInstance();
-            InformationPage page = new InformationPage( "Icarus Routing" );
+            InformationPage page = new InformationPage( "Unified Routing" );
             page.fullWidth();
             im.addPage( page );
             // Routing table
@@ -436,9 +420,9 @@ public class UnifiedRouting extends AbstractRouter {
                     List<String> row = new LinkedList<>();
                     row.add( k );
                     for ( Integer integer : v.values() ) {
-                        if ( integer == IcarusRoutingTable.MISSING_VALUE ) {
+                        if ( integer == UnifiedRoutingTable.MISSING_VALUE ) {
                             row.add( "Unknown" );
-                        } else if ( integer == IcarusRoutingTable.NO_PLACEMENT ) {
+                        } else if ( integer == UnifiedRoutingTable.NO_PLACEMENT ) {
                             row.add( "-" );
                         } else {
                             row.add( integer + "" );
@@ -467,7 +451,7 @@ public class UnifiedRouting extends AbstractRouter {
             return routingTable.get( queryClassStr );
         }
 
-        private Map<Set<Integer>, List<Long>> getExecutionTimes(String queryClassString){
+        public Map<Set<Integer>, List<Double>> getExecutionTimes(String queryClassString){
             val points = MonitoringServiceProvider.getInstance().getRoutingDataPoints( queryClassString );
 
             val mapped = points.stream()
@@ -502,9 +486,9 @@ public class UnifiedRouting extends AbstractRouter {
                 Map<Set<Integer>, Double> meanTimeRow = new HashMap<>();
 
                 // TODO: get from Monitoring
-                for ( Map.Entry<Set<Integer>, List<Long>> entry : this.getExecutionTimes( queryClass ).entrySet() ) {
+                for ( Map.Entry<Set<Integer>, List<Double>> entry : this.getExecutionTimes( queryClass ).entrySet() ) {
                     double mean = StatUtils.mean(
-                            ArrayUtils.toPrimitive( entry.getValue().stream().map( longValue -> (double) longValue / 1_000_000 ).toArray(Double[]::new) ),
+                            entry.getValue().stream().mapToDouble( d -> d ).toArray(),
                             0,
                             entry.getValue().size() );
                     meanTimeRow.put( entry.getKey(), mean );
@@ -512,7 +496,7 @@ public class UnifiedRouting extends AbstractRouter {
 
                 Map<Set<Integer>, Integer> newRow = new HashMap<>();
                 for ( Set<Integer> adapterIds : knownAdapters.keySet() ) {
-                    newRow.put( adapterIds, IcarusRoutingTable.NO_PLACEMENT );
+                    newRow.put( adapterIds, UnifiedRoutingTable.NO_PLACEMENT );
 
                 }
                 Map<Set<Integer>, Integer> calculatedRow = generateRow( meanTimeRow );
@@ -533,7 +517,6 @@ public class UnifiedRouting extends AbstractRouter {
         // called by execution monitor to inform about execution time
         @Override
         public void executionTime( String reference, long nanoTime ) {
-            // TODO: fix it
             String adapterIdStr = reference.split( "-" )[0]; // Reference starts with "ADAPTER_ID-..."
             if ( adapterIdStr.equals( "" ) ) {
                 // No adapterIdStr string. This happens if a query contains no table (e.g. select 1 )
@@ -564,14 +547,16 @@ public class UnifiedRouting extends AbstractRouter {
         }
 
 
-        public void initializeRow( String queryClassString, Set<Integer> adapters ) {
+        public void initializeRow( String queryClassString, List<HashSet<Integer>> adapterPlacements ) {
             Map<Set<Integer>, Integer> row = new HashMap<>();
             // Initialize with NO_PLACEMENT
             for ( val adapterIds : knownAdapters.keySet() ) {
                 row.put( adapterIds, NO_PLACEMENT );
             }
             // Set missing values entry
-            row.replace( adapters, MISSING_VALUE );
+            for(val adapters : adapterPlacements){
+                row.replace( adapters, MISSING_VALUE );
+            }
 
             routingTable.put( queryClassString, row );
         }
@@ -580,27 +565,27 @@ public class UnifiedRouting extends AbstractRouter {
         protected Map<Set<Integer>, Integer> generateRow( Map<Set<Integer>, Double> map ) {
             Map<Set<Integer>, Integer> row;
             // find fastest
-            Set<Integer> fastestAdapters = new HashSet<>();
+            Set<Integer> fastestAdapterIds = new HashSet<>();
             double fastestTime = Double.MAX_VALUE;
             for ( Map.Entry<Set<Integer>, Double> entry : map.entrySet() ) {
                 if ( fastestTime > entry.getValue() ) {
-                    fastestAdapters.addAll( entry.getKey() );
+                    fastestAdapterIds = entry.getKey();
                     fastestTime = entry.getValue();
                 }
             }
             long shortRunningLongRunningThreshold = SHORT_RUNNING_LONG_RUNNING_THRESHOLD.getInt() * 1_000_000L; // multiply with 1000000 to get nanoseconds
             if ( fastestTime < shortRunningLongRunningThreshold && SHORT_RUNNING_SIMILAR_THRESHOLD.getInt() != 0 ) {
-                row = calc( map, SHORT_RUNNING_SIMILAR_THRESHOLD.getInt(), fastestTime, fastestAdapters );
+                row = calc( map, SHORT_RUNNING_SIMILAR_THRESHOLD.getInt(), fastestTime, fastestAdapterIds );
             } else if ( fastestTime > shortRunningLongRunningThreshold && LONG_RUNNING_SIMILAR_THRESHOLD.getInt() != 0 ) {
-                row = calc( map, LONG_RUNNING_SIMILAR_THRESHOLD.getInt(), fastestTime, fastestAdapters );
+                row = calc( map, LONG_RUNNING_SIMILAR_THRESHOLD.getInt(), fastestTime, fastestAdapterIds );
             } else {
                 row = new HashMap<>();
                 // init row with 0
                 for ( val adapterIds : map.keySet() ) {
                     row.put( adapterIds, 0 );
                 }
-                if ( fastestAdapters.size() != -0&& fastestTime > 0 ) {
-                    row.put( fastestAdapters, 100 );
+                if ( fastestAdapterIds.size() != 0 && fastestTime > 0 ) {
+                    row.put( fastestAdapterIds, 100 );
                 }
             }
             return row;
@@ -610,7 +595,7 @@ public class UnifiedRouting extends AbstractRouter {
         private Map<Set<Integer>, Integer> calc( Map<Set<Integer>, Double> map, int similarThreshold, double fastestTime, Set<Integer> fastestStore ) {
             HashMap<Set<Integer>, Integer> row = new HashMap<>();
             ArrayList<Integer> percents = new ArrayList<>();
-            Map<Set<Integer>, Double> stores = new TreeMap<>();
+            Map<Set<Integer>, Double> stores = new HashMap<>();
             // init row with 0
             for ( val mapEntry : map.keySet() ) {
                 row.put(mapEntry, 0);
@@ -682,27 +667,27 @@ public class UnifiedRouting extends AbstractRouter {
             final ConfigManager configManager = ConfigManager.getInstance();
             // Only initialize ones
             if ( configManager.getConfig( TRAINING.getKey() ) == null ) {
-                final WebUiGroup icarusGroup = new WebUiGroup( "icarusGroup", RouterManager.getInstance().routingPage.getId(), 2 );
-                icarusGroup.withTitle( "Icarus Routing" );
-                configManager.registerWebUiGroup( icarusGroup );
+                final WebUiGroup unifiedGroupGroup = new WebUiGroup( "unifiedGroup", RouterManager.getInstance().routingPage.getId(), 2 );
+                unifiedGroupGroup.withTitle( "Unified Routing" );
+                configManager.registerWebUiGroup( unifiedGroupGroup );
 
                 configManager.registerConfig( TRAINING );
-                TRAINING.withUi( icarusGroup.getId() );
+                TRAINING.withUi( unifiedGroupGroup.getId() );
 
                 configManager.registerConfig( WINDOW_SIZE );
-                WINDOW_SIZE.withUi( icarusGroup.getId() );
+                WINDOW_SIZE.withUi( unifiedGroupGroup.getId() );
 
                 configManager.registerConfig( SHORT_RUNNING_SIMILAR_THRESHOLD );
-                SHORT_RUNNING_SIMILAR_THRESHOLD.withUi( icarusGroup.getId() );
+                SHORT_RUNNING_SIMILAR_THRESHOLD.withUi( unifiedGroupGroup.getId() );
 
                 configManager.registerConfig( LONG_RUNNING_SIMILAR_THRESHOLD );
-                LONG_RUNNING_SIMILAR_THRESHOLD.withUi( icarusGroup.getId() );
+                LONG_RUNNING_SIMILAR_THRESHOLD.withUi( unifiedGroupGroup.getId() );
 
                 configManager.registerConfig( SHORT_RUNNING_LONG_RUNNING_THRESHOLD );
-                SHORT_RUNNING_LONG_RUNNING_THRESHOLD.withUi( icarusGroup.getId() );
+                SHORT_RUNNING_LONG_RUNNING_THRESHOLD.withUi( unifiedGroupGroup.getId() );
 
                 configManager.registerConfig( QUERY_CLASS_PROVIDER );
-                QUERY_CLASS_PROVIDER.withUi( icarusGroup.getId() );
+                QUERY_CLASS_PROVIDER.withUi( unifiedGroupGroup.getId() );
             }
         }
 
