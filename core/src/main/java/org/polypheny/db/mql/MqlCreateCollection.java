@@ -1,6 +1,9 @@
 package org.polypheny.db.mql;
 
 import java.util.ArrayList;
+import java.util.stream.Collectors;
+import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
@@ -39,8 +42,9 @@ public class MqlCreateCollection extends MqlNode implements MqlExecutableStateme
     @Override
     public void execute( Context context, Statement statement ) {
         Catalog catalog = Catalog.getInstance();
+        AdapterManager adapterManager = AdapterManager.getInstance();
 
-        Long schemaId = null;
+        long schemaId;
         try {
 
             schemaId = catalog.getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
@@ -57,7 +61,7 @@ public class MqlCreateCollection extends MqlNode implements MqlExecutableStateme
                     new ArrayList<>(),
                     new ArrayList<>(),
                     false,
-                    null,
+                    stores.stream().map( store -> (DataStore) adapterManager.getAdapter( store ) ).collect( Collectors.toList() ),
                     placementType,
                     statement );
         } catch ( TableAlreadyExistsException | ColumnNotExistsException | UnknownPartitionTypeException e ) {

@@ -11,7 +11,7 @@ public abstract class MqlNode {
 
     @Getter
     @Setter
-    String store;
+    List<String> stores;
 
     @Setter
     @Getter

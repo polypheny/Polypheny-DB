@@ -497,11 +497,11 @@ String Literal():
 
 void Details( MqlNode node ):
 {
-    String store;
+    List<String> stores = new ArrayList();
 }
 {
-    ".store(" store=Literal() ")"
-    {node.store(store);}
+    ".store(" Literal_List(stores) ")"
+    {node.stores(stores);}
 }
 
 void Primary( MqlNode node ):
