@@ -222,7 +222,7 @@ import spark.utils.IOUtils;
 @Slf4j
 public class Crud implements InformationObserver {
 
-    private final Gson gson = new Gson();
+    private static final Gson gson = new Gson();
     private final TransactionManager transactionManager;
     private final String databaseName;
     private final String userName;
@@ -241,7 +241,7 @@ public class Crud implements InformationObserver {
         this.transactionManager = transactionManager;
         this.databaseName = databaseName;
         this.userName = userName;
-        this.documentCrud = new DocumentCrud( this );
+        this.documentCrud = new DocumentCrud();
         registerStatisticObserver();
     }
 
@@ -3429,7 +3429,7 @@ public class Crud implements InformationObserver {
      * @param rows Rows from the enumerable iterator
      * @param header Header from the UI-ResultSet
      */
-    public ArrayList<String[]> computeResultData( final List<List<Object>> rows, final List<DbColumn> header, final Transaction transaction ) {
+    public static ArrayList<String[]> computeResultData( final List<List<Object>> rows, final List<DbColumn> header, final Transaction transaction ) {
         ArrayList<String[]> data = new ArrayList<>();
         for ( List<Object> row : rows ) {
             String[] temp = new String[row.size()];
