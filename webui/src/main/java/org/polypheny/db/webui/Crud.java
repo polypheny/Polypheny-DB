@@ -110,6 +110,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.PartitionType;
+import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
@@ -122,6 +123,8 @@ import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogView;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
@@ -132,6 +135,7 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.exploreByExample.Explore;
 import org.polypheny.db.exploreByExample.ExploreManager;
@@ -2739,6 +2743,12 @@ public class Crud implements InformationObserver {
         // Prepare
         PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( root );
 
+        if ( request.createView ) {
+            String viewName = createViewFromRel( request, statement, root );
+
+            return new Result().setGeneratedQuery( "Created View " + viewName + "from RelRoot without Sql." );
+        }
+
         List<List<Object>> rows;
         try {
             @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( statement.getDataContext() );
@@ -2779,6 +2789,38 @@ public class Crud implements InformationObserver {
         }
 
         return new Result( header, data.toArray( new String[0][] ) ).setXid( transaction.getXid().toString() );
+    }
+
+
+    private String createViewFromRel( RelAlgRequest request, Statement statement, RelRoot root ) {
+        String viewName = request.viewName;
+        boolean replace = false;
+        List<DataStore> store = null;
+        PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
+
+        List<String> columns = new ArrayList<>();
+        root.rel.getRowType().getFieldList().forEach( f -> columns.add( f.getName() ) );
+
+        //default Schema
+        long schemaId = 1;
+
+        try {
+            DdlManager.getInstance().createView(
+                    viewName,
+                    schemaId,
+                    root.rel,
+                    root.collation,
+                    replace,
+                    statement,
+                    store,
+                    placementType,
+                    columns
+            );
+        } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
+            throw new RuntimeException( e );
+        }
+
+        return viewName;
     }
 
 
