@@ -198,6 +198,7 @@ import org.polypheny.db.webui.models.SortState;
 import org.polypheny.db.webui.models.Status;
 import org.polypheny.db.webui.models.TableConstraint;
 import org.polypheny.db.webui.models.Uml;
+import org.polypheny.db.webui.models.UnderlyingTables;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest.Update;
 import org.polypheny.db.webui.models.requests.ClassifyAllData;
@@ -1964,6 +1965,33 @@ public class Crud implements InformationObserver {
     }
 
 
+    UnderlyingTables getUnderlyingTable( final Request req, final Response res ) {
+
+        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
+        try {
+            CatalogTable catalogTable = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
+
+            if ( catalogTable.tableType == TableType.VIEW ) {
+                Map<Long, List<Long>> underlyingTableOriginal = ((CatalogView) catalogTable).getUnderlyingTables();
+                Map<String, List<String>> underlyingTable = new HashMap<>();
+                for ( Entry<Long, List<Long>> entry : underlyingTableOriginal.entrySet() ) {
+                    List<String> columns = new ArrayList<>();
+                    for ( Long ids : entry.getValue() ) {
+                        columns.add( catalog.getColumn( ids ).name );
+                    }
+                    underlyingTable.put( catalog.getTable( entry.getKey() ).name, columns );
+                }
+                return new UnderlyingTables( underlyingTable );
+            } else {
+                throw new RuntimeException( "only possible with Views" );
+            }
+
+        } catch ( UnknownDatabaseException | UnknownSchemaException | UnknownTableException e ) {
+            return new UnderlyingTables( e );
+        }
+    }
+
+
     /**
      * Get placements of a table
      */
@@ -1978,7 +2006,7 @@ public class Crud implements InformationObserver {
         String tableName = index.getTable();
         try {
             CatalogTable table = catalog.getTable( databaseName, schemaName, tableName );
-            Placement p = new Placement( table.isPartitioned, catalog.getPartitionNames( table.id ) );
+            Placement p = new Placement( table.isPartitioned, catalog.getPartitionNames( table.id ), table.tableType );
             if ( table.tableType == TableType.VIEW ) {
 
                 return p;
