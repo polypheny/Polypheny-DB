@@ -89,7 +89,6 @@ import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Linq4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringEscapeUtils;
@@ -2744,7 +2743,7 @@ public class Crud implements InformationObserver {
         PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( root );
 
         if ( request.createView ) {
-            String viewName = createViewFromRel( request, statement, root );
+            String viewName = createViewFromRel( request, statement, root, transaction );
 
             return new Result().setGeneratedQuery( "Created View " + viewName + "from RelRoot without Sql." );
         }
@@ -2792,7 +2791,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    private String createViewFromRel( RelAlgRequest request, Statement statement, RelRoot root ) {
+    private String createViewFromRel( RelAlgRequest request, Statement statement, RelRoot root, Transaction transaction ) {
         String viewName = request.viewName;
         boolean replace = false;
         List<DataStore> store = null;
@@ -2802,7 +2801,7 @@ public class Crud implements InformationObserver {
         root.rel.getRowType().getFieldList().forEach( f -> columns.add( f.getName() ) );
 
         //default Schema
-        long schemaId = 1;
+        long schemaId = transaction.getDefaultSchema().id;
 
         try {
             DdlManager.getInstance().createView(
@@ -3415,7 +3414,9 @@ public class Crud implements InformationObserver {
             }
             if ( iterator != null ) {
                 try {
-                    ((AutoCloseable) iterator).close();
+                    if ( iterator instanceof AutoCloseable ) {
+                        ((AutoCloseable) iterator).close();
+                    }
                 } catch ( Exception e ) {
                     log.error( "Exception while closing result iterator", e );
                 }
@@ -3479,8 +3480,7 @@ public class Crud implements InformationObserver {
             return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
         } finally {
             try {
-                // ugly fix for class org.apache.calcite.linq4j.EnumerableDefaults$LookupResultEnumerable$1 cannot be cast to class java.lang.AutoCloseable
-                if ( iterator instanceof Linq4j ) {
+                if ( iterator instanceof AutoCloseable ) {
                     ((AutoCloseable) iterator).close();
                 }
             } catch ( Exception e ) {

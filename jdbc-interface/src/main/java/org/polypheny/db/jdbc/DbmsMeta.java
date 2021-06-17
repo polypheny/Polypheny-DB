@@ -1117,9 +1117,7 @@ public class DbmsMeta implements ProtobufMeta {
                 statementHandle.getExecutionStopWatch().stop();
                 signature.getExecutionTimeMonitor().setExecutionTime( statementHandle.getExecutionStopWatch().getNanoTime() );
                 try {
-
-                    // ugly fix for class org.apache.calcite.linq4j.EnumerableDefaults$LookupResultEnumerable$1 cannot be cast to class java.lang.AutoCloseable
-                    if ( iterator instanceof Linq4j ) {
+                    if ( iterator instanceof AutoCloseable ) {
                         ((AutoCloseable) iterator).close();
                     }
                 } catch ( Exception e ) {

@@ -1306,20 +1306,20 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Adds a table to a specified schema.
+     * Adds a view to a specified schema.
      *
-     * @param name The name of the table to add
+     * @param name The name of the view to add
      * @param schemaId The id of the schema
      * @param ownerId The if of the owner
      * @param tableType The table type
      * @param modifiable Whether the content of the table can be modified
      * @param definition RelNode used to create Views
-     * @param underlyingTables all tables that were used within the Select statement (only used for views)
-     * @param fieldList all columns from all tables used within the Select statement (only used for views)
+     * @param underlyingTables all tables and columns used within the view
+     * @param fieldList all columns used within the View
      * @return The id of the inserted table
      */
     @Override
-    public long addViewTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList ) {
+    public long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList ) {
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( schemaId );
         CatalogUser owner = getUser( ownerId );

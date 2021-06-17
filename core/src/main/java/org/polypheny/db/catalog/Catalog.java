@@ -366,19 +366,19 @@ public abstract class Catalog {
     public abstract long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable );
 
     /**
-     * Adds a table to a specified schema.
+     * Adds a view to a specified schema.
      *
-     * @param name The name of the table to add
+     * @param name The name of the view to add
      * @param schemaId The id of the schema
      * @param ownerId The if of the owner
      * @param tableType The table type
      * @param modifiable Whether the content of the table can be modified
-     * @param definition The definition of this table RelNode with all information of table (used for Views)
-     * @param underlyingTables all tables used for View
-     * @param fieldList all columns selected within the viewTable
+     * @param definition RelNode used to create Views
+     * @param underlyingTables all tables and columns used within the view
+     * @param fieldList all columns used within the View
      * @return The id of the inserted table
      */
-    public abstract long addViewTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList );
+    public abstract long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList );
 
     /**
      * Checks if there is a table with the specified name in the specified schema.

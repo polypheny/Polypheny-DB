@@ -127,7 +127,9 @@ public class ExploreQueryProcessor {
         } catch ( Throwable t ) {
             if ( iterator != null ) {
                 try {
-                    ((AutoCloseable) iterator).close();
+                    if ( iterator instanceof AutoCloseable ) {
+                        ((AutoCloseable) iterator).close();
+                    }
                 } catch ( Exception e ) {
                     log.error( "Exception while closing result iterator", e );
                 }
@@ -173,7 +175,9 @@ public class ExploreQueryProcessor {
             return new ExploreQueryResult( d, rows.size(), typeInfo, name );
         } finally {
             try {
-                ((AutoCloseable) iterator).close();
+                if ( iterator instanceof AutoCloseable ) {
+                    ((AutoCloseable) iterator).close();
+                }
             } catch ( Exception e ) {
                 log.error( "Exception while closing result iterator2", e );
             }

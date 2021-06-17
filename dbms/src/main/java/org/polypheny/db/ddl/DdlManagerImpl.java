@@ -1333,6 +1333,7 @@ public class DdlManagerImpl extends DdlManager {
             stores = statement.getRouter().createTable( schemaId, statement );
         }
 
+
         prepareView( relNode );
         RelDataType fieldList = relNode.getRowType();
 
@@ -1365,7 +1366,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         Map<Long, List<Long>> underlyingTables = new HashMap<>();
-        long tableId = catalog.addViewTable(
+        long tableId = catalog.addView(
                 viewName,
                 schemaId,
                 statement.getPrepareContext().getCurrentUserId(),
