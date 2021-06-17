@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2020 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,7 +113,6 @@ public class StreamRules {
             final LogicalProject newProject = LogicalProject.create( newDelta, project.getProjects(), project.getRowType().getFieldNames() );
             call.transformTo( newProject );
         }
-
     }
 
 
@@ -143,7 +142,6 @@ public class StreamRules {
             final LogicalFilter newFilter = LogicalFilter.create( newDelta, filter.getCondition() );
             call.transformTo( newFilter );
         }
-
     }
 
 
@@ -175,7 +173,6 @@ public class StreamRules {
             final LogicalAggregate newAggregate = LogicalAggregate.create( newDelta, aggregate.getGroupSet(), aggregate.groupSets, aggregate.getAggCallList() );
             call.transformTo( newAggregate );
         }
-
     }
 
 
@@ -205,7 +202,6 @@ public class StreamRules {
             final LogicalSort newSort = LogicalSort.create( newDelta, sort.collation, sort.offset, sort.fetch );
             call.transformTo( newSort );
         }
-
     }
 
 
@@ -239,7 +235,6 @@ public class StreamRules {
             final LogicalUnion newUnion = LogicalUnion.create( newInputs, union.all );
             call.transformTo( newUnion );
         }
-
     }
 
 
@@ -281,7 +276,6 @@ public class StreamRules {
                 call.transformTo( newScan );
             }
         }
-
     }
 
 
@@ -313,7 +307,6 @@ public class StreamRules {
                 call.transformTo( builder.values( delta.getRowType() ).build() );
             }
         }
-
     }
 
 
@@ -365,8 +358,6 @@ public class StreamRules {
             final LogicalUnion newNode = LogicalUnion.create( inputsToUnion, true );
             call.transformTo( newNode );
         }
-
     }
-
 }
 
