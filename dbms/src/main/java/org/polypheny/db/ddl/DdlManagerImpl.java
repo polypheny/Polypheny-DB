@@ -1321,7 +1321,7 @@ public class DdlManagerImpl extends DdlManager {
                 try {
                     dropView( catalog.getTable( schemaId, viewName ), statement );
                 } catch ( UnknownTableException | DdlOnSourceException e ) {
-                    throw new RuntimeException( "Not possible to Drop View in order tu use CREATE OR REPLACE VIEW." );
+                    throw new RuntimeException( "Unable tp drop the existing View with this name." );
                 }
             } else {
                 throw new TableAlreadyExistsException();
@@ -1678,10 +1678,10 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropView( CatalogTable catalogView, Statement statement ) throws DdlOnSourceException {
-        // Make sure that this is a table of type TABLE (and not SOURCE)
+        // Make sure that this is a table of type VIEW
         checkIfViewType( catalogView.tableType );
 
-        //check if views are dependent from this view
+        // Check if views are dependent from this view
         checkViewDependencies( catalogView );
 
         catalog.deleteViewDependencies( (CatalogView) catalogView );
@@ -1691,7 +1691,7 @@ public class DdlManagerImpl extends DdlManager {
             catalog.deleteColumn( columnId );
         }
 
-        // Delete the table
+        // Delete the view
         catalog.deleteTable( catalogView.id );
 
         // Rest plan cache and implementation cache
@@ -1704,7 +1704,7 @@ public class DdlManagerImpl extends DdlManager {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfTableType( catalogTable.tableType );
 
-        //check if tables are dependent from this table
+        // Check if tables are dependent from this table
         checkViewDependencies( catalogTable );
 
         // Check if there are foreign keys referencing this table
