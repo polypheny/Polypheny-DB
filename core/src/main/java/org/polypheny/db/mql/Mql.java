@@ -62,6 +62,8 @@ public class Mql {
         REPLACE,
         SAVE,
         SELECT,
+        SHOW,
+        USE_DATABASE,
         UPDATE,
         EXPLAIN,
         COMMIT,

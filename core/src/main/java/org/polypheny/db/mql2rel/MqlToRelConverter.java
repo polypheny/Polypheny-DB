@@ -21,12 +21,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.polypheny.db.mql.Mql;
 import org.polypheny.db.mql.MqlFind;
 import org.polypheny.db.mql.MqlNode;
 import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.MqlProcessor;
 import org.polypheny.db.rel.RelNode;
@@ -35,11 +37,13 @@ import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.SqlBinaryOperator;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.type.PolyType;
@@ -72,31 +76,35 @@ public class MqlToRelConverter {
 
 
     private RelNode convertFind( MqlFind query ) {
-        //RelOptTable table = SqlValidatorUtil.getRelOptTable( null, null, null, null );
-        RelNode node = LogicalTableScan.create( cluster, catalogReader.getTable( Collections.singletonList( query.getCollection() ) ) );
+        RelOptTable table = catalogReader.getTable( Collections.singletonList( query.getCollection() ) );
+        RelNode node = LogicalTableScan.create( cluster, table );
+
         if ( query.getQuery() != null && !query.getQuery().isEmpty() ) {
-            node = combineFilter( query.getQuery(), node );
+            node = combineFilter( query.getQuery(), node, table );
         }
 
         if ( query.getProjection() != null && !query.getProjection().isEmpty() ) {
-            node = convertProjection( query.getProjection(), node );
+            node = combineProjection( query.getProjection(), node, table );
         }
         return node;
 
     }
 
 
-    private RelNode combineFilter( BsonDocument filter, RelNode node ) {
-        RelNode output = null;
-        if ( filter.size() == 1 ) {
-            output = convertFilter( filter.getFirstKey(), filter.get( filter.getFirstKey() ), node );
-        } else {
-            List<RexNode> operands = new ArrayList<>();
-            for ( Entry<String, BsonValue> entry : filter.entrySet() ) {
-                //operands.add( new RexLiteral( getComparable( entry.getValue() ),  ) )
-            }
+    private RelNode combineFilter( BsonDocument filter, RelNode node, RelOptTable table ) {
+        RexCall condition;
+        RelDataType type = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT ).createPolyType( PolyType.BOOLEAN );
+        List<RexCall> operands = new ArrayList<>();
+        for ( Entry<String, BsonValue> entry : filter.entrySet() ) {
+            operands.add( convertFilter( entry.getKey(), entry.getValue(), table.getRowType() ) );
         }
-        return output;
+
+        if ( operands.size() == 1 ) {
+            condition = operands.get( 0 );
+        } else {
+            condition = new RexCall( type, SqlStdOperatorTable.AND, operands );
+        }
+        return LogicalFilter.create( node, condition );
     }
 
 
@@ -149,17 +157,49 @@ public class MqlToRelConverter {
     }
 
 
-    private RelNode convertFilter( String firstKey, BsonValue bsonValue, RelNode node ) {
+    private RexCall convertFilter( String firstKey, BsonValue bsonValue, RelDataType rowType ) {
         RelDataType type = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT ).createPolyType( PolyType.BOOLEAN );
-        RelDataType keyType = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT ).createPolyType( PolyType.VARCHAR, 20 );
-        RelDataType valueType = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT ).createPolyType( getPolyType( bsonValue ) );
+        SqlBinaryOperator op = SqlStdOperatorTable.EQUALS;
         List<RexNode> operands = new ArrayList<>();
-        Pair<Comparable, PolyType> valuePair = RexLiteral.convertType( getComparable( bsonValue, valueType ), valueType );
+        RelDataTypeField field = rowType.getField( firstKey, false, false );
 
-        operands.add( new RexInputRef( 3, keyType ) );
-        operands.add( new RexLiteral( valuePair.left, valueType, valuePair.right ) );
-        RexCall condition = new RexCall( type, SqlStdOperatorTable.EQUALS, operands );
-        return LogicalFilter.create( node, condition );
+        operands.add( RexInputRef.of( field.getIndex(), rowType ) );
+        RexNode value;
+        if ( bsonValue.isDocument() ) {
+            String key = ((BsonDocument) bsonValue).getFirstKey();
+            op = getBinaryOperator( key );
+            Pair<Comparable, PolyType> valuePair = RexLiteral.convertType( getComparable( ((BsonDocument) bsonValue).get( key ), field.getType() ), field.getType() );
+            value = new RexLiteral( valuePair.left, field.getType(), valuePair.right );
+        } else {
+            Pair<Comparable, PolyType> valuePair = RexLiteral.convertType( getComparable( bsonValue, field.getType() ), field.getType() );
+            value = new RexLiteral( valuePair.left, field.getType(), valuePair.right );
+        }
+        operands.add( value );
+        return new RexCall( type, op, operands );
+    }
+
+
+    private SqlBinaryOperator getBinaryOperator( String key ) {
+        assert key.startsWith( "$" );
+
+        switch ( key ) {
+            case "$lt":
+                return SqlStdOperatorTable.LESS_THAN;
+            case "$gt":
+                return SqlStdOperatorTable.GREATER_THAN;
+            case "$eq":
+                return SqlStdOperatorTable.EQUALS;
+            case "$lte":
+                return SqlStdOperatorTable.LESS_THAN_OR_EQUAL;
+            case "$gte":
+                return SqlStdOperatorTable.GREATER_THAN_OR_EQUAL;
+            case "$in":
+                return SqlStdOperatorTable.IN;
+            case "$nin":
+                return SqlStdOperatorTable.NOT_IN;
+            default:
+                throw new IllegalStateException( "Unexpected value for SqlBinaryOperator: " + key );
+        }
     }
 
 
@@ -215,8 +255,58 @@ public class MqlToRelConverter {
     }
 
 
-    private RelNode convertProjection( BsonDocument projection, RelNode tableScan ) {
-        return LogicalProject.create( tableScan, Collections.emptyList(), (List<String>) null );
+    private RelNode combineProjection( BsonDocument projection, RelNode tableScan, RelOptTable table ) {
+        List<RelDataTypeField> includes = new ArrayList<>();
+        List<RelDataTypeField> excludes = new ArrayList<>();
+        List<Pair<String, RelDataTypeField>> renamings = new ArrayList<>();
+        for ( Entry<String, BsonValue> entry : projection.entrySet() ) {
+            // either [name] : 1 means column is included ore [name]: 0 means included
+            // cannot be mixed so we have to handle that as well
+            if ( entry.getValue().isInt32() ) {
+                // included fields
+                if ( entry.getValue().asInt32().getValue() == 1 ) {
+                    includes.add( table.getRowType().getField( entry.getKey(), false, false ) );
+                } else {
+                    excludes.add( table.getRowType().getField( entry.getKey(), false, false ) );
+                }
+            } else { // we can also have renaming with [new name]:$[name]
+                assert entry.getValue().isString() && entry.getValue().asString().getValue().startsWith( "$" );
+                String fieldName = entry.getValue().asString().getValue().substring( 1 );
+                renamings.add( Pair.of( entry.getKey(), table.getRowType().getField( fieldName, false, false ) ) );
+            }
+        }
+        if ( includes.size() != 0 && excludes.size() != 0 ) {
+            throw new RuntimeException( "It is not possible to include and exclude different fields at the same time." );
+        }
+        List<Pair<Integer, String>> indexes = new ArrayList<>();
+        // we have defined which fields have to be projected
+        if ( includes.size() != 0 ) {
+            for ( RelDataTypeField field : includes ) {
+                indexes.add( Pair.of( field.getIndex(), field.getName() ) );
+            }
+        } else {
+            // we have to include all fields except the excluded ones
+            for ( RelDataTypeField field : table.getRowType().getFieldList() ) {
+                if ( !excludes.contains( field ) ) {
+                    indexes.add( Pair.of( field.getIndex(), field.getName() ) );
+                }
+            }
+        }
+
+        List<Integer> includesIndexes = indexes.stream().map( field -> field.left ).collect( Collectors.toList() );
+        for ( Pair<String, RelDataTypeField> pair : renamings ) {
+            if ( Pair.left( indexes ).contains( pair.right.getIndex() ) && !includesIndexes.contains( pair.right.getIndex() ) ) {
+                // if we have already included the field we have to remove it,
+                // except if it is explicitly included and renamed at the same time
+                indexes.remove( Pair.left( indexes ).indexOf( pair.right.getIndex() ) );
+            }
+            indexes.add( Pair.of( pair.right.getIndex(), pair.left ) );
+        }
+
+        List<RexInputRef> inputRefs = indexes.stream()
+                .map( i -> RexInputRef.of( i.left, table.getRowType() ) )
+                .collect( Collectors.toList() );
+        return LogicalProject.create( tableScan, inputRefs, Pair.right( indexes ) );
     }
 
 }

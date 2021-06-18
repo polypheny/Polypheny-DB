@@ -31,6 +31,8 @@ import org.polypheny.db.mql.MqlRemove;
 import org.polypheny.db.mql.MqlReplace;
 import org.polypheny.db.mql.MqlSave;
 import org.polypheny.db.mql.MqlUpdate;
+import org.polypheny.db.mql.MqlShowDatabase;
+import org.polypheny.db.mql.MqlUseDatabase;
 import org.polypheny.db.mql.parser.MqlAbstractParserImpl;
 import org.polypheny.db.mql.parser.MqlParserImplFactory;
 import org.polypheny.db.mql.parser.MqlParseException;
@@ -115,9 +117,13 @@ SKIP : {
 
 TOKEN : /* IDENTIFIERS */
 {
-  < DOCUMENT: "{" (<LETTER>|<DIGIT>|<SYMBOL>)* "}" >
+  < DOCUMENT: "{" (<LETTER>|<DIGIT>|<SYMBOL>|<MERGE>)* "}" >
 |
-  < #SYMBOL: [".", ":", ";", "$", "\"", "'", "{", "}", "(", ")", " ", "\n"] >
+  < #MERGE: "{" (<LETTER>|<DIGIT>|<SYMBOL>|<KEY_VALUE>)* "}" >
+|
+  < #KEY_VALUE: "{" (<LETTER>|<DIGIT>|<SYMBOL>|"$")* "}" >
+|
+  < #SYMBOL: [".", ",", ":", ";", "$", "\"", "'", "(", ")", " ", "\n"] >
 |
   < IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>)* >
 |
@@ -330,6 +336,12 @@ MqlNode Db_Statement():
         "createView(" name = Literal() "," source = Literal() ("," doc=Document() )? ")"
         {n = new MqlCreateView(name, source, doc);}
     |
+        "use " name = Literal()
+        {n = new MqlUseDatabase(name);}
+    |
+        "db"
+        {n = new MqlShowDatabase();}
+    |
         n = Collection_Statement(null)
     |
         name=Literal() "." n=Collection_Statement(name)
@@ -444,11 +456,11 @@ MqlNode Count_Statement(String collection):
 
 MqlNode Find_Statement(String collection):
 {
-    BsonDocument query = null;
+    BsonDocument query;
     BsonDocument project = null;
 }
 {
-     "find(" (query=Document())? ["," project=Document() ] ")"
+     "find(" query=Document() ["," project=Document() ] ")"
     {return new MqlFind(collection, query, project);}
 }
 
@@ -466,7 +478,7 @@ BsonDocument Document():
     Token t;
 }
 {
-    t=<DOCUMENT>
+     t=<DOCUMENT>
     {
         return BsonDocument.parse( t.image );
     }
