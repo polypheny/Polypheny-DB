@@ -563,5 +563,4 @@ public class Rest {
         return restResult.getResult( res );
     }
 
-
 }
