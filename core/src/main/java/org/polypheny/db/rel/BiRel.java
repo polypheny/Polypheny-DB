@@ -116,10 +116,12 @@ public abstract class BiRel extends AbstractRelNode {
     public void tryExpandView( RelNode node ) {
         if ( left instanceof LogicalViewTableScan ) {
             left = ((LogicalViewTableScan) left).expandViewNode();
-        } else if ( right instanceof LogicalViewTableScan ) {
-            right = (((LogicalViewTableScan) right).expandViewNode());
         } else {
             left.tryExpandView( this );
+        }
+        if ( right instanceof LogicalViewTableScan ) {
+            right = (((LogicalViewTableScan) right).expandViewNode());
+        } else {
             right.tryExpandView( this );
         }
     }

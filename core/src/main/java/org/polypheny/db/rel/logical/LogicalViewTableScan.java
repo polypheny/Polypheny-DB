@@ -91,11 +91,8 @@ public class LogicalViewTableScan extends TableScan {
         for ( int i = 0; i < fieldCount; i++ ) {
             exprs.add( rexBuilder.makeInputRef( this, i ) );
         }
-        LogicalProject logicalProject = LogicalProject.create( relNode, exprs, this.getRowType().getFieldNames() );
-        if ( logicalProject.hasView() ) {
-            tryExpandView( logicalProject );
-        }
-        return logicalProject;
+
+        return LogicalProject.create( relNode, exprs, this.getRowType().getFieldNames() );
     }
 
 }

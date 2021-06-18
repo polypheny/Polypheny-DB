@@ -118,6 +118,7 @@ public class ViewTest {
                     statement.executeUpdate( "DROP VIEW viewTestEmp" );
                     statement.executeUpdate( "Drop VIEW viewTestEmpDep" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
+                    statement.executeUpdate( "DROP TABLE viewTestDepTable" );
                 }
             }
         }
@@ -297,5 +298,108 @@ public class ViewTest {
             }
         }
     }
+
+
+    @Test
+    public void testMixedViewAndTable() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
+                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
+                statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
+                statement.executeUpdate( VIEWTESTDEPTABLE_DATA_SQL );
+
+                try {
+                    statement.executeUpdate( "CREATE VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp, viewTestDepTable WHERE depname = 'IT'" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1, 1, "IT", 1 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2, 1, "IT", 1 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3, 1, "IT", 1 }
+                            )
+                    );
+
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP VIEW viewTestEmp" );
+                    statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
+                    statement.executeUpdate( "DROP TABLE viewTestDepTable" );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testMultipleViews() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
+                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
+                statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
+                statement.executeUpdate( VIEWTESTDEPTABLE_DATA_SQL );
+
+                try {
+                    statement.executeUpdate( "CREATE VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
+                    statement.executeUpdate( "CREATE VIEW viewTestDep AS SELECT * FROM viewTestDepTable" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp, viewTestDep WHERE depname = 'IT'" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1, 1, "IT", 1 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2, 1, "IT", 1 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3, 1, "IT", 1 }
+                            )
+                    );
+
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP VIEW viewTestEmp" );
+                    statement.executeUpdate( "DROP VIEW viewTestDep" );
+                    statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
+                    statement.executeUpdate( "DROP TABLE viewTestDepTable" );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testViewFromView() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
+                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
+                statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
+                statement.executeUpdate( VIEWTESTDEPTABLE_DATA_SQL );
+
+                try {
+                    statement.executeUpdate( "CREATE VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
+                    statement.executeUpdate( "CREATE VIEW viewTestDep AS SELECT * FROM viewTestDepTable" );
+                    statement.executeUpdate( "Create view viewFromView as Select * FROM viewTestEmp, viewTestDep WHERE depname = 'IT'" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewFromView" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1, 1, "IT", 1 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2, 1, "IT", 1 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3, 1, "IT", 1 }
+                            )
+                    );
+
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP VIEW viewFromView" );
+                    statement.executeUpdate( "DROP VIEW viewTestEmp" );
+                    statement.executeUpdate( "DROP VIEW viewTestDep" );
+                    statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
+                    statement.executeUpdate( "DROP TABLE viewTestDepTable" );
+                }
+            }
+        }
+    }
+
 
 }

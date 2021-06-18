@@ -40,10 +40,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import javax.annotation.Nonnull;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.ViewExpanders;
+import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelDistribution;
 import org.polypheny.db.rel.RelNode;
@@ -63,9 +67,11 @@ import org.polypheny.db.rel.logical.LogicalSortExchange;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalUnion;
 import org.polypheny.db.rel.logical.LogicalValues;
+import org.polypheny.db.rel.logical.LogicalViewTableScan;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.sql.SemiJoinType;
 import org.polypheny.db.sql.SqlKind;
@@ -125,7 +131,7 @@ public class RelFactories {
                             DEFAULT_SET_OP_FACTORY,
                             DEFAULT_VALUES_FACTORY,
                             DEFAULT_TABLE_SCAN_FACTORY,
-                            DEFAULT_CONDITIONAL_EXECUTE_FACTORY) );
+                            DEFAULT_CONDITIONAL_EXECUTE_FACTORY ) );
 
 
     private RelFactories() {
@@ -449,7 +455,20 @@ public class RelFactories {
 
         @Override
         public RelNode createScan( RelOptCluster cluster, RelOptTable table ) {
-            return LogicalTableScan.create( cluster, table );
+
+            //need to check if RelOptTable contains a View, in this case a LogicalViewTableScan needs to be created
+            if ( (((RelOptTableImpl) table).getTable()) instanceof LogicalTable ) {
+                Catalog catalog = Catalog.getInstance();
+                long idLogical = ((LogicalTable) ((RelOptTableImpl) table).getTable()).getTableId();
+                CatalogTable catalogTable = catalog.getTable( idLogical );
+                if ( catalogTable.tableType == TableType.VIEW ) {
+                    return LogicalViewTableScan.create( cluster, table );
+                } else {
+                    return LogicalTableScan.create( cluster, table );
+                }
+            } else {
+                return LogicalTableScan.create( cluster, table );
+            }
         }
     }
 
@@ -504,6 +523,7 @@ public class RelFactories {
          */
         RelNode createMatch( RelNode input, RexNode pattern, RelDataType rowType, boolean strictStart, boolean strictEnd, Map<String, RexNode> patternDefinitions, Map<String, RexNode> measures,
                 RexNode after, Map<String, ? extends SortedSet<String>> subsets, boolean allRows, List<RexNode> partitionKeys, RelCollation orderKeys, RexNode interval );
+
     }
 
 
@@ -517,6 +537,7 @@ public class RelFactories {
                 RexNode after, Map<String, ? extends SortedSet<String>> subsets, boolean allRows, List<RexNode> partitionKeys, RelCollation orderKeys, RexNode interval ) {
             return LogicalMatch.create( input, rowType, pattern, strictStart, strictEnd, patternDefinitions, measures, after, subsets, allRows, partitionKeys, orderKeys, interval );
         }
+
     }
 
 
@@ -529,6 +550,7 @@ public class RelFactories {
          * Creates a {@link ConditionalExecute}.
          */
         RelNode createConditionalExecute( RelNode left, RelNode right, Condition condition, Class<? extends Exception> exceptionClass, String exceptionMessage );
+
     }
 
 
@@ -541,6 +563,8 @@ public class RelFactories {
         public RelNode createConditionalExecute( RelNode left, RelNode right, Condition condition, Class<? extends Exception> exceptionClass, String exceptionMessage ) {
             return LogicalConditionalExecute.create( left, right, condition, exceptionClass, exceptionMessage );
         }
+
     }
+
 }
 

@@ -184,6 +184,9 @@ public class CatalogView extends CatalogTable {
     public RelNode prepareView( RelOptCluster cluster, RelCollation relCollation ) {
         RelNode viewLogicalRoot = definition;
         prepareView( viewLogicalRoot, cluster, relCollation );
+        if ( viewLogicalRoot.hasView() ) {
+            viewLogicalRoot.tryExpandView( viewLogicalRoot );
+        }
         return viewLogicalRoot;
     }
 

@@ -83,6 +83,7 @@ public class RestTest {
                         + "ttinyint TINYINT NOT NULL, "
                         + "tvarchar VARCHAR(20) NOT NULL, "
                         + "PRIMARY KEY (tinteger) )" );
+                statement.executeUpdate( "CREATE VIEW test.viewtest AS SELECT * FROM test.resttest" );
                 connection.commit();
             }
         }
@@ -94,6 +95,7 @@ public class RestTest {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 try {
+                    statement.executeUpdate( "DROP VIEW test.viewtest" );
                     statement.executeUpdate( "DROP TABLE test.resttest" );
                 } catch ( SQLException e ) {
                     log.error( "Exception while deleting old data", e );
@@ -206,6 +208,13 @@ public class RestTest {
         Assert.assertEquals(
                 "{\"result\":[],\"size\":0}",
                 executeRest( request ).getBody() );
+
+        //Select View
+        request = Unirest.get( "{protocol}://{host}:{port}/restapi/v1/res/test.viewtest" ).
+                queryString( "test.viewtest.tinteger", "=" + 9876 );
+        Assert.assertEquals( "{\"result\":[],\"size\":0}",
+                executeRest( request ).getBody() );
+
     }
 
 
