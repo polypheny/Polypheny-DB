@@ -5,8 +5,12 @@ import org.polypheny.db.mql.Mql.Type;
 
 public class MqlReplace extends MqlCollectionStatement {
 
+    private final BsonDocument document;
+
+
     public MqlReplace( String collection, BsonDocument document ) {
-        super( collection, document );
+        super( collection );
+        this.document = document;
     }
 
 

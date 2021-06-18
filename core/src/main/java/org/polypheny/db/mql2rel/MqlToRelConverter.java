@@ -16,6 +16,7 @@
 
 package org.polypheny.db.mql2rel;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -25,16 +26,20 @@ import java.util.stream.Collectors;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.polypheny.db.mql.Mql;
+import org.polypheny.db.mql.MqlAggregate;
 import org.polypheny.db.mql.MqlFind;
 import org.polypheny.db.mql.MqlNode;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.MqlProcessor;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rel.logical.LogicalSort;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
@@ -64,10 +69,19 @@ public class MqlToRelConverter {
 
 
     public RelRoot convert( MqlNode query, boolean b, boolean b1 ) {
+        RelOptTable table;
+        RelNode node;
         Mql.Type kind = query.getKind();
+
         switch ( kind ) {
             case FIND:
-                return RelRoot.of( convertFind( (MqlFind) query ), SqlKind.SELECT );
+                table = catalogReader.getTable( Collections.singletonList( ((MqlFind) query).getCollection() ) );
+                node = LogicalTableScan.create( cluster, table );
+                return RelRoot.of( convertFind( (MqlFind) query, table.getRowType(), node ), SqlKind.SELECT );
+            case AGGREGATE:
+                table = catalogReader.getTable( Collections.singletonList( ((MqlAggregate) query).getCollection() ) );
+                node = LogicalTableScan.create( cluster, table );
+                return RelRoot.of( convertAggregate( (MqlAggregate) query, table.getRowType(), node ), SqlKind.SELECT );
             default:
                 throw new IllegalStateException( "Unexpected value: " + kind );
         }
@@ -75,10 +89,29 @@ public class MqlToRelConverter {
     }
 
 
-    private RelNode convertFind( MqlFind query ) {
-        RelOptTable table = catalogReader.getTable( Collections.singletonList( query.getCollection() ) );
-        RelNode node = LogicalTableScan.create( cluster, table );
+    private RelNode convertAggregate( MqlAggregate query, RelDataType rowType, RelNode node ) {
+        for ( BsonValue value : query.getPipeline() ) {
+            if ( !value.isDocument() && ((BsonDocument) value).size() > 1 ) {
+                throw new RuntimeException( "The aggregation pipeline is not used correctly." );
+            }
+            switch ( ((BsonDocument) value).getFirstKey() ) {
+                case "$match":
+                    node = combineFilter( value.asDocument().getDocument( "$match" ), node, rowType );
+                    break;
+                case "$project":
+                    node = combineProjection( value.asDocument().getDocument( "$project" ), node, rowType ); // todo dl change rowtype when renames happened
+                    break;
+                // todo dl add more pipeline statements
+                default:
+                    throw new IllegalStateException( "Unexpected value: " + ((BsonDocument) value).getFirstKey() );
+            }
+        }
 
+        return node;
+    }
+
+
+    private RelNode convertFind( MqlFind query, RelDataType table, RelNode node ) {
         if ( query.getQuery() != null && !query.getQuery().isEmpty() ) {
             node = combineFilter( query.getQuery(), node, table );
         }
@@ -86,17 +119,35 @@ public class MqlToRelConverter {
         if ( query.getProjection() != null && !query.getProjection().isEmpty() ) {
             node = combineProjection( query.getProjection(), node, table );
         }
+
         return node;
 
     }
 
 
-    private RelNode combineFilter( BsonDocument filter, RelNode node, RelOptTable table ) {
+    private RelNode wrapLimit( RelNode node, int limit ) {
+        final RelCollation collation = cluster.traitSet().canonize( RelCollations.of( new ArrayList<>() ) );
+        return LogicalSort.create(
+                node,
+                collation,
+                new RexLiteral(
+                        new BigDecimal( 0 ),
+                        new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT )
+                                .createPolyType( PolyType.INTEGER ), PolyType.DECIMAL ),
+                new RexLiteral(
+                        new BigDecimal( limit ),
+                        new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT )
+                                .createPolyType( PolyType.INTEGER ), PolyType.DECIMAL )
+        );
+    }
+
+
+    private RelNode combineFilter( BsonDocument filter, RelNode node, RelDataType rowType ) {
         RexCall condition;
         RelDataType type = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT ).createPolyType( PolyType.BOOLEAN );
         List<RexCall> operands = new ArrayList<>();
         for ( Entry<String, BsonValue> entry : filter.entrySet() ) {
-            operands.add( convertFilter( entry.getKey(), entry.getValue(), table.getRowType() ) );
+            operands.add( convertFilter( entry.getKey(), entry.getValue(), rowType ) );
         }
 
         if ( operands.size() == 1 ) {
@@ -255,7 +306,7 @@ public class MqlToRelConverter {
     }
 
 
-    private RelNode combineProjection( BsonDocument projection, RelNode tableScan, RelOptTable table ) {
+    private RelNode combineProjection( BsonDocument projection, RelNode tableScan, RelDataType rowType ) {
         List<RelDataTypeField> includes = new ArrayList<>();
         List<RelDataTypeField> excludes = new ArrayList<>();
         List<Pair<String, RelDataTypeField>> renamings = new ArrayList<>();
@@ -265,14 +316,14 @@ public class MqlToRelConverter {
             if ( entry.getValue().isInt32() ) {
                 // included fields
                 if ( entry.getValue().asInt32().getValue() == 1 ) {
-                    includes.add( table.getRowType().getField( entry.getKey(), false, false ) );
+                    includes.add( rowType.getField( entry.getKey(), false, false ) );
                 } else {
-                    excludes.add( table.getRowType().getField( entry.getKey(), false, false ) );
+                    excludes.add( rowType.getField( entry.getKey(), false, false ) );
                 }
             } else { // we can also have renaming with [new name]:$[name]
                 assert entry.getValue().isString() && entry.getValue().asString().getValue().startsWith( "$" );
                 String fieldName = entry.getValue().asString().getValue().substring( 1 );
-                renamings.add( Pair.of( entry.getKey(), table.getRowType().getField( fieldName, false, false ) ) );
+                renamings.add( Pair.of( entry.getKey(), rowType.getField( fieldName, false, false ) ) );
             }
         }
         if ( includes.size() != 0 && excludes.size() != 0 ) {
@@ -286,7 +337,7 @@ public class MqlToRelConverter {
             }
         } else {
             // we have to include all fields except the excluded ones
-            for ( RelDataTypeField field : table.getRowType().getFieldList() ) {
+            for ( RelDataTypeField field : rowType.getFieldList() ) {
                 if ( !excludes.contains( field ) ) {
                     indexes.add( Pair.of( field.getIndex(), field.getName() ) );
                 }
@@ -301,10 +352,12 @@ public class MqlToRelConverter {
                 indexes.remove( Pair.left( indexes ).indexOf( pair.right.getIndex() ) );
             }
             indexes.add( Pair.of( pair.right.getIndex(), pair.left ) );
+            // if for some reason we rename the same field multiple times we stop the removal after the first by adding it here
+            includesIndexes.add( pair.right.getIndex() );
         }
 
         List<RexInputRef> inputRefs = indexes.stream()
-                .map( i -> RexInputRef.of( i.left, table.getRowType() ) )
+                .map( i -> RexInputRef.of( i.left, rowType ) )
                 .collect( Collectors.toList() );
         return LogicalProject.create( tableScan, inputRefs, Pair.right( indexes ) );
     }

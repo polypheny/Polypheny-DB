@@ -1,29 +1,23 @@
 package org.polypheny.db.mql;
 
 import lombok.Getter;
-import org.bson.BsonDocument;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 
 public abstract class MqlCollectionStatement extends MqlNode {
 
     @Getter
-    private final BsonDocument document;
-    @Getter
     private final String collection;
 
+    @Setter
+    @Getter
+    @Accessors(chain = true)
+    private int limit = 10;
 
-    public MqlCollectionStatement( String collection, BsonDocument document ) {
-        this.document = document;
+
+    public MqlCollectionStatement( String collection ) {
         this.collection = collection;
-        System.out.println( this );
     }
 
-
-    @Override
-    public String toString() {
-        return this.getClass().getSimpleName() + "{" +
-                "document=" + document +
-                ", collection='" + collection + '\'' +
-                '}';
-    }
 
 }

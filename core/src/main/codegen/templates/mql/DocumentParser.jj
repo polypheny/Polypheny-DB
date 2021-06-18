@@ -42,6 +42,7 @@ import org.polypheny.db.util.SourceStringReader;
 
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.bson.BsonArray;
 
 import java.io.Reader;
 import java.util.Arrays;
@@ -117,7 +118,9 @@ SKIP : {
 
 TOKEN : /* IDENTIFIERS */
 {
-  < DOCUMENT: "{" (<LETTER>|<DIGIT>|<SYMBOL>|<MERGE>)* "}" >
+  < DOCUMENT: "{" (<LETTER>|<DIGIT>|<SYMBOL>|<MERGE>|<ARRAY>)* "}" >
+|
+  < ARRAY: "[" (<LETTER>|<DIGIT>|<SYMBOL>|<MERGE>)* "]" >
 |
   < #MERGE: "{" (<LETTER>|<DIGIT>|<SYMBOL>|<KEY_VALUE>)* "}" >
 |
@@ -435,11 +438,12 @@ MqlNode Update_Statement(String collection):
 
 MqlNode Aggregate_Statement(String collection):
 {
-    BsonDocument doc;
+    BsonArray pipeline;
+    BsonDocument option = null;
 }
 {
-    "aggregate(" doc=Document() ")"
-    {return new MqlAggregate(collection, doc);}
+    "aggregate(" pipeline=Array() ["," option=Document()] ")"
+    {return new MqlAggregate(collection, pipeline, option);}
 }
 
 MqlNode Count_Statement(String collection):
@@ -481,6 +485,17 @@ BsonDocument Document():
      t=<DOCUMENT>
     {
         return BsonDocument.parse( t.image );
+    }
+}
+
+BsonArray Array():
+{
+    Token t;
+}
+{
+    t=<ARRAY>
+    {
+        return BsonArray.parse( t.image );
     }
 }
 

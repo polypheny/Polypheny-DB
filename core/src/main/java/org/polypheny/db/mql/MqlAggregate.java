@@ -1,12 +1,23 @@
 package org.polypheny.db.mql;
 
+import lombok.Getter;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.polypheny.db.mql.Mql.Type;
 
 public class MqlAggregate extends MqlCollectionStatement {
 
-    public MqlAggregate( String collection, BsonDocument document ) {
-        super( collection, document );
+    @Getter
+    private final BsonArray pipeline;
+    @Getter
+    private final BsonDocument option;
+
+
+    public MqlAggregate( String collection, BsonArray pipeline, BsonDocument option ) {
+        super( collection );
+        this.pipeline = pipeline;
+        this.option = option;
+
     }
 
 

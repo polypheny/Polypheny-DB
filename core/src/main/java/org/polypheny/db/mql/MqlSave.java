@@ -5,8 +5,12 @@ import org.polypheny.db.mql.Mql.Type;
 
 public class MqlSave extends MqlCollectionStatement {
 
+    private final BsonDocument document;
+
+
     public MqlSave( String collection, BsonDocument document ) {
-        super( collection, document );
+        super( collection );
+        this.document = document;
     }
 
 

@@ -5,8 +5,12 @@ import org.polypheny.db.mql.Mql.Type;
 
 public class MqlDelete extends MqlCollectionStatement {
 
+    private final BsonDocument document;
+
+
     public MqlDelete( String collection, BsonDocument document ) {
-        super( collection, document );
+        super( collection );
+        this.document = document;
     }
 
 

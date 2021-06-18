@@ -4,10 +4,7 @@ import lombok.Getter;
 import org.bson.BsonDocument;
 import org.polypheny.db.mql.Mql.Type;
 
-public class MqlFind extends MqlNode {
-
-    @Getter
-    private final String collection;
+public class MqlFind extends MqlCollectionStatement {
 
     @Getter
     private final BsonDocument query;
@@ -17,7 +14,7 @@ public class MqlFind extends MqlNode {
 
 
     public MqlFind( String collection, BsonDocument query, BsonDocument projection ) {
-        this.collection = collection;
+        super( collection );
         this.query = query;
         this.projection = projection;
     }
