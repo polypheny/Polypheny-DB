@@ -90,6 +90,7 @@ public class MqlToRelConverter {
 
 
     private RelNode convertAggregate( MqlAggregate query, RelDataType rowType, RelNode node ) {
+
         for ( BsonValue value : query.getPipeline() ) {
             if ( !value.isDocument() && ((BsonDocument) value).size() > 1 ) {
                 throw new RuntimeException( "The aggregation pipeline is not used correctly." );
@@ -100,6 +101,12 @@ public class MqlToRelConverter {
                     break;
                 case "$project":
                     node = combineProjection( value.asDocument().getDocument( "$project" ), node, rowType ); // todo dl change rowtype when renames happened
+
+                    // update the rowType due to potential renamings
+                    if ( rowType != null ) {
+                        rowType = node.getRowType();
+                    }
+
                     break;
                 // todo dl add more pipeline statements
                 default:
@@ -111,13 +118,13 @@ public class MqlToRelConverter {
     }
 
 
-    private RelNode convertFind( MqlFind query, RelDataType table, RelNode node ) {
+    private RelNode convertFind( MqlFind query, RelDataType rowType, RelNode node ) {
         if ( query.getQuery() != null && !query.getQuery().isEmpty() ) {
-            node = combineFilter( query.getQuery(), node, table );
+            node = combineFilter( query.getQuery(), node, rowType );
         }
 
         if ( query.getProjection() != null && !query.getProjection().isEmpty() ) {
-            node = combineProjection( query.getProjection(), node, table );
+            node = combineProjection( query.getProjection(), node, rowType );
         }
 
         return node;
@@ -306,7 +313,7 @@ public class MqlToRelConverter {
     }
 
 
-    private RelNode combineProjection( BsonDocument projection, RelNode tableScan, RelDataType rowType ) {
+    private RelNode combineProjection( BsonDocument projection, RelNode node, RelDataType rowType ) {
         List<RelDataTypeField> includes = new ArrayList<>();
         List<RelDataTypeField> excludes = new ArrayList<>();
         List<Pair<String, RelDataTypeField>> renamings = new ArrayList<>();
@@ -335,7 +342,7 @@ public class MqlToRelConverter {
             for ( RelDataTypeField field : includes ) {
                 indexes.add( Pair.of( field.getIndex(), field.getName() ) );
             }
-        } else {
+        } else if ( excludes.size() != 0 ) {
             // we have to include all fields except the excluded ones
             for ( RelDataTypeField field : rowType.getFieldList() ) {
                 if ( !excludes.contains( field ) ) {
@@ -359,7 +366,7 @@ public class MqlToRelConverter {
         List<RexInputRef> inputRefs = indexes.stream()
                 .map( i -> RexInputRef.of( i.left, rowType ) )
                 .collect( Collectors.toList() );
-        return LogicalProject.create( tableScan, inputRefs, Pair.right( indexes ) );
+        return LogicalProject.create( node, inputRefs, Pair.right( indexes ) );
     }
 
 }

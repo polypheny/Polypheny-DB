@@ -116,11 +116,13 @@ SKIP : {
 | "\r"
 }
 
-TOKEN : /* IDENTIFIERS */
+TOKEN : /* IDENTIFIERS */ // TODO DL fixed multiple stacked documents
 {
-  < DOCUMENT: "{" (<LETTER>|<DIGIT>|<SYMBOL>|<MERGE>|<ARRAY>)* "}" >
+  < DOCUMENT: "{" (<LETTER>|<DIGIT>|<SYMBOL>|<MERGE2>|<ARRAY>)* "}" >
 |
-  < ARRAY: "[" (<LETTER>|<DIGIT>|<SYMBOL>|<MERGE>)* "]" >
+  < ARRAY: "[" (<LETTER>|<DIGIT>|<SYMBOL>|<MERGE2>)* "]" >
+|
+  < #MERGE2: "{" (<LETTER>|<DIGIT>|<SYMBOL>|<KEY_VALUE>|<MERGE>)* "}" >
 |
   < #MERGE: "{" (<LETTER>|<DIGIT>|<SYMBOL>|<KEY_VALUE>)* "}" >
 |
