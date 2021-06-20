@@ -38,6 +38,7 @@ import org.polypheny.db.mql.parser.MqlParserImplFactory;
 import org.polypheny.db.mql.parser.MqlParseException;
 import org.polypheny.db.mql.parser.MqlParserPos;
 import org.polypheny.db.mql.parser.MqlParserUtil;
+import org.polypheny.db.mql.parser.BsonUtil;
 import org.polypheny.db.util.SourceStringReader;
 
 import org.bson.BsonDocument;
@@ -116,19 +117,13 @@ SKIP : {
 | "\r"
 }
 
-TOKEN : /* IDENTIFIERS */ // TODO DL fixed multiple stacked documents
+TOKEN : /* IDENTIFIERS */ // for nested documents check out Splitter()
 {
-  < DOCUMENT: "{" (<LETTER>|<DIGIT>|<SYMBOL>|<MERGE2>|<ARRAY>)* "}" >
+  < DOCUMENT: "{" (<LETTER>|<DIGIT>|<SYMBOL>|<EOL>)* "}" >
 |
-  < ARRAY: "[" (<LETTER>|<DIGIT>|<SYMBOL>|<MERGE2>)* "]" >
+  < ARRAY: "[" (<LETTER>|<DIGIT>|<SYMBOL>)* "]" >
 |
-  < #MERGE2: "{" (<LETTER>|<DIGIT>|<SYMBOL>|<KEY_VALUE>|<MERGE>)* "}" >
-|
-  < #MERGE: "{" (<LETTER>|<DIGIT>|<SYMBOL>|<KEY_VALUE>)* "}" >
-|
-  < #KEY_VALUE: "{" (<LETTER>|<DIGIT>|<SYMBOL>|"$")* "}" >
-|
-  < #SYMBOL: [".", ",", ":", ";", "$", "\"", "'", "(", ")", " ", "\n"] >
+  < #SYMBOL: [".", ",", ":", ";", "$", "\"", "'", "(", ")", " ", "\n", "{", "}"] >
 |
   < IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>)* >
 |
@@ -344,7 +339,7 @@ MqlNode Db_Statement():
         "use " name = Literal()
         {n = new MqlUseDatabase(name);}
     |
-        "db"
+        "show db"
         {n = new MqlShowDatabase();}
     |
         n = Collection_Statement(null)
@@ -462,12 +457,19 @@ MqlNode Count_Statement(String collection):
 
 MqlNode Find_Statement(String collection):
 {
-    BsonDocument query;
-    BsonDocument project = null;
+    List<BsonDocument> statements;
 }
 {
-     "find(" query=Document() ["," project=Document() ] ")"
-    {return new MqlFind(collection, query, project);}
+     "find(" statements=Splitter() ")"
+    {
+
+        if ( statements.size() >= 1 ){
+            return new MqlFind(collection, statements.get(0), statements.size() == 2 ? statements.get(1) : null);
+        }else {
+            throw new RuntimeException( "MqlFind needs minimaly a filter." );
+        }
+
+    }
 }
 
 MqlNode Insert_Statement(String collection):
@@ -487,6 +489,19 @@ BsonDocument Document():
      t=<DOCUMENT>
     {
         return BsonDocument.parse( t.image );
+    }
+}
+
+// due to the LL approach of JavaCC we have to parse Documents besides oneanother ourself
+// as identifier { document } handles {{}} and {},{} the same ( longest pattern is matched )
+List<BsonDocument> Splitter():
+{
+    Token t;
+}
+{
+    t=<DOCUMENT>
+    {
+        return BsonUtil.trySplit( t.image );
     }
 }
 
