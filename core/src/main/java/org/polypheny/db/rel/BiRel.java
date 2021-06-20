@@ -112,6 +112,10 @@ public abstract class BiRel extends AbstractRelNode {
     }
 
 
+    /**
+     * Replaces LogicalVieTableScan within RelNode if its view
+     * else recursively hands call down if view in deeper level
+     */
     @Override
     public void tryExpandView( RelNode node ) {
         if ( left instanceof LogicalViewTableScan ) {

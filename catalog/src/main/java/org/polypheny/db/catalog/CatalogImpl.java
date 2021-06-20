@@ -147,7 +147,6 @@ public class CatalogImpl extends Catalog {
     private static final AtomicLong schemaIdBuilder = new AtomicLong( 1 );
     private static final AtomicLong tableIdBuilder = new AtomicLong( 1 );
     private static final AtomicLong columnIdBuilder = new AtomicLong( 1 );
-    private static final AtomicLong viewIdBuilder = new AtomicLong( 1 );
 
     private static final AtomicLong partitionIdBuilder = new AtomicLong();
     private static BTreeMap<Long, CatalogPartition> partitions;

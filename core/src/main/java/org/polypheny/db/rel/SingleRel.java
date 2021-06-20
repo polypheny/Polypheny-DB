@@ -114,6 +114,10 @@ public abstract class SingleRel extends AbstractRelNode {
     }
 
 
+    /**
+     * Replaces LogicalVieTableScan within RelNode if its view
+     * else recursively hands call down if view in deeper level
+     */
     @Override
     public void tryExpandView( RelNode node ) {
         if ( input instanceof LogicalViewTableScan ) {

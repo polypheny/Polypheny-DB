@@ -53,7 +53,6 @@ public final class RelTraitSet extends AbstractList<RelTrait> implements Seriali
 
     private static final RelTrait[] EMPTY_TRAITS = new RelTrait[0];
 
-    //private transient final Cache cache;
     private final Cache cache;
     private final RelTrait[] traits;
     private final String string;

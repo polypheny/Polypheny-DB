@@ -347,7 +347,9 @@ public interface RelNode extends RelOptNode, Cloneable {
     }
 
     /**
-     * Expands View and if a part of RelNode is a ViewTableScan in order to replace this part within expandViewNode()
+     * expands node
+     * if a part of RelNode is a LogicalViewTableScan it is replaced
+     * else recursively hands call down if view in deeper level
      */
     default void tryExpandView( RelNode input ) {
         if ( input instanceof LogicalViewTableScan ) {

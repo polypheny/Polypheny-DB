@@ -456,7 +456,7 @@ public class RelFactories {
         @Override
         public RelNode createScan( RelOptCluster cluster, RelOptTable table ) {
 
-            //need to check if RelOptTable contains a View, in this case a LogicalViewTableScan needs to be created
+            //check if RelOptTable contains a View, in this case a LogicalViewTableScan needs to be created
             if ( (((RelOptTableImpl) table).getTable()) instanceof LogicalTable ) {
                 Catalog catalog = Catalog.getInstance();
                 long idLogical = ((LogicalTable) ((RelOptTableImpl) table).getTable()).getTableId();

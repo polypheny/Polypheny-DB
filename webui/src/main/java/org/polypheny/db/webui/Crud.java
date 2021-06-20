@@ -2745,7 +2745,7 @@ public class Crud implements InformationObserver {
         if ( request.createView ) {
             String viewName = createViewFromRel( request, statement, root, transaction );
 
-            return new Result().setGeneratedQuery( "Created View " + viewName + "from RelRoot without Sql." );
+            return new Result().setGeneratedQuery( "Created View " + viewName + " from RelRoot without Sql." );
         }
 
         List<List<Object>> rows;

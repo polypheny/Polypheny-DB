@@ -111,7 +111,7 @@ public abstract class AbstractRelNode implements RelNode {
 
     /**
      * The RelTraitSet that describes the traits of this RelNode.
-     * Setter is used to set the traitSet withinViews
+     * Setter is used to set the cluster in Views
      */
     @Setter
     protected RelTraitSet traitSet;

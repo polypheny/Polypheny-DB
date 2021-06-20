@@ -1234,7 +1234,6 @@ public enum SqlKind {
             EnumSet.of( COUNT, SUM, SUM0, MIN, MAX, LEAD, LAG, FIRST_VALUE, LAST_VALUE, COVAR_POP, COVAR_SAMP, REGR_COUNT, REGR_SXX, REGR_SYY, AVG, STDDEV_POP, STDDEV_SAMP, VAR_POP, VAR_SAMP, NTILE, COLLECT,
                     FUSION, SINGLE_VALUE, ROW_NUMBER, RANK, PERCENT_RANK, DENSE_RANK, CUME_DIST, JSON_ARRAYAGG, JSON_OBJECTAGG, BIT_AND, BIT_OR );
 
-    public static final EnumSet<SqlKind> ANDOR = EnumSet.of( AND, OR );
 
     /**
      * Category consisting of all DML operators.
