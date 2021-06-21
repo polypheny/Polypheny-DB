@@ -192,5 +192,6 @@ public class SqlCastFunction extends SqlFunction {
             return call.getOperandMonotonicity( 0 );
         }
     }
+
 }
 

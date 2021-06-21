@@ -97,5 +97,6 @@ public class LiteralOperandTypeChecker implements PolySingleOperandTypeChecker {
     public Consistency getConsistency() {
         return Consistency.NONE;
     }
+
 }
 

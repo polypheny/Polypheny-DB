@@ -147,6 +147,7 @@ public class RelFactories {
          * Creates a project.
          */
         RelNode createProject( RelNode input, List<? extends RexNode> childExprs, List<String> fieldNames );
+
     }
 
 
@@ -160,6 +161,7 @@ public class RelFactories {
         public RelNode createProject( RelNode input, List<? extends RexNode> childExprs, List<String> fieldNames ) {
             return LogicalProject.create( input, childExprs, fieldNames );
         }
+
     }
 
 
@@ -172,6 +174,7 @@ public class RelFactories {
          * Creates a sort.
          */
         RelNode createSort( RelNode input, RelCollation collation, RexNode offset, RexNode fetch );
+
     }
 
 
@@ -197,6 +200,7 @@ public class RelFactories {
          * Creates a Exchange.
          */
         RelNode createExchange( RelNode input, RelDistribution distribution );
+
     }
 
 
@@ -209,6 +213,7 @@ public class RelFactories {
         public RelNode createExchange( RelNode input, RelDistribution distribution ) {
             return LogicalExchange.create( input, distribution );
         }
+
     }
 
 
@@ -221,6 +226,7 @@ public class RelFactories {
          * Creates a {@link SortExchange}.
          */
         RelNode createSortExchange( RelNode input, RelDistribution distribution, RelCollation collation );
+
     }
 
 
@@ -233,6 +239,7 @@ public class RelFactories {
         public RelNode createSortExchange( RelNode input, RelDistribution distribution, RelCollation collation ) {
             return LogicalSortExchange.create( input, distribution, collation );
         }
+
     }
 
 
@@ -245,6 +252,7 @@ public class RelFactories {
          * Creates a set operation.
          */
         RelNode createSetOp( SqlKind kind, List<RelNode> inputs, boolean all );
+
     }
 
 
@@ -266,6 +274,7 @@ public class RelFactories {
                     throw new AssertionError( "not a set op: " + kind );
             }
         }
+
     }
 
 
@@ -278,6 +287,7 @@ public class RelFactories {
          * Creates an aggregate.
          */
         RelNode createAggregate( RelNode input, boolean indicator, ImmutableBitSet groupSet, ImmutableList<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls );
+
     }
 
 
@@ -291,6 +301,7 @@ public class RelFactories {
         public RelNode createAggregate( RelNode input, boolean indicator, ImmutableBitSet groupSet, ImmutableList<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
             return LogicalAggregate.create( input, indicator, groupSet, groupSets, aggCalls );
         }
+
     }
 
 
@@ -303,6 +314,7 @@ public class RelFactories {
          * Creates a filter.
          */
         RelNode createFilter( RelNode input, RexNode condition );
+
     }
 
 
@@ -315,6 +327,7 @@ public class RelFactories {
         public RelNode createFilter( RelNode input, RexNode condition ) {
             return LogicalFilter.create( input, condition );
         }
+
     }
 
 
@@ -336,6 +349,7 @@ public class RelFactories {
          * @param semiJoinDone Whether this join has been translated to a semi-join
          */
         RelNode createJoin( RelNode left, RelNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType, boolean semiJoinDone );
+
     }
 
 
@@ -348,6 +362,7 @@ public class RelFactories {
         public RelNode createJoin( RelNode left, RelNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType, boolean semiJoinDone ) {
             return LogicalJoin.create( left, right, condition, variablesSet, joinType, semiJoinDone, ImmutableList.of() );
         }
+
     }
 
 
@@ -368,6 +383,7 @@ public class RelFactories {
          * @param joinType Join type
          */
         RelNode createCorrelate( RelNode left, RelNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType joinType );
+
     }
 
 
@@ -380,6 +396,7 @@ public class RelFactories {
         public RelNode createCorrelate( RelNode left, RelNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType joinType ) {
             return LogicalCorrelate.create( left, right, correlationId, requiredColumns, joinType );
         }
+
     }
 
 
@@ -396,6 +413,7 @@ public class RelFactories {
          * @param condition Join condition
          */
         RelNode createSemiJoin( RelNode left, RelNode right, RexNode condition );
+
     }
 
 
@@ -409,6 +427,7 @@ public class RelFactories {
             final JoinInfo joinInfo = JoinInfo.of( left, right, condition );
             return SemiJoin.create( left, right, condition, joinInfo.leftKeys, joinInfo.rightKeys );
         }
+
     }
 
 
@@ -421,6 +440,7 @@ public class RelFactories {
          * Creates a Values.
          */
         RelNode createValues( RelOptCluster cluster, RelDataType rowType, List<ImmutableList<RexLiteral>> tuples );
+
     }
 
 
@@ -433,6 +453,7 @@ public class RelFactories {
         public RelNode createValues( RelOptCluster cluster, RelDataType rowType, List<ImmutableList<RexLiteral>> tuples ) {
             return LogicalValues.create( cluster, rowType, ImmutableList.copyOf( tuples ) );
         }
+
     }
 
 
@@ -445,6 +466,7 @@ public class RelFactories {
          * Creates a {@link TableScan}.
          */
         RelNode createScan( RelOptCluster cluster, RelOptTable table );
+
     }
 
 
@@ -470,6 +492,7 @@ public class RelFactories {
                 return LogicalTableScan.create( cluster, table );
             }
         }
+
     }
 
 

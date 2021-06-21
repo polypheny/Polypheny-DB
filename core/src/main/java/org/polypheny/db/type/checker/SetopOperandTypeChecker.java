@@ -132,5 +132,6 @@ public class SetopOperandTypeChecker implements PolyOperandTypeChecker {
     public Consistency getConsistency() {
         return Consistency.NONE;
     }
+
 }
 

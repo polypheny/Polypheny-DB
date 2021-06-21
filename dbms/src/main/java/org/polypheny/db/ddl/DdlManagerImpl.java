@@ -1333,7 +1333,6 @@ public class DdlManagerImpl extends DdlManager {
             stores = statement.getRouter().createTable( schemaId, statement );
         }
 
-
         prepareView( relNode );
         RelDataType fieldList = relNode.getRowType();
 

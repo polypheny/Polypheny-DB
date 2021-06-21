@@ -203,4 +203,5 @@ public class SqlDotOperator extends SqlSpecialOperator {
                 throw new AssertionError();
         }
     }
+
 }

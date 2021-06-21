@@ -145,5 +145,6 @@ public class SameOperandTypeChecker implements PolySingleOperandTypeChecker {
     public boolean checkSingleOperandType( SqlCallBinding callBinding, SqlNode operand, int iFormalOperand, boolean throwOnFailure ) {
         throw new UnsupportedOperationException(); // TODO:
     }
+
 }
 

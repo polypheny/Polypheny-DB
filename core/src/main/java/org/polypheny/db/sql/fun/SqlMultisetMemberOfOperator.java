@@ -98,5 +98,6 @@ public class SqlMultisetMemberOfOperator extends SqlBinaryOperator {
     public OperandCountRange getOperandCountRange() {
         return PolyOperandCountRanges.of( 2 );
     }
+
 }
 

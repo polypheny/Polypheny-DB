@@ -100,5 +100,6 @@ public class SqlDatePartFunction extends SqlFunction {
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
         return OperandTypes.DATETIME.checkSingleOperandType( callBinding, callBinding.operand( 0 ), 0, throwOnFailure );
     }
+
 }
 

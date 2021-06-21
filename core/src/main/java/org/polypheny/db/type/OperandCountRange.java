@@ -17,7 +17,6 @@
 package org.polypheny.db.type;
 
 
-
 /**
  * A class that describes how many operands an operator can take.
  */
