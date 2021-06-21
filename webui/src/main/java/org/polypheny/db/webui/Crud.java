@@ -2743,9 +2743,37 @@ public class Crud implements InformationObserver {
         PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( root );
 
         if ( request.createView ) {
-            String viewName = createViewFromRel( request, statement, root, transaction );
 
-            return new Result().setGeneratedQuery( "Created View " + viewName + " from RelRoot without Sql." );
+            String viewName = request.viewName;
+            boolean replace = false;
+            List<DataStore> store = null;
+            PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
+
+            List<String> columns = new ArrayList<>();
+            root.rel.getRowType().getFieldList().forEach( f -> columns.add( f.getName() ) );
+
+            //default Schema
+            long schemaId = transaction.getDefaultSchema().id;
+
+            try {
+                DdlManager.getInstance().createView(
+                        viewName,
+                        schemaId,
+                        root.rel,
+                        root.collation,
+                        replace,
+                        statement,
+                        store,
+                        placementType,
+                        columns
+                );
+            } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
+                log.error( "Not possible to create View because the Name is already used", e );
+                Result finalResult = new Result( e );
+                finalResult.setGeneratedQuery( "Execute logical query plan" );
+                return finalResult;
+            }
+            return new Result().setGeneratedQuery( "Created View \"" + viewName + "\" from logical query plan" );
         }
 
         List<List<Object>> rows;
@@ -2786,41 +2814,12 @@ public class Crud implements InformationObserver {
             }
             throw new RuntimeException( e );
         }
+        Result finalResult = new Result( header, data.toArray( new String[0][] ) ).setXid( transaction.getXid().toString() );
 
-        return new Result( header, data.toArray( new String[0][] ) ).setXid( transaction.getXid().toString() );
+        finalResult.setGeneratedQuery( "Execute logical query plan" );
+        return finalResult;
     }
 
-
-    private String createViewFromRel( RelAlgRequest request, Statement statement, RelRoot root, Transaction transaction ) {
-        String viewName = request.viewName;
-        boolean replace = false;
-        List<DataStore> store = null;
-        PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
-
-        List<String> columns = new ArrayList<>();
-        root.rel.getRowType().getFieldList().forEach( f -> columns.add( f.getName() ) );
-
-        //default Schema
-        long schemaId = transaction.getDefaultSchema().id;
-
-        try {
-            DdlManager.getInstance().createView(
-                    viewName,
-                    schemaId,
-                    root.rel,
-                    root.collation,
-                    replace,
-                    statement,
-                    store,
-                    placementType,
-                    columns
-            );
-        } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
-            throw new RuntimeException( e );
-        }
-
-        return viewName;
-    }
 
 
     /**
