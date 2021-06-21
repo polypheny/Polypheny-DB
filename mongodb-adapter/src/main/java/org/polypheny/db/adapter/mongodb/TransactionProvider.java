@@ -63,9 +63,7 @@ public class TransactionProvider {
                 .writeConcern( WriteConcern.MAJORITY ).build();
         ClientSession session;
         if ( !sessions.containsKey( xid ) ) {
-
             session = client.startSession();
-
             session.startTransaction( options );
             sessions.put( xid, session );
         } else {
@@ -135,7 +133,6 @@ public class TransactionProvider {
         } else {
             log.info( "No-op rollback" );
         }
-
     }
 
 

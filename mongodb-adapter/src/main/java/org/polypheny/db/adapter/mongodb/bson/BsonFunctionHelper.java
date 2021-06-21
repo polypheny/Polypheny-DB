@@ -70,15 +70,12 @@ public class BsonFunctionHelper extends BsonDocument {
         }
         if ( call.operands.size() == 3 ) {
             // prepared
-
             return new BsonDocument().append( "$function", new BsonDocument()
                     .append( "body", getDynamicFunction( call.operands.get( 2 ) ) )
                     .append( "args", getArgsArray( call.operands, rowType, bucket ) )
                     .append( "lang", new BsonString( "js" ) ) );
         }
-
         throw new IllegalArgumentException( "Unsupported function for MongoDB" );
-
     }
 
 
@@ -120,7 +117,6 @@ public class BsonFunctionHelper extends BsonDocument {
             return array;
         }
         throw new IllegalArgumentException( "This function is not supported yet" );
-
     }
 
 
