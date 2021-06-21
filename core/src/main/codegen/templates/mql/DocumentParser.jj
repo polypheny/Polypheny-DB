@@ -123,7 +123,7 @@ TOKEN : /* IDENTIFIERS */ // for nested documents check out Splitter()
 |
   < ARRAY: "[" (<LETTER>|<DIGIT>|<SYMBOL>)* "]" >
 |
-  < #SYMBOL: [".", ",", ":", ";", "$", "\"", "'", "(", ")", " ", "\n", "{", "}"] >
+  < #SYMBOL: [".", ",", ":", ";", "$", "\"", "'", "(", ")", " ", "\n", "{", "}", "[", "]" ] >
 |
   < IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>)* >
 |

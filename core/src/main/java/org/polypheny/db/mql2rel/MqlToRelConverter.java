@@ -18,6 +18,7 @@ package org.polypheny.db.mql2rel;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
@@ -226,13 +227,33 @@ public class MqlToRelConverter {
         if ( bsonValue.isDocument() ) {
             String key = ((BsonDocument) bsonValue).getFirstKey();
             op = getBinaryOperator( key );
-            Pair<Comparable, PolyType> valuePair = RexLiteral.convertType( getComparable( ((BsonDocument) bsonValue).get( key ), field.getType() ), field.getType() );
-            value = new RexLiteral( valuePair.left, field.getType(), valuePair.right );
+            if ( op == SqlStdOperatorTable.IN || op == SqlStdOperatorTable.NOT_IN ) {
+                boolean isIn = op == SqlStdOperatorTable.IN;
+                op = isIn ? SqlStdOperatorTable.OR : SqlStdOperatorTable.AND;
+                operands.clear();
+
+                for ( BsonValue literal : ((BsonDocument) bsonValue).get( key ).asArray() ) {
+                    if ( literal.isDocument() ) {
+                        throw new RuntimeException( "Non-literal in $in clauses are not supported" );
+                    }
+                    Pair<Comparable, PolyType> valuePair = RexLiteral.convertType( getComparable( literal, field.getType() ), field.getType() );
+                    value = new RexLiteral( valuePair.left, field.getType(), valuePair.right );
+                    operands.add(
+                            new RexCall( type, isIn ? SqlStdOperatorTable.EQUALS : SqlStdOperatorTable.NOT_EQUALS, Arrays.asList(
+                                    RexInputRef.of( field.getIndex(), rowType ), value ) ) );
+                }
+
+            } else {
+                Pair<Comparable, PolyType> valuePair = RexLiteral.convertType( getComparable( ((BsonDocument) bsonValue).get( key ), field.getType() ), field.getType() );
+                value = new RexLiteral( valuePair.left, field.getType(), valuePair.right );
+                operands.add( value );
+            }
         } else {
             Pair<Comparable, PolyType> valuePair = RexLiteral.convertType( getComparable( bsonValue, field.getType() ), field.getType() );
             value = new RexLiteral( valuePair.left, field.getType(), valuePair.right );
+            operands.add( value );
         }
-        operands.add( value );
+
         return new RexCall( type, op, operands );
     }
 
@@ -255,6 +276,10 @@ public class MqlToRelConverter {
                 return SqlStdOperatorTable.IN;
             case "$nin":
                 return SqlStdOperatorTable.NOT_IN;
+            case "$and":
+                return SqlStdOperatorTable.AND;
+            case "$or":
+                return SqlStdOperatorTable.OR;
             default:
                 throw new IllegalStateException( "Unexpected value for SqlBinaryOperator: " + key );
         }
