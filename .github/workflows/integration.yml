@@ -1,6 +1,9 @@
 name: Polypheny-DB Adapter Matrix CI
 
-on: [ pull_request, push ]
+on:
+    push:
+    pull_request:
+        types: [ unlabeled ]
 
 jobs:
     build:
