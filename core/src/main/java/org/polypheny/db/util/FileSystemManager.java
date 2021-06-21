@@ -33,6 +33,7 @@ public class FileSystemManager {
     final List<File> dirs = new ArrayList<>();
     final List<File> deleteOnExit = new ArrayList<>();
 
+
     public static FileSystemManager getInstance() {
         if ( fileSystemManager == null ) {
             fileSystemManager = new FileSystemManager();
@@ -43,8 +44,11 @@ public class FileSystemManager {
 
     private FileSystemManager() {
         if ( !root.exists() ) {
+            testWritePermission();
             root.mkdir();
         }
+        testWritePermission();
+
         Runtime.getRuntime().addShutdownHook( new Thread( () -> {
             for ( File file : deleteOnExit ) {
                 if ( file.exists() ) {
@@ -52,6 +56,13 @@ public class FileSystemManager {
                 }
             }
         } ) );
+    }
+
+
+    private void testWritePermission() {
+        if ( !new File( System.getProperty( "user.home" ) ).canWrite() ) {
+            throw new RuntimeException( "Cannot write in the filesystem." );
+        }
     }
 
 
