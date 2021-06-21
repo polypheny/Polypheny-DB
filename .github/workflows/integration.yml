@@ -1,6 +1,6 @@
 name: Polypheny-DB Adapter Matrix CI
 
-on: [ push ]
+on: [ pull_request, push ]
 
 jobs:
     build:
@@ -8,7 +8,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                adapter: [ mongodb, hsqldb, monetdb, postgresql ]
+                adapter: [ mongodb, hsqldb, monetdb, postgresql, file, cottontail, cassandra ]
         name: Integration Tests (Java 11)
         steps:
             -   name: Checkout
