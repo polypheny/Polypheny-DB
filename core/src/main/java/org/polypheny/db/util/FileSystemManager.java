@@ -29,7 +29,7 @@ import java.util.List;
 public class FileSystemManager {
 
     static FileSystemManager fileSystemManager = null;
-    final File root = new File( System.getProperty( "user.home" ), ".polypheny" );
+    final File root = new File( System.getProperty( "user.home" ) != null ? System.getProperty( "user.home" ) : ".", ".polypheny" );
     final List<File> dirs = new ArrayList<>();
     final List<File> deleteOnExit = new ArrayList<>();
 
