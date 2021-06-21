@@ -153,5 +153,6 @@ public class SqlOverlapsOperator extends SqlBinaryOperator {
         }
         return true;
     }
+
 }
 

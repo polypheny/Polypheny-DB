@@ -96,6 +96,8 @@ public abstract class PolyOperandCountRanges {
         public int getMax() {
             return max;
         }
+
     }
+
 }
 

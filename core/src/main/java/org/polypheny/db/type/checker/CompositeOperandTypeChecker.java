@@ -320,4 +320,5 @@ public class CompositeOperandTypeChecker implements PolyOperandTypeChecker {
                 throw new AssertionError();
         }
     }
+
 }

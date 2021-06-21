@@ -78,8 +78,8 @@ public class SqlItemOperator extends SqlSpecialOperator {
         SqlNode left = list.node( ordinal - 1 );
         SqlNode right = list.node( ordinal + 1 );
         //if expression is of type a[i:j]
-        if( list.size() > 3 && ! list.isOp(3) ) {
-            SqlNode right2 = list.node(ordinal+2);
+        if ( list.size() > 3 && !list.isOp( 3 ) ) {
+            SqlNode right2 = list.node( ordinal + 2 );
             return new ReduceResult(
                     ordinal - 1,
                     ordinal + 3,
@@ -111,7 +111,7 @@ public class SqlItemOperator extends SqlSpecialOperator {
         call.operand( 0 ).unparse( writer, leftPrec, 0 );
         final SqlWriter.Frame frame = writer.startList( "[", "]" );
         call.operand( 1 ).unparse( writer, 0, 0 );
-        if( call.operandCount() > 2 ) {
+        if ( call.operandCount() > 2 ) {
             writer.literal( ":" );
             call.operand( 2 ).unparse( writer, 0, 0 );
         }
@@ -167,16 +167,20 @@ public class SqlItemOperator extends SqlSpecialOperator {
         final RelDataType operandType = opBinding.getOperandType( 0 );
         switch ( operandType.getPolyType() ) {
             case ARRAY:
-                if( operandType instanceof ArrayType && ((ArrayType)operandType).getDimension() > 1 ) {
-                    long dimension = ((ArrayType) operandType).getDimension() -1;
+                if ( operandType instanceof ArrayType && ((ArrayType) operandType).getDimension() > 1 ) {
+                    long dimension = ((ArrayType) operandType).getDimension() - 1;
                     //set the dimension to -1 if you have a slice operator ([1:1]), so the returnType will be adjusted to array if they are additional itemOperators (without the slice operator)
-                    if( opBinding.getOperandCount() > 2 ){ dimension = -1; }
+                    if ( opBinding.getOperandCount() > 2 ) {
+                        dimension = -1;
+                    }
                     return typeFactory.createArrayType( operandType.getComponentType(), ((ArrayType) operandType).getCardinality(), dimension );
-                } else if( operandType instanceof ArrayType && ((ArrayType)operandType).getDimension() < 0//if dimension was set to -1
-                && !( ((SqlCallBinding) opBinding).operand( 0 ) instanceof SqlIdentifier )//e.g. a[1]
-                && !(operandType.getComponentType() instanceof RelRecordType) ){//e.g. a.b[1].c.d[1], for unit tests
-                    long dimension = ((ArrayType) operandType).getDimension() -1;
-                    if( opBinding.getOperandCount() > 2 ){ dimension = -1; }//if dimension was set to -1, the returned type will be an array (e.g. a[1:1][1] is of type array and [1:1] sets the cardinality to -1
+                } else if ( operandType instanceof ArrayType && ((ArrayType) operandType).getDimension() < 0//if dimension was set to -1
+                        && !(((SqlCallBinding) opBinding).operand( 0 ) instanceof SqlIdentifier)//e.g. a[1]
+                        && !(operandType.getComponentType() instanceof RelRecordType) ) {//e.g. a.b[1].c.d[1], for unit tests
+                    long dimension = ((ArrayType) operandType).getDimension() - 1;
+                    if ( opBinding.getOperandCount() > 2 ) {
+                        dimension = -1;
+                    }//if dimension was set to -1, the returned type will be an array (e.g. a[1:1][1] is of type array and [1:1] sets the cardinality to -1
                     return typeFactory.createArrayType( operandType.getComponentType(), ((ArrayType) operandType).getCardinality(), dimension );
                 } else {
                     return typeFactory.createTypeWithNullability( operandType.getComponentType(), true );
@@ -190,4 +194,5 @@ public class SqlItemOperator extends SqlSpecialOperator {
                 throw new AssertionError();
         }
     }
+
 }

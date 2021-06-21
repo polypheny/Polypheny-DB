@@ -108,5 +108,6 @@ public class AssignableOperandTypeChecker implements PolyOperandTypeChecker {
     public Consistency getConsistency() {
         return Consistency.NONE;
     }
+
 }
 

@@ -294,5 +294,6 @@ public class SqlCaseOperator extends SqlOperator {
         kase.elseExpr.unparse( writer, 0, 0 );
         writer.endList( frame );
     }
+
 }
 

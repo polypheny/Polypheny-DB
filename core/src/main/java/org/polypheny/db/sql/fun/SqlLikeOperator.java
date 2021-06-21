@@ -182,4 +182,5 @@ public class SqlLikeOperator extends SqlSpecialOperator {
         SqlCall call = createCall( SqlParserPos.ZERO, operands );
         return new ReduceResult( opOrdinal - 1, end, call );
     }
+
 }

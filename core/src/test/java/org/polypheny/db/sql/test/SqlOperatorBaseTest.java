@@ -5506,7 +5506,6 @@ public abstract class SqlOperatorBaseTest {
     */
 
 
-
     @Test
     public void testWindow() {
         if ( !enable ) {
@@ -7628,7 +7627,6 @@ public abstract class SqlOperatorBaseTest {
         tester.checkAgg( "bit_or(x)", values, 3, 0 );
     }
 
-
     /**
      * Tests that CAST fails when given a value just outside the valid range for that type. For example,
      *
@@ -7719,8 +7717,6 @@ public abstract class SqlOperatorBaseTest {
 //            }
 //        }
 //    }
-
-
     @Test
     public void testCastTruncates() {
         tester.setFor( SqlStdOperatorTable.CAST );
@@ -7880,6 +7876,7 @@ public abstract class SqlOperatorBaseTest {
             }
             fail( "Stack did not match any pattern; " + stack );
         }
+
     }
 
 
@@ -7923,6 +7920,7 @@ public abstract class SqlOperatorBaseTest {
                 fail( "Stack did not match any pattern; " + stack );
             }
         }
+
     }
 
 
@@ -7965,6 +7963,7 @@ public abstract class SqlOperatorBaseTest {
         protected SqlTester with( SqlTestFactory factory ) {
             return new TesterImpl( factory );
         }
+
     }
 
 
@@ -8017,6 +8016,7 @@ public abstract class SqlOperatorBaseTest {
                     throw new AssertionError( type );
             }
         }
+
     }
 
 
@@ -8052,6 +8052,7 @@ public abstract class SqlOperatorBaseTest {
             }
             this.values.add( new ValueType( type, null ) );
         }
+
     }
 
 
@@ -8084,6 +8085,8 @@ public abstract class SqlOperatorBaseTest {
                     .replace( "$2", values[2] )
                     .replace( "$3", values[3] );
         }
+
     }
+
 }
 
