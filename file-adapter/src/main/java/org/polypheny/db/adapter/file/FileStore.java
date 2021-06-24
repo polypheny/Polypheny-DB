@@ -72,7 +72,7 @@ public class FileStore extends DataStore {
     public FileStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );
         FileSystemManager fileManager = FileSystemManager.getInstance();
-        File adapterRoot = fileManager.registerNewFolder( "data/file-store" );
+        File adapterRoot = fileManager.registerNewFolder( "file-store" );
         //rootDir = new File( adapterRoot, "store" + getAdapterId() );
 
         rootDir = fileManager.registerNewFolder( adapterRoot, "store" + getAdapterId() );
