@@ -72,10 +72,12 @@ public class FileSystemManager {
      * @param path the path of the new folder
      * @return the file object for the directory
      */
-    public File registerNewFolder( String path ) {
-        File file = new File( this.root, path );
+    public File registerNewFolder( File root, String path ) {
+        File file = new File( root, path );
         if ( !file.exists() ) {
-            file.mkdirs();
+            if ( !file.mkdirs() ) {
+                throw new RuntimeException( "Could not create directory: " + path + " in parent folder: " + root.getAbsolutePath() );
+            }
             dirs.add( file );
         }
 
@@ -153,6 +155,11 @@ public class FileSystemManager {
             }
         }
         return file;
+    }
+
+
+    public File registerNewFolder( String folder ) {
+        return registerNewFolder( this.root, folder );
     }
 
 }
