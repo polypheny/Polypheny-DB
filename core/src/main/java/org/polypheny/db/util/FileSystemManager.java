@@ -65,10 +65,11 @@ public class FileSystemManager {
             return false;
         }
 
+        boolean couldCreate = true;
         if ( !root.exists() ) {
-            return root.canWrite() && root.mkdirs();
+            couldCreate = root.mkdirs();
         }
-        return true;
+        return couldCreate && root.canWrite();
     }
 
 
@@ -80,6 +81,9 @@ public class FileSystemManager {
      */
     public File registerNewFolder( File root, String path ) {
         File file = root;
+        if ( !file.setWritable( true ) ) {
+            throw new RuntimeException( "Directory " + path + " is not writable" );
+        }
 
         if ( path.contains( "/" ) ) {
             String[] splits = path.split( "/" );
