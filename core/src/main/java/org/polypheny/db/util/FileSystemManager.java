@@ -79,7 +79,16 @@ public class FileSystemManager {
      * @return the file object for the directory
      */
     public File registerNewFolder( File root, String path ) {
-        File file = new File( root, path );
+        File file = root;
+        if ( path.contains( "/" ) ) {
+            String[] splits = path.split( "/" );
+            for ( String split : splits ) {
+                file = registerNewFile( file, split );
+            }
+        } else {
+            file = new File( root, path );
+        }
+
         if ( !file.exists() ) {
             if ( !file.mkdirs() ) {
                 throw new RuntimeException( "Could not create directory: " + path + " in parent folder: " + root.getAbsolutePath() );
