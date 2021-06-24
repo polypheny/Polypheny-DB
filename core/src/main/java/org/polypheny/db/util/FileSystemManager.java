@@ -29,7 +29,7 @@ import java.util.List;
 public class FileSystemManager {
 
     static FileSystemManager fileSystemManager = null;
-    final File root = new File( System.getProperty( "user.home" ) != null ? System.getProperty( "user.home" ) : ".", ".polypheny" );
+    File root = new File( System.getProperty( "user.home" ) != null ? System.getProperty( "user.home" ) : ".", ".polypheny" );
     final List<File> dirs = new ArrayList<>();
     final List<File> deleteOnExit = new ArrayList<>();
 
@@ -43,13 +43,12 @@ public class FileSystemManager {
 
 
     private FileSystemManager() {
-        if ( !root.exists() ) {
-            testWritePermission();
-            if ( root.mkdirs() ) {
-                throw new RuntimeException( "Could not create root directory: .polypheny in:" + System.getProperty( "user.home" ) );
+        if ( !tryCreatingFolder( root ) ) {
+            root = new File( "." );
+            if ( !tryCreatingFolder( root ) ) {
+                throw new RuntimeException( "Could not create root directory: .polypheny neither in:" + System.getProperty( "user.home" ) + " nor \".\"" );
             }
         }
-        testWritePermission();
 
         Runtime.getRuntime().addShutdownHook( new Thread( () -> {
             for ( File file : deleteOnExit ) {
@@ -61,10 +60,15 @@ public class FileSystemManager {
     }
 
 
-    private void testWritePermission() {
-        if ( !new File( System.getProperty( "user.home" ) ).canWrite() ) {
-            throw new RuntimeException( "Cannot write in the filesystem." );
+    private boolean tryCreatingFolder( File file ) {
+        if ( file.isFile() ) {
+            return false;
         }
+
+        if ( !root.exists() ) {
+            return root.canWrite() && root.mkdirs();
+        }
+        return true;
     }
 
 
