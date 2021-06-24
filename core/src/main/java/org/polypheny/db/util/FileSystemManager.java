@@ -45,7 +45,9 @@ public class FileSystemManager {
     private FileSystemManager() {
         if ( !root.exists() ) {
             testWritePermission();
-            root.mkdir();
+            if ( root.mkdirs() ) {
+                throw new RuntimeException( "Could not create root directory: .polypheny in:" + System.getProperty( "user.home" ) );
+            }
         }
         testWritePermission();
 
