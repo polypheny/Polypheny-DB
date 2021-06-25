@@ -34,6 +34,7 @@ import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.excluded.MonetdbExcluded;
 import org.polypheny.db.excluded.PostgresqlExcluded;
@@ -42,7 +43,7 @@ import org.polypheny.db.type.PolyType;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-@Category({ AdapterTestSuite.class, PostgresqlExcluded.class })
+@Category({ AdapterTestSuite.class, PostgresqlExcluded.class, CassandraExcluded.class })
 public class JdbcDdlTest {
 
 

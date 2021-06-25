@@ -28,8 +28,10 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.excluded.CassandraExcluded;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -151,6 +153,7 @@ public class CatalogTest {
 
 
     @Test
+    @Category(CassandraExcluded.class)
     public void testGetTable() {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -188,6 +191,7 @@ public class CatalogTest {
 
 
     @Test
+    @Category(CassandraExcluded.class)
     public void testGetIndex() {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -206,6 +210,7 @@ public class CatalogTest {
 
 
     @Test
+    @Category(CassandraExcluded.class)
     public void testGetForeignKeys() {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

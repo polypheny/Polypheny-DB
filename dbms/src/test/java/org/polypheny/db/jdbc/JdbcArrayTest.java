@@ -30,6 +30,7 @@ import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.excluded.PostgresqlExcluded;
 
@@ -103,7 +104,7 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Category({ PostgresqlExcluded.class, FileExcluded.class })
+    @Category({ PostgresqlExcluded.class, FileExcluded.class, CassandraExcluded.class })
     public void arrayTypesTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -164,7 +165,7 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Category(FileExcluded.class)
+    @Category({ FileExcluded.class, CassandraExcluded.class })
     public void itemOperatorTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -211,7 +212,7 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Category(FileExcluded.class)
+    @Category({ FileExcluded.class, CassandraExcluded.class })
     public void nullTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -235,7 +236,7 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Category({ PostgresqlExcluded.class, FileExcluded.class })
+    @Category({ PostgresqlExcluded.class, FileExcluded.class, CassandraExcluded.class })
     public void arrayFilterTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
