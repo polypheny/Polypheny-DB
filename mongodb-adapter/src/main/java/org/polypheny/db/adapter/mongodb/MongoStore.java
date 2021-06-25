@@ -358,13 +358,12 @@ public class MongoStore extends DataStore {
 
     @Override
     public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn, PolyType polyType ) {
-        // this is not really possible in mongodb, only way would be to reinsert all date, which is not really performant, but could be a possibility
         String name = columnPlacement.physicalColumnName;
         BsonDocument filter = new BsonDocument();
         List<BsonDocument> updates = Collections.singletonList( new BsonDocument( "$set", new BsonDocument( name, new BsonDocument( "$convert", new BsonDocument()
                 .append( "input", new BsonString( "$" + name ) )
                 .append( "to", new BsonInt32( MongoTypeUtil.getTypeNumber( catalogColumn.type ) ) ) ) ) ) );
-        //updates.forEach( el -> System.out.println( el.toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ) );
+
         this.currentSchema.database.getCollection( columnPlacement.physicalTableName ).updateMany( filter, updates );
     }
 

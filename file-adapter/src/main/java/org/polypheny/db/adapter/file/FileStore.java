@@ -73,21 +73,9 @@ public class FileStore extends DataStore {
         super( storeId, uniqueName, settings, true );
         FileSystemManager fileManager = FileSystemManager.getInstance();
         File adapterRoot = fileManager.registerNewFolder( "data/file-store" );
-        //rootDir = new File( adapterRoot, "store" + getAdapterId() );
 
         rootDir = fileManager.registerNewFolder( adapterRoot, "store" + getAdapterId() );
-        /*if ( !rootDir.exists() ) {
-            if ( !rootDir.mkdirs() ) {
-                throw new RuntimeException( "Could not create root directory" );
-            }
-        }*/
-        // Subfolder for the write ahead log
-        /*this.WAL = new File( rootDir, "WAL" );
-        if ( !WAL.exists() ) {
-            if ( !WAL.mkdirs() ) {
-                throw new RuntimeException( "Could not create WAL folder" );
-            }
-        }*/
+
         WAL = fileManager.registerNewFolder( rootDir, "WAL" );
 
         trxRecovery();

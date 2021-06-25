@@ -128,16 +128,13 @@ public class CottontailStore extends DataStore {
         }
 
         if ( this.isEmbedded ) {
-            File adapterRoot = FileSystemManager.getInstance().registerNewFolder( "data/cottontaildb-store" );
-            File embeddedDir = new File( adapterRoot, "store" + getAdapterId() );
+            FileSystemManager fileSystemManager = FileSystemManager.getInstance();
+            File adapterRoot = fileSystemManager.registerNewFolder( "data/cottontaildb-store" );
 
-            if ( !embeddedDir.exists() ) {
-                if ( !embeddedDir.mkdirs() ) {
-                    throw new RuntimeException( "Could not create root directory" );
-                }
-            }
+            File embeddedDir = fileSystemManager.registerNewFile( adapterRoot, "store" + getAdapterId() );
 
-            final File dataFolder = new File( embeddedDir, "data" );
+            final File dataFolder = fileSystemManager.registerNewFolder( embeddedDir, "data" );
+
             final Config config = new Config(
                     Paths.get( dataFolder.getAbsolutePath() ),
                     false,
