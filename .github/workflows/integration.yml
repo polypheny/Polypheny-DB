@@ -21,9 +21,9 @@ jobs:
                 with:
                     java-version: 11
             -   name: Start Docker container
-                run: docker-compose up -d
+                run: sudo docker-compose up -d
             -   name: Assemble
-                run: ./gradlew assemble
+                run: sudo ./gradlew assemble
 
             -   name: Execute integration tests for ${{ matrix.adapter }}
-                run: ./gradlew integrationTests -Dstore.default=${{ matrix.adapter }}
+                run: sudo ./gradlew integrationTests -Dstore.default=${{ matrix.adapter }}

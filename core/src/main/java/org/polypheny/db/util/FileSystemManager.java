@@ -29,7 +29,7 @@ import java.util.List;
 public class FileSystemManager {
 
     static FileSystemManager fileSystemManager = null;
-    File root = new File( System.getProperty( "user.home" ) != null ? System.getProperty( "user.home" ) : ".", ".polypheny" );
+    File root = new File( System.getProperty( "user.home" ), ".polypheny" );
     final List<File> dirs = new ArrayList<>();
     final List<File> deleteOnExit = new ArrayList<>();
 
@@ -81,9 +81,7 @@ public class FileSystemManager {
      */
     public File registerNewFolder( File root, String path ) {
         File file = root;
-        if ( !file.setWritable( true ) ) {
-            throw new RuntimeException( "Directory " + path + " is not writable" );
-        }
+        file.setWritable( true );
 
         if ( path.contains( "/" ) ) {
             String[] splits = path.split( "/" );
