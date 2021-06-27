@@ -148,10 +148,7 @@ public class StatisticsManager<T extends Comparable<T>> {
             put( splits[0], splits[1], splits[2], new NumericalStatisticColumn<>( splits, type ) );
         } else if ( type.getFamily() == PolyTypeFamily.CHARACTER ) {
             put( splits[0], splits[1], splits[2], new AlphabeticStatisticColumn<>( splits, type ) );
-        } else if ( type.getFamily() == PolyTypeFamily.TIME
-                    || type.getFamily() == PolyTypeFamily.DATETIME
-                    || type.getFamily() == PolyTypeFamily.DATE
-                    || type.getFamily() == PolyTypeFamily.TIMESTAMP) {
+        } else if (PolyType.DATETIME_TYPES.contains(type)) {
             put( splits[0], splits[1], splits[2], new TemporalStatisticColumn<>( splits, type ) );
         }
     }
@@ -240,10 +237,7 @@ public class StatisticsManager<T extends Comparable<T>> {
             return this.reevaluateNumericalColumn( column );
         } else if ( column.getType().getFamily() == PolyTypeFamily.CHARACTER ) {
             return this.reevaluateAlphabeticalColumn( column );
-        } else if (column.getType().getFamily() == PolyTypeFamily.TIMESTAMP
-                    || column.getType().getFamily() == PolyTypeFamily.DATE
-                    || column.getType().getFamily() == PolyTypeFamily.DATETIME
-                    || column.getType().getFamily() == PolyTypeFamily.TIME)
+        } else if (PolyType.DATETIME_TYPES.contains(column.getType()))
             return this.reevaluateTemporalColumn( column );
         return null;
     }
@@ -302,8 +296,9 @@ public class StatisticsManager<T extends Comparable<T>> {
 
         StatisticQueryColumn unique = this.getUniqueValues( column );
         for(int idx=0;idx<unique.getData().length;idx++)
-            //noinspection unchecked
-            unique.getData()[idx] = DateTimeStringUtils.longToAdjustedString(Long.parseLong(unique.getData()[idx]),column.getType());
+            if(unique.getData()[idx] != null)
+                //noinspection unchecked
+                unique.getData()[idx] = DateTimeStringUtils.longToAdjustedString(Long.parseLong(unique.getData()[idx]),column.getType());
 
         assignUnique( statisticColumn, unique );
 
