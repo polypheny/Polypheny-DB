@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "defaultSchema": "SALES",
+  "schemas": [
+    {
+      "name": "SALES",
+      "type": "custom",
+      "factory": "org.polypheny.db.adapter.csv.CsvSchemaFactory",
+      "operand": {
+        "directory": "sales",
+        "flavor": "FILTERABLE"
+      }
+    }
+  ]
+}

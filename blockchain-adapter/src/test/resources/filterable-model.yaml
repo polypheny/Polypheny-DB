@@ -1,0 +1,14 @@
+#
+# A JSON model of a Polypheny-DB schema that is similar to model.json,
+# except that it produces tables that implement FilterableTable.
+# These tables can implement their own simple filtering.
+#
+version: 1.0,
+defaultSchema: SALES
+schemas:
+    -   name: SALES
+        type: custom
+        factory: org.polypheny.db.adapter.csv.CsvSchemaFactory
+        operand:
+            directory: sales
+            flavor: FILTERABLE

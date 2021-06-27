@@ -1,0 +1,13 @@
+version: 1.0
+defaultSchema: STREAM
+schemas:
+    -   name: SS
+        tables:
+            -   name: DEPTS
+                type: custom
+                factory: org.polypheny.db.adapter.csv.CsvStreamTableFactory
+                stream:
+                    stream: true
+                operand:
+                    file: sales/SDEPTS.csv
+                    flavor: scannable

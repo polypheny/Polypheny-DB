@@ -22,5 +22,6 @@ include 'statistic'
 include 'explore-by-example'
 include 'rest-interface'
 include 'cottontail-adapter'
+include 'blockchain-adapter'
 
 include 'dbms'
