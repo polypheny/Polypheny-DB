@@ -403,6 +403,7 @@ public class Crud implements InformationObserver {
             if ( request.depth > 1 ) {
                 ArrayList<SidebarElement> tableTree = new ArrayList<>();
                 ArrayList<SidebarElement> viewTree = new ArrayList<>();
+                ArrayList<SidebarElement> collectionTree = new ArrayList<>();
                 List<CatalogTable> tables = catalog.getTables( schema.id, null );
                 for ( CatalogTable table : tables ) {
                     String icon = "fa fa-table";
@@ -423,8 +424,9 @@ public class Crud implements InformationObserver {
                     } else if ( request.views && table.tableType == TableType.VIEW ) {
                         viewTree.add( tableElement );
                     }
+                    collectionTree.add( tableElement );
                 }
-                if ( request.showTable ) {
+                /*if ( request.showTable ) {
                     schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tableTree ).setRouterLink( "" ) );
                 } else {
                     schemaTree.addChildren( tableTree ).setRouterLink( "" );
@@ -436,6 +438,11 @@ public class Crud implements InformationObserver {
                         schemaTree.addChildren( viewTree ).setRouterLink( "" );
                     }
 
+                }*/
+                if ( request.showTable ) {
+                    schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( collectionTree ).setRouterLink( "" ) );
+                } else {
+                    schemaTree.addChildren( collectionTree ).setRouterLink( "" );
                 }
             }
             result.add( schemaTree );
@@ -449,8 +456,17 @@ public class Crud implements InformationObserver {
      * Get all tables of a schema
      */
     List<DbTable> getTables( final Request req, final Response res ) {
+        Transaction transaction = getTransaction();
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
-        List<CatalogTable> tables = catalog.getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( request.schema ), null );
+        long schemaId = transaction.getDefaultSchema().id;
+        String requestedSchema;
+        if ( request.schema != null ) {
+            requestedSchema = request.schema;
+        } else {
+            requestedSchema = catalog.getSchema( schemaId ).name;
+        }
+
+        List<CatalogTable> tables = catalog.getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( requestedSchema ), null );
         ArrayList<DbTable> result = new ArrayList<>();
         for ( CatalogTable t : tables ) {
             result.add( new DbTable( t.name, t.getSchemaName(), t.modifiable, t.tableType ) );
@@ -1330,27 +1346,21 @@ public class Crud implements InformationObserver {
                 Map<Long, List<Long>> underlyingTable = ((CatalogView) catalogTable).getUnderlyingTables();
 
                 List<DbColumn> columns = new ArrayList<>();
-                for ( Entry<Long, List<Long>> entry : underlyingTable.entrySet() ) {
-                    int adapterId = catalog.getColumnPlacements( entry.getValue().get( 0 ) ).get( 0 ).adapterId;
-                    for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapter( adapterId, entry.getKey() ) ) {
-                        for ( Long colId : entry.getValue() ) {
-                            if ( colId == ccp.columnId ) {
-                                CatalogColumn col = catalog.getColumn( ccp.columnId );
-                                columns.add( new DbColumn(
-                                        col.name,
-                                        col.type.getName(),
-                                        col.collectionsType == null ? "" : col.collectionsType.getName(),
-                                        col.nullable,
-                                        col.length,
-                                        col.scale,
-                                        col.dimension,
-                                        col.cardinality,
-                                        false,
-                                        col.defaultValue == null ? null : col.defaultValue.value
-                                ).setPhysicalName( ccp.physicalColumnName ) );
-                            }
-                        }
-                    }
+                for ( Long columnIds : catalogTable.columnIds ) {
+                    CatalogColumn col = catalog.getColumn( columnIds );
+                    columns.add( new DbColumn(
+                            col.name,
+                            col.type.getName(),
+                            col.collectionsType == null ? "" : col.collectionsType.getName(),
+                            col.nullable,
+                            col.length,
+                            col.scale,
+                            col.dimension,
+                            col.cardinality,
+                            false,
+                            col.defaultValue == null ? null : col.defaultValue.value
+                    ).setPhysicalName( col.name ) );
+
                 }
                 return new Result( columns.toArray( new DbColumn[0] ), null ).setType( ResultType.VIEW );
             } else {
@@ -1720,7 +1730,7 @@ public class Crud implements InformationObserver {
             ArrayList<String[]> data = new ArrayList<>();
             resultList.forEach( c -> data.add( c.asRow() ) );
 
-            result = new Result( header, data.toArray( new String[0][2] ) );
+            result = new Result( header, data.toArray( new String[0][2] ), catalogTable.tableType );
         } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             log.error( "Caught exception while fetching constraints", e );
             result = new Result( e );
@@ -2821,7 +2831,6 @@ public class Crud implements InformationObserver {
     }
 
 
-
     /**
      * Create or drop a schema
      */
@@ -3424,11 +3433,13 @@ public class Crud implements InformationObserver {
         }
 
         try {
+            TableType tableType = null;
             CatalogTable catalogTable = null;
             if ( request.tableId != null ) {
                 String[] t = request.tableId.split( "\\." );
                 try {
                     catalogTable = catalog.getTable( this.databaseName, t[0], t[1] );
+                    tableType = catalogTable.tableType;
                 } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
                     log.error( "Caught exception", e );
                 }
@@ -3476,7 +3487,13 @@ public class Crud implements InformationObserver {
 
             ArrayList<String[]> data = computeResultData( rows, header, statement.getTransaction() );
 
-            return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
+            if ( tableType != null ) {
+                return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), tableType ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
+            } else {
+                //if we do not have a fix table it is not possible to change anything within the resultSet therefore we use TableType.SOURCE
+                return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), TableType.SOURCE ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
+            }
+
         } finally {
             try {
                 if ( iterator instanceof AutoCloseable ) {

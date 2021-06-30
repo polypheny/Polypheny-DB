@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.webui.models.requests.UIRequest;
 
 
@@ -142,6 +143,33 @@ public class Result {
     public Result( final DbColumn[] header, final String[][] data ) {
         this.header = header;
         this.data = data;
+    }
+
+
+    /**
+     * Build a Result object containing the data from the ResultSet, including the headers of the columns
+     *
+     * @param header columns of the result
+     * @param data data of the result
+     * @param type if the data is from a table/view/arbitrary query
+     */
+    public Result( final DbColumn[] header, final String[][] data, final TableType type ) {
+        this.header = header;
+        this.data = data;
+
+        ResultType resultType = null;
+
+        if ( type != null ) {
+            switch ( type ) {
+                case TABLE:
+                    resultType = ResultType.TABLE;
+                    break;
+                default:
+                    resultType = ResultType.VIEW;
+            }
+        }
+
+        this.type = resultType;
     }
 
 
