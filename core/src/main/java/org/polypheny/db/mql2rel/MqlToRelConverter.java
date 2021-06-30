@@ -51,6 +51,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlBinaryOperator;
 import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
@@ -151,9 +152,9 @@ public class MqlToRelConverter {
 
 
     private RelNode combineFilter( BsonDocument filter, RelNode node, RelDataType rowType ) {
-        RexCall condition;
+        RexNode condition;
         RelDataType type = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT ).createPolyType( PolyType.BOOLEAN );
-        List<RexCall> operands = new ArrayList<>();
+        List<RexNode> operands = new ArrayList<>();
         for ( Entry<String, BsonValue> entry : filter.entrySet() ) {
             operands.add( convertFilter( entry.getKey(), entry.getValue(), rowType ) );
         }
@@ -164,6 +165,20 @@ public class MqlToRelConverter {
             condition = new RexCall( type, SqlStdOperatorTable.AND, operands );
         }
         return LogicalFilter.create( node, condition );
+    }
+
+
+    private RexNode convertDocument( BsonDocument doc, RelDataType rowType ) {
+        ArrayList<RexNode> operands = new ArrayList<>();
+        RelDataType type = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT ).createPolyType( PolyType.BOOLEAN );
+        for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
+            operands.add( convertFilter( entry.getKey(), entry.getValue(), rowType ) );
+        }
+
+        if ( operands.size() == 1 ) {
+            return operands.get( 0 );
+        }
+        return new RexCall( type, SqlStdOperatorTable.AND, operands );
     }
 
 
@@ -216,42 +231,113 @@ public class MqlToRelConverter {
     }
 
 
-    private RexCall convertFilter( String firstKey, BsonValue bsonValue, RelDataType rowType ) {
+    private RexNode convertFilter( String firstKey, BsonValue bsonValue, RelDataType rowType ) {
+        if ( !firstKey.startsWith( "$" ) ) {
+            return convertFieldEntry( firstKey, bsonValue, rowType );
+        } else {
+            return convertLogicalEntry( firstKey, bsonValue, rowType );
+        }
+    }
+
+
+    private RexNode convertLogicalEntry( String key, BsonValue bsonValue, RelDataType rowType ) {
         RelDataType type = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT ).createPolyType( PolyType.BOOLEAN );
-        SqlBinaryOperator op = SqlStdOperatorTable.EQUALS;
+        SqlOperator op;
+        switch ( key ) {
+            case "$and":
+                op = SqlStdOperatorTable.AND;
+                return convertLogicalArray( bsonValue, rowType, op, false );
+            case "$or":
+                op = SqlStdOperatorTable.OR;
+                return convertLogicalArray( bsonValue, rowType, op, false );
+
+            case "$nor":
+                op = SqlStdOperatorTable.OR;
+                return convertLogicalArray( bsonValue, rowType, op, true );
+
+            case "$not":
+                op = SqlStdOperatorTable.NOT;
+                return new RexCall( type, op, Collections.singletonList( convertDocument( bsonValue.asDocument(), rowType ) ) );
+
+            default:
+                throw new RuntimeException( "This logical operator was not recognized:" );
+        }
+    }
+
+
+    private RexNode convertLogicalArray( BsonValue bsonValue, RelDataType rowType, SqlOperator op, boolean isNegated ) {
+        RelDataType type = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT ).createPolyType( PolyType.BOOLEAN );
+        List<RexNode> operands = new ArrayList<>();
+        if ( bsonValue.isArray() ) {
+            for ( BsonValue value : bsonValue.asArray() ) {
+                if ( value.isDocument() && !isNegated ) {
+                    operands.add( convertDocument( value.asDocument(), rowType ) );
+                } else if ( value.isDocument() && isNegated ) {
+                    operands.add( new RexCall( type, SqlStdOperatorTable.NOT, Collections.singletonList( convertDocument( value.asDocument(), rowType ) ) ) );
+                } else {
+                    throw new RuntimeException( "After logical operators \"$and\",\"$or\" and \"nor\" an array of documents is needed" );
+                }
+            }
+        } else {
+            throw new RuntimeException( "After logical operators \"$and\",\"$or\" and \"nor\" an array of documents is needed" );
+        }
+        if ( operands.size() == 1 ) {
+            return operands.get( 0 );
+        }
+        return new RexCall( type, op, operands );
+    }
+
+
+    private RexNode convertFieldEntry( String firstKey, BsonValue bsonValue, RelDataType rowType ) {
+        RelDataType type = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT ).createPolyType( PolyType.BOOLEAN );
         List<RexNode> operands = new ArrayList<>();
         RelDataTypeField field = rowType.getField( firstKey, false, false );
+        SqlBinaryOperator op = SqlStdOperatorTable.EQUALS;
 
         operands.add( RexInputRef.of( field.getIndex(), rowType ) );
-        RexNode value;
         if ( bsonValue.isDocument() ) {
             String key = ((BsonDocument) bsonValue).getFirstKey();
             op = getBinaryOperator( key );
             if ( op == SqlStdOperatorTable.IN || op == SqlStdOperatorTable.NOT_IN ) {
-                boolean isIn = op == SqlStdOperatorTable.IN;
-                op = isIn ? SqlStdOperatorTable.OR : SqlStdOperatorTable.AND;
-                operands.clear();
-
-                for ( BsonValue literal : ((BsonDocument) bsonValue).get( key ).asArray() ) {
-                    if ( literal.isDocument() ) {
-                        throw new RuntimeException( "Non-literal in $in clauses are not supported" );
-                    }
-                    Pair<Comparable, PolyType> valuePair = RexLiteral.convertType( getComparable( literal, field.getType() ), field.getType() );
-                    value = new RexLiteral( valuePair.left, field.getType(), valuePair.right );
-                    operands.add(
-                            new RexCall( type, isIn ? SqlStdOperatorTable.EQUALS : SqlStdOperatorTable.NOT_EQUALS, Arrays.asList(
-                                    RexInputRef.of( field.getIndex(), rowType ), value ) ) );
-                }
-
+                return convertIn( (BsonDocument) bsonValue, rowType, type, op, field, key );
             } else {
-                Pair<Comparable, PolyType> valuePair = RexLiteral.convertType( getComparable( ((BsonDocument) bsonValue).get( key ), field.getType() ), field.getType() );
-                value = new RexLiteral( valuePair.left, field.getType(), valuePair.right );
-                operands.add( value );
+                return convertLiteral( ((BsonDocument) bsonValue).get( key ), operands, field, op );
             }
         } else {
-            Pair<Comparable, PolyType> valuePair = RexLiteral.convertType( getComparable( bsonValue, field.getType() ), field.getType() );
+            return convertLiteral( bsonValue, operands, field, op );
+        }
+    }
+
+
+    private RexNode convertLiteral( BsonValue bsonValue, List<RexNode> operands, RelDataTypeField field, SqlOperator op ) {
+        RexNode value;
+        Pair<Comparable, PolyType> valuePair = RexLiteral.convertType( getComparable( bsonValue, field.getType() ), field.getType() );
+        value = new RexLiteral( valuePair.left, field.getType(), valuePair.right );
+        operands.add( value );
+
+        RelDataType type = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT ).createPolyType( PolyType.BOOLEAN );
+        return new RexCall( type, op, operands );
+    }
+
+
+    private RexNode convertIn( BsonDocument bsonValue, RelDataType rowType, RelDataType type, SqlBinaryOperator op, RelDataTypeField field, String key ) {
+        RexNode value;
+        List<RexNode> operands = new ArrayList<>();
+        boolean isIn = op == SqlStdOperatorTable.IN;
+        op = isIn ? SqlStdOperatorTable.OR : SqlStdOperatorTable.AND;
+
+        for ( BsonValue literal : bsonValue.get( key ).asArray() ) {
+            if ( literal.isDocument() ) {
+                throw new RuntimeException( "Non-literal in $in clauses are not supported" );
+            }
+            Pair<Comparable, PolyType> valuePair = RexLiteral.convertType( getComparable( literal, field.getType() ), field.getType() );
             value = new RexLiteral( valuePair.left, field.getType(), valuePair.right );
-            operands.add( value );
+            operands.add(
+                    new RexCall( type, isIn ? SqlStdOperatorTable.EQUALS : SqlStdOperatorTable.NOT_EQUALS, Arrays.asList(
+                            RexInputRef.of( field.getIndex(), rowType ), value ) ) );
+        }
+        if ( operands.size() == 1 ) {
+            return operands.get( 0 );
         }
 
         return new RexCall( type, op, operands );
