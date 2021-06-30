@@ -1,5 +1,6 @@
 package org.polypheny.db.mql;
 
+import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,11 +12,11 @@ public abstract class MqlNode {
 
     @Getter
     @Setter
-    List<String> stores;
+    List<String> stores = new ArrayList<>();
 
     @Setter
     @Getter
-    List<String> primary;
+    List<String> primary = new ArrayList<>();
 
 
     public abstract Mql.Type getKind();

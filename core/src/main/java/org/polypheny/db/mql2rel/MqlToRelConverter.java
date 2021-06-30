@@ -16,6 +16,7 @@
 
 package org.polypheny.db.mql2rel;
 
+import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,11 +25,14 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.mql.Mql;
 import org.polypheny.db.mql.MqlAggregate;
 import org.polypheny.db.mql.MqlFind;
+import org.polypheny.db.mql.MqlInsert;
 import org.polypheny.db.mql.MqlNode;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
@@ -41,7 +45,10 @@ import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalSort;
+import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
+import org.polypheny.db.rel.logical.LogicalValues;
+import org.polypheny.db.rel.type.DynamicRecordTypeImpl;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
@@ -61,6 +68,7 @@ public class MqlToRelConverter {
 
     private final PolyphenyDbCatalogReader catalogReader;
     private final RelOptCluster cluster;
+    private final PolyTypeFactoryImpl typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
 
 
     public MqlToRelConverter( MqlProcessor mqlProcessor, PolyphenyDbCatalogReader catalogReader, RelOptCluster cluster ) {
@@ -84,10 +92,45 @@ public class MqlToRelConverter {
                 table = catalogReader.getTable( Collections.singletonList( ((MqlAggregate) query).getCollection() ) );
                 node = LogicalTableScan.create( cluster, table );
                 return RelRoot.of( convertAggregate( (MqlAggregate) query, table.getRowType(), node ), SqlKind.SELECT );
+            case INSERT:
+                table = catalogReader.getTable( Collections.singletonList( ((MqlInsert) query).getCollection() ) );
+
+                return RelRoot.of(
+                        LogicalTableModify.create(
+                                table,
+                                catalogReader,
+                                convertMultipleValues( ((MqlInsert) query).getArray() ),
+                                null,
+                                null,
+                                null,
+                                false ),
+                        SqlKind.INSERT );
             default:
                 throw new IllegalStateException( "Unexpected value: " + kind );
         }
 
+    }
+
+
+    private RelNode convertMultipleValues( BsonArray array ) {
+        List<ImmutableList<RexLiteral>> values = new ArrayList<>();
+        for ( BsonValue value : array ) {
+            values.add( convertValues( value.asDocument() ) );
+        }
+        return LogicalValues.create( cluster, new DynamicRecordTypeImpl( new JavaTypeFactoryImpl() ), ImmutableList.copyOf( values ) );
+    }
+
+
+    private ImmutableList<RexLiteral> convertValues( BsonDocument doc ) {
+        List<RexLiteral> values = new ArrayList<>();
+        for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
+            RelDataType type = typeFactory.createPolyType( getPolyType( entry.getValue() ) );
+            Pair<Comparable, PolyType> valuePair = RexLiteral.convertType( getComparable( entry.getValue(), type ), type );
+            RexLiteral value = new RexLiteral( valuePair.left, type, valuePair.right );
+            values.add( value );
+        }
+
+        return ImmutableList.copyOf( values );
     }
 
 

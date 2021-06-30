@@ -360,6 +360,10 @@ MqlNode Collection_Statement(String collection):
     |
         n = Insert_Statement(collection)
     |
+        n = Insert_One_Statement(collection)
+    |
+        n = Insert_Many_Statement(collection)
+    |
         n = Count_Statement(collection)
     |
         n = Aggregate_Statement(collection)
@@ -475,10 +479,35 @@ MqlNode Find_Statement(String collection):
 MqlNode Insert_Statement(String collection):
 {
     BsonDocument doc = null;
+    BsonArray array = null;
 }
 {
-    ("insertOne(" | "insert(" | "insertMany(") (doc=Document())? ")"
-    {return new MqlInsert(collection, doc);}
+    "insert(" ( doc=Document() | array=Array() ) ")"
+    {
+        if ( doc != null ) {
+            return new MqlInsert(collection, new BsonArray(Arrays.asList(doc)));
+        }else {
+            return new MqlInsert(collection, array);
+        }
+    }
+}
+
+MqlNode Insert_One_Statement(String collection):
+{
+    BsonDocument doc;
+}
+{
+    "insertOne(" doc=Document() ")"
+    {return new MqlInsert(collection, new BsonArray(Arrays.asList(doc)));}
+}
+
+MqlNode Insert_Many_Statement(String collection):
+{
+    BsonArray array;
+}
+{
+    "insertMany(" array=Array() ")"
+    {return new MqlInsert(collection, array);}
 }
 
 BsonDocument Document():

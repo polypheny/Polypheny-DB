@@ -28,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PartitionType;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
 
 
@@ -144,6 +145,12 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     @SneakyThrows
     public String getSchemaName() {
         return Catalog.getInstance().getSchema( schemaId ).name;
+    }
+
+
+    @SneakyThrows
+    public SchemaType getSchemaType() {
+        return Catalog.getInstance().getSchema( schemaId ).schemaType;
     }
 
 

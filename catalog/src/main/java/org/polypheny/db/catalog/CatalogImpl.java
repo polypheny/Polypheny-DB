@@ -629,7 +629,7 @@ public class CatalogImpl extends Catalog {
                 }
             }
 
-            initDocumentDefaultDocumentData( databaseId );
+            initDocumentDefaultDocumentData( databaseId, systemId );
         }
 
         ////////////////////////
@@ -657,7 +657,7 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    private void initDocumentDefaultDocumentData( long databaseId ) throws UnknownDatabaseException, UnknownSchemaException {
+    private void initDocumentDefaultDocumentData( long databaseId, int systemId ) throws UnknownDatabaseException, UnknownSchemaException, UnknownAdapterException {
         //////////////
         // init schema
 
@@ -666,6 +666,14 @@ public class CatalogImpl extends Catalog {
             schemaId = addSchema( "private", databaseId, 1, SchemaType.DOCUMENT );
         } else {
             schemaId = getSchema( "APP", "private" ).id;
+        }
+
+        if ( !testMode ) {
+            if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "secrets" } ) ) {
+                CatalogAdapter store = getAdapter( "hsqldb" );
+                long tableId = addTable( "secrets", schemaId, systemId, TableType.SOURCE, false, null );
+                addDefaultColumn( store, getTable( tableId ), "_id", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 0, 12 ); // todo dl: add this automatically
+            }
         }
     }
 

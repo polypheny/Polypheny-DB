@@ -1,16 +1,18 @@
 package org.polypheny.db.mql;
 
-import org.bson.BsonDocument;
+import lombok.Getter;
+import org.bson.BsonArray;
 import org.polypheny.db.mql.Mql.Type;
 
 public class MqlInsert extends MqlCollectionStatement {
 
-    private final BsonDocument document;
+    @Getter
+    private final BsonArray array;
 
 
-    public MqlInsert( String collection, BsonDocument document ) {
+    public MqlInsert( String collection, BsonArray array ) {
         super( collection );
-        this.document = document;
+        this.array = array;
     }
 
 

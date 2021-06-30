@@ -45,6 +45,8 @@ public class ContextImpl implements Context {
     @Getter
     private final long databaseId;
     @Getter
+    private final String defaultDocumentSchemaName = "private";
+    @Getter
     private final int currentUserId;
 
 
@@ -84,4 +86,5 @@ public class ContextImpl implements Context {
         final boolean enable = RuntimeConfig.SPARK_ENGINE.getBoolean();
         return PolyphenyDbPrepare.Dummy.getSparkHandler( enable );
     }
+
 }

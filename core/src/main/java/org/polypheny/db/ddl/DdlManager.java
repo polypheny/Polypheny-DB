@@ -574,10 +574,10 @@ public abstract class DdlManager {
                 Boolean nullable ) {
             this.type = type;
             this.collectionType = collectionType;
-            this.precision = precision == -1 ? null : precision;
-            this.scale = scale == -1 ? null : scale;
-            this.dimension = dimension == -1 ? null : dimension;
-            this.cardinality = cardinality == -1 ? null : cardinality;
+            this.precision = precision == null || precision == -1 ? null : precision;
+            this.scale = scale == null || scale == -1 ? null : scale;
+            this.dimension = dimension == null || dimension == -1 ? null : dimension;
+            this.cardinality = cardinality == null || cardinality == -1 ? null : cardinality;
             this.nullable = nullable;
         }
 
