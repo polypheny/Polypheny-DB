@@ -202,6 +202,7 @@ public class StatisticQueryProcessor {
         Statement statement = transaction.createStatement();
         StatisticResult result = new StatisticResult();
         try {
+            System.out.println(" --> " + query);
             result = executeSqlSelect( statement, query );
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException e ) {
@@ -251,7 +252,7 @@ public class StatisticQueryProcessor {
                     log.error( "Exception while closing result iterator", e );
                 }
             }
-            throw new QueryExecutionException( t );
+             throw new QueryExecutionException( t );
         }
 
         try {

@@ -55,6 +55,7 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
@@ -208,9 +209,9 @@ public class CassandraStore extends DataStore {
 
 
     @Override
-    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore ) {
-        String physicalTableName = currentSchema.getConvention().physicalNameProvider.getPhysicalTableName( catalogTable.id );
-        return new CassandraTable( this.currentSchema, catalogTable.name, physicalTableName, false );
+    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+        String cassandraphysicalTableName = currentSchema.getConvention().physicalNameProvider.getPhysicalTableName( catalogTable.id );
+        return new CassandraTable( this.currentSchema, catalogTable.name, cassandraphysicalTableName, false );
     }
 
 
@@ -247,7 +248,7 @@ public class CassandraStore extends DataStore {
         CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( this.getAdapterId() );
         String physicalTableName = physicalNameProvider.getPhysicalTableName( catalogTable.id );
         // List<CatalogColumn> columns = combinedTable.getColumns();
-        List<CatalogColumnPlacement> columns = catalog.getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id );
+        List<CatalogColumnPlacement> columns = catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id );
         CatalogColumnPlacement primaryColumnPlacement = columns.stream().filter( c -> c.columnId == primaryKeyColumnLambda ).findFirst().get();
         CatalogColumn catalogColumn = catalog.getColumn( primaryColumnPlacement.columnId );
 
@@ -275,7 +276,7 @@ public class CassandraStore extends DataStore {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         this.session.execute( createTable.build() );
 
-        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ) ) {
+        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ) ) {
             catalog.updateColumnPlacementPhysicalNames(
                     getAdapterId(),
                     placement.columnId,

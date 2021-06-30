@@ -47,6 +47,7 @@ import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -276,13 +277,13 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<CatalogColumnPlacement> getColumnPlacements( long columnId ) {
+    public List<CatalogColumnPlacement> getColumnPlacement( long columnId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<CatalogColumnPlacement> getColumnPlacementsOnAdapter( int adapterId, long tableId ) {
+    public List<CatalogColumnPlacement> getColumnPlacementsOnAdapterPerTable( int adapterId, long tableId ) {
         throw new NotImplementedException();
     }
 
@@ -684,7 +685,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addPartitionGroup( long tableId, String partitionGroupName, long schemaId, int ownerId, PartitionType partitionType, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException {
+    public long addPartitionGroup( long tableId, String partitionGroupName, long schemaId, PartitionType partitionType, long numberOfInternalPartitions, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException {
         throw new NotImplementedException();
     }
 
@@ -702,7 +703,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitionGroups, List<Long> partitionGroupIds ) {
+    public void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitionGroups, List<Long> partitionGroupIds, PartitionProperty partitionProperty  ) {
         throw new NotImplementedException();
     }
 

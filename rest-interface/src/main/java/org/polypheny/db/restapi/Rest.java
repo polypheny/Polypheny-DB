@@ -106,6 +106,7 @@ public class Rest {
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
+
         // Table Scans
         relBuilder = this.tableScans( relBuilder, rexBuilder, resourceGetRequest.tables );
 

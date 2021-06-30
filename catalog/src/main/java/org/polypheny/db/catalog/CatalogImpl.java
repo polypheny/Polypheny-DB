@@ -56,6 +56,7 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogSchema;
@@ -152,6 +153,9 @@ public class CatalogImpl extends Catalog {
     private static BTreeMap<Long, CatalogPartitionGroup> partitionGroups;
     private static BTreeMap<Long, CatalogPartition> partitions;
     private static HTreeMap<Object[], ImmutableList<Long>> dataPartitionGroupPlacement; // <AdapterId.TableId, List of partitionGroupIds>
+
+    //adapterid + Partition
+    private static BTreeMap<Object[], CatalogPartitionPlacement> partitionPlacements;
 
     // Keeps a list of all tableIDs which are going to be deleted. This is required to avoid constraints when recursively
     // removing a table and all placements and partitions. Otherwise **validatePartitionDistribution()** inside the Catalog would throw an error.
@@ -334,7 +338,7 @@ public class CatalogImpl extends Catalog {
         Map<Integer, List<Long>> restoredTables = new HashMap<>();
 
         for ( CatalogColumn c : columns.values() ) {
-            List<CatalogColumnPlacement> placements = getColumnPlacements( c.id );
+            List<CatalogColumnPlacement> placements = getColumnPlacement( c.id );
             if ( placements.size() == 0 ) {
                 // no placements shouldn't happen
                 throw new RuntimeException( "There seems to be no placement for the column with the id " + c.id );
@@ -535,6 +539,8 @@ public class CatalogImpl extends Catalog {
                 .keySerializer( new SerializerArrayTuple( Serializer.INTEGER, Serializer.LONG ) )
                 .valueSerializer( new GenericSerializer<ImmutableList<Long>>() )
                 .createOrOpen();
+
+        partitionPlacements = db.treeMap( "partitionPlacements", new SerializerArrayTuple( Serializer.INTEGER, Serializer.LONG ), Serializer.JAVA ).createOrOpen();
 
     }
 
@@ -1284,6 +1290,8 @@ public class CatalogImpl extends Catalog {
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( schemaId );
         CatalogUser owner = getUser( ownerId );
+
+
         CatalogTable table = new CatalogTable(
                 id,
                 name,
@@ -1296,7 +1304,7 @@ public class CatalogImpl extends Catalog {
                 definition,
                 null,
                 ImmutableMap.of(),
-                modifiable );
+                modifiable, null);
 
         synchronized ( this ) {
             tables.put( id, table );
@@ -1356,7 +1364,7 @@ public class CatalogImpl extends Catalog {
                     , old.partitionColumnId
                     , old.partitionProperty);
         }else {
-            table = new CatalogTable( old.id, name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, old.placementsByAdapter, old.modifiable );
+            table = new CatalogTable( old.id, name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, old.placementsByAdapter, old.modifiable, old.partitionProperty);
         }
         synchronized ( this ) {
             tables.replace( tableId, table );
@@ -1437,7 +1445,7 @@ public class CatalogImpl extends Catalog {
                     , old.partitionColumnId
                     ,old.partitionProperty );
         }else {
-            table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, ownerId, user.name, old.tableType, old.definition, old.primaryKey, old.placementsByAdapter, old.modifiable );
+            table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, ownerId, user.name, old.tableType, old.definition, old.primaryKey, old.placementsByAdapter, old.modifiable, old.partitionProperty);
         }
         synchronized ( this ) {
             tables.replace( tableId, table );
@@ -1477,7 +1485,7 @@ public class CatalogImpl extends Catalog {
                      , old.partitionColumnId
                      , old.partitionProperty);
         }else {
-             table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, keyId, old.placementsByAdapter, old.modifiable );
+             table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, keyId, old.placementsByAdapter, old.modifiable, old.partitionProperty );
         }
         synchronized ( this ) {
             tables.replace( tableId, table );
@@ -1507,9 +1515,10 @@ public class CatalogImpl extends Catalog {
      * @param partitionGroupIds List of partitions to place on this column placement (may be null)
      */
     @Override
-    public void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, List<Long> partitionGroupIds ) {
+    public void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, List<Long> partitionGroupIds) {
         CatalogColumn column = Objects.requireNonNull( columns.get( columnId ) );
         CatalogAdapter store = Objects.requireNonNull( adapters.get( adapterId ) );
+
         CatalogColumnPlacement placement = new CatalogColumnPlacement(
                 column.tableId,
                 columnId,
@@ -1519,7 +1528,7 @@ public class CatalogImpl extends Catalog {
                 physicalSchemaName,
                 physicalTableName,
                 physicalColumnName,
-                physicalPositionBuilder.getAndIncrement() );
+                physicalPositionBuilder.getAndIncrement());
 
         synchronized ( this ) {
             columnPlacements.put( new Object[]{ adapterId, columnId }, placement );
@@ -1594,24 +1603,32 @@ public class CatalogImpl extends Catalog {
                         old.definition,
                         old.primaryKey,
                         ImmutableMap.copyOf( placementsByStore ),
-                        old.modifiable );
+                        old.modifiable
+                        ,old.partitionProperty );
             }
 
             tables.replace( column.tableId, table );
             tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
         }
         listeners.firePropertyChange( "columnPlacement", null, placement );
+        System.out.println("addColumnPlacement() Finished with CCP: " +  physicalColumnName + " " + physicalTableName );
     }
 
 
+
+
+
+
     /**
-     * Deletes a column placement from a specified adapter.
+     * Deletes all dependent column placements
+     *
      *
      * @param adapterId The id of the adapter
      * @param columnId The id of the column
      */
     @Override
     public void deleteColumnPlacement( int adapterId, long columnId ) {
+
         boolean lastPlacementOnStore = false;
         CatalogTable oldTable = getTable( getColumn( columnId ).tableId );
         Map<Integer, ImmutableList<Long>> placementsByStore = new HashMap<>( oldTable.placementsByAdapter );
@@ -1682,7 +1699,8 @@ public class CatalogImpl extends Catalog {
                         oldTable.definition,
                         oldTable.primaryKey,
                         ImmutableMap.copyOf( placementsByStore ),
-                        oldTable.modifiable );
+                        oldTable.modifiable,
+                        oldTable.partitionProperty );
             }
 
             tables.replace( table.id, table );
@@ -1693,15 +1711,19 @@ public class CatalogImpl extends Catalog {
     }
 
 
+
+
+
     /**
-     * Get a specific column placement.
+     * Get a column placement independend of any partition.
+     * Mostly used get information about the placemnt itsef rather than the chunk of data
      *
      * @param adapterId The id of the adapter
      * @param columnId The id of the column
+     *
      * @return The specific column placement
      */
-    @Override
-    public CatalogColumnPlacement getColumnPlacement( int adapterId, long columnId ) {
+    public CatalogColumnPlacement getColumnPlacement( int adapterId, long columnId ){
         try {
             return Objects.requireNonNull( columnPlacements.get( new Object[]{ adapterId, columnId } ) );
         } catch ( NullPointerException e ) {
@@ -1712,6 +1734,8 @@ public class CatalogImpl extends Catalog {
     }
 
 
+
+
     /**
      * Checks if there is a column with the specified name in the specified table.
      *
@@ -1720,14 +1744,16 @@ public class CatalogImpl extends Catalog {
      * @return true if there is a column placement, false if not.
      */
     @Override
-    public boolean checkIfExistsColumnPlacement( int adapterId, long columnId ) {
+    public boolean checkIfExistsColumnPlacement( int adapterId, long columnId  ) {
         CatalogColumnPlacement placement = columnPlacements.get( new Object[]{ adapterId, columnId } );
         return placement != null;
     }
 
 
+
     /**
-     * Get column placements on a adapter
+     * Get column placements on a adapter. On column detail level
+     * Only returns one ColumnPlacement per column on adapter. Ignores multiplicity due to different partitionsIds
      *
      * @param adapterId The id of the adapter
      * @return List of column placements on the specified adapter
@@ -1738,14 +1764,15 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    /**
-     * Get column placements of a specific table on a specific adapter
+    /**TODO @HENNLO differentiate from colelctive
+     * Get column placements of a specific table on a specific adapter on column detail level.
+     * Only returns one ColumnPlacement per column on adapter. Ignores multiplicity due to different partitionsIds
      *
      * @param adapterId The id of the adapter
      * @return List of column placements of the table on the specified adapter
      */
     @Override
-    public List<CatalogColumnPlacement> getColumnPlacementsOnAdapter( int adapterId, long tableId ) {
+    public List<CatalogColumnPlacement> getColumnPlacementsOnAdapterPerTable( int adapterId, long tableId ) {
         final Comparator<CatalogColumnPlacement> columnPlacementComparator = Comparator.comparingInt( p -> getColumn( p.columnId ).position );
         return getColumnPlacementsOnAdapter( adapterId )
                 .stream()
@@ -1753,6 +1780,8 @@ public class CatalogImpl extends Catalog {
                 .sorted( columnPlacementComparator )
                 .collect( Collectors.toList() );
     }
+
+
 
 
     @Override
@@ -1765,7 +1794,6 @@ public class CatalogImpl extends Catalog {
                 .collect( Collectors.toList() );
     }
 
-
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsByColumn( long columnId ) {
         return columnPlacements.values()
@@ -1775,14 +1803,14 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    /**
-     * Get all column placements of a column
+    /** T
+     * Get all column placements of a column.
      *
      * @param columnId The id of the specific column
      * @return List of column placements of specific column
      */
     @Override
-    public List<CatalogColumnPlacement> getColumnPlacements( long columnId ) {
+    public List<CatalogColumnPlacement> getColumnPlacement( long columnId ) {
         return columnPlacements.values()
                 .stream()
                 .filter( p -> p.columnId == columnId )
@@ -1809,6 +1837,7 @@ public class CatalogImpl extends Catalog {
     }
 
 
+
     /**
      * Update type of a placement.
      *
@@ -1829,7 +1858,7 @@ public class CatalogImpl extends Catalog {
                     old.physicalSchemaName,
                     old.physicalTableName,
                     old.physicalColumnName,
-                    old.physicalPosition );
+                    old.physicalPosition);
             synchronized ( this ) {
                 columnPlacements.replace( new Object[]{ adapterId, columnId }, placement );
             }
@@ -1875,10 +1904,11 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    /**
-     * Update physical position of a column placement on a specified adapter. Uses auto-increment to get the globally increasing number.
-     *
-     * @param adapterId The id of the adapter
+    /*
+    **
+    * Update physical position of a column placement on a specified adapter. Uses auto-increment to get the globally increasing number.
+    *
+    * @param adapterId The id of the adapter
      * @param columnId The id of the column
      */
     @Override
@@ -1907,6 +1937,8 @@ public class CatalogImpl extends Catalog {
     }
 
 
+
+
     /**
      * Change physical names of a placement.
      *
@@ -1930,9 +1962,9 @@ public class CatalogImpl extends Catalog {
                     physicalSchemaName,
                     physicalTableName,
                     physicalColumnName,
-                    updatePhysicalColumnPosition ? physicalPositionBuilder.getAndIncrement() : old.physicalPosition );
+                    updatePhysicalColumnPosition ? physicalPositionBuilder.getAndIncrement() : old.physicalPosition);
             synchronized ( this ) {
-                columnPlacements.replace( new Object[]{ adapterId, columnId }, placement );
+                columnPlacements.replace( new Object[]{ adapterId, columnId}, placement );
             }
             listeners.firePropertyChange( "columnPlacement", old, placement );
         } catch ( NullPointerException e ) {
@@ -1941,6 +1973,7 @@ public class CatalogImpl extends Catalog {
             throw new UnknownColumnPlacementRuntimeException( adapterId, columnId );
         }
     }
+
 
 
     /**
@@ -2115,7 +2148,7 @@ public class CatalogImpl extends Catalog {
                         , table.partitionColumnId
                         , table.partitionProperty );
             }else {
-                updatedTable = new CatalogTable( table.id, table.name, ImmutableList.copyOf( columnIds ), table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByAdapter, table.modifiable );
+                updatedTable = new CatalogTable( table.id, table.name, ImmutableList.copyOf( columnIds ), table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByAdapter, table.modifiable, table.partitionProperty);
             }
             tables.replace( tableId, updatedTable );
             tableNames.replace( new Object[]{ updatedTable.databaseId, updatedTable.schemaId, updatedTable.name }, updatedTable );
@@ -2231,7 +2264,7 @@ public class CatalogImpl extends Catalog {
                 }
             } else {
                 // TODO: Check that the column does not contain any null values
-                getColumnPlacements( columnId );
+                getColumnPlacement( columnId );
             }
             CatalogColumn column = new CatalogColumn(
                     old.id,
@@ -2336,14 +2369,14 @@ public class CatalogImpl extends Catalog {
                     , old.partitionColumnId
                     , old.partitionProperty);
         }else {
-            table = new CatalogTable( old.id, old.name, ImmutableList.copyOf( columnIds ), old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, old.placementsByAdapter, old.modifiable );
+            table = new CatalogTable( old.id, old.name, ImmutableList.copyOf( columnIds ), old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, old.placementsByAdapter, old.modifiable, old.partitionProperty);
         }
         synchronized ( this ) {
             columnNames.remove( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name } );
             tableChildren.replace( column.tableId, ImmutableList.copyOf( children ) );
 
             deleteDefaultValue( columnId );
-            for ( CatalogColumnPlacement p : getColumnPlacements( columnId ) ) {
+            for ( CatalogColumnPlacement p : getColumnPlacement( columnId ) ) {
                 deleteColumnPlacement( p.adapterId, p.columnId );
             }
             tables.replace( column.tableId, table );
@@ -3408,7 +3441,8 @@ public class CatalogImpl extends Catalog {
                 old.definition,
                 old.primaryKey,
                 old.placementsByAdapter,
-                old.modifiable );
+                old.modifiable,
+                old.partitionProperty );
 
         synchronized ( this ) {
             tables.replace( tableId, table );
@@ -3423,10 +3457,44 @@ public class CatalogImpl extends Catalog {
             // Basically get first part of PK even if its compound of PK it is sufficient
             CatalogColumn pkColumn = getColumn( pkColumnIds.get( 0 ) );
             // This gets us only one ccp per store (first part of PK)
-            for ( CatalogColumnPlacement ccp : getColumnPlacements( pkColumn.id ) ) {
+            for ( CatalogColumnPlacement ccp : getColumnPlacement( pkColumn.id ) ) {
                 dataPartitionGroupPlacement.remove( new Object[]{ ccp.adapterId, ccp.tableId } );
             }
         }
+        listeners.firePropertyChange( "table", old, table );
+    }
+
+
+    /**
+     * Updates partitionProperties on table
+     *
+     * @param tableId Table to be partitioned
+     * @param partitionProperty Partition properties
+     */
+    @Override
+    public void updateTablePartitionProperties( long tableId, PartitionProperty partitionProperty ) {
+        CatalogTable old = Objects.requireNonNull( tables.get( tableId ) );
+
+        CatalogTable table = new CatalogTable(
+                old.id,
+                old.name,
+                old.columnIds,
+                old.schemaId,
+                old.databaseId,
+                old.ownerId,
+                old.ownerName,
+                old.tableType,
+                old.definition,
+                old.primaryKey,
+                old.placementsByAdapter,
+                old.modifiable,
+                partitionProperty);
+
+        synchronized ( this ) {
+            tables.replace( tableId, table );
+            tableNames.replace( new Object[]{ table.databaseId, table.schemaId, old.name }, table );
+        }
+
         listeners.firePropertyChange( "table", old, table );
     }
 
@@ -3547,7 +3615,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsByPartitionGroup( long tableId, long partitionGroupId, long columnId ) {
         List<CatalogColumnPlacement> catalogColumnPlacements = new ArrayList<>();
-        for ( CatalogColumnPlacement ccp : getColumnPlacements( columnId ) ) {
+        for ( CatalogColumnPlacement ccp : getColumnPlacement( columnId ) ) {
             if ( dataPartitionGroupPlacement.get( new Object[]{ ccp.adapterId, tableId } ).contains( partitionGroupId ) ) {
                 catalogColumnPlacements.add( ccp );
             }
@@ -3609,7 +3677,7 @@ public class CatalogImpl extends Catalog {
 
                 // Validate if partition distribution after update is successful otherwise rollback
                 // Check if partition change has impact on the complete partition distribution for current Part.Type
-                for ( CatalogColumnPlacement ccp : getColumnPlacementsOnAdapter( adapterId, tableId ) ) {
+                for ( CatalogColumnPlacement ccp : getColumnPlacementsOnAdapterPerTable( adapterId, tableId ) ) {
                     long columnId = ccp.columnId;
                     if ( !validatePartitionGroupDistribution( adapterId, tableId, columnId ) ) {
                         dataPartitionGroupPlacement.replace( new Object[]{ adapterId, tableId }, ImmutableList.copyOf( tempPartition ) );
@@ -3623,7 +3691,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get all partitions of a DataPlacement (identified by adapterId and tableId)
+     * Get all partitionGroupss of a DataPlacement (identified by adapterId and tableId)
      *
      * @param adapterId The unique id of the adapter
      * @param tableId The unique id of the table
@@ -3636,6 +3704,23 @@ public class CatalogImpl extends Catalog {
             partitionGroups = new ArrayList<>();
         }
         return partitionGroups;
+    }
+
+
+    /**
+     * Get all partitions of a DataPlacement (identified by adapterId and tableId)
+     *
+     * @param adapterId The unique id of the adapter
+     * @param tableId The unique id of the table
+     * @return List of partitionIds
+     */
+    @Override
+    public List<Long> getPartitionsOnDataPlacement( int adapterId, long tableId ) {
+        List<Long> partitionIds = new ArrayList<>();
+        //get All PartitoinGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
+        getPartitionGroupsOnDataPlacement( adapterId, tableId ).forEach( pg -> partitionIds.forEach( p -> partitionIds.add( p ) ) );
+
+        return partitionIds;
     }
 
 
@@ -3674,7 +3759,7 @@ public class CatalogImpl extends Catalog {
     public void deletePartitionGroupsOnDataPlacement( int adapterId, long tableId ) {
         // Check if there is indeed no column placement left.
         if ( getTable( tableId ).isPartitioned ) {
-            if ( getColumnPlacementsOnAdapter( adapterId, tableId ).isEmpty() ) {
+            if ( getColumnPlacementsOnAdapterPerTable( adapterId, tableId ).isEmpty() ) {
                 synchronized ( this ) {
                     dataPartitionGroupPlacement.remove( new Object[]{ adapterId, tableId } );
                     log.debug( "Removed all dataPartitionGroupPlacements" );
@@ -3736,6 +3821,114 @@ public class CatalogImpl extends Catalog {
     @Override
     public boolean isTableFlaggedForDeletion( long tableId ) {
         return tablesFlaggedForDeletion.contains( tableId );
+    }
+
+
+    /**
+     * Adds a placement for a partition.
+     *
+     * @param adapterId The adapter on which the table should be placed on
+     * @param placementType The type of placement
+     * @param physicalSchemaName The schema name on the adapter
+     * @param physicalTableName The table name on the adapter
+     */
+    @Override
+    public void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName ) {
+
+        if ( ! checkIfExistsPartitionPlacement(adapterId,partitionId) ) {
+            CatalogAdapter store = Objects.requireNonNull( adapters.get( adapterId ) );
+            CatalogPartitionPlacement partitionPlacement = new CatalogPartitionPlacement(
+                    tableId,
+                    adapterId,
+                    store.uniqueName,
+                    placementType,
+                    physicalSchemaName,
+                    physicalTableName,
+                    partitionId );
+
+            synchronized ( this ) {
+                partitionPlacements.put( new Object[]{ adapterId, partitionId }, partitionPlacement );
+            }
+            listeners.firePropertyChange( "partitionPlacement", null, partitionPlacements );
+        }
+    }
+
+
+    /**
+     * Updates the partition placements on the store.
+     *
+     * @param adapterId The adapter on which the table should be placed on
+     * @param tableId
+     */
+    @Override
+    public void updatePartitionPlacements( int adapterId, long tableId ) {
+
+        //TODO get all partitionGroups of table on specific store
+        //TODO get all partitions of these partitionGroups of this store
+        List<Long> partitionIds =  getPartitionsOnDataPlacement( adapterId, tableId );
+        synchronized ( this ){
+            //addPartitionPlacement(  );
+        }
+        //TODO iterate over list of partitions and add or delete PartitionPlacements on this adapter
+
+    }
+
+
+    /**
+     * Delets a placement for a partition.
+     *
+     * @param adapterId The adapter on which the table should be placed on
+     */
+    @Override
+    public void deletePartitionPlacement( int adapterId, long partitionId ) {
+        if ( checkIfExistsPartitionPlacement(adapterId,partitionId) ) {
+            synchronized ( this ) {
+                partitionPlacements.remove( new Object[]{ adapterId, partitionId } );
+            }
+        }
+    }
+
+
+    @Override
+    public CatalogPartitionPlacement getPartitionPlacement( int adapterId, long partitionId ) {
+        try {
+            return Objects.requireNonNull( partitionPlacements.get( new Object[]{ adapterId, partitionId } ) );
+        } catch ( NullPointerException e ) {
+            getAdapter( adapterId );
+            getPartition( partitionId );
+            throw new UnknownColumnPlacementRuntimeException( adapterId, partitionId );
+        }
+    }
+
+
+    @Override
+    public List<CatalogPartitionPlacement> getPartitionPlacementsByAdapter( int adapterId ) { return new ArrayList<>( partitionPlacements.prefixSubMap( new Object[]{ adapterId } ).values() ); }
+
+
+    @Override
+    public List<CatalogPartitionPlacement> getPartitionPlacementByTable( int adapterId, long tableId ) {
+        return getPartitionPlacementsByAdapter( adapterId )
+                .stream()
+                .filter( p -> p.tableId == tableId )
+                .collect( Collectors.toList() );
+    }
+
+
+
+
+    @Override
+    public boolean checkIfExistsPartitionPlacement( int adapterId, long partitionId ) {
+        CatalogPartitionPlacement placement = partitionPlacements.get( new Object[]{ adapterId, partitionId } );
+        return placement != null;
+    }
+
+
+    @Override
+    public List<CatalogPartitionPlacement> getPartitionPlacements( long partitionId ) {
+        return partitionPlacements.values()
+                .stream()
+                .filter( p -> p.partitionId == partitionId )
+                .collect( Collectors.toList() );
     }
 
 

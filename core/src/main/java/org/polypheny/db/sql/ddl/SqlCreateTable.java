@@ -223,6 +223,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         }
 
         try {
+
             DdlManager.getInstance().createTable(
                     schemaId,
                     tableName,
@@ -233,6 +234,8 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                     placementType,
                     statement );
 
+
+
             if ( partitionType != null ) {
                 DdlManager.getInstance().addPartitioning( PartitionInformation.fromSqlLists(
                         getCatalogTable( context, new SqlIdentifier( tableName, SqlParserPos.ZERO ) ),
@@ -241,7 +244,9 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                         partitionNamesList,
                         numPartitionGroups,
                         numPartitions,
-                        partitionQualifierList ) );
+                        partitionQualifierList ),
+                        stores,
+                        statement);
             }
 
         } catch ( TableAlreadyExistsException e ) {

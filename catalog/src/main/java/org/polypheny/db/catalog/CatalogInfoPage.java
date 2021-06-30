@@ -140,7 +140,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
                 tableInformation.addRow( t.id, t.name, t.databaseId, t.schemaId, t.partitionType.toString(), t.numPartitionGroups );
             } );
             catalog.getColumns( null, null, null, null ).forEach( c -> {
-                String placements = catalog.getColumnPlacements( c.id ).stream().map( plac -> String.valueOf( plac.adapterId ) ).collect( Collectors.joining( "," ) );
+                String placements = catalog.getColumnPlacement( c.id ).stream().map( plac -> String.valueOf( plac.adapterId ) ).collect( Collectors.joining( "," ) );
                 columnInformation.addRow( c.id, c.name, c.databaseId, c.schemaId, c.tableId, placements );
             } );
             catalog.getIndexes().forEach( i -> {

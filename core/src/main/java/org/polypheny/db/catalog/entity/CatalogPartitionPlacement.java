@@ -18,87 +18,43 @@ package org.polypheny.db.catalog.entity;
 
 
 import java.io.Serializable;
-import lombok.EqualsAndHashCode;
 import lombok.NonNull;
-import lombok.SneakyThrows;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 
 
-@EqualsAndHashCode
-public class CatalogColumnPlacement implements CatalogEntity {
+public class CatalogPartitionPlacement implements CatalogEntity{
 
-    private static final long serialVersionUID = 3538121146945513108L;
+    private static final long serialVersionUID = 3035193464866141590L;
 
     public final long tableId;
-    public final long columnId;
+    public final long partitionId;
     public final int adapterId;
     public final String adapterUniqueName;
     public final PlacementType placementType;
 
-    public final long physicalPosition;
-
     public final String physicalSchemaName;
     public final String physicalTableName;
-    public final String physicalColumnName;
 
-
-    public CatalogColumnPlacement(
+    public CatalogPartitionPlacement(
             final long tableId,
-            final long columnId,
             final int adapterId,
             @NonNull final String adapterUniqueName,
             @NonNull final PlacementType placementType,
             final String physicalSchemaName,
             final String physicalTableName,
-            final String physicalColumnName,
-            final long physicalPosition) {
+            final long partitionId){
+
         this.tableId = tableId;
-        this.columnId = columnId;
         this.adapterId = adapterId;
         this.adapterUniqueName = adapterUniqueName;
         this.placementType = placementType;
         this.physicalSchemaName = physicalSchemaName;
         this.physicalTableName = physicalTableName;
-        this.physicalColumnName = physicalColumnName;
-        this.physicalPosition = physicalPosition;
+        this.partitionId = partitionId;
     }
 
-
-    @SneakyThrows
-    public String getLogicalSchemaName() {
-        return Catalog.getInstance().getTable( tableId ).getSchemaName();
-    }
-
-
-    @SneakyThrows
-    public String getLogicalTableName() {
-        return Catalog.getInstance().getTable( tableId ).name;
-    }
-
-
-    @SneakyThrows
-    public String getLogicalColumnName() {
-        return Catalog.getInstance().getColumn( columnId ).name;
-    }
-
-
-    @SneakyThrows
-    public String getAdapterUniqueName() {
-        return Catalog.getInstance().getAdapter( adapterId ).uniqueName;
-    }
-
-
-    // Used for creating ResultSets
     @Override
     public Serializable[] getParameterArray() {
-        return new Serializable[]{
-                getLogicalTableName(),
-                adapterUniqueName,
-                placementType.name(),
-                physicalSchemaName,
-                physicalTableName,
-                physicalColumnName };
+        return new Serializable[0];
     }
-
 }

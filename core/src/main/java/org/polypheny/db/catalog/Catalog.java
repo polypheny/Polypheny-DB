@@ -36,6 +36,7 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogSchema;
@@ -415,18 +416,27 @@ public abstract class Catalog {
      * @param physicalColumnName The column name on the adapter
      * @param partitionGroupIds List of partitions to place on this column placement (may be null)
      */
-    public abstract void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, List<Long> partitionGroupIds );
+    public abstract void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, List<Long> partitionGroupIds);
+
+
+
 
     /**
-     * Deletes a column placement
+     * Deletes all dependent column placements
      *
      * @param adapterId The id of the adapter
      * @param columnId The id of the column
      */
     public abstract void deleteColumnPlacement( int adapterId, long columnId );
 
+
+
+
+
+
     /**
-     * Get a specific column placement.
+     * Gets a collective list of column placements per column on a adapter.
+     * Effectively used to retrieve all relevant placements including partitions.
      *
      * @param adapterId The id of the adapter
      * @param columnId The id of the column
@@ -443,13 +453,15 @@ public abstract class Catalog {
      */
     public abstract boolean checkIfExistsColumnPlacement( int adapterId, long columnId );
 
+
     /**
      * Get all column placements of a column
      *
      * @param columnId The id of the specific column
      * @return List of column placements of specific column
      */
-    public abstract List<CatalogColumnPlacement> getColumnPlacements( long columnId );
+    public abstract List<CatalogColumnPlacement> getColumnPlacement( long columnId );
+
 
     /**
      * Get column placements of a specific table on a specific adapter
@@ -457,9 +469,13 @@ public abstract class Catalog {
      * @param adapterId The id of the adapter
      * @return List of column placements of the table on the specified adapter
      */
-    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapter( int adapterId, long tableId );
+    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterPerTable( int adapterId, long tableId );
+
+
+
 
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterSortedByPhysicalPosition( int storeId, long tableId );
+
 
     /**
      * Get column placements on a adapter
@@ -468,6 +484,7 @@ public abstract class Catalog {
      * @return List of column placements on the specified adapter
      */
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapter( int adapterId );
+
 
     public abstract List<CatalogColumnPlacement> getColumnPlacementsByColumn( long columnId );
 
@@ -484,6 +501,8 @@ public abstract class Catalog {
      */
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterAndSchema( int adapterId, long schemaId );
 
+
+
     /**
      * Update type of a placement.
      *
@@ -491,7 +510,7 @@ public abstract class Catalog {
      * @param columnId The id of the column
      * @param placementType The new type of placement
      */
-    public abstract void updateColumnPlacementType( int adapterId, long columnId, PlacementType placementType );
+    public abstract void updateColumnPlacementType( int adapterId, long columnId ,  PlacementType placementType );
 
     /**
      * Update physical position of a column placement on a specified adapter.
@@ -502,6 +521,8 @@ public abstract class Catalog {
      */
     public abstract void updateColumnPlacementPhysicalPosition( int adapterId, long columnId, long position );
 
+
+
     /**
      * Update physical position of a column placement on a specified adapter. Uses auto-increment to get the globally increasing number.
      *
@@ -510,8 +531,12 @@ public abstract class Catalog {
      */
     public abstract void updateColumnPlacementPhysicalPosition( int adapterId, long columnId );
 
+
+
+
+
     /**
-     * Change physical names of a placement.
+     * Change physical names of all column placements.
      *
      * @param adapterId The id of the adapter
      * @param columnId The id of the column
@@ -521,6 +546,9 @@ public abstract class Catalog {
      * @param updatePhysicalColumnPosition Whether to reset the column position (highest number in the table; represents that the column is now at the last position)
      */
     public abstract void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName, boolean updatePhysicalColumnPosition );
+
+
+
 
     /**
      * Get all columns of the specified table.
@@ -1039,6 +1067,8 @@ public abstract class Catalog {
      */
     public abstract CatalogPartition getPartition( long partitionId );
 
+
+
     /**
      * Effectively partitions a table with the specified partitionType
      *
@@ -1057,6 +1087,15 @@ public abstract class Catalog {
      * @param tableId Table to be merged
      */
     public abstract void mergeTable( long tableId );
+
+    /**
+     * Updates partitionProperties on table
+     *
+     * @param tableId Table to be partitioned
+     * @param partitionProperty Partition properties
+     */
+    public abstract void updateTablePartitionProperties( long tableId, PartitionProperty partitionProperty);
+
 
     /**
      * Get a List of all partitions belonging to a specific table
@@ -1145,6 +1184,15 @@ public abstract class Catalog {
     public abstract List<Long> getPartitionGroupsOnDataPlacement( int adapterId, long tableId );
 
     /**
+     * Get all partitions of a DataPlacement (identified by adapterId and tableId)
+     *
+     * @param adapterId The unique id of the adapter
+     * @param tableId The unique id of the table
+     * @return List of partitionIds
+     */
+    public abstract List<Long> getPartitionsOnDataPlacement( int adapterId, long tableId );
+
+    /**
      * Returns list with the index of the partitions on this store from  0..numPartitions
      *
      * @param adapterId The unique id of the adapter
@@ -1191,6 +1239,49 @@ public abstract class Catalog {
      */
     public abstract boolean isTableFlaggedForDeletion( long tableId );
 
+
+    /**
+            * Adds a placement for a partition.
+            *
+    * @param adapterId The adapter on which the table should be placed on
+    * @param tableId
+    * @param partitionId
+     * @param placementType The type of placement
+     * @param physicalSchemaName The schema name on the adapter
+     * @param physicalTableName The table name on the adapter
+
+     */
+    public abstract void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName);
+
+    /**
+     * Updates the partition placements on the store.
+     *
+     * @param adapterId The adapter on which the table should be placed on
+     * @param tableId
+
+     */
+    public abstract void updatePartitionPlacements( int adapterId, long tableId );
+
+
+    /**
+     * Delets a placement for a partition.
+     *
+     * @param adapterId The adapter on which the table should be placed on
+     * @param partitionId
+     */
+    public abstract void deletePartitionPlacement( int adapterId, long partitionId);
+
+
+    public abstract CatalogPartitionPlacement getPartitionPlacement( int adapterId, long partitionId );
+
+    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByAdapter( int adapterId );
+
+    public abstract List<CatalogPartitionPlacement> getPartitionPlacementByTable( int adapterId, long tableId );
+
+    public abstract List<CatalogPartitionPlacement> getPartitionPlacements( long partitionId );
+
+
+    public abstract boolean checkIfExistsPartitionPlacement(int adapterId, long partitionId );
 
     /*
      *

@@ -146,7 +146,7 @@ public class CassandraPhysicalNameProvider {
 
     public void updatePhysicalColumnName( long columnId, String updatedName, boolean updatePosition ) {
         CatalogColumnPlacement placement = this.catalog.getColumnPlacement( this.storeId, columnId );
-        this.catalog.updateColumnPlacementPhysicalNames( this.storeId, columnId, placement.physicalTableName, placement.physicalTableName, updatedName, updatePosition );
+        this.catalog.updateColumnPlacementPhysicalNames( this.storeId, columnId,placement.physicalTableName, placement.physicalTableName, updatedName, updatePosition );
     }
 
 

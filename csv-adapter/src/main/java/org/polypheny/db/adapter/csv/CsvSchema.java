@@ -97,7 +97,7 @@ public class CsvSchema extends AbstractSchema {
 
         String csvFileName = Catalog
                 .getInstance()
-                .getColumnPlacementsOnAdapter( csvSource.getAdapterId(), catalogTable.id ).iterator().next()
+                .getColumnPlacementsOnAdapterPerTable( csvSource.getAdapterId(), catalogTable.id ).iterator().next()
                 .physicalSchemaName;
         Source source;
         try {

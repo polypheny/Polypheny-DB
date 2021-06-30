@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.collections4.iterators.ArrayListIterator;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
@@ -89,7 +90,6 @@ import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
-import org.polypheny.db.partition.TemperatureAwarePartitionManager;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty.PartitionCostIndication;
@@ -219,7 +219,7 @@ public class DdlManagerImpl extends DdlManager {
                             exportedColumn.physicalSchemaName,
                             exportedColumn.physicalTableName,
                             exportedColumn.physicalColumnName,
-                            null );
+                            null ); //Not a valid partitionID --> placeholder
                     catalog.updateColumnPlacementPhysicalPosition( adapter.getAdapterId(), columnId, exportedColumn.physicalPosition );
                     if ( exportedColumn.primary ) {
                         primaryKeyColIds.add( columnId );
@@ -275,11 +275,11 @@ public class DdlManagerImpl extends DdlManager {
                 }
 
                 // Inform routing
-                statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnAdapter( catalogAdapter.id, table.id ) );
+                statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnAdapterPerTable( catalogAdapter.id, table.id ) );
                 // Delete column placement in catalog
                 for ( Long columnId : table.columnIds ) {
-                    if ( catalog.checkIfExistsColumnPlacement( catalogAdapter.id, columnId ) ) {
-                        catalog.deleteColumnPlacement( catalogAdapter.id, columnId );
+                    if ( catalog.checkIfExistsColumnPlacement( catalogAdapter.id, columnId) ) {
+                        catalog.deleteColumnPlacement( catalogAdapter.id, columnId);
                     }
                 }
 
@@ -338,14 +338,14 @@ public class DdlManagerImpl extends DdlManager {
         checkIfTableType( catalogTable.tableType );
 
         // Make sure there is only one adapter
-        if ( catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).size() != 1 ) {
+        if ( catalog.getColumnPlacement( catalogTable.columnIds.get( 0 ) ).size() != 1 ) {
             throw new RuntimeException( "The table has an unexpected number of placements!" );
         }
 
-        int adapterId = catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).get( 0 ).adapterId;
+        int adapterId = catalog.getColumnPlacement( catalogTable.columnIds.get( 0 ) ).get( 0 ).adapterId;
         DataSource dataSource = (DataSource) AdapterManager.getInstance().getAdapter( adapterId );
 
-        String physicalTableName = catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).get( 0 ).physicalTableName;
+        String physicalTableName = catalog.getColumnPlacement( catalogTable.columnIds.get( 0 ) ).get( 0 ).physicalTableName;
         List<ExportedColumn> exportedColumns = dataSource.getExportedColumns().get( physicalTableName );
 
         // Check if physicalColumnName is valid
@@ -360,7 +360,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Make sure this physical column has not already been added to this table
-        for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapter( adapterId, catalogTable.id ) ) {
+        for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapterPerTable( adapterId, catalogTable.id ) ) {
             if ( ccp.physicalColumnName.equalsIgnoreCase( columnPhysicalName ) ) {
                 throw new RuntimeException( "The physical column '" + columnPhysicalName + "' has already been added to this table!" );
             }
@@ -394,7 +394,7 @@ public class DdlManagerImpl extends DdlManager {
                 exportedColumn.physicalSchemaName,
                 exportedColumn.physicalTableName,
                 exportedColumn.physicalColumnName,
-                null );
+                null );//Not a valid partitionID --> placeholder
 
         // Set column position
         catalog.updateColumnPlacementPhysicalPosition( adapterId, columnId, exportedColumn.physicalPosition );
@@ -468,7 +468,7 @@ public class DdlManagerImpl extends DdlManager {
                     null, // Will be set later
                     null, // Will be set later
                     null, // Will be set later
-                    null );
+                    null );//Not a valid partitionID --> placeholder
             AdapterManager.getInstance().getStore( store.getAdapterId() ).addColumn( statement.getPrepareContext(), catalogTable, addedColumn );
         }
 
@@ -548,7 +548,7 @@ public class DdlManagerImpl extends DdlManager {
 
             // Check if there if all required columns are present on this store
             for ( long columnId : columnIds ) {
-                if ( !catalog.checkIfExistsColumnPlacement( location.getAdapterId(), columnId ) ) {
+                if ( !catalog.checkIfExistsColumnPlacement( location.getAdapterId(), columnId) ) {
                     throw new MissingColumnPlacementException( catalog.getColumn( columnId ).name );
                 }
             }
@@ -672,31 +672,45 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        // Create column placements
-        for ( long cid : columnIds ) {
-            catalog.addColumnPlacement(
-                    dataStore.getAdapterId(),
-                    cid,
-                    PlacementType.MANUAL,
-                    null,
-                    null,
-                    null,
-                    tempPartitionList );
-            addedColumns.add( catalog.getColumn( cid ) );
+
+        //all internal partitions placed on this store
+        List<Long> partitionIds = new ArrayList<>();
+        partitionIds = catalog.getPartitionsOnDataPlacement(dataStore.getAdapterId(), catalogTable.id );
+
+        if ( partitionIds.isEmpty() ){
+            partitionIds.add( (long) -1 );
+            //add default value for non-partitioned otherwise CCP wouldn't be created at all
         }
-        //Check if placement includes primary key columns
-        CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
-        for ( long cid : primaryKey.columnIds ) {
-            if ( !columnIds.contains( cid ) ) {
+
+
+        //Creates column placements for all partitionIds assigned to this store.
+        for ( long partitionId : partitionIds ) {
+            // Create column placements
+            for ( long cid : columnIds ) {
                 catalog.addColumnPlacement(
                         dataStore.getAdapterId(),
                         cid,
-                        PlacementType.AUTOMATIC,
+                        PlacementType.MANUAL,
                         null,
                         null,
                         null,
-                        tempPartitionList );
+                        tempPartitionList);
                 addedColumns.add( catalog.getColumn( cid ) );
+            }
+            //Check if placement includes primary key columns
+            CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
+            for ( long cid : primaryKey.columnIds ) {
+                if ( !columnIds.contains( cid ) ) {
+                    catalog.addColumnPlacement(
+                            dataStore.getAdapterId(),
+                            cid,
+                            PlacementType.AUTOMATIC,
+                            null,
+                            null,
+                            null,
+                            tempPartitionList);
+                    addedColumns.add( catalog.getColumn( cid ) );
+                }
             }
         }
         // Create table on store
@@ -724,7 +738,7 @@ public class DdlManagerImpl extends DdlManager {
 
             // Add new column placements
             long pkColumnId = oldPk.columnIds.get( 0 ); // It is sufficient to check for one because all get replicated on all stores
-            List<CatalogColumnPlacement> oldPkPlacements = catalog.getColumnPlacements( pkColumnId );
+            List<CatalogColumnPlacement> oldPkPlacements = catalog.getColumnPlacement( pkColumnId );
             for ( CatalogColumnPlacement ccp : oldPkPlacements ) {
                 for ( long columnId : columnIds ) {
                     if ( !catalog.checkIfExistsColumnPlacement( ccp.adapterId, columnId ) ) {
@@ -735,7 +749,7 @@ public class DdlManagerImpl extends DdlManager {
                                 null, // Will be set later
                                 null, // Will be set later
                                 null, // Will be set later
-                                null );
+                                null);
                         AdapterManager.getInstance().getStore( ccp.adapterId ).addColumn(
                                 statement.getPrepareContext(),
                                 catalog.getTable( ccp.tableId ),
@@ -796,7 +810,7 @@ public class DdlManagerImpl extends DdlManager {
             if ( catalogTable.tableType == TableType.TABLE ) {
                 AdapterManager.getInstance().getStore( dp.adapterId ).dropColumn( statement.getPrepareContext(), dp );
             }
-            catalog.deleteColumnPlacement( dp.adapterId, dp.columnId );
+            catalog.deleteColumnPlacement( dp.adapterId, dp.columnId);
         }
 
         // Delete from catalog
@@ -872,8 +886,8 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Check if there are is another placement for every column on this store
-        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapter( storeInstance.getAdapterId(), catalogTable.id ) ) {
-            List<CatalogColumnPlacement> existingPlacements = catalog.getColumnPlacements( placement.columnId );
+        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id ) ) {
+            List<CatalogColumnPlacement> existingPlacements = catalog.getColumnPlacement( placement.columnId );
             if ( existingPlacements.size() < 2 ) {
                 throw new LastPlacementException();
             }
@@ -895,9 +909,9 @@ public class DdlManagerImpl extends DdlManager {
         // Physically delete the data from the store
         storeInstance.dropTable( statement.getPrepareContext(), catalogTable );
         // Inform routing
-        statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnAdapter( storeInstance.getAdapterId(), catalogTable.id ) );
+        statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id ) );
         // Delete placement in the catalog
-        List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnAdapter( storeInstance.getAdapterId(), catalogTable.id );
+        List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id );
         for ( CatalogColumnPlacement placement : placements ) {
             catalog.deleteColumnPlacement( storeInstance.getAdapterId(), placement.columnId );
         }
@@ -934,7 +948,7 @@ public class DdlManagerImpl extends DdlManager {
                 type.scale,
                 type.dimension,
                 type.cardinality );
-        for ( CatalogColumnPlacement placement : catalog.getColumnPlacements( catalogColumn.id ) ) {
+        for ( CatalogColumnPlacement placement : catalog.getColumnPlacement( catalogColumn.id ) ) {
             AdapterManager.getInstance().getStore( placement.adapterId ).updateColumnType(
                     statement.getPrepareContext(),
                     placement,
@@ -1053,7 +1067,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Which columns to remove
-        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapter( storeInstance.getAdapterId(), catalogTable.id ) ) {
+        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id ) ) {
             if ( !columnIds.contains( placement.columnId ) ) {
                 // Check whether there are any indexes located on the store requiring this column
                 for ( CatalogIndex index : catalog.getIndexes( catalogTable.id, false ) ) {
@@ -1075,7 +1089,7 @@ public class DdlManagerImpl extends DdlManager {
                 } else {
                     // It is not a primary key. Remove the column
                     // Check if there are is another placement for this column
-                    List<CatalogColumnPlacement> existingPlacements = catalog.getColumnPlacements( placement.columnId );
+                    List<CatalogColumnPlacement> existingPlacements = catalog.getColumnPlacement( placement.columnId);
                     if ( existingPlacements.size() < 2 ) {
                         throw new LastPlacementException();
                     }
@@ -1126,31 +1140,44 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
+        //all internal partitions placed on this store
+        List<Long> partitionIds = new ArrayList<>();
+        partitionIds = catalog.getPartitionsOnDataPlacement(storeInstance.getAdapterId(), catalogTable.id );
+
+        if ( partitionIds.isEmpty() ){
+            partitionIds.add( (long) -1 );
+            //add default value for non-partitioned otherwise CCP wouldn't be created at all
+        }
+
+
         // Which columns to add
         List<CatalogColumn> addedColumns = new LinkedList<>();
-        for ( long cid : columnIds ) {
-            if ( catalog.checkIfExistsColumnPlacement( storeInstance.getAdapterId(), cid ) ) {
-                CatalogColumnPlacement placement = catalog.getColumnPlacement( storeInstance.getAdapterId(), cid );
-                if ( placement.placementType == PlacementType.AUTOMATIC ) {
-                    // Make placement manual
-                    catalog.updateColumnPlacementType( storeInstance.getAdapterId(), cid, PlacementType.MANUAL );
+        for ( long partitionId : partitionIds ) {
+            for ( long cid : columnIds ) {
+                if ( catalog.checkIfExistsColumnPlacement( storeInstance.getAdapterId(), cid ) ) {
+                    CatalogColumnPlacement placement = catalog.getColumnPlacement( storeInstance.getAdapterId(), cid );
+                    if ( placement.placementType == PlacementType.AUTOMATIC ) {
+                        // Make placement manual
+                        catalog.updateColumnPlacementType( storeInstance.getAdapterId(), cid, PlacementType.MANUAL );
+                    }
+                } else {
+                    // Create column placement
+                    catalog.addColumnPlacement(
+                            storeInstance.getAdapterId(),
+                            cid,
+                            PlacementType.MANUAL,
+                            null,
+                            null,
+                            null,
+                            tempPartitionList);
+                    // Add column on store
+                    storeInstance.addColumn( statement.getPrepareContext(), catalogTable, catalog.getColumn( cid ) );
+                    // Add to list of columns for which we need to copy data
+                    addedColumns.add( catalog.getColumn( cid ) );
                 }
-            } else {
-                // Create column placement
-                catalog.addColumnPlacement(
-                        storeInstance.getAdapterId(),
-                        cid,
-                        PlacementType.MANUAL,
-                        null,
-                        null,
-                        null,
-                        tempPartitionList );
-                // Add column on store
-                storeInstance.addColumn( statement.getPrepareContext(), catalogTable, catalog.getColumn( cid ) );
-                // Add to list of columns for which we need to copy data
-                addedColumns.add( catalog.getColumn( cid ) );
             }
         }
+
         // Copy the data to the newly added column placements
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
         if ( addedColumns.size() > 0 ) {
@@ -1192,7 +1219,7 @@ public class DdlManagerImpl extends DdlManager {
                     null,
                     null,
                     null,
-                    null );
+                    null);
             // Add column on store
             storeInstance.addColumn( statement.getPrepareContext(), catalogTable, catalogColumn );
             // Copy the data to the newly added column placements
@@ -1225,7 +1252,7 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
         // Check if there are is another placement for this column
-        List<CatalogColumnPlacement> existingPlacements = catalog.getColumnPlacements( catalogColumn.id );
+        List<CatalogColumnPlacement> existingPlacements = catalog.getColumnPlacement( catalogColumn.id );
         if ( existingPlacements.size() < 2 ) {
             throw new LastPlacementException();
         }
@@ -1276,7 +1303,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createTable( long schemaId, String tableName, List<ColumnInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws TableAlreadyExistsException, ColumnNotExistsException, UnknownPartitionTypeException {
+    public void createTable( long schemaId, String tableName, List<ColumnInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws TableAlreadyExistsException, ColumnNotExistsException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException {
         try {
             // Check if there is already a table with this name
             if ( catalog.checkIfExistsTable( schemaId, tableName ) ) {
@@ -1309,7 +1336,25 @@ public class DdlManagerImpl extends DdlManager {
                 addConstraint( constraint.name, constraint.type, constraint.columnNames, tableId );
             }
 
+
             CatalogTable catalogTable = catalog.getTable( tableId );
+            //Technically every Table is partitioned. But tables classified as UNPARTITIONED only consist of one PartitionGroup and one large partition
+            List<Long> partitionGroupIds = new ArrayList<>();
+            partitionGroupIds.add(catalog.addPartitionGroup( tableId,"full", schemaId, PartitionType.NONE, 1, new ArrayList<>(), true));
+
+            List<Long> partitionIds = new ArrayList<>();
+            //get All(only one) PartitoinGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
+            catalog.getPartitionGroup( partitionGroupIds.get( 0 ) );
+
+            PartitionProperty partitionProperty = PartitionProperty.builder()
+                    .partitionType( PartitionType.NONE )
+                    .partitionGroupIds( ImmutableList.copyOf( partitionIds ))
+                    .partitionIds( ImmutableList.copyOf( partitionGroupIds ) )
+                    .build();
+
+
+            catalog.updateTablePartitionProperties(tableId, partitionProperty);
+
             for ( DataStore store : stores ) {
                 store.createTable( statement.getPrepareContext(), catalogTable );
             }
@@ -1320,9 +1365,11 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+
     @Override
-    public void addPartitioning( PartitionInformation partitionInfo ) throws GenericCatalogException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException {
+    public void addPartitioning( PartitionInformation partitionInfo,List<DataStore> stores,  Statement statement ) throws GenericCatalogException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException {
         CatalogColumn catalogColumn = catalog.getColumn( partitionInfo.table.id, partitionInfo.columnName );
+
 
         PartitionType actualPartitionType = PartitionType.getByName( partitionInfo.typeName );
 
@@ -1418,8 +1465,12 @@ public class DdlManagerImpl extends DdlManager {
         }
 
 
-        //TODO Find better place to work with Property handling
+        List<Long> partitionIds = new ArrayList<>();
+        //get All PartitoinGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
+        catalog.getPartitionGroups( partitionInfo.table.id ).forEach( pg -> partitionIds.forEach( p -> partitionIds.add( p ) ) );
 
+
+        //TODO Find better place to work with Property handling
         PartitionProperty partitionProperty;
         if ( actualPartitionType == PartitionType.TEMPERATURE ){
             partitionProperty = TemperaturePartitionProperty.builder()
@@ -1427,6 +1478,7 @@ public class DdlManagerImpl extends DdlManager {
                     .internalPartitionFunction( PartitionType.HASH ) //TODO HENNLO RemoveHard coded HASH
                     .partitionColumnId( catalogColumn.id )
                     .partitionGroupIds( ImmutableList.copyOf( partitionGroupIds ))
+                    .partitionIds( ImmutableList.copyOf( partitionIds ) )
                     .partitionCostIndication( PartitionCostIndication.WRITE )
                     .hotAccessPercentageIn( 10 )
                     .hotAccessPercentageOut( 18 )
@@ -1436,7 +1488,8 @@ public class DdlManagerImpl extends DdlManager {
             partitionProperty = PartitionProperty.builder()
                     .partitionType( actualPartitionType )
                     .partitionColumnId( catalogColumn.id )
-                    .partitionGroupIds( ImmutableList.copyOf( partitionGroupIds ))
+                    .partitionGroupIds( ImmutableList.copyOf( partitionIds ))
+                    .partitionIds( ImmutableList.copyOf( partitionGroupIds ) )
                     .build();
         }
 
@@ -1449,8 +1502,28 @@ public class DdlManagerImpl extends DdlManager {
         // Basically get first part of PK even if its compound of PK it is sufficient
         CatalogColumn pkColumn = catalog.getColumn( pkColumnIds.get( 0 ) );
         // This gets us only one ccp per store (first part of PK)
-        for ( CatalogColumnPlacement ccp : catalog.getColumnPlacements( pkColumn.id ) ) {
+        for ( CatalogColumnPlacement ccp : catalog.getColumnPlacement( pkColumn.id ) ) {
             catalog.updatePartitionGroupsOnDataPlacement( ccp.adapterId, ccp.tableId, partitionGroupIds );
+        }
+
+
+        //Now get the partitioned table, partionInfo still contains the basic/unpartitioned table.
+        CatalogTable partitionedTable = catalog.getTable( partitionInfo.table.id );
+
+
+        if ( stores == null ) {
+            // Ask router on which store(s) the table should be placed
+            stores = statement.getRouter().createTable( partitionedTable.schemaId, statement );
+        }
+
+        for ( DataStore store : stores ) {
+            store.createTable( statement.getPrepareContext(), partitionedTable );
+
+            //TODO Migrate data from standard table to unpartitioned table
+            //Shadow based operation
+
+            //Remove old table //Todo currently drops catalog.columnPlacement which is the last CCP that was added. in that case the last physical table partition
+            //store.dropTable( statement.getPrepareContext(),partitionInfo.table  );
         }
 
     }
@@ -1482,7 +1555,7 @@ public class DdlManagerImpl extends DdlManager {
                     null,
                     null,
                     null,
-                    null );
+                    null);
         }
     }
 
@@ -1579,11 +1652,11 @@ public class DdlManagerImpl extends DdlManager {
             // Delete table on store
             AdapterManager.getInstance().getStore( storeId ).dropTable( statement.getPrepareContext(), catalogTable );
             // Inform routing
-            statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnAdapter( storeId, catalogTable.id ) );
+            statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnAdapterPerTable( storeId, catalogTable.id ) );
             // Delete column placement in catalog
             for ( Long columnId : catalogTable.columnIds ) {
                 if ( catalog.checkIfExistsColumnPlacement( storeId, columnId ) ) {
-                    catalog.deleteColumnPlacement( storeId, columnId );
+                    catalog.deleteColumnPlacement( storeId, columnId);
                 }
             }
         }

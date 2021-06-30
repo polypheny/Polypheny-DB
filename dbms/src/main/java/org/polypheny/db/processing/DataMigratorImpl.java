@@ -71,7 +71,7 @@ public class DataMigratorImpl implements DataMigrator {
         // Check Lists
         List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
         for ( CatalogColumn catalogColumn : columns ) {
-            columnPlacements.add( Catalog.getInstance().getColumnPlacement( store.id, catalogColumn.id ) );
+            columnPlacements.add( Catalog.getInstance().getColumnPlacement( store.id, catalogColumn.id) );
         }
 
         List<CatalogColumn> selectColumnList = new LinkedList<>( columns );
@@ -88,7 +88,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         RelRoot sourceRel = getSourceIterator( sourceStatement, selectSourcePlacements( table, selectColumnList, columnPlacements.get( 0 ).adapterId ) );
         RelRoot targetRel;
-        if ( Catalog.getInstance().getColumnPlacementsOnAdapter( store.id, table.id ).size() == columns.size() ) {
+        if ( Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( store.id, table.id ).size() == columns.size() ) {
             // There have been no placements for this table on this store before. Build insert statement
             targetRel = buildInsertStatement( targetStatement, columnPlacements );
         } else {
@@ -150,7 +150,8 @@ public class DataMigratorImpl implements DataMigrator {
                 PolySchemaBuilder.buildAdapterSchemaName(
                         to.get( 0 ).adapterUniqueName,
                         to.get( 0 ).getLogicalSchemaName(),
-                        to.get( 0 ).physicalSchemaName ),
+                        to.get( 0 ).physicalSchemaName,
+                        -1),
                 to.get( 0 ).getLogicalTableName() );
         RelOptTable physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
         ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
@@ -190,7 +191,8 @@ public class DataMigratorImpl implements DataMigrator {
                 PolySchemaBuilder.buildAdapterSchemaName(
                         to.get( 0 ).adapterUniqueName,
                         to.get( 0 ).getLogicalSchemaName(),
-                        to.get( 0 ).physicalSchemaName ),
+                        to.get( 0 ).physicalSchemaName
+                        ,-1),
                 to.get( 0 ).getLogicalTableName() );
         RelOptTable physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
         ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
@@ -293,7 +295,7 @@ public class DataMigratorImpl implements DataMigrator {
                 if ( table.placementsByAdapter.get( adapterIdWithMostPlacements ).contains( cid ) ) {
                     placementList.add( Catalog.getInstance().getColumnPlacement( adapterIdWithMostPlacements, cid ) );
                 } else {
-                    for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacements( cid ) ) {
+                    for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacement( cid ) ) {
                         if ( placement.adapterId != excludingAdapterId ) {
                             placementList.add( placement );
                             break;

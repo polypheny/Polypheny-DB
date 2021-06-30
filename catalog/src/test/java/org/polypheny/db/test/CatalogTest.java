@@ -325,17 +325,17 @@ public class CatalogTest {
 
         catalog.addColumnPlacement( store1.id, columnId, PlacementType.AUTOMATIC, null, "table1", column.name, null );
 
-        assertEquals( 1, catalog.getColumnPlacements( columnId ).size() );
-        assertEquals( columnId, catalog.getColumnPlacements( columnId ).get( 0 ).columnId );
+        assertEquals( 1, catalog.getColumnPlacement( columnId ).size() );
+        assertEquals( columnId, catalog.getColumnPlacement( columnId ).get( 0 ).columnId );
 
         catalog.addColumnPlacement( store2.id, columnId, PlacementType.AUTOMATIC, null, "table1", column.name, null );
 
-        assertEquals( 2, catalog.getColumnPlacements( columnId ).size() );
-        assertTrue( catalog.getColumnPlacements( columnId ).stream().map( p -> p.adapterId ).collect( Collectors.toList() ).containsAll( Arrays.asList( store2.id, store1.id ) ) );
+        assertEquals( 2, catalog.getColumnPlacement( columnId ).size() );
+        assertTrue( catalog.getColumnPlacement( columnId ).stream().map( p -> p.adapterId ).collect( Collectors.toList() ).containsAll( Arrays.asList( store2.id, store1.id ) ) );
 
         catalog.deleteColumnPlacement( store1.id, columnId );
-        assertEquals( 1, catalog.getColumnPlacements( columnId ).size() );
-        assertEquals( store2.id, catalog.getColumnPlacements( columnId ).get( 0 ).adapterId );
+        assertEquals( 1, catalog.getColumnPlacement( columnId ).size() );
+        assertEquals( store2.id, catalog.getColumnPlacement( columnId ).get( 0 ).adapterId );
     }
 
 

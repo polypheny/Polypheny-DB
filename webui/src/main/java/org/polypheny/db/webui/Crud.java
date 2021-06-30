@@ -1318,14 +1318,14 @@ public class Crud implements InformationObserver {
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
         try {
             CatalogTable catalogTable = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
-            if ( catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).size() != 1 ) {
+            if ( catalog.getColumnPlacement( catalogTable.columnIds.get( 0 ) ).size() != 1 ) {
                 throw new RuntimeException( "The table has an unexpected number of placements!" );
             }
-            int adapterId = catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).get( 0 ).adapterId;
+            int adapterId = catalog.getColumnPlacement( catalogTable.columnIds.get( 0 ) ).get( 0 ).adapterId;
             CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
             List<String> pkColumnNames = primaryKey.getColumnNames();
             List<DbColumn> columns = new ArrayList<>();
-            for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapter( adapterId, catalogTable.id ) ) {
+            for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapterPerTable( adapterId, catalogTable.id ) ) {
                 CatalogColumn col = catalog.getColumn( ccp.columnId );
                 columns.add( new DbColumn(
                         col.name,
@@ -1948,13 +1948,13 @@ public class Crud implements InformationObserver {
             long pkid = table.primaryKey;
             List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
             CatalogColumn pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );
-            List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacements( pkColumn.id );
+            List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacement( pkColumn.id );
             for ( CatalogColumnPlacement placement : pkPlacements ) {
                 Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
                 p.addAdapter( new Placement.Store(
                         adapter.getUniqueName(),
                         adapter.getAdapterName(),
-                        catalog.getColumnPlacementsOnAdapter( adapter.getAdapterId(), table.id ),
+                        catalog.getColumnPlacementsOnAdapterPerTable( adapter.getAdapterId(), table.id ),
                         catalog.getPartitionGroupsIndexOnDataPlacement( placement.adapterId, placement.tableId ),
                         table.numPartitionGroups,
                         table.partitionType ) );

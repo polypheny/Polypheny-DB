@@ -98,7 +98,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
         Catalog catalog = Catalog.getInstance();
 
         // Return every placement of this column
-        List<CatalogColumnPlacement> tempCcps = catalog.getColumnPlacements( columnId );
+        List<CatalogColumnPlacement> tempCcps = catalog.getColumnPlacement( columnId );
         List<CatalogColumnPlacement> returnCcps = new ArrayList<>();
         int placementCounter = 0;
         for ( CatalogColumnPlacement ccp : tempCcps ) {

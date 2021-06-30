@@ -57,6 +57,7 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -136,7 +137,7 @@ public class JdbcSchema implements Schema {
     }
 
 
-    public JdbcTable createJdbcTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore ) {
+    public JdbcTable createJdbcTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
         // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type,
         // not a type; before being used, the proto-type will be copied into a real type factory.
         final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
@@ -144,15 +145,13 @@ public class JdbcSchema implements Schema {
         List<String> logicalColumnNames = new LinkedList<>();
         List<String> physicalColumnNames = new LinkedList<>();
         String physicalSchemaName = null;
-        String physicalTableName = null;
+
         for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
             CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
             if ( physicalSchemaName == null ) {
                 physicalSchemaName = placement.physicalSchemaName;
             }
-            if ( physicalTableName == null ) {
-                physicalTableName = placement.physicalTableName;
-            }
+
             RelDataType sqlType = catalogColumn.getRelDataType( typeFactory );
             fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
             logicalColumnNames.add( catalogColumn.name );
@@ -166,10 +165,10 @@ public class JdbcSchema implements Schema {
                 TableType.TABLE,
                 RelDataTypeImpl.proto( fieldInfo.build() ),
                 physicalSchemaName,
-                physicalTableName,
+                partitionPlacement.physicalTableName,
                 physicalColumnNames );
         tableMap.put( catalogTable.name, table );
-        physicalToLogicalTableNameMap.put( physicalTableName, catalogTable.name );
+        physicalToLogicalTableNameMap.put( partitionPlacement.physicalTableName, catalogTable.name );
         return table;
     }
 

@@ -71,7 +71,8 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
             final String definition,
             final Long primaryKey,
             @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
-            boolean modifiable ) {
+            boolean modifiable,
+            PartitionProperty partitionProperty ) {
         this.id = id;
         this.name = name;
         this.columnIds = columnIds;
@@ -90,7 +91,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         this.partitionGroupIds = null;
         this.partitionColumnId = 0;
         this.numPartitionGroups = 0;
-        this.partitionProperty = null;
+        this.partitionProperty = partitionProperty;
 
         if ( type == TableType.TABLE && !modifiable ) {
             throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );

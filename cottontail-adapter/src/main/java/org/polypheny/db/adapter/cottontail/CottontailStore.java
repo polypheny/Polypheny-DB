@@ -40,6 +40,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.rel.type.RelDataType;
@@ -152,7 +153,7 @@ public class CottontailStore extends DataStore {
 
 
     @Override
-    public Table createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore ) {
+    public Table createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
         final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<String> logicalColumnNames = new LinkedList<>();
@@ -211,7 +212,7 @@ public class CottontailStore extends DataStore {
             columns.add( columnBuilder.build() );
         }*/
 
-        List<ColumnDefinition> columns = this.buildColumnDefinitions( this.catalog.getColumnPlacementsOnAdapter( this.getAdapterId(), combinedTable.id ) );
+        List<ColumnDefinition> columns = this.buildColumnDefinitions( this.catalog.getColumnPlacementsOnAdapterPerTable( this.getAdapterId(), combinedTable.id ) );
 
         String physicalTableName = CottontailNameUtil.createPhysicalTableName( combinedTable.id );
         Entity tableEntity = Entity.newBuilder().setSchema( this.currentSchema.getCottontailSchema() ).setName( physicalTableName ).build();
@@ -224,7 +225,7 @@ public class CottontailStore extends DataStore {
             throw new RuntimeException( "Unable to create table." );
         }
 
-        for ( CatalogColumnPlacement placement : this.catalog.getColumnPlacementsOnAdapter( this.getAdapterId(), combinedTable.id ) ) {
+        for ( CatalogColumnPlacement placement : this.catalog.getColumnPlacementsOnAdapterPerTable( this.getAdapterId(), combinedTable.id ) ) {
             this.catalog.updateColumnPlacementPhysicalNames(
                     this.getAdapterId(),
                     placement.columnId,
@@ -277,7 +278,7 @@ public class CottontailStore extends DataStore {
 
     @Override
     public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
-        final List<CatalogColumnPlacement> placements = this.catalog.getColumnPlacementsOnAdapter( this.getAdapterId(), catalogTable.id );
+        final List<CatalogColumnPlacement> placements = this.catalog.getColumnPlacementsOnAdapterPerTable( this.getAdapterId(), catalogTable.id );
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( placements );
 
         final String currentPhysicalTableName;
@@ -332,7 +333,7 @@ public class CottontailStore extends DataStore {
         }
 
         // Update column placement physical table names
-        for ( CatalogColumnPlacement placement : this.catalog.getColumnPlacementsOnAdapter( this.getAdapterId(), catalogTable.id ) ) {
+        for ( CatalogColumnPlacement placement : this.catalog.getColumnPlacementsOnAdapterPerTable( this.getAdapterId(), catalogTable.id ) ) {
             this.catalog.updateColumnPlacementPhysicalNames(
                     this.getAdapterId(),
                     placement.columnId,
@@ -350,7 +351,7 @@ public class CottontailStore extends DataStore {
 
     @Override
     public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
-        final List<CatalogColumnPlacement> placements = this.catalog.getColumnPlacementsOnAdapter( this.getAdapterId(), columnPlacement.tableId );
+        final List<CatalogColumnPlacement> placements = this.catalog.getColumnPlacementsOnAdapterPerTable( this.getAdapterId(), columnPlacement.tableId );
         placements.removeIf( it -> it.columnId == columnPlacement.columnId );
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( placements );
 
@@ -391,7 +392,7 @@ public class CottontailStore extends DataStore {
         }
 
         // Update column placement physical table names
-        for ( CatalogColumnPlacement placement : this.catalog.getColumnPlacementsOnAdapter( this.getAdapterId(), columnPlacement.tableId ) ) {
+        for ( CatalogColumnPlacement placement : this.catalog.getColumnPlacementsOnAdapterPerTable( this.getAdapterId(), columnPlacement.tableId ) ) {
             this.catalog.updateColumnPlacementPhysicalNames(
                     this.getAdapterId(),
                     placement.columnId,

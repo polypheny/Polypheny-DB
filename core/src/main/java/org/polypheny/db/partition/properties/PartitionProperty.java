@@ -32,6 +32,7 @@ public class PartitionProperty implements Serializable {
 
     public final PartitionType partitionType;
     public final ImmutableList<Long> partitionGroupIds;
+    public final ImmutableList<Long> partitionIds;
     public final long partitionColumnId;
 
     public final long numPartitionGroups;

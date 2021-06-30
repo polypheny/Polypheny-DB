@@ -354,7 +354,7 @@ public abstract class AbstractRouter implements Router {
                 long pkid = catalogTable.primaryKey;
                 List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
                 CatalogColumn pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );
-                List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacements( pkColumn.id );
+                List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacement( pkColumn.id );
 
                 if ( catalogTable.isPartitioned && log.isDebugEnabled() ) {
                     log.debug( "\nListing all relevant stores for table: '{}' and all partitions: {}", catalogTable.name, catalogTable.partitionGroupIds );
@@ -375,13 +375,14 @@ public abstract class AbstractRouter implements Router {
                             PolySchemaBuilder.buildAdapterSchemaName(
                                     pkPlacement.adapterUniqueName,
                                     catalogTable.getSchemaName(),
-                                    pkPlacement.physicalSchemaName ),
+                                    pkPlacement.physicalSchemaName,
+                                    -1),
                             t.getLogicalTableName() );
                     RelOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
                     ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
                     // Get placements on store
-                    List<CatalogColumnPlacement> placementsOnAdapter = catalog.getColumnPlacementsOnAdapter( pkPlacement.adapterId, catalogTable.id );
+                    List<CatalogColumnPlacement> placementsOnAdapter = catalog.getColumnPlacementsOnAdapterPerTable( pkPlacement.adapterId, catalogTable.id );
 
                     // If this is a update, check whether we need to execute on this store at all
                     List<String> updateColumnList = ((LogicalTableModify) node).getUpdateColumnList();
@@ -902,7 +903,7 @@ public abstract class AbstractRouter implements Router {
             selectedAdapter.put( tableId, new SelectedAdapterInfo( storeUniqueName, physicalSchemaName, physicalTableName ) );
         }
         return builder.scan( ImmutableList.of(
-                PolySchemaBuilder.buildAdapterSchemaName( storeUniqueName, logicalSchemaName, physicalSchemaName ),
+                PolySchemaBuilder.buildAdapterSchemaName( storeUniqueName, logicalSchemaName, physicalSchemaName,  -1),
                 logicalTableName ) );
     }
 

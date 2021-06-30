@@ -30,7 +30,7 @@ public class CottontailNameUtil {
 
 
     public static String getPhysicalTableName( int storeId, long tableId ) {
-        List<CatalogColumnPlacement> placements = Catalog.getInstance().getColumnPlacementsOnAdapter( storeId, tableId );
+        List<CatalogColumnPlacement> placements = Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( storeId, tableId );
         if ( placements.isEmpty() ) {
             throw new RuntimeException( "Placements not registered in catalog. This should not happen!" );
         }
