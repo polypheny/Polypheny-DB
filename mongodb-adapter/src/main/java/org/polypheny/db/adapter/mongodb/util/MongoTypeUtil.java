@@ -351,7 +351,6 @@ public class MongoTypeUtil {
      */
     public static Class<?> getClassFromType( PolyType type ) {
         switch ( type ) {
-
             case BOOLEAN:
                 return Boolean.class;
             case TINYINT:
@@ -401,7 +400,6 @@ public class MongoTypeUtil {
      * @return a Bson object which matches the initial like clause
      */
     public static BsonValue replaceLikeWithRegex( String input ) {
-
         if ( !input.startsWith( "%" ) ) {
             input = "^" + input;
         }
@@ -446,7 +444,6 @@ public class MongoTypeUtil {
      */
     public static int getTypeNumber( PolyType type ) {
         switch ( type ) {
-
             case BOOLEAN:
                 return 8;
             case TINYINT:

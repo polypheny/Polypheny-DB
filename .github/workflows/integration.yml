@@ -1,6 +1,9 @@
 name: Polypheny-DB Adapter Matrix CI
 
-on: [ push, pull_request ]
+on:
+    push:
+    pull_request:
+        types: [ unlabeled ]
 
 jobs:
     build:
@@ -8,7 +11,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                adapter: [ mongodb, hsqldb ]
+                adapter: [ mongodb, hsqldb, monetdb, postgresql, file, cottontail, cassandra ]
         name: Integration Tests (Java 11)
         steps:
             -   name: Checkout
@@ -18,9 +21,9 @@ jobs:
                 with:
                     java-version: 11
             -   name: Start Docker container
-                run: docker-compose up -d
+                run: sudo docker-compose up -d
             -   name: Assemble
-                run: ./gradlew assemble
+                run: sudo ./gradlew assemble
 
             -   name: Execute integration tests for ${{ matrix.adapter }}
-                run: ./gradlew integrationTests -Dstore.default=${{ matrix.adapter }}
+                run: sudo ./gradlew integrationTests -Dstore.default=${{ matrix.adapter }}

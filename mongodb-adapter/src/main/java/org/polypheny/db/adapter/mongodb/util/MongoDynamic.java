@@ -41,7 +41,6 @@ import org.polypheny.db.type.PolyType;
  */
 public class MongoDynamic {
 
-
     private final HashMap<Long, List<DocWrapper>> docHandles = new HashMap<>(); // parent, key,
     private final HashMap<Long, List<ArrayWrapper>> arrayHandles = new HashMap<>(); // parent, index,
     private final HashMap<Long, Function<Object, BsonValue>> transformerMap = new HashMap<>();
@@ -115,7 +114,6 @@ public class MongoDynamic {
      * @param isFunction flag if the BsonDynamic is defined function, which has to be retrieved uniquely
      */
     public void addHandle( long index, BsonDocument doc, String key, PolyType type, Boolean isRegex, Boolean isFunction ) {
-
         if ( !arrayHandles.containsKey( index ) ) {
             this.transformerMap.put( index, MongoTypeUtil.getBsonTransformer( type, bucket ) );
             this.isRegexMap.put( index, isRegex );
@@ -185,8 +183,12 @@ public class MongoDynamic {
      * @param constructor the initial constructor, which holds the blueprint to replace the dynamic parameter
      * @return a list of rows, which can directly be inserted
      */
-    public List<? extends WriteModel<Document>> getAll( List<Map<Long, Object>> parameterValues, Function<Document, ? extends WriteModel<Document>> constructor ) {
-        return parameterValues.stream().map( value -> constructor.apply( MongoTypeUtil.asDocument( insert( value ) ) ) ).collect( Collectors.toList() );
+    public List<? extends WriteModel<Document>> getAll(
+            List<Map<Long, Object>> parameterValues,
+            Function<Document, ? extends WriteModel<Document>> constructor ) {
+        return parameterValues.stream()
+                .map( value -> constructor.apply( MongoTypeUtil.asDocument( insert( value ) ) ) )
+                .collect( Collectors.toList() );
     }
 
 
@@ -204,12 +206,10 @@ public class MongoDynamic {
         final String key;
         final BsonDocument doc;
 
-
         DocWrapper( String key, BsonDocument doc ) {
             this.key = key;
             this.doc = doc;
         }
-
 
         public void insert( BsonValue value ) {
             doc.put( key, value );
@@ -227,12 +227,10 @@ public class MongoDynamic {
         final int index;
         final BsonArray array;
 
-
         ArrayWrapper( int index, BsonArray array ) {
             this.index = index;
             this.array = array;
         }
-
 
         public void insert( BsonValue value ) {
             array.set( index, value );

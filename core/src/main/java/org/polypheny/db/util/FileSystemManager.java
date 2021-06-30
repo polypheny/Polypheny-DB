@@ -29,9 +29,10 @@ import java.util.List;
 public class FileSystemManager {
 
     static FileSystemManager fileSystemManager = null;
-    final File root = new File( System.getProperty( "user.home" ), ".polypheny" );
+    File root = new File( System.getProperty( "user.home" ), ".polypheny" );
     final List<File> dirs = new ArrayList<>();
     final List<File> deleteOnExit = new ArrayList<>();
+
 
     public static FileSystemManager getInstance() {
         if ( fileSystemManager == null ) {
@@ -42,9 +43,13 @@ public class FileSystemManager {
 
 
     private FileSystemManager() {
-        if ( !root.exists() ) {
-            root.mkdir();
+        if ( !tryCreatingFolder( root ) ) {
+            root = new File( "." );
+            if ( !tryCreatingFolder( root ) ) {
+                throw new RuntimeException( "Could not create root directory: .polypheny neither in:" + System.getProperty( "user.home" ) + " nor \".\"" );
+            }
         }
+
         Runtime.getRuntime().addShutdownHook( new Thread( () -> {
             for ( File file : deleteOnExit ) {
                 if ( file.exists() ) {
@@ -55,16 +60,43 @@ public class FileSystemManager {
     }
 
 
+    private boolean tryCreatingFolder( File file ) {
+        if ( file.isFile() ) {
+            return false;
+        }
+
+        boolean couldCreate = true;
+        if ( !root.exists() ) {
+            couldCreate = root.mkdirs();
+        }
+        return couldCreate && root.canWrite();
+    }
+
+
     /**
      * Registers a new folder
      *
      * @param path the path of the new folder
      * @return the file object for the directory
      */
-    public File registerNewFolder( String path ) {
-        File file = new File( this.root, path );
+    public File registerNewFolder( File root, String path ) {
+        File file = root;
+        file.setWritable( true );
+
+        if ( path.contains( "/" ) ) {
+            String[] splits = path.split( "/" );
+            for ( String split : splits ) {
+                file = registerNewFolder( file, split );
+            }
+        } else {
+            file = new File( root, path );
+        }
+
         if ( !file.exists() ) {
-            file.mkdirs();
+
+            if ( !file.mkdirs() ) {
+                throw new RuntimeException( "Could not create directory: " + path + " in parent folder: " + root.getAbsolutePath() );
+            }
             dirs.add( file );
         }
 
@@ -142,6 +174,11 @@ public class FileSystemManager {
             }
         }
         return file;
+    }
+
+
+    public File registerNewFolder( String folder ) {
+        return registerNewFolder( this.root, folder );
     }
 
 }

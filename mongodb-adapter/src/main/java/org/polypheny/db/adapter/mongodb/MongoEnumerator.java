@@ -266,7 +266,6 @@ class MongoEnumerator implements Enumerator<Object> {
 
         @Override
         public boolean moveNext() {
-
             if ( iterator.hasNext() ) {
                 current = iterator.next();
                 return true;

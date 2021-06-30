@@ -33,10 +33,16 @@ import org.apache.calcite.avatica.util.ArrayFactoryImpl;
 import org.apache.calcite.avatica.util.Unsafe;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.excluded.CassandraExcluded;
+import org.polypheny.db.excluded.CottontailExcluded;
+import org.polypheny.db.excluded.FileExcluded;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
+@Category({ AdapterTestSuite.class, CassandraExcluded.class })
 public class JdbcPreparedStatementsTest {
 
 
@@ -357,6 +363,7 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
+    @Category({ CottontailExcluded.class, FileExcluded.class })
     public void updateTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -412,6 +419,7 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
+    @Category({ CottontailExcluded.class, FileExcluded.class })
     public void batchUpdateTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -517,6 +525,7 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
+    @Category(FileExcluded.class)
     public void arrayTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -561,6 +570,7 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
+    @Category(FileExcluded.class)
     public void arrayBatchTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

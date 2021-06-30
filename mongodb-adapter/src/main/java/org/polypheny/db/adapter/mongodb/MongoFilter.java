@@ -106,7 +106,6 @@ public class MongoFilter extends Filter implements MongoRel {
             translator = new Translator( MongoRules.mongoFieldNames( getRowType() ), implementor );
         }
         translator.translateMatch( condition, implementor );
-
     }
 
 
@@ -244,7 +243,6 @@ public class MongoFilter extends Filter implements MongoRel {
                 default:
                     throw new IllegalStateException( "Unexpected value: " + right.getKind() );
             }
-
         }
 
 
@@ -344,7 +342,6 @@ public class MongoFilter extends Filter implements MongoRel {
                 default:
                     return false;
             }
-
         }
 
 
