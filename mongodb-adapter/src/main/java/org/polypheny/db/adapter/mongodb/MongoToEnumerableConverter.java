@@ -37,6 +37,7 @@ package org.polypheny.db.adapter.mongodb;
 import com.google.common.collect.Lists;
 import java.util.AbstractList;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -68,6 +69,7 @@ import org.polypheny.db.util.Pair;
 /**
  * Relational expression representing a scan of a table in a Mongo data source.
  */
+@Slf4j
 public class MongoToEnumerableConverter extends ConverterImpl implements EnumerableRel {
 
     protected MongoToEnumerableConverter( RelOptCluster cluster, RelTraitSet traits, RelNode input ) {
@@ -94,7 +96,6 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
         mongoImplementor.visitChild( 0, getInput() );
 
         final RelDataType rowType = getRowType();
-        ;
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaRowFormat.ARRAY ) );
 
         if ( mongoImplementor.table == null ) {
@@ -111,7 +112,6 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
                                             public Class get( int index ) {
                                                 return physType.fieldClass( index );
                                             }
-
 
                                             @Override
                                             public int size() {
@@ -139,7 +139,6 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
 
                                             }
 
-
                                             @Override
                                             public int size() {
                                                 return rowType.getFieldCount();
@@ -157,17 +156,19 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
         Expression enumerable;
         if ( !mongoImplementor.isDML() ) {
             final Expression preProjects = list.append( "prePro", constantArrayList( mongoImplementor.getPreProjects(), String.class ) );
-
-            enumerable = list.append( "enumerable", Expressions.call( table, MongoMethod.MONGO_QUERYABLE_AGGREGATE.method, fields, arrayClassFields, ops, filter, preProjects ) );
+            enumerable = list.append(
+                    "enumerable",
+                    Expressions.call( table, MongoMethod.MONGO_QUERYABLE_AGGREGATE.method, fields, arrayClassFields, ops, filter, preProjects ) );
         } else {
             final Expression operations = list.append( "operations", constantArrayList( mongoImplementor.getOperations(), String.class ) );
             final Expression operation = list.append( "operation", Expressions.constant( mongoImplementor.getOperation(), Operation.class ) );
-
-            enumerable = list.append( "enumerable", Expressions.call( table, MongoMethod.HANDLE_DIRECT_DML.method, operation, filter, operations ) );
+            enumerable = list.append(
+                    "enumerable",
+                    Expressions.call( table, MongoMethod.HANDLE_DIRECT_DML.method, operation, filter, operations ) );
         }
 
         if ( RuntimeConfig.DEBUG.getBoolean() ) {
-            System.out.println( "Mongo: " + opList );
+            log.info( "Mongo: " + opList );
         }
         Hook.QUERY_PLAN.run( opList );
         list.add( Expressions.return_( null, enumerable ) );

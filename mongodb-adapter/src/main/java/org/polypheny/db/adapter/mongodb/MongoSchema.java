@@ -129,7 +129,6 @@ public class MongoSchema extends AbstractSchema {
 
         tableMap.put( catalogTable.name, table );
         return table;
-
     }
 
 }

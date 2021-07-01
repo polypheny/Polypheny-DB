@@ -46,6 +46,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 
+
 /**
  * Helper class, which provided multiple methods to transform PolyTypes to the correct Bson representation
  */
@@ -53,7 +54,7 @@ public class MongoTypeUtil {
 
     /**
      * Retrieval method to get a suitable transformer, which transforms the untyped input
-     * into the corresponding Bson format
+     * into the corresponding Bson format.
      *
      * @param type the corresponding type of the input object
      * @param bucket the bucket can be used to retrieve multimedia objects
@@ -77,7 +78,7 @@ public class MongoTypeUtil {
 
     /**
      * Retrieval method to get a suitable transformer, which transforms the untyped input
-     * into the corresponding Bson format according to a provided PolyType
+     * into the corresponding Bson format according to a provided PolyType.
      *
      * @param type the corresponding type of the input object
      * @param bucket the bucket can be used to retrieve multimedia objects
@@ -125,7 +126,7 @@ public class MongoTypeUtil {
 
     /**
      * Direct transformation of an untyped input to the correct Bson format according to the
-     * provided PolyType
+     * provided PolyType.
      *
      * @param obj the input
      * @param type the corresponding PolyType
@@ -262,7 +263,7 @@ public class MongoTypeUtil {
 
 
     /**
-     * Wrapper method, which unpacks the provided literal and retrieves it a BsonValue
+     * Wrapper method, which unpacks the provided literal and retrieves it a BsonValue.
      *
      * @param literal the literal to transform to BSON
      * @param bucket the bucket, which can be used to retrieve multimedia objects
@@ -274,7 +275,7 @@ public class MongoTypeUtil {
 
 
     /**
-     * Helper method which maps the Rexliteral to the provided type, which is MongoDB adapter conform
+     * Helper method which maps the RexLiteral to the provided type, which is MongoDB adapter conform.
      *
      * @param finalType the type which should be retrieved from the literal
      * @param el the literal itself
@@ -323,7 +324,7 @@ public class MongoTypeUtil {
 
 
     /**
-     * Recursively transforms a provided RexCall into a matching BsonArray
+     * Recursively transforms a provided RexCall into a matching BsonArray.
      *
      * @param call the call which is transformed
      * @param bucket the bucket, which is used to retrieve multimedia objects
@@ -344,7 +345,7 @@ public class MongoTypeUtil {
 
 
     /**
-     * Get the corresponding MongoDB class for a provided type
+     * Get the corresponding MongoDB class for a provided type.
      *
      * @param type the type, for which a class is needed
      * @return the supported class
@@ -420,8 +421,8 @@ public class MongoTypeUtil {
 
 
     /**
-     * Helper method to transform a BsonDocument to the matching Document
-     * which is needed form some methods ( @see insertMany() )
+     * Helper method to transform a BsonDocument to the matching Document which is needed
+     * form some methods ( @see insertMany() ).
      *
      * @param bson the BsonDocument
      * @return the transformed BsonDocument as Document

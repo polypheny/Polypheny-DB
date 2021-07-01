@@ -34,6 +34,7 @@ import org.bson.Document;
 import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
 import org.polypheny.db.type.PolyType;
 
+
 /**
  * Objects of this class represent a blueprint of a dynamic/prepared BsonValue,
  * they initial prepare the correct places to insert later provided dynamic parameters according to the
@@ -58,10 +59,8 @@ public class MongoDynamic {
 
 
     /**
-     * Recursively steps through the BsonDocument and stores parent of dynamic/prepared parameters
-     * in the corresponding maps
-     * This can later be used to effiecntly insert multiple paramters, without the need to traverse the tree
-     * every time
+     * Recursively steps through the BsonDocument and stores parent of dynamic/prepared parameters in the corresponding maps.
+     * This can later be used to efficiently insert multiple parameters, without the need to traverse the tree every time.
      *
      * @param preDocument the BsonDocument, which holds BsonDynamics
      * @param parent the parent of the momentarily observer preDocument
@@ -104,7 +103,7 @@ public class MongoDynamic {
 
 
     /**
-     * Stores the information needed to replace a BsonDynamic later on
+     * Stores the information needed to replace a BsonDynamic later on.
      *
      * @param index of the corresponding prepared parameter (?3 -> 3)
      * @param doc parent of dynamic
@@ -126,7 +125,7 @@ public class MongoDynamic {
 
 
     /**
-     * Stores the information needed to replace a BsonDynamic later on
+     * Stores the information needed to replace a BsonDynamic later on.
      *
      * @param index of the corresponding prepared parameter (?3 -> 3)
      * @param array parent of dynamic
@@ -148,7 +147,7 @@ public class MongoDynamic {
 
 
     /**
-     * Insert operation, which replaces the initially defined dynamic/prepared objects the provided values
+     * Insert operation, which replaces the initially defined dynamic/prepared objects the provided values.
      *
      * @param parameterValues the dynamic parameters
      * @return a final BsonObject with the correct values inserted
@@ -177,7 +176,7 @@ public class MongoDynamic {
 
 
     /**
-     * Fully prepare a batch of multiple prepared rows and transform them into BsonDocuments
+     * Fully prepare a batch of multiple prepared rows and transform them into BsonDocuments.
      *
      * @param parameterValues multiple rows of dynamic parameters
      * @param constructor the initial constructor, which holds the blueprint to replace the dynamic parameter
@@ -199,7 +198,7 @@ public class MongoDynamic {
 
     /**
      * Helper class which holds replace information for a BsonDocument, which has one or multiple dynamic children
-     * and defines how the child can be replaced
+     * and defines how the child can be replaced.
      */
     static class DocWrapper {
 
@@ -220,7 +219,7 @@ public class MongoDynamic {
 
     /**
      * Helper class which holds replace information for a BsonDocument, which has one or multiple dynamic children
-     * and defines how the child can be replaced
+     * and defines how the child can be replaced.
      */
     static class ArrayWrapper {
 

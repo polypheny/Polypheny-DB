@@ -385,7 +385,6 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
             long changes = 0;
 
             switch ( operation ) {
-
                 case INSERT:
                     if ( dataContext.getParameterValues().size() != 0 ) {
                         assert operations.size() == 1;
@@ -402,8 +401,8 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                         mongoTable.getCollection().insertMany( session, docs );
                         changes = docs.size();
                     }
-
                     break;
+
                 case UPDATE:
                     assert operations.size() == 1;
                     if ( dataContext.getParameterValues().size() != 0 ) {
@@ -418,8 +417,8 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                         // direct
                         changes = mongoTable.getCollection().updateMany( session, BsonDocument.parse( filter ), Collections.singletonList( BsonDocument.parse( operations.get( 0 ) ) ) ).getModifiedCount();
                     }
-
                     break;
+
                 case DELETE:
                     if ( dataContext.getParameterValues().size() != 0 ) {
                         // prepared
@@ -432,6 +431,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                         changes = mongoTable.getCollection().deleteMany( session, BsonDocument.parse( filter ) ).getDeletedCount();
                     }
                     break;
+
                 case MERGE:
                     throw new RuntimeException( "MERGE IS NOT SUPPORTED" );
             }
