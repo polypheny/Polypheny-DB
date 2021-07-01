@@ -16,13 +16,13 @@
 
 package org.polypheny.db.catalog;
 
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import lombok.Getter;
 
 public enum Adapter {
+
     MONGODB( "org.polypheny.db.adapter.mongodb.MongoStore" ),
     HSQLDB( "org.polypheny.db.adapter.jdbc.stores.HsqldbStore" ),
     CSV( "org.polypheny.db.adapter.csv.CsvSource" ),
@@ -48,11 +48,8 @@ public enum Adapter {
     }
 
 
-    public static EnumSet<Adapter> store = EnumSet.of( MONGODB, HSQLDB );
-
-
-    public static Adapter fromString( String defaultStore ) {
-        return Adapter.valueOf( defaultStore.toUpperCase( Locale.ROOT ) );
+    public static Adapter fromString( String storeName ) {
+        return Adapter.valueOf( storeName.toUpperCase( Locale.ROOT ) );
     }
 
 
