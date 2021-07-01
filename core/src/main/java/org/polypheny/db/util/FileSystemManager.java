@@ -29,7 +29,7 @@ import java.util.List;
 public class FileSystemManager {
 
     static FileSystemManager fileSystemManager = null;
-    File root = new File( System.getProperty( "user.home" ), ".polypheny" );
+    File root;
     final List<File> dirs = new ArrayList<>();
     final List<File> deleteOnExit = new ArrayList<>();
 
@@ -43,6 +43,15 @@ public class FileSystemManager {
 
 
     private FileSystemManager() {
+        String pathVar;
+        if ( System.getenv( "POLYPHENY_HOME" ) != null ) {
+            pathVar = System.getenv( "POLYPHENY_HOME" );
+        } else {
+            pathVar = System.getProperty( "user.home" );
+        }
+        System.out.println( pathVar );
+        root = new File( pathVar, ".polypheny" );
+
         if ( !tryCreatingFolder( root ) ) {
             root = new File( "." );
             if ( !tryCreatingFolder( root ) ) {
@@ -81,7 +90,6 @@ public class FileSystemManager {
      */
     public File registerNewFolder( File root, String path ) {
         File file = root;
-        file.setWritable( true );
 
         if ( path.contains( "/" ) ) {
             String[] splits = path.split( "/" );

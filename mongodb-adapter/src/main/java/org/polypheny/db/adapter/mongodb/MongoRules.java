@@ -369,7 +369,13 @@ public class MongoRules {
         public RelNode convert( RelNode rel ) {
             final Sort sort = (Sort) rel;
             final RelTraitSet traitSet = sort.getTraitSet().replace( out ).replace( sort.getCollation() );
-            return new MongoSort( rel.getCluster(), traitSet, convert( sort.getInput(), traitSet.replace( RelCollations.EMPTY ) ), sort.getCollation(), sort.offset, sort.fetch );
+            return new MongoSort(
+                    rel.getCluster(),
+                    traitSet,
+                    convert( sort.getInput(), traitSet.replace( RelCollations.EMPTY ) ),
+                    sort.getCollation(),
+                    sort.offset,
+                    sort.fetch );
         }
 
     }
@@ -392,7 +398,11 @@ public class MongoRules {
         public RelNode convert( RelNode rel ) {
             final LogicalFilter filter = (LogicalFilter) rel;
             final RelTraitSet traitSet = filter.getTraitSet().replace( out );
-            return new MongoFilter( rel.getCluster(), traitSet, convert( filter.getInput(), out ), filter.getCondition() );
+            return new MongoFilter(
+                    rel.getCluster(),
+                    traitSet,
+                    convert( filter.getInput(), out ),
+                    filter.getCondition() );
         }
 
     }
@@ -415,7 +425,12 @@ public class MongoRules {
         public RelNode convert( RelNode rel ) {
             final LogicalProject project = (LogicalProject) rel;
             final RelTraitSet traitSet = project.getTraitSet().replace( out );
-            return new MongoProject( project.getCluster(), traitSet, convert( project.getInput(), out ), project.getProjects(), project.getRowType() );
+            return new MongoProject(
+                    project.getCluster(),
+                    traitSet,
+                    convert( project.getInput(), out ),
+                    project.getProjects(),
+                    project.getRowType() );
         }
 
     }
@@ -434,7 +449,11 @@ public class MongoRules {
         @Override
         public RelNode convert( RelNode rel ) {
             Values values = (Values) rel;
-            return new MongoValues( values.getCluster(), values.getRowType(), values.getTuples(), values.getTraitSet().replace( out ) );
+            return new MongoValues(
+                    values.getCluster(),
+                    values.getRowType(),
+                    values.getTuples(),
+                    values.getTraitSet().replace( out ) );
         }
 
     }
@@ -496,7 +515,16 @@ public class MongoRules {
     private static class MongoTableModify extends TableModify implements MongoRel {
 
 
-        protected MongoTableModify( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table, CatalogReader catalogReader, RelNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+        protected MongoTableModify(
+                RelOptCluster cluster,
+                RelTraitSet traitSet,
+                RelOptTable table,
+                CatalogReader catalogReader,
+                RelNode input,
+                Operation operation,
+                List<String> updateColumnList,
+                List<RexNode> sourceExpressionList,
+                boolean flattened ) {
             super( cluster, traitSet, table, catalogReader, input, operation, updateColumnList, sourceExpressionList, flattened );
         }
 
@@ -535,7 +563,7 @@ public class MongoRules {
             implementor.setOperation( this.getOperation() );
 
             switch ( this.getOperation() ) {
-                case INSERT: {
+                case INSERT:
                     if ( input instanceof MongoValues ) {
                         handleDirectInsert( implementor, ((MongoValues) input) );
                     } else if ( input instanceof MongoProject ) {
@@ -543,8 +571,7 @@ public class MongoRules {
                     } else {
                         return;
                     }
-                }
-                break;
+                    break;
                 case UPDATE:
                     MongoRel.Implementor condImplementor = new Implementor( true );
                     condImplementor.setStaticRowType( implementor.getStaticRowType() );
@@ -557,15 +584,23 @@ public class MongoRules {
                     GridFSBucket bucket = implementor.mongoTable.getMongoSchema().getBucket();
                     for ( RexNode el : getSourceExpressionList() ) {
                         if ( el instanceof RexLiteral ) {
-                            doc.append( rowType.getPhysicalName( getUpdateColumnList().get( pos ) ), MongoTypeUtil.getAsBson( (RexLiteral) el, bucket ) );
+                            doc.append(
+                                    rowType.getPhysicalName( getUpdateColumnList().get( pos ) ),
+                                    MongoTypeUtil.getAsBson( (RexLiteral) el, bucket ) );
                         } else if ( el instanceof RexCall ) {
                             if ( ((RexCall) el).op.kind == SqlKind.PLUS ) {
-                                doc.append( rowType.getPhysicalName( getUpdateColumnList().get( pos ) ), visitCall( implementor, (RexCall) el, SqlKind.PLUS, el.getType().getPolyType() ) );
+                                doc.append(
+                                        rowType.getPhysicalName( getUpdateColumnList().get( pos ) ),
+                                        visitCall( implementor, (RexCall) el, SqlKind.PLUS, el.getType().getPolyType() ) );
                             } else {
-                                doc.append( rowType.getPhysicalName( getUpdateColumnList().get( pos ) ), MongoTypeUtil.getBsonArray( (RexCall) el, bucket ) );
+                                doc.append(
+                                        rowType.getPhysicalName( getUpdateColumnList().get( pos ) ),
+                                        MongoTypeUtil.getBsonArray( (RexCall) el, bucket ) );
                             }
                         } else if ( el instanceof RexDynamicParam ) {
-                            doc.append( rowType.getPhysicalName( getUpdateColumnList().get( pos ) ), new BsonDynamic( (RexDynamicParam) el ) );
+                            doc.append(
+                                    rowType.getPhysicalName( getUpdateColumnList().get( pos ) ),
+                                    new BsonDynamic( (RexDynamicParam) el ) );
                         }
                         pos++;
                     }
@@ -576,15 +611,13 @@ public class MongoRules {
                     break;
                 case MERGE:
                     break;
-                case DELETE: {
+                case DELETE:
                     MongoRel.Implementor filterCollector = new Implementor( true );
                     filterCollector.setStaticRowType( implementor.getStaticRowType() );
                     ((MongoRel) input).implement( filterCollector );
                     implementor.filter = filterCollector.filter;
-                }
-
+                    break;
             }
-
         }
 
 
@@ -662,7 +695,6 @@ public class MongoRules {
             }
             // we need to use the extended json format here to not loose precision like long -> int etc.
             implementor.operations = Collections.singletonList( doc );
-
         }
 
 
@@ -712,7 +744,9 @@ public class MongoRules {
                 BsonDocument doc = new BsonDocument();
                 int pos = 0;
                 for ( RexLiteral literal : literals ) {
-                    doc.append( MongoStore.getPhysicalColumnName( catalogTable.columnIds.get( pos ) ), MongoTypeUtil.getAsBson( literal, bucket ) );
+                    doc.append(
+                            MongoStore.getPhysicalColumnName( catalogTable.columnIds.get( pos ) ),
+                            MongoTypeUtil.getAsBson( literal, bucket ) );
                     pos++;
                 }
                 docs.add( doc );

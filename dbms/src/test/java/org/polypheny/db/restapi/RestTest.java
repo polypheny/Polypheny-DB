@@ -44,7 +44,6 @@ import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
-import org.polypheny.db.excluded.FileExcluded;
 
 @SuppressWarnings("SqlDialectInspection")
 @Slf4j
@@ -172,7 +171,7 @@ public class RestTest {
 
 
     @Test
-    @Category({ FileExcluded.class, CassandraExcluded.class })
+    @Category({ CassandraExcluded.class })
     public void testOperations() {
         // Insert
         HttpRequest<?> request = buildRestInsert( "test.resttest", ImmutableList.of( getTestRow() ) );

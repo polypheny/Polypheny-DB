@@ -20,10 +20,17 @@ jobs:
                 uses: actions/setup-java@v1
                 with:
                     java-version: 11
+            -   name: Set env variable
+                run: |
+                    echo "POLYPHENY_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+            -   name: Create folders for certs
+                run: |
+                    mkdir $POLYPHENY_HOME/.polypheny
+                    mkdir $POLYPHENY_HOME/.polypheny/certs
             -   name: Start Docker container
-                run: sudo docker-compose up -d
+                run: docker-compose up -d
             -   name: Assemble
-                run: sudo ./gradlew assemble
+                run: ./gradlew assemble
 
             -   name: Execute integration tests for ${{ matrix.adapter }}
-                run: sudo ./gradlew integrationTests -Dstore.default=${{ matrix.adapter }}
+                run: ./gradlew integrationTests -Dstore.default=${{ matrix.adapter }}

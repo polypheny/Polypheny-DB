@@ -1,6 +1,9 @@
 name: Polypheny-DB Matrix
 
-on: [ push ]
+on:
+    push:
+    pull_request:
+        types: [ unlabeled ]
 
 jobs:
     build:
@@ -18,6 +21,13 @@ jobs:
                 uses: actions/setup-java@v1
                 with:
                     java-version: ${{ matrix.java }}
+            -   name: Set env variable
+                run: |
+                    echo "POLYPHENY_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+            -   name: Create folders for certs
+                run: |
+                    mkdir $POLYPHENY_HOME/.polypheny
+                    mkdir $POLYPHENY_HOME/.polypheny/certs
             -   name: Assemble
                 run: ./gradlew assemble
             -   name: Execute tests
