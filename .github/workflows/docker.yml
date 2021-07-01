@@ -1,12 +1,18 @@
 name: Polypheny-DB Docker CI
 
-on: [ push ]
+on:
+    push:
+    pull_request:
+        types: [ unlabeled ]
 
 jobs:
     build:
         runs-on: ubuntu-latest
         name: Docker Tests (Java 11)
         steps:
+            -   name: Set env variable
+                run: |
+                    echo "POLYPHENY_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
             -   name: Checkout
                 uses: actions/checkout@v2
             -   name: Set up JDK
@@ -14,8 +20,8 @@ jobs:
                 with:
                     java-version: 11
             -   name: Start Docker container
-                run: sudo docker-compose up -d
+                run: docker-compose up -d
             -   name: Assemble
-                run: sudo ./gradlew assemble
+                run: ./gradlew assemble
             -   name: Execute Docker tests
-                run: sudo ./gradlew dockerTests
+                run: ./gradlew dockerTests

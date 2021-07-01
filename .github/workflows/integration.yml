@@ -14,6 +14,9 @@ jobs:
                 adapter: [ mongodb, hsqldb, monetdb, postgresql, file, cottontail, cassandra ]
         name: Integration Tests (Java 11)
         steps:
+            -   name: Set env variable
+                run: |
+                    echo "POLYPHENY_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
             -   name: Checkout
                 uses: actions/checkout@v2
             -   name: Set up JDK
@@ -21,9 +24,9 @@ jobs:
                 with:
                     java-version: 11
             -   name: Start Docker container
-                run: sudo docker-compose up -d
+                run: docker-compose up -d
             -   name: Assemble
-                run: sudo ./gradlew assemble
+                run: ./gradlew assemble
 
             -   name: Execute integration tests for ${{ matrix.adapter }}
-                run: sudo ./gradlew integrationTests -Dstore.default=${{ matrix.adapter }}
+                run: ./gradlew integrationTests -Dstore.default=${{ matrix.adapter }}
