@@ -23,9 +23,9 @@ jobs:
             -   name: Set env variable
                 run: |
                     echo "POLYPHENY_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
-            -   name: test env
+            -   name: Create folders for certs
                 run: |
-                    echo ".polypheny is save in $POLYPHENY_HOME"
+                    mkdir $POLYPHENY_HOME/.polypheny/certs
             -   name: Start Docker container
                 run: docker-compose up -d
             -   name: Assemble
