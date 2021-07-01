@@ -49,7 +49,6 @@ public class FileSystemManager {
         } else {
             pathVar = System.getProperty( "user.home" );
         }
-        System.out.println( pathVar );
         root = new File( pathVar, ".polypheny" );
 
         if ( !tryCreatingFolder( root ) ) {
