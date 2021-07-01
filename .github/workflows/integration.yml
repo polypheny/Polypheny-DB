@@ -14,15 +14,18 @@ jobs:
                 adapter: [ mongodb, hsqldb, monetdb, postgresql, file, cottontail, cassandra ]
         name: Integration Tests (Java 11)
         steps:
-            -   name: Set env variable
-                run: |
-                    echo "POLYPHENY_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
             -   name: Checkout
                 uses: actions/checkout@v2
             -   name: Set up JDK
                 uses: actions/setup-java@v1
                 with:
                     java-version: 11
+            -   name: Set env variable
+                run: |
+                    echo "POLYPHENY_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+            -   name: test env
+                run: |
+                    echo ".polypheny is save in $POLYPHENY_HOME"
             -   name: Start Docker container
                 run: docker-compose up -d
             -   name: Assemble

@@ -15,15 +15,15 @@ jobs:
                 os: [ macos-latest, ubuntu-latest, windows-latest ]
         name: Java ${{ matrix.java }} @ ${{ matrix.os }}
         steps:
-            -   name: Set env variable
-                run: |
-                    echo "POLYPHENY_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
             -   name: Checkout
                 uses: actions/checkout@v2
             -   name: Set up JDK
                 uses: actions/setup-java@v1
                 with:
                     java-version: ${{ matrix.java }}
+            -   name: Set env variable
+                run: |
+                    echo "POLYPHENY_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
             -   name: Assemble
                 run: ./gradlew assemble
             -   name: Execute tests

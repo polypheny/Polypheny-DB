@@ -10,15 +10,15 @@ jobs:
         runs-on: ubuntu-latest
         name: Docker Tests (Java 11)
         steps:
-            -   name: Set env variable
-                run: |
-                    echo "POLYPHENY_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
             -   name: Checkout
                 uses: actions/checkout@v2
             -   name: Set up JDK
                 uses: actions/setup-java@v1
                 with:
                     java-version: 11
+            -   name: Set env variable
+                run: |
+                    echo "POLYPHENY_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
             -   name: Start Docker container
                 run: docker-compose up -d
             -   name: Assemble
