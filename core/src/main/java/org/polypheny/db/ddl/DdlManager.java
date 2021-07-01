@@ -580,9 +580,9 @@ public abstract class DdlManager {
                 Integer cardinality,
                 Boolean nullable ) {
             this.type = type;
-            this.collectionType = collectionType;
+            this.collectionType = collectionType == type ? null : collectionType;
             this.precision = precision == -1 ? null : precision;
-            this.scale = scale == -1 ? null : scale;
+            this.scale = scale == -1 || scale == Integer.MIN_VALUE ? null : scale;
             this.dimension = dimension == -1 ? null : dimension;
             this.cardinality = cardinality == -1 ? null : cardinality;
             this.nullable = nullable;

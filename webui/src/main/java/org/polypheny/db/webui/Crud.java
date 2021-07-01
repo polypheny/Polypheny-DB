@@ -466,6 +466,16 @@ public class Crud implements InformationObserver {
             requestedSchema = catalog.getSchema( schemaId ).name;
         }
 
+        try {
+            transaction.commit();
+        } catch ( TransactionException e ) {
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback", ex );
+            }
+        }
+
         List<CatalogTable> tables = catalog.getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( requestedSchema ), null );
         ArrayList<DbTable> result = new ArrayList<>();
         for ( CatalogTable t : tables ) {
@@ -1730,7 +1740,7 @@ public class Crud implements InformationObserver {
             ArrayList<String[]> data = new ArrayList<>();
             resultList.forEach( c -> data.add( c.asRow() ) );
 
-            result = new Result( header, data.toArray( new String[0][2] ), catalogTable.tableType );
+            result = new Result( header, data.toArray( new String[0][2] ) );
         } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             log.error( "Caught exception while fetching constraints", e );
             result = new Result( e );
@@ -2783,6 +2793,18 @@ public class Crud implements InformationObserver {
                 finalResult.setGeneratedQuery( "Execute logical query plan" );
                 return finalResult;
             }
+            try {
+                transaction.commit();
+            } catch ( TransactionException e ) {
+                log.error( "Caught exception while creating View from Planbuilder.", e );
+                try {
+                    transaction.rollback();
+                } catch ( TransactionException transactionException ) {
+                    log.error( "Exception while rollback", transactionException );
+                }
+                throw new RuntimeException( e );
+            }
+
             return new Result().setGeneratedQuery( "Created View \"" + viewName + "\" from logical query plan" );
         }
 
@@ -3488,10 +3510,10 @@ public class Crud implements InformationObserver {
             ArrayList<String[]> data = computeResultData( rows, header, statement.getTransaction() );
 
             if ( tableType != null ) {
-                return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), tableType ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
+                return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
             } else {
                 //if we do not have a fix table it is not possible to change anything within the resultSet therefore we use TableType.SOURCE
-                return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), TableType.SOURCE ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
+                return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
             }
 
         } finally {

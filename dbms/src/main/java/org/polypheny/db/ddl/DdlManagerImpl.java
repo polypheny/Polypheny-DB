@@ -1348,8 +1348,10 @@ public class DdlManagerImpl extends DdlManager {
             if ( projectedColumns != null ) {
                 colName = projectedColumns.get( position - 1 );
             }
+
+            // type.getPrecision() == RelDataTypeSystemImpl.DEFAULT.getDefaultPrecision(type.getPolyType()) ? type.getPrecision() : -1,
             columns.add( new ColumnInformation(
-                    colName,
+                    colName.toLowerCase().replaceAll( "[^A-Za-z0-9]", "_" ),
                     new ColumnTypeInformation(
                             type.getPolyType(),
                             rel.getType().getPolyType(),
