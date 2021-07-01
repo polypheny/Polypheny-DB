@@ -30,7 +30,7 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 
 
 @Slf4j
-public class GroupByTests {
+public class GroupByTest {
 
 
     @BeforeClass

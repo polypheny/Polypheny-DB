@@ -36,7 +36,7 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 
 
 @Slf4j
-public class JoinTests {
+public class JoinTest {
 
 
     @BeforeClass
