@@ -45,11 +45,13 @@ import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Entity;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.EntityName;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.From;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Query;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryMessage;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Schema;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Scan;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.SchemaName;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.TransactionId;
 
 
 public class CottontailTable extends AbstractQueryableTable implements TranslatableTable, ModifiableTable {  // implements TranslatableTable
@@ -58,7 +60,7 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
     private CottontailSchema cottontailSchema;
 
     @Getter
-    private Entity entity;
+    private EntityName entity;
 
     @Getter
     private final String physicalSchemaName;
@@ -92,7 +94,10 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
         this.physicalTableName = physicalTableName;
         this.physicalColumnNames = physicalColumnNames;
 
-        this.entity = Entity.newBuilder().setName( this.physicalTableName ).setSchema( Schema.newBuilder().setName( physicalSchemaName ).build() ).build();
+        this.entity = EntityName.newBuilder()
+                .setName( this.physicalTableName )
+                .setSchema( SchemaName.newBuilder().setName( physicalSchemaName ).build() )
+                .build();
     }
 
 
@@ -186,16 +191,16 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
         @Override
         public Enumerator<T> enumerator() {
             final JavaTypeFactory typeFactory = dataContext.getTypeFactory();
-            CottontailTable cottontailTable = (CottontailTable) this.table;
-            Query query = Query.newBuilder()
-                    .setFrom( From.newBuilder().setEntity( cottontailTable.entity ).build() )
-                    .build();
-            QueryMessage queryMessage = QueryMessage.newBuilder().setQuery( query ).build();
+            final CottontailTable cottontailTable = (CottontailTable) this.table;
+
+            /* Begin or continue Cottontail DB transaction. */
+            final TransactionId txId = cottontailTable.cottontailSchema.getWrapper().beginOrContinue( this.dataContext.getStatement().getTransaction() );
+
+            final Query query = Query.newBuilder().setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( cottontailTable.entity ) ).build() ).build();
+            final QueryMessage queryMessage = QueryMessage.newBuilder().setTxId( txId ).setQuery( query ).build();
             final Enumerable enumerable = new CottontailQueryEnumerable<>(
                     cottontailTable.cottontailSchema.getWrapper().query( queryMessage ),
-                    new CottontailQueryEnumerable.RowTypeParser(
-                            cottontailTable.getRowType( typeFactory ),
-                            cottontailTable.physicalColumnNames ) );
+                    new CottontailQueryEnumerable.RowTypeParser( cottontailTable.getRowType( typeFactory ), cottontailTable.physicalColumnNames ) );
             return enumerable.enumerator();
         }
 
