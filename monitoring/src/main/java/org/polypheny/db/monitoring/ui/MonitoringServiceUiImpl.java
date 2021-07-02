@@ -20,6 +20,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -34,6 +35,7 @@ import org.polypheny.db.monitoring.core.MonitoringQueue;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
+import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 
@@ -133,6 +135,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
         val informationGroup = new InformationGroup( informationPage, "Workload Overview" );
         val informationTable = new InformationTable( informationGroup,
                 Arrays.asList( "Attribute", "Value" ) );
+        informationGroup.setOrder( 1 );
 
         informationGroup.setRefreshFunction( () -> this.updateWorkloadInformationTable( informationTable ) );
 
@@ -158,14 +161,14 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
 
     private void updateQueueInformationTable( InformationTable table ) {
-        List<MonitoringEvent> queueElements = this.queue.getElementsInQueue();
+        List<HashMap<String, String>> queueInfoElements = this.queue.getInformationOnElementsInQueue();
         table.reset();
 
-        for ( MonitoringEvent event : queueElements ) {
+        for ( HashMap<String, String> infoRow : queueInfoElements ) {
             List<String> row = new ArrayList<>();
-            row.add( event.getEventType() );
-            row.add( event.getId().toString() );
-            row.add( event.getRecordedTimestamp().toString() );
+            row.add( infoRow.get("type"));
+            row.add( infoRow.get("id"));
+            row.add( infoRow.get("timestamp"));
 
             table.addRow( row );
         }
@@ -178,9 +181,10 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
         table.addRow( "Number of processed events in total", queue.getNumberOfProcessedEvents( true ) );
         table.addRow( "Number of processed events since restart", queue.getNumberOfProcessedEvents( false ) );
-        table.addRow( "Number of events in queue", queue.getElementsInQueue().size() );
-        //table.addRow( "Metrics available", queue.getMetrics );
-        table.addRow( "# SELECT Statements ", MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPoint.class ).size() );
+        table.addRow( "Number of events in queue", queue.getNumberOfElementsInQueue());
+        //table.addRow( "# Data Points", queue.getElementsInQueue().size() );
+        table.addRow( "# SELECT", MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPoint.class ).size() );
+        table.addRow( "# DML", MonitoringServiceProvider.getInstance().getAllDataPoints( DMLDataPoint.class ).size() );
     }
 
 

@@ -16,6 +16,7 @@
 
 package org.polypheny.db.monitoring.core;
 
+import java.util.HashMap;
 import java.util.List;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 
@@ -35,11 +36,13 @@ public interface MonitoringQueue {
     void queueEvent( MonitoringEvent eventData );
 
     /**
-     * Essential usage to display current contents of queue
+     * Display current number of elements in queue
      *
-     * @return All current elements in Queue
+     * @return Current numbe of elements in Queue
      */
-    List<MonitoringEvent> getElementsInQueue();
+    long getNumberOfElementsInQueue();
+
+    List<HashMap<String, String>> getInformationOnElementsInQueue();
 
     long getNumberOfProcessedEvents( boolean all );
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -224,7 +224,7 @@ public class StatisticsManager<T extends Comparable<T>> {
      * Method to sort a column into the different kinds of column types and hands it to the specific reevaluation
      */
     private StatisticColumn<T> reevaluateColumn( QueryColumn column ) {
-        if ( !this.sqlQueryInterface.hasData( column.getSchema(), column.getTable(), column.getName() ) ) {
+        if ( column.getCollectionType() != null || !this.sqlQueryInterface.hasData( column.getSchema(), column.getTable(), column.getName() ) ) {
             return null;
         }
         if ( column.getType().getFamily() == PolyTypeFamily.NUMERIC ) {

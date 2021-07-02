@@ -678,6 +678,7 @@ public class Crud implements InformationObserver {
      */
     ArrayList<Result> anyQuery( final QueryRequest request, final Session session ) {
         Transaction transaction = getTransaction( request.analyze );
+
         if ( request.analyze ) {
             transaction.getQueryAnalyzer().setSession( session );
         }
@@ -788,6 +789,7 @@ public class Crud implements InformationObserver {
                     temp = System.nanoTime();
                     int numOfRows = executeSqlUpdate( transaction, query );
                     executionTime += System.nanoTime() - temp;
+                    transaction.getMonitoringData().setExecutionTime( executionTime );
                     result = new Result( numOfRows ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
                     results.add( result );
                     if ( autoCommit ) {
@@ -839,7 +841,6 @@ public class Crud implements InformationObserver {
             queryAnalyzer.addGroup( g1 );
             queryAnalyzer.registerInformation( text );
         }
-
 
         return results;
     }
@@ -3277,6 +3278,7 @@ public class Crud implements InformationObserver {
         List<List<Object>> rows;
         Iterator<Object> iterator = null;
         boolean hasMoreRows = false;
+        statement.getTransaction().setMonitoringData( new QueryEvent() );
         try {
             signature = processQuery( statement, sqlSelect );
             final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
@@ -3292,9 +3294,11 @@ public class Crud implements InformationObserver {
             hasMoreRows = iterator.hasNext();
             stopWatch.stop();
 
+
             long executionTime = stopWatch.getNanoTime();
             signature.getExecutionTimeMonitor().setExecutionTime( executionTime );
-            ((StatementEvent) statement.getTransaction().getMonitoringData()).setExecutionTime( executionTime );
+
+            statement.getTransaction().getMonitoringData().setExecutionTime( executionTime );
 
         } catch ( Throwable t ) {
             if ( statement.getTransaction().isAnalyze() ) {
@@ -3369,8 +3373,7 @@ public class Crud implements InformationObserver {
 
             ArrayList<String[]> data = computeResultData( rows, header, statement.getTransaction() );
 
-            ((StatementEvent) statement.getTransaction().getMonitoringData()).setRowCount( data.size() );
-
+            statement.getTransaction().getMonitoringData().setRowCount( data.size() );
             MonitoringServiceProvider.getInstance().monitorEvent( statement.getTransaction().getMonitoringData() );
 
             return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
@@ -3571,6 +3574,8 @@ public class Crud implements InformationObserver {
 
     private int executeSqlUpdate( final Statement statement, final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
         PolyphenyDbSignature<?> signature;
+
+        statement.getTransaction().setMonitoringData( new DMLEvent() );
         try {
             signature = processQuery( statement, sqlUpdate );
         } catch ( Throwable t ) {
@@ -3618,8 +3623,11 @@ public class Crud implements InformationObserver {
                 }
             }
 
-            //((DMLEvent) statement.getTransaction().getMonitoringData()).setRowCount( rowsChanged );
-            MonitoringServiceProvider.getInstance().monitorEvent( statement.getTransaction().getMonitoringData() );
+
+            StatementEvent ev = statement.getTransaction().getMonitoringData();
+            ev.setRowCount( rowsChanged );
+
+            MonitoringServiceProvider.getInstance().monitorEvent( ev );
             return rowsChanged;
         } else {
             throw new QueryExecutionException( "Unknown statement type: " + signature.statementType );
