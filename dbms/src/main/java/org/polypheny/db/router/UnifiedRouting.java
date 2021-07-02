@@ -34,6 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.math3.stat.StatUtils;
@@ -55,6 +56,7 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.RoutingEvent;
 import org.polypheny.db.monitoring.events.metrics.RoutingDataPoint;
+import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.processing.QueryParameterizer;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
@@ -62,6 +64,7 @@ import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.core.TableFunctionScan;
 import org.polypheny.db.rel.core.TableScan;
 import org.polypheny.db.rel.logical.LogicalAggregate;
+import org.polypheny.db.rel.logical.LogicalConditionalExecute;
 import org.polypheny.db.rel.logical.LogicalCorrelate;
 import org.polypheny.db.rel.logical.LogicalExchange;
 import org.polypheny.db.rel.logical.LogicalFilter;
@@ -74,8 +77,25 @@ import org.polypheny.db.rel.logical.LogicalSort;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalUnion;
 import org.polypheny.db.rel.logical.LogicalValues;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexCorrelVariable;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexFieldAccess;
+import org.polypheny.db.rex.RexFieldCollation;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexLocalRef;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexOver;
+import org.polypheny.db.rex.RexPatternFieldRef;
+import org.polypheny.db.rex.RexRangeRef;
+import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.rex.RexSubQuery;
+import org.polypheny.db.rex.RexTableInputRef;
+import org.polypheny.db.rex.RexWindow;
 import org.polypheny.db.routing.ExecutionTimeMonitor.ExecutionTimeObserver;
 import org.polypheny.db.routing.Router;
+import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
@@ -126,9 +146,285 @@ public class UnifiedRouting extends AbstractRouter {
         //MonitoringServiceProvider.getInstance()
     }
 
+    private static class UnifiedRelShuttle extends RelShuttleImpl {
+
+        private final Statement statenent;
+        private final UnifiedRexShuttle rexShuttle;
+
+        @Getter
+        private final HashMap<Long, String> availableColumns = new HashMap<>();
+
+        public final HashSet<Long> getUsedColumns() {
+            return this.rexShuttle.ids;
+        }
+
+        public UnifiedRelShuttle(Statement s){
+            this.statenent  = s;
+            rexShuttle = new UnifiedRexShuttle( this.statenent );
+        }
+
+        private static class UnifiedRexShuttle extends RexShuttle {
+
+            private final Statement statement;
+
+            @Getter
+            private final HashSet<Long> ids = new HashSet<>();
+            //private final long partitionColumnIndex;
+
+            public UnifiedRexShuttle( Statement statement){
+                super();
+                this.statement = statement;
+                //this.partitionColumnIndex = partitionColumnIndex;
+            }
+
+            @Override
+            public RexNode visitCall( RexCall call ) {
+                super.visitCall( call );
+                return call;
+            }
+
+
+            @Override
+            public RexNode visitInputRef( RexInputRef inputRef ) {
+                this.ids.add( new Long(inputRef.getIndex() + 1));
+                return super.visitInputRef( inputRef );
+            }
+
+
+            @Override
+            public RexNode visitOver( RexOver over ) {
+                return super.visitOver( over );
+            }
+
+
+            @Override
+            public RexWindow visitWindow( RexWindow window ) {
+                return super.visitWindow( window );
+            }
+
+
+            @Override
+            public RexNode visitSubQuery( RexSubQuery subQuery ) {
+                return super.visitSubQuery( subQuery );
+            }
+
+
+            @Override
+            public RexNode visitTableInputRef( RexTableInputRef ref ) {
+                return super.visitTableInputRef( ref );
+            }
+
+
+            @Override
+            public RexNode visitPatternFieldRef( RexPatternFieldRef fieldRef ) {
+                return super.visitPatternFieldRef( fieldRef );
+            }
+
+
+            @Override
+            protected RexNode[] visitArray( RexNode[] exprs, boolean[] update ) {
+                return super.visitArray( exprs, update );
+            }
+
+
+            @Override
+            protected List<RexNode> visitList( List<? extends RexNode> exprs, boolean[] update ) {
+                return super.visitList( exprs, update );
+            }
+
+
+            @Override
+            public void visitList( List<? extends RexNode> exprs, List<RexNode> outExprs ) {
+                super.visitList( exprs, outExprs );
+            }
+
+
+            @Override
+            protected List<RexFieldCollation> visitFieldCollations( List<RexFieldCollation> collations, boolean[] update ) {
+                return super.visitFieldCollations( collations, update );
+            }
+
+
+            @Override
+            public RexNode visitCorrelVariable( RexCorrelVariable variable ) {
+                return super.visitCorrelVariable( variable );
+            }
+
+
+            @Override
+            public RexNode visitFieldAccess( RexFieldAccess fieldAccess ) {
+                return super.visitFieldAccess( fieldAccess );
+            }
+
+
+            @Override
+            public RexNode visitLocalRef( RexLocalRef localRef ) {
+                return super.visitLocalRef( localRef );
+            }
+
+
+            @Override
+            public RexNode visitLiteral( RexLiteral literal ) {
+                return super.visitLiteral( literal );
+            }
+
+
+            @Override
+            public RexNode visitDynamicParam( RexDynamicParam dynamicParam ) {
+                return super.visitDynamicParam( dynamicParam );
+            }
+
+
+            @Override
+            public RexNode visitRangeRef( RexRangeRef rangeRef ) {
+                return super.visitRangeRef( rangeRef );
+            }
+
+        }
+
+        @Override
+        protected <T extends RelNode> T visitChild( T parent, int i, RelNode child ) {
+            return super.visitChild( parent, i, child );
+        }
+
+
+        @Override
+        protected <T extends RelNode> T visitChildren( T rel ) {
+            return super.visitChildren( rel );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalAggregate aggregate ) {
+            return super.visit( aggregate );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalMatch match ) {
+            return super.visit( match );
+        }
+
+
+        @Override
+        public RelNode visit( TableScan scan ) {
+            val t = scan.getTable();
+            val test1 = t.getQualifiedName();
+            val test2 = t.getColumnStrategies();
+            val test3 = t.getRelOptSchema();
+
+            val t2 = (RelOptTableImpl)t;
+
+
+            val t3 = ((LogicalTable) t2.getTable());
+            val ids = t3.getColumnIds();
+            val names = t3.getLogicalColumnNames();
+            val baseName = t3.getLogicalSchemaName() + "." + t3.getLogicalTableName() + ".";
+
+            for ( int i = 0; i < ids.size() ; i++ ){
+                this.availableColumns.putIfAbsent( ids.get( i ), baseName + names.get( i ) );
+            }
+
+            return super.visit( scan );
+        }
+
+
+        @Override
+        public RelNode visit( TableFunctionScan scan ) {
+            return super.visit( scan );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalValues values ) {
+            return super.visit( values );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalFilter filter ) {
+            super.visit( filter );
+            filter.accept( this.rexShuttle );
+            return filter;
+        }
+
+
+        @Override
+        public RelNode visit( LogicalProject project ) {
+            super.visit( project );
+            project.accept( this.rexShuttle );
+            return project;
+        }
+
+
+        @Override
+        public RelNode visit( LogicalJoin join ) {
+            super.visit( join );
+            join.accept( this.rexShuttle );
+            return join;
+        }
+
+
+        @Override
+        public RelNode visit( LogicalCorrelate correlate ) {
+            return super.visit( correlate );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalUnion union ) {
+            return super.visit( union );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalIntersect intersect ) {
+            return super.visit( intersect );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalMinus minus ) {
+            return super.visit( minus );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalSort sort ) {
+            return super.visit( sort );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalExchange exchange ) {
+            return super.visit( exchange );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalConditionalExecute lce ) {
+            return super.visit( lce );
+        }
+
+
+        @Override
+        public RelNode visit( RelNode other ) {
+            return super.visit( other );
+        }
+
+    }
+
     @Override
     protected void analyze( Statement statement, RelRoot logicalRoot ) {
         if ( !(logicalRoot.rel instanceof LogicalTableModify) ) {
+
+
+            val shuttle = new UnifiedRelShuttle( statement );
+            logicalRoot.rel.accept( shuttle );
+
+            val bla = shuttle.getAvailableColumns();
+            val usedBla = shuttle.getUsedColumns();
+
             if ( QUERY_CLASS_PROVIDER.getEnum() == QUERY_CLASS_PROVIDER_METHOD.ICARUS_SHUTTLE ) {
                 IcarusShuttle icarusShuttle = new IcarusShuttle();
                 logicalRoot.rel.accept( icarusShuttle );
