@@ -224,5 +224,9 @@ public interface RelDataType {
      */
     boolean isDynamicStruct();
 
+    default void setIsDocument( boolean isDocument ) {
+
+    }
+
 }
 

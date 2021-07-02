@@ -740,13 +740,24 @@ public class MongoRules {
             CatalogTable catalogTable = implementor.mongoTable.getCatalogTable();
             GridFSBucket bucket = implementor.mongoTable.getMongoSchema().getBucket();
 
+            if ( rowType == null ) {
+                rowType = values.getRowType();
+            }
+
             for ( ImmutableList<RexLiteral> literals : values.tuples ) {
                 BsonDocument doc = new BsonDocument();
                 int pos = 0;
                 for ( RexLiteral literal : literals ) {
-                    doc.append(
-                            MongoStore.getPhysicalColumnName( catalogTable.columnIds.get( pos ) ),
-                            MongoTypeUtil.getAsBson( literal, bucket ) );
+                    if ( catalogTable.columnIds.contains( pos ) ) {
+                        doc.append(
+                                MongoStore.getPhysicalColumnName( catalogTable.columnIds.get( pos ) ),
+                                MongoTypeUtil.getAsBson( literal, bucket ) );
+                    } else {
+                        doc.append(
+                                rowType.getFieldNames().get( pos ),
+                                MongoTypeUtil.getAsBson( literal, bucket ) );
+                    }
+
                     pos++;
                 }
                 docs.add( doc );
@@ -755,7 +766,6 @@ public class MongoRules {
         }
 
     }
-
 
 
     /**
@@ -794,4 +804,5 @@ public class MongoRules {
         }
 
     }
+
 }

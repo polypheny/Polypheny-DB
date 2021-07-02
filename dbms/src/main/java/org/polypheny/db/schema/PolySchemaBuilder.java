@@ -39,6 +39,8 @@ import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.rel.type.DynamicRecordTypeImpl;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeImpl;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
@@ -89,13 +91,26 @@ public class PolySchemaBuilder implements PropertyChangeListener {
             SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, new AbstractSchema(), catalogSchema.name, catalogSchema.schemaType ).plus();
             for ( CatalogTable catalogTable : catalog.getTables( catalogSchema.id, null ) ) {
                 List<String> columnNames = new LinkedList<>();
+                RelDataType rowType = null;
                 final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-                final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
-                for ( CatalogColumn catalogColumn : catalog.getColumns( catalogTable.id ) ) {
-                    columnNames.add( catalogColumn.name );
-                    fieldInfo.add( catalogColumn.name, null, catalogColumn.getRelDataType( typeFactory ) );
-                    fieldInfo.nullable( catalogColumn.nullable );
+
+                if ( catalogSchema.schemaType == SchemaType.RELATIONAL ) {
+                    final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+                    for ( CatalogColumn catalogColumn : catalog.getColumns( catalogTable.id ) ) {
+                        columnNames.add( catalogColumn.name );
+                        fieldInfo.add( catalogColumn.name, null, catalogColumn.getRelDataType( typeFactory ) );
+                        fieldInfo.nullable( catalogColumn.nullable );
+                    }
+                    rowType = fieldInfo.build();
+                } else {
+                    rowType = new DynamicRecordTypeImpl( typeFactory );
+                    rowType.setIsDocument( true );
+                    for ( CatalogColumn catalogColumn : catalog.getColumns( catalogTable.id ) ) {
+                        columnNames.add( catalogColumn.name );
+                        rowType.getField( catalogColumn.name, false, false );
+                    }
                 }
+
                 List<Long> columnIds = new LinkedList<>();
                 catalog.getColumns( catalogTable.id ).forEach( c -> columnIds.add( c.id ) );
                 LogicalTable table = new LogicalTable(
@@ -104,7 +119,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                         catalogTable.name,
                         columnIds,
                         columnNames,
-                        RelDataTypeImpl.proto( fieldInfo.build() ),
+                        RelDataTypeImpl.proto( rowType ),
                         catalogSchema.schemaType );
                 s.add( catalogTable.name, table );
                 tableMap.put( catalogTable.name, table );

@@ -657,7 +657,7 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    private void initDocumentDefaultDocumentData( long databaseId, int systemId ) throws UnknownDatabaseException, UnknownSchemaException, UnknownAdapterException {
+    private void initDocumentDefaultDocumentData( long databaseId, int systemId ) throws UnknownDatabaseException, UnknownSchemaException, UnknownAdapterException, UnknownColumnException, GenericCatalogException {
         //////////////
         // init schema
 
@@ -671,8 +671,9 @@ public class CatalogImpl extends Catalog {
         if ( !testMode ) {
             if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "secrets" } ) ) {
                 CatalogAdapter store = getAdapter( "hsqldb" );
-                long tableId = addTable( "secrets", schemaId, systemId, TableType.SOURCE, false, null );
-                addDefaultColumn( store, getTable( tableId ), "_id", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 0, 12 ); // todo dl: add this automatically
+                long tableId = addTable( "secrets", schemaId, systemId, TableType.TABLE, true, null );
+                addDefaultColumn( store, getTable( tableId ), "_id", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 0, 24 ); // todo dl: add this automatically
+                addPrimaryKey( tableId, Collections.singletonList( getColumn( tableId, "_id" ).id ) );
             }
         }
     }

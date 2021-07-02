@@ -321,9 +321,17 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
     public RelDataType copyType( RelDataType type ) {
         if ( type instanceof RelRecordType ) {
             return copyRecordType( (RelRecordType) type, true, false );
+        } else if ( type instanceof DynamicRecordType ) {
+            return copyDynamicType( (DynamicRecordType) type );
         } else {
             return createTypeWithNullability( type, type.isNullable() );
         }
+    }
+
+
+    private RelDataType copyDynamicType( DynamicRecordType type ) {
+        Objects.requireNonNull( type );
+        return type;
     }
 
 

@@ -470,7 +470,7 @@ MqlNode Find_Statement(String collection):
         if ( statements.size() >= 1 ){
             return new MqlFind(collection, statements.get(0), statements.size() == 2 ? statements.get(1) : null);
         }else {
-            throw new RuntimeException( "MqlFind needs minimaly a filter." );
+            throw new RuntimeException( "MqlFind needs a filter." );
         }
 
     }
