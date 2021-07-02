@@ -172,6 +172,12 @@ public class BasicPolyType extends AbstractPolyType {
 
 
     @Override
+    public int getRawPrecision() {
+        return precision;
+    }
+
+
+    @Override
     public int getScale() {
         if ( scale == SCALE_NOT_SPECIFIED ) {
             switch ( typeName ) {

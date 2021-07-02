@@ -1355,7 +1355,7 @@ public class DdlManagerImpl extends DdlManager {
                     new ColumnTypeInformation(
                             type.getPolyType(),
                             rel.getType().getPolyType(),
-                            type.getPrecision(),
+                            type.getRawPrecision(),
                             type.getScale(),
                             rel.getValue().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) rel.getValue()).getDimension() : -1,
                             rel.getValue().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) rel.getValue()).getCardinality() : -1,

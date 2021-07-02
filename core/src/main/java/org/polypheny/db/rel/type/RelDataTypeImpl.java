@@ -265,6 +265,12 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
 
 
     @Override
+    public int getRawPrecision() {
+        return PRECISION_NOT_SPECIFIED;
+    }
+
+
+    @Override
     public int getScale() {
         return SCALE_NOT_SPECIFIED;
     }
