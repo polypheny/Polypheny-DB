@@ -359,6 +359,15 @@ public interface RelNode extends RelOptNode, Cloneable {
         }
     }
 
+    default RelNode tryParentExpandView( RelNode input ) {
+        if ( input instanceof LogicalViewTableScan ) {
+            return ((LogicalViewTableScan) input).expandViewNode();
+        } else {
+            input.tryExpandView( input );
+            return input;
+        }
+    }
+
     /**
      * Context of a relational expression, for purposes of checking validity.
      */

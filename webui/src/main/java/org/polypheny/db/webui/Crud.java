@@ -419,13 +419,27 @@ public class Crud implements InformationObserver {
                             tableElement.addChild( new SidebarElement( schema.name + "." + table.name + "." + column.name, column.name, request.routerLinkRoot ).setCssClass( "sidebarColumn" ) );
                         }
                     }
+
+                    if ( request.views ) {
+                        if ( table.tableType == TableType.TABLE || table.tableType == TableType.SOURCE ) {
+                            tableElement.setTableType( "TABLE" );
+                        } else if ( table.tableType == TableType.VIEW ) {
+                            tableElement.setTableType( "VIEW" );
+                        }
+                    }
+
+                    /*
                     if ( table.tableType == TableType.TABLE || table.tableType == TableType.SOURCE ) {
                         tableTree.add( tableElement );
                     } else if ( request.views && table.tableType == TableType.VIEW ) {
                         viewTree.add( tableElement );
                     }
+                     */
                     collectionTree.add( tableElement );
                 }
+
+
+
                 /*if ( request.showTable ) {
                     schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tableTree ).setRouterLink( "" ) );
                 } else {

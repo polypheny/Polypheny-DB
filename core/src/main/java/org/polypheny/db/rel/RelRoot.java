@@ -116,6 +116,11 @@ public class RelRoot implements Serializable {
     }
 
 
+    public RelRoot tryExpandView() {
+        return new RelRoot( rel.tryParentExpandView( rel ), validatedRowType, kind, fields, collation );
+    }
+
+
     /**
      * Creates a simple RelRoot.
      */

@@ -180,7 +180,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         stopWatch.start();
 
         if ( logicalRoot.rel.hasView() ) {
-            logicalRoot.rel.tryExpandView( logicalRoot.rel );
+            logicalRoot = logicalRoot.tryExpandView();
         }
 
         ExecutionTimeMonitor executionTimeMonitor = new ExecutionTimeMonitor();

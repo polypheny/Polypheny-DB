@@ -26,11 +26,13 @@ import lombok.experimental.Accessors;
  * Can be used to define data for the left sidebar in the UI.
  * Required for Gson.
  */
-@Accessors( chain = true )
+@Accessors(chain = true)
 public class SidebarElement {
 
     private String id;
     private String name;
+    @Setter
+    private String tableType;
     private String icon;//todo: enum
     private String routerLink;
     @Setter
