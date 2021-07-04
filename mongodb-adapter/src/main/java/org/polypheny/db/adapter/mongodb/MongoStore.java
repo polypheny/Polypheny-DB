@@ -223,7 +223,7 @@ public class MongoStore extends DataStore {
                     placement.columnId,
                     catalogTable.getSchemaName(),
                     catalogTable.name,
-                    getPhysicalColumnName( placement.columnId ),
+                    getPhysicalColumnName( placement.getLogicalColumnName(), placement.columnId ),
                     true );
         }
     }
@@ -274,9 +274,9 @@ public class MongoStore extends DataStore {
                 throw new RuntimeException( "Default values are not supported for array types" );
             }
 
-            field = new Document().append( getPhysicalColumnName( catalogColumn.id ), value );
+            field = new Document().append( getPhysicalColumnName( catalogColumn ), value );
         } else {
-            field = new Document().append( getPhysicalColumnName( catalogColumn.id ), null );
+            field = new Document().append( getPhysicalColumnName( catalogColumn ), null );
         }
         Document update = new Document().append( "$set", field );
 
@@ -289,16 +289,26 @@ public class MongoStore extends DataStore {
                 catalogColumn.id,
                 currentSchema.getDatabase().getName(),
                 catalogTable.name,
-                getPhysicalColumnName( catalogColumn.id ),
+                getPhysicalColumnName( catalogColumn ),
                 false );
 
+    }
+
+
+    private String getPhysicalColumnName( CatalogColumn catalogColumn ) {
+        return getPhysicalColumnName( catalogColumn.name, catalogColumn.id );
+    }
+
+
+    private String getPhysicalColumnName( CatalogColumnPlacement columnPlacement ) {
+        return getPhysicalColumnName( columnPlacement.getLogicalColumnName(), columnPlacement.columnId );
     }
 
 
     @Override
     public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
         commitAll();
-        Document field = new Document().append( getPhysicalColumnName( columnPlacement.columnId ), 1 );
+        Document field = new Document().append( getPhysicalColumnName( columnPlacement ), 1 );
         Document filter = new Document().append( "$unset", field );
 
         context.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( getAdapterId() ) );
@@ -393,7 +403,10 @@ public class MongoStore extends DataStore {
     }
 
 
-    public static String getPhysicalColumnName( long id ) {
+    public static String getPhysicalColumnName( String name, long id ) {
+        if ( name.startsWith( "_" ) ) {
+            return name;
+        }
         // we can simply use ids as our physical column names as MongoDB allows this
         return "col" + id;
     }

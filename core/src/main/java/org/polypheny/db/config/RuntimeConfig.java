@@ -150,19 +150,19 @@ public enum RuntimeConfig {
 
     DYNAMIC_QUERYING( "statistics/useDynamicQuerying",
             "Use statistics for query assistance.",
-            true,
+            false,
             ConfigType.BOOLEAN,
             "statisticSettingsGroup" ),
 
     STATISTICS_ON_STARTUP( "statistics/statisticsOnStartup",
             "Whether to build statistics for all stored data on system startup.",
-            true,
+            false,
             ConfigType.BOOLEAN,
             "statisticSettingsGroup" ),
 
     ACTIVE_TRACKING( "statistics/activeTracking",
             "All transactions are tracked and statistics collected during execution.",
-            true,
+            false,
             ConfigType.BOOLEAN,
             "statisticSettingsGroup" ),
 
@@ -225,12 +225,12 @@ public enum RuntimeConfig {
 
     SCHEMA_CACHING( "runtime/schemaCaching",
             "Cache polypheny-db schema",
-            true,
+            false,
             ConfigType.BOOLEAN ),
 
     QUERY_PLAN_CACHING( "runtime/queryPlanCaching",
             "Cache planned and optimized query plans.",
-            true,
+            false,
             ConfigType.BOOLEAN,
             "queryPlanCachingGroup" ),
 
@@ -248,7 +248,7 @@ public enum RuntimeConfig {
 
     IMPLEMENTATION_CACHING( "runtime/implementationCaching",
             "Cache implemented query plans.",
-            true,
+            false,
             ConfigType.BOOLEAN,
             "implementationCachingGroup" ),
 

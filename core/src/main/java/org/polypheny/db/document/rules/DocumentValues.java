@@ -14,24 +14,25 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.processing;
+package org.polypheny.db.document.rules;
 
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.mql.MqlNode;
-import org.polypheny.db.rel.RelRoot;
+import com.google.common.collect.ImmutableList;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelInput;
+import org.polypheny.db.rel.logical.LogicalValues;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.rex.RexLiteral;
 
-public interface MqlProcessor {
+public class DocumentValues extends LogicalValues {
 
-    MqlNode parse( String sql );
+    public DocumentValues( RelOptCluster cluster, RelTraitSet traitSet, RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples ) {
+        super( cluster, traitSet, rowType, tuples );
+    }
 
-    void validate( RelRoot root, boolean addDefaultValues );
 
-    RelRoot translate( Statement statement, MqlNode mql );
-
-    PolyphenyDbSignature<?> prepareDdl( Statement statement, MqlNode parsed, String mql );
-
-    RelDataType getParameterRowType( MqlNode left );
+    public DocumentValues( RelInput input ) {
+        super( input );
+    }
 
 }

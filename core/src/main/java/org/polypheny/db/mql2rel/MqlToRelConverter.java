@@ -27,8 +27,9 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.bson.types.ObjectId;
+import org.polypheny.db.document.DocumentValidator;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.mql.Mql;
 import org.polypheny.db.mql.MqlAggregate;
@@ -59,13 +60,11 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlBinaryOperator;
-import org.polypheny.db.sql.SqlCollation;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
-import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
 
 public class MqlToRelConverter {
@@ -89,7 +88,7 @@ public class MqlToRelConverter {
 
         switch ( kind ) {
             case FIND:
-                table = catalogReader.getTable( Collections.singletonList( ((MqlFind) query).getCollection() ) );
+                table = catalogReader.getTable( ImmutableList.of( "private", ((MqlFind) query).getCollection() ) );
                 node = LogicalTableScan.create( cluster, table );
                 return RelRoot.of( convertFind( (MqlFind) query, table.getRowType(), node ), SqlKind.SELECT );
             case AGGREGATE:
@@ -119,41 +118,23 @@ public class MqlToRelConverter {
     private RelNode convertMultipleValues( BsonArray array ) {
         RelDataType rowType = new DynamicRecordTypeImpl( new JavaTypeFactoryImpl() );
 
-        rowType.getField( "_id", false, false );
-
         List<ImmutableList<RexLiteral>> values = new ArrayList<>();
         for ( BsonValue value : array ) {
             values.add( convertValues( value.asDocument(), rowType ) );
         }
         // todo dl allow different rowtypes as this is possible for documents
-        return LogicalValues.create( cluster, rowType, ImmutableList.copyOf( values ) );
+        return DocumentValidator.validateValues( LogicalValues.create( cluster, rowType, ImmutableList.copyOf( values ) ) );
     }
 
 
     private ImmutableList<RexLiteral> convertValues( BsonDocument doc, RelDataType rowType ) {
         List<RexLiteral> values = new ArrayList<>();
 
-        // we add the necessary _id, which is the
-        String _id;
-        if ( !doc.containsKey( "_id" ) ) {
-            _id = ObjectId.get().toString();
-        } else {
-            BsonValue obj = doc.get( "_id" );
-
-            if ( obj.isObjectId() ) {
-                _id = obj.asObjectId().getValue().toString();
-            } else {
-                _id = obj.toString();
-            }
-
-        }
-
-        values.add( new RexLiteral( new NlsString( _id, "ISO-8859-1", SqlCollation.IMPLICIT ), typeFactory.createPolyType( PolyType.CHAR, _id.length() ), PolyType.CHAR ) );
-
-        for ( Entry<String, BsonValue> entry : doc.entrySet().stream().filter( d -> !d.getValue().asString().getValue().equals( "_id" ) ).collect( Collectors.toList() ) ) {
-            RelDataType type = getRelDataType( entry.getValue() );
+        for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
+            BsonValue jsonValue = jsonify( entry.getValue() );
+            RelDataType type = getRelDataType( jsonValue );
             rowType.getField( entry.getKey(), false, false );
-            Pair<Comparable, PolyType> valuePair = RexLiteral.convertType( getComparable( entry.getValue(), type ), type );
+            Pair<Comparable, PolyType> valuePair = RexLiteral.convertType( getComparable( jsonValue, type ), type );
             RexLiteral value = new RexLiteral( valuePair.left, type, valuePair.right );
             values.add( value );
         }
@@ -162,9 +143,19 @@ public class MqlToRelConverter {
     }
 
 
+    private BsonValue jsonify( BsonValue value ) {
+        if ( value.isDocument() ) {
+            return new BsonString( value.asDocument().toJson() );
+        }
+        return value;
+    }
+
+
     private RelDataType getRelDataType( BsonValue value ) {
         PolyType polyType = getPolyType( value );
         switch ( polyType ) {
+            case JSON:
+                return typeFactory.createPolyType( PolyType.CHAR, value.asDocument().toJson().length() );
             case CHAR:
             case BINARY:
             case VARCHAR:
@@ -469,7 +460,7 @@ public class MqlToRelConverter {
             case STRING:
                 return PolyType.CHAR;
             case DOCUMENT:
-                break;
+                return PolyType.JSON;
             case ARRAY:
                 break;
             case BINARY:

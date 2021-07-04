@@ -123,7 +123,7 @@ public class MongoSchema extends AbstractSchema {
         for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
             CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
             RelDataType sqlType = catalogColumn.getRelDataType( typeFactory );
-            fieldInfo.add( catalogColumn.name, MongoStore.getPhysicalColumnName( catalogColumn.id ), sqlType ).nullable( catalogColumn.nullable );
+            fieldInfo.add( catalogColumn.name, MongoStore.getPhysicalColumnName( catalogColumn.name, catalogColumn.id ), sqlType ).nullable( catalogColumn.nullable );
         }
         MongoTable table = new MongoTable( catalogTable, this, RelDataTypeImpl.proto( fieldInfo.build() ), transactionProvider, storeId );
 

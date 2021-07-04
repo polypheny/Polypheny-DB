@@ -253,7 +253,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
         BsonDocument projects = new BsonDocument();
         for ( String name : Pair.left( fields ) ) {
             int index = catalogTable.getColumnNames().indexOf( name );
-            projects.append( name, new BsonString( "$" + MongoStore.getPhysicalColumnName( catalogTable.columnIds.get( index ) ) ) );
+            projects.append( name, new BsonString( "$" + MongoStore.getPhysicalColumnName( name, catalogTable.columnIds.get( index ) ) ) );
         }
         list.add( new BsonDocument().append( "$project", projects ) );
 

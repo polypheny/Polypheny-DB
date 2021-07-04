@@ -41,10 +41,8 @@ import org.polypheny.db.transaction.DeadlockException;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionImpl;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SourceStringReader;
 
 @Slf4j
@@ -94,8 +92,8 @@ public class MqlProcessorImpl implements MqlProcessor, ViewExpander {
 
 
     @Override
-    public Pair<MqlNode, RelDataType> validate( Transaction transaction, MqlNode parsed, boolean addDefaultValues ) {
-        return null;
+    public void validate( RelRoot root, boolean addDefaultValues ) {
+        return;
     }
 
 

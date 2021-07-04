@@ -673,6 +673,7 @@ public class CatalogImpl extends Catalog {
                 CatalogAdapter store = getAdapter( "hsqldb" );
                 long tableId = addTable( "secrets", schemaId, systemId, TableType.TABLE, true, null );
                 addDefaultColumn( store, getTable( tableId ), "_id", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 0, 24 ); // todo dl: add this automatically
+                addDefaultColumn( store, getTable( tableId ), "_data", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 1, 1024 );
                 addPrimaryKey( tableId, Collections.singletonList( getColumn( tableId, "_id" ).id ) );
             }
         }
@@ -686,38 +687,38 @@ public class CatalogImpl extends Catalog {
         CatalogSchema schema = getSchema( "APP", "public" );
         CatalogTable depts = getTable( schema.id, "depts" );
 
-        addDefaultColumn( csv, depts, "deptno", PolyType.INTEGER, null, 1, null );
-        addDefaultColumn( csv, depts, "name", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 2, 20 );
+        addDefaultCsvColumn( csv, depts, "deptno", PolyType.INTEGER, null, 1, null );
+        addDefaultCsvColumn( csv, depts, "name", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 2, 20 );
 
         CatalogTable emps = getTable( schema.id, "emps" );
-        addDefaultColumn( csv, emps, "empid", PolyType.INTEGER, null, 1, null );
-        addDefaultColumn( csv, emps, "deptno", PolyType.INTEGER, null, 2, null );
-        addDefaultColumn( csv, emps, "name", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
-        addDefaultColumn( csv, emps, "salary", PolyType.INTEGER, null, 4, null );
-        addDefaultColumn( csv, emps, "commission", PolyType.INTEGER, null, 5, null );
+        addDefaultCsvColumn( csv, emps, "empid", PolyType.INTEGER, null, 1, null );
+        addDefaultCsvColumn( csv, emps, "deptno", PolyType.INTEGER, null, 2, null );
+        addDefaultCsvColumn( csv, emps, "name", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
+        addDefaultCsvColumn( csv, emps, "salary", PolyType.INTEGER, null, 4, null );
+        addDefaultCsvColumn( csv, emps, "commission", PolyType.INTEGER, null, 5, null );
 
         CatalogTable emp = getTable( schema.id, "emp" );
-        addDefaultColumn( csv, emp, "employeeno", PolyType.INTEGER, null, 1, null );
-        addDefaultColumn( csv, emp, "age", PolyType.INTEGER, null, 2, null );
-        addDefaultColumn( csv, emp, "gender", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
-        addDefaultColumn( csv, emp, "maritalstatus", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 4, 20 );
-        addDefaultColumn( csv, emp, "worklifebalance", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 5, 20 );
-        addDefaultColumn( csv, emp, "education", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 6, 20 );
-        addDefaultColumn( csv, emp, "monthlyincome", PolyType.INTEGER, null, 7, null );
-        addDefaultColumn( csv, emp, "relationshipjoy", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 8, 20 );
-        addDefaultColumn( csv, emp, "workingyears", PolyType.INTEGER, null, 9, null );
-        addDefaultColumn( csv, emp, "yearsatcompany", PolyType.INTEGER, null, 10, null );
+        addDefaultCsvColumn( csv, emp, "employeeno", PolyType.INTEGER, null, 1, null );
+        addDefaultCsvColumn( csv, emp, "age", PolyType.INTEGER, null, 2, null );
+        addDefaultCsvColumn( csv, emp, "gender", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
+        addDefaultCsvColumn( csv, emp, "maritalstatus", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 4, 20 );
+        addDefaultCsvColumn( csv, emp, "worklifebalance", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 5, 20 );
+        addDefaultCsvColumn( csv, emp, "education", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 6, 20 );
+        addDefaultCsvColumn( csv, emp, "monthlyincome", PolyType.INTEGER, null, 7, null );
+        addDefaultCsvColumn( csv, emp, "relationshipjoy", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 8, 20 );
+        addDefaultCsvColumn( csv, emp, "workingyears", PolyType.INTEGER, null, 9, null );
+        addDefaultCsvColumn( csv, emp, "yearsatcompany", PolyType.INTEGER, null, 10, null );
 
         CatalogTable work = getTable( schema.id, "work" );
-        addDefaultColumn( csv, work, "employeeno", PolyType.INTEGER, null, 1, null );
-        addDefaultColumn( csv, work, "educationfield", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 2, 20 );
-        addDefaultColumn( csv, work, "jobinvolvement", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
-        addDefaultColumn( csv, work, "joblevel", PolyType.INTEGER, null, 4, null );
-        addDefaultColumn( csv, work, "jobrole", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 5, 30 );
-        addDefaultColumn( csv, work, "businesstravel", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 6, 20 );
-        addDefaultColumn( csv, work, "department", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 7, 25 );
-        addDefaultColumn( csv, work, "attrition", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 8, 20 );
-        addDefaultColumn( csv, work, "dailyrate", PolyType.INTEGER, null, 9, null );
+        addDefaultCsvColumn( csv, work, "employeeno", PolyType.INTEGER, null, 1, null );
+        addDefaultCsvColumn( csv, work, "educationfield", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 2, 20 );
+        addDefaultCsvColumn( csv, work, "jobinvolvement", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
+        addDefaultCsvColumn( csv, work, "joblevel", PolyType.INTEGER, null, 4, null );
+        addDefaultCsvColumn( csv, work, "jobrole", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 5, 30 );
+        addDefaultCsvColumn( csv, work, "businesstravel", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 6, 20 );
+        addDefaultCsvColumn( csv, work, "department", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 7, 25 );
+        addDefaultCsvColumn( csv, work, "attrition", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 8, 20 );
+        addDefaultCsvColumn( csv, work, "dailyrate", PolyType.INTEGER, null, 9, null );
 
         // set all needed primary keys
         addPrimaryKey( depts.id, Collections.singletonList( getColumn( depts.id, "deptno" ).id ) );
@@ -745,7 +746,7 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    private void addDefaultColumn( CatalogAdapter csv, CatalogTable table, String name, PolyType type, Collation collation, int position, Integer length ) {
+    private void addDefaultCsvColumn( CatalogAdapter csv, CatalogTable table, String name, PolyType type, Collation collation, int position, Integer length ) {
         if ( !checkIfExistsColumn( table.id, name ) ) {
             long colId = addColumn( name, table.id, position, type, null, length, null, null, null, false, collation );
             String filename = table.name + ".csv";
@@ -754,6 +755,15 @@ public class CatalogImpl extends Catalog {
             }
             addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, filename, table.name, name, null );
             updateColumnPlacementPhysicalPosition( csv.id, colId, position );
+        }
+    }
+
+
+    private void addDefaultColumn( CatalogAdapter adapter, CatalogTable table, String name, PolyType type, Collation collation, int position, Integer length ) {
+        if ( !checkIfExistsColumn( table.id, name ) ) {
+            long colId = addColumn( name, table.id, position, type, null, length, null, null, null, false, collation );
+            addColumnPlacement( adapter.id, colId, PlacementType.AUTOMATIC, "col" + colId, table.name, name, null );
+            updateColumnPlacementPhysicalPosition( adapter.id, colId, position );
         }
     }
 

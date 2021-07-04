@@ -20,6 +20,7 @@ import static org.reflections.Reflections.log;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -1295,6 +1296,28 @@ public class DdlManagerImpl extends DdlManager {
                     TableType.TABLE,
                     true,
                     null );
+
+            if ( catalog.getSchema( schemaId ).schemaType == SchemaType.DOCUMENT ) {
+                List<String> names = columns.stream().map( c -> c.name ).collect( Collectors.toList() );
+
+                // add _id column if necessary
+                if ( !names.contains( "_id" ) ) {
+                    ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.VARCHAR, PolyType.VARCHAR, 24, null, null, null, false );
+                    columns.add( new ColumnInformation( "_id", typeInformation, Collation.CASE_INSENSITIVE, null, 0 ) );
+
+                }
+
+                // add constraint for _id as primary if necessary
+                if ( constraints.stream().noneMatch( c -> c.type.getId() == 2 ) ) {
+                    constraints.add( new ConstraintInformation( "primary", ConstraintType.PRIMARY, Collections.singletonList( "_id" ) ) );
+                }
+
+                // add _id column if necessary
+                if ( !names.contains( "_data" ) ) {
+                    ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.VARCHAR, PolyType.VARCHAR, 1024, null, null, null, false );
+                    columns.add( new ColumnInformation( "_data", typeInformation, Collation.CASE_INSENSITIVE, null, 1 ) );
+                }
+            }
 
             for ( ColumnInformation column : columns ) {
                 addColumn( column.name, column.typeInformation, column.collation, column.defaultValue, tableId, column.position, stores, placementType );

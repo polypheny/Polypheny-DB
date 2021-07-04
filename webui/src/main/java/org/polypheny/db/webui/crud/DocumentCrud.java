@@ -40,6 +40,7 @@ import org.polypheny.db.mql.MqlNode;
 import org.polypheny.db.processing.MqlProcessor;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.models.DbColumn;
 import org.polypheny.db.webui.models.Result;
@@ -54,7 +55,7 @@ public class DocumentCrud {
         PolyphenyDbSignature<?> signature;
         MqlProcessor mqlProcessor = statement.getTransaction().getMqlProcessor();
 
-        ArrayList<Result> results = new ArrayList<>();
+        List<Result> results = new ArrayList<>();
 
         MqlNode parsed = mqlProcessor.parse( mql );
 
@@ -63,13 +64,18 @@ public class DocumentCrud {
             Result result = new Result( 1 ).setGeneratedQuery( mql ).setXid( statement.getTransaction().getXid().toString() );
             results.add( result );
         } else {
-            //Pair<SqlNode, RelDataType> validated = mqlProcessor.validate( statement.getTransaction(), parsed ); TODO DL
+            //RelRoot validated = mqlProcessor.validate( statement.getTransaction(), parsed );
             RelRoot logicalRoot = mqlProcessor.translate( statement, parsed );
 
             // Prepare
             signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
 
-            return getResults( statement, request, signature );
+            results = getResults( statement, request, signature );
+        }
+        try {
+            statement.getTransaction().commit();
+        } catch ( TransactionException e ) {
+            throw new RuntimeException( "error while committing" );
         }
 
         return results;

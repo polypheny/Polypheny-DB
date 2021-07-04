@@ -684,7 +684,6 @@ public class MongoRules {
                     doc.append( physicalMapping.get( pos ), getBsonArray( (RexCall) rexNode, type, bucket ) );
 
                 } else if ( rexNode.getKind() == SqlKind.INPUT_REF && input.getInput() instanceof MongoValues ) {
-                    // TODO DL handle and refactor
                     handleDirectInsert( implementor, (MongoValues) input.getInput() );
                     return;
                 } else {
@@ -704,7 +703,7 @@ public class MongoRules {
             List<Long> ids = catalogTable.columnIds;
             int pos = 0;
             for ( String name : Pair.left( fieldList ) ) {
-                map.put( pos, MongoStore.getPhysicalColumnName( ids.get( names.indexOf( name ) ) ) );
+                map.put( pos, MongoStore.getPhysicalColumnName( name, ids.get( names.indexOf( name ) ) ) );
                 pos++;
             }
             return map;
@@ -714,7 +713,7 @@ public class MongoRules {
         private String getPhysicalName( MongoProject input, CatalogTable catalogTable, int pos ) {
             String logicalName = input.getRowType().getFieldNames().get( pos );
             int index = catalogTable.getColumnNames().indexOf( logicalName );
-            return MongoStore.getPhysicalColumnName( catalogTable.columnIds.get( index ) );
+            return MongoStore.getPhysicalColumnName( logicalName, catalogTable.columnIds.get( index ) );
         }
 
 
@@ -744,13 +743,16 @@ public class MongoRules {
                 rowType = values.getRowType();
             }
 
+            List<String> columnNames = catalogTable.getColumnNames();
+            List<Long> columnIds = catalogTable.columnIds;
             for ( ImmutableList<RexLiteral> literals : values.tuples ) {
                 BsonDocument doc = new BsonDocument();
                 int pos = 0;
                 for ( RexLiteral literal : literals ) {
-                    if ( catalogTable.columnIds.contains( pos ) ) {
+                    String name = rowType.getFieldNames().get( pos );
+                    if ( columnNames.contains( name ) ) {
                         doc.append(
-                                MongoStore.getPhysicalColumnName( catalogTable.columnIds.get( pos ) ),
+                                MongoStore.getPhysicalColumnName( name, columnIds.get( columnNames.indexOf( name ) ) ),
                                 MongoTypeUtil.getAsBson( literal, bucket ) );
                     } else {
                         doc.append(
