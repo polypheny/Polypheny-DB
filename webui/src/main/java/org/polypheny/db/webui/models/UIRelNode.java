@@ -31,6 +31,11 @@ public class UIRelNode {
     public String type;
 
     /**
+     * Type of Table, e.g. Table, View
+     */
+    public String tableType;
+
+    /**
      * Children of this node in the tree
      */
     public UIRelNode[] children;

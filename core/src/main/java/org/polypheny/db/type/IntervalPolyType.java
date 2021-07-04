@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ import org.polypheny.db.sql.util.SqlString;
 public class IntervalPolyType extends AbstractPolyType {
 
     private final RelDataTypeSystem typeSystem;
-    private final SqlIntervalQualifier intervalQualifier;
+    private final PolyIntervalQualifier intervalQualifier;
 
 
     /**
@@ -62,7 +62,7 @@ public class IntervalPolyType extends AbstractPolyType {
     public IntervalPolyType( RelDataTypeSystem typeSystem, SqlIntervalQualifier intervalQualifier, boolean isNullable ) {
         super( intervalQualifier.typeName(), isNullable, null );
         this.typeSystem = Objects.requireNonNull( typeSystem );
-        this.intervalQualifier = Objects.requireNonNull( intervalQualifier );
+        this.intervalQualifier = PolyIntervalQualifier.fromSqlQualifier( intervalQualifier );
         computeDigest();
     }
 
@@ -75,7 +75,7 @@ public class IntervalPolyType extends AbstractPolyType {
         writer.setAlwaysUseParentheses( false );
         writer.setSelectListItemsOnSeparateLines( false );
         writer.setIndentation( 0 );
-        intervalQualifier.unparse( writer, 0, 0 );
+        new SqlIntervalQualifier( intervalQualifier ).unparse( writer, 0, 0 );
         final String sql = writer.toString();
         sb.append( new SqlString( dialect, sql ).getSql() );
     }
@@ -83,7 +83,7 @@ public class IntervalPolyType extends AbstractPolyType {
 
     @Override
     public SqlIntervalQualifier getIntervalQualifier() {
-        return intervalQualifier;
+        return new SqlIntervalQualifier( intervalQualifier );
     }
 
 
@@ -104,7 +104,7 @@ public class IntervalPolyType extends AbstractPolyType {
 
         int secondPrec = this.intervalQualifier.getStartPrecisionPreservingDefault();
         final int fracPrec =
-                SqlIntervalQualifier.combineFractionalSecondPrecisionPreservingDefault(
+                PolyIntervalQualifier.combineFractionalSecondPrecisionPreservingDefault(
                         typeSystem,
                         this.intervalQualifier,
                         that.intervalQualifier );
@@ -115,7 +115,7 @@ public class IntervalPolyType extends AbstractPolyType {
             secondPrec = that.intervalQualifier.getStartPrecisionPreservingDefault();
         } else if ( thisStart.ordinal() == thatStart.ordinal() ) {
             secondPrec =
-                    SqlIntervalQualifier.combineStartPrecisionPreservingDefault(
+                    PolyIntervalQualifier.combineStartPrecisionPreservingDefault(
                             typeFactory.getTypeSystem(),
                             this.intervalQualifier,
                             that.intervalQualifier );
@@ -145,5 +145,6 @@ public class IntervalPolyType extends AbstractPolyType {
     public int getScale() {
         return intervalQualifier.getFractionalSecondPrecision( typeSystem );
     }
+
 }
 
