@@ -2761,7 +2761,6 @@ public class Crud implements InformationObserver {
         try {
             temp = System.nanoTime();
             result = QueryPlanBuilder.buildFromTree( request.topNode, statement );
-            executionTime += System.nanoTime() - temp;
         } catch ( Exception e ) {
             log.error( "Caught exception while building the plan builder tree", e );
             return new Result( e );
@@ -2853,6 +2852,7 @@ public class Crud implements InformationObserver {
         ArrayList<String[]> data = computeResultData( rows, Arrays.asList( header ), statement.getTransaction() );
 
         try {
+            executionTime += System.nanoTime() - temp;
             transaction.commit();
         } catch ( TransactionException e ) {
             log.error( "Caught exception while committing the plan builder tree", e );
