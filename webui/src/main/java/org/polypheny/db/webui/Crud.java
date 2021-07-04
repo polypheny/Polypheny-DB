@@ -2752,13 +2752,16 @@ public class Crud implements InformationObserver {
         Transaction transaction = getTransaction( true );
         transaction.getQueryAnalyzer().setSession( session );
         Statement statement = transaction.createStatement();
+        long executionTime = 0;
+        long temp = 0;
 
-        InformationManager im = transaction.getQueryAnalyzer().observe( this );
-        im.addPage( new InformationPage( "Query analysis" ) );
+        InformationManager queryAnalyzer = transaction.getQueryAnalyzer().observe( this );
 
         RelNode result;
         try {
+            temp = System.nanoTime();
             result = QueryPlanBuilder.buildFromTree( request.topNode, statement );
+            executionTime += System.nanoTime() - temp;
         } catch ( Exception e ) {
             log.error( "Caught exception while building the plan builder tree", e );
             return new Result( e );
@@ -2863,6 +2866,26 @@ public class Crud implements InformationObserver {
         Result finalResult = new Result( header, data.toArray( new String[0][] ) ).setXid( transaction.getXid().toString() );
 
         finalResult.setGeneratedQuery( "Execute logical query plan" );
+
+        if ( queryAnalyzer != null ) {
+            InformationPage p1 = new InformationPage( "Query analysis", "Analysis of the query." );
+            InformationGroup g1 = new InformationGroup( p1, "Execution time" );
+            InformationText text;
+            if ( executionTime < 1e4 ) {
+                text = new InformationText( g1, String.format( "Execution time: %d nanoseconds", signature ) );
+            } else {
+                long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
+                // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444
+                //noinspection SuspiciousDateFormat
+                DateFormat df = new SimpleDateFormat( "m 'min' s 'sec' S 'ms'" );
+                String durationText = df.format( new Date( millis ) );
+                text = new InformationText( g1, String.format( "Execution time: %s", durationText ) );
+            }
+            queryAnalyzer.addPage( p1 );
+            queryAnalyzer.addGroup( g1 );
+            queryAnalyzer.registerInformation( text );
+        }
+
         return finalResult;
     }
 
