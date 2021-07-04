@@ -27,6 +27,8 @@ import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
@@ -35,6 +37,7 @@ import org.polypheny.db.TestHelper.JdbcConnection;
  */
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
+@Category({ AdapterTestSuite.class })
 public class ComplexViewTest {
 
     private final static String DROP_TABLES_NATION = "DROP TABLE IF EXISTS nation";
@@ -1783,23 +1786,23 @@ public class ComplexViewTest {
                     );
 
                     statement.executeUpdate( "CREATE VIEW q17_VIEW AS "
-                            + "select "
-                            + "sum(l_extendedprice) / 7.0 as avg_yearly "
+                            +"select "
+                            +     "sum(l_extendedprice) / 7.0 as avg_yearly "
                             + "from "
-                            + "lineitem, "
-                            + "part "
+                            +     "lineitem, "
+                            +     "part "
                             + "where "
-                            + "p_partkey = l_partkey "
-                            + "and p_brand = 'Logitec'  "
-                            + "and p_container = 'container' "
-                            + "and l_quantity > ( "
-                            + "select "
-                            + "0.2 * avg(l_quantity) "
-                            + "from "
-                            + "lineitem "
-                            + "where "
-                            + "l_partkey = p_partkey "
-                            + ")" );
+                            +     "p_partkey = l_partkey "
+                            +     "and p_brand = 'Logitec'  "
+                            +     "and p_container = 'container' "
+                            +     "and l_quantity > ( "
+                            +         "select "
+                            +             "0.2 * avg(l_quantity) "
+                            +         "from "
+                            +             "lineitem "
+                            +         "where "
+                            +             "l_partkey = p_partkey "
+                            +     ")"  );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM q17_VIEW" ),
                             ImmutableList.of( q17_TEST_DATA )
