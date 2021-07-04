@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,38 +35,38 @@ package org.polypheny.db.type;
 
 
 import com.google.common.base.Preconditions;
-import org.polypheny.db.sql.SqlOperandCountRange;
+import java.io.Serializable;
 
 
 /**
- * Helpers for {@link SqlOperandCountRange}.
+ * Helpers for {@link OperandCountRange}.
  */
 public abstract class PolyOperandCountRanges {
 
-    public static SqlOperandCountRange of( int length ) {
+    public static OperandCountRange of( int length ) {
         return new RangeImpl( length, length );
     }
 
 
-    public static SqlOperandCountRange between( int min, int max ) {
+    public static OperandCountRange between( int min, int max ) {
         return new RangeImpl( min, max );
     }
 
 
-    public static SqlOperandCountRange from( int min ) {
+    public static OperandCountRange from( int min ) {
         return new RangeImpl( min, -1 );
     }
 
 
-    public static SqlOperandCountRange any() {
+    public static OperandCountRange any() {
         return new RangeImpl( 0, -1 );
     }
 
 
     /**
-     * Implementation of {@link SqlOperandCountRange}.
+     * Implementation of {@link OperandCountRange}.
      */
-    private static class RangeImpl implements SqlOperandCountRange {
+    private static class RangeImpl implements OperandCountRange, Serializable {
 
         private final int min;
         private final int max;
@@ -96,6 +96,8 @@ public abstract class PolyOperandCountRanges {
         public int getMax() {
             return max;
         }
+
     }
+
 }
 

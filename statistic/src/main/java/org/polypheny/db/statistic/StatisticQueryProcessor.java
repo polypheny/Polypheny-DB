@@ -246,7 +246,9 @@ public class StatisticQueryProcessor {
         } catch ( Throwable t ) {
             if ( iterator != null ) {
                 try {
-                    ((AutoCloseable) iterator).close();
+                    if ( iterator instanceof AutoCloseable ) {
+                        ((AutoCloseable) iterator).close();
+                    }
                 } catch ( Exception e ) {
                     log.error( "Exception while closing result iterator", e );
                 }
@@ -283,7 +285,9 @@ public class StatisticQueryProcessor {
             return new StatisticResult( names, types, d );
         } finally {
             try {
-                ((AutoCloseable) iterator).close();
+                if ( iterator instanceof AutoCloseable ) {
+                    ((AutoCloseable) iterator).close();
+                }
             } catch ( Exception e ) {
                 log.error( "Exception while closing result iterator2", e );
             }

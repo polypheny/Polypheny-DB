@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import lombok.Setter;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.RelOptCluster;
@@ -99,7 +100,9 @@ public abstract class AbstractRelNode implements RelNode {
      */
     protected String digest;
 
-    private final RelOptCluster cluster;
+    //Setter is used to set the cluster in Views
+    @Setter
+    private transient RelOptCluster cluster;
 
     /**
      * unique id of this object -- for debugging
@@ -108,7 +111,9 @@ public abstract class AbstractRelNode implements RelNode {
 
     /**
      * The RelTraitSet that describes the traits of this RelNode.
+     * Setter is used to set the cluster in Views
      */
+    @Setter
     protected RelTraitSet traitSet;
 
 
@@ -439,5 +444,6 @@ public abstract class AbstractRelNode implements RelNode {
         explain( pw );
         return sw.toString();
     }
+
 }
 

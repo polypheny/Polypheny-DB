@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 package org.polypheny.db.rel;
 
 
+import java.io.Serializable;
 import java.util.Objects;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
 
@@ -43,7 +44,7 @@ import org.polypheny.db.sql.validate.SqlMonotonicity;
  *
  * @see RelCollation
  */
-public class RelFieldCollation {
+public class RelFieldCollation implements Serializable {
 
     /**
      * Utility method that compares values taking into account null direction.
@@ -304,4 +305,5 @@ public class RelFieldCollation {
                 return direction.shortString;
         }
     }
+
 }

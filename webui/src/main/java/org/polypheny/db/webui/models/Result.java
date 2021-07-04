@@ -144,7 +144,6 @@ public class Result {
         this.data = data;
     }
 
-
     /**
      * Build a Result object containing the error message of a failed query
      *

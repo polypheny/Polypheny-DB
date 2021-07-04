@@ -40,6 +40,7 @@ import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
@@ -69,6 +70,9 @@ import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -359,10 +363,24 @@ public abstract class Catalog {
      * @param ownerId The if of the owner
      * @param tableType The table type
      * @param modifiable Whether the content of the table can be modified
-     * @param definition The definition of this table (e.g. a SQL string; null if not applicable)
      * @return The id of the inserted table
      */
-    public abstract long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, String definition );
+    public abstract long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable );
+
+    /**
+     * Adds a view to a specified schema.
+     *
+     * @param name The name of the view to add
+     * @param schemaId The id of the schema
+     * @param ownerId The if of the owner
+     * @param tableType The table type
+     * @param modifiable Whether the content of the table can be modified
+     * @param definition RelNode used to create Views
+     * @param underlyingTables all tables and columns used within the view
+     * @param fieldList all columns used within the View
+     * @return The id of the inserted table
+     */
+    public abstract long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList );
 
     /**
      * Checks if there is a table with the specified name in the specified schema.
@@ -570,6 +588,7 @@ public abstract class Catalog {
      * @return A CatalogColumn
      */
     public abstract CatalogColumn getColumn( String databaseName, String schemaName, String tableName, String columnName ) throws UnknownColumnException, UnknownSchemaException, UnknownDatabaseException, UnknownTableException;
+
 
     /**
      * Adds a column.
@@ -1153,6 +1172,13 @@ public abstract class Catalog {
     public abstract void close();
 
     public abstract void clear();
+
+    /**
+     * Deletes all the dependencies before deleting a View
+     *
+     * @param catalogView view to be deleted
+     */
+    public abstract void deleteViewDependencies( CatalogView catalogView );
 
 
     public enum TableType {

@@ -90,7 +90,7 @@ public class JdbcMetaTest {
 
             // Check number of columns
             int totalColumns = rsmd.getColumnCount();
-            Assert.assertEquals( "Wrong number of columns", 12, totalColumns );
+            Assert.assertEquals( "Wrong number of columns", 11, totalColumns );
 
             // Check column names
             Assert.assertEquals( "Wrong column name", "TABLE_CAT", rsmd.getColumnName( 1 ) );
@@ -104,11 +104,10 @@ public class JdbcMetaTest {
             Assert.assertEquals( "Wrong column name", "SELF_REFERENCING_COL_NAME", rsmd.getColumnName( 9 ) );
             Assert.assertEquals( "Wrong column name", "REF_GENERATION", rsmd.getColumnName( 10 ) );
             Assert.assertEquals( "Wrong column name", "OWNER", rsmd.getColumnName( 11 ) );
-            Assert.assertEquals( "Wrong column name", "DEFINITION", rsmd.getColumnName( 12 ) );
 
             // Check data
-            final Object[] tableFoo = new Object[]{ "APP", "public", "foo", "TABLE", "", null, null, null, null, null, "pa", null };
-            final Object[] tableFoo2 = new Object[]{ "APP", "test", "foo2", "TABLE", "", null, null, null, null, null, "pa", null };
+            final Object[] tableFoo = new Object[]{ "APP", "public", "foo", "TABLE", "", null, null, null, null, null, "pa" };
+            final Object[] tableFoo2 = new Object[]{ "APP", "test", "foo2", "TABLE", "", null, null, null, null, null, "pa" };
             TestHelper.checkResultSet(
                     connection.getMetaData().getTables( "APP", null, "foo", null ),
                     ImmutableList.of( tableFoo ) );
