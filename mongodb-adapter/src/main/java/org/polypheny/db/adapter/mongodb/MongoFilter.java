@@ -276,7 +276,15 @@ public class MongoFilter extends Filter implements MongoRel {
             if ( right instanceof RexCall && left instanceof RexInputRef ) {
                 // $9 ( index ) -> [el1, el2]
                 String name = getPhysicalName( (RexInputRef) left );
-                dynamics.add( new BsonDocument( name, new BsonArray( ((RexCall) right).operands.stream().map( el -> MongoTypeUtil.getAsBson( (RexLiteral) el, bucket ) ).collect( Collectors.toList() ) ) ) );
+                dynamics.add( new BsonDocument( name, new BsonArray( ((RexCall) right).operands.stream().map( el -> {
+                    if ( el.isA( INPUT_REF ) ) {
+                        return MongoTypeUtil.getAsBson( (RexLiteral) el, bucket );
+                    } else if ( el.isA( DYNAMIC_PARAM ) ) {
+                        return new BsonDynamic( (RexDynamicParam) el );
+                    } else {
+                        throw new RuntimeException( "Input in array is not translatable." );
+                    }
+                } ).collect( Collectors.toList() ) ) ) );
 
                 return true;
             } else if ( right instanceof RexCall && left instanceof RexLiteral ) {

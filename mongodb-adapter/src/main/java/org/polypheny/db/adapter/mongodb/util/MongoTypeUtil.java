@@ -24,6 +24,7 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.function.Function;
@@ -223,6 +224,8 @@ public class MongoTypeUtil {
             return new BsonInt64( (Integer) o );
         } else if ( o instanceof Date ) {
             return new BsonInt64( ((Date) o).toLocalDate().toEpochDay() );
+        } else if ( o instanceof GregorianCalendar ) {
+            return new BsonInt64( ((GregorianCalendar) o).toZonedDateTime().toLocalDate().toEpochDay() );
         } else {
             return new BsonInt64( new Date( ((Time) o).getTime() ).toLocalDate().toEpochDay() );
         }
@@ -232,6 +235,8 @@ public class MongoTypeUtil {
     private static BsonValue handleTime( Object o ) {
         if ( o instanceof Integer ) {
             return new BsonInt64( ((Integer) o) );
+        } else if ( o instanceof GregorianCalendar ) {
+            return new BsonInt64( ((GregorianCalendar) o).toZonedDateTime().toEpochSecond() );
         } else {
             return new BsonInt64( ((Time) o).toLocalTime().toNanoOfDay() / 1000000 );
         }
