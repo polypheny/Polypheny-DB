@@ -93,8 +93,8 @@ public abstract class AbstractRouter implements Router {
     final Catalog catalog = Catalog.getInstance();
 
 
-    private final Map<Integer, List<String>> filterMap = new HashMap<>();
-    private static final Cache<Integer, RelNode> joinedTableScanCache = CacheBuilder.newBuilder()
+    protected final Map<Integer, List<String>> filterMap = new HashMap<>();
+    protected static final Cache<Integer, RelNode> joinedTableScanCache = CacheBuilder.newBuilder()
             .maximumSize( RuntimeConfig.JOINED_TABLE_SCAN_CACHE_SIZE.getInteger() )
             .build();
 
@@ -930,7 +930,7 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    private static class WhereClauseVisitor extends RexShuttle {
+    protected static class WhereClauseVisitor extends RexShuttle {
 
         private final Statement statement;
 
@@ -939,7 +939,7 @@ public abstract class AbstractRouter implements Router {
         private final List<Object> values = new ArrayList<>();
         private final long partitionColumnIndex;
         @Getter
-        private boolean valueIdentified = false;
+        protected boolean valueIdentified = false;
 
 
         public WhereClauseVisitor( Statement statement, long partitionColumnIndex ) {

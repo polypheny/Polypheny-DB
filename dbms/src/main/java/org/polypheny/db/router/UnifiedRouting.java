@@ -17,12 +17,14 @@
 package org.polypheny.db.router;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +43,7 @@ import org.apache.commons.math3.stat.StatUtils;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.ConfigBoolean;
@@ -56,6 +59,7 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.RoutingEvent;
 import org.polypheny.db.monitoring.events.metrics.RoutingDataPoint;
+import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.processing.QueryParameterizer;
 import org.polypheny.db.rel.RelNode;
@@ -64,7 +68,6 @@ import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.core.TableFunctionScan;
 import org.polypheny.db.rel.core.TableScan;
 import org.polypheny.db.rel.logical.LogicalAggregate;
-import org.polypheny.db.rel.logical.LogicalConditionalExecute;
 import org.polypheny.db.rel.logical.LogicalCorrelate;
 import org.polypheny.db.rel.logical.LogicalExchange;
 import org.polypheny.db.rel.logical.LogicalFilter;
@@ -78,24 +81,16 @@ import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalUnion;
 import org.polypheny.db.rel.logical.LogicalValues;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexFieldAccess;
-import org.polypheny.db.rex.RexFieldCollation;
 import org.polypheny.db.rex.RexInputRef;
-import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexOver;
 import org.polypheny.db.rex.RexPatternFieldRef;
-import org.polypheny.db.rex.RexRangeRef;
 import org.polypheny.db.rex.RexShuttle;
-import org.polypheny.db.rex.RexSubQuery;
-import org.polypheny.db.rex.RexTableInputRef;
-import org.polypheny.db.rex.RexWindow;
 import org.polypheny.db.routing.ExecutionTimeMonitor.ExecutionTimeObserver;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.schema.LogicalTable;
+import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
@@ -137,8 +132,13 @@ public class UnifiedRouting extends AbstractRouter {
 
     private static final UnifiedRoutingTable routingTable = new UnifiedRoutingTable();
 
-    private Set<Integer> selectedAdapterIds = Sets.newHashSet(-2); // Is set in analyze
+    private List<Integer> selectedAdapterIds = new ArrayList<>();
     private String queryClassString;
+
+    private HashMap<Long, String> usedColumns = new HashMap<>();
+    private HashMap<CatalogTable, Set<CatalogColumn>> usedCatalogColumnsPerTable = new HashMap<>();
+    private List<CatalogColumnPlacement> usedCatalogPlacements = new ArrayList<>();
+    private Boolean basePlacementInitialized = false;
 
 
     private UnifiedRouting() {
@@ -148,19 +148,19 @@ public class UnifiedRouting extends AbstractRouter {
 
     private static class UnifiedRelShuttle extends RelShuttleImpl {
 
-        private final Statement statenent;
+        private final Statement statement;
         private final UnifiedRexShuttle rexShuttle;
 
         @Getter
-        private final HashMap<Long, String> availableColumns = new HashMap<>();
+        private final LinkedHashMap<Long, String> availableColumns = new LinkedHashMap<>();
 
-        public final HashSet<Long> getUsedColumns() {
+        public final HashSet<Integer> getUsedColumns() {
             return this.rexShuttle.ids;
         }
 
         public UnifiedRelShuttle(Statement s){
-            this.statenent  = s;
-            rexShuttle = new UnifiedRexShuttle( this.statenent );
+            this.statement = s;
+            rexShuttle = new UnifiedRexShuttle( this.statement );
         }
 
         private static class UnifiedRexShuttle extends RexShuttle {
@@ -168,13 +168,11 @@ public class UnifiedRouting extends AbstractRouter {
             private final Statement statement;
 
             @Getter
-            private final HashSet<Long> ids = new HashSet<>();
-            //private final long partitionColumnIndex;
+            private final HashSet<Integer> ids = new HashSet<>();
 
             public UnifiedRexShuttle( Statement statement){
                 super();
                 this.statement = statement;
-                //this.partitionColumnIndex = partitionColumnIndex;
             }
 
             @Override
@@ -186,74 +184,21 @@ public class UnifiedRouting extends AbstractRouter {
 
             @Override
             public RexNode visitInputRef( RexInputRef inputRef ) {
-                this.ids.add( new Long(inputRef.getIndex() + 1));
+                // add accessed value
+                if(inputRef != null){
+                    this.ids.add( inputRef.getIndex());
+                }
+
                 return super.visitInputRef( inputRef );
             }
 
 
             @Override
-            public RexNode visitOver( RexOver over ) {
-                return super.visitOver( over );
-            }
-
-
-            @Override
-            public RexWindow visitWindow( RexWindow window ) {
-                return super.visitWindow( window );
-            }
-
-
-            @Override
-            public RexNode visitSubQuery( RexSubQuery subQuery ) {
-                return super.visitSubQuery( subQuery );
-            }
-
-
-            @Override
-            public RexNode visitTableInputRef( RexTableInputRef ref ) {
-                return super.visitTableInputRef( ref );
-            }
-
-
-            @Override
             public RexNode visitPatternFieldRef( RexPatternFieldRef fieldRef ) {
+                if ( fieldRef != null ){
+                    this.ids.add( fieldRef.getIndex() );
+                }
                 return super.visitPatternFieldRef( fieldRef );
-            }
-
-
-            @Override
-            protected RexNode[] visitArray( RexNode[] exprs, boolean[] update ) {
-                return super.visitArray( exprs, update );
-            }
-
-
-            @Override
-            protected List<RexNode> visitList( List<? extends RexNode> exprs, boolean[] update ) {
-                return super.visitList( exprs, update );
-            }
-
-
-            @Override
-            public void visitList( List<? extends RexNode> exprs, List<RexNode> outExprs ) {
-                super.visitList( exprs, outExprs );
-            }
-
-
-            @Override
-            protected List<RexFieldCollation> visitFieldCollations( List<RexFieldCollation> collations, boolean[] update ) {
-                return super.visitFieldCollations( collations, update );
-            }
-
-
-            @Override
-            public RexNode visitCorrelVariable( RexCorrelVariable variable ) {
-                return super.visitCorrelVariable( variable );
-            }
-
-
-            @Override
-            public RexNode visitFieldAccess( RexFieldAccess fieldAccess ) {
-                return super.visitFieldAccess( fieldAccess );
             }
 
 
@@ -264,35 +209,14 @@ public class UnifiedRouting extends AbstractRouter {
 
 
             @Override
-            public RexNode visitLiteral( RexLiteral literal ) {
-                return super.visitLiteral( literal );
-            }
-
-
-            @Override
             public RexNode visitDynamicParam( RexDynamicParam dynamicParam ) {
+                if( dynamicParam != null){
+                    this.ids.add( (int)dynamicParam.getIndex() );
+                }
                 return super.visitDynamicParam( dynamicParam );
             }
 
-
-            @Override
-            public RexNode visitRangeRef( RexRangeRef rangeRef ) {
-                return super.visitRangeRef( rangeRef );
-            }
-
         }
-
-        @Override
-        protected <T extends RelNode> T visitChild( T parent, int i, RelNode child ) {
-            return super.visitChild( parent, i, child );
-        }
-
-
-        @Override
-        protected <T extends RelNode> T visitChildren( T rel ) {
-            return super.visitChildren( rel );
-        }
-
 
         @Override
         public RelNode visit( LogicalAggregate aggregate ) {
@@ -301,43 +225,20 @@ public class UnifiedRouting extends AbstractRouter {
 
 
         @Override
-        public RelNode visit( LogicalMatch match ) {
-            return super.visit( match );
-        }
-
-
-        @Override
         public RelNode visit( TableScan scan ) {
-            val t = scan.getTable();
-            val test1 = t.getQualifiedName();
-            val test2 = t.getColumnStrategies();
-            val test3 = t.getRelOptSchema();
+            // get available columns for every table scan
+            LogicalTable table = (LogicalTable) ((RelOptTableImpl)scan.getTable()).getTable();
+            if(table != null){
+                val ids = table.getColumnIds();
+                val names = table.getLogicalColumnNames();
+                val baseName = table.getLogicalSchemaName() + "." + table.getLogicalTableName() + ".";
 
-            val t2 = (RelOptTableImpl)t;
-
-
-            val t3 = ((LogicalTable) t2.getTable());
-            val ids = t3.getColumnIds();
-            val names = t3.getLogicalColumnNames();
-            val baseName = t3.getLogicalSchemaName() + "." + t3.getLogicalTableName() + ".";
-
-            for ( int i = 0; i < ids.size() ; i++ ){
-                this.availableColumns.putIfAbsent( ids.get( i ), baseName + names.get( i ) );
+                for ( int i = 0; i < ids.size() ; i++ ){
+                    this.availableColumns.putIfAbsent( ids.get( i ), baseName + names.get( i ) );
+                }
             }
 
             return super.visit( scan );
-        }
-
-
-        @Override
-        public RelNode visit( TableFunctionScan scan ) {
-            return super.visit( scan );
-        }
-
-
-        @Override
-        public RelNode visit( LogicalValues values ) {
-            return super.visit( values );
         }
 
 
@@ -366,69 +267,57 @@ public class UnifiedRouting extends AbstractRouter {
 
 
         @Override
-        public RelNode visit( LogicalCorrelate correlate ) {
-            return super.visit( correlate );
-        }
-
-
-        @Override
         public RelNode visit( LogicalUnion union ) {
-            return super.visit( union );
+            super.visit( union );
+            union.accept( this.rexShuttle );
+            return union;
         }
 
 
         @Override
         public RelNode visit( LogicalIntersect intersect ) {
-            return super.visit( intersect );
+            super.visit( intersect );
+            intersect.accept( this.rexShuttle );
+            return intersect;
         }
-
-
-        @Override
-        public RelNode visit( LogicalMinus minus ) {
-            return super.visit( minus );
-        }
-
-
-        @Override
-        public RelNode visit( LogicalSort sort ) {
-            return super.visit( sort );
-        }
-
-
-        @Override
-        public RelNode visit( LogicalExchange exchange ) {
-            return super.visit( exchange );
-        }
-
-
-        @Override
-        public RelNode visit( LogicalConditionalExecute lce ) {
-            return super.visit( lce );
-        }
-
-
-        @Override
-        public RelNode visit( RelNode other ) {
-            return super.visit( other );
-        }
-
     }
+
 
     @Override
     protected void analyze( Statement statement, RelRoot logicalRoot ) {
         if ( !(logicalRoot.rel instanceof LogicalTableModify) ) {
 
+            this.basePlacementInitialized = false;
 
+            // get used columns:
             val shuttle = new UnifiedRelShuttle( statement );
             logicalRoot.rel.accept( shuttle );
 
-            val bla = shuttle.getAvailableColumns();
-            val usedBla = shuttle.getUsedColumns();
+            this.usedColumns.clear();
+            val availableNames = new ArrayList<String>(shuttle.availableColumns.values());
+            val availableKeys = new ArrayList<Long>(shuttle.availableColumns.keySet());
+            for ( int index : shuttle.getUsedColumns() ) {
+                val name = availableNames.get( index );
+                val globalIndex = availableKeys.get( index );
+                this.usedColumns.putIfAbsent( globalIndex, name );
+            }
+            
+            if(!this.usedColumns.isEmpty()){
+                this.usedCatalogColumnsPerTable.clear();
+                for ( val entry: this.usedColumns.keySet()) {
+                    val column = Catalog.getInstance().getColumn( entry );
+                    val table = Catalog.getInstance().getTable( column.tableId );
+                    if (this.usedCatalogColumnsPerTable.containsKey( table )){
+                        this.usedCatalogColumnsPerTable.get( table ).add( column );
+                    }
+                    this.usedCatalogColumnsPerTable.putIfAbsent( table,  Sets.newHashSet( column));
+                }
+            }
 
             if ( QUERY_CLASS_PROVIDER.getEnum() == QUERY_CLASS_PROVIDER_METHOD.ICARUS_SHUTTLE ) {
-                IcarusShuttle icarusShuttle = new IcarusShuttle();
-                logicalRoot.rel.accept( icarusShuttle );
-                queryClassString = icarusShuttle.hashBasis.toString();
+                QueryNameShuttle queryNameShuttle = new QueryNameShuttle();
+                logicalRoot.rel.accept( queryNameShuttle );
+                queryClassString = queryNameShuttle.hashBasis.toString();
             } else if ( QUERY_CLASS_PROVIDER.getEnum() == QUERY_CLASS_PROVIDER_METHOD.QUERY_PARAMETERIZER ) {
                 QueryParameterizer parameterizer = new QueryParameterizer( 0, new LinkedList<>() );
                 RelNode parameterized = logicalRoot.rel.accept( parameterizer );
@@ -437,10 +326,9 @@ public class UnifiedRouting extends AbstractRouter {
                 throw new RuntimeException( "Unknown value for QUERY_CLASS_PROVIDER config: " + QUERY_CLASS_PROVIDER.getEnum().name() );
             }
 
-            if ( routingTable.contains( queryClassString ) && routingTable.get( queryClassString ).size() > 0 ) {
+            if ( routingTable.contains( queryClassString ) && !routingTable.get( queryClassString ).isEmpty() ) {
                 selectedAdapterIds.clear();
                 selectedAdapterIds = routeQuery( routingTable.get( queryClassString ) ) ;
-
 
                 // In case the query class is known but the table has been dropped and than recreated with the same name,
                 // the query class is known but only contains information for the adapters with no placement. To handle this
@@ -450,7 +338,7 @@ public class UnifiedRouting extends AbstractRouter {
                     InformationGroup group = new InformationGroup( page, "Routing Table Entry" );
                     statement.getTransaction().getQueryAnalyzer().addGroup( group );
                     InformationTable table = new InformationTable( group, ImmutableList.copyOf( routingTable.knownAdapters.values() ) );
-                    Map<Set<Integer>, Integer> entry = routingTable.get( queryClassString );
+                    Map<List<Integer>, Integer> entry = routingTable.get( queryClassString );
 
                     // TODO: get from Monitoring
                     Map<Set<Integer>, List<Double>> timesEntry = routingTable.getExecutionTimes( queryClassString );
@@ -458,7 +346,7 @@ public class UnifiedRouting extends AbstractRouter {
 
                     List<String> row1 = new LinkedList<>();
                     List<String> row2 = new LinkedList<>();
-                    for ( Entry<Set<Integer>, Integer> e : entry.entrySet() ) {
+                    for ( Entry<List<Integer>, Integer> e : entry.entrySet() ) {
                         if ( e.getValue() == UnifiedRoutingTable.MISSING_VALUE ) {
                             row1.add( "MISSING VALUE" );
                             row2.add( "" );
@@ -500,9 +388,35 @@ public class UnifiedRouting extends AbstractRouter {
     }
 
 
-    private Set<Integer> routeQuery( Map<Set<Integer>, Integer> routingTableRow ) {
+    @Override
+    protected RelBuilder buildSelect( RelNode node, RelBuilder builder, Statement statement, RelOptCluster cluster ) {
+        for ( int i = 0; i < node.getInputs().size(); i++ ) {
+            buildDql( node.getInput( i ), builder, statement, cluster );
+        }
+
+        if ( node instanceof LogicalValues ) {
+            builder =  handleValues( (LogicalValues) node, builder );
+        } else {
+            builder =  handleGeneric( node, builder );
+        }
+
+        if( !this.basePlacementInitialized ){
+            this.basePlacementInitialized = true;
+            val placements = selectPlacement( );
+            return builder.push( buildJoinedTableScan( statement, cluster, placements ) );
+
+        }
+
+
+        // TODO.
+        return builder;
+
+    }
+
+
+    private List<Integer> routeQuery( Map<List<Integer>, Integer> routingTableRow ) {
         // Check if there is an adapter for which we do not have an execution time
-        for ( Entry<Set<Integer>, Integer> entry : routingTable.get( queryClassString ).entrySet() ) {
+        for ( Entry<List<Integer>, Integer> entry : routingTable.get( queryClassString ).entrySet() ) {
             if ( entry.getValue() == UnifiedRoutingTable.MISSING_VALUE ) {
                 // We have no execution time for this adapter.
                 return entry.getKey();
@@ -511,7 +425,7 @@ public class UnifiedRouting extends AbstractRouter {
 
         if ( SHORT_RUNNING_SIMILAR_THRESHOLD.getInt() == 0 ) {
             // There should only be exactly one entry in the routing table > 0
-            for ( Entry<Set<Integer>, Integer> entry : routingTable.get( queryClassString ).entrySet() ) {
+            for ( Entry<List<Integer>, Integer> entry : routingTable.get( queryClassString ).entrySet() ) {
                 if ( entry.getValue() == 100 ) {
                     // We have no execution time for this adapter.
                     return entry.getKey();
@@ -520,7 +434,7 @@ public class UnifiedRouting extends AbstractRouter {
         } else {
             int p = 0;
             int random = Math.min( (int) (Math.random() * 100) + 1, 100 );
-            for ( Map.Entry<Set<Integer>, Integer> entry : routingTableRow.entrySet() ) {
+            for ( Map.Entry<List<Integer>, Integer> entry : routingTableRow.entrySet() ) {
                 p += Math.max( entry.getValue(), 0 ); // avoid subtracting -2
                 if ( p >= random ) {
                     return entry.getKey();
@@ -548,6 +462,15 @@ public class UnifiedRouting extends AbstractRouter {
         }
     }
 
+    private List<CatalogColumnPlacement> selectPlacement() {
+        //this.usedCatalogColumnsPerTable
+
+
+
+        // TODO
+        return Collections.emptyList();
+    }
+
 
     // Execute the table scan on the adapter selected in the analysis (in Icarus routing all tables are expected to be
     // replicated to all adapters)
@@ -555,15 +478,14 @@ public class UnifiedRouting extends AbstractRouter {
     // Icarus routing is based on a full replication of data to all underlying adapters (data stores). This implementation
     // therefore assumes that there is either no placement of a table on a adapter or a full placement.
     //
-    @Override
     protected List<CatalogColumnPlacement> selectPlacement( RelNode node, CatalogTable table ) {
         // Update known adapters
         // updateKnownAdapters( table.placementsByAdapter.keySet() );
-        val placements = updateKnownAdapters( table );
+        val adapters = updateKnownAdapters( table );
 
         if ( selectedAdapterIds.size() == 0  ) {
-            routingTable.initializeRow( queryClassString, placements );
-            selectedAdapterIds = placements.get( 0 );
+            routingTable.initializeRow( queryClassString, adapters );
+            selectedAdapterIds = adapters.get( 0 );
         }
         if ( selectedAdapterIds.size() > 0) {
 
@@ -588,46 +510,64 @@ public class UnifiedRouting extends AbstractRouter {
             if(result.size() == 0){
                 throw new RuntimeException( "The previously selected store does not contain a placement of this table. Store ID: " + selectedAdapterIds );
             }
-
+            this.usedCatalogPlacements.addAll( result );
             return result;
         }
         throw new RuntimeException( "The previously selected store does not contain a placement of this table. Store ID: " + selectedAdapterIds );
     }
 
-    public List<HashSet<Integer>> updateKnownAdapters( CatalogTable table ) {
+    private List<List<Integer>> updateKnownAdapters( CatalogTable table ) {
+        // used cols:
+        val usedCols = this.usedCatalogColumnsPerTable.get( table );
+        List<List<Integer>> adapterPlacements = new ArrayList<>();
+        if(!usedCols.isEmpty() && !table.isPartitioned){
+            // get adapter full placements
+            val adapterWithFullPlacement = table.placementsByAdapter.entrySet()
+                    .stream()
+                    .filter( elem -> elem.getValue().containsAll( usedCols ) )
+                    .map( adapter -> Lists.newArrayList(adapter.getKey() ) ) // adapterId
+                    .collect( Collectors.toList());
 
-        // get adapter full placements
-        val adapterWithFullPlacement = table.placementsByAdapter.entrySet()
-                .stream()
-                .filter( elem -> elem.getValue().size() == table.columnIds.size() )
-                .map( adapter -> Sets.newHashSet(adapter.getKey()) ) // adapterId
-                .collect( Collectors.toList());
+            adapterPlacements.addAll( adapterWithFullPlacement );
 
-        if(adapterWithFullPlacement.size() == 0){
-            int adapterIdWithMostPlacements = -1;
-            int numOfPlacements = 0;
-            for ( Entry<Integer, ImmutableList<Long>> entry : table.placementsByAdapter.entrySet() ) {
-                if ( entry.getValue().size() > numOfPlacements ) {
-                    adapterIdWithMostPlacements = entry.getKey();
-                    numOfPlacements = entry.getValue().size();
+            if ( adapterWithFullPlacement.size() == 0){
+                int adapterIdWithMostPlacements = -1;
+                int numOfPlacements = 0;
+                for ( Entry<Integer, ImmutableList<Long>> entry : table.placementsByAdapter.entrySet() ) {
+                    if ( entry.getValue().size() > numOfPlacements ) {
+                        adapterIdWithMostPlacements = entry.getKey();
+                        numOfPlacements = entry.getValue().size();
+                    }
                 }
-            }
 
-            // get combined adapters for query, non available with full placements
-            val adapterIds = new HashSet<Integer>();
-            for ( long cid : table.columnIds ) {
-                if ( table.placementsByAdapter.get( adapterIdWithMostPlacements ).contains( cid ) ) {
-                    adapterIds.add( Catalog.getInstance().getColumnPlacement( adapterIdWithMostPlacements, cid ).adapterId );
-                } else {
-                    adapterIds.add( Catalog.getInstance().getColumnPlacements( cid ).get( 0 ).adapterId );
+                // get combined adapters for query, non available with full placements
+                val adapterIds = new ArrayList<Integer>();
+                for ( val column : usedCols ) {
+                    if ( table.placementsByAdapter.get( adapterIdWithMostPlacements ).contains( column.id ) ) {
+                        // get the own with most placements
+                        adapterIds.add( Catalog.getInstance().getColumnPlacement( adapterIdWithMostPlacements, column.id ).adapterId );
+                    } else {
+                        val placements = Catalog.getInstance().getColumnPlacements( column.id );
+                        val adapterPlacement = placements.stream().filter( elem -> adapterIds.contains( elem.adapterId ) ).collect( Collectors.toList());
+                        if(!adapterPlacement.isEmpty()){
+                            // get first one which adapter is already used
+                            adapterIds.add( adapterPlacement.get( 0 ).adapterId );
+                        }else{
+                            // otherwise get new adapter
+                            adapterIds.add( placements.get( 0 ).adapterId );
+                        }
+                    }
                 }
-            }
 
-            adapterWithFullPlacement.add( adapterIds );
+                adapterPlacements.add( adapterIds );
+
+            }
 
         }
 
-        for ( val placement : adapterWithFullPlacement) {
+
+
+        for ( val placement : adapterPlacements) {
             if ( !routingTable.knownAdapters.containsKey( placement ) ) {
                 val uniqueName = placement.stream()
                         .map( adapterId -> Catalog.getInstance().getAdapter( adapterId ).uniqueName )
@@ -640,7 +580,7 @@ public class UnifiedRouting extends AbstractRouter {
             }
         }
 
-        return adapterWithFullPlacement;
+        return adapterPlacements;
     }
 
 
@@ -680,8 +620,8 @@ public class UnifiedRouting extends AbstractRouter {
         public static final int MISSING_VALUE = -1;
         public static final int NO_PLACEMENT = -2;
 
-        private final Map<String, Map<Set<Integer>, Integer>> routingTable = new ConcurrentHashMap<>();  // QueryClassStr -> (Adapter -> Percentage)
-        private final Map<Set<Integer>, String> knownAdapters = new HashMap<>(); // Adapter Id -> Adapter Name
+        private final Map<String, Map<List<Integer>, Integer>> routingTable = new ConcurrentHashMap<>();  // QueryClassStr -> (Adapter -> Percentage)
+        private final Map<List<Integer>, String> knownAdapters = new HashMap<>(); // Adapter Id -> Adapter Name
         //private final Map<String, Map<Set<Integer>, CircularFifoQueue<Double>>> times = new ConcurrentHashMap<>();  // QueryClassStr -> (Adapter -> Time)
 
         private final Lock processingQueueLock = new ReentrantLock();
@@ -743,7 +683,7 @@ public class UnifiedRouting extends AbstractRouter {
         }
 
 
-        public Map<Set<Integer>, Integer> get( String queryClassStr ) {
+        public Map<List<Integer>, Integer> get( String queryClassStr ) {
             return routingTable.get( queryClassStr );
         }
 
@@ -790,13 +730,13 @@ public class UnifiedRouting extends AbstractRouter {
                     meanTimeRow.put( entry.getKey(), mean );
                 }
 
-                Map<Set<Integer>, Integer> newRow = new HashMap<>();
-                for ( Set<Integer> adapterIds : knownAdapters.keySet() ) {
+                Map<List<Integer>, Integer> newRow = new HashMap<>();
+                for ( List<Integer> adapterIds : knownAdapters.keySet() ) {
                     newRow.put( adapterIds, UnifiedRoutingTable.NO_PLACEMENT );
 
                 }
                 Map<Set<Integer>, Integer> calculatedRow = generateRow( meanTimeRow );
-                for ( Map.Entry<Set<Integer>, Integer> oldEntry : routingTable.get( queryClass ).entrySet() ) {
+                for ( Map.Entry<List<Integer>, Integer> oldEntry : routingTable.get( queryClass ).entrySet() ) {
                     if ( oldEntry.getValue() == NO_PLACEMENT ) {
                         newRow.put( oldEntry.getKey(), NO_PLACEMENT );
                     } else if ( calculatedRow.containsKey( oldEntry.getKey() ) ) {
@@ -834,7 +774,7 @@ public class UnifiedRouting extends AbstractRouter {
             processingQueueLock.lock();
             for ( CatalogColumnPlacement placement : placements ) {
                 knownAdapters.remove( placement.adapterId );
-                for ( Map<Set<Integer>, Integer> entry : routingTable.values() ) {
+                for ( Map<List<Integer>, Integer> entry : routingTable.values() ) {
                     entry.remove( placement.adapterId );
                 }
             }
@@ -843,8 +783,8 @@ public class UnifiedRouting extends AbstractRouter {
         }
 
 
-        public void initializeRow( String queryClassString, List<HashSet<Integer>> adapterPlacements ) {
-            Map<Set<Integer>, Integer> row = new HashMap<>();
+        public void initializeRow( String queryClassString, List<List<Integer>> adapterPlacements ) {
+            Map<List<Integer>, Integer> row = new HashMap<>();
             // Initialize with NO_PLACEMENT
             for ( val adapterIds : knownAdapters.keySet() ) {
                 row.put( adapterIds, NO_PLACEMENT );
@@ -997,7 +937,7 @@ public class UnifiedRouting extends AbstractRouter {
 
 
     // TODO MV: This should be improved to include more information on the used tables and columns
-    private static class IcarusShuttle extends RelShuttleImpl {
+    private static class QueryNameShuttle extends RelShuttleImpl {
 
         private final HashSet<String> hashBasis = new HashSet<>();
 
