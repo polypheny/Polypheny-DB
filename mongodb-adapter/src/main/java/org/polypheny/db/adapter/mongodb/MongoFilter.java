@@ -307,7 +307,7 @@ public class MongoFilter extends Filter implements MongoRel {
 
         private boolean translateFunction( String op, RexCall right, RexNode left ) {
             String randomName = getRandomName();
-            this.preProjections.put( randomName, BsonFunctionHelper.getFunction( right, rowType, bucket ) );
+            this.preProjections.put( randomName, BsonFunctionHelper.getFunction( right, rowType, implementor ) );
 
             switch ( left.getKind() ) {
                 case LITERAL:
@@ -438,7 +438,7 @@ public class MongoFilter extends Filter implements MongoRel {
             final RexInputRef left1 = left;
             String name = fieldNames.get( left1.getIndex() );
             if ( rowType != null && rowType.getId( name ) != null ) {
-                name = rowType.getPhysicalName( name );
+                name = rowType.getPhysicalName( name, implementor );
             }
             return name;
         }

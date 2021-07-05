@@ -44,6 +44,7 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Aggregate;
 import org.polypheny.db.rel.core.AggregateCall;
 import org.polypheny.db.sql.SqlAggFunction;
+import org.polypheny.db.sql.fun.SqlSingleValueAggFunction;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.fun.SqlSumAggFunction;
 import org.polypheny.db.sql.fun.SqlSumEmptyIsZeroAggFunction;
@@ -169,9 +170,14 @@ public class MongoAggregate extends Aggregate implements MongoRel {
             assert args.size() == 1;
             final String inName = inNames.get( args.get( 0 ) );
             return "{$avg: " + MongoRules.maybeQuote( "$" + inName ) + "}";
+        } else if ( aggregation instanceof SqlSingleValueAggFunction ) {
+            assert args.size() == 1;
+            final String inName = inNames.get( args.get( 0 ) );
+            return "{" + MongoRules.maybeQuote( "$" + inName ) + ":1}";
         } else {
             throw new AssertionError( "unknown aggregate " + aggregation );
         }
     }
+
 }
 

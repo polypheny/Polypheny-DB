@@ -38,6 +38,8 @@ import com.mongodb.client.gridfs.GridFSBucket;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
@@ -78,6 +80,7 @@ public interface MongoRel extends RelNode {
         @Setter
         public GridFSBucket bucket;
         public List<BsonDocument> preProjections = new ArrayList<>();
+        public Set<String> physicalMapper = new TreeSet<>();
 
         RelOptTable table;
         @Setter

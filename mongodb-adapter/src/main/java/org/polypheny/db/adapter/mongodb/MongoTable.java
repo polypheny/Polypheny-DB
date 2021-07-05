@@ -61,6 +61,8 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.bson.json.JsonMode;
+import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
@@ -194,7 +196,17 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
      * @param filter
      * @return Enumerator of results
      */
-    private Enumerable<Object> aggregate( ClientSession session, final MongoDatabase mongoDb, MongoTable table, final List<Entry<String, Class>> fields, List<Entry<String, Class>> arrayFields, final List<String> operations, Map<Long, Object> parameterValues, BsonDocument filter, List<BsonDocument> preOps ) {
+    private Enumerable<Object> aggregate(
+            ClientSession session,
+            final MongoDatabase mongoDb,
+            MongoTable table,
+            final List<Entry<String, Class>> fields,
+            List<Entry<String, Class>> arrayFields,
+            final List<String> operations,
+            Map<Long, Object> parameterValues,
+            BsonDocument filter,
+            List<BsonDocument> preOps,
+            List<String> logicalCols ) {
         final List<BsonDocument> list = new ArrayList<>();
 
         if ( parameterValues.size() == 0 ) {
@@ -227,8 +239,12 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
             projectMatchAll( fields, list );
         }
 
+        if ( logicalCols.size() != 0 ) {
+            list.add( 0, MongoTypeUtil.getPhysicalProjections( logicalCols, catalogTable ) );
+        }
+
         final Function1<Document, Object> getter = MongoEnumerator.getter( fields, arrayFields );
-        //list.forEach( el -> System.out.println( el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ) );
+        list.forEach( el -> System.out.println( el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ) );
         return new AbstractEnumerable<Object>() {
             @Override
             public Enumerator<Object> enumerator() {
@@ -339,7 +355,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
          * @see MongoMethod#MONGO_QUERYABLE_AGGREGATE
          */
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<Object> aggregate( List<Map.Entry<String, Class>> fields, List<Map.Entry<String, Class>> arrayClass, List<String> operations, String filter, List<String> preProjections ) {
+        public Enumerable<Object> aggregate( List<Map.Entry<String, Class>> fields, List<Map.Entry<String, Class>> arrayClass, List<String> operations, String filter, List<String> preProjections, List<String> logicalCols ) {
             ClientSession session = getTable().getTransactionProvider().getSession( dataContext.getStatement().getTransaction().getXid() );
 
             Map<Long, Object> values = new HashMap<>();
@@ -347,7 +363,17 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                 values = dataContext.getParameterValues().get( 0 );
             }
 
-            return getTable().aggregate( session, getMongoDb(), getTable(), fields, arrayClass, operations, values, BsonDocument.parse( filter ), preProjections.stream().map( BsonDocument::parse ).collect( Collectors.toList() ) );
+            return getTable().aggregate(
+                    session,
+                    getMongoDb(),
+                    getTable(),
+                    fields,
+                    arrayClass,
+                    operations,
+                    values,
+                    BsonDocument.parse( filter ),
+                    preProjections.stream().map( BsonDocument::parse ).collect( Collectors.toList() ),
+                    logicalCols );
         }
 
 

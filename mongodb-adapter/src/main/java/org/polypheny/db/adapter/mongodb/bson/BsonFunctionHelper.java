@@ -17,11 +17,11 @@
 package org.polypheny.db.adapter.mongodb.bson;
 
 import com.google.common.collect.ImmutableList;
-import com.mongodb.client.gridfs.GridFSBucket;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
+import org.polypheny.db.adapter.mongodb.MongoRel.Implementor;
 import org.polypheny.db.adapter.mongodb.MongoRowType;
 import org.polypheny.db.adapter.mongodb.util.MongoTypeUtil;
 import org.polypheny.db.rex.RexCall;
@@ -55,7 +55,7 @@ public class BsonFunctionHelper extends BsonDocument {
             + "        return result;}";
 
 
-    public static BsonDocument getFunction( RexCall call, MongoRowType rowType, GridFSBucket bucket ) {
+    public static BsonDocument getFunction( RexCall call, MongoRowType rowType, Implementor implementor ) {
         String function;
         if ( call.operands.size() == 3 && call.operands.get( 2 ) instanceof RexLiteral ) {
             Object funcName = ((RexLiteral) call.operands.get( 2 )).getValue3();
@@ -64,7 +64,7 @@ public class BsonFunctionHelper extends BsonDocument {
             return new BsonDocument().append( "$function",
                     new BsonDocument()
                             .append( "body", new BsonString( function ) )
-                            .append( "args", getArgsArray( call.operands, rowType, bucket ) )
+                            .append( "args", getArgsArray( call.operands, rowType, implementor ) )
                             .append( "lang", new BsonString( "js" ) ) );
 
         }
@@ -72,7 +72,7 @@ public class BsonFunctionHelper extends BsonDocument {
             // prepared
             return new BsonDocument().append( "$function", new BsonDocument()
                     .append( "body", getDynamicFunction( call.operands.get( 2 ) ) )
-                    .append( "args", getArgsArray( call.operands, rowType, bucket ) )
+                    .append( "args", getArgsArray( call.operands, rowType, implementor ) )
                     .append( "lang", new BsonString( "js" ) ) );
         }
         throw new IllegalArgumentException( "Unsupported function for MongoDB" );
@@ -108,11 +108,11 @@ public class BsonFunctionHelper extends BsonDocument {
     }
 
 
-    private static BsonArray getArgsArray( ImmutableList<RexNode> operands, MongoRowType rowType, GridFSBucket bucket ) {
+    private static BsonArray getArgsArray( ImmutableList<RexNode> operands, MongoRowType rowType, Implementor implementor ) {
         BsonArray array = new BsonArray();
         if ( operands.size() == 3 ) {
-            array.add( getVal( operands.get( 0 ), rowType, bucket ) );
-            array.add( getVal( operands.get( 1 ), rowType, bucket ) );
+            array.add( getVal( operands.get( 0 ), rowType, implementor ) );
+            array.add( getVal( operands.get( 1 ), rowType, implementor ) );
 
             return array;
         }
@@ -120,14 +120,14 @@ public class BsonFunctionHelper extends BsonDocument {
     }
 
 
-    private static BsonValue getVal( RexNode rexNode, MongoRowType rowType, GridFSBucket bucket ) {
+    private static BsonValue getVal( RexNode rexNode, MongoRowType rowType, Implementor implementor ) {
         if ( rexNode.isA( SqlKind.INPUT_REF ) ) {
             RexInputRef rex = (RexInputRef) rexNode;
-            return new BsonString( "$" + rowType.getPhysicalName( rowType.getFieldNames().get( rex.getIndex() ) ) );
+            return new BsonString( "$" + rowType.getPhysicalName( rowType.getFieldNames().get( rex.getIndex() ), implementor ) );
 
         } else if ( rexNode.isA( SqlKind.ARRAY_VALUE_CONSTRUCTOR ) ) {
             RexCall rex = (RexCall) rexNode;
-            return MongoTypeUtil.getBsonArray( rex, bucket );
+            return MongoTypeUtil.getBsonArray( rex, implementor.getBucket() );
 
         } else if ( rexNode.isA( SqlKind.DYNAMIC_PARAM ) ) {
             RexDynamicParam rex = (RexDynamicParam) rexNode;

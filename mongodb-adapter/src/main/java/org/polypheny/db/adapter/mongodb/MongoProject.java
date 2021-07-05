@@ -34,9 +34,12 @@
 package org.polypheny.db.adapter.mongodb;
 
 
+import com.google.common.collect.Streams;
 import com.mongodb.client.gridfs.GridFSBucket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.bson.BsonDocument;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
@@ -85,7 +88,7 @@ public class MongoProject extends Project implements MongoRel {
     public void implement( Implementor implementor ) {
         implementor.visitChild( 0, getInput() );
 
-        final MongoRules.RexToMongoTranslator translator = new MongoRules.RexToMongoTranslator( (JavaTypeFactory) getCluster().getTypeFactory(), MongoRules.mongoFieldNames( getInput().getRowType() ) );
+        final MongoRules.RexToMongoTranslator translator = new MongoRules.RexToMongoTranslator( (JavaTypeFactory) getCluster().getTypeFactory(), MongoRules.mongoFieldNames( getInput().getRowType() ), implementor );
         final List<String> items = new ArrayList<>();
         GridFSBucket bucket = implementor.getBucket();
         // we us our specialized rowType to derive the mapped underlying column identifiers
@@ -106,7 +109,7 @@ public class MongoProject extends Project implements MongoRel {
             String phyName = "1";
 
             if ( pair.left.getKind() == SqlKind.DISTANCE ) {
-                documents.put( pair.right, BsonFunctionHelper.getFunction( (RexCall) pair.left, mongoRowType, bucket ) );
+                documents.put( pair.right, BsonFunctionHelper.getFunction( (RexCall) pair.left, mongoRowType, implementor ) );
                 continue;
             }
 
@@ -115,21 +118,13 @@ public class MongoProject extends Project implements MongoRel {
                 continue;
             }
 
-            // we can you use a project of [name] : $[physical name] to rename our retrieved columns on aggregation
-            // we have to pay attention to "DUMMY" as it is apparently used for handling aggregates here
-            if ( mongoRowType != null && !name.contains( "$" ) && !name.equals( "DUMMY" ) ) {
-                if ( mongoRowType.containsPhysicalName( MongoRules.maybeFix( name ) ) ) {
-                    phyName = "\"$" + mongoRowType.getPhysicalName( MongoRules.maybeFix( name ) ) + "\"";
-                }
-            }
 
             StringBuilder blankExpr = new StringBuilder( expr.replace( "'", "" ) );
             if ( blankExpr.toString().startsWith( "$" ) && blankExpr.toString().endsWith( "]" ) && blankExpr.toString().contains( "[" ) ) {
                 // we want to access an array element and have to get the correct table and the specified array element
                 String[] splits = blankExpr.toString().split( "\\[" );
                 if ( splits.length >= 2 && splits[1].contains( "]" ) && mongoRowType != null ) {
-                    String arrayName = splits[0].replace( "$", "" );
-                    arrayName = "\"$" + mongoRowType.getPhysicalName( arrayName ) + "\"";
+                    String arrayName = "\"$" + splits[0].replace( "$", "" ) + "\"";
 
                     // we can have multidimensional arrays and have to take care here
                     blankExpr = new StringBuilder( arrayName );
@@ -150,11 +145,16 @@ public class MongoProject extends Project implements MongoRel {
             }
 
             items.add( expr.equals( "'$" + name + "'" )
-                    ? MongoRules.maybeQuote( name ) + ": " + phyName//1"
+                    ? MongoRules.maybeQuote( name ) + ": " + 1
                     : MongoRules.maybeQuote( name ) + ": " + expr );
         }
         String functions = documents.toJson( JsonWriterSettings.builder().outputMode( JsonMode.RELAXED ).build() );
-        String findString = Util.toString( items, "{", ", ", "" ) + functions.substring( 1, functions.length() - 1 ) + "}";
+        String findString = Util.toString(
+                Streams.concat(
+                        items.stream(),
+                        Stream.of( functions.substring( 1, functions.length() - 1 ) ) )
+                        .collect( Collectors.toList() ),
+                "{", ", ", "}" );
         final String aggregateString = "{$project: " + findString + "}";
         final Pair<String, String> op = Pair.of( findString, aggregateString );
         implementor.hasProject = true;

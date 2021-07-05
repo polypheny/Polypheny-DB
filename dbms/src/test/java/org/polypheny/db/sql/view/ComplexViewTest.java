@@ -1692,9 +1692,9 @@ public class ComplexViewTest {
                             ImmutableList.of( q15_TEST_DATA )
                     );
 
-                    statement.executeUpdate( "DROP VIEW revenue0" );
                     connection.commit();
                 } finally {
+                    statement.executeUpdate( "DROP VIEW revenue0" );
                     dropTables( statement );
                 }
             }
