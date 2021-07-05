@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.commons.collections4.iterators.ArrayListIterator;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
@@ -591,7 +591,7 @@ public class DdlManagerImpl extends DdlManager {
     public void addPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException {
         List<CatalogColumn> addedColumns = new LinkedList<>();
 
-        List<Long> tempPartitionList = new ArrayList<>();
+        List<Long> tempPartitionGroupList = new ArrayList<>();
 
         // Check whether this placement already exists
         for ( int storeId : catalogTable.placementsByAdapter.keySet() ) {
@@ -605,7 +605,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Select partitions to create on this placement
-        if ( catalogTable.isPartitioned ) {
+       // if ( catalogTable.isPartitioned ) {
             boolean isDataPlacementPartitioned = false;
             long tableId = catalogTable.id;
             // Needed to ensure that column placements on the same store contain all the same partitions
@@ -629,10 +629,10 @@ public class DdlManagerImpl extends DdlManager {
                 for ( int partitionGroupId : partitionGroupIds ) {
                     // Check if specified partition index is even part of table and if so get corresponding uniquePartId
                     try {
-                        tempPartitionList.add( catalogTable.partitionGroupIds.get( partitionGroupId ) );
+                        tempPartitionGroupList.add( catalogTable.partitionProperty.partitionGroupIds.get( partitionGroupId ) );
                     } catch ( IndexOutOfBoundsException e ) {
                         throw new RuntimeException( "Specified Partition-Index: '" + partitionGroupId + "' is not part of table '"
-                                + catalogTable.name + "', has only " + catalogTable.numPartitionGroups + " partitions" );
+                                + catalogTable.name + "', has only " + catalogTable.partitionProperty.numPartitionGroups + " partitions" );
                     }
                 }
             } else if ( !partitionGroupNames.isEmpty() && partitionGroupIds.isEmpty() ) {
@@ -647,7 +647,7 @@ public class DdlManagerImpl extends DdlManager {
                     boolean isPartOfTable = false;
                     for ( CatalogPartitionGroup catalogPartitionGroup : catalogPartitionGroups ) {
                         if ( partitionName.equals( catalogPartitionGroup.partitionGroupName.toLowerCase() ) ) {
-                            tempPartitionList.add( catalogPartitionGroup.id );
+                            tempPartitionGroupList.add( catalogPartitionGroup.id );
                             isPartOfTable = true;
                             break;
                         }
@@ -665,59 +665,61 @@ public class DdlManagerImpl extends DdlManager {
 
                 if ( isDataPlacementPartitioned ) {
                     // If DataPlacement already contains partitions then create new placement with same set of partitions.
-                    tempPartitionList = currentPartList;
+                    tempPartitionGroupList = currentPartList;
                 } else {
-                    tempPartitionList = catalogTable.partitionGroupIds;
+                    tempPartitionGroupList = catalogTable.partitionProperty.partitionGroupIds;
                 }
             }
-        }
+        //}
 
 
         //all internal partitions placed on this store
         List<Long> partitionIds = new ArrayList<>();
-        partitionIds = catalog.getPartitionsOnDataPlacement(dataStore.getAdapterId(), catalogTable.id );
+        /*partitionIds = catalog.getPartitionsOnDataPlacement(dataStore.getAdapterId(), catalogTable.id );
 
         if ( partitionIds.isEmpty() ){
             partitionIds.add( (long) -1 );
             //add default value for non-partitioned otherwise CCP wouldn't be created at all
+        }*/
+
+
+        //Gather all partitions relevant to add depending on the specified partitionGroup
+        tempPartitionGroupList.forEach( pg -> catalog.getPartitions(pg).forEach( p -> partitionIds.add( p.id ) ) );
+
+
+        // Create column placements
+        for ( long cid : columnIds ) {
+            catalog.addColumnPlacement(
+                    dataStore.getAdapterId(),
+                    cid,
+                    PlacementType.MANUAL,
+                    null,
+                    null,
+                    null,
+                    tempPartitionGroupList);
+            addedColumns.add( catalog.getColumn( cid ) );
         }
-
-
-        //Creates column placements for all partitionIds assigned to this store.
-        for ( long partitionId : partitionIds ) {
-            // Create column placements
-            for ( long cid : columnIds ) {
+        //Check if placement includes primary key columns
+        CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
+        for ( long cid : primaryKey.columnIds ) {
+            if ( !columnIds.contains( cid ) ) {
                 catalog.addColumnPlacement(
                         dataStore.getAdapterId(),
                         cid,
-                        PlacementType.MANUAL,
+                        PlacementType.AUTOMATIC,
                         null,
                         null,
                         null,
-                        tempPartitionList);
+                        tempPartitionGroupList);
                 addedColumns.add( catalog.getColumn( cid ) );
             }
-            //Check if placement includes primary key columns
-            CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
-            for ( long cid : primaryKey.columnIds ) {
-                if ( !columnIds.contains( cid ) ) {
-                    catalog.addColumnPlacement(
-                            dataStore.getAdapterId(),
-                            cid,
-                            PlacementType.AUTOMATIC,
-                            null,
-                            null,
-                            null,
-                            tempPartitionList);
-                    addedColumns.add( catalog.getColumn( cid ) );
-                }
-            }
         }
+
         // Create table on store
         dataStore.createTable( statement.getPrepareContext(), catalogTable );
         // Copy data to the newly added placements
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
-        dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( dataStore.getAdapterId() ), addedColumns );
+        dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( dataStore.getAdapterId() ), addedColumns, partitionIds );
     }
 
 
@@ -1101,7 +1103,7 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        List<Long> tempPartitionList = new ArrayList<>();
+        List<Long> tempPartitionGroupList = new ArrayList<>();
         // Select partitions to create on this placement
         if ( catalogTable.isPartitioned ) {
             long tableId = catalogTable.id;
@@ -1111,13 +1113,13 @@ public class DdlManagerImpl extends DdlManager {
                 for ( int partitionGroupId : partitionGroupIds ) {
                     // Check if specified partition index is even part of table and if so get corresponding uniquePartId
                     try {
-                        tempPartitionList.add( catalogTable.partitionGroupIds.get( partitionGroupId ) );
+                        tempPartitionGroupList.add( catalogTable.partitionProperty.partitionGroupIds.get( partitionGroupId ) );
                     } catch ( IndexOutOfBoundsException e ) {
                         throw new RuntimeException( "Specified Partition-Index: '" + partitionGroupId + "' is not part of table '"
-                                + catalogTable.name + "', has only " + catalogTable.numPartitionGroups + " partitions" );
+                                + catalogTable.name + "', has only " + catalogTable.partitionProperty.partitionGroupIds.size() + " partitions" );
                     }
                 }
-                catalog.updatePartitionGroupsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id, tempPartitionList );
+                catalog.updatePartitionGroupsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id, tempPartitionGroupList );
             }
             // If name partitions are specified
             else if ( !partitionGroupNames.isEmpty() && partitionGroupIds.isEmpty() ) {
@@ -1126,7 +1128,7 @@ public class DdlManagerImpl extends DdlManager {
                     boolean isPartOfTable = false;
                     for ( CatalogPartitionGroup catalogPartitionGroup : catalogPartitionGroups ) {
                         if ( partitionName.equals( catalogPartitionGroup.partitionGroupName.toLowerCase() ) ) {
-                            tempPartitionList.add( catalogPartitionGroup.id );
+                            tempPartitionGroupList.add( catalogPartitionGroup.id );
                             isPartOfTable = true;
                             break;
                         }
@@ -1136,52 +1138,55 @@ public class DdlManagerImpl extends DdlManager {
                                 + catalogTable.name + "'. Available partitions: " + String.join( ",", catalog.getPartitionGroupNames( tableId ) ) );
                     }
                 }
-                catalog.updatePartitionGroupsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id, tempPartitionList );
+                catalog.updatePartitionGroupsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id, tempPartitionGroupList );
             }
         }
 
         //all internal partitions placed on this store
         List<Long> partitionIds = new ArrayList<>();
-        partitionIds = catalog.getPartitionsOnDataPlacement(storeInstance.getAdapterId(), catalogTable.id );
+        /*partitionIds = catalog.getPartitionsOnDataPlacement(storeInstance.getAdapterId(), catalogTable.id );
 
         if ( partitionIds.isEmpty() ){
             partitionIds.add( (long) -1 );
             //add default value for non-partitioned otherwise CCP wouldn't be created at all
-        }
+        }*/
+
+        //Gather all partitions relevant to add depending on the specified partitionGroup
+        tempPartitionGroupList.forEach( pg -> catalog.getPartitions(pg).forEach( p -> partitionIds.add( p.id ) ) );
 
 
         // Which columns to add
         List<CatalogColumn> addedColumns = new LinkedList<>();
-        for ( long partitionId : partitionIds ) {
-            for ( long cid : columnIds ) {
-                if ( catalog.checkIfExistsColumnPlacement( storeInstance.getAdapterId(), cid ) ) {
-                    CatalogColumnPlacement placement = catalog.getColumnPlacement( storeInstance.getAdapterId(), cid );
-                    if ( placement.placementType == PlacementType.AUTOMATIC ) {
-                        // Make placement manual
-                        catalog.updateColumnPlacementType( storeInstance.getAdapterId(), cid, PlacementType.MANUAL );
-                    }
-                } else {
-                    // Create column placement
-                    catalog.addColumnPlacement(
-                            storeInstance.getAdapterId(),
-                            cid,
-                            PlacementType.MANUAL,
-                            null,
-                            null,
-                            null,
-                            tempPartitionList);
-                    // Add column on store
-                    storeInstance.addColumn( statement.getPrepareContext(), catalogTable, catalog.getColumn( cid ) );
-                    // Add to list of columns for which we need to copy data
-                    addedColumns.add( catalog.getColumn( cid ) );
+
+        for ( long cid : columnIds ) {
+            if ( catalog.checkIfExistsColumnPlacement( storeInstance.getAdapterId(), cid ) ) {
+                CatalogColumnPlacement placement = catalog.getColumnPlacement( storeInstance.getAdapterId(), cid );
+                if ( placement.placementType == PlacementType.AUTOMATIC ) {
+                    // Make placement manual
+                    catalog.updateColumnPlacementType( storeInstance.getAdapterId(), cid, PlacementType.MANUAL );
                 }
+            } else {
+                // Create column placement
+                catalog.addColumnPlacement(
+                        storeInstance.getAdapterId(),
+                        cid,
+                        PlacementType.MANUAL,
+                        null,
+                        null,
+                        null,
+                        tempPartitionGroupList);
+                // Add column on store
+                storeInstance.addColumn( statement.getPrepareContext(), catalogTable, catalog.getColumn( cid ) );
+                // Add to list of columns for which we need to copy data
+                addedColumns.add( catalog.getColumn( cid ) );
             }
         }
+
 
         // Copy the data to the newly added column placements
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
         if ( addedColumns.size() > 0 ) {
-            dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( storeInstance.getAdapterId() ), addedColumns );
+            dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( storeInstance.getAdapterId() ), addedColumns, partitionIds);
         }
     }
 
@@ -1224,7 +1229,8 @@ public class DdlManagerImpl extends DdlManager {
             storeInstance.addColumn( statement.getPrepareContext(), catalogTable, catalogColumn );
             // Copy the data to the newly added column placements
             DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
-            dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( storeInstance.getAdapterId() ), ImmutableList.of( catalogColumn ) );
+            dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( storeInstance.getAdapterId() ),
+                    ImmutableList.of( catalogColumn ), catalog.getPartitionsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id ) );
         }
     }
 
@@ -1336,24 +1342,25 @@ public class DdlManagerImpl extends DdlManager {
                 addConstraint( constraint.name, constraint.type, constraint.columnNames, tableId );
             }
 
+/*
 
-            CatalogTable catalogTable = catalog.getTable( tableId );
             //Technically every Table is partitioned. But tables classified as UNPARTITIONED only consist of one PartitionGroup and one large partition
             List<Long> partitionGroupIds = new ArrayList<>();
             partitionGroupIds.add(catalog.addPartitionGroup( tableId,"full", schemaId, PartitionType.NONE, 1, new ArrayList<>(), true));
 
             List<Long> partitionIds = new ArrayList<>();
             //get All(only one) PartitoinGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
-            catalog.getPartitionGroup( partitionGroupIds.get( 0 ) );
+            CatalogPartitionGroup defaultUnpartitionedGroup = catalog.getPartitionGroup( partitionGroupIds.get( 0 ) );
 
             PartitionProperty partitionProperty = PartitionProperty.builder()
                     .partitionType( PartitionType.NONE )
-                    .partitionGroupIds( ImmutableList.copyOf( partitionIds ))
-                    .partitionIds( ImmutableList.copyOf( partitionGroupIds ) )
+                    .partitionGroupIds( ImmutableList.copyOf( partitionGroupIds ))
+                    .partitionIds( ImmutableList.copyOf( defaultUnpartitionedGroup.partitionIds ) )
                     .build();
+*/
 
-
-            catalog.updateTablePartitionProperties(tableId, partitionProperty);
+            //catalog.updateTablePartitionProperties(tableId, partitionProperty);
+            CatalogTable catalogTable = catalog.getTable( tableId );
 
             for ( DataStore store : stores ) {
                 store.createTable( statement.getPrepareContext(), catalogTable );
@@ -1462,13 +1469,15 @@ public class DdlManagerImpl extends DdlManager {
                 }
             }
             partitionGroupIds.add( partId );
+
         }
+
 
 
         List<Long> partitionIds = new ArrayList<>();
         //get All PartitoinGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
-        catalog.getPartitionGroups( partitionInfo.table.id ).forEach( pg -> partitionIds.forEach( p -> partitionIds.add( p ) ) );
-
+        //catalog.getPartitionGroups( partitionInfo.table.id ).forEach( pg -> partitionIds.forEach( p -> partitionIds.add( p ) ) );
+        partitionGroupIds.forEach( pg -> catalog.getPartitions(pg).forEach( p -> partitionIds.add( p.id) ) );
 
         //TODO Find better place to work with Property handling
         PartitionProperty partitionProperty;
@@ -1488,8 +1497,8 @@ public class DdlManagerImpl extends DdlManager {
             partitionProperty = PartitionProperty.builder()
                     .partitionType( actualPartitionType )
                     .partitionColumnId( catalogColumn.id )
-                    .partitionGroupIds( ImmutableList.copyOf( partitionIds ))
-                    .partitionIds( ImmutableList.copyOf( partitionGroupIds ) )
+                    .partitionGroupIds( ImmutableList.copyOf( partitionGroupIds ))
+                    .partitionIds( ImmutableList.copyOf( partitionIds ) )
                     .build();
         }
 

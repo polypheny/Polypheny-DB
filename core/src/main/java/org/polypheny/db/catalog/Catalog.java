@@ -1278,6 +1278,8 @@ public abstract class Catalog {
 
     public abstract List<CatalogPartitionPlacement> getPartitionPlacementByTable( int adapterId, long tableId );
 
+    public abstract List<CatalogPartitionPlacement> getAllPartitionPlacementsByTable( long tableId );
+
     public abstract List<CatalogPartitionPlacement> getPartitionPlacements( long partitionId );
 
 

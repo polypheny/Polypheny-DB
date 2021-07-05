@@ -121,10 +121,10 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
             for ( int partitionId : partitionList ) {
                 // Check if specified partition index is even part of table and if so get corresponding uniquePartId
                 try {
-                    tempPartitionList.add( catalogTable.partitionGroupIds.get( partitionId ) );
+                    tempPartitionList.add( catalogTable.partitionProperty.partitionGroupIds.get( partitionId ) );
                 } catch ( IndexOutOfBoundsException e ) {
                     throw new RuntimeException( "Specified Partition-Index: '" + partitionId + "' is not part of table '"
-                            + catalogTable.name + "', has only " + catalogTable.numPartitionGroups + " partitions" );
+                            + catalogTable.name + "', has only " + catalogTable.partitionProperty.numPartitionGroups + " partitions" );
                 }
             }
         }

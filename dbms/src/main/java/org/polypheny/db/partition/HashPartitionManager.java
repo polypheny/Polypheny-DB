@@ -52,7 +52,7 @@ public class HashPartitionManager extends AbstractPartitionManager {
 
         //Get and accumulate all catalogPartitions for table
         List<CatalogPartition> catalogPartitions  = new ArrayList<>();
-        for ( long partitionGroupID : catalogTable.partitionGroupIds ) {
+        for ( long partitionGroupID : catalogTable.partitionProperty.partitionGroupIds ) {
             CatalogPartitionGroup catalogPartitionGroup = catalog.getPartitionGroup( partitionGroupID );
 
             //Build long list of catalog partitions to process later on
@@ -74,11 +74,11 @@ public class HashPartitionManager extends AbstractPartitionManager {
     @Override
     public boolean probePartitionGroupDistributionChange( CatalogTable catalogTable, int storeId, long columnId ) {
         // Change is only critical if there is only one column left with the characteristics
-        int numberOfFullPlacements = getPlacementsWithAllPartitionGroups( columnId, catalogTable.numPartitionGroups ).size();
+        int numberOfFullPlacements = getPlacementsWithAllPartitionGroups( columnId, catalogTable.partitionProperty.partitionGroupIds.size() ).size();
         if ( numberOfFullPlacements <= 1 ) {
             Catalog catalog = Catalog.getInstance();
             //Check if this one column is the column we are about to delete
-            if ( catalog.getPartitionGroupsOnDataPlacement( storeId, catalogTable.id ).size() == catalogTable.numPartitionGroups ) {
+            if ( catalog.getPartitionGroupsOnDataPlacement( storeId, catalogTable.id ).size() == catalogTable.partitionProperty.partitionGroupIds.size() ) {
                 return false;
             }
         }
@@ -94,7 +94,7 @@ public class HashPartitionManager extends AbstractPartitionManager {
         // Pick for each column the column placement which has full partitioning //SELECT WORST-CASE ergo Fallback
         for ( long columnId : catalogTable.columnIds ) {
             // Take the first column placement
-            relevantCcps.add( getPlacementsWithAllPartitionGroups( columnId, catalogTable.numPartitionGroups ).get( 0 ) );
+            relevantCcps.add( getPlacementsWithAllPartitionGroups( columnId, catalogTable.partitionProperty.partitionGroupIds.size() ).get( 0 ) );
         }
 
         return relevantCcps;

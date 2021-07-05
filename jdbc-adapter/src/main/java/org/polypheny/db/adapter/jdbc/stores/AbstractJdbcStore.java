@@ -130,70 +130,33 @@ public abstract class AbstractJdbcStore extends DataStore {
 
         List<CatalogColumnPlacement> existingPlacements = catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id );
 
-        //Create as much tables as we have physicalTable names.
-        // Is only >1 if catalogTable is partitioned
-        // Therefore for each partition a designated physical table is created
-        boolean firstIteration = true;
-        if ( catalogTable.isPartitioned ){
-            //Remove the unpartitioned table name again, otherwise it would cause, table already exist due to create statement
-
-            for ( long partitionId : catalogTable.partitionProperty.partitionIds ){
-                String physicalTableName = getPhysicalTableName( catalogTable.id, partitionId );
-                firstIteration = true;
-                if ( log.isDebugEnabled() ) {
-                    log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), qualifiedNames, physicalTableName );
-                }
-                StringBuilder query = buildCreateTableQuery( getDefaultPhysicalSchemaName(), physicalTableName, catalogTable );
-                executeUpdate( query, context );
-
-
-                catalog.addPartitionPlacement(
-                        getAdapterId(),
-                        catalogTable.id,
-                        partitionId,
-                        PlacementType.MANUAL,
-                        getDefaultPhysicalSchemaName(),
-                        physicalTableName);
-
-                for ( CatalogColumnPlacement placement : existingPlacements ) {
-                    catalog.addColumnPlacement(
-                            getAdapterId(),
-                            placement.columnId,
-                            placement.placementType,
-                            getDefaultPhysicalSchemaName(),
-                            physicalTableName,
-                            getPhysicalColumnName( placement.columnId ),
-                            null);
-
-                    //Remove old occurence for unpartitioned table
-                    if ( firstIteration ){
-                        catalog.deleteColumnPlacement( getAdapterId(), placement.columnId );
-                        firstIteration = false;
-                    }
-
-                }
-
-            }
-        }else{
-
+        //Remove the unpartitioned table name again, otherwise it would cause, table already exist due to create statement
+        for ( long partitionId : catalogTable.partitionProperty.partitionIds ){
+            String physicalTableName = getPhysicalTableName( catalogTable.id, partitionId );
 
             if ( log.isDebugEnabled() ) {
-                log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), qualifiedNames, originalPhysicalTableName );
+                log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), qualifiedNames, physicalTableName );
             }
-            StringBuilder query = buildCreateTableQuery( getDefaultPhysicalSchemaName(), originalPhysicalTableName, catalogTable );
+            StringBuilder query = buildCreateTableQuery( getDefaultPhysicalSchemaName(), physicalTableName, catalogTable );
             executeUpdate( query, context );
-            // Add physical names to placements
+
+
+            catalog.addPartitionPlacement(
+                    getAdapterId(),
+                    catalogTable.id,
+                    partitionId,
+                    PlacementType.MANUAL,
+                    getDefaultPhysicalSchemaName(),
+                    physicalTableName);
 
             for ( CatalogColumnPlacement placement : existingPlacements ) {
-                //Update the original placement which is already existing due to initial table create
                 catalog.updateColumnPlacementPhysicalNames(
                         getAdapterId(),
                         placement.columnId,
                         getDefaultPhysicalSchemaName(),
-                        originalPhysicalTableName,
+                        null,
                         getPhysicalColumnName( placement.columnId ),
                         true );
-
             }
         }
     }

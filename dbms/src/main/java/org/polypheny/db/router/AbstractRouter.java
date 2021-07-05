@@ -36,6 +36,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -277,7 +278,8 @@ public abstract class AbstractRouter implements Router {
                     placements = selectPlacement( node, catalogTable );
                 }
 
-                return builder.push( buildJoinedTableScan( statement, cluster, placements ) );
+                //TODO @HENNLO currently returns all PartitionPlacements
+                return builder.push( buildJoinedTableScan( statement, cluster, placements, catalog.getAllPartitionPlacementsByTable(catalogTable.id)) );
 
             } else {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
@@ -354,10 +356,12 @@ public abstract class AbstractRouter implements Router {
                 long pkid = catalogTable.primaryKey;
                 List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
                 CatalogColumn pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );
+
+                //Essentially gets a list of all stores where this table resides
                 List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacement( pkColumn.id );
 
                 if ( catalogTable.isPartitioned && log.isDebugEnabled() ) {
-                    log.debug( "\nListing all relevant stores for table: '{}' and all partitions: {}", catalogTable.name, catalogTable.partitionGroupIds );
+                    log.debug( "\nListing all relevant stores for table: '{}' and all partitions: {}", catalogTable.name, catalogTable.partitionProperty.partitionGroupIds );
                     for ( CatalogColumnPlacement dataPlacement : pkPlacements ) {
                         log.debug( "\t\t -> '{}' {}\t{}",
                                 dataPlacement.adapterUniqueName,
@@ -369,17 +373,7 @@ public abstract class AbstractRouter implements Router {
                 // Execute on all primary key placements
                 List<TableModify> modifies = new ArrayList<>( pkPlacements.size() );
                 for ( CatalogColumnPlacement pkPlacement : pkPlacements ) {
-                    CatalogReader catalogReader = statement.getTransaction().getCatalogReader();
 
-                    List<String> qualifiedTableName = ImmutableList.of(
-                            PolySchemaBuilder.buildAdapterSchemaName(
-                                    pkPlacement.adapterUniqueName,
-                                    catalogTable.getSchemaName(),
-                                    pkPlacement.physicalSchemaName,
-                                    -1),
-                            t.getLogicalTableName() );
-                    RelOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
-                    ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
                     // Get placements on store
                     List<CatalogColumnPlacement> placementsOnAdapter = catalog.getColumnPlacementsOnAdapterPerTable( pkPlacement.adapterId, catalogTable.id );
@@ -412,6 +406,7 @@ public abstract class AbstractRouter implements Router {
                         }
                     }
 
+                    long identPart = -1;
                     // Identify where clause of UPDATE
                     if ( catalogTable.isPartitioned ) {
                         boolean worstCaseRouting = false;
@@ -441,7 +436,6 @@ public abstract class AbstractRouter implements Router {
                             }
                         }
 
-                        long identPart = -1;
 
                         String partitionValue = "";
                         //set true if partitionColumn is part of UPDATE Statement, else assume worst case routing
@@ -588,7 +582,22 @@ public abstract class AbstractRouter implements Router {
                         accessedPartitionList.add( identPart );
                         statement.getTransaction().getMonitoringData().setAccessedPartitions( accessedPartitionList );
 
+                    }else{
+                        //unpartitioned tables only have one partition anyway
+                        identPart = catalogTable.partitionProperty.partitionIds.get( 0 );
                     }
+
+                    CatalogReader catalogReader = statement.getTransaction().getCatalogReader();
+
+                    List<String> qualifiedTableName = ImmutableList.of(
+                            PolySchemaBuilder.buildAdapterSchemaName(
+                                    pkPlacement.adapterUniqueName,
+                                    catalogTable.getSchemaName(),
+                                    pkPlacement.physicalSchemaName,
+                                    identPart),
+                            t.getLogicalTableName() );
+                    RelOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
+                    ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
                     // Build DML
                     TableModify modify;
@@ -597,8 +606,9 @@ public abstract class AbstractRouter implements Router {
                             RelBuilder.create( statement, cluster ),
                             catalogTable,
                             placementsOnAdapter,
+                            catalog.getPartitionPlacementsByAdapter(pkPlacement.adapterId),
                             statement,
-                            cluster ).build();
+                            cluster).build();
                     if ( modifiableTable != null && modifiableTable == physical.unwrap( Table.class ) ) {
                         modify = modifiableTable.toModificationRel(
                                 cluster,
@@ -647,9 +657,9 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    protected RelBuilder buildDml( RelNode node, RelBuilder builder, CatalogTable catalogTable, List<CatalogColumnPlacement> placements, Statement statement, RelOptCluster cluster ) {
+    protected RelBuilder buildDml( RelNode node, RelBuilder builder, CatalogTable catalogTable, List<CatalogColumnPlacement> placements, List<CatalogPartitionPlacement> partitionPlacements, Statement statement, RelOptCluster cluster ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            buildDml( node.getInput( i ), builder, catalogTable, placements, statement, cluster );
+            buildDml( node.getInput( i ), builder, catalogTable, placements, partitionPlacements, statement, cluster );
         }
 
         if ( log.isDebugEnabled() ) {
@@ -661,20 +671,25 @@ public abstract class AbstractRouter implements Router {
 
         if ( node instanceof LogicalTableScan && node.getTable() != null ) {
             RelOptTableImpl table = (RelOptTableImpl) node.getTable();
+
             if ( table.getTable() instanceof LogicalTable ) {
                 // Special handling for INSERT INTO foo SELECT * FROM foo2
                 if ( ((LogicalTable) table.getTable()).getTableId() != catalogTable.id ) {
                     return buildSelect( node, builder, statement, cluster );
                 }
-                builder = handleTableScan(
-                        builder,
-                        placements.get( 0 ).tableId,
-                        placements.get( 0 ).adapterUniqueName,
-                        catalogTable.getSchemaName(),
-                        catalogTable.name,
-                        placements.get( 0 ).physicalSchemaName,
-                        placements.get( 0 ).physicalTableName );
+                for ( CatalogPartitionPlacement cpp : partitionPlacements ) {
+                    builder = handleTableScan(
+                            builder,
+                            placements.get( 0 ).tableId,
+                            placements.get( 0 ).adapterUniqueName,
+                            catalogTable.getSchemaName(),
+                            catalogTable.name,
+                            placements.get( 0 ).physicalSchemaName,
+                            cpp.physicalTableName,
+                            cpp.partitionId);
+                }
                 return builder;
+
             } else {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
             }
@@ -775,7 +790,7 @@ public abstract class AbstractRouter implements Router {
 
 
     @Override
-    public RelNode buildJoinedTableScan( Statement statement, RelOptCluster cluster, List<CatalogColumnPlacement> placements ) {
+    public RelNode buildJoinedTableScan( Statement statement, RelOptCluster cluster, List<CatalogColumnPlacement> placements, List<CatalogPartitionPlacement> partitionPlacements ) {
         RelBuilder builder = RelBuilder.create( statement, cluster );
 
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
@@ -793,95 +808,100 @@ public abstract class AbstractRouter implements Router {
             }
             placementsByAdapter.get( placement.adapterId ).add( placement );
         }
+        for ( CatalogPartitionPlacement cpp : partitionPlacements ) {
+            if ( placementsByAdapter.size() == 1 ) {
 
-        if ( placementsByAdapter.size() == 1 ) {
-            List<CatalogColumnPlacement> ccp = placementsByAdapter.values().iterator().next();
-            builder = handleTableScan(
-                    builder,
-                    ccp.get( 0 ).tableId,
-                    ccp.get( 0 ).adapterUniqueName,
-                    ccp.get( 0 ).getLogicalSchemaName(),
-                    ccp.get( 0 ).getLogicalTableName(),
-                    ccp.get( 0 ).physicalSchemaName,
-                    ccp.get( 0 ).physicalTableName );
-            // final project
-            ArrayList<RexNode> rexNodes = new ArrayList<>();
-            List<CatalogColumnPlacement> placementList = placements.stream()
-                    .sorted( Comparator.comparingInt( p -> Catalog.getInstance().getColumn( p.columnId ).position ) )
-                    .collect( Collectors.toList() );
-            for ( CatalogColumnPlacement catalogColumnPlacement : placementList ) {
-                rexNodes.add( builder.field( catalogColumnPlacement.getLogicalColumnName() ) );
-            }
-            builder.project( rexNodes );
-        } else if ( placementsByAdapter.size() > 1 ) {
-            // We need to join placements on different adapters
-
-            // Get primary key
-            long pkid = catalog.getTable( placements.get( 0 ).tableId ).primaryKey;
-            List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
-            List<CatalogColumn> pkColumns = new LinkedList<>();
-            for ( long pkColumnId : pkColumnIds ) {
-                pkColumns.add( Catalog.getInstance().getColumn( pkColumnId ) );
-            }
-
-            // Add primary key
-            for ( Entry<Integer, List<CatalogColumnPlacement>> entry : placementsByAdapter.entrySet() ) {
-                for ( CatalogColumn pkColumn : pkColumns ) {
-                    CatalogColumnPlacement pkPlacement = Catalog.getInstance().getColumnPlacement( entry.getKey(), pkColumn.id );
-                    if ( !entry.getValue().contains( pkPlacement ) ) {
-                        entry.getValue().add( pkPlacement );
-                    }
-                }
-            }
-
-            Deque<String> queue = new LinkedList<>();
-            boolean first = true;
-            for ( List<CatalogColumnPlacement> ccps : placementsByAdapter.values() ) {
-                handleTableScan(
+                List<CatalogColumnPlacement> ccp = placementsByAdapter.values().iterator().next();
+                builder = handleTableScan(
                         builder,
-                        ccps.get( 0 ).tableId,
-                        ccps.get( 0 ).adapterUniqueName,
-                        ccps.get( 0 ).getLogicalSchemaName(),
-                        ccps.get( 0 ).getLogicalTableName(),
-                        ccps.get( 0 ).physicalSchemaName,
-                        ccps.get( 0 ).physicalTableName );
-                if ( first ) {
-                    first = false;
-                } else {
-                    ArrayList<RexNode> rexNodes = new ArrayList<>();
-                    for ( CatalogColumnPlacement p : ccps ) {
-                        if ( pkColumnIds.contains( p.columnId ) ) {
-                            String alias = ccps.get( 0 ).adapterUniqueName + "_" + p.getLogicalColumnName();
-                            rexNodes.add( builder.alias( builder.field( p.getLogicalColumnName() ), alias ) );
-                            queue.addFirst( alias );
-                            queue.addFirst( p.getLogicalColumnName() );
-                        } else {
-                            rexNodes.add( builder.field( p.getLogicalColumnName() ) );
+                        ccp.get( 0 ).tableId,
+                        ccp.get( 0 ).adapterUniqueName,
+                        ccp.get( 0 ).getLogicalSchemaName(),
+                        ccp.get( 0 ).getLogicalTableName(),
+                        ccp.get( 0 ).physicalSchemaName,
+                        cpp.physicalTableName,
+                        cpp.partitionId );
+                // final project
+                ArrayList<RexNode> rexNodes = new ArrayList<>();
+                List<CatalogColumnPlacement> placementList = placements.stream()
+                        .sorted( Comparator.comparingInt( p -> Catalog.getInstance().getColumn( p.columnId ).position ) )
+                        .collect( Collectors.toList() );
+                for ( CatalogColumnPlacement catalogColumnPlacement : placementList ) {
+                    rexNodes.add( builder.field( catalogColumnPlacement.getLogicalColumnName() ) );
+                }
+                builder.project( rexNodes );
+
+            } else if ( placementsByAdapter.size() > 1 ) {
+                // We need to join placements on different adapters
+
+                // Get primary key
+                long pkid = catalog.getTable( placements.get( 0 ).tableId ).primaryKey;
+                List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
+                List<CatalogColumn> pkColumns = new LinkedList<>();
+                for ( long pkColumnId : pkColumnIds ) {
+                    pkColumns.add( Catalog.getInstance().getColumn( pkColumnId ) );
+                }
+
+                // Add primary key
+                for ( Entry<Integer, List<CatalogColumnPlacement>> entry : placementsByAdapter.entrySet() ) {
+                    for ( CatalogColumn pkColumn : pkColumns ) {
+                        CatalogColumnPlacement pkPlacement = Catalog.getInstance().getColumnPlacement( entry.getKey(), pkColumn.id );
+                        if ( !entry.getValue().contains( pkPlacement ) ) {
+                            entry.getValue().add( pkPlacement );
                         }
                     }
-                    builder.project( rexNodes );
-                    List<RexNode> joinConditions = new LinkedList<>();
-                    for ( int i = 0; i < pkColumnIds.size(); i++ ) {
-                        joinConditions.add( builder.call(
-                                SqlStdOperatorTable.EQUALS,
-                                builder.field( 2, ccps.get( 0 ).getLogicalTableName(), queue.removeFirst() ),
-                                builder.field( 2, ccps.get( 0 ).getLogicalTableName(), queue.removeFirst() ) ) );
-                    }
-                    builder.join( JoinRelType.INNER, joinConditions );
-
                 }
+
+                Deque<String> queue = new LinkedList<>();
+                boolean first = true;
+                for ( List<CatalogColumnPlacement> ccps : placementsByAdapter.values() ) {
+                    handleTableScan(
+                            builder,
+                            ccps.get( 0 ).tableId,
+                            ccps.get( 0 ).adapterUniqueName,
+                            ccps.get( 0 ).getLogicalSchemaName(),
+                            ccps.get( 0 ).getLogicalTableName(),
+                            ccps.get( 0 ).physicalSchemaName,
+                            cpp.physicalTableName,
+                            cpp.partitionId);
+                    if ( first ) {
+                        first = false;
+                    } else {
+                        ArrayList<RexNode> rexNodes = new ArrayList<>();
+                        for ( CatalogColumnPlacement p : ccps ) {
+                            if ( pkColumnIds.contains( p.columnId ) ) {
+                                String alias = ccps.get( 0 ).adapterUniqueName + "_" + p.getLogicalColumnName();
+                                rexNodes.add( builder.alias( builder.field( p.getLogicalColumnName() ), alias ) );
+                                queue.addFirst( alias );
+                                queue.addFirst( p.getLogicalColumnName() );
+                            } else {
+                                rexNodes.add( builder.field( p.getLogicalColumnName() ) );
+                            }
+                        }
+                        builder.project( rexNodes );
+                        List<RexNode> joinConditions = new LinkedList<>();
+                        for ( int i = 0; i < pkColumnIds.size(); i++ ) {
+                            joinConditions.add( builder.call(
+                                    SqlStdOperatorTable.EQUALS,
+                                    builder.field( 2, ccps.get( 0 ).getLogicalTableName(), queue.removeFirst() ),
+                                    builder.field( 2, ccps.get( 0 ).getLogicalTableName(), queue.removeFirst() ) ) );
+                        }
+                        builder.join( JoinRelType.INNER, joinConditions );
+
+                    }
+                }
+                // final project
+                ArrayList<RexNode> rexNodes = new ArrayList<>();
+                List<CatalogColumnPlacement> placementList = placements.stream()
+                        .sorted( Comparator.comparingInt( p -> Catalog.getInstance().getColumn( p.columnId ).position ) )
+                        .collect( Collectors.toList() );
+                for ( CatalogColumnPlacement ccp : placementList ) {
+                    rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
+                }
+                builder.project( rexNodes );
+            } else {
+                throw new RuntimeException( "The table '" + placements.get( 0 ).getLogicalTableName() + "' seems to have no placement. This should not happen!" );
             }
-            // final project
-            ArrayList<RexNode> rexNodes = new ArrayList<>();
-            List<CatalogColumnPlacement> placementList = placements.stream()
-                    .sorted( Comparator.comparingInt( p -> Catalog.getInstance().getColumn( p.columnId ).position ) )
-                    .collect( Collectors.toList() );
-            for ( CatalogColumnPlacement ccp : placementList ) {
-                rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
-            }
-            builder.project( rexNodes );
-        } else {
-            throw new RuntimeException( "The table '" + placements.get( 0 ).getLogicalTableName() + "' seems to have no placement. This should not happen!" );
         }
         RelNode node = builder.build();
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
@@ -898,12 +918,13 @@ public abstract class AbstractRouter implements Router {
             String logicalSchemaName,
             String logicalTableName,
             String physicalSchemaName,
-            String physicalTableName ) {
+            String physicalTableName,
+            long partitionId ) {
         if ( selectedAdapter != null ) {
             selectedAdapter.put( tableId, new SelectedAdapterInfo( storeUniqueName, physicalSchemaName, physicalTableName ) );
         }
         return builder.scan( ImmutableList.of(
-                PolySchemaBuilder.buildAdapterSchemaName( storeUniqueName, logicalSchemaName, physicalSchemaName,  -1),
+                PolySchemaBuilder.buildAdapterSchemaName( storeUniqueName, logicalSchemaName, physicalSchemaName,  partitionId),
                 logicalTableName ) );
     }
 

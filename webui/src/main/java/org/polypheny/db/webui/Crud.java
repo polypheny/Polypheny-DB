@@ -1956,8 +1956,8 @@ public class Crud implements InformationObserver {
                         adapter.getAdapterName(),
                         catalog.getColumnPlacementsOnAdapterPerTable( adapter.getAdapterId(), table.id ),
                         catalog.getPartitionGroupsIndexOnDataPlacement( placement.adapterId, placement.tableId ),
-                        table.numPartitionGroups,
-                        table.partitionType ) );
+                        table.partitionProperty.numPartitionGroups,
+                        table.partitionProperty.partitionType ) );
             }
             return p;
         } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {

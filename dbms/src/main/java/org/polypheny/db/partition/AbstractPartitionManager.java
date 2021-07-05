@@ -45,7 +45,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
     public boolean validatePartitionGroupDistribution( CatalogTable table ) {
         // Check for every column if there exists at least one placement which contains all partitions
         for ( long columnId : table.columnIds ) {
-            int numberOfFullPlacements = getPlacementsWithAllPartitionGroups( columnId, table.numPartitionGroups ).size();
+            int numberOfFullPlacements = getPlacementsWithAllPartitionGroups( columnId, table.partitionProperty.partitionGroupIds.size() ).size();
             if ( numberOfFullPlacements >= 1 ) {
                 log.debug( "Found ColumnPlacement which contains all partitions for column: {}", columnId );
                 break;

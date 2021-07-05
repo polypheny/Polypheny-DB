@@ -137,7 +137,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
                 schemaInformation.addRow( s.id, s.name, s.databaseId, s.schemaType );
             } );
             catalog.getTables( null, null, null ).forEach( t -> {
-                tableInformation.addRow( t.id, t.name, t.databaseId, t.schemaId, t.partitionType.toString(), t.numPartitionGroups );
+                tableInformation.addRow( t.id, t.name, t.databaseId, t.schemaId, t.partitionProperty.partitionType.toString(), t.partitionProperty.partitionGroupIds.size() );
             } );
             catalog.getColumns( null, null, null, null ).forEach( c -> {
                 String placements = catalog.getColumnPlacement( c.id ).stream().map( plac -> String.valueOf( plac.adapterId ) ).collect( Collectors.joining( "," ) );

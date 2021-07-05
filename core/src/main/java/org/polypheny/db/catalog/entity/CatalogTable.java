@@ -52,11 +52,8 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
 
     public final boolean isPartitioned;
     public final Catalog.PartitionType partitionType;
-    public final ImmutableList<Long> partitionGroupIds;
     public final long partitionColumnId;
     public final PartitionProperty partitionProperty;
-
-    public final long numPartitionGroups;
 
 
     public CatalogTable(
@@ -88,9 +85,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
 
         this.isPartitioned = false;
         this.partitionType = PartitionType.NONE;
-        this.partitionGroupIds = null;
         this.partitionColumnId = 0;
-        this.numPartitionGroups = 0;
         this.partitionProperty = partitionProperty;
 
         if ( type == TableType.TABLE && !modifiable ) {
@@ -114,9 +109,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
             final Long primaryKey,
             @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             boolean modifiable,
-            final long numPartitionGroups,
             final PartitionType partitionType,
-            final ImmutableList<Long> partitionGroupIds,
             final long partitionColumnId, PartitionProperty partitionProperty ) {
         this.id = id;
         this.name = name;
@@ -131,9 +124,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         this.placementsByAdapter = placementsByAdapter;
         this.modifiable = modifiable;
         this.partitionType = partitionType;
-        this.partitionGroupIds = partitionGroupIds;
         this.partitionColumnId = partitionColumnId;
-        this.numPartitionGroups = numPartitionGroups;
         this.isPartitioned = true;
         this.partitionProperty = partitionProperty;
 

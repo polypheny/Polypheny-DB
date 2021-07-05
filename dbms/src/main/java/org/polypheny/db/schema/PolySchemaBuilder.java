@@ -78,14 +78,13 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
 
     private synchronized AbstractPolyphenyDbSchema buildSchema() {
-        System.out.println("HENNLO START buildSchema");
+
         final Schema schema = new RootSchema();
         final AbstractPolyphenyDbSchema polyphenyDbSchema = new SimplePolyphenyDbSchema( null, schema, "" );
 
         SchemaPlus rootSchema = polyphenyDbSchema.plus();
         Catalog catalog = Catalog.getInstance();
-        //
-        System.out.println("HENNLO buildSchema - build logical Schema");
+
         // Build logical schema
         CatalogDatabase catalogDatabase = catalog.getDatabase( 1 );
         for ( CatalogSchema catalogSchema : catalog.getSchemas( catalogDatabase.id, null ) ) {
@@ -134,7 +133,6 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                 }
 
 
-
                 for ( String physicalSchemaName : tableIdsPerSchema.keySet() ) {
                     Set<Long> tableIds = tableIdsPerSchema.get( physicalSchemaName );
 
@@ -147,6 +145,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                         CatalogTable catalogTable = catalog.getTable( tableId );
 
                         List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementByTable(adapter.getAdapterId(), tableId);
+
 
                         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements){
 
@@ -170,8 +169,6 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                 }
             }
         }
-
-        System.out.println("HENNLO END buildSchema");
         return polyphenyDbSchema;
     }
 
