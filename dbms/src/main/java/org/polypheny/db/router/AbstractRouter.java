@@ -371,7 +371,7 @@ public abstract class AbstractRouter implements Router {
                 }
 
                 // Execute on all primary key placements
-                List<TableModify> modifies = new ArrayList<>( pkPlacements.size() );
+                List<TableModify> modifies = new ArrayList<>(  );
                 for ( CatalogColumnPlacement pkPlacement : pkPlacements ) {
 
 
@@ -589,6 +589,11 @@ public abstract class AbstractRouter implements Router {
 
                     CatalogReader catalogReader = statement.getTransaction().getCatalogReader();
 
+
+
+                    List<CatalogPartitionPlacement> debugPlacements = catalog.getAllPartitionPlacementsByTable( t.getTableId() );
+
+
                     List<String> qualifiedTableName = ImmutableList.of(
                             PolySchemaBuilder.buildAdapterSchemaName(
                                     pkPlacement.adapterUniqueName,
@@ -606,7 +611,7 @@ public abstract class AbstractRouter implements Router {
                             RelBuilder.create( statement, cluster ),
                             catalogTable,
                             placementsOnAdapter,
-                            catalog.getPartitionPlacementsByAdapter(pkPlacement.adapterId),
+                            catalog.getPartitionPlacement( pkPlacement.adapterId,identPart),
                             statement,
                             cluster).build();
                     if ( modifiableTable != null && modifiableTable == physical.unwrap( Table.class ) ) {
@@ -633,6 +638,8 @@ public abstract class AbstractRouter implements Router {
                     }
                     modifies.add( modify );
                 }
+
+
                 if ( modifies.size() == 1 ) {
                     return modifies.get( 0 );
                 } else {
@@ -657,9 +664,9 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    protected RelBuilder buildDml( RelNode node, RelBuilder builder, CatalogTable catalogTable, List<CatalogColumnPlacement> placements, List<CatalogPartitionPlacement> partitionPlacements, Statement statement, RelOptCluster cluster ) {
+    protected RelBuilder buildDml( RelNode node, RelBuilder builder, CatalogTable catalogTable, List<CatalogColumnPlacement> placements, CatalogPartitionPlacement partitionPlacement, Statement statement, RelOptCluster cluster ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            buildDml( node.getInput( i ), builder, catalogTable, placements, partitionPlacements, statement, cluster );
+            buildDml( node.getInput( i ), builder, catalogTable, placements, partitionPlacement, statement, cluster );
         }
 
         if ( log.isDebugEnabled() ) {
@@ -677,17 +684,17 @@ public abstract class AbstractRouter implements Router {
                 if ( ((LogicalTable) table.getTable()).getTableId() != catalogTable.id ) {
                     return buildSelect( node, builder, statement, cluster );
                 }
-                for ( CatalogPartitionPlacement cpp : partitionPlacements ) {
-                    builder = handleTableScan(
-                            builder,
-                            placements.get( 0 ).tableId,
-                            placements.get( 0 ).adapterUniqueName,
-                            catalogTable.getSchemaName(),
-                            catalogTable.name,
-                            placements.get( 0 ).physicalSchemaName,
-                            cpp.physicalTableName,
-                            cpp.partitionId);
-                }
+
+                builder = handleTableScan(
+                        builder,
+                        placements.get( 0 ).tableId,
+                        placements.get( 0 ).adapterUniqueName,
+                        catalogTable.getSchemaName(),
+                        catalogTable.name,
+                        placements.get( 0 ).physicalSchemaName,
+                        partitionPlacement.physicalTableName,
+                        partitionPlacement.partitionId);
+
                 return builder;
 
             } else {

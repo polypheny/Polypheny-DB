@@ -29,7 +29,9 @@ import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
+import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogSchema;
@@ -796,5 +798,157 @@ public abstract class MockCatalog extends Catalog {
     public void clear() {
         throw new NotImplementedException();
     }
+
+    /**
+     * Adds a partition to the catalog
+     *
+     * @param tableId The unique id of the table
+     * @param schemaId The unique id of the table
+     * @param partitionGroupId partitionGroupId where the partition should be initially added to
+     * @return The id of the created partition
+     */
+    @Override
+    public long addPartition( long tableId, long schemaId, long partitionGroupId, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException {
+        throw new NotImplementedException();
+    }
+
+
+    /**
+     * Deletes a single partition and all references.
+     *
+     * @param tableId The unique id of the table
+     * @param schemaId The unique id of the table
+     * @param partitionId The partitionId to be deleted
+     */
+    @Override
+    public void deletePartition( long tableId, long schemaId, long partitionId ) {
+        throw new NotImplementedException();
+    }
+
+
+    /**
+     * Get a partition object by its unique id
+     *
+     * @param partitionId The unique id of the partition
+     * @return A catalog partition
+     */
+    @Override
+    public CatalogPartition getPartition( long partitionId ) {
+        throw new NotImplementedException();    }
+
+
+    /**
+     * Updates partitionProperties on table
+     *
+     * @param tableId Table to be partitioned
+     * @param partitionProperty Partition properties
+     */
+    @Override
+    public void updateTablePartitionProperties( long tableId, PartitionProperty partitionProperty ) {
+        throw new NotImplementedException();
+    }
+
+
+    /**
+     * Get a List of all partitions belonging to a specific table
+     *
+     * @param partitionGroupId Table to be queried
+     * @return list of all partitions on this table
+     */
+    @Override
+    public List<CatalogPartition> getPartitions( long partitionGroupId ) {
+        throw new NotImplementedException();    }
+
+
+    /**
+     * Get all partitions of the specified database which fit to the specified filter patterns.
+     * <code>getColumns(xid, databaseName, null, null, null)</code> returns all partitions of the database.
+     *
+     * @param databaseNamePattern Pattern for the database name. null returns all.
+     * @param schemaNamePattern Pattern for the schema name. null returns all.
+     * @param tableNamePattern Pattern for the table name. null returns catalog/src/test/java/org/polypheny/db/test/CatalogTest.javaall.
+     * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
+     */
+    @Override
+    public List<CatalogPartition> getPartitions( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) {
+        throw new NotImplementedException();    }
+
+
+    /**
+     * Get all partitions of a DataPlacement (identified by adapterId and tableId)
+     *
+     * @param adapterId The unique id of the adapter
+     * @param tableId The unique id of the table
+     * @return List of partitionIds
+     */
+    @Override
+    public List<Long> getPartitionsOnDataPlacement( int adapterId, long tableId ) {
+        throw new NotImplementedException();    }
+
+
+    /**
+     * Adds a placement for a partition.
+     *
+     * @param adapterId The adapter on which the table should be placed on
+     * @param placementType The type of placement
+     * @param physicalSchemaName The schema name on the adapter
+     * @param physicalTableName The table name on the adapter
+     */
+    @Override
+    public void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName ) {
+        throw new NotImplementedException();
+    }
+
+
+    /**
+     * Updates the partition placements on the store.
+     *
+     * @param adapterId The adapter on which the table should be placed on
+     */
+    @Override
+    public void updatePartitionPlacements( int adapterId, long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    /**
+     * Delets a placement for a partition.
+     *
+     * @param adapterId The adapter on which the table should be placed on
+     */
+    @Override
+    public void deletePartitionPlacement( int adapterId, long partitionId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public CatalogPartitionPlacement getPartitionPlacement( int adapterId, long partitionId ) {
+        throw new NotImplementedException();    }
+
+
+    @Override
+    public List<CatalogPartitionPlacement> getPartitionPlacementsByAdapter( int adapterId ) {
+        throw new NotImplementedException();    }
+
+
+    @Override
+    public List<CatalogPartitionPlacement> getPartitionPlacementByTable( int adapterId, long tableId ) {
+        throw new NotImplementedException();    }
+
+
+    @Override
+    public List<CatalogPartitionPlacement> getAllPartitionPlacementsByTable( long tableId ) {
+        throw new NotImplementedException();    }
+
+
+    @Override
+    public List<CatalogPartitionPlacement> getPartitionPlacements( long partitionId ) {
+        throw new NotImplementedException();    }
+
+
+    @Override
+    public boolean checkIfExistsPartitionPlacement( int adapterId, long partitionId ) {
+        throw new NotImplementedException();    }
 
 }

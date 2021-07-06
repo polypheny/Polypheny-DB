@@ -1511,8 +1511,23 @@ public class DdlManagerImpl extends DdlManager {
         // Basically get first part of PK even if its compound of PK it is sufficient
         CatalogColumn pkColumn = catalog.getColumn( pkColumnIds.get( 0 ) );
         // This gets us only one ccp per store (first part of PK)
-        for ( CatalogColumnPlacement ccp : catalog.getColumnPlacement( pkColumn.id ) ) {
+
+        boolean fillStores = false;
+        if ( stores == null ) {
+            stores = new ArrayList<>();
+            fillStores = true;
+        }
+        List<CatalogColumnPlacement> catalogColumnPlacements = catalog.getColumnPlacement( pkColumn.id );
+        for ( CatalogColumnPlacement ccp : catalogColumnPlacements ) {
             catalog.updatePartitionGroupsOnDataPlacement( ccp.adapterId, ccp.tableId, partitionGroupIds );
+            if ( fillStores ) {
+                // Ask router on which store(s) the table should be placed
+                Adapter adapter = AdapterManager.getInstance().getAdapter( ccp.adapterId );
+                DataStore store;
+                if ( adapter instanceof DataStore ) {
+                    stores.add((DataStore) adapter);
+                }
+            }
         }
 
 
@@ -1520,12 +1535,11 @@ public class DdlManagerImpl extends DdlManager {
         CatalogTable partitionedTable = catalog.getTable( partitionInfo.table.id );
 
 
-        if ( stores == null ) {
-            // Ask router on which store(s) the table should be placed
-            stores = statement.getRouter().createTable( partitionedTable.schemaId, statement );
-        }
+
+
 
         for ( DataStore store : stores ) {
+            store.dropTable( statement.getPrepareContext(), partitionedTable );
             store.createTable( statement.getPrepareContext(), partitionedTable );
 
             //TODO Migrate data from standard table to unpartitioned table
