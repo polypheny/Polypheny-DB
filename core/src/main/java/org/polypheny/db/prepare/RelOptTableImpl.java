@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ package org.polypheny.db.prepare;
 
 
 import com.google.common.collect.ImmutableList;
+import java.io.Serializable;
 import java.util.AbstractList;
 import java.util.Collection;
 import java.util.List;
@@ -91,11 +92,11 @@ import org.polypheny.db.util.Util;
  */
 public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
 
-    private final RelOptSchema schema;
+    private final transient RelOptSchema schema;
     private final RelDataType rowType;
     @Getter
     private final Table table;
-    private final Function<Class, Expression> expressionFunction;
+    private final transient Function<Class, Expression> expressionFunction;
     private final ImmutableList<String> names;
 
     /**
@@ -161,15 +162,15 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
     private static Function<Class, Expression> getClassExpressionFunction( final SchemaPlus schema, final String tableName, final Table table ) {
         if ( table instanceof QueryableTable ) {
             final QueryableTable queryableTable = (QueryableTable) table;
-            return clazz -> queryableTable.getExpression( schema, tableName, clazz );
+            return (Function<Class, Expression> & Serializable) clazz -> queryableTable.getExpression( schema, tableName, clazz );
         } else if ( table instanceof ScannableTable
                 || table instanceof FilterableTable
                 || table instanceof ProjectableFilterableTable ) {
-            return clazz -> Schemas.tableExpression( schema, Object[].class, tableName, table.getClass() );
+            return (Function<Class, Expression> & Serializable) clazz -> Schemas.tableExpression( schema, Object[].class, tableName, table.getClass() );
         } else if ( table instanceof StreamableTable ) {
             return getClassExpressionFunction( schema, tableName, ((StreamableTable) table).stream() );
         } else {
-            return input -> {
+            return (Function<Class, Expression> & Serializable) input -> {
                 throw new UnsupportedOperationException();
             };
         }
@@ -617,6 +618,8 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
         public Schema snapshot( SchemaVersion version ) {
             throw new UnsupportedOperationException();
         }
+
     }
+
 }
 

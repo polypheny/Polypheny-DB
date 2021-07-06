@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 package org.polypheny.db.plan;
 
 
+import java.io.Serializable;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.rel.RelCollation;
@@ -53,7 +54,7 @@ import org.polypheny.db.util.ImmutableBitSet;
 /**
  * Represents a relational dataset in a {@link RelOptSchema}. It has methods to describe and implement itself.
  */
-public interface RelOptTable extends Wrapper {
+public interface RelOptTable extends Wrapper, Serializable {
 
     /**
      * Obtains an identifier for this table. The identifier must be unique with respect to the Connection producing this table.
@@ -147,6 +148,7 @@ public interface RelOptTable extends Wrapper {
          * @return Relational expression
          */
         RelRoot expandView( RelDataType rowType, String queryString, List<String> schemaPath, List<String> viewPath );
+
     }
 
 
@@ -156,6 +158,8 @@ public interface RelOptTable extends Wrapper {
     interface ToRelContext extends ViewExpander {
 
         RelOptCluster getCluster();
+
     }
+
 }
 

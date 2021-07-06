@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 package org.polypheny.db.rex;
 
 
+import java.io.Serializable;
 import java.util.Collection;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlKind;
@@ -49,7 +50,7 @@ import org.polypheny.db.sql.SqlKind;
  *
  * All sub-classes of RexNode are immutable.
  */
-public abstract class RexNode {
+public abstract class RexNode implements Serializable {
 
     // Effectively final. Set in each sub-class constructor, and never re-set.
     protected String digest;
@@ -126,5 +127,6 @@ public abstract class RexNode {
      */
     @Override
     public abstract int hashCode();
+
 }
 

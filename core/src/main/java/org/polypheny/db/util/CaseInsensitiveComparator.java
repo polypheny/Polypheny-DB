@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 package org.polypheny.db.util;
 
 
+import java.io.Serializable;
 import java.util.Comparator;
 
 
@@ -45,7 +46,7 @@ import java.util.Comparator;
  * In a collection sorted on this comparator, we can find case-insensitive matches for a given string using
  * {@link #floorKey(java.lang.String)} and {@link #ceilingKey(java.lang.String)}.
  */
-class CaseInsensitiveComparator implements Comparator {
+class CaseInsensitiveComparator implements Comparator, Serializable {
 
     static final CaseInsensitiveComparator COMPARATOR = new CaseInsensitiveComparator();
 
@@ -69,6 +70,7 @@ class CaseInsensitiveComparator implements Comparator {
         public String toString() {
             return value;
         }
+
     }
 
 
@@ -98,4 +100,5 @@ class CaseInsensitiveComparator implements Comparator {
         }
         return s1.compareTo( s2 );
     }
+
 }

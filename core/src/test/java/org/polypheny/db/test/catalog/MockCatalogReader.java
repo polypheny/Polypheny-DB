@@ -989,6 +989,12 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
+        public int getRawPrecision() {
+            return delegate.getRawPrecision();
+        }
+
+
+        @Override
         public int getScale() {
             return delegate.getScale();
         }

@@ -34,10 +34,28 @@
 package org.polypheny.db.sql.ddl;
 
 
+import static org.polypheny.db.util.Static.RESOURCE;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import lombok.Getter;
+import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.processing.SqlProcessor;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.sql.SqlCreate;
 import org.polypheny.db.sql.SqlExecutableStatement;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -46,6 +64,7 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
+import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
@@ -59,6 +78,7 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
 
     private final SqlIdentifier name;
     private final SqlNodeList columnList;
+    @Getter
     private final SqlNode query;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE VIEW", SqlKind.CREATE_VIEW );
@@ -67,7 +87,12 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
     /**
      * Creates a SqlCreateView.
      */
-    SqlCreateView( SqlParserPos pos, boolean replace, SqlIdentifier name, SqlNodeList columnList, SqlNode query ) {
+    SqlCreateView(
+            SqlParserPos pos,
+            boolean replace,
+            SqlIdentifier name,
+            SqlNodeList columnList,
+            SqlNode query ) {
         super( OPERATOR, pos, replace, false );
         this.name = Objects.requireNonNull( name );
         this.columnList = columnList; // may be null
@@ -83,7 +108,77 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement ) {
-        DdlManager.getInstance().createView();
+        Catalog catalog = Catalog.getInstance();
+        String viewName;
+        long schemaId;
+
+        try {
+            if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
+                schemaId = catalog.getSchema( name.names.get( 0 ), name.names.get( 1 ) ).id;
+                viewName = name.names.get( 2 );
+            } else if ( name.names.size() == 2 ) { // SchemaName.TableName
+                schemaId = catalog.getSchema( context.getDatabaseId(), name.names.get( 0 ) ).id;
+                viewName = name.names.get( 1 );
+            } else { // TableName
+                schemaId = catalog.getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
+                viewName = name.names.get( 0 );
+            }
+        } catch ( UnknownDatabaseException e ) {
+            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.databaseNotFound( name.toString() ) );
+        } catch ( UnknownSchemaException e ) {
+            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaNotFound( name.toString() ) );
+        }
+
+        List<DataStore> store = null;
+        PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
+
+        SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
+        RelRoot relRoot = sqlProcessor.translate(
+                statement,
+                sqlProcessor.validate( statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left );
+
+        RelNode relNode = relRoot.rel;
+        RelCollation relCollation = relRoot.collation;
+
+        List<String> columns = null;
+
+        if ( columnList != null ) {
+            columns = getColumnInfo();
+        }
+
+        try {
+            DdlManager.getInstance().createView(
+                    viewName,
+                    schemaId,
+                    relNode,
+                    relCollation,
+                    replace,
+                    statement,
+                    store,
+                    placementType,
+                    columns );
+        } catch ( TableAlreadyExistsException e ) {
+            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( viewName ) );
+        } catch ( GenericCatalogException | UnknownColumnException e ) {
+            // we just added the table/column so it has to exist or we have a internal problem
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    private List<String> getColumnInfo() {
+        List<String> columnName = new ArrayList<>();
+
+        for ( Ord<SqlNode> c : Ord.zip( columnList ) ) {
+            if ( c.e instanceof SqlIdentifier ) {
+                SqlIdentifier sqlIdentifier = (SqlIdentifier) c.e;
+                columnName.add( sqlIdentifier.getSimple() );
+
+            } else {
+                throw new AssertionError( c.e.getClass() );
+            }
+        }
+        return columnName;
     }
 
 

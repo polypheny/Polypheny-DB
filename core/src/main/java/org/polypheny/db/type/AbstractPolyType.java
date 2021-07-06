@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,6 @@
 package org.polypheny.db.type;
 
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.rel.type.RelDataType;
@@ -47,7 +46,7 @@ import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
 /**
  * Abstract base class for SQL implementations of {@link RelDataType}.
  */
-public abstract class AbstractPolyType extends RelDataTypeImpl implements Cloneable, Serializable {
+public abstract class AbstractPolyType extends RelDataTypeImpl implements Cloneable {
 
     protected final PolyType typeName;
     protected boolean isNullable;
@@ -56,9 +55,9 @@ public abstract class AbstractPolyType extends RelDataTypeImpl implements Clonea
     /**
      * Creates an AbstractSqlType.
      *
-     * @param typeName   Type name
+     * @param typeName Type name
      * @param isNullable Whether nullable
-     * @param fields     Fields of type, or null if not a record type
+     * @param fields Fields of type, or null if not a record type
      */
     protected AbstractPolyType( PolyType typeName, boolean isNullable, List<? extends RelDataTypeField> fields ) {
         super( fields );
@@ -97,5 +96,6 @@ public abstract class AbstractPolyType extends RelDataTypeImpl implements Clonea
         }
         return super.getPrecedenceList();
     }
+
 }
 

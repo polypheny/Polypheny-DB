@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ package org.polypheny.db.rel;
 
 
 import com.google.common.collect.ImmutableList;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -90,7 +91,7 @@ import org.polypheny.db.util.mapping.Mappings;
  * }
  * </code></blockquote>
  */
-public class RelRoot {
+public class RelRoot implements Serializable {
 
     public final RelNode rel;
     public final RelDataType validatedRowType;
@@ -112,6 +113,11 @@ public class RelRoot {
         this.kind = kind;
         this.fields = ImmutableList.copyOf( fields );
         this.collation = Objects.requireNonNull( collation );
+    }
+
+
+    public RelRoot tryExpandView() {
+        return new RelRoot( rel.tryParentExpandView( rel ), validatedRowType, kind, fields, collation );
     }
 
 
@@ -222,5 +228,6 @@ public class RelRoot {
                 && collations.size() == 1
                 && collations.get( 0 ).equals( collation );
     }
+
 }
 

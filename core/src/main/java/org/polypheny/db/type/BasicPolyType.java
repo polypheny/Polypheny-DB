@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ public class BasicPolyType extends AbstractPolyType {
     private final int precision;
     private final int scale;
     private final RelDataTypeSystem typeSystem;
-    private final SqlCollation collation;
+    private final transient SqlCollation collation;
     private final SerializableCharset wrappedCharset;
 
 
@@ -82,8 +82,8 @@ public class BasicPolyType extends AbstractPolyType {
      * Constructs a type with precision/length but no scale.
      *
      * @param typeSystem Type system
-     * @param typeName   Type name
-     * @param precision  Precision (called length for some types)
+     * @param typeName Type name
+     * @param precision Precision (called length for some types)
      */
     public BasicPolyType( RelDataTypeSystem typeSystem, PolyType typeName, int precision ) {
         this( typeSystem, typeName, false, precision, SCALE_NOT_SPECIFIED, null, null );
@@ -95,9 +95,9 @@ public class BasicPolyType extends AbstractPolyType {
      * Constructs a type with precision/length and scale.
      *
      * @param typeSystem Type system
-     * @param typeName   Type name
-     * @param precision  Precision (called length for some types)
-     * @param scale      Scale
+     * @param typeName Type name
+     * @param precision Precision (called length for some types)
+     * @param scale Scale
      */
     public BasicPolyType( RelDataTypeSystem typeSystem, PolyType typeName, int precision, int scale ) {
         this( typeSystem, typeName, false, precision, scale, null, null );
@@ -167,6 +167,12 @@ public class BasicPolyType extends AbstractPolyType {
         if ( precision == PRECISION_NOT_SPECIFIED ) {
             return typeSystem.getDefaultPrecision( typeName );
         }
+        return precision;
+    }
+
+
+    @Override
+    public int getRawPrecision() {
         return precision;
     }
 
@@ -319,5 +325,6 @@ public class BasicPolyType extends AbstractPolyType {
         int scale = typeName.allowsScale() ? this.getScale() : -1;
         return typeName.getLimit( sign, limit, beyond, precision, scale );
     }
+
 }
 
