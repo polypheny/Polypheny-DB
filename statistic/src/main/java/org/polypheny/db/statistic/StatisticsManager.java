@@ -30,6 +30,8 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.information.InformationAction;
+import org.polypheny.db.information.InformationAction.Action;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -40,8 +42,6 @@ import org.polypheny.db.util.DateTimeStringUtils;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
-import org.polypheny.db.information.InformationAction;
-import org.polypheny.db.information.InformationAction.Action;
 
 
 /**
@@ -148,7 +148,7 @@ public class StatisticsManager<T extends Comparable<T>> {
             put( splits[0], splits[1], splits[2], new NumericalStatisticColumn<>( splits, type ) );
         } else if ( type.getFamily() == PolyTypeFamily.CHARACTER ) {
             put( splits[0], splits[1], splits[2], new AlphabeticStatisticColumn<>( splits, type ) );
-        } else if (PolyType.DATETIME_TYPES.contains(type)) {
+        } else if ( PolyType.DATETIME_TYPES.contains( type ) ) {
             put( splits[0], splits[1], splits[2], new TemporalStatisticColumn<>( splits, type ) );
         }
     }
@@ -237,8 +237,9 @@ public class StatisticsManager<T extends Comparable<T>> {
             return this.reevaluateNumericalColumn( column );
         } else if ( column.getType().getFamily() == PolyTypeFamily.CHARACTER ) {
             return this.reevaluateAlphabeticalColumn( column );
-        } else if (PolyType.DATETIME_TYPES.contains(column.getType()))
+        } else if ( PolyType.DATETIME_TYPES.contains( column.getType() ) ) {
             return this.reevaluateTemporalColumn( column );
+        }
         return null;
     }
 
@@ -268,6 +269,7 @@ public class StatisticsManager<T extends Comparable<T>> {
         return statisticColumn;
     }
 
+
     private StatisticColumn<T> reevaluateTemporalColumn( QueryColumn column ) {
         StatisticQueryColumn min = this.getAggregateColumn( column, "MIN" );
         StatisticQueryColumn max = this.getAggregateColumn( column, "MAX" );
@@ -275,30 +277,33 @@ public class StatisticsManager<T extends Comparable<T>> {
 
         TemporalStatisticColumn<T> statisticColumn = new TemporalStatisticColumn<>( QueryColumn.getSplitColumn( column.getQualifiedColumnName() ), column.getType() );
         if ( min != null ) {
-            if (NumberUtils.isParsable(min.getData()[0])) {
+            if ( NumberUtils.isParsable( min.getData()[0] ) ) {
                 //noinspection unchecked
-                statisticColumn.setMin((T) DateTimeStringUtils.longToAdjustedString(Long.parseLong(min.getData()[0]), column.getType()));
+                statisticColumn.setMin( (T) DateTimeStringUtils.longToAdjustedString( Long.parseLong( min.getData()[0] ), column.getType() ) );
             } else {
                 //noinspection unchecked
-                statisticColumn.setMin((T)min.getData()[0]);
+                statisticColumn.setMin( (T) min.getData()[0] );
             }
         }
 
         if ( max != null ) {
-            if (NumberUtils.isParsable(max.getData()[0])) {
+            if ( NumberUtils.isParsable( max.getData()[0] ) ) {
                 //noinspection unchecked
-                statisticColumn.setMax((T) DateTimeStringUtils.longToAdjustedString(Long.parseLong(max.getData()[0]), column.getType()));
+                statisticColumn.setMax( (T) DateTimeStringUtils.longToAdjustedString( Long.parseLong( max.getData()[0] ), column.getType() ) );
             } else {
                 //noinspection unchecked
-                statisticColumn.setMax((T)max.getData()[0]);
+                statisticColumn.setMax( (T) max.getData()[0] );
             }
         }
 
         StatisticQueryColumn unique = this.getUniqueValues( column );
-        for(int idx=0;idx<unique.getData().length;idx++)
-            if(unique.getData()[idx] != null)
-                //noinspection unchecked
-                unique.getData()[idx] = DateTimeStringUtils.longToAdjustedString(Long.parseLong(unique.getData()[idx]),column.getType());
+        for ( int idx = 0; idx < unique.getData().length; idx++ ) {
+            if ( unique.getData()[idx] != null )
+            //noinspection unchecked
+            {
+                unique.getData()[idx] = DateTimeStringUtils.longToAdjustedString( Long.parseLong( unique.getData()[idx] ), column.getType() );
+            }
+        }
 
         assignUnique( statisticColumn, unique );
 
@@ -475,12 +480,11 @@ public class StatisticsManager<T extends Comparable<T>> {
         im.addGroup( numericalGroup );
 
         InformationGroup temporalGroup = new InformationGroup( page, "Temporal Statistics" );
-        im.addGroup( temporalGroup);
+        im.addGroup( temporalGroup );
 
         InformationTable temporalInformation = new InformationTable( temporalGroup, Arrays.asList( "Column Name", "Min", "Max" ) );
 
         InformationTable numericalInformation = new InformationTable( numericalGroup, Arrays.asList( "Column Name", "Min", "Max" ) );
-
 
         InformationTable alphabeticalInformation = new InformationTable( alphabeticalGroup, Arrays.asList( "Column Name", "Unique Values" ) );
 
@@ -511,13 +515,14 @@ public class StatisticsManager<T extends Comparable<T>> {
                         numericalInformation.addRow( v.getQualifiedColumnName(), "❌", "❌" );
                     }
 
-                } if ( v instanceof TemporalStatisticColumn) {
+                }
+                if ( v instanceof TemporalStatisticColumn ) {
                     if ( ((TemporalStatisticColumn<T>) v).getMin() != null && ((TemporalStatisticColumn<T>) v).getMax() != null ) {
                         temporalInformation.addRow( v.getQualifiedColumnName(), ((TemporalStatisticColumn<T>) v).getMin().toString(), ((TemporalStatisticColumn<T>) v).getMax().toString() );
                     } else {
                         temporalInformation.addRow( v.getQualifiedColumnName(), "❌", "❌" );
                     }
-                }else {
+                } else {
                     String values = v.getUniqueValues().toString();
                     if ( !v.isFull ) {
                         alphabeticalInformation.addRow( v.getQualifiedColumnName(), values );
