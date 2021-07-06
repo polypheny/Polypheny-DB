@@ -1,0 +1,370 @@
+options {
+    STATIC = false;
+    IGNORE_CASE = true;
+}
+
+PARSER_BEGIN(Parser)
+
+package org.polypheny.cql.parser;
+
+import org.polypheny.cql.parser.ParseException;
+
+import java.io.BufferedReader;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.HashMap;
+
+import org.polypheny.cql.BooleanOperator;
+import org.polypheny.cql.BooleanGroup;
+import org.polypheny.cql.ComparatorSymbol;
+import org.polypheny.cql.Comparator;
+import org.polypheny.cql.Modifier;
+import org.polypheny.cql.Relation;
+import org.polypheny.cql.SortSpecification;
+import org.polypheny.cql.SearchClause;
+import org.polypheny.cql.QueryNode;
+import org.polypheny.cql.CqlQuery;
+
+public class Parser {
+
+    public Parser( String cql ) {
+        this( new BufferedReader( new StringReader( cql ) ) );
+    }
+
+}
+
+PARSER_END(Parser)
+
+TOKEN : { < SORT_BY : "sortby" > }
+
+<DEFAULT> SKIP : { " " | "\t" | "\n" | "\r" | "\f" }
+
+TOKEN : { < BOOLEAN_AND : "and" | "\"and\"" > }
+TOKEN : { < BOOLEAN_OR : "or" | "\"or\"" > }
+TOKEN : { < BOOLEAN_NOT : "not" | "\"not\"" > }
+TOKEN : { < BOOLEAN_PROX : "prox" | "\"prox\"" > }
+
+TOKEN : { < COMPARATOR_SERVER_CHOICE : "=" > }
+TOKEN : { < COMPARATOR_EQUALS : "==" > }
+TOKEN : { < COMPARATOR_NOT_EQUALS : "<>" > }
+TOKEN : { < COMPARATOR_GREATER_THAN : ">" > }
+TOKEN : { < COMPARATOR_LESS_THAN : "<" > }
+TOKEN : { < COMPARATOR_GREATER_THAN_OR_EQUALS : ">=" > }
+TOKEN : { < COMPARATOR_LESS_THAN_OR_EQUALS : "<=" > }
+
+TOKEN : { < STRING_WITHOUT_DOUBLE_QUOTES : ( ~[ " ", "\t", "\n", "\r", "\f", "(", ")", "\"", "=", "<", ">", "/" ] )+ > }
+TOKEN: {
+    < STRING_WITH_DOUBLE_QUOTES :
+        "\""
+        (
+             "\\" ~[]
+        |
+            ~["\"","\\"]
+        )*
+        "\"" >
+}
+
+
+CqlQuery parse() :
+{
+    CqlQuery cqlQuery = null;
+    QueryNode root = null;
+    HashMap<String, String> prefixURIPairs = new HashMap<String, String>();
+    HashSet<String> indices = new HashSet<String>();
+    ArrayList<SortSpecification> sortSpecs = null;
+}
+{
+    root = CQL_QUERY( prefixURIPairs, indices )
+    [
+        < SORT_BY >
+        sortSpecs = SORT_SPECIFICATION_LIST( indices )
+    ]
+    < EOF >
+    {
+        cqlQuery = new CqlQuery( root, sortSpecs, indices, prefixURIPairs );
+        return cqlQuery;
+    }
+}
+
+QueryNode CQL_QUERY( HashMap<String, String> prefixURIPairs, HashSet<String> indices ) :
+{
+    QueryNode root = null;
+}
+{
+    (
+        PREFIX_ASSIGNMENT( prefixURIPairs )
+    )*
+
+    root = SCOPED_CLAUSE( prefixURIPairs, indices )
+    { return root; }
+}
+
+QueryNode SCOPED_CLAUSE( HashMap<String, String> prefixURIPairs, HashSet<String> indices ) :
+{
+    QueryNode leftSearchClause = null;
+    BooleanGroup booleanGroup = null;
+    QueryNode rightSearchClause = null;
+}
+{
+    leftSearchClause = SEARCH_CLAUSE( prefixURIPairs, indices )
+    (
+        booleanGroup = BOOLEAN_GROUP()
+        rightSearchClause = SEARCH_CLAUSE( prefixURIPairs, indices )
+        { leftSearchClause = new QueryNode( leftSearchClause, booleanGroup, rightSearchClause ); }
+    )*
+    { return leftSearchClause; }
+}
+
+QueryNode SEARCH_CLAUSE( HashMap<String, String> prefixURIPairs, HashSet<String> indices ) :
+{
+    QueryNode queryNode = null;
+    SearchClause searchClause = null;
+    String index = null;
+    Relation relation = null;
+    String searchTerm = null;
+}
+{
+    (
+        "("
+        queryNode = CQL_QUERY( prefixURIPairs, indices )
+        ")"
+    |
+        index = IDENTIFIER()
+        [
+            relation = RELATION()
+            searchTerm = IDENTIFIER()
+            {
+                searchClause = new SearchClause( index, relation, searchTerm );
+                queryNode = new QueryNode( searchClause );
+                indices.add( index );
+            }
+        ]
+        {
+            if ( queryNode == null ) {
+                searchTerm = index;
+                searchClause = new SearchClause( searchTerm );
+                queryNode = new QueryNode( searchClause );
+            }
+        }
+    )
+    { return queryNode; }
+}
+
+ArrayList<SortSpecification> SORT_SPECIFICATION_LIST( HashSet<String> indices ) :
+{
+    ArrayList<SortSpecification> sortSpecs = new ArrayList<SortSpecification>();
+    SortSpecification sortSpec = null;
+}
+{
+    sortSpec = SORT_SPECIFICATION()
+    {
+        sortSpecs.add( sortSpec );
+        indices.add( sortSpec.index );
+    }
+    (
+        sortSpec = SORT_SPECIFICATION()
+        {
+            sortSpecs.add( sortSpec );
+            indices.add( sortSpec.index );
+        }
+    )*
+    { return sortSpecs; }
+}
+
+SortSpecification SORT_SPECIFICATION() :
+{
+    SortSpecification sortSpec = null;
+    String index = null;
+    ArrayList<Modifier> modifiers = null;
+}
+{
+    index = IDENTIFIER()
+    [
+        modifiers = MODIFIER_LIST()
+        { sortSpec = new SortSpecification( index, modifiers ); }
+    ]
+    {
+        if ( sortSpec == null ) {
+            sortSpec = new SortSpecification( index );
+        }
+
+        return sortSpec;
+    }
+}
+
+void PREFIX_ASSIGNMENT( HashMap<String, String> prefixURIPairs ) :
+{
+    String prefix = null;
+    String uri = null;
+}
+{
+    < COMPARATOR_GREATER_THAN >
+    prefix = IDENTIFIER()
+    [
+        < COMPARATOR_SERVER_CHOICE >
+        uri = IDENTIFIER()
+    ]
+    {
+        if ( uri == null ) {
+            uri = prefix;
+            prefix = "";
+        }
+
+        prefixURIPairs.put( prefix, uri );
+    }
+}
+
+BooleanGroup BOOLEAN_GROUP() :
+{
+    BooleanGroup booleanGroup = null;
+    BooleanOperator booleanOperator = null;
+    ArrayList<Modifier> modifiers = null;
+}
+{
+    booleanOperator = BOOLEAN_OPERATOR()
+    [
+        modifiers = MODIFIER_LIST()
+    ]
+    {
+        if ( modifiers == null ) {
+            booleanGroup = new BooleanGroup( booleanOperator );
+        } else {
+            booleanGroup = new BooleanGroup( booleanOperator, modifiers );
+        }
+        return booleanGroup;
+    }
+}
+
+Relation RELATION() :
+{
+    Relation relation = null;
+    Comparator comparator = null;
+    ArrayList<Modifier> modifiers = null;
+}
+{
+    comparator = COMPARATOR()
+    [
+        modifiers = MODIFIER_LIST()
+    ]
+    {
+        if ( modifiers == null ) {
+            relation = new Relation( comparator );
+        } else {
+            relation = new Relation( comparator, modifiers );
+        }
+        return relation;
+    }
+}
+
+ArrayList<Modifier> MODIFIER_LIST() :
+{
+    ArrayList<Modifier> modifiers = new ArrayList<Modifier>();
+    Modifier modifier = null;
+}
+{
+    modifier = MODIFIER()
+    { modifiers.add( modifier ); }
+    (
+        modifier = MODIFIER()
+        { modifiers.add( modifier ); }
+    )*
+    { return modifiers; }
+}
+
+Modifier MODIFIER() :
+{
+    Modifier modifier = null    ;
+    String modifierName = null;
+    String modifierValue = "";
+    Comparator comparator = new Comparator( ComparatorSymbol.SERVER_CHOICE );
+}
+{
+    "/"
+    modifierName = IDENTIFIER()
+    [
+        LOOKAHEAD( 2 )
+        comparator = COMPARATOR()
+        modifierValue = IDENTIFIER()
+    ]
+    {
+        modifier = new Modifier( modifierName, comparator, modifierValue );
+        return modifier;
+    }
+}
+
+String IDENTIFIER() :
+{
+    Token t = null;
+    String identifier = null;
+}
+{
+    (
+        t = < STRING_WITHOUT_DOUBLE_QUOTES >
+        { identifier = t.image; }
+    |
+        t = < STRING_WITH_DOUBLE_QUOTES >
+        {
+            String str = t.image;
+            str = str.substring( 1, str.length() - 1 );
+            str = str.replace( "\\\"", "\"" );
+            identifier = str;
+        }
+    )
+    { return identifier; }
+}
+
+BooleanOperator BOOLEAN_OPERATOR() :
+{
+    BooleanOperator booleanOperator = null;
+}
+{
+    (
+        < BOOLEAN_AND >
+        { booleanOperator = BooleanOperator.AND; }
+    |
+        < BOOLEAN_OR >
+        { booleanOperator = BooleanOperator.OR; }
+    |
+        < BOOLEAN_NOT >
+        { booleanOperator = BooleanOperator.NOT; }
+    |
+        < BOOLEAN_PROX >
+        { booleanOperator = BooleanOperator.PROX; }
+    )
+    { return booleanOperator; }
+}
+
+Comparator COMPARATOR() :
+{
+    Comparator comparator = null;
+    String named_comparator = null;
+}
+{
+    (
+        < COMPARATOR_SERVER_CHOICE >
+        { comparator = new Comparator( ComparatorSymbol.SERVER_CHOICE ); }
+    |
+        < COMPARATOR_EQUALS >
+        { comparator = new Comparator( ComparatorSymbol.EQUALS ); }
+    |
+        < COMPARATOR_NOT_EQUALS >
+        { comparator = new Comparator( ComparatorSymbol.NOT_EQUALS ); }
+    |
+        < COMPARATOR_GREATER_THAN >
+        { comparator = new Comparator( ComparatorSymbol.GREATER_THAN ); }
+    |
+        < COMPARATOR_LESS_THAN >
+        { comparator = new Comparator( ComparatorSymbol.LESS_THAN ); }
+    |
+        < COMPARATOR_GREATER_THAN_OR_EQUALS >
+        { comparator = new Comparator( ComparatorSymbol.GREATER_THAN_OR_EQUALS ); }
+    |
+        < COMPARATOR_LESS_THAN_OR_EQUALS >
+        { comparator = new Comparator( ComparatorSymbol.LESS_THAN_OR_EQUALS ); }
+    |
+        named_comparator = IDENTIFIER()
+        { comparator = new Comparator( named_comparator ); }
+    )
+    { return comparator; }
+}

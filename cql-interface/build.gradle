@@ -1,0 +1,44 @@
+import ca.coglinc.gradle.plugins.javacc.CompileJavaccTask
+
+group "org.polypheny"
+
+configurations {
+    javacc
+}
+
+buildscript {
+    dependencies {
+        classpath group: "gradle.plugin.ca.coglinc2", name: "javacc-gradle-plugin", version: javacc_plugin_version
+    }
+}
+
+dependencies {
+    javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/main/java", "build/generated-sources"]
+            outputDir = file(project.buildDir.absolutePath + "/classes")
+        }
+    }
+    test {
+        java {
+            srcDirs = ["src/test/java"]
+            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+        }
+    }
+}
+
+
+task generateParser(type: CompileJavaccTask) {
+    getConventionMapping().map("classpath", { configurations.javacc })
+    arguments = [static: "false"]
+    inputDirectory = file("src/main/codegen")
+    outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/org/polypheny/cql/parser")
+}
+
+compileJava {
+    dependsOn("generateParser")
+}
