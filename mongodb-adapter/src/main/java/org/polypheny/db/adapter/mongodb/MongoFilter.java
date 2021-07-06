@@ -41,6 +41,7 @@ import static org.polypheny.db.sql.SqlKind.LITERAL;
 import static org.polypheny.db.sql.SqlKind.OTHER_FUNCTION;
 
 import com.mongodb.client.gridfs.GridFSBucket;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -66,6 +67,7 @@ import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlItemOperator;
 import org.polypheny.db.util.JsonBuilder;
 
@@ -117,7 +119,7 @@ public class MongoFilter extends Filter implements MongoRel {
         final JsonBuilder builder = new JsonBuilder();
         private final List<String> fieldNames;
         private final MongoRowType rowType;
-        private final BsonArray dynamics = new BsonArray();
+        private final List<BsonDocument> dynamics = new ArrayList<>();
         private final GridFSBucket bucket;
         private final BsonDocument preProjections = new BsonDocument();
         private final Implementor implementor;
@@ -138,7 +140,10 @@ public class MongoFilter extends Filter implements MongoRel {
 
 
         private void translateMatch( RexNode condition, Implementor implementor ) {
-            implementor.filter.add( translateOr( condition ) );
+            BsonDocument value = translateOr( condition );
+            if ( !value.isEmpty() ) {
+                implementor.filter.add( value );
+            }
 
             if ( preProjections.size() != 0 ) {
                 implementor.preProjections.add( preProjections );
@@ -146,7 +151,7 @@ public class MongoFilter extends Filter implements MongoRel {
         }
 
 
-        private BsonValue translateOr( RexNode condition ) {
+        private BsonDocument translateOr( RexNode condition ) {
             for ( RexNode node : RelOptUtil.disjunctions( condition ) ) {
                 translateAnd( node );
             }
@@ -157,7 +162,7 @@ public class MongoFilter extends Filter implements MongoRel {
                 case 1:
                     return dynamics.get( 0 );
                 default:
-                    return new BsonDocument( "$or", dynamics );
+                    return new BsonDocument( "$or", new BsonArray( dynamics ) );
             }
         }
 
@@ -268,7 +273,30 @@ public class MongoFilter extends Filter implements MongoRel {
             if ( b ) {
                 return null;
             }
+
+            b = translateExpr( op, left, right );
+            if ( b ) {
+                return null;
+            }
+
             throw new AssertionError( "cannot translate op " + op + " call " + call );
+        }
+
+
+        private boolean translateExpr( String op, RexNode left, RexNode right ) {
+            if ( op == null ) {
+                return false;
+            }
+
+            if ( left.isA( INPUT_REF ) && right.isA( INPUT_REF ) ) {
+                BsonValue l = new BsonString( getPhysicalName( (RexInputRef) left ) );
+                BsonValue r = new BsonString( getPhysicalName( (RexInputRef) right ) );
+
+                dynamics.add( new BsonDocument( "$expr", new BsonDocument( op, new BsonArray( Arrays.asList( l, r ) ) ) ) );
+                return true;
+            }
+
+            return false;
         }
 
 
@@ -276,16 +304,11 @@ public class MongoFilter extends Filter implements MongoRel {
             if ( right instanceof RexCall && left instanceof RexInputRef ) {
                 // $9 ( index ) -> [el1, el2]
                 String name = getPhysicalName( (RexInputRef) left );
-                dynamics.add( new BsonDocument( name, new BsonArray( ((RexCall) right).operands.stream().map( el -> {
-                    if ( el.isA( INPUT_REF ) ) {
-                        return MongoTypeUtil.getAsBson( (RexLiteral) el, bucket );
-                    } else if ( el.isA( DYNAMIC_PARAM ) ) {
-                        return new BsonDynamic( (RexDynamicParam) el );
-                    } else {
-                        throw new RuntimeException( "Input in array is not translatable." );
-                    }
-                } ).collect( Collectors.toList() ) ) ) );
-
+                if ( op == null ) {
+                    dynamics.add( new BsonDocument( "$expr", translateCall( name, (RexCall) right ) ) );
+                } else {
+                    dynamics.add( new BsonDocument( "$expr", new BsonDocument( op, translateCall( name, (RexCall) right ) ) ) );
+                }
                 return true;
             } else if ( right instanceof RexCall && left instanceof RexLiteral ) {
                 if ( right.isA( DISTANCE ) ) {
@@ -302,6 +325,44 @@ public class MongoFilter extends Filter implements MongoRel {
                 return true;
             }
             return false;
+        }
+
+
+        private BsonArray translateCall( String left, RexCall right ) {
+            BsonArray array = new BsonArray();
+            array.add( 0, new BsonString( "$" + left ) );
+            array.add( getArray( right ) );
+            return array;
+        }
+
+
+        private BsonDocument getArray( RexCall right ) {
+            BsonArray array = new BsonArray( right.operands.stream().map( el -> {
+                if ( el.isA( INPUT_REF ) ) {
+                    return MongoTypeUtil.getAsBson( (RexLiteral) el, bucket );
+                } else if ( el.isA( DYNAMIC_PARAM ) ) {
+                    return new BsonDynamic( (RexDynamicParam) el );
+                } else {
+                    throw new RuntimeException( "Input in array is not translatable." );
+                }
+            } ).collect( Collectors.toList() ) );
+            return new BsonDocument( getOp( right.op ), array );
+        }
+
+
+        private String getOp( SqlOperator op ) {
+            switch ( op.kind ) {
+                case PLUS:
+                    return "$add";
+                case MINUS:
+                    return "$substr";
+                case TIMES:
+                    return "$multiply";
+                case DIVIDE:
+                    return "$divide";
+                default:
+                    throw new RuntimeException( "Sql operation is not supported" );
+            }
         }
 
 
@@ -434,12 +495,9 @@ public class MongoFilter extends Filter implements MongoRel {
         }
 
 
-        private String getPhysicalName( RexInputRef left ) {
-            final RexInputRef left1 = left;
-            String name = fieldNames.get( left1.getIndex() );
-            if ( rowType != null && rowType.getId( name ) != null ) {
-                name = rowType.getPhysicalName( name, implementor );
-            }
+        private String getPhysicalName( RexInputRef input ) {
+            String name = fieldNames.get( input.getIndex() );
+            implementor.physicalMapper.add( name );
             return name;
         }
 

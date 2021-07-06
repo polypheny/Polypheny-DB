@@ -123,6 +123,8 @@ public class MongoTypeUtil {
                 return MongoTypeUtil::handleMonthInterval;
             case INTERVAL_DAY:
                 return MongoTypeUtil::handleDayInterval;
+            case INTERVAL_YEAR:
+                return MongoTypeUtil::handleYearInterval;
             case CHAR:
             case VARCHAR:
             default:
@@ -180,6 +182,12 @@ public class MongoTypeUtil {
             case VIDEO:
             case FILE:
                 return handleMultimedia( bucket, (InputStream) obj );
+            case INTERVAL_MONTH:
+                return handleMonthInterval( obj );
+            case INTERVAL_DAY:
+                return handleDayInterval( obj );
+            case INTERVAL_YEAR:
+                return handleYearInterval( obj );
             case CHAR:
             case VARCHAR:
             default:
@@ -196,11 +204,20 @@ public class MongoTypeUtil {
     }
 
 
+    private static BsonValue handleYearInterval( Object o ) {
+        if ( o instanceof BigDecimal ) {
+            return new BsonDecimal128( new Decimal128( ((BigDecimal) o).multiply( BigDecimal.valueOf( 365 ) ) ) );
+        } else {
+            return new BsonDecimal128( new Decimal128( ((int) o) * 24 * 60 * 60000L ) );
+        }
+    }
+
+
     private static BsonValue handleMonthInterval( Object o ) {
         if ( o instanceof BigDecimal ) {
-            return new BsonDecimal128( new Decimal128( ((BigDecimal) o).multiply( BigDecimal.valueOf( 31 ) ) ) );
+            return new BsonDecimal128( new Decimal128( ((BigDecimal) o).multiply( BigDecimal.valueOf( 30 ) ) ) );
         } else {
-            return new BsonDecimal128( new Decimal128( ((int) o) * 31L ) );
+            return new BsonDecimal128( new Decimal128( ((int) o) * 30L ) );
         }
     }
 

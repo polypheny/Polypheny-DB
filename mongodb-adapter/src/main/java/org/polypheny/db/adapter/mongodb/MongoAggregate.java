@@ -97,18 +97,20 @@ public class MongoAggregate extends Aggregate implements MongoRel {
         if ( groupSet.cardinality() == 1 ) {
             final String inName = inNames.get( groupSet.nth( 0 ) );
             list.add( "_id: " + MongoRules.maybeQuote( "$" + inName ) );
+            implementor.physicalMapper.add( inName );
             ++i;
         } else {
             List<String> keys = new ArrayList<>();
             for ( int group : groupSet ) {
                 final String inName = inNames.get( group );
                 keys.add( inName + ": " + MongoRules.quote( "$" + inName ) );
+                implementor.physicalMapper.add( inName );
                 ++i;
             }
             list.add( "_id: " + Util.toString( keys, "{", ", ", "}" ) );
         }
         for ( AggregateCall aggCall : aggCalls ) {
-            list.add( MongoRules.maybeQuote( outNames.get( i++ ) ) + ": " + toMongo( aggCall.getAggregation(), inNames, aggCall.getArgList() ) );
+            list.add( MongoRules.maybeQuote( outNames.get( i++ ) ) + ": " + toMongo( aggCall.getAggregation(), inNames, aggCall.getArgList(), implementor ) );
         }
         implementor.add( null, "{$group: " + Util.toString( list, "{", ", ", "}" ) + "}" );
         final List<String> fixups;
@@ -145,35 +147,41 @@ public class MongoAggregate extends Aggregate implements MongoRel {
     }
 
 
-    private String toMongo( SqlAggFunction aggregation, List<String> inNames, List<Integer> args ) {
+    private String toMongo( SqlAggFunction aggregation, List<String> inNames, List<Integer> args, Implementor implementor ) {
         if ( aggregation == SqlStdOperatorTable.COUNT ) {
             if ( args.size() == 0 ) {
                 return "{$sum: 1}";
             } else {
                 assert args.size() == 1;
                 final String inName = inNames.get( args.get( 0 ) );
+                implementor.physicalMapper.add( inName );
                 return "{$sum: {$cond: [ {$eq: [" + MongoRules.quote( inName ) + ", null]}, 0, 1]}}";
             }
         } else if ( aggregation instanceof SqlSumAggFunction || aggregation instanceof SqlSumEmptyIsZeroAggFunction ) {
             assert args.size() == 1;
             final String inName = inNames.get( args.get( 0 ) );
+            implementor.physicalMapper.add( inName );
             return "{$sum: " + MongoRules.maybeQuote( "$" + inName ) + "}";
         } else if ( aggregation == SqlStdOperatorTable.MIN ) {
             assert args.size() == 1;
             final String inName = inNames.get( args.get( 0 ) );
+            implementor.physicalMapper.add( inName );
             return "{$min: " + MongoRules.maybeQuote( "$" + inName ) + "}";
         } else if ( aggregation == SqlStdOperatorTable.MAX ) {
             assert args.size() == 1;
             final String inName = inNames.get( args.get( 0 ) );
+            implementor.physicalMapper.add( inName );
             return "{$max: " + MongoRules.maybeQuote( "$" + inName ) + "}";
         } else if ( aggregation == SqlStdOperatorTable.AVG ) {
             assert args.size() == 1;
             final String inName = inNames.get( args.get( 0 ) );
+            implementor.physicalMapper.add( inName );
             return "{$avg: " + MongoRules.maybeQuote( "$" + inName ) + "}";
         } else if ( aggregation instanceof SqlSingleValueAggFunction ) {
             assert args.size() == 1;
             final String inName = inNames.get( args.get( 0 ) );
-            return "{" + MongoRules.maybeQuote( "$" + inName ) + ":1}";
+            implementor.physicalMapper.add( inName );
+            return "{$sum:" + MongoRules.maybeQuote( "$" + inName ) + "}";
         } else {
             throw new AssertionError( "unknown aggregate " + aggregation );
         }

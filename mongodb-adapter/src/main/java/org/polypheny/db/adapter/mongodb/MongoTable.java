@@ -213,7 +213,9 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
             // direct query
             preOps.forEach( op -> list.add( new BsonDocument( "$project", op ) ) );
 
-            list.add( new BsonDocument( "$match", filter ) );
+            if ( !filter.isEmpty() ) {
+                list.add( new BsonDocument( "$match", filter ) );
+            }
 
             for ( String operation : operations ) {
                 list.add( BsonDocument.parse( operation ) );
@@ -224,8 +226,10 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                     .map( op -> new MongoDynamic( new BsonDocument( "$addFields", op ), mongoSchema.getBucket() ) )
                     .forEach( util -> list.add( util.insert( parameterValues ) ) );
 
-            MongoDynamic util = new MongoDynamic( filter, getMongoSchema().getBucket() );
-            list.add( new BsonDocument( "$match", util.insert( parameterValues ) ) );
+            if ( !filter.isEmpty() ) {
+                MongoDynamic util = new MongoDynamic( filter, getMongoSchema().getBucket() );
+                list.add( new BsonDocument( "$match", util.insert( parameterValues ) ) );
+            }
 
             for ( String operation : operations ) {
                 MongoDynamic opUtil = new MongoDynamic( BsonDocument.parse( operation ), getMongoSchema().getBucket() );
@@ -235,7 +239,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
         }
 
         // do we need to add all if nothing is selected?
-        if ( operations.size() == 0 ) {
+        if ( operations.size() == 0 && filter.isEmpty() ) {
             projectMatchAll( fields, list );
         }
 

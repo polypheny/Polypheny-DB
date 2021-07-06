@@ -288,11 +288,11 @@ public class MongoRules {
                     if ( !Bug.CALCITE_194_FIXED ) {
                         return "'" + stripQuotes( strings.get( 0 ) ) + "[" + ((RexLiteral) op1).getValue2() + "]'";
                     }
-                    return strings.get( 0 ) + "[" + strings.get( 1 ) + "]";
+                    return "{$arrayElemAt:[" + strings.get( 0 ) + "," + strings.get( 1 ) + "]}";
                 }
                 // prepared
                 if ( op1 instanceof RexDynamicParam ) {
-                    return strings.get( 0 ) + "[" + new BsonDynamic( (RexDynamicParam) op1 ).toJson() + "]";
+                    return "{$arrayElemAt:[" + strings.get( 0 ) + "," + new BsonDynamic( (RexDynamicParam) op1 ).toJson() + "]}";
                 }
             }
             if ( call.getOperator() == SqlStdOperatorTable.CASE ) {

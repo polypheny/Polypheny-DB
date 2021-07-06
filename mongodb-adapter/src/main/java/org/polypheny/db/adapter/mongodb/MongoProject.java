@@ -105,8 +105,9 @@ public class MongoProject extends Project implements MongoRel {
         }
 
         for ( Pair<RexNode, String> pair : getNamedProjects() ) {
-            final String name = MongoRules.maybeFix( pair.right );
-            String phyName = "1";
+            final String name = pair.right.startsWith( "$" )
+                    ? "_" + MongoRules.maybeFix( pair.right.substring( 2 ) )
+                    : MongoRules.maybeFix( pair.right );
 
             if ( pair.left.getKind() == SqlKind.DISTANCE ) {
                 documents.put( pair.right, BsonFunctionHelper.getFunction( (RexCall) pair.left, mongoRowType, implementor ) );
@@ -118,42 +119,24 @@ public class MongoProject extends Project implements MongoRel {
                 continue;
             }
 
-
-            StringBuilder blankExpr = new StringBuilder( expr.replace( "'", "" ) );
-            if ( blankExpr.toString().startsWith( "$" ) && blankExpr.toString().endsWith( "]" ) && blankExpr.toString().contains( "[" ) ) {
-                // we want to access an array element and have to get the correct table and the specified array element
-                String[] splits = blankExpr.toString().split( "\\[" );
-                if ( splits.length >= 2 && splits[1].contains( "]" ) && mongoRowType != null ) {
-                    String arrayName = "\"$" + splits[0].replace( "$", "" ) + "\"";
-
-                    // we can have multidimensional arrays and have to take care here
-                    blankExpr = new StringBuilder( arrayName );
-                    for ( int i = 1; i < splits.length; i++ ) {
-                        if ( splits[i].startsWith( "{" ) && splits[i].endsWith( "}]" ) ) {
-                            String dynamic = splits[i].substring( 0, splits[i].length() - 1 );
-                            blankExpr = new StringBuilder( "{$arrayElemAt:[" + blankExpr + ", {$add: [" + dynamic + ", -1]}]}" );
-                        } else {
-                            // we have to adjust as sql arrays start at 1
-                            int pos = Integer.parseInt( splits[i].replace( "]", "" ) ) - 1;
-                            blankExpr = new StringBuilder( "{$arrayElemAt:[" + blankExpr + ", " + pos + "]}" );
-                        }
-                    }
-                    expr = blankExpr.toString();
-
-                }
-
-            }
-
             items.add( expr.equals( "'$" + name + "'" )
                     ? MongoRules.maybeQuote( name ) + ": " + 1
                     : MongoRules.maybeQuote( name ) + ": " + expr );
         }
-        String functions = documents.toJson( JsonWriterSettings.builder().outputMode( JsonMode.RELAXED ).build() );
+        List<String> mergedItems;
+
+        if ( documents.size() != 0 ) {
+            String functions = documents.toJson( JsonWriterSettings.builder().outputMode( JsonMode.RELAXED ).build() );
+            mergedItems = Streams.concat(
+                    items.stream(),
+                    Stream.of( functions.substring( 1, functions.length() - 1 ) ) )
+                    .collect( Collectors.toList() );
+        } else {
+            mergedItems = items;
+        }
+
         String findString = Util.toString(
-                Streams.concat(
-                        items.stream(),
-                        Stream.of( functions.substring( 1, functions.length() - 1 ) ) )
-                        .collect( Collectors.toList() ),
+                mergedItems,
                 "{", ", ", "}" );
         final String aggregateString = "{$project: " + findString + "}";
         final Pair<String, String> op = Pair.of( findString, aggregateString );
