@@ -33,6 +33,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -58,6 +59,7 @@ import org.polypheny.db.rel.core.SetOp;
 import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rel.core.TableModify.Operation;
 import org.polypheny.db.rel.logical.LogicalConditionalExecute;
+import org.polypheny.db.rel.logical.LogicalDocuments;
 import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalModifyCollect;
 import org.polypheny.db.rel.logical.LogicalProject;
@@ -667,6 +669,10 @@ public abstract class AbstractRouter implements Router {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
             }
         } else if ( node instanceof LogicalValues ) {
+            if ( node.getModel() == SchemaType.DOCUMENT ) {
+                return handleDocuments( (LogicalDocuments) node, builder );
+            }
+
             builder = handleValues( (LogicalValues) node, builder );
             if ( catalogTable.columnIds.size() == placements.size() ) { // full placement, no additional checks required
                 return builder;
@@ -893,6 +899,11 @@ public abstract class AbstractRouter implements Router {
         return builder.scan( ImmutableList.of(
                 PolySchemaBuilder.buildAdapterSchemaName( storeUniqueName, logicalSchemaName, physicalSchemaName ),
                 logicalTableName ) );
+    }
+
+
+    protected RelBuilder handleDocuments( LogicalDocuments node, RelBuilder builder ) {
+        return builder.documents( node.tuples, node.getRowTypes(), node.getRowType(), node.getNormalizedTuples() );
     }
 
 

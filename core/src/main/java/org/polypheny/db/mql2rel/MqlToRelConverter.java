@@ -29,7 +29,6 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.polypheny.db.document.DocumentValidator;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.mql.Mql;
 import org.polypheny.db.mql.MqlAggregate;
@@ -45,12 +44,12 @@ import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.TableModify.Operation;
+import org.polypheny.db.rel.logical.LogicalDocuments;
 import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalSort;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
-import org.polypheny.db.rel.logical.LogicalValues;
 import org.polypheny.db.rel.type.DynamicRecordTypeImpl;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
@@ -116,14 +115,15 @@ public class MqlToRelConverter {
 
 
     private RelNode convertMultipleValues( BsonArray array ) {
-        RelDataType rowType = new DynamicRecordTypeImpl( new JavaTypeFactoryImpl() );
-
         List<ImmutableList<RexLiteral>> values = new ArrayList<>();
+        List<RelDataType> rowTypes = new ArrayList<>();
         for ( BsonValue value : array ) {
+            RelDataType rowType = new DynamicRecordTypeImpl( new JavaTypeFactoryImpl() );
             values.add( convertValues( value.asDocument(), rowType ) );
+            rowTypes.add( rowType );
         }
-        // todo dl allow different rowtypes as this is possible for documents
-        return DocumentValidator.validateValues( LogicalValues.create( cluster, rowType, ImmutableList.copyOf( values ) ) );
+
+        return LogicalDocuments.create( cluster, rowTypes, ImmutableList.copyOf( values ) );
     }
 
 

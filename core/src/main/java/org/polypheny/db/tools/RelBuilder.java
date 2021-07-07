@@ -158,6 +158,7 @@ public class RelBuilder {
     private final RelFactories.ValuesFactory valuesFactory;
     private final RelFactories.TableScanFactory scanFactory;
     private final RelFactories.MatchFactory matchFactory;
+    private final RelFactories.DocumentsFactory documentsFactory;
     private final Deque<Frame> stack = new ArrayDeque<>();
     private final boolean simplify;
     private final RexSimplify simplifier;
@@ -222,6 +223,10 @@ public class RelBuilder {
                 Util.first(
                         context.unwrap( RelFactories.MatchFactory.class ),
                         RelFactories.DEFAULT_MATCH_FACTORY );
+        this.documentsFactory =
+                Util.first(
+                        context.unwrap( RelFactories.DocumentsFactory.class ),
+                        RelFactories.DEFAULT_DOCUMENTS_FACTORY );
         final RexExecutor executor =
                 Util.first(
                         context.unwrap( RexExecutor.class ),
@@ -2124,6 +2129,13 @@ public class RelBuilder {
     public RelBuilder values( Iterable<? extends List<RexLiteral>> tupleList, RelDataType rowType ) {
         RelNode values = valuesFactory.createValues( cluster, rowType, copy( tupleList ) );
         push( values );
+        return this;
+    }
+
+
+    public RelBuilder documents( ImmutableList<ImmutableList<RexLiteral>> tuples, List<RelDataType> rowTypes, RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
+        RelNode documents = documentsFactory.createDocuments( cluster, rowTypes, copy( tuples ), rowType, copy( normalizedTuples ) );
+        push( documents );
         return this;
     }
 

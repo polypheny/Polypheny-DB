@@ -14,23 +14,19 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.schema;
+package org.polypheny.db.rel.core;
 
+import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexLiteral;
 
-public class LogicalView extends LogicalTable {
+public interface Documents {
 
+    List<RelDataType> getRowTypes();
 
-    protected LogicalView(
-            long tableId,
-            String logicalSchemaName,
-            String logicalTableName,
-            List<Long> columnIds,
-            List<String> logicalColumnNames,
-            RelProtoDataType protoRowType ) {
-        super( tableId, logicalSchemaName, logicalTableName, columnIds, logicalColumnNames, protoRowType, SchemaType.RELATIONAL );
-    }
+    ImmutableList<ImmutableList<RexLiteral>> getTuples();
+
+    ImmutableList<ImmutableList<RexLiteral>> getFlatTuples();
 
 }

@@ -65,7 +65,7 @@ public abstract class Values extends AbstractRelNode {
     public static final Predicate<? super Values> IS_EMPTY_J = Values::isEmpty;
 
 
-    public final ImmutableList<ImmutableList<RexLiteral>> tuples;
+    public ImmutableList<ImmutableList<RexLiteral>> tuples;
 
 
     /**

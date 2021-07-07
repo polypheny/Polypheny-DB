@@ -54,6 +54,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.mongodb.MongoRel.Implementor;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.util.MongoTypeUtil;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
@@ -70,6 +71,7 @@ import org.polypheny.db.rel.InvalidRelException;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.convert.ConverterRule;
+import org.polypheny.db.rel.core.Documents;
 import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rel.core.Values;
@@ -120,7 +122,7 @@ public class MongoRules {
             MongoFilterRule.INSTANCE,
             MongoProjectRule.INSTANCE,
             MongoAggregateRule.INSTANCE,
-            MongoTableModificationRule.INSTANCE
+            MongoTableModificationRule.INSTANCE,
     };
 
 
@@ -461,6 +463,17 @@ public class MongoRules {
         @Override
         public RelNode convert( RelNode rel ) {
             Values values = (Values) rel;
+            if ( values.getModel() == SchemaType.DOCUMENT ) {
+                Documents documents = (Documents) rel;
+                return new MongoDocuments(
+                        rel.getCluster(),
+                        documents.getRowTypes(),
+                        rel.getRowType(),
+                        documents.getFlatTuples(),
+                        rel.getTraitSet().replace( out ),
+                        values.getTuples()
+                );
+            }
             return new MongoValues(
                     values.getCluster(),
                     values.getRowType(),
@@ -481,6 +494,27 @@ public class MongoRules {
         @Override
         public void implement( Implementor implementor ) {
 
+        }
+
+    }
+
+
+    public static class MongoDocuments extends Values implements MongoRel {
+
+        @Getter
+        private final List<RelDataType> rowTypes;
+
+
+        public MongoDocuments( RelOptCluster cluster, List<RelDataType> rowTypes, RelDataType defaultRowType, ImmutableList<ImmutableList<RexLiteral>> tuples, RelTraitSet traitSet, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
+            super( cluster, defaultRowType, normalizedTuples, traitSet );
+            this.rowTypes = rowTypes;
+            this.tuples = tuples;
+        }
+
+
+        @Override
+        public void implement( Implementor implementor ) {
+            // empty on purpose
         }
 
     }
@@ -578,6 +612,8 @@ public class MongoRules {
                 case INSERT:
                     if ( input instanceof MongoValues ) {
                         handleDirectInsert( implementor, ((MongoValues) input) );
+                    } else if ( input instanceof MongoDocuments ) {
+                        handleDocumentInsert( implementor, ((MongoDocuments) input) );
                     } else if ( input instanceof MongoProject ) {
                         handlePreparedInsert( implementor, ((MongoProject) input) );
                     } else {
@@ -630,6 +666,28 @@ public class MongoRules {
                     implementor.filter = filterCollector.filter;
                     break;
             }
+        }
+
+
+        private void handleDocumentInsert( Implementor implementor, MongoDocuments documents ) {
+            List<BsonDocument> docs = new ArrayList<>();
+            GridFSBucket bucket = implementor.mongoTable.getMongoSchema().getBucket();
+            List<RelDataType> rowTypes = documents.getRowTypes();
+
+            int docPos = 0;
+            for ( ImmutableList<RexLiteral> literals : documents.tuples ) {
+                BsonDocument doc = new BsonDocument();
+                int pos = 0;
+                for ( RexLiteral literal : literals ) {
+                    doc.put(
+                            rowTypes.get( docPos ).getFieldNames().get( pos ),
+                            MongoTypeUtil.getAsBson( literal, bucket ) );
+                    pos++;
+                }
+                docs.add( doc );
+                docPos++;
+            }
+            implementor.operations = docs;
         }
 
 
