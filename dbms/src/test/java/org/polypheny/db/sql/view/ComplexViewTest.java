@@ -423,15 +423,17 @@ public class ComplexViewTest {
     }
 
 
-    public void dropTables( Statement statement ) throws SQLException {
-        statement.executeUpdate( DROP_TABLES_NATION );
-        statement.executeUpdate( DROP_TABLES_REGION );
-        statement.executeUpdate( DROP_TABLES_PART );
-        statement.executeUpdate( DROP_TABLES_SUPPLIER );
-        statement.executeUpdate( DROP_TABLES_PARTSUPP );
-        statement.executeUpdate( DROP_TABLES_ORDERS );
-        statement.executeUpdate( DROP_TABLES_CUSTOMER );
-        statement.executeUpdate( DROP_TABLES_LINEITEM );
+    public void dropTables( Connection connection ) throws SQLException {
+        try ( Statement statement = connection.createStatement() ) {
+            statement.executeUpdate( DROP_TABLES_NATION );
+            statement.executeUpdate( DROP_TABLES_REGION );
+            statement.executeUpdate( DROP_TABLES_PART );
+            statement.executeUpdate( DROP_TABLES_SUPPLIER );
+            statement.executeUpdate( DROP_TABLES_PARTSUPP );
+            statement.executeUpdate( DROP_TABLES_ORDERS );
+            statement.executeUpdate( DROP_TABLES_CUSTOMER );
+            statement.executeUpdate( DROP_TABLES_LINEITEM );
+        }
     }
 
 
@@ -479,7 +481,7 @@ public class ComplexViewTest {
 
                     connection.commit();
                 } finally {
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
@@ -515,7 +517,7 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW date_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
@@ -553,7 +555,7 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW decimal_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
@@ -592,7 +594,7 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW decimalDate_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
@@ -634,7 +636,7 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW decimalDateInt_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
@@ -682,7 +684,7 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW dateOrderby_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
@@ -718,7 +720,7 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW timeIntervall_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
@@ -771,7 +773,7 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW q1_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
@@ -839,7 +841,7 @@ public class ComplexViewTest {
                     );
                     connection.commit();
                 } finally {
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
@@ -914,7 +916,7 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW q3_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
@@ -987,7 +989,7 @@ public class ComplexViewTest {
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP VIEW q4_VIEW" );
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
@@ -1036,7 +1038,7 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW q6_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
@@ -1139,7 +1141,7 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW q7_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
@@ -1243,7 +1245,7 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW q8_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables( statement );
+                    dropTables( connection );
 
                 }
             }
@@ -1337,7 +1339,7 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW q9_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
@@ -1430,7 +1432,7 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW q10_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
@@ -1482,7 +1484,7 @@ public class ComplexViewTest {
 
                     connection.commit();
                 } finally {
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
@@ -1535,7 +1537,7 @@ public class ComplexViewTest {
 
                     connection.commit();
                 } finally {
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
@@ -1604,7 +1606,7 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW q13_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
@@ -1659,7 +1661,7 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW q14_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
@@ -1710,11 +1712,10 @@ public class ComplexViewTest {
                                     + "s_suppkey" ),
                             ImmutableList.of( q15_TEST_DATA )
                     );
-
+                    statement.executeUpdate( "DROP VIEW revenue0" );
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP VIEW revenue0" );
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
@@ -1768,7 +1769,7 @@ public class ComplexViewTest {
 
                     connection.commit();
                 } finally {
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
@@ -1830,7 +1831,7 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW q17_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
@@ -1888,7 +1889,7 @@ public class ComplexViewTest {
 
                     connection.commit();
                 } finally {
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
@@ -1960,7 +1961,7 @@ public class ComplexViewTest {
                     statement.executeUpdate( "DROP VIEW q19_VIEW" );
                     connection.commit();
                 } finally {
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
@@ -2021,7 +2022,7 @@ public class ComplexViewTest {
 
                     connection.commit();
                 } finally {
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
@@ -2060,7 +2061,7 @@ public class ComplexViewTest {
 
                     connection.commit();
                 } finally {
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
@@ -2121,7 +2122,7 @@ public class ComplexViewTest {
 
                     connection.commit();
                 } finally {
-                    dropTables( statement );
+                    dropTables( connection );
                 }
             }
         }
