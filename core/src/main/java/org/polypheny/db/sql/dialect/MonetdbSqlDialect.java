@@ -18,10 +18,14 @@ package org.polypheny.db.sql.dialect;
 
 
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlDialect;
+import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlWriter;
+import org.polypheny.db.sql.parser.SqlParserPos;
 
 
 /**
@@ -46,6 +50,27 @@ public class MonetdbSqlDialect extends SqlDialect {
     @Override
     public boolean supportsCharSet() {
         return false;
+    }
+
+
+    @Override
+    public IntervalParameterStrategy getIntervalParameterStrategy() {
+        return IntervalParameterStrategy.MULTIPLICATION;
+    }
+
+
+    @Override
+    public SqlNode getCastSpec( RelDataType type ) {
+        String castSpec;
+        switch ( type.getPolyType() ) {
+            case ARRAY:
+                castSpec = "TEXT";
+                break;
+            default:
+                return super.getCastSpec( type );
+        }
+
+        return new SqlDataTypeSpec( new SqlIdentifier( castSpec, SqlParserPos.ZERO ), -1, -1, null, null, SqlParserPos.ZERO );
     }
 
 

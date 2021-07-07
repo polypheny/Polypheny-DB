@@ -36,9 +36,12 @@ package org.polypheny.db.sql.dialect;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlBasicCall;
 import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlDialect;
+import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
@@ -78,6 +81,42 @@ public class HsqldbSqlDialect extends SqlDialect {
     @Override
     public boolean supportsWindowFunctions() {
         return false;
+    }
+
+
+    @Override
+    public IntervalParameterStrategy getIntervalParameterStrategy() {
+        return IntervalParameterStrategy.NONE;
+    }
+
+
+    @Override
+    public SqlNode getCastSpec( RelDataType type ) {
+        String castSpec;
+        switch ( type.getPolyType() ) {
+            case ARRAY:
+                castSpec = "LONGVARCHAR";
+                break;
+            case INTERVAL_YEAR_MONTH:
+            case INTERVAL_DAY:
+            case INTERVAL_DAY_HOUR:
+            case INTERVAL_DAY_MINUTE:
+            case INTERVAL_DAY_SECOND:
+            case INTERVAL_HOUR_MINUTE:
+            case INTERVAL_HOUR:
+            case INTERVAL_HOUR_SECOND:
+            case INTERVAL_MINUTE:
+            case INTERVAL_MONTH:
+            case INTERVAL_SECOND:
+            case INTERVAL_MINUTE_SECOND:
+            case INTERVAL_YEAR:
+                castSpec = "INTERVAL";
+                break;
+            default:
+                return super.getCastSpec( type );
+        }
+
+        return new SqlDataTypeSpec( new SqlIdentifier( castSpec, SqlParserPos.ZERO ), -1, -1, null, null, SqlParserPos.ZERO );
     }
 
 

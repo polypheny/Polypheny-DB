@@ -754,6 +754,17 @@ public class SqlDialect {
     }
 
 
+    public enum IntervalParameterStrategy {CAST, MULTIPLICATION, NONE}
+
+
+    ;
+
+
+    public IntervalParameterStrategy getIntervalParameterStrategy() {
+        return IntervalParameterStrategy.CAST;
+    }
+
+
     /**
      * A few utility functions copied from org.polypheny.db.util.Util. We have copied them because we wish to keep SqlDialect's dependencies to a minimum.
      */

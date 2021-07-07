@@ -87,6 +87,7 @@ import org.polypheny.db.sql.SqlBasicCall;
 import org.polypheny.db.sql.SqlBinaryOperator;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlDialect;
+import org.polypheny.db.sql.SqlDialect.IntervalParameterStrategy;
 import org.polypheny.db.sql.SqlDynamicParam;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlJoin;
@@ -106,6 +107,7 @@ import org.polypheny.db.sql.fun.SqlSumEmptyIsZeroAggFunction;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.DateString;
@@ -587,7 +589,22 @@ public abstract class SqlImplementor {
                 case DYNAMIC_PARAM:
                     final RexDynamicParam caseParam = (RexDynamicParam) rex;
                     SqlDynamicParam sqlDynamicParam = new SqlDynamicParam( (int) caseParam.getIndex(), POS );
-                    return SqlStdOperatorTable.CAST.createCall( POS, sqlDynamicParam, dialect.getCastSpec( caseParam.getType() ) );
+                    if ( caseParam.getType() instanceof IntervalPolyType ) {
+                        if ( dialect.getIntervalParameterStrategy() == IntervalParameterStrategy.MULTIPLICATION ) {
+                            return SqlStdOperatorTable.MULTIPLY.createCall(
+                                    POS,
+                                    sqlDynamicParam,
+                                    SqlLiteral.createInterval( 1, "1", caseParam.getType().getIntervalQualifier(), POS ) );
+                        } else if ( dialect.getIntervalParameterStrategy() == IntervalParameterStrategy.CAST ) {
+                            return SqlStdOperatorTable.CAST.createCall( POS, sqlDynamicParam, dialect.getCastSpec( caseParam.getType() ) );
+                        } else if ( dialect.getIntervalParameterStrategy() == IntervalParameterStrategy.NONE ) {
+                            return sqlDynamicParam;
+                        } else {
+                            throw new RuntimeException( "Unknown IntervalParameterStrategy: " + dialect.getIntervalParameterStrategy().name() );
+                        }
+                    } else {
+                        return SqlStdOperatorTable.CAST.createCall( POS, sqlDynamicParam, dialect.getCastSpec( caseParam.getType() ) );
+                    }
 
                 case IN:
                     if ( rex instanceof RexSubQuery ) {

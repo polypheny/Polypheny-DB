@@ -92,14 +92,8 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
 
     @Override
-    public boolean supportsCharSet() {
-        return false;
-    }
-
-
-    @Override
-    public boolean supportsNestedArrays() {
-        return true;
+    public IntervalParameterStrategy getIntervalParameterStrategy() {
+        return IntervalParameterStrategy.CAST;
     }
 
 
