@@ -29,6 +29,7 @@ import com.mongodb.client.MongoClient;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import lombok.Setter;
 import org.polypheny.db.transaction.PolyXid;
 
@@ -60,6 +61,7 @@ public class TransactionProvider {
         TransactionOptions options = TransactionOptions.builder()
                 .readPreference( ReadPreference.primary() )
                 .readConcern( ReadConcern.LOCAL )
+                .maxCommitTime( 2L, TimeUnit.MINUTES )
                 .writeConcern( WriteConcern.MAJORITY ).build();
         ClientSession session;
         if ( !sessions.containsKey( xid ) ) {

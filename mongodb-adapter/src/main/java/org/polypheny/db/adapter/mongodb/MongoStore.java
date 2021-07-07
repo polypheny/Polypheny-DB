@@ -80,6 +80,7 @@ import org.polypheny.db.type.PolyTypeFamily;
 @AdapterSettingBoolean(name = "persistent", defaultValue = false)
 @AdapterSettingInteger(name = "port", defaultValue = 27017)
 @AdapterSettingString(name = "host", defaultValue = "localhost", appliesTo = DeploySetting.REMOTE)
+@AdapterSettingInteger(name = "trxLifetimeLimit", defaultValue = 120)
 public class MongoStore extends DataStore {
 
     private final String host;
@@ -98,7 +99,7 @@ public class MongoStore extends DataStore {
 
         DockerManager.Container container = new ContainerBuilder( getAdapterId(), "mongo:latest", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
                 .withMappedPort( 27017, port )
-                .withInitCommands( Arrays.asList( "mongod", "--replSet", "test" ) )
+                .withInitCommands( Arrays.asList( "mongod", "--replSet", "poly" ) )
                 .withReadyTest( this::testConnection, 20000 )
                 .withAfterCommands( Arrays.asList( "mongo", "--eval", "rs.initiate()" ) )
                 .build();
@@ -114,6 +115,10 @@ public class MongoStore extends DataStore {
         resetDockerConnection( RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, Integer.parseInt( settings.get( "instanceId" ) ) ) );
 
         this.transactionProvider = new TransactionProvider( this.client );
+        MongoDatabase db = this.client.getDatabase( "admin" );
+        Document configs = new Document( "setParameter", 1 );
+        configs.put( "transactionLifetimeLimitSeconds", Integer.parseInt( settings.get( "trxLifetimeLimit" ) ) );
+        db.runCommand( configs );
     }
 
 
