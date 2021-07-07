@@ -90,24 +90,7 @@ public class FileModifier extends FileEnumerator {
                             ((FileInputHandle) value).materializeAsFile( newFile.toPath() );
                             continue;
                         }
-                        if ( !newFile.createNewFile() ) {
-                            throw new RuntimeException( "Primary key conflict! You are trying to insert a row with a primary key that already exists." );
-                        }
-                        if ( value instanceof byte[] ) {
-                            Files.write( newFile.toPath(), (byte[]) value );
-                        } else if ( value instanceof InputStream ) {
-                            //see https://attacomsian.com/blog/java-convert-inputstream-to-outputstream
-                            try ( InputStream is = (InputStream) value; FileOutputStream os = new FileOutputStream( newFile ) ) {
-                                IOUtils.copyLarge( is, os );
-                            }
-                        } else if ( FileHelper.isSqlDateOrTimeOrTS( value ) ) {
-                            Long l = FileHelper.sqlToLong( value );
-                            Files.write( newFile.toPath(), l.toString().getBytes( FileStore.CHARSET ) );
-                        } else {
-                            String writeString = value.toString();
-                            Files.write( newFile.toPath(), writeString.getBytes( FileStore.CHARSET ) );
-                        }
-
+                        write( newFile, value );
                     }
                 }
                 current = Long.valueOf( insertPosition );
@@ -116,6 +99,27 @@ public class FileModifier extends FileEnumerator {
             }
         } catch ( IOException | RuntimeException e ) {
             throw new RuntimeException( e );
+        }
+    }
+
+
+    static void write( File newFile, Object value ) throws IOException {
+        if ( !newFile.createNewFile() ) {
+            throw new RuntimeException( "Primary key conflict! You are trying to insert a row with a primary key that already exists." );
+        }
+        if ( value instanceof byte[] ) {
+            Files.write( newFile.toPath(), (byte[]) value );
+        } else if ( value instanceof InputStream ) {
+            //see https://attacomsian.com/blog/java-convert-inputstream-to-outputstream
+            try ( InputStream is = (InputStream) value; FileOutputStream os = new FileOutputStream( newFile ) ) {
+                IOUtils.copyLarge( is, os );
+            }
+        } else if ( FileHelper.isSqlDateOrTimeOrTS( value ) ) {
+            Long l = FileHelper.sqlToLong( value );
+            Files.write( newFile.toPath(), l.toString().getBytes( FileStore.CHARSET ) );
+        } else {
+            String writeString = value.toString();
+            Files.write( newFile.toPath(), writeString.getBytes( FileStore.CHARSET ) );
         }
     }
 

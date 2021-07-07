@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,7 +127,9 @@ public class ExploreQueryProcessor {
         } catch ( Throwable t ) {
             if ( iterator != null ) {
                 try {
-                    ((AutoCloseable) iterator).close();
+                    if ( iterator instanceof AutoCloseable ) {
+                        ((AutoCloseable) iterator).close();
+                    }
                 } catch ( Exception e ) {
                     log.error( "Exception while closing result iterator", e );
                 }
@@ -173,7 +175,9 @@ public class ExploreQueryProcessor {
             return new ExploreQueryResult( d, rows.size(), typeInfo, name );
         } finally {
             try {
-                ((AutoCloseable) iterator).close();
+                if ( iterator instanceof AutoCloseable ) {
+                    ((AutoCloseable) iterator).close();
+                }
             } catch ( Exception e ) {
                 log.error( "Exception while closing result iterator2", e );
             }
@@ -210,9 +214,11 @@ public class ExploreQueryProcessor {
 
 
     static class QueryExecutionException extends Exception {
+
         QueryExecutionException( Throwable t ) {
             super( t );
         }
+
     }
 
 

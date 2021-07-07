@@ -26,15 +26,19 @@ import java.util.concurrent.Executors;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.information.InformationAction;
+import org.polypheny.db.information.InformationAction.Action;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.util.DateTimeStringUtils;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
@@ -144,6 +148,8 @@ public class StatisticsManager<T extends Comparable<T>> {
             put( splits[0], splits[1], splits[2], new NumericalStatisticColumn<>( splits, type ) );
         } else if ( type.getFamily() == PolyTypeFamily.CHARACTER ) {
             put( splits[0], splits[1], splits[2], new AlphabeticStatisticColumn<>( splits, type ) );
+        } else if ( PolyType.DATETIME_TYPES.contains( type ) ) {
+            put( splits[0], splits[1], splits[2], new TemporalStatisticColumn<>( splits, type ) );
         }
     }
 
@@ -231,6 +237,8 @@ public class StatisticsManager<T extends Comparable<T>> {
             return this.reevaluateNumericalColumn( column );
         } else if ( column.getType().getFamily() == PolyTypeFamily.CHARACTER ) {
             return this.reevaluateAlphabeticalColumn( column );
+        } else if ( PolyType.DATETIME_TYPES.contains( column.getType() ) ) {
+            return this.reevaluateTemporalColumn( column );
         }
         return null;
     }
@@ -262,6 +270,49 @@ public class StatisticsManager<T extends Comparable<T>> {
     }
 
 
+    private StatisticColumn<T> reevaluateTemporalColumn( QueryColumn column ) {
+        StatisticQueryColumn min = this.getAggregateColumn( column, "MIN" );
+        StatisticQueryColumn max = this.getAggregateColumn( column, "MAX" );
+        Integer count = this.getCount( column );
+
+        TemporalStatisticColumn<T> statisticColumn = new TemporalStatisticColumn<>( QueryColumn.getSplitColumn( column.getQualifiedColumnName() ), column.getType() );
+        if ( min != null ) {
+            if ( NumberUtils.isParsable( min.getData()[0] ) ) {
+                //noinspection unchecked
+                statisticColumn.setMin( (T) DateTimeStringUtils.longToAdjustedString( Long.parseLong( min.getData()[0] ), column.getType() ) );
+            } else {
+                //noinspection unchecked
+                statisticColumn.setMin( (T) min.getData()[0] );
+            }
+        }
+
+        if ( max != null ) {
+            if ( NumberUtils.isParsable( max.getData()[0] ) ) {
+                //noinspection unchecked
+                statisticColumn.setMax( (T) DateTimeStringUtils.longToAdjustedString( Long.parseLong( max.getData()[0] ), column.getType() ) );
+            } else {
+                //noinspection unchecked
+                statisticColumn.setMax( (T) max.getData()[0] );
+            }
+        }
+
+        StatisticQueryColumn unique = this.getUniqueValues( column );
+        for ( int idx = 0; idx < unique.getData().length; idx++ ) {
+            if ( unique.getData()[idx] != null )
+            //noinspection unchecked
+            {
+                unique.getData()[idx] = DateTimeStringUtils.longToAdjustedString( Long.parseLong( unique.getData()[idx] ), column.getType() );
+            }
+        }
+
+        assignUnique( statisticColumn, unique );
+
+        statisticColumn.setCount( count );
+
+        return statisticColumn;
+    }
+
+
     /**
      * Helper method tho assign unique values or set isFull if too much exist
      *
@@ -272,7 +323,6 @@ public class StatisticsManager<T extends Comparable<T>> {
             return;
         }
         if ( unique.getData().length <= this.buffer ) {
-            //noinspection unchecked
             column.setUniqueValues( Arrays.asList( (T[]) unique.getData() ) );
         } else {
             column.setFull( true );
@@ -429,16 +479,33 @@ public class StatisticsManager<T extends Comparable<T>> {
         InformationGroup numericalGroup = new InformationGroup( page, "Numerical Statistics" );
         im.addGroup( numericalGroup );
 
+        InformationGroup temporalGroup = new InformationGroup( page, "Temporal Statistics" );
+        im.addGroup( temporalGroup );
+
+        InformationTable temporalInformation = new InformationTable( temporalGroup, Arrays.asList( "Column Name", "Min", "Max" ) );
+
         InformationTable numericalInformation = new InformationTable( numericalGroup, Arrays.asList( "Column Name", "Min", "Max" ) );
 
         InformationTable alphabeticalInformation = new InformationTable( alphabeticalGroup, Arrays.asList( "Column Name", "Unique Values" ) );
 
+        im.registerInformation( temporalInformation );
         im.registerInformation( numericalInformation );
         im.registerInformation( alphabeticalInformation );
 
+        InformationGroup actionGroup = new InformationGroup( page, "Action" );
+        im.addGroup( actionGroup );
+        Action reevaluateAction = parameters -> {
+            reevaluateAllStatistics();
+            page.refresh();
+            return "Recalculated statistics";
+        };
+        InformationAction reevaluateAllInfo = new InformationAction( actionGroup, "Recalculate Statistics", reevaluateAction );
+        actionGroup.addInformation( reevaluateAllInfo );
+        im.registerInformation( reevaluateAllInfo );
         page.setRefreshFunction( () -> {
             numericalInformation.reset();
             alphabeticalInformation.reset();
+            temporalInformation.reset();
             statisticSchemaMap.values().forEach( schema -> schema.values().forEach( table -> table.forEach( ( k, v ) -> {
                 if ( v instanceof NumericalStatisticColumn ) {
 
@@ -448,6 +515,13 @@ public class StatisticsManager<T extends Comparable<T>> {
                         numericalInformation.addRow( v.getQualifiedColumnName(), "❌", "❌" );
                     }
 
+                }
+                if ( v instanceof TemporalStatisticColumn ) {
+                    if ( ((TemporalStatisticColumn<T>) v).getMin() != null && ((TemporalStatisticColumn<T>) v).getMax() != null ) {
+                        temporalInformation.addRow( v.getQualifiedColumnName(), ((TemporalStatisticColumn<T>) v).getMin().toString(), ((TemporalStatisticColumn<T>) v).getMax().toString() );
+                    } else {
+                        temporalInformation.addRow( v.getQualifiedColumnName(), "❌", "❌" );
+                    }
                 } else {
                     String values = v.getUniqueValues().toString();
                     if ( !v.isFull ) {

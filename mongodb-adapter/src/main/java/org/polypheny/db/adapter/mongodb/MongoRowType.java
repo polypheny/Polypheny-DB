@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.mongodb;
 
 import java.util.HashMap;
 import java.util.List;
+import org.polypheny.db.adapter.mongodb.MongoRel.Implementor;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rel.type.RelRecordType;
@@ -48,8 +49,10 @@ public class MongoRowType extends RelRecordType {
     }
 
 
-    public String getPhysicalName( String name ) {
-        return MongoStore.getPhysicalColumnName( name, getId( name ) );
+    public String getPhysicalName( String name, Implementor implementor ) {
+        String id = MongoStore.getPhysicalColumnName( name, getId( name ) );
+        implementor.physicalMapper.add( id );
+        return id;
     }
 
 

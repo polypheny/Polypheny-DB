@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ package org.polypheny.db.sql;
 
 
 import com.google.common.collect.ImmutableList;
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -51,6 +52,7 @@ import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
@@ -72,7 +74,7 @@ import org.polypheny.db.util.Util;
  *
  * In many cases, the formal/actual distinction is clear from context, in which case we drop these qualifiers.
  */
-public abstract class SqlOperator {
+public abstract class SqlOperator implements Serializable {
 
     public static final String NL = System.getProperty( "line.separator" );
 
@@ -191,7 +193,7 @@ public abstract class SqlOperator {
      *
      * @return acceptable range
      */
-    public SqlOperandCountRange getOperandCountRange() {
+    public OperandCountRange getOperandCountRange() {
         if ( operandTypeChecker != null ) {
             return operandTypeChecker.getOperandCountRange();
         }
@@ -581,7 +583,7 @@ public abstract class SqlOperator {
     /**
      * Checks that the operand values in a {@link SqlCall} to this operator are valid. Subclasses must either override this method or supply an instance of {@link PolyOperandTypeChecker} to the constructor.
      *
-     * @param callBinding    description of call
+     * @param callBinding description of call
      * @param throwOnFailure whether to throw an exception if check fails (otherwise returns false in that case)
      * @return whether check succeeded
      */
@@ -607,7 +609,7 @@ public abstract class SqlOperator {
 
 
     protected void checkOperandCount( SqlValidator validator, PolyOperandTypeChecker argType, SqlCall call ) {
-        SqlOperandCountRange od = call.getOperator().getOperandCountRange();
+        OperandCountRange od = call.getOperator().getOperandCountRange();
         if ( od.isValidCount( call.operandCount() ) ) {
             return;
         }
@@ -833,4 +835,5 @@ public abstract class SqlOperator {
     public boolean argumentMustBeScalar( int ordinal ) {
         return true;
     }
+
 }

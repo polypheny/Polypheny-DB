@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
     protected final NameMap<TypeEntry> typeMap;
     protected final NameSet functionNames;
     protected final NameMap<FunctionEntry> nullaryFunctionMap;
-    protected final NameMap<PolyphenyDbSchema> subSchemaMap;
+    protected transient final NameMap<PolyphenyDbSchema> subSchemaMap;
     private List<? extends List<String>> path;
 
 
@@ -632,6 +632,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
         public void add( String name, RelProtoDataType type ) {
             AbstractPolyphenyDbSchema.this.add( name, type );
         }
+
     }
 
 

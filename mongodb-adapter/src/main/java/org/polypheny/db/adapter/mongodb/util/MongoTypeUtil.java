@@ -24,6 +24,7 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.function.Function;
@@ -41,6 +42,8 @@ import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.types.Decimal128;
 import org.bson.types.ObjectId;
+import org.polypheny.db.adapter.mongodb.MongoStore;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -116,6 +119,12 @@ public class MongoTypeUtil {
             case VIDEO:
             case FILE:
                 return ( o ) -> handleMultimedia( bucket, (InputStream) o );
+            case INTERVAL_MONTH:
+                return MongoTypeUtil::handleMonthInterval;
+            case INTERVAL_DAY:
+                return MongoTypeUtil::handleDayInterval;
+            case INTERVAL_YEAR:
+                return MongoTypeUtil::handleYearInterval;
             case CHAR:
             case VARCHAR:
             default:
@@ -173,6 +182,12 @@ public class MongoTypeUtil {
             case VIDEO:
             case FILE:
                 return handleMultimedia( bucket, (InputStream) obj );
+            case INTERVAL_MONTH:
+                return handleMonthInterval( obj );
+            case INTERVAL_DAY:
+                return handleDayInterval( obj );
+            case INTERVAL_YEAR:
+                return handleYearInterval( obj );
             case CHAR:
             case VARCHAR:
             default:
@@ -186,6 +201,33 @@ public class MongoTypeUtil {
         return new BsonDocument()
                 .append( "_type", new BsonString( "s" ) )
                 .append( "_id", new BsonString( id.toString() ) );
+    }
+
+
+    private static BsonValue handleYearInterval( Object o ) {
+        if ( o instanceof BigDecimal ) {
+            return new BsonDecimal128( new Decimal128( ((BigDecimal) o).multiply( BigDecimal.valueOf( 365 ) ) ) );
+        } else {
+            return new BsonDecimal128( new Decimal128( ((int) o) * 24 * 60 * 60000L ) );
+        }
+    }
+
+
+    private static BsonValue handleMonthInterval( Object o ) {
+        if ( o instanceof BigDecimal ) {
+            return new BsonDecimal128( new Decimal128( ((BigDecimal) o).multiply( BigDecimal.valueOf( 30 ) ) ) );
+        } else {
+            return new BsonDecimal128( new Decimal128( ((int) o) * 30L ) );
+        }
+    }
+
+
+    private static BsonValue handleDayInterval( Object o ) {
+        if ( o instanceof BigDecimal ) {
+            return new BsonDecimal128( new Decimal128( ((BigDecimal) o).multiply( BigDecimal.valueOf( 24 * 60 * 60000 ) ) ) );
+        } else {
+            return new BsonDecimal128( new Decimal128( ((int) o) * 24 * 60 * 60000L ) );
+        }
     }
 
 
@@ -223,6 +265,8 @@ public class MongoTypeUtil {
             return new BsonInt64( (Integer) o );
         } else if ( o instanceof Date ) {
             return new BsonInt64( ((Date) o).toLocalDate().toEpochDay() );
+        } else if ( o instanceof GregorianCalendar ) {
+            return new BsonInt64( ((GregorianCalendar) o).toZonedDateTime().toLocalDate().toEpochDay() );
         } else {
             return new BsonInt64( new Date( ((Time) o).getTime() ).toLocalDate().toEpochDay() );
         }
@@ -232,6 +276,8 @@ public class MongoTypeUtil {
     private static BsonValue handleTime( Object o ) {
         if ( o instanceof Integer ) {
             return new BsonInt64( ((Integer) o) );
+        } else if ( o instanceof GregorianCalendar ) {
+            return new BsonInt64( ((GregorianCalendar) o).toZonedDateTime().toEpochSecond() );
         } else {
             return new BsonInt64( ((Time) o).toLocalTime().toNanoOfDay() / 1000000 );
         }
@@ -472,6 +518,21 @@ public class MongoTypeUtil {
             default:
                 throw new IllegalStateException( "Unexpected value: " + type );
         }
+    }
+
+
+    public static BsonDocument getPhysicalProjections( List<String> logicalCols, CatalogTable catalogTable ) {
+        BsonDocument projections = new BsonDocument();
+        List<String> names = catalogTable.getColumnNames();
+        for ( String logicalCol : logicalCols ) {
+            int index = names.indexOf( logicalCol );
+            if ( index != -1 ) {
+                projections.append( logicalCol, new BsonString( "$" + MongoStore.getPhysicalColumnName( catalogTable.columnIds.get( index ) ) ) );
+            } else {
+                projections.append( logicalCol, new BsonInt32( 1 ) );
+            }
+        }
+        return new BsonDocument( "$project", projections );
     }
 
 }

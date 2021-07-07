@@ -32,6 +32,7 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -90,10 +91,12 @@ public class PolySchemaBuilder implements PropertyChangeListener {
             SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, new AbstractSchema(), catalogSchema.name, catalogSchema.schemaType ).plus();
             for ( CatalogTable catalogTable : catalog.getTables( catalogSchema.id, null ) ) {
                 List<String> columnNames = new LinkedList<>();
+
                 RelDataType rowType;
                 final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
 
                 final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+
                 for ( CatalogColumn catalogColumn : catalog.getColumns( catalogTable.id ) ) {
                     columnNames.add( catalogColumn.name );
                     fieldInfo.add( catalogColumn.name, null, catalogColumn.getRelDataType( typeFactory ) );
@@ -103,18 +106,32 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
                 List<Long> columnIds = new LinkedList<>();
                 catalog.getColumns( catalogTable.id ).forEach( c -> columnIds.add( c.id ) );
-                LogicalTable table = new LogicalTable(
-                        catalogTable.id,
-                        catalogTable.getSchemaName(),
-                        catalogTable.name,
-                        columnIds,
-                        columnNames,
-                        RelDataTypeImpl.proto( rowType ),
-                        catalogSchema.schemaType );
-                s.add( catalogTable.name, table );
-                tableMap.put( catalogTable.name, table );
-
+                if ( catalogTable.tableType == TableType.VIEW ) {
+                    LogicalView view = new LogicalView(
+                            catalogTable.id,
+                            catalogTable.getSchemaName(),
+                            catalogTable.name,
+                            columnIds,
+                            columnNames,
+                            RelDataTypeImpl.proto( fieldInfo.build() ) );
+                    s.add( catalogTable.name, view );
+                    tableMap.put( catalogTable.name, view );
+                } else if ( catalogTable.tableType == TableType.TABLE || catalogTable.tableType == TableType.SOURCE ) {
+                    LogicalTable table = new LogicalTable(
+                            catalogTable.id,
+                            catalogTable.getSchemaName(),
+                            catalogTable.name,
+                            columnIds,
+                            columnNames,
+                            RelDataTypeImpl.proto( rowType ),
+                            catalogSchema.schemaType );
+                    s.add( catalogTable.name, table );
+                    tableMap.put( catalogTable.name, table );
+                } else {
+                    throw new RuntimeException( "Unhandled table type: " + catalogTable.tableType.name() );
+                }
             }
+
             rootSchema.add( catalogSchema.name, s, catalogSchema.schemaType );
             tableMap.forEach( rootSchema.getSubSchema( catalogSchema.name )::add );
             if ( catalogDatabase.defaultSchemaId != null && catalogSchema.id == catalogDatabase.defaultSchemaId ) {

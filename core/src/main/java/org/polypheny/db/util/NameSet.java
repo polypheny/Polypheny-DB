@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ package org.polypheny.db.util;
 
 
 import com.google.common.collect.Maps;
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -44,7 +45,7 @@ import java.util.Set;
 /**
  * Set of names that can be accessed with and without case sensitivity.
  */
-public class NameSet {
+public class NameSet implements Serializable {
 
     public static final Comparator<String> COMPARATOR = CaseInsensitiveComparator.COMPARATOR;
 
@@ -125,5 +126,6 @@ public class NameSet {
     public Iterable<String> iterable() {
         return Collections.unmodifiableSet( names.map().keySet() );
     }
+
 }
 

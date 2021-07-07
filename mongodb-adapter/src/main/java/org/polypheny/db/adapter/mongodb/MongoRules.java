@@ -51,6 +51,7 @@ import org.bson.BsonValue;
 import org.polypheny.db.adapter.enumerable.RexImpTable;
 import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.adapter.mongodb.MongoRel.Implementor;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.util.MongoTypeUtil;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -233,8 +234,12 @@ public class MongoRules {
         }
 
 
-        protected RexToMongoTranslator( JavaTypeFactory typeFactory, List<String> inFields ) {
+        private final Implementor implementor;
+
+
+        protected RexToMongoTranslator( JavaTypeFactory typeFactory, List<String> inFields, Implementor implementor ) {
             super( true );
+            this.implementor = implementor;
             this.typeFactory = typeFactory;
             this.inFields = inFields;
         }
@@ -250,7 +255,14 @@ public class MongoRules {
 
 
         @Override
+        public String visitDynamicParam( RexDynamicParam dynamicParam ) {
+            return new BsonDynamic( dynamicParam ).toJson();
+        }
+
+
+        @Override
         public String visitInputRef( RexInputRef inputRef ) {
+            implementor.physicalMapper.add( inFields.get( inputRef.getIndex() ) );
             return maybeQuote( "$" + inFields.get( inputRef.getIndex() ) );
         }
 
@@ -276,11 +288,11 @@ public class MongoRules {
                     if ( !Bug.CALCITE_194_FIXED ) {
                         return "'" + stripQuotes( strings.get( 0 ) ) + "[" + ((RexLiteral) op1).getValue2() + "]'";
                     }
-                    return strings.get( 0 ) + "[" + strings.get( 1 ) + "]";
+                    return "{$arrayElemAt:[" + strings.get( 0 ) + "," + strings.get( 1 ) + "]}";
                 }
                 // prepared
                 if ( op1 instanceof RexDynamicParam ) {
-                    return strings.get( 0 ) + "[" + new BsonDynamic( (RexDynamicParam) op1 ).toJson() + "]";
+                    return "{$arrayElemAt:[" + strings.get( 0 ) + "," + new BsonDynamic( (RexDynamicParam) op1 ).toJson() + "]}";
                 }
             }
             if ( call.getOperator() == SqlStdOperatorTable.CASE ) {
@@ -585,21 +597,21 @@ public class MongoRules {
                     for ( RexNode el : getSourceExpressionList() ) {
                         if ( el instanceof RexLiteral ) {
                             doc.append(
-                                    rowType.getPhysicalName( getUpdateColumnList().get( pos ) ),
+                                    rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
                                     MongoTypeUtil.getAsBson( (RexLiteral) el, bucket ) );
                         } else if ( el instanceof RexCall ) {
                             if ( ((RexCall) el).op.kind == SqlKind.PLUS ) {
                                 doc.append(
-                                        rowType.getPhysicalName( getUpdateColumnList().get( pos ) ),
+                                        rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
                                         visitCall( implementor, (RexCall) el, SqlKind.PLUS, el.getType().getPolyType() ) );
                             } else {
                                 doc.append(
-                                        rowType.getPhysicalName( getUpdateColumnList().get( pos ) ),
+                                        rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
                                         MongoTypeUtil.getBsonArray( (RexCall) el, bucket ) );
                             }
                         } else if ( el instanceof RexDynamicParam ) {
                             doc.append(
-                                    rowType.getPhysicalName( getUpdateColumnList().get( pos ) ),
+                                    rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
                                     new BsonDynamic( (RexDynamicParam) el ) );
                         }
                         pos++;
@@ -692,7 +704,6 @@ public class MongoRules {
 
                 pos++;
             }
-            // we need to use the extended json format here to not loose precision like long -> int etc.
             implementor.operations = Collections.singletonList( doc );
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.polypheny.db.schema;
 
 
 import com.google.common.collect.ImmutableList;
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import java.util.NavigableMap;
@@ -103,7 +104,6 @@ public interface PolyphenyDbSchema {
     boolean removeType( String name );
 
 
-
     /**
      * Entry in a schema, such as a table or sub-schema.
      *
@@ -112,7 +112,7 @@ public interface PolyphenyDbSchema {
      *
      * The members of a schema must have unique names.
      */
-    abstract class Entry {
+    abstract class Entry implements Serializable {
 
         public final PolyphenyDbSchema schema;
         public final String name;
@@ -130,6 +130,7 @@ public interface PolyphenyDbSchema {
         public final List<String> path() {
             return schema.path( name );
         }
+
     }
 
 
@@ -148,6 +149,7 @@ public interface PolyphenyDbSchema {
 
 
         public abstract Table getTable();
+
     }
 
 
@@ -162,6 +164,7 @@ public interface PolyphenyDbSchema {
 
 
         public abstract RelProtoDataType getType();
+
     }
 
 
@@ -201,6 +204,7 @@ public interface PolyphenyDbSchema {
         public Table getTable() {
             return table;
         }
+
     }
 
 
@@ -225,6 +229,7 @@ public interface PolyphenyDbSchema {
         public RelProtoDataType getType() {
             return protoDataType;
         }
+
     }
 
 
@@ -267,5 +272,7 @@ public interface PolyphenyDbSchema {
         public Expression getExpression( SchemaPlus parentSchema, String name ) {
             return Expressions.call( DataContext.ROOT, BuiltInMethod.DATA_CONTEXT_GET_ROOT_SCHEMA.method );
         }
+
     }
+
 }

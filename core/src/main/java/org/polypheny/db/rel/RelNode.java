@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.core.Correlate;
 import org.polypheny.db.rel.core.CorrelationId;
+import org.polypheny.db.rel.logical.LogicalViewTableScan;
 import org.polypheny.db.rel.metadata.Metadata;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
@@ -339,11 +340,42 @@ public interface RelNode extends RelOptNode, Cloneable {
     }
 
     /**
+     * To check if a RelNode includes a ViewTableScan
+     */
+    default boolean hasView() {
+        return false;
+    }
+
+    /**
+     * expands node
+     * if a part of RelNode is a LogicalViewTableScan it is replaced
+     * else recursively hands call down if view in deeper level
+     */
+    default void tryExpandView( RelNode input ) {
+        if ( input instanceof LogicalViewTableScan ) {
+            input = ((LogicalViewTableScan) input).expandViewNode();
+        } else {
+            input.tryExpandView( input );
+        }
+    }
+
+    default RelNode tryParentExpandView( RelNode input ) {
+        if ( input instanceof LogicalViewTableScan ) {
+            return ((LogicalViewTableScan) input).expandViewNode();
+        } else {
+            input.tryExpandView( input );
+            return input;
+        }
+    }
+
+    /**
      * Context of a relational expression, for purposes of checking validity.
      */
     interface Context {
 
         Set<CorrelationId> correlationIds();
+
     }
+
 }
 

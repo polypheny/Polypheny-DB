@@ -30,7 +30,15 @@ jobs:
             -   name: Start Docker container
                 run: docker-compose up -d
             -   name: Assemble
-                run: ./gradlew assemble
+                uses: nick-invision/retry@v2
+                with:
+                    max_attempts: 2
+                    timeout_minutes: 15
+                    command: ./gradlew assemble
 
             -   name: Execute integration tests for ${{ matrix.adapter }}
-                run: ./gradlew integrationTests -Dstore.default=${{ matrix.adapter }}
+                uses: nick-invision/retry@v2
+                with:
+                    max_attempts: 2
+                    timeout_minutes: 20
+                    command: ./gradlew integrationTests -Dstore.default=${{ matrix.adapter }}

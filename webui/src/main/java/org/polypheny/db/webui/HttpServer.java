@@ -154,6 +154,8 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/createIndex", crud::createIndex, gson::toJson );
 
+        webuiServer.post( "/getUnderlyingTable", crud::getUnderlyingTable, gson::toJson );
+
         webuiServer.post( "/getPlacements", crud::getPlacements, gson::toJson );
 
         webuiServer.post( "/addDropPlacement", crud::addDropPlacement, gson::toJson );

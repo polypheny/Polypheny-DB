@@ -56,9 +56,7 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
-import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
-import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.polypheny.db.adapter.AdapterManager;
@@ -85,7 +83,6 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.transaction.PolyXid;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
 
@@ -194,14 +191,26 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
      * @param filter
      * @return Enumerator of results
      */
-    private Enumerable<Object> aggregate( ClientSession session, final MongoDatabase mongoDb, MongoTable table, final List<Entry<String, Class>> fields, List<Entry<String, Class>> arrayFields, final List<String> operations, Map<Long, Object> parameterValues, BsonDocument filter, List<BsonDocument> preOps ) {
+    private Enumerable<Object> aggregate(
+            ClientSession session,
+            final MongoDatabase mongoDb,
+            MongoTable table,
+            final List<Entry<String, Class>> fields,
+            List<Entry<String, Class>> arrayFields,
+            final List<String> operations,
+            Map<Long, Object> parameterValues,
+            BsonDocument filter,
+            List<BsonDocument> preOps,
+            List<String> logicalCols ) {
         final List<BsonDocument> list = new ArrayList<>();
 
         if ( parameterValues.size() == 0 ) {
             // direct query
             preOps.forEach( op -> list.add( new BsonDocument( "$project", op ) ) );
 
-            list.add( new BsonDocument( "$match", filter ) );
+            if ( !filter.isEmpty() ) {
+                list.add( new BsonDocument( "$match", filter ) );
+            }
 
             for ( String operation : operations ) {
                 list.add( BsonDocument.parse( operation ) );
@@ -212,8 +221,10 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                     .map( op -> new MongoDynamic( new BsonDocument( "$addFields", op ), mongoSchema.getBucket() ) )
                     .forEach( util -> list.add( util.insert( parameterValues ) ) );
 
-            MongoDynamic util = new MongoDynamic( filter, getMongoSchema().getBucket() );
-            list.add( new BsonDocument( "$match", util.insert( parameterValues ) ) );
+            if ( !filter.isEmpty() ) {
+                MongoDynamic util = new MongoDynamic( filter, getMongoSchema().getBucket() );
+                list.add( new BsonDocument( "$match", util.insert( parameterValues ) ) );
+            }
 
             for ( String operation : operations ) {
                 MongoDynamic opUtil = new MongoDynamic( BsonDocument.parse( operation ), getMongoSchema().getBucket() );
@@ -222,9 +233,8 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 
         }
 
-        // do we need to add all if nothing is selected?
-        if ( operations.size() == 0 ) {
-            projectMatchAll( fields, list );
+        if ( logicalCols.size() != 0 ) {
+            list.add( 0, MongoTypeUtil.getPhysicalProjections( logicalCols, catalogTable ) );
         }
 
         final Function1<Document, Object> getter = MongoEnumerator.getter( fields, arrayFields );
@@ -245,20 +255,6 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                 return new MongoEnumerator( resultIterator, getter, table.getMongoSchema().getBucket() );
             }
         };
-    }
-
-
-    private void projectMatchAll( List<Entry<String, Class>> fields, List<BsonDocument> list ) {
-        // project all
-        BsonDocument projects = new BsonDocument();
-        for ( String name : Pair.left( fields ) ) {
-            int index = catalogTable.getColumnNames().indexOf( name );
-            projects.append( name, new BsonString( "$" + MongoStore.getPhysicalColumnName( name, catalogTable.columnIds.get( index ) ) ) );
-        }
-        list.add( new BsonDocument().append( "$project", projects ) );
-
-        // match all
-        list.add( new BsonDocument().append( "$match", new BsonDocument().append( "_id", new BsonDocument().append( "$exists", new BsonBoolean( true ) ) ) ) );
     }
 
 
@@ -339,7 +335,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
          * @see MongoMethod#MONGO_QUERYABLE_AGGREGATE
          */
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<Object> aggregate( List<Map.Entry<String, Class>> fields, List<Map.Entry<String, Class>> arrayClass, List<String> operations, String filter, List<String> preProjections ) {
+        public Enumerable<Object> aggregate( List<Map.Entry<String, Class>> fields, List<Map.Entry<String, Class>> arrayClass, List<String> operations, String filter, List<String> preProjections, List<String> logicalCols ) {
             ClientSession session = getTable().getTransactionProvider().getSession( dataContext.getStatement().getTransaction().getXid() );
 
             Map<Long, Object> values = new HashMap<>();
@@ -347,7 +343,17 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                 values = dataContext.getParameterValues().get( 0 );
             }
 
-            return getTable().aggregate( session, getMongoDb(), getTable(), fields, arrayClass, operations, values, BsonDocument.parse( filter ), preProjections.stream().map( BsonDocument::parse ).collect( Collectors.toList() ) );
+            return getTable().aggregate(
+                    session,
+                    getMongoDb(),
+                    getTable(),
+                    fields,
+                    arrayClass,
+                    operations,
+                    values,
+                    BsonDocument.parse( filter ),
+                    preProjections.stream().map( BsonDocument::parse ).collect( Collectors.toList() ),
+                    logicalCols );
         }
 
 

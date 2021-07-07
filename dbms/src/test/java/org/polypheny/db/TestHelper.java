@@ -152,13 +152,10 @@ public class TestHelper {
                                 Assert.assertTrue(
                                         "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "': The difference between the expected double and the received double exceeds the epsilon.",
                                         Math.abs( (double) expectedRow[j] - resultSet.getDouble( j + 1 ) ) < EPSILON );
-                            } else if ( columnType == Types.DECIMAL ) { // Decimals are exact
+                            } else if ( columnType == Types.DECIMAL ) { // Decimals are exact // but not for calculations?
                                 BigDecimal expectedResult = (BigDecimal) expectedRow[j];
                                 BigDecimal result = resultSet.getBigDecimal( j + 1 );
-                                Assert.assertEquals(
-                                        "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "'",
-                                        expectedResult,
-                                        result );
+                                Assert.assertEquals( "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "'", 0, expectedResult.doubleValue() - result.doubleValue(), 0.0 );
                             }
                         } else {
                             Assert.assertEquals(
