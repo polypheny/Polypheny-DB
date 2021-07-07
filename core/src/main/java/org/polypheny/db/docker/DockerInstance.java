@@ -128,8 +128,15 @@ public class DockerInstance extends DockerManager {
             for ( String name : names ) {
                 String[] splits = name.split( "_polypheny_" );
                 if ( splits.length == 2 ) {
-                    int adapterId = Integer.parseInt( splits[1] );
-                    if ( !catalog.checkIfExistsAdapter( adapterId ) || !catalog.getAdapter( adapterId ).uniqueName.equals( splits[0] ) ) {
+                    String unparsedAdapterId = splits[1];
+                    boolean isTestContainer = splits[1].contains( "_test" );
+                    // if the container was annotate with "_test", it has to be deleted if a new run in testMode was started
+                    if ( isTestContainer ) {
+                        unparsedAdapterId = unparsedAdapterId.replace( "_test", "" );
+                    }
+
+                    int adapterId = Integer.parseInt( unparsedAdapterId );
+                    if ( !catalog.checkIfExistsAdapter( adapterId ) || !catalog.getAdapter( adapterId ).uniqueName.equals( splits[0] ) || isTestContainer ) {
                         idsToRemove.put( container.getId(), container.getState().equalsIgnoreCase( "running" ) );
                         // as we remove this container later we skip the name and port adding
                         continue outer;
