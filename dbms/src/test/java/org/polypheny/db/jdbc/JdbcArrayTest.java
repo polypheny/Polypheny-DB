@@ -184,6 +184,7 @@ public class JdbcArrayTest {
 
 
     @Test
+    @Category({ PostgresqlExcluded.class, FileExcluded.class, CassandraExcluded.class })
     public void arrayTypesViewTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
