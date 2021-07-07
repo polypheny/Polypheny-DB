@@ -223,7 +223,7 @@ public class JdbcDdlTest {
                             ImmutableList.of( new Object[]{ DDLTEST_DATA[11] } ) );
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "CREATE VIEW ddltestview as SELECT * FROM ddltest" );
+                    statement.executeUpdate( "DROP TABLE ddltestview" );
                     statement.executeUpdate( "DROP TABLE ddltest" );
                     connection.commit();
                 }
