@@ -221,10 +221,11 @@ public class JdbcDdlTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT tvarchar FROM ddltestview" ),
                             ImmutableList.of( new Object[]{ DDLTEST_DATA[11] } ) );
-                    statement.executeUpdate( "DROP VIEW ddltestview" );
                     connection.commit();
                 } finally {
+                    statement.executeUpdate( "CREATE VIEW ddltestview as SELECT * FROM ddltest" );
                     statement.executeUpdate( "DROP TABLE ddltest" );
+                    connection.commit();
                 }
             }
         }
