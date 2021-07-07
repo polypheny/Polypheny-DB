@@ -134,7 +134,6 @@ public abstract class Catalog {
     /**
      * Validates that all columns have a valid placement,
      * else deletes them.
-     * TODO DL check
      */
     public abstract void validateColumns();
 

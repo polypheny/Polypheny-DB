@@ -696,7 +696,6 @@ public class MongoRules {
                     doc.append( physicalMapping.get( pos ), getBsonArray( (RexCall) rexNode, type, bucket ) );
 
                 } else if ( rexNode.getKind() == SqlKind.INPUT_REF && input.getInput() instanceof MongoValues ) {
-                    // TODO DL handle and refactor
                     handleDirectInsert( implementor, (MongoValues) input.getInput() );
                     return;
                 } else {
@@ -705,7 +704,6 @@ public class MongoRules {
 
                 pos++;
             }
-            // we need to use the extended json format here to not loose precision like long -> int etc.
             implementor.operations = Collections.singletonList( doc );
         }
 

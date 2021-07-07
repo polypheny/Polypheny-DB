@@ -186,7 +186,6 @@ public class DockerInstance extends DockerManager {
 
 
     private boolean testDockerRunning( DockerClient client ) {
-        // todo dl, better checking, exceptions for code flow is bad practice
         try {
             return null != client.infoCmd().exec();
         } catch ( Exception e ) {

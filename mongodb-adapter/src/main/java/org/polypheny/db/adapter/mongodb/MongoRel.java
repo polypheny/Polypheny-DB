@@ -80,6 +80,9 @@ public interface MongoRel extends RelNode {
         @Setter
         public GridFSBucket bucket;
         public List<BsonDocument> preProjections = new ArrayList<>();
+
+        // holds the logical names which where used in a DQL
+        // and need to be projected beforehand from their physical names
         public Set<String> physicalMapper = new TreeSet<>();
 
         RelOptTable table;

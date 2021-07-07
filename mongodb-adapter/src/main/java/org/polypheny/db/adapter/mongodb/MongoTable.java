@@ -56,9 +56,7 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
-import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
-import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.json.JsonMode;
@@ -87,7 +85,6 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.transaction.PolyXid;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
 
@@ -238,10 +235,6 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 
         }
 
-        // do we need to add all if nothing is selected?
-        if ( operations.size() == 0 && filter.isEmpty() ) {
-            projectMatchAll( fields, list );
-        }
 
         if ( logicalCols.size() != 0 ) {
             list.add( 0, MongoTypeUtil.getPhysicalProjections( logicalCols, catalogTable ) );
@@ -265,20 +258,6 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                 return new MongoEnumerator( resultIterator, getter, table.getMongoSchema().getBucket() );
             }
         };
-    }
-
-
-    private void projectMatchAll( List<Entry<String, Class>> fields, List<BsonDocument> list ) {
-        // project all
-        BsonDocument projects = new BsonDocument();
-        for ( String name : Pair.left( fields ) ) {
-            int index = catalogTable.getColumnNames().indexOf( name );
-            projects.append( name, new BsonString( "$" + MongoStore.getPhysicalColumnName( catalogTable.columnIds.get( index ) ) ) );
-        }
-        list.add( new BsonDocument().append( "$project", projects ) );
-
-        // match all
-        list.add( new BsonDocument().append( "$match", new BsonDocument().append( "_id", new BsonDocument().append( "$exists", new BsonBoolean( true ) ) ) ) );
     }
 
 
