@@ -195,6 +195,7 @@ public abstract class SqlAbstractParserImpl {
                     "LOCAL",
                     "LOWER",
                     "MATCH",
+                    "MATERIALIZED",
                     "MAX",
                     "MIN",
                     "MINUTE",

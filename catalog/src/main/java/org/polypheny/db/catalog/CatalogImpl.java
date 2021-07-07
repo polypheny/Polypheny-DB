@@ -54,6 +54,7 @@ import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
+import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
@@ -1347,6 +1348,41 @@ public class CatalogImpl extends Catalog {
 
             //Should not happen, addViewTable is only called with TableType.View
             throw new RuntimeException( "addViewTable is only possible with TableType = VIEW" );
+        }
+        return id;
+    }
+
+
+    @Override
+    public long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList ) {
+        long id = tableIdBuilder.getAndIncrement();
+        CatalogSchema schema = getSchema( schemaId );
+        CatalogUser owner = getUser( ownerId );
+
+        if ( tableType == TableType.MATERIALIZEDVIEW ) {
+            CatalogMaterializedView viewTable = new CatalogMaterializedView(
+                    id,
+                    name,
+                    ImmutableList.of(),
+                    schemaId,
+                    schema.databaseId,
+                    ownerId,
+                    owner.name,
+                    tableType,
+                    definition,
+                    null,
+                    ImmutableMap.of(),
+                    modifiable,
+                    relCollation,
+                    ImmutableMap.copyOf( underlyingTables ),
+                    fieldList
+            );
+            addConnectedViews( underlyingTables, viewTable.id );
+            updateTableLogistics( name, schemaId, id, schema, viewTable );
+        } else {
+
+            //Should not happen, addViewTable is only called with TableType.View
+            throw new RuntimeException( "addMaterializedViewTable is only possible with TableType = MATERIALIZEDVIEW" );
         }
         return id;
     }

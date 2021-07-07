@@ -180,6 +180,7 @@ data: {
             "M"
             "MAP"
             "MATCHED"
+            "MATERIALIZED"
             "MAXVALUE"
             "MICROSECOND"
             "MESSAGE_LENGTH"
@@ -408,6 +409,7 @@ data: {
             "SqlCreateTable"
             "SqlCreateType"
             "SqlCreateView"
+            "SqlCreateMaterializedView"
             "SqlCreateFunction"
         ]
 

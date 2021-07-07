@@ -87,6 +87,13 @@ public class SqlDdlNodes {
         return new SqlCreateView( pos, replace, name, columnList, query );
     }
 
+    /**
+     * Creates a CREATE MATERIALIZED VIEW.
+     */
+    public static SqlCreateMaterializedView createMaterializedView( SqlParserPos pos, boolean replace, SqlIdentifier name, SqlNodeList columnList, SqlNode query, SqlIdentifier store ) {
+        return new SqlCreateMaterializedView( pos, replace, name, columnList, query, store );
+    }
+
 
     /**
      * Creates a CREATE FUNCTION.

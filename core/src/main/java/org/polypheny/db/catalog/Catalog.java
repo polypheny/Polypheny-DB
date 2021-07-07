@@ -380,6 +380,13 @@ public abstract class Catalog {
      */
     public abstract long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList );
 
+
+
+    public abstract long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList );
+
+
+
+
     /**
      * Checks if there is a table with the specified name in the specified schema.
      *
@@ -1182,7 +1189,8 @@ public abstract class Catalog {
     public enum TableType {
         TABLE( 1 ),
         SOURCE( 2 ),
-        VIEW( 3 );
+        VIEW( 3 ),
+        MATERIALIZEDVIEW(4);
         // STREAM, ...
 
         private final int id;

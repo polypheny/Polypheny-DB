@@ -6382,6 +6382,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < MATCHES: "MATCHES" >
 |   < MATCH_NUMBER: "MATCH_NUMBER">
 |   < MATCH_RECOGNIZE: "MATCH_RECOGNIZE">
+|   < MATERIALIZED: "MATERIALIZED">
 |   < MAX: "MAX" >
 |   < MAXVALUE: "MAXVALUE" >
 |   < MEASURES: "MEASURES" >

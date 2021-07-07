@@ -336,6 +336,22 @@ SqlCreate SqlCreateView(Span s, boolean replace) :
     }
 }
 
+SqlCreate SqlCreateMaterializedView(Span s, boolean replace) :
+{
+    final SqlIdentifier id;
+    SqlNodeList columnList = null;
+    final SqlNode query;
+    SqlIdentifier store = null;
+}
+{
+    <MATERIALIZED><VIEW> id = CompoundIdentifier()
+    [ columnList = ParenthesizedSimpleIdentifierList() ]
+    <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
+    [ <ON> <STORE> store = SimpleIdentifier() ]{
+        return SqlDdlNodes.createMaterializedView(s.end(this), replace, id, columnList, query, store);
+    }
+}
+
 private void FunctionJarDef(SqlNodeList usingList) :
 {
     final SqlDdlNodes.FileType fileType;

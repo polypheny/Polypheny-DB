@@ -443,6 +443,18 @@ public abstract class DdlManager {
      */
     public abstract void createView( String viewName, long schemaId, RelNode relNode, RelCollation relCollation, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException;
 
+
+    /**
+     * Create a new materialized view
+     *
+     * @param viewName the name of the new view
+     * @param schemaId the id of the schema to which the view belongs
+     * @param relNode the relNode which was built form the Select part of the view
+     * @param statement the used Statement
+     */
+    public abstract void createMaterializedView( String viewName, long schemaId, RelNode relNode, RelCollation relCollation, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException;
+
+
     /**
      * Add new partitions for the column
      *

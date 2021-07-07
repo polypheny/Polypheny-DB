@@ -232,6 +232,12 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
+    public long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
     public void deleteViewDependencies( CatalogView catalogView ) {
         throw new NotImplementedException();
     }

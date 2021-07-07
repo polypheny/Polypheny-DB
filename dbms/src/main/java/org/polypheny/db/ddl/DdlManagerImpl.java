@@ -1328,43 +1328,10 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        if ( stores == null ) {
-            // Ask router on which store(s) the table should be placed
-            stores = statement.getRouter().createTable( schemaId, statement );
-        }
-
         prepareView( relNode );
         RelDataType fieldList = relNode.getRowType();
 
-        List<ColumnInformation> columns = new ArrayList<>();
-
-        int position = 1;
-        for ( RelDataTypeField rel : fieldList.getFieldList() ) {
-            RelDataType type = rel.getValue();
-            if ( rel.getType().getPolyType() == PolyType.ARRAY ) {
-                type = ((ArrayType) rel.getValue()).getComponentType();
-            }
-            String colName = rel.getName();
-            if ( projectedColumns != null ) {
-                colName = projectedColumns.get( position - 1 );
-            }
-
-            // type.getPrecision() == RelDataTypeSystemImpl.DEFAULT.getDefaultPrecision(type.getPolyType()) ? type.getPrecision() : -1,
-            columns.add( new ColumnInformation(
-                    colName.toLowerCase().replaceAll( "[^A-Za-z0-9]", "_" ),
-                    new ColumnTypeInformation(
-                            type.getPolyType(),
-                            rel.getType().getPolyType(),
-                            type.getRawPrecision(),
-                            type.getScale(),
-                            rel.getValue().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) rel.getValue()).getDimension() : -1,
-                            rel.getValue().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) rel.getValue()).getCardinality() : -1,
-                            rel.getValue().isNullable() ),
-                    Collation.getDefaultCollation(),
-                    null,
-                    position ) );
-            position++;
-        }
+        List<ColumnInformation> columns = getColumnInformation( projectedColumns, fieldList );
 
         Map<Long, List<Long>> underlyingTables = new HashMap<>();
         long tableId = catalog.addView(
@@ -1380,7 +1347,6 @@ public class DdlManagerImpl extends DdlManager {
         );
 
         for ( ColumnInformation column : columns ) {
-            //addColumn( column.name, column.typeInformation, column.collation, column.defaultValue, tableId, column.position, stores, placementType );
             long columnId = catalog.addColumn(
                     column.name,
                     tableId,
@@ -1394,6 +1360,105 @@ public class DdlManagerImpl extends DdlManager {
                     column.typeInformation.nullable,
                     column.collation );
         }
+    }
+
+    @Override
+    public void createMaterializedView( String viewName, long schemaId, RelNode relNode, RelCollation relCollation, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException{
+        if(catalog.checkIfExistsTable( schemaId, viewName  )){
+            throw  new TableAlreadyExistsException();
+        }
+
+        if ( stores == null ) {
+            // Ask router on which store(s) the table should be placed
+            stores = statement.getRouter().createTable( schemaId, statement );
+        }
+
+        prepareView( relNode );
+        RelDataType fieldList = relNode.getRowType();
+
+        List<ColumnInformation> columns = getColumnInformation( projectedColumns, fieldList );
+
+        Map<Long, List<Long>> underlyingTables = new HashMap<>();
+        long tableId = catalog.addMaterializedView(
+                viewName,
+                schemaId,
+                statement.getPrepareContext().getCurrentUserId(),
+                TableType.MATERIALIZEDVIEW,
+                false,
+                relNode,
+                relCollation,
+                findUnderlyingTablesOfView( relNode, underlyingTables, fieldList ),
+                fieldList
+        );
+
+
+        for ( ColumnInformation column : columns ) {
+            long columnId = catalog.addColumn(
+                    column.name,
+                    tableId,
+                    column.position,
+                    column.typeInformation.type,
+                    column.typeInformation.collectionType,
+                    column.typeInformation.precision,
+                    column.typeInformation.scale,
+                    column.typeInformation.dimension,
+                    column.typeInformation.cardinality,
+                    column.typeInformation.nullable,
+                    column.collation );
+
+            for ( DataStore s : stores ) {
+                catalog.addColumnPlacement(
+                        s.getAdapterId(),
+                        columnId,
+                        placementType,
+                        null,
+                        null,
+                        null,
+                        null );
+            }
+        }
+
+
+
+        CatalogTable catalogTable = catalog.getTable( tableId );
+        for ( DataStore store : stores ) {
+            store.createTable( statement.getPrepareContext(), catalogTable );
+        }
+    }
+
+
+
+
+    private List<ColumnInformation> getColumnInformation( List<String> projectedColumns, RelDataType fieldList ) {
+        List<ColumnInformation> columns = new ArrayList<>();
+
+        int position = 1;
+        for ( RelDataTypeField rel : fieldList.getFieldList() ) {
+            RelDataType type = rel.getValue();
+            if ( rel.getType().getPolyType() == PolyType.ARRAY ) {
+                type = ((ArrayType) rel.getValue()).getComponentType();
+            }
+            String colName = rel.getName();
+            if ( projectedColumns != null ) {
+                colName = projectedColumns.get( position - 1 );
+            }
+
+            columns.add( new ColumnInformation(
+                    colName.toLowerCase().replaceAll( "[^A-Za-z0-9]", "_" ),
+                    new ColumnTypeInformation(
+                            type.getPolyType(),
+                            rel.getType().getPolyType(),
+                            type.getRawPrecision(),
+                            type.getScale(),
+                            rel.getValue().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) rel.getValue()).getDimension() : -1,
+                            rel.getValue().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) rel.getValue()).getCardinality() : -1,
+                            rel.getValue().isNullable() ),
+                    Collation.getDefaultCollation(),
+                    null,
+                    position ) );
+            position++;
+        }
+        return columns;
     }
 
 
