@@ -919,7 +919,7 @@ public class ComplexViewTest {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 initTables( statement );
-
+                connection.commit();
                 try {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select "

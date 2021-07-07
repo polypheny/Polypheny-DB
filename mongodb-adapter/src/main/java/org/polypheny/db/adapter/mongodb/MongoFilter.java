@@ -119,7 +119,7 @@ public class MongoFilter extends Filter implements MongoRel {
         final JsonBuilder builder = new JsonBuilder();
         private final List<String> fieldNames;
         private final MongoRowType rowType;
-        private final List<BsonDocument> dynamics = new ArrayList<>();
+        private final List<BsonDocument> ors = new ArrayList<>();
         private final GridFSBucket bucket;
         private final BsonDocument preProjections = new BsonDocument();
         private final Implementor implementor;
@@ -156,13 +156,13 @@ public class MongoFilter extends Filter implements MongoRel {
                 translateAnd( node );
             }
 
-            switch ( dynamics.size() ) {
+            switch ( ors.size() ) {
                 case 0:
                     return new BsonDocument();
                 case 1:
-                    return dynamics.get( 0 );
+                    return ors.get( 0 );
                 default:
-                    return new BsonDocument( "$or", new BsonArray( dynamics ) );
+                    return new BsonDocument( "$or", new BsonArray( ors ) );
             }
         }
 
@@ -171,8 +171,18 @@ public class MongoFilter extends Filter implements MongoRel {
          * Translates a condition that may be an AND of other conditions. Gathers together conditions that apply to the same field.
          */
         private void translateAnd( RexNode node0 ) {
+            int count = 0;
             for ( RexNode node : RelOptUtil.conjunctions( node0 ) ) {
                 translateMatch2( node );
+                count++;
+            }
+            if ( count > 1 ) {
+                // we transforms the previously handle statements into one AND statements to handle them correctly
+                List<BsonDocument> ands = new ArrayList<>();
+                for ( int i = 0; i < count; i++ ) {
+                    ands.add( ors.remove( ors.size() - 1 ) );
+                }
+                ors.add( new BsonDocument( "$and", new BsonArray( ands ) ) );
             }
         }
 
@@ -234,7 +244,7 @@ public class MongoFilter extends Filter implements MongoRel {
 
             switch ( right.getKind() ) {
                 case DYNAMIC_PARAM:
-                    this.dynamics.add(
+                    this.ors.add(
                             new BsonDocument()
                                     .append(
                                             getPhysicalName( (RexInputRef) left ),
@@ -242,7 +252,7 @@ public class MongoFilter extends Filter implements MongoRel {
                     return null;
                 case LITERAL:
 
-                    this.dynamics.add( new BsonDocument(
+                    this.ors.add( new BsonDocument(
                             getPhysicalName( (RexInputRef) left ), MongoTypeUtil.replaceLikeWithRegex( ((RexLiteral) right).getValueAs( String.class ) ) ) );
                     return null;
                 default:
@@ -292,7 +302,7 @@ public class MongoFilter extends Filter implements MongoRel {
                 BsonValue l = new BsonString( getPhysicalName( (RexInputRef) left ) );
                 BsonValue r = new BsonString( getPhysicalName( (RexInputRef) right ) );
 
-                dynamics.add( new BsonDocument( "$expr", new BsonDocument( op, new BsonArray( Arrays.asList( l, r ) ) ) ) );
+                ors.add( new BsonDocument( "$expr", new BsonDocument( op, new BsonArray( Arrays.asList( l, r ) ) ) ) );
                 return true;
             }
 
@@ -305,9 +315,9 @@ public class MongoFilter extends Filter implements MongoRel {
                 // $9 ( index ) -> [el1, el2]
                 String name = getPhysicalName( (RexInputRef) left );
                 if ( op == null ) {
-                    dynamics.add( new BsonDocument( "$expr", translateCall( name, (RexCall) right ) ) );
+                    ors.add( new BsonDocument( "$expr", translateCall( name, (RexCall) right ) ) );
                 } else {
-                    dynamics.add( new BsonDocument( "$expr", new BsonDocument( op, translateCall( name, (RexCall) right ) ) ) );
+                    ors.add( new BsonDocument( "$expr", new BsonDocument( op, translateCall( name, (RexCall) right ) ) ) );
                 }
                 return true;
             } else if ( right instanceof RexCall && left instanceof RexLiteral ) {
@@ -373,18 +383,18 @@ public class MongoFilter extends Filter implements MongoRel {
             switch ( left.getKind() ) {
                 case LITERAL:
                     if ( op == null ) {
-                        this.dynamics.add( new BsonDocument( randomName, MongoTypeUtil.getAsBson( (RexLiteral) left, bucket ) ) );
+                        this.ors.add( new BsonDocument( randomName, MongoTypeUtil.getAsBson( (RexLiteral) left, bucket ) ) );
                         return true;
                     } else {
-                        this.dynamics.add( new BsonDocument( randomName, new BsonDocument( op, MongoTypeUtil.getAsBson( (RexLiteral) left, bucket ) ) ) );
+                        this.ors.add( new BsonDocument( randomName, new BsonDocument( op, MongoTypeUtil.getAsBson( (RexLiteral) left, bucket ) ) ) );
                         return true;
                     }
                 case DYNAMIC_PARAM:
                     if ( op == null ) {
-                        this.dynamics.add( new BsonDocument( randomName, new BsonDynamic( (RexDynamicParam) left ) ) );
+                        this.ors.add( new BsonDocument( randomName, new BsonDynamic( (RexDynamicParam) left ) ) );
                         return true;
                     } else {
-                        this.dynamics.add( new BsonDocument( randomName, new BsonDocument( op, new BsonDynamic( (RexDynamicParam) left ) ) ) );
+                        this.ors.add( new BsonDocument( randomName, new BsonDocument( op, new BsonDynamic( (RexDynamicParam) left ) ) ) );
                         return true;
                     }
                 default:
@@ -438,14 +448,14 @@ public class MongoFilter extends Filter implements MongoRel {
         private boolean translateDynamic( String op, RexNode left, RexDynamicParam right ) {
             if ( left.getKind() == INPUT_REF ) {
                 if ( op == null ) {
-                    this.dynamics
+                    this.ors
                             .add(
                                     new BsonDocument()
                                             .append(
                                                     getPhysicalName( (RexInputRef) left ),
                                                     new BsonDynamic( right ) ) );
                 } else {
-                    this.dynamics
+                    this.ors
                             .add(
                                     new BsonDocument()
                                             .append(
@@ -486,7 +496,7 @@ public class MongoFilter extends Filter implements MongoRel {
                                     new BsonDocument( "$add", new BsonArray( Arrays.asList( item, new BsonInt32( -1 ) ) ) ) ) );
                     this.preProjections.put( name, new BsonDocument( "$arrayElemAt", array ) );
 
-                    this.dynamics.add( new BsonDocument( name, new BsonDynamic( right ) ) );
+                    this.ors.add( new BsonDocument( name, new BsonDynamic( right ) ) );
 
                     return true;
                 }
@@ -497,6 +507,14 @@ public class MongoFilter extends Filter implements MongoRel {
 
         private String getPhysicalName( RexInputRef input ) {
             String name = fieldNames.get( input.getIndex() );
+            // DML (and also DDL) have to use the physical name, as they do not allow
+            // to use projections beforehand
+            if ( implementor.isDML() ) {
+                if ( rowType != null && rowType.getId( name ) != null ) {
+                    name = rowType.getPhysicalName( name, implementor );
+                }
+                return name;
+            }
             implementor.physicalMapper.add( name );
             return name;
         }
@@ -505,10 +523,10 @@ public class MongoFilter extends Filter implements MongoRel {
         private void translateOp2( String op, String name, RexLiteral right ) {
             if ( op == null ) {
                 // E.g.: {deptno: 100}
-                dynamics.add( new BsonDocument().append( name, MongoTypeUtil.getAsBson( right, bucket ) ) );
+                ors.add( new BsonDocument().append( name, MongoTypeUtil.getAsBson( right, bucket ) ) );
             } else {
                 // E.g. {deptno: {$lt: 100}} which may later be combined with other conditions: E.g. {deptno: [$lt: 100, $gt: 50]}
-                dynamics.add( new BsonDocument().append( name, new BsonDocument().append( op, MongoTypeUtil.getAsBson( right, bucket ) ) ) );
+                ors.add( new BsonDocument().append( name, new BsonDocument().append( op, MongoTypeUtil.getAsBson( right, bucket ) ) ) );
             }
         }
 
