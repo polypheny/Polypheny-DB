@@ -225,9 +225,9 @@ public class JdbcArrayTest {
                             statement.executeQuery( "SELECT varchararray FROM arrayTypesViewTest" ),
                             ImmutableList.of( new Object[]{ ARRAYTEST_DATA[9] } ) );
 
-                    statement.executeUpdate( "DROP VIEW arrayTypesViewTest" );
                     connection.commit();
                 } finally {
+                    statement.executeUpdate( "DROP VIEW arrayTypesViewTest" );
                     statement.executeUpdate( "DROP TABLE arraytest" );
                     connection.commit();
                 }
