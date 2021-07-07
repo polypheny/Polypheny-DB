@@ -23,6 +23,7 @@ import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
@@ -1067,6 +1068,9 @@ public abstract class Catalog {
      */
     public abstract CatalogPartition getPartition( long partitionId );
 
+
+
+    public abstract List<CatalogPartition> getPartitionsByTable( long tableId );
 
 
     /**

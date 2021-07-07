@@ -40,7 +40,7 @@ public class HashPartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public long getTargetPartitionGroupId( CatalogTable catalogTable, String columnValue ) {
+    public long getTargetPartitionId( CatalogTable catalogTable, String columnValue ) {
         long hashValue = columnValue.hashCode() * -1;
 
         // Don't want any neg. value for now
@@ -50,22 +50,13 @@ public class HashPartitionManager extends AbstractPartitionManager {
 
         Catalog catalog = Catalog.getInstance();
 
-        //Get and accumulate all catalogPartitions for table
-        List<CatalogPartition> catalogPartitions  = new ArrayList<>();
-        for ( long partitionGroupID : catalogTable.partitionProperty.partitionGroupIds ) {
-            CatalogPartitionGroup catalogPartitionGroup = catalog.getPartitionGroup( partitionGroupID );
 
-            //Build long list of catalog partitions to process later on
-            for ( Long internalPartitionID : catalogPartitionGroup.partitionIds ) {
-                catalogPartitions.add( catalog.getPartition( internalPartitionID ) );
-            }
-        }
 
         //Get designated HASH partition based on number of internal partitions
-        int partitionIndex = (int) (hashValue % catalogPartitions.size());
+        int partitionIndex = (int) (hashValue % catalogTable.partitionProperty.partitionIds.size());
 
         // Finally decide on which partition to put it
-        return catalogPartitions.get( partitionIndex ).partitionGroupId ;
+        return catalogTable.partitionProperty.partitionIds.get( partitionIndex ) ;
     }
 
 

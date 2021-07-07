@@ -31,7 +31,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
     // returns the Index of the partition where to place the object
     @Override
-    public abstract long getTargetPartitionGroupId( CatalogTable catalogTable, String columnValue );
+    public abstract long getTargetPartitionId( CatalogTable catalogTable, String columnValue );
 
 
     /**

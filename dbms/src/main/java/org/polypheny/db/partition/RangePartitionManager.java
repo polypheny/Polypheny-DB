@@ -44,49 +44,41 @@ public class RangePartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public long getTargetPartitionGroupId( CatalogTable catalogTable, String columnValue ) {
+    public long getTargetPartitionId( CatalogTable catalogTable, String columnValue ) {
         Catalog catalog = Catalog.getInstance();
-        long selectedPartitionGroupId = -1;
-        long unboundPartitionGroupId = -1;
+
+        long unboundPartitionId = -1;
         long selectedPartitionId = -1;
 
-        //Get and accumulate all catalogPartitions for table
-        List<CatalogPartition> catalogPartitions  = new ArrayList<>();
-        for ( long partitionGroupID : catalogTable.partitionProperty.partitionGroupIds ) {
-            CatalogPartitionGroup catalogPartitionGroup = catalog.getPartitionGroup( partitionGroupID );
+        //Process all accumulated CatalogPartitions
+        for ( CatalogPartition catalogPartition : catalog.getPartitionsByTable(catalogTable.id) ) {
 
-            if ( catalogPartitionGroup.isUnbound ) {
-                unboundPartitionGroupId = catalogPartitionGroup.id;
+
+            if ( unboundPartitionId == -1 && catalogPartition.isUnbound ){
+                unboundPartitionId = catalogPartition.id;
                 break;
             }
 
-            //Build long list of catalog partitions to process later on
-            for ( Long internalPartitionID : catalogPartitionGroup.partitionIds ) {
-                catalogPartitions.add( catalog.getPartition( internalPartitionID ) );
-            }
-        }
-
-        //Process all accumulated CatalogPartitions
-        for ( CatalogPartition catalogPartition : catalogPartitions ) {
             if ( isValueInRange( columnValue, catalogPartition ) ) {
                 if ( log.isDebugEnabled() ) {
-                    log.debug( "Found column value: {} on partitionGroupID {} in range: [{} - {}]",
+                    log.debug( "Found column value: {} on partitionID {} in range: [{} - {}]",
                             columnValue,
                             catalogPartition.id,
                             catalogPartition.partitionQualifiers.get( 0 ),
                             catalogPartition.partitionQualifiers.get( 1 ) );
                 }
                 selectedPartitionId = catalogPartition.id;
-                selectedPartitionGroupId = catalogPartition.partitionGroupId;
-                return selectedPartitionGroupId;
+                break;
             }
-        }
-        // If no concrete partition could be identified, report back the unbound/default partition
-        if ( selectedPartitionGroupId == -1 ) {
-            selectedPartitionGroupId = unboundPartitionGroupId;
+
         }
 
-        return selectedPartitionGroupId;
+        // If no concrete partition could be identified, report back the unbound/default partition
+        if ( selectedPartitionId == -1 ) {
+            selectedPartitionId = unboundPartitionId;
+        }
+
+        return selectedPartitionId;
     }
 
 

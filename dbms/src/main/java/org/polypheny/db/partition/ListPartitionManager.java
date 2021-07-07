@@ -42,31 +42,22 @@ public class ListPartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public long getTargetPartitionGroupId( CatalogTable catalogTable, String columnValue ) {
+    public long getTargetPartitionId( CatalogTable catalogTable, String columnValue ) {
         log.debug( "ListPartitionManager" );
 
         Catalog catalog = Catalog.getInstance();
-        long selectedPartitionGroupId = -1;
-        long unboundPartitionGroupId = -1;
+        long unboundPartitionId = -1;
         long selectedPartitionId = -1;
 
-        //Get and accumulate all catalogPartitions for table
-        List<CatalogPartition> catalogPartitions  = new ArrayList<>();
-        for ( long partitionGroupID : catalogTable.partitionProperty.partitionGroupIds ) {
-            CatalogPartitionGroup catalogPartitionGroup = catalog.getPartitionGroup( partitionGroupID );
-
-            if ( catalogPartitionGroup.isUnbound ) {
-                unboundPartitionGroupId = catalogPartitionGroup.id;
-            }
-
-            //Build long list of catalog partitions to process later on
-            for ( Long internalPartitionID : catalogPartitionGroup.partitionIds ) {
-                catalogPartitions.add( catalog.getPartition( internalPartitionID ) );
-            }
-        }
 
         //Process all accumulated CatalogPartitions
-        for ( CatalogPartition catalogPartition : catalogPartitions ) {
+        for ( CatalogPartition catalogPartition : catalog.getPartitionsByTable(catalogTable.id) ) {
+
+            if ( unboundPartitionId == -1 && catalogPartition.isUnbound ){
+                unboundPartitionId = catalogPartition.id;
+                break;
+            }
+
             for ( int i = 0; i < catalogPartition.partitionQualifiers.size(); i++ ) {
                 //Could be int
                 if ( catalogPartition.partitionQualifiers.get( i ).equals( columnValue ) ) {
@@ -77,18 +68,17 @@ public class ListPartitionManager extends AbstractPartitionManager {
                                 catalogPartition.partitionQualifiers );
                     }
                     selectedPartitionId = catalogPartition.id;
-                    selectedPartitionGroupId = catalogPartition.partitionGroupId;
                     break;
                 }
             }
         }
 
         // If no concrete partition could be identified, report back the unbound/default partition
-        if ( selectedPartitionGroupId == -1 ) {
-            selectedPartitionGroupId = unboundPartitionGroupId;
+        if ( selectedPartitionId == -1 ) {
+            selectedPartitionId = unboundPartitionId;
         }
 
-        return selectedPartitionGroupId;
+        return selectedPartitionId;
     }
 
 

@@ -77,6 +77,7 @@ import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionGroupIdRuntimeException;
+import org.polypheny.db.catalog.exceptions.UnknownPartitionPlacementException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -3301,6 +3302,13 @@ public class CatalogImpl extends Catalog {
             for ( long partitionId :  partitionGroup.partitionIds ){
                 deletePartition( tableId, schemaId, partitionId );
             }
+
+            for ( CatalogAdapter adapter : getAdaptersByPartitionGroup( tableId,partitionGroupId )) {
+                deletePartitionGroupsOnDataPlacement( adapter.id, partitionGroupId );
+            }
+
+
+
             partitionGroups.remove( partitionGroupId );
         }
     }
@@ -3370,6 +3378,9 @@ public class CatalogImpl extends Catalog {
         // Check whether there this partition id exists
         getPartition( partitionId );
         synchronized ( this ) {
+            for ( CatalogPartitionPlacement partitionPlacement :  getPartitionPlacements( partitionId ) ){
+                deletePartitionPlacement( partitionPlacement.adapterId, partitionId );
+            }
             partitions.remove( partitionId );
         }
     }
@@ -3390,6 +3401,16 @@ public class CatalogImpl extends Catalog {
         }
     }
 
+    @Override
+    public List<CatalogPartition> getPartitionsByTable( long tableId ) {
+
+        return partitions.values()
+                .stream()
+                .filter( p -> p.tableId == tableId )
+                .collect( Collectors.toList() );
+
+    }
+
 
     /**
      * Effectively partitions a table with the specified partitionType
@@ -3403,6 +3424,10 @@ public class CatalogImpl extends Catalog {
     @Override
     public void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitionGroups, List<Long> partitionGroupIds, PartitionProperty  partitionProperty) {
         CatalogTable old = Objects.requireNonNull( tables.get( tableId ) );
+
+        //Clean old partitionGroup form "unpartitionedTable"
+        //deletion of partitionGroup subseqeuntly clears all partitions and placements
+        deletePartitionGroup( tableId, old.schemaId, old.partitionProperty.partitionGroupIds.get( 0 ) );
 
         CatalogTable table = new CatalogTable(
                 old.id,
@@ -3439,6 +3464,26 @@ public class CatalogImpl extends Catalog {
     @Override
     public void mergeTable( long tableId ) {
         CatalogTable old = Objects.requireNonNull( tables.get( tableId ) );
+
+    //Technically every Table is partitioned. But tables classified as UNPARTITIONED only consist of one PartitionGroup and one large partition
+        List<Long> partitionGroupIds = new ArrayList<>();
+        try{
+            partitionGroupIds.add( addPartitionGroup( tableId, "full", old.schemaId, PartitionType.NONE, 1, new ArrayList<>(), true ) );
+        }catch ( GenericCatalogException e ){
+            throw new RuntimeException( e );
+        }
+
+        List<Long> partitionIds = new ArrayList<>();
+        //get All(only one) PartitionGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
+        CatalogPartitionGroup defaultUnpartitionedGroup = getPartitionGroup( partitionGroupIds.get( 0 ) );
+            PartitionProperty partitionProperty = PartitionProperty.builder()
+                    .partitionType( PartitionType.NONE )
+                    .partitionGroupIds( ImmutableList.copyOf( partitionGroupIds ) )
+                    .partitionIds( ImmutableList.copyOf( defaultUnpartitionedGroup.partitionIds ) )
+                    .build();
+
+
+
         CatalogTable table = new CatalogTable(
                 old.id,
                 old.name,
@@ -3452,7 +3497,8 @@ public class CatalogImpl extends Catalog {
                 old.primaryKey,
                 old.placementsByAdapter,
                 old.modifiable,
-                old.partitionProperty );
+                partitionProperty );
+
 
         synchronized ( this ) {
             tables.replace( tableId, table );
@@ -3768,16 +3814,13 @@ public class CatalogImpl extends Catalog {
     @Override
     public void deletePartitionGroupsOnDataPlacement( int adapterId, long tableId ) {
         // Check if there is indeed no column placement left.
-        if ( getTable( tableId ).isPartitioned ) {
-            if ( getColumnPlacementsOnAdapterPerTable( adapterId, tableId ).isEmpty() ) {
+        if ( getColumnPlacementsOnAdapterPerTable( adapterId, tableId ).isEmpty() ) {
                 synchronized ( this ) {
                     dataPartitionGroupPlacement.remove( new Object[]{ adapterId, tableId } );
                     log.debug( "Removed all dataPartitionGroupPlacements" );
                 }
             }
-        } else {
-            log.debug( "Table wasn't even partitioned" );
-        }
+
     }
 
 
@@ -3906,7 +3949,7 @@ public class CatalogImpl extends Catalog {
         } catch ( NullPointerException e ) {
             getAdapter( adapterId );
             getPartition( partitionId );
-            throw new UnknownColumnPlacementRuntimeException( adapterId, partitionId );
+            throw new UnknownPartitionPlacementException( adapterId, partitionId );
         }
     }
 

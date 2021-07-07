@@ -28,7 +28,7 @@ public interface PartitionManager {
     /**
      * Returns the Index of the partition where to place the object
      */
-    long getTargetPartitionGroupId( CatalogTable catalogTable, String columnValue );
+    long getTargetPartitionId( CatalogTable catalogTable, String columnValue );
 
     boolean validatePartitionGroupDistribution( CatalogTable table );
 
