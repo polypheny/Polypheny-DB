@@ -74,6 +74,8 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.util.FileInputHandle;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Static;
@@ -240,6 +242,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
                             preparedStatement,
                             i + 1,
                             values.get( index ),
+                            context.getParameterType( index ),
                             preparedStatement.getParameterMetaData().getParameterType( i + 1 ),
                             connectionHandler );
                 }
@@ -256,9 +259,11 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
      * Assigns a value to a dynamic parameter in a prepared statement, calling the appropriate {@code setXxx}
      * method based on the type of the parameter.
      */
-    private static void setDynamicParam( PreparedStatement preparedStatement, int i, Object value, int sqlType, ConnectionHandler connectionHandler ) throws SQLException {
+    private static void setDynamicParam( PreparedStatement preparedStatement, int i, Object value, RelDataType type, int sqlType, ConnectionHandler connectionHandler ) throws SQLException {
         if ( value == null ) {
             preparedStatement.setNull( i, SqlType.NULL.id );
+        } else if ( type instanceof IntervalPolyType ) {
+            preparedStatement.setString( i, value.toString() + " " + type.getIntervalQualifier().timeUnitRange.name() );
         } else if ( value instanceof Timestamp ) {
             preparedStatement.setTimestamp( i, (Timestamp) value );
         } else if ( value instanceof Time ) {

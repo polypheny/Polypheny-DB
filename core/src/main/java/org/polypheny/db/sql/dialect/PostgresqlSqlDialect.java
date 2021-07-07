@@ -115,6 +115,21 @@ public class PostgresqlSqlDialect extends SqlDialect {
                 // Postgres has a double type but it is named differently
                 castSpec = "_double precision";
                 break;
+            case INTERVAL_YEAR_MONTH:
+            case INTERVAL_DAY:
+            case INTERVAL_DAY_HOUR:
+            case INTERVAL_DAY_MINUTE:
+            case INTERVAL_DAY_SECOND:
+            case INTERVAL_HOUR_MINUTE:
+            case INTERVAL_HOUR:
+            case INTERVAL_HOUR_SECOND:
+            case INTERVAL_MINUTE:
+            case INTERVAL_MONTH:
+            case INTERVAL_SECOND:
+            case INTERVAL_MINUTE_SECOND:
+            case INTERVAL_YEAR:
+                castSpec = "interval";
+                break;
             default:
                 return super.getCastSpec( type );
         }

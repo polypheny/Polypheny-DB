@@ -586,7 +586,8 @@ public abstract class SqlImplementor {
 
                 case DYNAMIC_PARAM:
                     final RexDynamicParam caseParam = (RexDynamicParam) rex;
-                    return new SqlDynamicParam( (int) caseParam.getIndex(), POS );
+                    SqlDynamicParam sqlDynamicParam = new SqlDynamicParam( (int) caseParam.getIndex(), POS );
+                    return SqlStdOperatorTable.CAST.createCall( POS, sqlDynamicParam, dialect.getCastSpec( caseParam.getType() ) );
 
                 case IN:
                     if ( rex instanceof RexSubQuery ) {
