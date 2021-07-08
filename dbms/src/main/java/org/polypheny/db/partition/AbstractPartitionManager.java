@@ -18,6 +18,7 @@ package org.polypheny.db.partition;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -65,7 +66,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
     public abstract boolean probePartitionGroupDistributionChange( CatalogTable catalogTable, int storeId, long columnId );
 
     @Override
-    public abstract List<CatalogColumnPlacement> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionGroupIds );
+    public abstract Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds );
 
 
     @Override

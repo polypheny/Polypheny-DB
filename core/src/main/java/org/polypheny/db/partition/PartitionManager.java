@@ -17,10 +17,10 @@
 package org.polypheny.db.partition;
 
 import java.util.List;
+import java.util.Map;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.partition.PartitionFunctionInfo;
 import org.polypheny.db.type.PolyType;
 
 public interface PartitionManager {
@@ -34,7 +34,7 @@ public interface PartitionManager {
 
     boolean probePartitionGroupDistributionChange( CatalogTable catalogTable, int storeId, long columnId );
 
-    List<CatalogColumnPlacement> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionGroupIds );
+    Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds );
 
     boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, CatalogColumn partitionColumn );
 

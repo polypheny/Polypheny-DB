@@ -19,7 +19,9 @@ package org.polypheny.db.partition;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +29,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartition;
-import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumnType;
@@ -101,34 +102,34 @@ public class RangePartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public List<CatalogColumnPlacement> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionGroupIds ) {
+    public Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
         Catalog catalog = Catalog.getInstance();
-        List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();
 
-        if ( partitionGroupIds != null ) {
+        Map <Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
 
-            for ( long partitionGroupId : partitionGroupIds ) {
+        if ( partitionIds != null ) {
+            for ( long  partitionId : partitionIds ) {
+
+                CatalogPartition catalogPartition = catalog.getPartition( partitionId );
+                List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();
+
                 // Find stores with full placements (partitions)
                 // Pick for each column the column placement which has full partitioning //SELECT WORST-CASE ergo Fallback
                 for ( long columnId : catalogTable.columnIds ) {
-                    List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartitionGroup( catalogTable.id, partitionGroupId, columnId );
+                    List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartitionGroup( catalogTable.id, catalogPartition.partitionGroupId, columnId );
                     if ( !ccps.isEmpty() ) {
                         //get first column placement which contains partition
                         relevantCcps.add( ccps.get( 0 ) );
                         if ( log.isDebugEnabled() ) {
-                            log.debug( "{} {} with part. {}", ccps.get( 0 ).adapterUniqueName, ccps.get( 0 ).getLogicalColumnName(), partitionGroupId );
+                            log.debug( "{} {} with part. {}", ccps.get( 0 ).adapterUniqueName, ccps.get( 0 ).getLogicalColumnName(), partitionId  );
                         }
                     }
                 }
-            }
-        } else {
-            // Take the first column placement
-            // Worst-case
-            for ( long columnId : catalogTable.columnIds ) {
-                relevantCcps.add( getPlacementsWithAllPartitionGroups( columnId, catalogTable.partitionProperty.partitionGroupIds.size() ).get( 0 ) );
+                placementDistribution.put( partitionId, relevantCcps );
             }
         }
-        return relevantCcps;
+
+        return placementDistribution;
     }
 
 

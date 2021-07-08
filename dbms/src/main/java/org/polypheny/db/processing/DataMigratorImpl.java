@@ -88,7 +88,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         for ( long partitionId : partitionIds ) {
 
-            RelRoot sourceRel = getSourceIterator( sourceStatement, selectSourcePlacements( table, selectColumnList, columnPlacements.get( 0 ).adapterId ) );
+            RelRoot sourceRel = getSourceIterator( sourceStatement, selectSourcePlacements( table, selectColumnList, columnPlacements.get( 0 ).adapterId ),partitionId );
             RelRoot targetRel;
             if ( Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( store.id, table.id ).size() == columns.size() ) {
                 // There have been no placements for this table on this store before. Build insert statement
@@ -257,7 +257,7 @@ public class DataMigratorImpl implements DataMigrator {
     }
 
 
-    private RelRoot getSourceIterator( Statement statement, List<CatalogColumnPlacement> placements ) {
+    private RelRoot getSourceIterator( Statement statement, List<CatalogColumnPlacement> placements, long partitionId ) {
         // Get map of placements by adapter
         Map<String, List<CatalogColumnPlacement>> placementsByAdapter = new HashMap<>();
         long tableId = -1;
@@ -275,7 +275,10 @@ public class DataMigratorImpl implements DataMigrator {
                 statement.getQueryProcessor().getPlanner(),
                 new RexBuilder( statement.getTransaction().getTypeFactory() ) );
 
-        RelNode node = statement.getRouter().buildJoinedTableScan( statement, cluster, placements,Catalog.getInstance().getAllPartitionPlacementsByTable(tableId) );
+        Map<Long,List<CatalogColumnPlacement>> distributionPlacements = new HashMap<>();
+        distributionPlacements.put( partitionId,placements );
+
+        RelNode node = statement.getRouter().buildJoinedTableScan( statement, cluster, distributionPlacements );
         return RelRoot.of( node, SqlKind.SELECT );
     }
 

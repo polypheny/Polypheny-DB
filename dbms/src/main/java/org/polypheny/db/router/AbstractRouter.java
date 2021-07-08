@@ -229,6 +229,7 @@ public abstract class AbstractRouter implements Router {
                 LogicalTable t = ((LogicalTable) table.getTable());
                 CatalogTable catalogTable;
                 List<CatalogColumnPlacement> placements;
+                Map <Long,List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
                 catalogTable = Catalog.getInstance().getTable( t.getTableId() );
 
                 // Check if table is even partitioned
@@ -251,7 +252,7 @@ public abstract class AbstractRouter implements Router {
                                     catalogTable.partitionColumnId,
                                     catalog.getColumn( catalogTable.partitionColumnId ).name );
                         }
-                        if ( partitionValues.size() == 1 ) {
+                        if ( partitionValues.size() != 0 ) {
                             List<Long> identPartitions = new ArrayList<>();
                             for ( String partitionValue : partitionValues ) {
                                 log.debug( "Extracted PartitionValue: {}", partitionValue );
@@ -263,23 +264,24 @@ public abstract class AbstractRouter implements Router {
                             // Currently only one partition is identified, therefore LIST is not needed YET.
 
                             statement.getTransaction().getMonitoringData().setAccessedPartitions( identPartitions );
-                            placements = partitionManager.getRelevantPlacements( catalogTable, identPartitions );
+                            placementDistribution = partitionManager.getRelevantPlacements( catalogTable, identPartitions );
                         } else {
-                            placements = partitionManager.getRelevantPlacements( catalogTable, null );
+                            placementDistribution = partitionManager.getRelevantPlacements( catalogTable, catalogTable.partitionProperty.partitionIds );
                         }
                     } else {
                         // TODO Change to worst-case
-                        placements = partitionManager.getRelevantPlacements( catalogTable, null );
+                        placementDistribution = partitionManager.getRelevantPlacements( catalogTable, catalogTable.partitionProperty.partitionIds );
                         //placements = selectPlacement( node, catalogTable );
                     }
 
                 } else {
                     log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
                     placements = selectPlacement( node, catalogTable );
+                    placementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ),placements );
                 }
 
                 //TODO @HENNLO currently returns all PartitionPlacements
-                return builder.push( buildJoinedTableScan( statement, cluster, placements, catalog.getAllPartitionPlacementsByTable(catalogTable.id)) );
+                return builder.push( buildJoinedTableScan( statement, cluster, placementDistribution ) );
 
             } else {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
@@ -798,7 +800,7 @@ public abstract class AbstractRouter implements Router {
 
 
     @Override
-    public RelNode buildJoinedTableScan( Statement statement, RelOptCluster cluster, List<CatalogColumnPlacement> placements, List<CatalogPartitionPlacement> partitionPlacements ) {
+    public RelNode buildJoinedTableScan( Statement statement, RelOptCluster cluster, Map<Long, List<CatalogColumnPlacement>> placements ) {
         RelBuilder builder = RelBuilder.create( statement, cluster );
 
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
@@ -808,30 +810,37 @@ public abstract class AbstractRouter implements Router {
             }
         }
 
+        for ( Entry partitionToPlacement : placements.entrySet() ) {
+
+            Long partitionId = (long) partitionToPlacement.getKey();
+            List<CatalogColumnPlacement> currentPlacements = (List<CatalogColumnPlacement>) partitionToPlacement.getValue();
         // Sort by adapter
         Map<Integer, List<CatalogColumnPlacement>> placementsByAdapter = new HashMap<>();
-        for ( CatalogColumnPlacement placement : placements ) {
+        for ( CatalogColumnPlacement placement : currentPlacements ) {
             if ( !placementsByAdapter.containsKey( placement.adapterId ) ) {
                 placementsByAdapter.put( placement.adapterId, new LinkedList<>() );
             }
             placementsByAdapter.get( placement.adapterId ).add( placement );
         }
-        for ( CatalogPartitionPlacement cpp : partitionPlacements ) {
+
             if ( placementsByAdapter.size() == 1 ) {
 
-                List<CatalogColumnPlacement> ccp = placementsByAdapter.values().iterator().next();
+                List<CatalogColumnPlacement> ccps = placementsByAdapter.values().iterator().next();
+                CatalogColumnPlacement ccp = ccps.get( 0 );
+                CatalogPartitionPlacement cpp = catalog.getPartitionPlacement( ccp.adapterId, partitionId );
+
                 builder = handleTableScan(
                         builder,
-                        ccp.get( 0 ).tableId,
-                        ccp.get( 0 ).adapterUniqueName,
-                        ccp.get( 0 ).getLogicalSchemaName(),
-                        ccp.get( 0 ).getLogicalTableName(),
-                        ccp.get( 0 ).physicalSchemaName,
+                        ccp.tableId,
+                        ccp.adapterUniqueName,
+                        ccp.getLogicalSchemaName(),
+                        ccp.getLogicalTableName(),
+                        ccp.physicalSchemaName,
                         cpp.physicalTableName,
                         cpp.partitionId );
                 // final project
                 ArrayList<RexNode> rexNodes = new ArrayList<>();
-                List<CatalogColumnPlacement> placementList = placements.stream()
+                List<CatalogColumnPlacement> placementList = currentPlacements.stream()
                         .sorted( Comparator.comparingInt( p -> Catalog.getInstance().getColumn( p.columnId ).position ) )
                         .collect( Collectors.toList() );
                 for ( CatalogColumnPlacement catalogColumnPlacement : placementList ) {
@@ -843,7 +852,7 @@ public abstract class AbstractRouter implements Router {
                 // We need to join placements on different adapters
 
                 // Get primary key
-                long pkid = catalog.getTable( placements.get( 0 ).tableId ).primaryKey;
+                long pkid = catalog.getTable( currentPlacements.get( 0 ).tableId ).primaryKey;
                 List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
                 List<CatalogColumn> pkColumns = new LinkedList<>();
                 for ( long pkColumnId : pkColumnIds ) {
@@ -863,13 +872,17 @@ public abstract class AbstractRouter implements Router {
                 Deque<String> queue = new LinkedList<>();
                 boolean first = true;
                 for ( List<CatalogColumnPlacement> ccps : placementsByAdapter.values() ) {
+
+                    CatalogColumnPlacement ccp = ccps.get( 0 );
+                    CatalogPartitionPlacement cpp = catalog.getPartitionPlacement( ccp.adapterId, partitionId );
+
                     handleTableScan(
                             builder,
-                            ccps.get( 0 ).tableId,
-                            ccps.get( 0 ).adapterUniqueName,
-                            ccps.get( 0 ).getLogicalSchemaName(),
-                            ccps.get( 0 ).getLogicalTableName(),
-                            ccps.get( 0 ).physicalSchemaName,
+                            ccp.tableId,
+                            ccp.adapterUniqueName,
+                            ccp.getLogicalSchemaName(),
+                            ccp.getLogicalTableName(),
+                            ccp.physicalSchemaName,
                             cpp.physicalTableName,
                             cpp.partitionId);
                     if ( first ) {
@@ -891,8 +904,8 @@ public abstract class AbstractRouter implements Router {
                         for ( int i = 0; i < pkColumnIds.size(); i++ ) {
                             joinConditions.add( builder.call(
                                     SqlStdOperatorTable.EQUALS,
-                                    builder.field( 2, ccps.get( 0 ).getLogicalTableName(), queue.removeFirst() ),
-                                    builder.field( 2, ccps.get( 0 ).getLogicalTableName(), queue.removeFirst() ) ) );
+                                    builder.field( 2, ccp.getLogicalTableName(), queue.removeFirst() ),
+                                    builder.field( 2, ccp.getLogicalTableName(), queue.removeFirst() ) ) );
                         }
                         builder.join( JoinRelType.INNER, joinConditions );
 
@@ -900,7 +913,7 @@ public abstract class AbstractRouter implements Router {
                 }
                 // final project
                 ArrayList<RexNode> rexNodes = new ArrayList<>();
-                List<CatalogColumnPlacement> placementList = placements.stream()
+                List<CatalogColumnPlacement> placementList = currentPlacements.stream()
                         .sorted( Comparator.comparingInt( p -> Catalog.getInstance().getColumn( p.columnId ).position ) )
                         .collect( Collectors.toList() );
                 for ( CatalogColumnPlacement ccp : placementList ) {
@@ -908,9 +921,11 @@ public abstract class AbstractRouter implements Router {
                 }
                 builder.project( rexNodes );
             } else {
-                throw new RuntimeException( "The table '" + placements.get( 0 ).getLogicalTableName() + "' seems to have no placement. This should not happen!" );
+                throw new RuntimeException( "The table '" + currentPlacements.get( 0 ).getLogicalTableName() + "' seems to have no placement. This should not happen!" );
             }
         }
+        builder.union( true, placements.size() );
+
         RelNode node = builder.build();
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
             joinedTableScanCache.put( placements.hashCode(), node );
