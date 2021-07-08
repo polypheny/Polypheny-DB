@@ -20,6 +20,7 @@ import static org.reflections.Reflections.log;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -56,6 +57,7 @@ import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.SchemaAlreadyExistsException;
@@ -88,11 +90,24 @@ import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
+import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.processing.DataMigrator;
+import org.polypheny.db.rel.AbstractRelNode;
+import org.polypheny.db.rel.BiRel;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.SingleRel;
+import org.polypheny.db.rel.logical.LogicalTableScan;
+import org.polypheny.db.rel.logical.LogicalViewTableScan;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.schema.LogicalTable;
+import org.polypheny.db.schema.LogicalView;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 
 
@@ -109,6 +124,24 @@ public class DdlManagerImpl extends DdlManager {
     private void checkIfTableType( TableType tableType ) throws DdlOnSourceException {
         if ( tableType != TableType.TABLE ) {
             throw new DdlOnSourceException();
+        }
+    }
+
+
+    private void checkIfViewType( TableType tableType ) throws DdlOnSourceException {
+        if ( tableType != TableType.VIEW ) {
+            throw new DdlOnSourceException();
+        }
+    }
+
+
+    private void checkViewDependencies( CatalogTable catalogTable ) {
+        if ( catalogTable.connectedViews.size() > 0 ) {
+            List<String> views = new ArrayList<>();
+            for ( Long id : catalogTable.connectedViews ) {
+                views.add( catalog.getTable( id ).name );
+            }
+            throw new PolyphenyDbException( "Cannot alter table because of underlying View " + views.stream().map( String::valueOf ).collect( Collectors.joining( (", ") ) ) );
         }
     }
 
@@ -191,7 +224,7 @@ public class DdlManagerImpl extends DdlManager {
                     tableName += i;
                 }
 
-                long tableId = catalog.addTable( tableName, 1, 1, TableType.SOURCE, !((DataSource) adapter).isDataReadOnly(), null );
+                long tableId = catalog.addTable( tableName, 1, 1, TableType.SOURCE, !((DataSource) adapter).isDataReadOnly() );
                 List<Long> primaryKeyColIds = new ArrayList<>();
                 int colPos = 1;
                 for ( ExportedColumn exportedColumn : entry.getValue() ) {
@@ -768,6 +801,9 @@ public class DdlManagerImpl extends DdlManager {
             throw new RuntimeException( "Cannot drop sole column of table " + catalogTable.name );
         }
 
+        //check if views are dependent from this view
+        checkViewDependencies( catalogTable );
+
         CatalogColumn column = getCatalogColumn( catalogTable.id, columnName );
 
         // Check if column is part of an key
@@ -1047,6 +1083,9 @@ public class DdlManagerImpl extends DdlManager {
             throw new PlacementNotExistsException();
         }
 
+        //check if views are dependent from this view
+        checkViewDependencies( catalogTable );
+
         // Which columns to remove
         for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapter( storeInstance.getAdapterId(), catalogTable.id ) ) {
             if ( !columnIds.contains( placement.columnId ) ) {
@@ -1248,6 +1287,9 @@ public class DdlManagerImpl extends DdlManager {
         if ( catalog.checkIfExistsTable( catalogTable.schemaId, newTableName ) ) {
             throw new TableAlreadyExistsException();
         }
+        //check if views are dependent from this view
+        checkViewDependencies( catalogTable );
+
         catalog.renameTable( catalogTable.id, newTableName );
 
         // Rest plan cache and implementation cache (not sure if required in this case)
@@ -1262,11 +1304,143 @@ public class DdlManagerImpl extends DdlManager {
         if ( catalog.checkIfExistsColumn( catalogColumn.tableId, newColumnName ) ) {
             throw new ColumnAlreadyExistsException( newColumnName, catalogColumn.getTableName() );
         }
+        //check if views are dependent from this view
+        checkViewDependencies( catalogTable );
 
         catalog.renameColumn( catalogColumn.id, newColumnName );
 
         // Rest plan cache and implementation cache (not sure if required in this case)
         statement.getQueryProcessor().resetCaches();
+    }
+
+
+    @Override
+    public void createView( String viewName, long schemaId, RelNode relNode, RelCollation relCollation, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns ) throws TableAlreadyExistsException {
+        if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
+            if ( replace ) {
+                try {
+                    dropView( catalog.getTable( schemaId, viewName ), statement );
+                } catch ( UnknownTableException | DdlOnSourceException e ) {
+                    throw new RuntimeException( "Unable tp drop the existing View with this name." );
+                }
+            } else {
+                throw new TableAlreadyExistsException();
+            }
+        }
+
+        if ( stores == null ) {
+            // Ask router on which store(s) the table should be placed
+            stores = statement.getRouter().createTable( schemaId, statement );
+        }
+
+        prepareView( relNode );
+        RelDataType fieldList = relNode.getRowType();
+
+        List<ColumnInformation> columns = new ArrayList<>();
+
+        int position = 1;
+        for ( RelDataTypeField rel : fieldList.getFieldList() ) {
+            RelDataType type = rel.getValue();
+            if ( rel.getType().getPolyType() == PolyType.ARRAY ) {
+                type = ((ArrayType) rel.getValue()).getComponentType();
+            }
+            String colName = rel.getName();
+            if ( projectedColumns != null ) {
+                colName = projectedColumns.get( position - 1 );
+            }
+
+            // type.getPrecision() == RelDataTypeSystemImpl.DEFAULT.getDefaultPrecision(type.getPolyType()) ? type.getPrecision() : -1,
+            columns.add( new ColumnInformation(
+                    colName.toLowerCase().replaceAll( "[^A-Za-z0-9]", "_" ),
+                    new ColumnTypeInformation(
+                            type.getPolyType(),
+                            rel.getType().getPolyType(),
+                            type.getRawPrecision(),
+                            type.getScale(),
+                            rel.getValue().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) rel.getValue()).getDimension() : -1,
+                            rel.getValue().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) rel.getValue()).getCardinality() : -1,
+                            rel.getValue().isNullable() ),
+                    Collation.getDefaultCollation(),
+                    null,
+                    position ) );
+            position++;
+        }
+
+        Map<Long, List<Long>> underlyingTables = new HashMap<>();
+        long tableId = catalog.addView(
+                viewName,
+                schemaId,
+                statement.getPrepareContext().getCurrentUserId(),
+                TableType.VIEW,
+                false,
+                relNode,
+                relCollation,
+                findUnderlyingTablesOfView( relNode, underlyingTables, fieldList ),
+                fieldList
+        );
+
+        for ( ColumnInformation column : columns ) {
+            //addColumn( column.name, column.typeInformation, column.collation, column.defaultValue, tableId, column.position, stores, placementType );
+            long columnId = catalog.addColumn(
+                    column.name,
+                    tableId,
+                    column.position,
+                    column.typeInformation.type,
+                    column.typeInformation.collectionType,
+                    column.typeInformation.precision,
+                    column.typeInformation.scale,
+                    column.typeInformation.dimension,
+                    column.typeInformation.cardinality,
+                    column.typeInformation.nullable,
+                    column.collation );
+        }
+    }
+
+
+    private void prepareView( RelNode viewNode ) {
+        if ( viewNode instanceof AbstractRelNode ) {
+            ((AbstractRelNode) viewNode).setCluster( null );
+        }
+        if ( viewNode instanceof BiRel ) {
+            prepareView( ((BiRel) viewNode).getLeft() );
+            prepareView( ((BiRel) viewNode).getRight() );
+        } else if ( viewNode instanceof SingleRel ) {
+            prepareView( ((SingleRel) viewNode).getInput() );
+        }
+    }
+
+
+    private Map<Long, List<Long>> findUnderlyingTablesOfView( RelNode relNode, Map<Long, List<Long>> underlyingTables, RelDataType fieldList ) {
+        if ( relNode instanceof LogicalTableScan ) {
+            List<Long> underlyingColumns = getUnderlyingColumns( relNode, fieldList );
+            underlyingTables.put( ((LogicalTable) ((RelOptTableImpl) relNode.getTable()).getTable()).getTableId(), underlyingColumns );
+        } else if ( relNode instanceof LogicalViewTableScan ) {
+            List<Long> underlyingColumns = getUnderlyingColumns( relNode, fieldList );
+            underlyingTables.put( ((LogicalView) ((RelOptTableImpl) relNode.getTable()).getTable()).getTableId(), underlyingColumns );
+        }
+        if ( relNode instanceof BiRel ) {
+            findUnderlyingTablesOfView( ((BiRel) relNode).getLeft(), underlyingTables, fieldList );
+            findUnderlyingTablesOfView( ((BiRel) relNode).getRight(), underlyingTables, fieldList );
+        } else if ( relNode instanceof SingleRel ) {
+            findUnderlyingTablesOfView( ((SingleRel) relNode).getInput(), underlyingTables, fieldList );
+        }
+        return underlyingTables;
+    }
+
+
+    private List<Long> getUnderlyingColumns( RelNode relNode, RelDataType fieldList ) {
+        List<Long> columnIds = ((LogicalTable) ((RelOptTableImpl) relNode.getTable()).getTable()).getColumnIds();
+        List<String> logicalColumnNames = ((LogicalTable) ((RelOptTableImpl) relNode.getTable()).getTable()).getLogicalColumnNames();
+        List<Long> underlyingColumns = new ArrayList<>();
+        for ( int i = 0; i < columnIds.size(); i++ ) {
+            for ( RelDataTypeField relDataTypeField : fieldList.getFieldList() ) {
+                String name = logicalColumnNames.get( i );
+                if ( relDataTypeField.getName().equals( name ) ) {
+                    underlyingColumns.add( columnIds.get( i ) );
+                }
+            }
+        }
+        return underlyingColumns;
     }
 
 
@@ -1293,8 +1467,7 @@ public class DdlManagerImpl extends DdlManager {
                     schemaId,
                     statement.getPrepareContext().getCurrentUserId(),
                     TableType.TABLE,
-                    true,
-                    null );
+                    true );
 
             for ( ColumnInformation column : columns ) {
                 addColumn( column.name, column.typeInformation, column.collation, column.defaultValue, tableId, column.position, stores, placementType );
@@ -1422,7 +1595,6 @@ public class DdlManagerImpl extends DdlManager {
         for ( CatalogColumnPlacement ccp : catalog.getColumnPlacements( pkColumn.id ) ) {
             catalog.updatePartitionsOnDataPlacement( ccp.adapterId, ccp.tableId, partitionIds );
         }
-
     }
 
 
@@ -1506,9 +1678,35 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
+    public void dropView( CatalogTable catalogView, Statement statement ) throws DdlOnSourceException {
+        // Make sure that this is a table of type VIEW
+        checkIfViewType( catalogView.tableType );
+
+        // Check if views are dependent from this view
+        checkViewDependencies( catalogView );
+
+        catalog.deleteViewDependencies( (CatalogView) catalogView );
+
+        // Delete columns
+        for ( Long columnId : catalogView.columnIds ) {
+            catalog.deleteColumn( columnId );
+        }
+
+        // Delete the view
+        catalog.deleteTable( catalogView.id );
+
+        // Rest plan cache and implementation cache
+        statement.getQueryProcessor().resetCaches();
+    }
+
+
+    @Override
     public void dropTable( CatalogTable catalogTable, Statement statement ) throws DdlOnSourceException {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfTableType( catalogTable.tableType );
+
+        // Check if tables are dependent from this table
+        checkViewDependencies( catalogTable );
 
         // Check if there are foreign keys referencing this table
         List<CatalogForeignKey> selfRefsToDelete = new LinkedList<>();
@@ -1522,7 +1720,6 @@ public class DdlManagerImpl extends DdlManager {
                     throw new PolyphenyDbException( "Cannot drop table '" + catalogTable.getSchemaName() + "." + catalogTable.name + "' because it is being referenced by '" + exportedKeys.get( 0 ).getSchemaName() + "." + exportedKeys.get( 0 ).getTableName() + "'." );
                 }
             }
-
         }
 
         // Make sure that all adapters are of type store (and not source)
@@ -1617,18 +1814,6 @@ public class DdlManagerImpl extends DdlManager {
         catalogTable.placementsByAdapter.forEach( ( adapterId, placements ) -> {
             AdapterManager.getInstance().getAdapter( adapterId ).truncate( statement.getPrepareContext(), catalogTable );
         } );
-    }
-
-
-    @Override
-    public void createView() {
-        throw new RuntimeException( "Not supported yet" );
-    }
-
-
-    @Override
-    public void dropView() {
-        throw new RuntimeException( "Not supported yet" );
     }
 
 

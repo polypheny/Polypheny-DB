@@ -100,6 +100,10 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
 
+        if ( catalogTable.isView() ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE with Views" );
+        }
+
         // You can't partition placements if the table is not partitioned
         if ( !catalogTable.isPartitioned && (!partitionList.isEmpty() || !partitionNamesList.isEmpty()) ) {
             throw new RuntimeException( " Partition Placement is not allowed for unpartitioned table '" + catalogTable.name + "'" );

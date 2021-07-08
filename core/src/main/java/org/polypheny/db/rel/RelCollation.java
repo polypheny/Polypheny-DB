@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 package org.polypheny.db.rel;
 
 
+import java.io.Serializable;
 import java.util.List;
 import org.polypheny.db.plan.RelMultipleTrait;
 
@@ -43,11 +44,12 @@ import org.polypheny.db.plan.RelMultipleTrait;
  *
  * An ordering consists of a list of one or more column ordinals and the direction of the ordering.
  */
-public interface RelCollation extends RelMultipleTrait {
+public interface RelCollation extends RelMultipleTrait, Serializable {
 
     /**
      * Returns the ordinals and directions of the columns in this ordering.
      */
     List<RelFieldCollation> getFieldCollations();
+
 }
 

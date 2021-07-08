@@ -97,6 +97,25 @@ public class JdbcArrayTest {
 
 
     @Test
+    public void basicViewTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ARRAY[1, 2] = ARRAY[1, 2], ARRAY[2, 4] = ARRAY[2, 3]" ),
+                        ImmutableList.of( new Object[]{ true, false } ) );
+
+                statement.executeUpdate( "CREATE VIEW basicViewTest as SELECT ARRAY[1, 2] = ARRAY[1, 2], ARRAY[2, 4] = ARRAY[2, 3]" );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM basicViewTest" ),
+                        ImmutableList.of( new Object[]{ true, false } ) );
+                statement.executeUpdate( "DROP VIEW basicViewTest" );
+            }
+        }
+    }
+
+
+    @Test
     public void arrayTypesTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -146,6 +165,67 @@ public class JdbcArrayTest {
                             statement.executeQuery( "SELECT varchararray FROM arraytest" ),
                             ImmutableList.of( new Object[]{ ARRAYTEST_DATA[9] } ) );
 
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE arraytest" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void arrayTypesViewTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( ARRAYTEST_SQL );
+                statement.executeUpdate( ARRAYTEST_DATA_SQL );
+                statement.executeUpdate( "CREATE VIEW arrayTypesViewTest AS SELECT * FROM arraytest" );
+                try {
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT id FROM arrayTypesViewTest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[0] } ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT bigintarray FROM arrayTypesViewTest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[1] } ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT booleanarray FROM arrayTypesViewTest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[2] } ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT decimalarray FROM arrayTypesViewTest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[3] } ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT doublearray FROM arrayTypesViewTest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[4] } ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT intarray FROM arrayTypesViewTest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[5] } ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT realarray FROM arrayTypesViewTest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[6] } ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT smallintarray FROM arrayTypesViewTest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[7] } ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tinyintarray FROM arrayTypesViewTest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[8] } ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT varchararray FROM arrayTypesViewTest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[9] } ) );
+
+                    statement.executeUpdate( "DROP VIEW arrayTypesViewTest" );
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE arraytest" );

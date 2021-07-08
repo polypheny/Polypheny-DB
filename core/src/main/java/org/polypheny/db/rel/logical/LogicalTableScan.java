@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,6 +70,7 @@ import org.polypheny.db.schema.Table;
  */
 public final class LogicalTableScan extends TableScan {
 
+
     /**
      * Creates a LogicalTableScan.
      *
@@ -77,6 +78,12 @@ public final class LogicalTableScan extends TableScan {
      */
     public LogicalTableScan( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table ) {
         super( cluster, traitSet, table );
+    }
+
+
+    @Override
+    public void tryExpandView( RelNode input ) {
+        // do nothing
     }
 
 
@@ -104,6 +111,7 @@ public final class LogicalTableScan extends TableScan {
      */
     public static LogicalTableScan create( RelOptCluster cluster, final RelOptTable relOptTable ) {
         final Table table = relOptTable.unwrap( Table.class );
+
         final RelTraitSet traitSet =
                 cluster.traitSetOf( Convention.NONE )
                         .replaceIfs(
@@ -114,7 +122,9 @@ public final class LogicalTableScan extends TableScan {
                                     }
                                     return ImmutableList.of();
                                 } );
+
         return new LogicalTableScan( cluster, traitSet, relOptTable );
     }
+
 }
 

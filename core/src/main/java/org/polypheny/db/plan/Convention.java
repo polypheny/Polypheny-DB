@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,13 +34,14 @@
 package org.polypheny.db.plan;
 
 
+import java.io.Serializable;
 import org.polypheny.db.rel.RelNode;
 
 
 /**
  * Calling convention trait.
  */
-public interface Convention extends RelTrait {
+public interface Convention extends RelTrait, Serializable {
 
     /**
      * Convention that for a relational expression that does not support any convention. It is not implementable, and has to be transformed to something else in order to be implemented.
@@ -81,7 +82,7 @@ public interface Convention extends RelTrait {
     class Impl implements Convention {
 
         private final String name;
-        private final Class<? extends RelNode> relClass;
+        private final transient Class<? extends RelNode> relClass;
 
 
         public Impl( String name, Class<? extends RelNode> relClass ) {
@@ -135,6 +136,8 @@ public interface Convention extends RelTrait {
         public boolean useAbstractConvertersForConversion( RelTraitSet fromTraits, RelTraitSet toTraits ) {
             return false;
         }
+
     }
+
 }
 

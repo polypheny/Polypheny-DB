@@ -34,12 +34,18 @@
 package org.polypheny.db.sql.ddl;
 
 
+import static org.polypheny.db.util.Static.RESOURCE;
+
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
+import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 
@@ -62,7 +68,25 @@ public class SqlDropView extends SqlDropObject {
 
     @Override
     public void execute( Context context, Statement statement ) {
-        DdlManager.getInstance().dropView();
+        final CatalogTable table;
+
+        try {
+            table = getCatalogTable( context, name );
+        } catch ( PolyphenyDbContextException e ) {
+            if ( ifExists ) {
+                // It is ok that there is no database / schema / table with this name because "IF EXISTS" was specified
+                return;
+            } else {
+                throw e;
+            }
+        }
+
+        try {
+            DdlManager.getInstance().dropView( table, statement );
+        } catch ( DdlOnSourceException e ) {
+            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.ddlOnSourceTable() );
+        }
+
     }
 
 }

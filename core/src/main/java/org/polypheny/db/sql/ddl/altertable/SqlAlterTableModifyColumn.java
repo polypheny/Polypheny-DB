@@ -138,6 +138,10 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, tableName );
 
+        if ( catalogTable.isView() ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE with Views" );
+        }
+
         try {
             if ( type != null ) {
                 DdlManager.getInstance().setColumnType( catalogTable, columnName.getSimple(), ColumnTypeInformation.fromSqlDataTypeSpec( type ), statement );
