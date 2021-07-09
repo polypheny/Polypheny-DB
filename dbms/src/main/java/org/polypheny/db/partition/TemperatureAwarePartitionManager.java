@@ -51,12 +51,6 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
 
 
     @Override
-    public boolean probePartitionGroupDistributionChange( CatalogTable catalogTable, int storeId, long columnId ) {
-        return false;
-    }
-
-
-    @Override
     public Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
         return null;
     }

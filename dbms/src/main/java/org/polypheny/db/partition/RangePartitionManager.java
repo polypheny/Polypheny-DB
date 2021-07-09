@@ -83,23 +83,6 @@ public class RangePartitionManager extends AbstractPartitionManager {
     }
 
 
-    // Needed when columnPlacements are being dropped
-    @Override
-    public boolean probePartitionGroupDistributionChange( CatalogTable catalogTable, int storeId, long columnId ) {
-        Catalog catalog = Catalog.getInstance();
-
-        // change is only critical if there is only one column left with the characteristics
-        int numberOfFullPlacements = getPlacementsWithAllPartitionGroups( columnId, catalogTable.partitionProperty.partitionGroupIds.size() ).size();
-        if ( numberOfFullPlacements <= 1 ) {
-            //Check if this one column is the column we are about to delete
-            if ( catalog.getPartitionGroupsOnDataPlacement( storeId, catalogTable.id ).size() == catalogTable.partitionProperty.partitionGroupIds.size() ) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
 
     @Override
     public Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
@@ -113,8 +96,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
                 CatalogPartition catalogPartition = catalog.getPartition( partitionId );
                 List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();
 
-                // Find stores with full placements (partitions)
-                // Pick for each column the column placement which has full partitioning //SELECT WORST-CASE ergo Fallback
+
                 for ( long columnId : catalogTable.columnIds ) {
                     List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartitionGroup( catalogTable.id, catalogPartition.partitionGroupId, columnId );
                     if ( !ccps.isEmpty() ) {

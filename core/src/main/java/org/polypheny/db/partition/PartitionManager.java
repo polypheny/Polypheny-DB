@@ -30,9 +30,7 @@ public interface PartitionManager {
      */
     long getTargetPartitionId( CatalogTable catalogTable, String columnValue );
 
-    boolean validatePartitionGroupDistribution( CatalogTable table );
-
-    boolean probePartitionGroupDistributionChange( CatalogTable catalogTable, int storeId, long columnId );
+    boolean probePartitionGroupDistributionChange( CatalogTable catalogTable, int storeId, long columnId, int threshold );
 
     Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds );
 

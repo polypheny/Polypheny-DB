@@ -23,7 +23,6 @@ import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
@@ -1220,9 +1219,10 @@ public abstract class Catalog {
      * @param adapterId The id of the adapter to be checked
      * @param tableId The id of the table to be checked
      * @param columnId The id of the column to be checked
+     * @param threshold
      * @return If its correctly distributed or not
      */
-    public abstract boolean validatePartitionGroupDistribution( int adapterId, long tableId, long columnId );
+    public abstract boolean validatePartitionGroupDistribution( int adapterId, long tableId, long columnId, int threshold );
 
     /**
      * Flags the table for deletion.

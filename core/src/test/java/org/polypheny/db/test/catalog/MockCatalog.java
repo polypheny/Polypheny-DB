@@ -771,7 +771,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public boolean validatePartitionGroupDistribution( int adapterId, long tableId, long columnId ) {
+    public boolean validatePartitionGroupDistribution( int adapterId, long tableId, long columnId, int threshold ) {
         throw new NotImplementedException();
     }
 

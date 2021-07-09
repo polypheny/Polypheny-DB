@@ -1667,8 +1667,8 @@ public class CatalogImpl extends Catalog {
                 if ( log.isDebugEnabled() ) {
                     log.debug( "Is flagged for deletion {}", isTableFlaggedForDeletion( oldTable.id ) );
                 }
-                if ( isTableFlaggedForDeletion( oldTable.id ) ) {
-                    if ( !validatePartitionGroupDistribution( adapterId, oldTable.id, columnId ) ) {
+                if ( !isTableFlaggedForDeletion( oldTable.id ) ) {
+                    if ( !validatePartitionGroupDistribution( adapterId, oldTable.id, columnId, 1 ) ) {
                         throw new RuntimeException( "Partition Distribution failed" );
                     }
                 }
@@ -3735,7 +3735,7 @@ public class CatalogImpl extends Catalog {
                 // Check if partition change has impact on the complete partition distribution for current Part.Type
                 for ( CatalogColumnPlacement ccp : getColumnPlacementsOnAdapterPerTable( adapterId, tableId ) ) {
                     long columnId = ccp.columnId;
-                    if ( !validatePartitionGroupDistribution( adapterId, tableId, columnId ) ) {
+                    if ( !validatePartitionGroupDistribution( adapterId, tableId, columnId,0 ) ) {
                         dataPartitionGroupPlacement.replace( new Object[]{ adapterId, tableId }, ImmutableList.copyOf( tempPartition ) );
                         throw new RuntimeException( "Validation of PartitionGroup distribution failed for column: '" + ccp.getLogicalColumnName() + "'" );
                     }
@@ -3831,10 +3831,11 @@ public class CatalogImpl extends Catalog {
      * @param adapterId The id of the adapter to be checked
      * @param tableId The id of the table to be checked
      * @param columnId The id of the column to be checked
+     * @param threshold
      * @return If its correctly distributed or not
      */
     @Override
-    public boolean validatePartitionGroupDistribution( int adapterId, long tableId, long columnId ) {
+    public boolean validatePartitionGroupDistribution( int adapterId, long tableId, long columnId, int threshold ) {
         CatalogTable catalogTable = getTable( tableId );
         if ( isTableFlaggedForDeletion( tableId ) ) {
             return true;
@@ -3842,7 +3843,7 @@ public class CatalogImpl extends Catalog {
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionType );
 
-        return partitionManager.probePartitionGroupDistributionChange( catalogTable, adapterId, columnId );
+        return partitionManager.probePartitionGroupDistributionChange( catalogTable, adapterId, columnId, threshold);
     }
 
 
