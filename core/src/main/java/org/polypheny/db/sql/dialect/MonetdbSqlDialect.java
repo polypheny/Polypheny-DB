@@ -50,6 +50,34 @@ public class MonetdbSqlDialect extends SqlDialect {
 
 
     @Override
+    public boolean supportsColumnNamesWithSchema() {
+        return false;
+    }
+
+
+    @Override
+    public IntervalParameterStrategy getIntervalParameterStrategy() {
+        return IntervalParameterStrategy.MULTIPLICATION;
+    }
+
+
+    @Override
+    public SqlNode getCastSpec( RelDataType type ) {
+        String castSpec;
+        switch ( type.getPolyType() ) {
+            case ARRAY:
+                // We need to flag the type with a underscore to flag the type (the underscore is removed in the unparse method)
+                castSpec = "_TEXT";
+                break;
+            default:
+                return super.getCastSpec( type );
+        }
+
+        return new SqlDataTypeSpec( new SqlIdentifier( castSpec, SqlParserPos.ZERO ), -1, -1, null, null, SqlParserPos.ZERO );
+    }
+
+
+    @Override
     public void unparseOffsetFetch( SqlWriter writer, SqlNode offset, SqlNode fetch ) {
         unparseFetchUsingLimit( writer, offset, fetch );
     }

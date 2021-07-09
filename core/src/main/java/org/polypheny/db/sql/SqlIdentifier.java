@@ -314,13 +314,17 @@ public class SqlIdentifier extends SqlNode {
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startList( SqlWriter.FrameTypeEnum.IDENTIFIER );
+        int i = 0;
         for ( String name : names ) {
-            writer.sep( "." );
-            if ( name.equals( "" ) ) {
-                writer.print( "*" );
-            } else {
-                writer.identifier( name );
+            if ( i != 0 || names.size() != 3 || writer.getDialect().supportsColumnNamesWithSchema() ) {
+                writer.sep( "." );
+                if ( name.equals( "" ) ) {
+                    writer.print( "*" );
+                } else {
+                    writer.identifier( name );
+                }
             }
+            i++;
         }
 
         if ( null != collation ) {
