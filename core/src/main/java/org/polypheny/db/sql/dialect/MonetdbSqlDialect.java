@@ -54,6 +54,12 @@ public class MonetdbSqlDialect extends SqlDialect {
 
 
     @Override
+    public boolean supportsColumnNamesWithSchema() {
+        return false;
+    }
+
+
+    @Override
     public IntervalParameterStrategy getIntervalParameterStrategy() {
         return IntervalParameterStrategy.MULTIPLICATION;
     }

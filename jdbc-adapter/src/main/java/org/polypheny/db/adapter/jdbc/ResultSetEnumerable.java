@@ -266,7 +266,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
         } else if ( type instanceof IntervalPolyType && connectionHandler.getDialect().getIntervalParameterStrategy() != IntervalParameterStrategy.NONE ) {
             if ( connectionHandler.getDialect().getIntervalParameterStrategy() == IntervalParameterStrategy.MULTIPLICATION ) {
                 preparedStatement.setInt( i, ((BigDecimal) value).intValue() );
-            } else if ( connectionHandler.getDialect().getIntervalParameterStrategy() == IntervalParameterStrategy.MULTIPLICATION ) {
+            } else if ( connectionHandler.getDialect().getIntervalParameterStrategy() == IntervalParameterStrategy.CAST ) {
                 preparedStatement.setString( i, value.toString() + " " + type.getIntervalQualifier().timeUnitRange.name() );
             } else {
                 throw new RuntimeException( "Unknown IntervalParameterStrategy: " + connectionHandler.getDialect().getIntervalParameterStrategy().name() );
