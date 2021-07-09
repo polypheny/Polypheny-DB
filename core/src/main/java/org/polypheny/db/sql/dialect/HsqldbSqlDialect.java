@@ -95,7 +95,8 @@ public class HsqldbSqlDialect extends SqlDialect {
         String castSpec;
         switch ( type.getPolyType() ) {
             case ARRAY:
-                castSpec = "LONGVARCHAR";
+                // We need to flag the type with a underscore to flag the type (the underscore is removed in the unparse method)
+                castSpec = "_LONGVARCHAR";
                 break;
             case INTERVAL_YEAR_MONTH:
             case INTERVAL_DAY:

@@ -64,7 +64,8 @@ public class MonetdbSqlDialect extends SqlDialect {
         String castSpec;
         switch ( type.getPolyType() ) {
             case ARRAY:
-                castSpec = "TEXT";
+                // We need to flag the type with a underscore to flag the type (the underscore is removed in the unparse method)
+                castSpec = "_TEXT";
                 break;
             default:
                 return super.getCastSpec( type );
