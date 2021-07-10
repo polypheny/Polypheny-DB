@@ -679,8 +679,8 @@ public class CatalogImpl extends Catalog {
             if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "secrets" } ) ) {
                 CatalogAdapter store = getAdapter( "hsqldb" );
                 long tableId = addTable( "secrets", schemaId, systemId, TableType.TABLE, true );
-                addDefaultColumn( store, getTable( tableId ), "_id", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 0, 24 ); // todo dl: add this automatically
-                addDefaultColumn( store, getTable( tableId ), "_data", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 1, 1024 );
+                addDefaultColumn( store, getTable( tableId ), "_id", PolyType.JSON, Collation.CASE_INSENSITIVE, 0, 24 ); // todo dl: add this automatically
+                addDefaultColumn( store, getTable( tableId ), "_data", PolyType.JSON, Collation.CASE_INSENSITIVE, 1, 1024 );
                 addPrimaryKey( tableId, Collections.singletonList( getColumn( tableId, "_id" ).id ) );
             }
         }
@@ -2154,10 +2154,10 @@ public class CatalogImpl extends Catalog {
         // TODO DL: remove
         Integer fixedLength = length;
         Collation fixedCollation = collation;
-        if ( type == PolyType.JSON ) {
+        /*if ( type == PolyType.JSON ) {
             fixedLength = scale == null ? 300 : scale;
             fixedCollation = Collation.CASE_INSENSITIVE;
-        }
+        }*/
 
         long id = columnIdBuilder.getAndIncrement();
         CatalogColumn column = new CatalogColumn(

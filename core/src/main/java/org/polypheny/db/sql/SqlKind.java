@@ -626,6 +626,9 @@ public enum SqlKind {
      */
     INPUT_REF,
 
+
+    SUB_INPUT_REF,
+
     /**
      * Reference to an input field, with a qualified name and an identifier
      *

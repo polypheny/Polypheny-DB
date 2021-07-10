@@ -25,6 +25,7 @@ import java.util.Map;
 import lombok.Getter;
 import org.bson.types.ObjectId;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.document.DocumentTypeUtil;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -141,7 +142,7 @@ public class LogicalDocuments extends LogicalValues implements Documents {
         for ( ImmutableList<RexLiteral> tuple : tuples ) {
             List<RexLiteral> normalizedTuple = new ArrayList<>();
             List<String> fieldNames = rowTypes.get( pos ).getFieldNames();
-            Map<String, RexLiteral> data = new HashMap<>();
+            Map<String, Comparable<?>> data = new HashMap<>();
             List<String> usedNames = new ArrayList<>();
 
             int fieldPos = 0;
@@ -151,7 +152,7 @@ public class LogicalDocuments extends LogicalValues implements Documents {
                     normalizedTuple.add( literal );
                     usedNames.add( name );
                 } else {
-                    data.put( name, literal );
+                    data.put( name, DocumentTypeUtil.getMqlType( literal ) );
                 }
                 fieldPos++;
             }

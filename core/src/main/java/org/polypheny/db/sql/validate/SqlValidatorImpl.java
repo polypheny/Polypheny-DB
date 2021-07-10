@@ -68,6 +68,7 @@ import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.function.Functions;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.document.DocumentTypeUtil;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.prepare.Prepare;
@@ -98,6 +99,7 @@ import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.SqlBasicCall;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlCallBinding;
+import org.polypheny.db.sql.SqlCharStringLiteral;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlDelete;
 import org.polypheny.db.sql.SqlDynamicParam;
@@ -4340,6 +4342,26 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                                 sourceFields.get( i ).getName(),
                                 sourceTypeString ) );
             }
+            if ( targetType.getPolyType() == PolyType.JSON ) {
+                String value = null;
+                if ( query instanceof SqlInsert && ((SqlInsert) query).getSource() instanceof SqlBasicCall ) {
+                    SqlBasicCall source = (SqlBasicCall) ((SqlInsert) query).getSource();
+                    if ( source.operands[i] instanceof SqlBasicCall ) {
+                        SqlNode charNode = ((SqlBasicCall) source.operands[i]).operands[0];
+                        if ( charNode instanceof SqlCharStringLiteral ) {
+                            value = ((SqlCharStringLiteral) charNode).getValueAs( String.class );
+                        }
+                    }
+                }
+
+                // similar approach to PostgreSql the main difference for a JSON
+                // field this validation compared to an normal text type
+                if ( value == null || !DocumentTypeUtil.validateJson( value ) ) {
+                    throw newValidationError(
+                            query,
+                            RESOURCE.notValidJson( value, "false" ) );
+                }
+            }
         }
     }
 
@@ -4597,6 +4619,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         public PolyphenyDbContextException get() {
             return newValidationError( sqlNode, validatorException );
         }
+
     }
 
 
@@ -4610,6 +4633,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         public PolyphenyDbContextException apply( SqlNode v0, Resources.ExInst<SqlValidatorException> v1 ) {
             return newValidationError( v0, v1 );
         }
+
     }
 
 
@@ -5240,6 +5264,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         protected DmlNamespace( SqlValidatorImpl validator, SqlNode id, SqlNode enclosingNode, SqlValidatorScope parentScope ) {
             super( validator, id, enclosingNode, parentScope );
         }
+
     }
 
 
@@ -5261,6 +5286,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         public SqlInsert getNode() {
             return node;
         }
+
     }
 
 
@@ -5282,6 +5308,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         public SqlUpdate getNode() {
             return node;
         }
+
     }
 
 
@@ -5303,6 +5330,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         public SqlDelete getNode() {
             return node;
         }
+
     }
 
 
@@ -5324,6 +5352,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         public SqlMerge getNode() {
             return node;
         }
+
     }
 
 
@@ -5385,6 +5414,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         public Void visit( SqlIntervalQualifier intervalQualifier ) {
             throw Util.needToImplement( intervalQualifier );
         }
+
     }
 
 
@@ -5513,6 +5543,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         public RelDataType visit( SqlIntervalQualifier intervalQualifier ) {
             return typeFactory.createSqlIntervalType( intervalQualifier );
         }
+
     }
 
 
@@ -5572,6 +5603,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             }
             return fqId;
         }
+
     }
 
 
@@ -5673,6 +5705,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             }
             return super.visitScoped( call );
         }
+
     }
 
 
@@ -5772,6 +5805,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
             return super.visit( literal );
         }
+
     }
 
 
@@ -5788,6 +5822,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             this.scope = scope;
             this.id = id;
         }
+
     }
 
 
@@ -5811,6 +5846,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             cursorPosToSelectMap = new HashMap<>();
             columnListParamToParentCursorMap = new HashMap<>();
         }
+
     }
 
 
@@ -5822,6 +5858,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         public SqlNode go( SqlNode node ) {
             return node.accept( this );
         }
+
     }
 
 
@@ -5913,6 +5950,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 return op.createCall( SqlParserPos.ZERO, id, offset );
             }
         }
+
     }
 
 
@@ -5967,6 +6005,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     id,
                     SqlLiteral.createExactNumeric( "0", SqlParserPos.ZERO ) );
         }
+
     }
 
 
@@ -6102,6 +6141,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         public Set<String> visit( SqlDynamicParam param ) {
             return ImmutableSet.of();
         }
+
     }
 
 
@@ -6240,6 +6280,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 selectItems.add( selectItem );
             }
         }
+
     }
 
 

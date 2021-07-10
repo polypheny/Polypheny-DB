@@ -52,25 +52,27 @@ import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.type.DynamicRecordTypeImpl;
 import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.rel.type.RelDataTypeFieldImpl;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlBinaryOperator;
+import org.polypheny.db.sql.SqlCollation;
+import org.polypheny.db.sql.SqlJsonValueEmptyOrErrorBehavior;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
 
 public class MqlToRelConverter {
 
     private final PolyphenyDbCatalogReader catalogReader;
     private final RelOptCluster cluster;
-    private final PolyTypeFactoryImpl typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
 
 
     public MqlToRelConverter( MqlProcessor mqlProcessor, PolyphenyDbCatalogReader catalogReader, RelOptCluster cluster ) {
@@ -155,14 +157,14 @@ public class MqlToRelConverter {
         PolyType polyType = getPolyType( value );
         switch ( polyType ) {
             case JSON:
-                return typeFactory.createPolyType( PolyType.CHAR, value.asDocument().toJson().length() );
+                return cluster.getTypeFactory().createPolyType( PolyType.CHAR, value.asDocument().toJson().length() );
             case CHAR:
             case BINARY:
             case VARCHAR:
             case VARBINARY:
-                return typeFactory.createPolyType( polyType, value.asString().getValue().length() );
+                return cluster.getTypeFactory().createPolyType( polyType, value.asString().getValue().length() );
             default:
-                return typeFactory.createPolyType( getPolyType( value ) );
+                return cluster.getTypeFactory().createPolyType( getPolyType( value ) );
         }
 
 
@@ -219,11 +221,11 @@ public class MqlToRelConverter {
                 collation,
                 new RexLiteral(
                         new BigDecimal( 0 ),
-                        new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT )
+                        cluster.getTypeFactory()
                                 .createPolyType( PolyType.INTEGER ), PolyType.DECIMAL ),
                 new RexLiteral(
                         new BigDecimal( limit ),
-                        new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT )
+                        cluster.getTypeFactory()
                                 .createPolyType( PolyType.INTEGER ), PolyType.DECIMAL )
         );
     }
@@ -231,7 +233,7 @@ public class MqlToRelConverter {
 
     private RelNode combineFilter( BsonDocument filter, RelNode node, RelDataType rowType ) {
         RexNode condition;
-        RelDataType type = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT ).createPolyType( PolyType.BOOLEAN );
+        RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
         List<RexNode> operands = new ArrayList<>();
         for ( Entry<String, BsonValue> entry : filter.entrySet() ) {
             operands.add( convertFilter( entry.getKey(), entry.getValue(), rowType ) );
@@ -248,7 +250,7 @@ public class MqlToRelConverter {
 
     private RexNode convertDocument( BsonDocument doc, RelDataType rowType ) {
         ArrayList<RexNode> operands = new ArrayList<>();
-        RelDataType type = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT ).createPolyType( PolyType.BOOLEAN );
+        RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
         for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
             operands.add( convertFilter( entry.getKey(), entry.getValue(), rowType ) );
         }
@@ -319,7 +321,7 @@ public class MqlToRelConverter {
 
 
     private RexNode convertLogicalEntry( String key, BsonValue bsonValue, RelDataType rowType ) {
-        RelDataType type = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT ).createPolyType( PolyType.BOOLEAN );
+        RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
         SqlOperator op;
         switch ( key ) {
             case "$and":
@@ -344,7 +346,7 @@ public class MqlToRelConverter {
 
 
     private RexNode convertLogicalArray( BsonValue bsonValue, RelDataType rowType, SqlOperator op, boolean isNegated ) {
-        RelDataType type = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT ).createPolyType( PolyType.BOOLEAN );
+        RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
         List<RexNode> operands = new ArrayList<>();
         if ( bsonValue.isArray() ) {
             for ( BsonValue value : bsonValue.asArray() ) {
@@ -367,12 +369,20 @@ public class MqlToRelConverter {
 
 
     private RexNode convertFieldEntry( String firstKey, BsonValue bsonValue, RelDataType rowType ) {
-        RelDataType type = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT ).createPolyType( PolyType.BOOLEAN );
+        RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
         List<RexNode> operands = new ArrayList<>();
-        RelDataTypeField field = rowType.getField( firstKey, false, false );
         SqlBinaryOperator op = SqlStdOperatorTable.EQUALS;
 
-        operands.add( RexInputRef.of( field.getIndex(), rowType ) );
+        RelDataTypeField field;
+        if ( !rowType.getFieldNames().contains( firstKey ) ) {
+            field = rowType.getField( "_data", false, false );
+            //operands.add( RexSubInputRef.of( field.getIndex(), rowType, firstKey ) );
+            operands.add( translateJsonValue( field.getIndex(), field.getName(), rowType, firstKey ) );
+        } else {
+            field = rowType.getField( firstKey, false, false );
+            operands.add( RexInputRef.of( field.getIndex(), rowType ) );
+        }
+
         if ( bsonValue.isDocument() ) {
             String key = ((BsonDocument) bsonValue).getFirstKey();
             op = getBinaryOperator( key );
@@ -387,14 +397,51 @@ public class MqlToRelConverter {
     }
 
 
+    private RexNode translateJsonValue( int index, String name, RelDataType rowType, String firstKey ) {
+        RelDataTypeFactory factory = cluster.getTypeFactory();
+        RelDataType type = factory.createPolyType( PolyType.ANY );
+        RelDataType anyType = factory.createTypeWithNullability( type, true );
+
+        // match part
+        RexCall ref = new RexCall(
+                anyType,
+                SqlStdOperatorTable.JSON_VALUE_EXPRESSION,
+                Collections.singletonList( RexInputRef.of( index, rowType ) ) );
+        String jsonFilter = "strict $." + firstKey;
+        NlsString nlsString = new NlsString( jsonFilter, "ISO-8859-1", SqlCollation.IMPLICIT );
+        RexLiteral filter = new RexLiteral( nlsString, factory.createPolyType( PolyType.CHAR, jsonFilter.length() ), PolyType.CHAR );
+        RexCall common = new RexCall( anyType, SqlStdOperatorTable.JSON_API_COMMON_SYNTAX, Arrays.asList( ref, filter ) );
+
+        RexLiteral flag = new RexLiteral( SqlJsonValueEmptyOrErrorBehavior.NULL, factory.createPolyType( PolyType.SYMBOL ), PolyType.SYMBOL );
+
+        RexCall value = new RexCall(
+                anyType,
+                SqlStdOperatorTable.JSON_VALUE_ANY,
+                Arrays.asList( common, flag, new RexLiteral( null, anyType, PolyType.NULL, true ),
+                        flag,
+                        new RexLiteral( null, anyType, PolyType.NULL, true ) ) );
+
+        RelDataType returnAny = factory.createTypeWithNullability( factory.createPolyType( PolyType.VARCHAR, 2000 ), true );
+        return new RexCall( returnAny, SqlStdOperatorTable.CAST, Collections.singletonList( value ) );
+
+    }
+
+
+    private RelDataTypeField getRelDataTypeField( String name, int index, BsonValue bsonValue ) {
+        RelDataType type = getRelDataType( bsonValue );
+
+        return new RelDataTypeFieldImpl( name, index, type );
+    }
+
+
     private RexNode convertLiteral( BsonValue bsonValue, List<RexNode> operands, RelDataTypeField field, SqlOperator op ) {
-        RexNode value;
-        Pair<Comparable, PolyType> valuePair = RexLiteral.convertType( getComparable( bsonValue, field.getType() ), field.getType() );
-        value = new RexLiteral( valuePair.left, field.getType(), valuePair.right );
+        RelDataType type = getRelDataType( bsonValue );
+        Pair<Comparable, PolyType> valuePair = RexLiteral.convertType( getComparable( bsonValue, field.getType() ), type );
+        RexNode value = new RexLiteral( valuePair.left, type, valuePair.right );
         operands.add( value );
 
-        RelDataType type = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT ).createPolyType( PolyType.BOOLEAN );
-        return new RexCall( type, op, operands );
+        RelDataType eq = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
+        return new RexCall( eq, op, operands );
     }
 
 

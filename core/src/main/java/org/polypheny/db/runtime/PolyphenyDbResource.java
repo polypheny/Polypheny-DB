@@ -200,6 +200,9 @@ public interface PolyphenyDbResource {
     @BaseMessage("Table ''{0}'' not found; did you mean ''{1}''?")
     ExInst<SqlValidatorException> tableNameNotFoundDidYouMean( String a0, String a1 );
 
+    @BaseMessage("Value ''{0}'' is not valid JSON; {1}")
+    ExInst<SqlValidatorException> notValidJson( String a0, String a1 );
+
     /**
      * Same message as {@link #tableNameNotFound(String)} but a different kind of exception, so it can be used in {@code RelBuilder}.
      */

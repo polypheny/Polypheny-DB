@@ -366,7 +366,7 @@ public enum PolyType {
             PolyTypeFamily.MULTIMEDIA
     ),
     JSON(
-            PrecScale.NO_NO | PrecScale.YES_NO,
+            PrecScale.NO_NO,
             true,
             Types.VARCHAR,
             PolyTypeFamily.CHARACTER

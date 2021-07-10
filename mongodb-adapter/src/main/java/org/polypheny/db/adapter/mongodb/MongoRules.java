@@ -42,8 +42,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.experimental.Accessors;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
@@ -54,7 +56,6 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.mongodb.MongoRel.Implementor;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.util.MongoTypeUtil;
-import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
@@ -71,7 +72,9 @@ import org.polypheny.db.rel.InvalidRelException;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.core.Documents;
+import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.core.RelFactories;
 import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rel.core.Values;
@@ -93,6 +96,7 @@ import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.fun.SqlJsonValueFunction;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.type.PolyType;
@@ -358,8 +362,8 @@ public class MongoRules {
         protected final Convention out;
 
 
-        MongoConverterRule( Class<? extends RelNode> clazz, RelTrait in, Convention out, String description ) {
-            super( clazz, in, out, description );
+        <R extends RelNode> MongoConverterRule( Class<R> clazz, Predicate<? super R> supports, RelTrait in, Convention out, String description ) {
+            super( clazz, supports, in, out, RelFactories.LOGICAL_BUILDER, description );
             this.out = out;
         }
 
@@ -375,7 +379,7 @@ public class MongoRules {
 
 
         private MongoSortRule() {
-            super( Sort.class, Convention.NONE, MongoRel.CONVENTION, "MongoSortRule" );
+            super( Sort.class, r -> true, Convention.NONE, MongoRel.CONVENTION, "MongoSortRule" );
         }
 
 
@@ -404,7 +408,7 @@ public class MongoRules {
 
 
         private MongoFilterRule() {
-            super( LogicalFilter.class, Convention.NONE, MongoRel.CONVENTION, "MongoFilterRule" );
+            super( LogicalFilter.class, filter -> !jsonInFilter( filter ), Convention.NONE, MongoRel.CONVENTION, "MongoFilterRule" );
         }
 
 
@@ -419,6 +423,18 @@ public class MongoRules {
                     filter.getCondition() );
         }
 
+
+        private static boolean jsonInFilter( Filter filter ) {
+            MongoVisitor visitor = new MongoVisitor();
+            for ( RexNode node : filter.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.containsJson() ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
     }
 
 
@@ -431,7 +447,7 @@ public class MongoRules {
 
 
         private MongoProjectRule() {
-            super( LogicalProject.class, Convention.NONE, MongoRel.CONVENTION, "MongoProjectRule" );
+            super( LogicalProject.class, project -> !jsonInProject( project ), Convention.NONE, MongoRel.CONVENTION, "MongoProjectRule" );
         }
 
 
@@ -447,6 +463,18 @@ public class MongoRules {
                     project.getRowType() );
         }
 
+
+        private static boolean jsonInProject( Project project ) {
+            MongoVisitor visitor = new MongoVisitor();
+            for ( RexNode node : project.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.containsJson() ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
     }
 
 
@@ -456,14 +484,14 @@ public class MongoRules {
 
 
         private MongoValuesRule() {
-            super( Values.class, Convention.NONE, MongoRel.CONVENTION, "MongoValuesRule." + MongoRel.CONVENTION );
+            super( Values.class, r -> true, Convention.NONE, MongoRel.CONVENTION, "MongoValuesRule." + MongoRel.CONVENTION );
         }
 
 
         @Override
         public RelNode convert( RelNode rel ) {
             Values values = (Values) rel;
-            if ( values.getModel() == SchemaType.DOCUMENT ) {
+            /*if ( values.getModel() == SchemaType.DOCUMENT ) {
                 Documents documents = (Documents) rel;
                 return new MongoDocuments(
                         rel.getCluster(),
@@ -473,7 +501,7 @@ public class MongoRules {
                         rel.getTraitSet().replace( out ),
                         values.getTuples()
                 );
-            }
+            }*/
             return new MongoValues(
                     values.getCluster(),
                     values.getRowType(),
@@ -526,7 +554,7 @@ public class MongoRules {
 
 
         MongoTableModificationRule() {
-            super( TableModify.class, Convention.NONE, MongoRel.CONVENTION, "MongoTableModificationRule." + MongoRel.CONVENTION );
+            super( TableModify.class, r -> true, Convention.NONE, MongoRel.CONVENTION, "MongoTableModificationRule." + MongoRel.CONVENTION );
         }
 
 
@@ -849,7 +877,7 @@ public class MongoRules {
 
 
         private MongoAggregateRule() {
-            super( LogicalAggregate.class, Convention.NONE, MongoRel.CONVENTION,
+            super( LogicalAggregate.class, r -> true, Convention.NONE, MongoRel.CONVENTION,
                     "MongoAggregateRule" );
         }
 
@@ -872,6 +900,30 @@ public class MongoRules {
                 LOGGER.warn( e.toString() );
                 return null;
             }
+        }
+
+    }
+
+
+    private static class MongoVisitor extends RexVisitorImpl<Void> {
+
+        @Accessors(fluent = true)
+        @Getter
+        private boolean containsJson = false;
+
+
+        protected MongoVisitor() {
+            super( true );
+        }
+
+
+        @Override
+        public Void visitCall( RexCall call ) {
+            SqlOperator operator = call.getOperator();
+            if ( operator.kind == SqlKind.JSON_VALUE_EXPRESSION || operator instanceof SqlJsonValueFunction || operator.kind == SqlKind.JSON_API_COMMON_SYNTAX ) {
+                containsJson = true;
+            }
+            return super.visitCall( call );
         }
 
     }

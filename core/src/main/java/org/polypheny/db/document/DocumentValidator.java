@@ -83,7 +83,7 @@ public class DocumentValidator {
         values.add( id );
 
         String parsed = gson.toJson( data );
-        RexLiteral literal = new RexLiteral( new NlsString( parsed, "ISO-8859-1", SqlCollation.IMPLICIT ), typeFactory.createPolyType( PolyType.CHAR, parsed.length() ), PolyType.CHAR );
+        RexLiteral literal = new RexLiteral( new NlsString( parsed, "ISO-8859-1", SqlCollation.IMPLICIT ), typeFactory.createPolyType( PolyType.JSON ), PolyType.JSON );
         values.add( literal );
 
         return values;
