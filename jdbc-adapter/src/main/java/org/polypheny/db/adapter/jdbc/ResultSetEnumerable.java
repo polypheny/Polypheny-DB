@@ -34,11 +34,13 @@
 package org.polypheny.db.adapter.jdbc;
 
 
+import com.google.common.io.ByteStreams;
 import com.google.gson.Gson;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.net.URL;
@@ -323,15 +325,35 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
         } else if ( value instanceof Byte ) {
             preparedStatement.setByte( i, (Byte) value );
         } else if ( value instanceof ByteString ) {
-            preparedStatement.setBinaryStream( i, new ByteArrayInputStream( ((ByteString) value).getBytes() ) );
+            if ( connectionHandler.getDialect().supportsBinaryStream() ) {
+                preparedStatement.setBinaryStream( i, new ByteArrayInputStream( ((ByteString) value).getBytes() ) );
+            } else {
+                preparedStatement.setBytes( i, ((ByteString) value).getBytes() );
+            }
         } else if ( value instanceof File ) {
-            try {
-                preparedStatement.setBinaryStream( i, new FileInputStream( (File) value ) );
-            } catch ( FileNotFoundException e ) {
-                throw new RuntimeException( "Could not generate FileInputStream", e );
+            if ( connectionHandler.getDialect().supportsBinaryStream() ) {
+                try {
+                    preparedStatement.setBinaryStream( i, new FileInputStream( (File) value ) );
+                } catch ( FileNotFoundException e ) {
+                    throw new RuntimeException( "Could not generate FileInputStream", e );
+                }
+            } else {
+                try {
+                    preparedStatement.setBytes( i, ByteStreams.toByteArray( new FileInputStream( (File) value ) ) );
+                } catch ( IOException e ) {
+                    throw new RuntimeException( "Could not generate FileInputStream", e );
+                }
             }
         } else if ( value instanceof FileInputHandle ) {
-            preparedStatement.setBinaryStream( i, ((FileInputHandle) value).getData() );
+            if ( connectionHandler.getDialect().supportsBinaryStream() ) {
+                preparedStatement.setBinaryStream( i, ((FileInputHandle) value).getData() );
+            } else {
+                try {
+                    preparedStatement.setBytes( i, ByteStreams.toByteArray( ((FileInputHandle) value).getData() ) );
+                } catch ( IOException e ) {
+                    throw new RuntimeException( "Could not generate FileInputStream", e );
+                }
+            }
         } else if ( value instanceof NClob ) {
             preparedStatement.setNClob( i, (NClob) value );
         } else if ( value instanceof Clob ) {

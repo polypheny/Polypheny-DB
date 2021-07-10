@@ -65,6 +65,11 @@ public class MonetdbSqlDialect extends SqlDialect {
     }
 
 
+    public boolean supportsBinaryStream() {
+        return false;
+    }
+
+
     @Override
     public SqlNode getCastSpec( RelDataType type ) {
         String castSpec;

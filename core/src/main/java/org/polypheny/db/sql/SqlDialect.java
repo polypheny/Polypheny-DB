@@ -766,6 +766,11 @@ public class SqlDialect {
     }
 
 
+    public boolean supportsBinaryStream() {
+        return true;
+    }
+
+
     public enum IntervalParameterStrategy {CAST, MULTIPLICATION, NONE}
 
 
