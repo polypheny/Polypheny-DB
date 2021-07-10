@@ -34,14 +34,13 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.CottontailExcluded;
 import org.polypheny.db.excluded.FileExcluded;
-import org.polypheny.db.excluded.MonetdbExcluded;
 
 /*
  * Table and Queries from https://github.com/polypheny/OLTPBench/tree/polypheny/src/com/oltpbenchmark/benchmarks/tpch
  */
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-@Category({ AdapterTestSuite.class, MonetdbExcluded.class, CassandraExcluded.class })
+@Category({ AdapterTestSuite.class, CassandraExcluded.class })
 public class ComplexViewTest {
 
     private final static String DROP_TABLES_NATION = "DROP TABLE IF EXISTS nation";
