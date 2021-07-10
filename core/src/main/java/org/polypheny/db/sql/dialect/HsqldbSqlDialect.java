@@ -98,6 +98,13 @@ public class HsqldbSqlDialect extends SqlDialect {
                 // We need to flag the type with a underscore to flag the type (the underscore is removed in the unparse method)
                 castSpec = "_LONGVARCHAR";
                 break;
+            case FILE:
+            case IMAGE:
+            case VIDEO:
+            case SOUND:
+                // We need to flag the type with a underscore to flag the type (the underscore is removed in the unparse method)
+                castSpec = "_BLOB";
+                break;
             case INTERVAL_YEAR_MONTH:
             case INTERVAL_DAY:
             case INTERVAL_DAY_HOUR:

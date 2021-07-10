@@ -35,6 +35,7 @@ package org.polypheny.db.adapter.jdbc;
 
 
 import com.google.gson.Gson;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -65,6 +66,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.SqlType;
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -286,22 +288,26 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
         } else if ( value instanceof List ) {
             if ( connectionHandler.getDialect().supportsNestedArrays() ) {
                 SqlType componentType;
-                if ( ((List<?>) value).get( 0 ) instanceof String ) {
-                    componentType = SqlType.VARCHAR;
-                } else if ( ((List<?>) value).get( 0 ) instanceof Integer ) {
-                    componentType = SqlType.INTEGER;
-                } else if ( ((List<?>) value).get( 0 ) instanceof Double ) {
-                    componentType = SqlType.DOUBLE;
-                } else if ( ((List<?>) value).get( 0 ) instanceof BigDecimal ) {
-                    componentType = SqlType.DECIMAL;
-                } else if ( ((List<?>) value).get( 0 ) instanceof Boolean ) {
-                    componentType = SqlType.BOOLEAN;
-                } else if ( ((List<?>) value).get( 0 ) instanceof Float ) {
-                    componentType = SqlType.FLOAT;
-                } else if ( ((List<?>) value).get( 0 ) instanceof Long ) {
-                    componentType = SqlType.BIGINT;
+                if ( type != null ) {
+                    componentType = SqlType.valueOf( type.getComponentType().getPolyType().getJdbcOrdinal() );
                 } else {
-                    throw new RuntimeException( "Unknown data type: " + ((List<?>) value).get( 0 ).getClass() );
+                    if ( ((List<?>) value).get( 0 ) instanceof String ) {
+                        componentType = SqlType.VARCHAR;
+                    } else if ( ((List<?>) value).get( 0 ) instanceof Integer ) {
+                        componentType = SqlType.INTEGER;
+                    } else if ( ((List<?>) value).get( 0 ) instanceof Double ) {
+                        componentType = SqlType.DOUBLE;
+                    } else if ( ((List<?>) value).get( 0 ) instanceof BigDecimal ) {
+                        componentType = SqlType.DECIMAL;
+                    } else if ( ((List<?>) value).get( 0 ) instanceof Boolean ) {
+                        componentType = SqlType.BOOLEAN;
+                    } else if ( ((List<?>) value).get( 0 ) instanceof Float ) {
+                        componentType = SqlType.FLOAT;
+                    } else if ( ((List<?>) value).get( 0 ) instanceof Long ) {
+                        componentType = SqlType.BIGINT;
+                    } else {
+                        throw new RuntimeException( "Unknown array type: " + ((List<?>) value).get( 0 ).getClass().getName() );
+                    }
                 }
                 Array array = connectionHandler.createArrayOf( connectionHandler.getDialect().getArrayComponentTypeString( componentType ), ((List<?>) value).toArray() );
                 preparedStatement.setArray( i, array );
@@ -316,6 +322,8 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             preparedStatement.setBlob( i, (Blob) value );
         } else if ( value instanceof Byte ) {
             preparedStatement.setByte( i, (Byte) value );
+        } else if ( value instanceof ByteString ) {
+            preparedStatement.setBinaryStream( i, new ByteArrayInputStream( ((ByteString) value).getBytes() ) );
         } else if ( value instanceof File ) {
             try {
                 preparedStatement.setBinaryStream( i, new FileInputStream( (File) value ) );

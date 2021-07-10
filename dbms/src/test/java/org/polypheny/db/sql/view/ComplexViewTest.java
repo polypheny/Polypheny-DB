@@ -1440,6 +1440,7 @@ public class ComplexViewTest {
                             statement.executeQuery( "SELECT * FROM q10_VIEW" ),
                             ImmutableList.of( q10_TEST_DATA )
                     );
+
                     connection.commit();
                 } finally {
                     connection.rollback();
@@ -1823,24 +1824,26 @@ public class ComplexViewTest {
                             ImmutableList.of( q17_TEST_DATA )
                     );
 
+                    // @formatter:off
                     statement.executeUpdate( "CREATE VIEW q17_VIEW AS "
-                            + "select "
-                            + "sum(l_extendedprice) / 7.0 as avg_yearly "
+                            +"select "
+                            +     "sum(l_extendedprice) / 7.0 as avg_yearly "
                             + "from "
-                            + "lineitem, "
-                            + "part "
+                            +     "lineitem, "
+                            +     "part "
                             + "where "
-                            + "p_partkey = l_partkey "
-                            + "and p_brand = 'Logitec'  "
-                            + "and p_container = 'container' "
-                            + "and l_quantity > ( "
-                            + "select "
-                            + "0.2 * avg(l_quantity) "
-                            + "from "
-                            + "lineitem "
-                            + "where "
-                            + "l_partkey = p_partkey "
-                            + ")" );
+                            +     "p_partkey = l_partkey "
+                            +     "and p_brand = 'Logitec'  "
+                            +     "and p_container = 'container' "
+                            +     "and l_quantity > ( "
+                            +         "select "
+                            +             "0.2 * avg(l_quantity) "
+                            +         "from "
+                            +             "lineitem "
+                            +         "where "
+                            +             "l_partkey = p_partkey "
+                            +     ")"  );
+                    //@formatter:on
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM q17_VIEW" ),
                             ImmutableList.of( q17_TEST_DATA )

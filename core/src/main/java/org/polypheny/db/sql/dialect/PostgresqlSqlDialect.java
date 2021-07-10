@@ -92,8 +92,20 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
 
     @Override
+    public boolean supportsCharSet() {
+        return false;
+    }
+
+
+    @Override
     public IntervalParameterStrategy getIntervalParameterStrategy() {
         return IntervalParameterStrategy.CAST;
+    }
+
+
+    @Override
+    public boolean supportsNestedArrays() {
+        return true;
     }
 
 
@@ -108,6 +120,25 @@ public class PostgresqlSqlDialect extends SqlDialect {
             case DOUBLE:
                 // Postgres has a double type but it is named differently
                 castSpec = "_double precision";
+                break;
+            case FILE:
+            case IMAGE:
+            case VIDEO:
+            case SOUND:
+                castSpec = "_BYTEA";
+                break;
+            case ARRAY:
+                PolyType t = type.getComponentType().getPolyType();
+                switch ( t ) {
+                    case TINYINT:
+                        castSpec = "_smallint[]";
+                        break;
+                    case DOUBLE:
+                        castSpec = "_double precision[]";
+                        break;
+                    default:
+                        castSpec = "_" + type.getComponentType().getPolyType().getName() + "[]";
+                }
                 break;
             case INTERVAL_YEAR_MONTH:
             case INTERVAL_DAY:

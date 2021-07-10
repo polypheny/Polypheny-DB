@@ -332,7 +332,7 @@ public class JdbcArrayTest {
                             ImmutableList.of( new Object[]{ 1 } ) );
 
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT id FROM arraytest WHERE bigintarray = array[9999999,8888888]" ),
+                            statement.executeQuery( "SELECT id FROM arraytest WHERE bigintarray = CAST(array[9999999,8888888] as BIGINT ARRAY(1,2))" ),
                             ImmutableList.of( new Object[]{ 1 } ) );
 
                     TestHelper.checkResultSet(
@@ -410,6 +410,7 @@ public class JdbcArrayTest {
 
                     connection.commit();
                 } finally {
+                    connection.rollback();
                     statement.executeUpdate( "DROP TABLE arraytest" );
                     connection.commit();
                 }
