@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
 import org.polypheny.db.adapter.DataContext.ParameterValue;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.core.TableModify;
@@ -49,6 +50,7 @@ import org.polypheny.db.rex.RexSubQuery;
 import org.polypheny.db.rex.RexTableInputRef;
 import org.polypheny.db.rex.RexVisitor;
 import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
+import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
 
 public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<RexNode> {
@@ -168,6 +170,9 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
 
     @Override
     public RexNode visitLiteral( RexLiteral literal ) {
+        if ( literal.getType() instanceof IntervalPolyType && !RuntimeConfig.PARAMETERIZE_INTERVALS.getBoolean() ) {
+            return literal;
+        }
         int i = index.getAndIncrement();
         values.put( i, Collections.singletonList( new ParameterValue( i, literal.getType(), literal.getValueForQueryParameterizer() ) ) );
         types.add( literal.getType() );

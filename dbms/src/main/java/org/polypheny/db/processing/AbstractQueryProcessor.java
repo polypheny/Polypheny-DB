@@ -274,7 +274,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         //
         // Parameterize
         RelRoot parameterizedRoot = null;
-        if ( statement.getDataContext().getParameterValues().size() == 0 ) {
+        if ( statement.getDataContext().getParameterValues().size() == 0 && (RuntimeConfig.PARAMETERIZE_DML.getBoolean() || !routedRoot.kind.belongsTo( SqlKind.DML )) ) {
             Pair<RelRoot, RelDataType> parameterized = parameterize( routedRoot, parameterRowType );
             parameterizedRoot = parameterized.left;
             parameterRowType = parameterized.right;
