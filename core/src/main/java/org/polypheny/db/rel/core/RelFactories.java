@@ -466,7 +466,7 @@ public class RelFactories {
         RelNode createDocuments(
                 RelOptCluster cluster,
                 List<RelDataType> rowTypes,
-                ImmutableList<ImmutableList<RexLiteral>> tuples,
+                ImmutableList<ImmutableList<Object>> tuples,
                 RelDataType defaultRowType,
                 ImmutableList<ImmutableList<RexLiteral>> normalizedTuple );
 
@@ -480,7 +480,7 @@ public class RelFactories {
         public RelNode createDocuments(
                 RelOptCluster cluster,
                 List<RelDataType> rowTypes,
-                ImmutableList<ImmutableList<RexLiteral>> tuples,
+                ImmutableList<ImmutableList<Object>> tuples,
                 RelDataType defaultRowType,
                 ImmutableList<ImmutableList<RexLiteral>> normalizedTuple ) {
             return LogicalDocuments.create( cluster, rowTypes, ImmutableList.copyOf( tuples ), defaultRowType, ImmutableList.copyOf( normalizedTuple ) );

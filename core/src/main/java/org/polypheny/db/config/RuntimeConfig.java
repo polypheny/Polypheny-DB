@@ -319,7 +319,12 @@ public enum RuntimeConfig {
     DEFAULT_SCHEMA_MODEL( "runtime/defaultSchemaModel",
             "Define default schema model, which is used when none is provided.",
             SchemaType.RELATIONAL,
-            ConfigType.ENUM );
+            ConfigType.ENUM ),
+
+    JSON_MODE( "runtime/jsonMode",
+            "Define the mode of the json matching.",
+            "strict",
+            ConfigType.STRING );
 
 
     private final String key;

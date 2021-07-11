@@ -21,7 +21,9 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -29,6 +31,7 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.mql.Mql;
 import org.polypheny.db.mql.MqlAggregate;
@@ -117,7 +120,7 @@ public class MqlToRelConverter {
 
 
     private RelNode convertMultipleValues( BsonArray array ) {
-        List<ImmutableList<RexLiteral>> values = new ArrayList<>();
+        List<ImmutableList<Object>> values = new ArrayList<>();
         List<RelDataType> rowTypes = new ArrayList<>();
         for ( BsonValue value : array ) {
             RelDataType rowType = new DynamicRecordTypeImpl( new JavaTypeFactoryImpl() );
@@ -129,19 +132,30 @@ public class MqlToRelConverter {
     }
 
 
-    private ImmutableList<RexLiteral> convertValues( BsonDocument doc, RelDataType rowType ) {
-        List<RexLiteral> values = new ArrayList<>();
+    private ImmutableList<Object> convertValues( BsonDocument doc, RelDataType rowType ) {
+        List<Object> values = new ArrayList<>();
 
         for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
-            BsonValue jsonValue = jsonify( entry.getValue() );
-            RelDataType type = getRelDataType( jsonValue );
             rowType.getField( entry.getKey(), false, false );
-            Pair<Comparable, PolyType> valuePair = RexLiteral.convertType( getComparable( jsonValue, type ), type );
-            RexLiteral value = new RexLiteral( valuePair.left, type, valuePair.right );
-            values.add( value );
+            values.add( convertSingleEntry( entry ) );
         }
 
         return ImmutableList.copyOf( values );
+    }
+
+
+    private Object convertSingleEntry( Entry<String, BsonValue> entry ) {
+        if ( entry.getValue().isDocument() ) {
+            Map<String, Object> entries = new HashMap<>();
+            for ( Entry<String, BsonValue> docEntry : entry.getValue().asDocument().entrySet() ) {
+                entries.put( docEntry.getKey(), convertSingleEntry( docEntry ) );
+            }
+            return entries;
+        } else {
+            RelDataType type = getRelDataType( entry.getValue() );
+            Pair<Comparable, PolyType> valuePair = RexLiteral.convertType( getComparable( entry.getValue(), type ), type );
+            return new RexLiteral( valuePair.left, type, valuePair.right );
+        }
     }
 
 
@@ -368,31 +382,71 @@ public class MqlToRelConverter {
     }
 
 
-    private RexNode convertFieldEntry( String firstKey, BsonValue bsonValue, RelDataType rowType ) {
-        RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
+    private RexNode convertFieldEntry( String parentKey, BsonValue bsonValue, RelDataType rowType ) {
         List<RexNode> operands = new ArrayList<>();
-        SqlBinaryOperator op = SqlStdOperatorTable.EQUALS;
 
         RelDataTypeField field;
-        if ( !rowType.getFieldNames().contains( firstKey ) ) {
+        if ( !rowType.getFieldNames().contains( parentKey ) ) {
             field = rowType.getField( "_data", false, false );
             //operands.add( RexSubInputRef.of( field.getIndex(), rowType, firstKey ) );
-            operands.add( translateJsonValue( field.getIndex(), field.getName(), rowType, firstKey ) );
-        } else {
-            field = rowType.getField( firstKey, false, false );
-            operands.add( RexInputRef.of( field.getIndex(), rowType ) );
-        }
-
-        if ( bsonValue.isDocument() ) {
-            String key = ((BsonDocument) bsonValue).getFirstKey();
-            op = getBinaryOperator( key );
-            if ( op == SqlStdOperatorTable.IN || op == SqlStdOperatorTable.NOT_IN ) {
-                return convertIn( (BsonDocument) bsonValue, rowType, type, op, field, key );
+            //operands.add( translateJson( field.getIndex(), field.getName(), rowType, firstKey, bsonValue ) );
+            if ( bsonValue.isDocument() ) {
+                // we have a document where the sub-keys are either logical like "$eq, $or" or we have a sub-key and need to change the value
+                return translateDocument( bsonValue.asDocument(), rowType, operands, field, parentKey );
             } else {
-                return convertLiteral( ((BsonDocument) bsonValue).get( key ), operands, field, op );
+                // we have a simple assignment to a value, can attach and translate the value
+                operands.add( translateJsonValue( field.getIndex(), field.getName(), rowType, parentKey ) );
+                return translateDocumentOrLiteral( bsonValue, rowType, operands, field );
             }
         } else {
-            return convertLiteral( bsonValue, operands, field, op );
+            field = rowType.getField( parentKey, false, false );
+            operands.add( RexInputRef.of( field.getIndex(), rowType ) );
+
+            return translateDocumentOrLiteral( bsonValue, rowType, operands, field );
+        }
+
+    }
+
+
+    private RexNode translateDocumentOrLiteral( BsonValue bsonValue, RelDataType rowType, List<RexNode> operands, RelDataTypeField field ) {
+        if ( bsonValue.isDocument() ) {
+            List<RexNode> nodes = new ArrayList<>();
+            for ( Entry<String, BsonValue> entry : bsonValue.asDocument().entrySet() ) {
+                nodes.add( translateDocument( (BsonDocument) bsonValue, rowType, operands, field, entry.getKey() ) );
+            }
+
+            if ( nodes.size() == 1 ) {
+                return nodes.get( 0 );
+            } else {
+                throw new RuntimeException( "todo" );
+            }
+
+        } else {
+            return convertLiteral( bsonValue, operands, field, SqlStdOperatorTable.EQUALS );
+        }
+    }
+
+
+    private RexNode translateDocument( BsonDocument bsonValue, RelDataType rowType, List<RexNode> operands, RelDataTypeField field, String key ) {
+        SqlBinaryOperator op = SqlStdOperatorTable.EQUALS;
+        if ( key.startsWith( "$" ) ) {
+            op = getBinaryOperator( key );
+            if ( op == SqlStdOperatorTable.IN || op == SqlStdOperatorTable.NOT_IN ) {
+                return convertIn( bsonValue, rowType, op, field, key );
+            } else {
+                return convertLiteral( bsonValue.get( key ), operands, field, op );
+            }
+        } else {
+            List<RexNode> nodes = new ArrayList<>();
+            for ( Entry<String, BsonValue> entry : bsonValue.entrySet() ) {
+                nodes.add( convertFieldEntry( key + "." + entry.getKey(), entry.getValue(), rowType ) );
+            }
+
+            if ( nodes.size() == 1 ) {
+                return nodes.get( 0 );
+            } else {
+                throw new RuntimeException( "todo" );
+            }
         }
     }
 
@@ -407,7 +461,7 @@ public class MqlToRelConverter {
                 anyType,
                 SqlStdOperatorTable.JSON_VALUE_EXPRESSION,
                 Collections.singletonList( RexInputRef.of( index, rowType ) ) );
-        String jsonFilter = "strict $." + firstKey;
+        String jsonFilter = RuntimeConfig.JSON_MODE.getString() + " $." + firstKey;
         NlsString nlsString = new NlsString( jsonFilter, "ISO-8859-1", SqlCollation.IMPLICIT );
         RexLiteral filter = new RexLiteral( nlsString, factory.createPolyType( PolyType.CHAR, jsonFilter.length() ), PolyType.CHAR );
         RexCall common = new RexCall( anyType, SqlStdOperatorTable.JSON_API_COMMON_SYNTAX, Arrays.asList( ref, filter ) );
@@ -445,7 +499,8 @@ public class MqlToRelConverter {
     }
 
 
-    private RexNode convertIn( BsonDocument bsonValue, RelDataType rowType, RelDataType type, SqlBinaryOperator op, RelDataTypeField field, String key ) {
+    private RexNode convertIn( BsonDocument bsonValue, RelDataType rowType, SqlBinaryOperator op, RelDataTypeField field, String key ) {
+        RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
         RexNode value;
         List<RexNode> operands = new ArrayList<>();
         boolean isIn = op == SqlStdOperatorTable.IN;

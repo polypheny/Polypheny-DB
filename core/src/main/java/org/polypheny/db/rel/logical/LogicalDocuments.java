@@ -56,7 +56,7 @@ public class LogicalDocuments extends LogicalValues implements Documents {
     @Getter
     private final RelDataType defaultRowType;
     @Getter
-    private final ImmutableList<ImmutableList<RexLiteral>> normalizedTuples;
+    private final ImmutableList<ImmutableList<Object>> documentTuples;
 
 
     /**
@@ -68,19 +68,19 @@ public class LogicalDocuments extends LogicalValues implements Documents {
      * @param traitSet
      * @param tuples
      */
-    public LogicalDocuments( RelOptCluster cluster, List<RelDataType> rowTypes, RelDataType defaultRowType, RelTraitSet traitSet, ImmutableList<ImmutableList<RexLiteral>> tuples, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
+    public LogicalDocuments( RelOptCluster cluster, List<RelDataType> rowTypes, RelDataType defaultRowType, RelTraitSet traitSet, ImmutableList<ImmutableList<Object>> tuples, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
         super( cluster, traitSet, defaultRowType, normalizedTuples );
-        this.tuples = tuples;
+        this.documentTuples = tuples;
         this.rowTypes = rowTypes;
         this.defaultRowType = defaultRowType;
-        this.normalizedTuples = normalizedTuples;
+        this.tuples = normalizedTuples;
     }
 
 
-    public static RelNode create( RelOptCluster cluster, final List<RelDataType> rowTypes, final ImmutableList<ImmutableList<RexLiteral>> tuples ) {
+    public static RelNode create( RelOptCluster cluster, final List<RelDataType> rowTypes, final ImmutableList<ImmutableList<Object>> tuples ) {
         List<RelDataTypeField> fields = new ArrayList<>();
         fields.add( new RelDataTypeFieldImpl( "_id", 0, typeFactory.createPolyType( PolyType.VARCHAR, 24 ) ) );
-        fields.add( new RelDataTypeFieldImpl( "_data", 1, typeFactory.createPolyType( PolyType.VARCHAR, 1024 ) ) );
+        fields.add( new RelDataTypeFieldImpl( "_data", 1, typeFactory.createPolyType( PolyType.JSON ) ) );
         RelDataType defaultRowType = new RelRecordType( fields );
 
         ImmutableList<ImmutableList<RexLiteral>> normalizedTuples = normalize( tuples, rowTypes, defaultRowType );
@@ -89,7 +89,7 @@ public class LogicalDocuments extends LogicalValues implements Documents {
     }
 
 
-    public static RelNode create( RelOptCluster cluster, List<RelDataType> rowTypes, ImmutableList<ImmutableList<RexLiteral>> tuples, RelDataType defaultRowType, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
+    public static RelNode create( RelOptCluster cluster, List<RelDataType> rowTypes, ImmutableList<ImmutableList<Object>> tuples, RelDataType defaultRowType, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
         final RelMetadataQuery mq = cluster.getMetadataQuery();
         final RelTraitSet traitSet = cluster.traitSetOf( Convention.NONE )
                 .replaceIfs( RelCollationTraitDef.INSTANCE, () -> RelMdCollation.values( mq, defaultRowType, normalizedTuples ) );
@@ -109,11 +109,6 @@ public class LogicalDocuments extends LogicalValues implements Documents {
     }
 
 
-    @Override
-    public ImmutableList<ImmutableList<RexLiteral>> getTuples() {
-        return getNormalizedTuples();
-    }
-
 
     @Override
     public ImmutableList<ImmutableList<RexLiteral>> getFlatTuples() {
@@ -125,7 +120,7 @@ public class LogicalDocuments extends LogicalValues implements Documents {
     public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
         assert inputs.isEmpty();
-        return new LogicalDocuments( getCluster(), rowTypes, defaultRowType, traitSet, tuples, normalizedTuples );
+        return new LogicalDocuments( getCluster(), rowTypes, defaultRowType, traitSet, documentTuples, tuples );
     }
 
 
@@ -134,25 +129,29 @@ public class LogicalDocuments extends LogicalValues implements Documents {
      *
      * @return
      */
-    private static ImmutableList<ImmutableList<RexLiteral>> normalize( ImmutableList<ImmutableList<RexLiteral>> tuples, List<RelDataType> rowTypes, RelDataType defaultRowType ) {
+    private static ImmutableList<ImmutableList<RexLiteral>> normalize( ImmutableList<ImmutableList<Object>> tuples, List<RelDataType> rowTypes, RelDataType defaultRowType ) {
         List<ImmutableList<RexLiteral>> normalized = new ArrayList<>();
         List<String> rowNames = defaultRowType.getFieldNames();
 
         int pos = 0;
-        for ( ImmutableList<RexLiteral> tuple : tuples ) {
+        for ( ImmutableList<Object> tuple : tuples ) {
             List<RexLiteral> normalizedTuple = new ArrayList<>();
             List<String> fieldNames = rowTypes.get( pos ).getFieldNames();
-            Map<String, Comparable<?>> data = new HashMap<>();
+            Map<String, Object> data = new HashMap<>();
             List<String> usedNames = new ArrayList<>();
 
             int fieldPos = 0;
-            for ( RexLiteral literal : tuple ) {
+            for ( Object node : tuple ) {
                 String name = fieldNames.get( fieldPos );
                 if ( rowNames.contains( name ) ) {
-                    normalizedTuple.add( literal );
-                    usedNames.add( name );
+                    if ( node instanceof RexLiteral ) {
+                        normalizedTuple.add( (RexLiteral) node );
+                        usedNames.add( name );
+                    } else {
+                        throw new RuntimeException( "Fixed columns for document where not supplied correctly" );
+                    }
                 } else {
-                    data.put( name, DocumentTypeUtil.getMqlType( literal ) );
+                    data.put( name, DocumentTypeUtil.getMqlComparable( node ) );
                 }
                 fieldPos++;
             }
@@ -161,7 +160,7 @@ public class LogicalDocuments extends LogicalValues implements Documents {
             if ( !usedNames.contains( "_id" ) ) {
                 normalizedTuple.add( 0, new RexLiteral( new NlsString( ObjectId.get().toString(), "ISO-8859-1", SqlCollation.IMPLICIT ), typeFactory.createPolyType( PolyType.CHAR, 24 ), PolyType.CHAR ) );
             }
-            String parsed = gson.toJson( data );
+            String parsed = removeNestedEscapes( gson.toJson( data ) );
             RexLiteral literal = new RexLiteral( new NlsString( parsed, "ISO-8859-1", SqlCollation.IMPLICIT ), typeFactory.createPolyType( PolyType.CHAR, parsed.length() ), PolyType.CHAR );
             normalizedTuple.add( literal );
 
@@ -170,6 +169,11 @@ public class LogicalDocuments extends LogicalValues implements Documents {
         }
 
         return ImmutableList.copyOf( normalized );
+    }
+
+
+    private static String removeNestedEscapes( String json ) {
+        return json.replace( "\\\"", "\"" );
     }
 
 

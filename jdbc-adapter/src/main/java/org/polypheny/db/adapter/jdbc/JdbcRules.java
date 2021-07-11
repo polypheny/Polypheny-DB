@@ -43,6 +43,7 @@ import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor;
 import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor.Result;
+import org.polypheny.db.document.DocumentRules;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -427,6 +428,7 @@ public class JdbcRules {
                                     && !userDefinedFunctionInProject( project )
                                     && !knnFunctionInProject( project )
                                     && !multimediaFunctionInProject( project )
+                                    && !DocumentRules.jsonInProject( project )
                                     && (out.dialect.supportsNestedArrays() || !itemOperatorInProject( project )),
                     Convention.NONE, out, relBuilderFactory, "JdbcProjectRule." + out );
         }
@@ -542,6 +544,7 @@ public class JdbcRules {
                             !userDefinedFunctionInFilter( filter )
                                     && !knnFunctionInFilter( filter )
                                     && !multimediaFunctionInFilter( filter )
+                                    && !DocumentRules.jsonInFilter( filter )
                                     && (out.dialect.supportsNestedArrays() || (!itemOperatorInFilter( filter ) && isStringComparableArrayType( filter )))),
                     Convention.NONE, out, relBuilderFactory, "JdbcFilterRule." + out );
         }

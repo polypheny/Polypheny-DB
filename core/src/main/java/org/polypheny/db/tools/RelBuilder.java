@@ -2133,7 +2133,7 @@ public class RelBuilder {
     }
 
 
-    public RelBuilder documents( ImmutableList<ImmutableList<RexLiteral>> tuples, List<RelDataType> rowTypes, RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
+    public RelBuilder documents( ImmutableList<ImmutableList<Object>> tuples, List<RelDataType> rowTypes, RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
         RelNode documents = documentsFactory.createDocuments( cluster, rowTypes, copy( tuples ), rowType, copy( normalizedTuples ) );
         push( documents );
         return this;
