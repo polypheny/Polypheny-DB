@@ -87,6 +87,7 @@ import org.polypheny.db.catalog.exceptions.UnknownTableIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.exceptions.UnknownUserIdRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.partition.FrequencyMap;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
@@ -154,6 +155,7 @@ public class CatalogImpl extends Catalog {
     private static BTreeMap<Long, CatalogPartitionGroup> partitionGroups;
     private static BTreeMap<Long, CatalogPartition> partitions;
     private static HTreeMap<Object[], ImmutableList<Long>> dataPartitionGroupPlacement; // <AdapterId.TableId, List of partitionGroupIds>
+    private static List<Long> frequencyDependentTables  = new ArrayList<>(); //all tables to consider in periodic run
 
     //adapterid + Partition
     private static BTreeMap<Object[], CatalogPartitionPlacement> partitionPlacements;
@@ -542,6 +544,9 @@ public class CatalogImpl extends Catalog {
                 .createOrOpen();
 
         partitionPlacements = db.treeMap( "partitionPlacements", new SerializerArrayTuple( Serializer.INTEGER, Serializer.LONG ), Serializer.JAVA ).createOrOpen();
+
+        //Restores all Tables dependent on periodic checks like TEMPERATURE Paartitioning
+        frequencyDependentTables = tables.values().stream().filter( t -> t.partitionProperty.reliesOnPeriodicChecks ).map( t -> t.id ).collect( Collectors.toList() );
 
     }
 
@@ -1309,6 +1314,7 @@ public class CatalogImpl extends Catalog {
                     .partitionType( PartitionType.NONE )
                     .partitionGroupIds( ImmutableList.copyOf( partitionGroupIds ) )
                     .partitionIds( ImmutableList.copyOf( defaultUnpartitionedGroup.partitionIds ) )
+                    .reliesOnPeriodicChecks(false )
                     .build();
 
             CatalogTable table = new CatalogTable(
@@ -1422,6 +1428,10 @@ public class CatalogImpl extends Catalog {
                 deleteColumn( columnId );
             }
 
+
+            if ( table.partitionProperty.reliesOnPeriodicChecks ) {
+                removeTableFromPeriodicProcessing( tableId );
+            }
 
             tableChildren.remove( tableId );
             tables.remove( tableId );
@@ -3449,6 +3459,10 @@ public class CatalogImpl extends Catalog {
         synchronized ( this ) {
             tables.replace( tableId, table );
             tableNames.replace( new Object[]{ table.databaseId, table.schemaId, old.name }, table );
+
+            if ( table.partitionProperty.reliesOnPeriodicChecks ) {
+                addTableToPeriodicProcessing( tableId );
+            }
         }
 
         listeners.firePropertyChange( "table", old, table );
@@ -3480,6 +3494,7 @@ public class CatalogImpl extends Catalog {
                     .partitionType( PartitionType.NONE )
                     .partitionGroupIds( ImmutableList.copyOf( partitionGroupIds ) )
                     .partitionIds( ImmutableList.copyOf( defaultUnpartitionedGroup.partitionIds ) )
+                    .reliesOnPeriodicChecks(false )
                     .build();
 
 
@@ -3992,6 +4007,46 @@ public class CatalogImpl extends Catalog {
                 .stream()
                 .filter( p -> p.partitionId == partitionId )
                 .collect( Collectors.toList() );
+    }
+
+
+    @Override
+    public List<CatalogTable> getTablesForPeriodicProcessing()  {
+        List<CatalogTable> procTables = new ArrayList<>();
+        frequencyDependentTables.forEach( id -> procTables.add(getTable(id)) );
+
+        return procTables;
+    }
+
+    @Override
+    public void addTableToPeriodicProcessing( long tableId )  {
+
+        int beforeSize = frequencyDependentTables.size();
+        getTable( tableId );
+        if ( !frequencyDependentTables.contains( tableId ) ){
+            frequencyDependentTables.add( tableId );
+        }
+        //Initially starts the periodic job if this was the first table to enable periodic processing
+        if ( beforeSize == 0 && frequencyDependentTables.size() == 1){
+            //Start Job for periodic processing
+            FrequencyMap.INSTANCE.initialize();
+        }
+
+    }
+
+
+    @Override
+    public void removeTableFromPeriodicProcessing( long tableId ) {
+        getTable( tableId );
+        if ( !frequencyDependentTables.contains( tableId ) ){
+            frequencyDependentTables.remove( tableId );
+        }
+
+        //Terminates the periodic job if this was the last table with perodic processing
+        if ( frequencyDependentTables.size() == 0){
+            //Terminate Job for periodic processing
+            FrequencyMap.INSTANCE.terminate();
+        }
     }
 
 

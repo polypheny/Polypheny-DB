@@ -232,6 +232,7 @@ public abstract class AbstractRouter implements Router {
                 Map <Long,List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
                 catalogTable = Catalog.getInstance().getTable( t.getTableId() );
 
+                List <Long> accessedPartitionList;
                 // Check if table is even partitioned
                 if ( catalogTable.isPartitioned ) {
 
@@ -263,21 +264,25 @@ public abstract class AbstractRouter implements Router {
                             // Add identified partitions to monitoring object
                             // Currently only one partition is identified, therefore LIST is not needed YET.
 
-                            statement.getTransaction().getMonitoringData().setAccessedPartitions( identPartitions );
                             placementDistribution = partitionManager.getRelevantPlacements( catalogTable, identPartitions );
+                            accessedPartitionList = identPartitions;
                         } else {
                             placementDistribution = partitionManager.getRelevantPlacements( catalogTable, catalogTable.partitionProperty.partitionIds );
+                            accessedPartitionList = catalogTable.partitionProperty.partitionIds;
                         }
                     } else {
                         placementDistribution = partitionManager.getRelevantPlacements( catalogTable, catalogTable.partitionProperty.partitionIds );
+                        accessedPartitionList = catalogTable.partitionProperty.partitionIds;
                     }
 
                 } else {
                     log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
                     placements = selectPlacement( node, catalogTable );
+                    accessedPartitionList = catalogTable.partitionProperty.partitionIds;
                     placementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ),placements );
                 }
 
+                statement.getTransaction().getMonitoringData().setAccessedPartitions( accessedPartitionList );
                 //TODO @HENNLO currently returns all PartitionPlacements
                 return builder.push( buildJoinedTableScan( statement, cluster, placementDistribution ) );
 

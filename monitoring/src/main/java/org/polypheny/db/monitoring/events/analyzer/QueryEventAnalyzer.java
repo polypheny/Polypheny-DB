@@ -37,6 +37,7 @@ public class QueryEventAnalyzer {
                 .rowCount( queryEvent.getRowCount() )
                 .isSubQuery( queryEvent.isSubQuery() )
                 .recordedTimestamp( queryEvent.getRecordedTimestamp()  )
+                .accessedPartitions( queryEvent.getAccessedPartitions() )
                 .build();
 
         RelNode node = queryEvent.getRouted().rel;

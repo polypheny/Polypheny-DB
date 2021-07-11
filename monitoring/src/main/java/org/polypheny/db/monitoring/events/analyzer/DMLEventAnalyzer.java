@@ -39,6 +39,7 @@ public class DMLEventAnalyzer {
                 .rowCount( dmlEvent.getRowCount() )
                 .isSubQuery( dmlEvent.isSubQuery() )
                 .recordedTimestamp( dmlEvent.getRecordedTimestamp()  )
+                .accessedPartitions( dmlEvent.getAccessedPartitions() )
                 .build();
 
         RelNode node = dmlEvent.getRouted().rel;

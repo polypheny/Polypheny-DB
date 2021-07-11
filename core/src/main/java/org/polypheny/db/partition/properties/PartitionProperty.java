@@ -37,5 +37,7 @@ public class PartitionProperty implements Serializable {
 
     public final long numPartitionGroups;
 
+    public final boolean reliesOnPeriodicChecks;
+
 
 }

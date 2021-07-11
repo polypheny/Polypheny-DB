@@ -1491,6 +1491,9 @@ public class DdlManagerImpl extends DdlManager {
                     .partitionCostIndication( PartitionCostIndication.WRITE )
                     .hotAccessPercentageIn( 10 )
                     .hotAccessPercentageOut( 18 )
+                    .reliesOnPeriodicChecks(true)
+                    .hotPartitionGroupId( partitionGroupIds.get( 0 ) )
+                    .coldPartitionGroupId( partitionGroupIds.get( 1 ) )
                     .build();
         }
         else{
@@ -1499,6 +1502,7 @@ public class DdlManagerImpl extends DdlManager {
                     .partitionColumnId( catalogColumn.id )
                     .partitionGroupIds( ImmutableList.copyOf( partitionGroupIds ))
                     .partitionIds( ImmutableList.copyOf( partitionIds ) )
+                    .reliesOnPeriodicChecks(false )
                     .build();
         }
 

@@ -1286,6 +1286,12 @@ public abstract class Catalog {
 
     public abstract List<CatalogPartitionPlacement> getPartitionPlacements( long partitionId );
 
+    public abstract  List<CatalogTable> getTablesForPeriodicProcessing();
+    
+    public abstract void addTableToPeriodicProcessing(long tableId)  ;
+
+    public abstract  void removeTableFromPeriodicProcessing(long tableId)  ;
+
 
     public abstract boolean checkIfExistsPartitionPlacement(int adapterId, long partitionId );
 

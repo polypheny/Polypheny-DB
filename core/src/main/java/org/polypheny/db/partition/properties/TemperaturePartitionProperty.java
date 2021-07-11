@@ -34,8 +34,14 @@ public class TemperaturePartitionProperty extends PartitionProperty {
     private final PartitionType internalPartitionFunction;
 
     //Maybe get default if left empty, centrally by configuration
-    private final long hotAccessPercentageIn;
-    private final long hotAccessPercentageOut;
+    private final int hotAccessPercentageIn;
+    private final int hotAccessPercentageOut;
+
+    private final long frequencyInterval;
+
+    private final long hotPartitionGroupId;
+    private final long coldPartitionGroupId;
+
 
 
     /* TODO @HENNLO Maybe extend later on with Records
