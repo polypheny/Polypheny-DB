@@ -15,8 +15,8 @@ public class MqlFind extends MqlCollectionStatement {
 
     public MqlFind( String collection, BsonDocument query, BsonDocument projection ) {
         super( collection );
-        this.query = query;
-        this.projection = projection;
+        this.query = query != null ? query : new BsonDocument();
+        this.projection = projection != null ? projection : new BsonDocument();
     }
 
 

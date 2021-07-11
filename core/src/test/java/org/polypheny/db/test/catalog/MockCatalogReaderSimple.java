@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
@@ -60,6 +61,7 @@ import org.polypheny.db.util.Util;
  */
 public class MockCatalogReaderSimple extends MockCatalogReader {
 
+    @Getter
     private final Fixture fixture;
 
 

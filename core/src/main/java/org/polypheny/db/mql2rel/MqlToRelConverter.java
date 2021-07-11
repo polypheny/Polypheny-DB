@@ -395,7 +395,7 @@ public class MqlToRelConverter {
                 return translateDocument( bsonValue.asDocument(), rowType, operands, field, parentKey );
             } else {
                 // we have a simple assignment to a value, can attach and translate the value
-                operands.add( translateJsonValue( field.getIndex(), field.getName(), rowType, parentKey ) );
+                operands.add( translateJsonValue( field.getIndex(), rowType, parentKey ) );
                 return translateDocumentOrLiteral( bsonValue, rowType, operands, field );
             }
         } else {
@@ -427,44 +427,80 @@ public class MqlToRelConverter {
     }
 
 
-    private RexNode translateDocument( BsonDocument bsonValue, RelDataType rowType, List<RexNode> operands, RelDataTypeField field, String key ) {
-        SqlBinaryOperator op = SqlStdOperatorTable.EQUALS;
-        if ( key.startsWith( "$" ) ) {
-            op = getBinaryOperator( key );
-            if ( op == SqlStdOperatorTable.IN || op == SqlStdOperatorTable.NOT_IN ) {
-                return convertIn( bsonValue, rowType, op, field, key );
+    private RexNode translateDocument( BsonDocument bsonValue, RelDataType rowType, List<RexNode> operands, RelDataTypeField field, String parentKey ) {
+        List<RexNode> nodes = new ArrayList<>();
+        for ( Entry<String, BsonValue> entry : bsonValue.entrySet() ) {
+            if ( entry.getKey().startsWith( "$" ) ) {
+                nodes.add( translateLogical( bsonValue, rowType, operands, field, entry.getKey(), parentKey ) );
             } else {
-                return convertLiteral( bsonValue.get( key ), operands, field, op );
+                nodes.add( convertFieldEntry( parentKey + "." + entry.getKey(), entry.getValue(), rowType ) );
             }
-        } else {
-            List<RexNode> nodes = new ArrayList<>();
-            for ( Entry<String, BsonValue> entry : bsonValue.entrySet() ) {
-                nodes.add( convertFieldEntry( key + "." + entry.getKey(), entry.getValue(), rowType ) );
-            }
+        }
 
-            if ( nodes.size() == 1 ) {
-                return nodes.get( 0 );
-            } else {
-                throw new RuntimeException( "todo" );
-            }
+        if ( nodes.size() == 1 ) {
+            return nodes.get( 0 );
+        } else {
+            RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
+            return new RexCall( type, SqlStdOperatorTable.AND, nodes );
         }
     }
 
 
-    private RexNode translateJsonValue( int index, String name, RelDataType rowType, String firstKey ) {
+    private RexNode translateLogical( BsonDocument bsonValue, RelDataType rowType, List<RexNode> operands, RelDataTypeField field, String key, String parentKey ) {
+        SqlOperator op;
+        op = getBinaryOperator( key );
+        if ( op == SqlStdOperatorTable.IN || op == SqlStdOperatorTable.NOT_IN ) {
+            return convertIn( bsonValue, rowType, (SqlBinaryOperator) op, field, key );
+        } else if ( op.kind == SqlKind.EXISTS ) {
+            return convertExists( bsonValue.get( key ), parentKey, rowType, field );
+        } else {
+            return convertLiteral( bsonValue.get( key ), operands, field, op );
+        }
+    }
+
+
+    private RexNode convertExists( BsonValue value, String parentKey, RelDataType rowType, RelDataTypeField field ) {
+        if ( value.isBoolean() ) {
+
+            int index = rowType.getFieldList().indexOf( field );
+            RexNode exists = translateJsonExists( index, rowType, parentKey );
+            if ( !value.asBoolean().getValue() ) {
+                return negate( exists );
+            }
+            return exists;
+
+        } else {
+            throw new RuntimeException( "$exist without a boolean is not supported" );
+        }
+    }
+
+
+    private RexNode negate( RexNode exists ) {
+        return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), SqlStdOperatorTable.NOT, Collections.singletonList( exists ) );
+    }
+
+
+    private RexNode translateJsonExists( int index, RelDataType rowType, String key ) {
+        RelDataTypeFactory factory = cluster.getTypeFactory();
+        RelDataType type = factory.createPolyType( PolyType.ANY );
+        RelDataType anyType = factory.createTypeWithNullability( type, true );
+
+        RexCall common = getJsonCommonApi( index, rowType, key, factory, anyType );
+
+        return new RexCall(
+                factory.createPolyType( PolyType.BOOLEAN ),
+                SqlStdOperatorTable.JSON_EXISTS,
+                Collections.singletonList( common ) );
+    }
+
+
+    private RexNode translateJsonValue( int index, RelDataType rowType, String key ) {
         RelDataTypeFactory factory = cluster.getTypeFactory();
         RelDataType type = factory.createPolyType( PolyType.ANY );
         RelDataType anyType = factory.createTypeWithNullability( type, true );
 
         // match part
-        RexCall ref = new RexCall(
-                anyType,
-                SqlStdOperatorTable.JSON_VALUE_EXPRESSION,
-                Collections.singletonList( RexInputRef.of( index, rowType ) ) );
-        String jsonFilter = RuntimeConfig.JSON_MODE.getString() + " $." + firstKey;
-        NlsString nlsString = new NlsString( jsonFilter, "ISO-8859-1", SqlCollation.IMPLICIT );
-        RexLiteral filter = new RexLiteral( nlsString, factory.createPolyType( PolyType.CHAR, jsonFilter.length() ), PolyType.CHAR );
-        RexCall common = new RexCall( anyType, SqlStdOperatorTable.JSON_API_COMMON_SYNTAX, Arrays.asList( ref, filter ) );
+        RexCall common = getJsonCommonApi( index, rowType, key, factory, anyType );
 
         RexLiteral flag = new RexLiteral( SqlJsonValueEmptyOrErrorBehavior.NULL, factory.createPolyType( PolyType.SYMBOL ), PolyType.SYMBOL );
 
@@ -478,6 +514,19 @@ public class MqlToRelConverter {
         RelDataType returnAny = factory.createTypeWithNullability( factory.createPolyType( PolyType.VARCHAR, 2000 ), true );
         return new RexCall( returnAny, SqlStdOperatorTable.CAST, Collections.singletonList( value ) );
 
+    }
+
+
+    private RexCall getJsonCommonApi( int index, RelDataType rowType, String key, RelDataTypeFactory factory, RelDataType anyType ) {
+        RexCall ref = new RexCall(
+                anyType,
+                SqlStdOperatorTable.JSON_VALUE_EXPRESSION,
+                Collections.singletonList( RexInputRef.of( index, rowType ) ) );
+        String jsonFilter = RuntimeConfig.JSON_MODE.getString() + " $." + key;
+        NlsString nlsString = new NlsString( jsonFilter, "ISO-8859-1", SqlCollation.IMPLICIT );
+        RexLiteral filter = new RexLiteral( nlsString, factory.createPolyType( PolyType.CHAR, jsonFilter.length() ), PolyType.CHAR );
+        RexCall common = new RexCall( anyType, SqlStdOperatorTable.JSON_API_COMMON_SYNTAX, Arrays.asList( ref, filter ) );
+        return common;
     }
 
 
@@ -524,7 +573,7 @@ public class MqlToRelConverter {
     }
 
 
-    private SqlBinaryOperator getBinaryOperator( String key ) {
+    private SqlOperator getBinaryOperator( String key ) {
         assert key.startsWith( "$" );
 
         switch ( key ) {
@@ -546,6 +595,8 @@ public class MqlToRelConverter {
                 return SqlStdOperatorTable.AND;
             case "$or":
                 return SqlStdOperatorTable.OR;
+            case "$exists":
+                return SqlStdOperatorTable.EXISTS;
             default:
                 throw new IllegalStateException( "Unexpected value for SqlBinaryOperator: " + key );
         }
