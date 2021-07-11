@@ -16,19 +16,32 @@
 
 package org.polypheny.db.mql;
 
+import java.util.HashMap;
+import java.util.Map;
+import lombok.Getter;
 import org.polypheny.db.mql.parser.MqlParseException;
 import org.polypheny.db.mql.parser.MqlParser;
 import org.polypheny.db.mql.parser.MqlParser.MqlParserConfig;
+import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.util.SourceStringReader;
 
 public abstract class MqlTest {
 
     private static final MqlParserConfig parserConfig;
+    @Getter
+    private static final Map<String, SqlKind> biComparisons;
 
 
     static {
         MqlParser.ConfigBuilder configConfigBuilder = MqlParser.configBuilder();
         parserConfig = configConfigBuilder.build();
+        biComparisons = new HashMap<>();
+
+        biComparisons.put( "$eq", SqlKind.EQUALS );
+        biComparisons.put( "$gt", SqlKind.GREATER_THAN );
+        biComparisons.put( "$gte", SqlKind.GREATER_THAN_OR_EQUAL );
+        biComparisons.put( "$lt", SqlKind.LESS_THAN );
+        biComparisons.put( "$lte", SqlKind.LESS_THAN_OR_EQUAL );
     }
 
 
