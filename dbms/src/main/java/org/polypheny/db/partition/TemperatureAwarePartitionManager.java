@@ -22,10 +22,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumnType;
+import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.type.PolyType;
 
 
@@ -44,15 +46,26 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
     @Override
     public long getTargetPartitionId( CatalogTable catalogTable, String columnValue ) {
 
-        //Simply decide IF hot or COLD based on internal partition Function
+        // Get partition manager
+        PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
+        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager(
+                ((TemperaturePartitionProperty) catalogTable.partitionProperty).getInternalPartitionFunction()
+        );
 
-        return 0;
+        return partitionManager.getTargetPartitionId( catalogTable,columnValue );
     }
 
 
     @Override
     public Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
-        return null;
+
+        // Get partition manager
+        PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
+        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager(
+                ((TemperaturePartitionProperty) catalogTable.partitionProperty).getInternalPartitionFunction()
+        );
+
+        return partitionManager.getRelevantPlacements( catalogTable, partitionIds );
     }
 
 
@@ -73,6 +86,16 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
         return 1;
     }
 
+
+    @Override
+    public boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, CatalogColumn partitionColumn ) {
+        super.validatePartitionGroupSetup( partitionGroupQualifiers, numPartitionGroups, partitionGroupNames, partitionColumn );
+
+        // VALUES for HOT in & COLD out cannot be ambigious or overlapping
+        // Percentage of HOt to COLD has to be truly greater than HOT in
+
+        return true;
+    }
 
     @Override
     public PartitionFunctionInfo getPartitionFunctionInfo() {
@@ -156,6 +179,49 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
 
 
 
+        List<PartitionFunctionInfoColumn> rowInHot = new ArrayList<>();
+        rowInHot.add( PartitionFunctionInfoColumn.builder()
+                .fieldType( PartitionFunctionInfoColumnType.LABEL )
+                .mandatory( false )
+                .modifiable( false )
+                .sqlPrefix( "" )
+                .sqlSuffix( "" )
+                .valueSeparation( "" )
+                .defaultValue( "% Threshold into HOT" )
+                .build() );
+
+        //TODO get Thresholds from central configuration, as well as standard internal partitioning
+        rowInHot.add( PartitionFunctionInfoColumn.builder()
+                .fieldType( PartitionFunctionInfoColumnType.STRING )
+                .mandatory( false )
+                .modifiable( true )
+                .sqlPrefix( "" )
+                .sqlSuffix( "" )
+                .valueSeparation( "" )
+                .defaultValue( "10" )
+                .build() );
+
+        List<PartitionFunctionInfoColumn> rowOutHot = new ArrayList<>();
+        rowOutHot.add( PartitionFunctionInfoColumn.builder()
+                .fieldType( PartitionFunctionInfoColumnType.LABEL )
+                .mandatory( false )
+                .modifiable( false )
+                .sqlPrefix( "" )
+                .sqlSuffix( "" )
+                .valueSeparation( "" )
+                .defaultValue( "% Threshold out of HOT" )
+                .build() );
+
+        rowOutHot.add( PartitionFunctionInfoColumn.builder()
+                .fieldType( PartitionFunctionInfoColumnType.STRING )
+                .mandatory( false )
+                .modifiable( true )
+                .sqlPrefix( "" )
+                .sqlSuffix( "" )
+                .valueSeparation( "" )
+                .defaultValue( "15" )
+                .build() );
+
         List<PartitionFunctionInfoColumn> chunkRow = new ArrayList<>();
         chunkRow.add( PartitionFunctionInfoColumn.builder()
                 .fieldType( PartitionFunctionInfoColumnType.LABEL )
@@ -235,6 +301,8 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
 
 
         rowsAfter.add( unboundRow );
+        rowsAfter.add( rowInHot );
+        rowsAfter.add( rowOutHot );
         rowsAfter.add( chunkRow );
         rowsAfter.add( costRow );
         rowsAfter.add( extendedCostRow );

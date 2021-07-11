@@ -93,6 +93,7 @@ import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty.PartitionCostIndication;
+import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
@@ -1482,15 +1483,30 @@ public class DdlManagerImpl extends DdlManager {
         //TODO Find better place to work with Property handling
         PartitionProperty partitionProperty;
         if ( actualPartitionType == PartitionType.TEMPERATURE ){
+            long frequencyInterval = ((RawTemperaturePartitionInformation)partitionInfo.rawPartitionInformation).getInterval();
+            switch ( ((RawTemperaturePartitionInformation)partitionInfo.rawPartitionInformation).getIntervalUnit().toString() ) {
+                case "days":
+                    frequencyInterval = frequencyInterval * 60 * 60 * 24;
+                    break;
+
+                case "hours":
+                    frequencyInterval = frequencyInterval * 60 * 60;
+                    break;
+
+                case "minutes":
+                    frequencyInterval = frequencyInterval * 60;
+                    break;
+            }
             partitionProperty = TemperaturePartitionProperty.builder()
                     .partitionType( actualPartitionType )
-                    .internalPartitionFunction( PartitionType.HASH ) //TODO HENNLO RemoveHard coded HASH
+                    .internalPartitionFunction( PartitionType.valueOf(((RawTemperaturePartitionInformation)partitionInfo.rawPartitionInformation).getInternalPartitionFunction().toString().toUpperCase()) )
                     .partitionColumnId( catalogColumn.id )
                     .partitionGroupIds( ImmutableList.copyOf( partitionGroupIds ))
                     .partitionIds( ImmutableList.copyOf( partitionIds ) )
-                    .partitionCostIndication( PartitionCostIndication.WRITE )
-                    .hotAccessPercentageIn( 10 )
-                    .hotAccessPercentageOut( 18 )
+                    .partitionCostIndication( PartitionCostIndication.valueOf( ((RawTemperaturePartitionInformation)partitionInfo.rawPartitionInformation).getAccessPattern().toString().toUpperCase()) )
+                    .frequencyInterval( frequencyInterval )
+                    .hotAccessPercentageIn(  Integer.valueOf( ((RawTemperaturePartitionInformation)partitionInfo.rawPartitionInformation).getHotAccessPercentageIn().toString()) )
+                    .hotAccessPercentageOut( Integer.valueOf( ((RawTemperaturePartitionInformation)partitionInfo.rawPartitionInformation).getHotAccessPercentageOut().toString())  )
                     .reliesOnPeriodicChecks(true)
                     .hotPartitionGroupId( partitionGroupIds.get( 0 ) )
                     .coldPartitionGroupId( partitionGroupIds.get( 1 ) )

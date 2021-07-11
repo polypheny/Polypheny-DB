@@ -53,6 +53,7 @@ import org.polypheny.db.ddl.exception.PlacementIsPrimaryException;
 import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
+import org.polypheny.db.partition.raw.RawPartitionInformation;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlLiteral;
@@ -606,6 +607,7 @@ public abstract class DdlManager {
         public final int numberOfPartitionGroups;
         public final int numberOfPartitions;
         public final List<List<String>> qualifiers;
+        public final RawPartitionInformation rawPartitionInformation;
 
 
         public PartitionInformation(
@@ -614,7 +616,9 @@ public abstract class DdlManager {
                 String columnName,
                 List<String> partitionGroupNames,
                 int numberOfPartitionGroups,
-                int numberOfPartitions, List<List<String>> qualifiers ) {
+                int numberOfPartitions,
+                List<List<String>> qualifiers,
+                RawPartitionInformation rawPartitionInformation) {
             this.table = table;
             this.typeName = typeName;
             this.columnName = columnName;
@@ -622,6 +626,7 @@ public abstract class DdlManager {
             this.numberOfPartitionGroups = numberOfPartitionGroups;
             this.numberOfPartitions = numberOfPartitions;
             this.qualifiers = qualifiers;
+            this.rawPartitionInformation = rawPartitionInformation;
         }
 
 
@@ -632,7 +637,8 @@ public abstract class DdlManager {
                 List<SqlIdentifier> partitionGroupNames,
                 int numberOfPartitionGroups,
                 int numberOfPartitions,
-                List<List<SqlNode>> partitionQualifierList ) {
+                List<List<SqlNode>> partitionQualifierList,
+                RawPartitionInformation rawPartitionInformation) {
             List<String> names = partitionGroupNames
                     .stream()
                     .map( SqlIdentifier::getSimple )
@@ -641,7 +647,7 @@ public abstract class DdlManager {
                     .stream()
                     .map( qs -> qs.stream().map( PartitionInformation::getValueOfSqlNode ).collect( Collectors.toList() ) )
                     .collect( Collectors.toList() );
-            return new PartitionInformation( table, typeName, columnName, names, numberOfPartitionGroups, numberOfPartitions, qualifiers );
+            return new PartitionInformation( table, typeName, columnName, names, numberOfPartitionGroups, numberOfPartitions, qualifiers, rawPartitionInformation );
         }
 
 

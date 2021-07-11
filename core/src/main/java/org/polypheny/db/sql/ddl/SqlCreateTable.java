@@ -60,6 +60,8 @@ import org.polypheny.db.ddl.DdlManager.PartitionInformation;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.ddl.exception.PartitionGroupNamesNotUniqueException;
 import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.partition.raw.RawPartitionInformation;
+import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
 import org.polypheny.db.sql.SqlCreate;
 import org.polypheny.db.sql.SqlExecutableStatement;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -91,6 +93,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
     private final int numPartitionGroups;
     private final int numPartitions;
     private final List<SqlIdentifier> partitionNamesList;
+    private final RawPartitionInformation rawPartitionInfo;
 
     private final List<List<SqlNode>> partitionQualifierList;
 
@@ -113,7 +116,8 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             int numPartitionGroups,
             int numPartitions,
             List<SqlIdentifier> partitionNamesList,
-            List<List<SqlNode>> partitionQualifierList ) {
+            List<List<SqlNode>> partitionQualifierList,
+            RawPartitionInformation rawPartitionInfo) {
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
         this.columnList = columnList; // May be null
@@ -125,6 +129,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         this.numPartitions = numPartitions;
         this.partitionNamesList = partitionNamesList; // May be null and can only be used in association with PARTITION BY and PARTITIONS
         this.partitionQualifierList = partitionQualifierList;
+        this.rawPartitionInfo = rawPartitionInfo;
     }
 
 
@@ -236,6 +241,8 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
 
 
+
+
             if ( partitionType != null ) {
                 DdlManager.getInstance().addPartitioning( PartitionInformation.fromSqlLists(
                         getCatalogTable( context, new SqlIdentifier( tableName, SqlParserPos.ZERO ) ),
@@ -244,7 +251,8 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                         partitionNamesList,
                         numPartitionGroups,
                         numPartitions,
-                        partitionQualifierList ),
+                        partitionQualifierList,
+                        rawPartitionInfo),
                         stores,
                         statement);
             }

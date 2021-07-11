@@ -36,6 +36,7 @@ public class PartitionProperty implements Serializable {
     public final long partitionColumnId;
 
     public final long numPartitionGroups;
+    public final long numPartitions;
 
     public final boolean reliesOnPeriodicChecks;
 

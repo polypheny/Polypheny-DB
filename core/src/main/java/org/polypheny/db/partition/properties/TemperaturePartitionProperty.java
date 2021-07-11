@@ -19,6 +19,7 @@ package org.polypheny.db.partition.properties;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.partition.properties.PartitionProperty;

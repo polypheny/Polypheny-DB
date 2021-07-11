@@ -203,6 +203,7 @@ public class StatisticQueryProcessor {
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
         StatisticResult result = new StatisticResult();
+
         try {
             result = executeSqlSelect( statement, query );
             transaction.commit();

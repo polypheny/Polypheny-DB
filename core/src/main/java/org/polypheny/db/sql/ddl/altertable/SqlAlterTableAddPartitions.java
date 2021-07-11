@@ -33,6 +33,7 @@ import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.PartitionInformation;
 import org.polypheny.db.ddl.exception.PartitionGroupNamesNotUniqueException;
 import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.partition.raw.RawPartitionInformation;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlUtil;
@@ -56,6 +57,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
     private final int numPartitions;
     private final List<SqlIdentifier> partitionNamesList;
     private final List<List<SqlNode>> partitionQualifierList;
+    private final RawPartitionInformation rawPartitionInformation;
 
 
     public SqlAlterTableAddPartitions(
@@ -66,7 +68,8 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
             int numPartitionGroups,
             int numPartitions,
             List<SqlIdentifier> partitionNamesList,
-            List<List<SqlNode>> partitionQualifierList ) {
+            List<List<SqlNode>> partitionQualifierList,
+            RawPartitionInformation rawPartitionInformation) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.partitionType = Objects.requireNonNull( partitionType );
@@ -75,6 +78,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
         this.numPartitions = numPartitions; //May be empty
         this.partitionNamesList = partitionNamesList; //May be null and can only be used in association with PARTITION BY and PARTITIONS
         this.partitionQualifierList = partitionQualifierList;
+        this.rawPartitionInformation = rawPartitionInformation;
     }
 
 
@@ -113,7 +117,8 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
                         partitionNamesList,
                         numPartitionGroups,
                         numPartitions,
-                        partitionQualifierList ),
+                        partitionQualifierList,
+                        rawPartitionInformation),
                         null,
                         statement);
 
