@@ -88,6 +88,7 @@ import org.polypheny.db.ddl.exception.PlacementIsPrimaryException;
 import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
+import org.polypheny.db.materializedView.MaterializedViewManager;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.prepare.RelOptTableImpl;
@@ -96,6 +97,7 @@ import org.polypheny.db.rel.AbstractRelNode;
 import org.polypheny.db.rel.BiRel;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.SingleRel;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalViewTableScan;
@@ -122,7 +124,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private void checkIfTableType( TableType tableType ) throws DdlOnSourceException {
-        if ( tableType != TableType.TABLE ) {
+        if ( tableType != TableType.TABLE && tableType != TableType.MATERIALIZEDVIEW ) {
             throw new DdlOnSourceException();
         }
     }
@@ -1362,10 +1364,11 @@ public class DdlManagerImpl extends DdlManager {
         }
     }
 
+
     @Override
-    public void createMaterializedView( String viewName, long schemaId, RelNode relNode, RelCollation relCollation, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException{
-        if(catalog.checkIfExistsTable( schemaId, viewName  )){
-            throw  new TableAlreadyExistsException();
+    public void createMaterializedView( String viewName, long schemaId, RelRoot relRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException {
+        if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
+            throw new TableAlreadyExistsException();
         }
 
         if ( stores == null ) {
@@ -1373,8 +1376,8 @@ public class DdlManagerImpl extends DdlManager {
             stores = statement.getRouter().createTable( schemaId, statement );
         }
 
-        prepareView( relNode );
-        RelDataType fieldList = relNode.getRowType();
+        prepareView( relRoot.rel );
+        RelDataType fieldList = relRoot.rel.getRowType();
 
         List<ColumnInformation> columns = getColumnInformation( projectedColumns, fieldList );
 
@@ -1385,12 +1388,13 @@ public class DdlManagerImpl extends DdlManager {
                 statement.getPrepareContext().getCurrentUserId(),
                 TableType.MATERIALIZEDVIEW,
                 false,
-                relNode,
-                relCollation,
-                findUnderlyingTablesOfView( relNode, underlyingTables, fieldList ),
+                relRoot.rel,
+                relRoot.collation,
+                findUnderlyingTablesOfView( relRoot.rel, underlyingTables, fieldList ),
                 fieldList
         );
 
+        List<CatalogColumn> addedColumns = new LinkedList<>();
 
         for ( ColumnInformation column : columns ) {
             long columnId = catalog.addColumn(
@@ -1415,15 +1419,19 @@ public class DdlManagerImpl extends DdlManager {
                         null,
                         null,
                         null );
+                addedColumns.add( catalog.getColumn( columnId ) );
             }
         }
-
-
 
         CatalogTable catalogTable = catalog.getTable( tableId );
         for ( DataStore store : stores ) {
             store.createTable( statement.getPrepareContext(), catalogTable );
         }
+
+        MaterializedViewManager materializedViewManager = statement.getTransaction().getMaterializedViewManager();
+        materializedViewManager.insertData( statement.getTransaction(), stores, addedColumns, relRoot );
+
+
     }
 
 

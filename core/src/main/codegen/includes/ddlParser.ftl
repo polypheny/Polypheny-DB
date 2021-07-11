@@ -442,6 +442,17 @@ SqlDrop SqlDropView(Span s, boolean replace) :
     }
 }
 
+SqlDrop SqlDropMaterializedView(Span s, boolean replace) :
+{
+    final boolean ifExists;
+    final SqlIdentifier id;
+}
+{
+    <MATERIALIZED><VIEW> ifExists = IfExistsOpt() id = CompoundIdentifier() {
+    return SqlDdlNodes.dropMaterializedView(s.end(this), ifExists, id);
+    }
+}
+
 SqlDrop SqlDropFunction(Span s, boolean replace) :
 {
     final boolean ifExists;

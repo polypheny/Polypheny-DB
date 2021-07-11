@@ -136,6 +136,14 @@ public class SqlDdlNodes {
 
 
     /**
+     * Creates a DROP MATERIALIZED VIEW.
+     */
+    public static SqlDrop dropMaterializedView( SqlParserPos pos, boolean ifExists, SqlIdentifier name ) {
+        return new SqlDropMaterializedView( pos, ifExists, name );
+    }
+
+
+    /**
      * Creates a DROP FUNCTION.
      */
     public static SqlDrop dropFunction( SqlParserPos pos, boolean ifExists, SqlIdentifier name ) {

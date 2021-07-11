@@ -135,8 +135,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
             DdlManager.getInstance().createMaterializedView(
                     viewName,
                     schemaId,
-                    relNode,
-                    relCollation,
+                    relRoot,
                     replace,
                     statement,
                     stores,

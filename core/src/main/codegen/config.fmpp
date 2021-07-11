@@ -419,6 +419,7 @@ data: {
             "SqlDropTable"
             "SqlDropType"
             "SqlDropView"
+            "SqlDropMaterializedView"
             "SqlDropFunction"
         ]
 
