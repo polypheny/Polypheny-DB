@@ -18,6 +18,12 @@ public class MqlAggregate extends MqlCollectionStatement {
         this.pipeline = pipeline;
         this.option = option;
 
+        enforceNonEmptyProject( pipeline );
+
+    }
+
+    private void enforceNonEmptyProject( BsonArray pipeline) {
+        
     }
 
 

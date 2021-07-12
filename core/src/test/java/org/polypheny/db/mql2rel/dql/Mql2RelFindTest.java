@@ -205,7 +205,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
 
     @Test
-    public void TestNinOperator() {
+    public void testNinOperator() {
         RelRoot root = translate( find( "\"key\": { \"$nin\": [\"value\",\"value1\"]}" ) );
 
         RexCall condition = getConditionTestFilter( root );
@@ -218,6 +218,86 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
         RexCall right = assertRexCall( condition, 1 );
         testJsonValueCond( right, "key", "value1", SqlKind.NOT_EQUALS );
+    }
+
+    @Test
+    public void testLogicalOperator() {
+        RelRoot root = translate( find( "\"key\": { \"$and\": [{\"$eq\": \"value\"},{\"$eq\": \"value\"}]}" ) );
+        RelRoot root = translate( find( " \"$and\": [{\"key\":\"value\"},{\"key1\": \"value1\"}]" ) );
+    }
+
+    @Test
+    public void testFunctionalOperators() {
+        
+    }
+
+    /////////// only projection /////////////
+
+    @Test
+    public void testEmptyProjection() {
+        RelRoot root = translate( find( "", "" ) );
+    }
+
+    @Test
+    public void testSingleInclusion() {
+        RelRoot root = translate( find( "", "\"key\": 1" ) );
+        
+    }
+
+    @Test
+    public void testMultipleInclusion() {
+        RelRoot root = translate( find( "", "\"key\": 1, \"key1\": 1" ) );
+        
+    }
+
+    @Test
+    public void testNestedInclusion() {
+        RelRoot root = translate( find( "", "\"key.subkey\": 1" ) );
+
+
+        root = translate( find( "", "\"key: {subkey\": 1"} ) );
+        
+    }
+
+    @Test
+    public void testSingleExclusion() {
+        RelRoot root = translate( find( "", "\"key\": 0" ) );
+    }
+
+    @Test
+    public void testMultipleInclusion() {
+        RelRoot root = translate( find( "", "\"key\": 0, \"key1\": 0" ) );
+        
+    }
+
+    @Test
+    public void testMixedExAndInclusion() {
+        RelRoot root = translate( find( "", "\"key\": 1, \"key1\": 0" ) );
+        
+    }
+
+    @Test
+    public void testNestedExclusion() {
+        RelRoot root = translate( find( "", "\"key.subkey\": 0" ) );
+
+
+        root = translate( find( "", "\"key: {subkey\": 0"} ) );
+        
+    }
+
+    @Test
+    public void testSingleRename() {
+        RelRoot root = translate( find( "", "\"key\": \"$newName\"" ) );
+    }
+
+    @Test
+    public void testMultipleRename() {
+        RelRoot root = translate( find( "", "\"key\": \"$newName\", \"key1\": \"$newName1\"" ) );
+    }
+
+    @Test
+    public void testLiteral() {
+        RelRoot root = translate( find( "", "\"key\": {\"$literal\": 1}" ) );
     }
 
 
@@ -289,16 +369,16 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
 
     private void testCastLiteral( RexNode node, Object value, Class<?> clazz ) {
-        assert (node.isA( SqlKind.LITERAL ));
-        assert (((RexLiteral) node).getValueAs( clazz ).equals( value ));
+        assertTrue (node.isA( SqlKind.LITERAL ));
+        assertEquals (((RexLiteral) node).getValueAs( clazz ), value );
     }
 
 
     private void testJsonValueCond( RexCall condition, String key, String value, SqlKind kind ) {
-        assert (condition.op.kind == kind);
+        assertEquals (condition.op.kind, kind);
 
         // test json value
-        assert (condition.operands.get( 0 ).isA( SqlKind.CAST ));
+        assertTrue (condition.operands.get( 0 ).isA( SqlKind.CAST ));
         RexCall cast = (RexCall) condition.operands.get( 0 );
         testJsonValue( cast, key );
 
@@ -308,9 +388,9 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
 
     private void testNoncastLiteral( RexCall jsonValue, int i, Object object ) {
-        assert (jsonValue.operands.get( i ).isA( SqlKind.LITERAL ));
+        assertTrue (jsonValue.operands.get( i ).isA( SqlKind.LITERAL ));
         RexLiteral flag1 = (RexLiteral) jsonValue.operands.get( i );
-        assert (flag1.getValue() == object);
+        assertEquals (flag1.getValue(), object);
     }
 
 }
