@@ -17,12 +17,26 @@
 package org.polypheny.db.mql.parser;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.bson.BsonDocument;
 import org.polypheny.db.util.Pair;
 
 public class BsonUtil {
+
+    private final static List<Pair<String, String>> mappings = new ArrayList<>();
+
+
+    static {
+        mappings.add( new Pair<>( "\\+", "$add" ) );
+        mappings.add( new Pair<>( "\\-", "$subtract" ) );
+        mappings.add( new Pair<>( "\\*", "$multiply" ) );
+        mappings.add( new Pair<>( "\\/", "$divide" ) );
+    }
+
 
     public static List<BsonDocument> trySplit( String documents ) {
         int openedCount = 0;
@@ -49,9 +63,46 @@ public class BsonUtil {
 
         return intervals
                 .stream()
-                .map( interval -> BsonDocument.parse( documents.substring( interval.left, interval.right + 1 ) ) ) // +1 due to smaller than handling of substring
+                .map( interval -> BsonDocument.parse( BsonUtil.fixBson( documents.substring( interval.left, interval.right + 1 ) ) ) ) // +1 due to smaller than handling of substring
                 .collect( Collectors.toList() );
 
+    }
+
+
+    public static String fixBson( String bson ) {
+        String reg = "\\d+\\s*([*/+-]\\s*\\d+)+";
+
+        if ( bson.split( reg ).length == 1 ) {
+            return bson;
+        }
+
+        Pattern p = Pattern.compile( reg );
+        Matcher m = p.matcher( bson );
+
+        while ( m.find() ) {
+            String match = m.group( 0 );
+            String calculation = fixCalculation( match, 0 );
+            bson = bson.replace( match, calculation );
+        }
+
+        return bson;
+    }
+
+
+    private static String fixCalculation( String calculation, int depth ) {
+        if ( depth > mappings.size() - 1 ) {
+            return calculation;
+        }
+
+        Pair<String, String> entry = mappings.get( depth );
+        String[] splits = calculation.split( entry.getKey() );
+
+        if ( splits.length > 1 ) {
+            List<String> parts = Arrays.stream( splits ).map( s -> fixCalculation( s, depth + 1 ) ).collect( Collectors.toList() );
+            return "{" + entry.getValue() + " : [" + String.join( ",", parts ) + "]}";
+        } else {
+            return fixCalculation( calculation, depth + 1 );
+        }
     }
 
 }

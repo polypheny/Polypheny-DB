@@ -123,7 +123,9 @@ TOKEN : /* IDENTIFIERS */ // for nested documents check out Splitter()
 |
   < ARRAY: "[" (<LETTER>|<DIGIT>|<SYMBOL>)* "]" >
 |
-  < #SYMBOL: [".", ",", ":", ";", "$", "\"", "'", "(", ")", " ", "\n", "{", "}", "[", "]" ] >
+  < #SYMBOL: [".", ",", ":", ";", "$", "\"", "'", "(", ")", " ", "\n", "{", "}", "[", "]" ] | <MATH> >
+|
+  < #MATH: ["*", "/", "-", "+"] >
 |
   < IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>)* >
 |
@@ -517,7 +519,7 @@ BsonDocument Document():
 {
      t=<DOCUMENT>
     {
-        return BsonDocument.parse( t.image );
+        return BsonDocument.parse( BsonUtil.fixBson(t.image ));
     }
 }
 
@@ -541,7 +543,7 @@ BsonArray Array():
 {
     t=<ARRAY>
     {
-        return BsonArray.parse( t.image );
+        return BsonArray.parse( BsonUtil.fixBson(t.image) );
     }
 }
 

@@ -31,7 +31,7 @@ public abstract class MqlTest {
     @Getter
     private static final Map<String, SqlKind> biComparisons;
     @Getter
-    private static final Map<String, SqlKind> logicalOpertors;
+    private static final Map<String, SqlKind> logicalOperators;
 
 
     static {
@@ -40,18 +40,18 @@ public abstract class MqlTest {
         biComparisons = new HashMap<>();
 
         biComparisons.put( "$eq", SqlKind.EQUALS );
-        biComparisons.put( "$ne", SqlKind.NOT_EQUALS )
+        biComparisons.put( "$ne", SqlKind.NOT_EQUALS );
         biComparisons.put( "$gt", SqlKind.GREATER_THAN );
         biComparisons.put( "$gte", SqlKind.GREATER_THAN_OR_EQUAL );
         biComparisons.put( "$lt", SqlKind.LESS_THAN );
         biComparisons.put( "$lte", SqlKind.LESS_THAN_OR_EQUAL );
 
-        logicalOpertors = new HashMap<>();
+        logicalOperators = new HashMap<>();
 
-        logicalOpertors.put( "$and", SqlKind.AND );
-        logicalOpertors.put( "$or", SqlKind.OR );
-        //logicalOpertors.put( "nor", SqlKind.N);
-        //logicalOpertors.put( "not", SqlKind.NOT );
+        logicalOperators.put( "$and", SqlKind.AND );
+        logicalOperators.put( "$or", SqlKind.OR );
+        //logicalOperators.put( "nor", SqlKind.N);
+        //logicalOperators.put( "not", SqlKind.NOT );
     }
 
 

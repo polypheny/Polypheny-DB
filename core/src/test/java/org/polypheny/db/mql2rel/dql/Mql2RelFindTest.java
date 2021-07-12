@@ -58,10 +58,10 @@ public class Mql2RelFindTest extends Mql2RelTest {
     public void testSingleMatch() {
         RelRoot root = translate( find( "\"_id\":\"value\"" ) );
         RexCall condition = getConditionTestFilter( root );
-        assertEquals( condition.op.kind, SqlKind.EQUALS );
+        assertEquals( SqlKind.EQUALS, condition.op.kind );
 
         assertTrue( condition.operands.get( 0 ).isA( SqlKind.INPUT_REF ) );
-        assertEquals( ((RexInputRef) condition.operands.get( 0 )).getIndex(), 0 );
+        assertEquals( 0, ((RexInputRef) condition.operands.get( 0 )).getIndex() );
 
         testCastLiteral( condition.operands.get( 1 ), "value", String.class );
     }
@@ -82,9 +82,9 @@ public class Mql2RelFindTest extends Mql2RelTest {
         RelRoot root = translate( find( "\"key\":\"value\",\"key1\":\"value1\"" ) );
 
         RexCall condition = getConditionTestFilter( root );
-        assertEquals( condition.op.kind, SqlKind.AND );
+        assertEquals( SqlKind.AND, condition.op.kind );
 
-        assertEquals( condition.operands.size(), 2 );
+        assertEquals( 2, condition.operands.size() );
 
         RexCall left = assertRexCall( condition, 0 );
         testJsonValueCond( left, "key", "value", SqlKind.EQUALS );
@@ -99,7 +99,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
         RelRoot root = translate( find( "\"key\":{\"key1\":\"value1\"}" ) );
 
         RexCall condition = getConditionTestFilter( root );
-        assertEquals( condition.op.kind, SqlKind.EQUALS );
+        assertEquals( SqlKind.EQUALS, condition.op.kind );
 
         testJsonValueCond( condition, "key.key1", "value1", SqlKind.EQUALS );
 
@@ -112,9 +112,9 @@ public class Mql2RelFindTest extends Mql2RelTest {
         RelRoot root = translate( find( "\"key\":{\"key1\":\"value1\"}, \"key1\":{\"key2\":\"value2\"}" ) );
 
         RexCall condition = getConditionTestFilter( root );
-        assertEquals( condition.op.kind, SqlKind.AND );
+        assertEquals( SqlKind.AND, condition.op.kind );
 
-        assertEquals( condition.operands.size(), 2 );
+        assertEquals( 2, condition.operands.size() );
 
         RexCall left = assertRexCall( condition, 0 );
         testJsonValueCond( left, "key.key1", "value1", SqlKind.EQUALS );
@@ -153,8 +153,8 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
         RexCall condition = getConditionTestFilter( root );
 
-        assertEquals( condition.op.kind, SqlKind.AND );
-        assertEquals( condition.operands.size(), 2 );
+        assertEquals( SqlKind.AND, condition.op.kind );
+        assertEquals( 2, condition.operands.size() );
         RexCall left = assertRexCall( condition, 0 );
         testJsonExists( left, "key" );
 
@@ -193,8 +193,8 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
         RexCall condition = getConditionTestFilter( root );
 
-        assertEquals( condition.op.kind, SqlKind.OR );
-        assertEquals( condition.operands.size(), 2 );
+        assertEquals( SqlKind.OR, condition.op.kind );
+        assertEquals( 2, condition.operands.size() );
 
         RexCall left = assertRexCall( condition, 0 );
         testJsonValueCond( left, "key", "value", SqlKind.EQUALS );
@@ -210,8 +210,8 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
         RexCall condition = getConditionTestFilter( root );
 
-        assertEquals( condition.op.kind, SqlKind.AND );
-        assertEquals( condition.operands.size(), 2 );
+        assertEquals( SqlKind.AND, condition.op.kind );
+        assertEquals( 2, condition.operands.size() );
 
         RexCall left = assertRexCall( condition, 0 );
         testJsonValueCond( left, "key", "value", SqlKind.NOT_EQUALS );
@@ -220,80 +220,142 @@ public class Mql2RelFindTest extends Mql2RelTest {
         testJsonValueCond( right, "key", "value1", SqlKind.NOT_EQUALS );
     }
 
+
     @Test
-    public void testLogicalOperator() {
-        RelRoot root = translate( find( "\"key\": { \"$and\": [{\"$eq\": \"value\"},{\"$eq\": \"value\"}]}" ) );
-        RelRoot root = translate( find( " \"$and\": [{\"key\":\"value\"},{\"key1\": \"value1\"}]" ) );
+    public void testLogicalAndOperator() {
+        RelRoot root = translate( find( "\"key\": { \"$and\": [{\"$eq\": \"value\"},{\"$gt\": \"value1\"}]}" ) );
+
+        RexCall condition = getConditionTestFilter( root );
+
+        assertEquals( 2, condition.operands.size() );
+        assertEquals( SqlKind.AND, condition.op.kind );
+
+        RexCall left = assertRexCall( condition, 0 );
+        testJsonValueCond( left, "key", "value", SqlKind.EQUALS );
+
+        RexCall right = assertRexCall( condition, 1 );
+        testJsonValueCond( right, "key", "value1", SqlKind.GREATER_THAN );
+
+        // less deep
+
+        root = translate( find( " \"$and\": [{\"key\":\"value\"},{\"key1\":\"value1\"}]" ) );
+
+        condition = getConditionTestFilter( root );
+
+        assertEquals( 2, condition.operands.size() );
+        assertEquals( SqlKind.AND, condition.op.kind );
+
+        left = assertRexCall( condition, 0 );
+        testJsonValueCond( left, "key", "value", SqlKind.EQUALS );
+
+        right = assertRexCall( condition, 1 );
+        testJsonValueCond( right, "key1", "value1", SqlKind.EQUALS );
     }
+
+
+    @Test
+    public void testMixedNestedAndLogical() {
+        RelRoot root = translate( find( "\"key\": {\"$gt\": 3, \"$and\": [{\"$not\":{ \"sub\": 4}},{\"$lt\": 15}]}" ) );
+
+        RexCall condition = getConditionTestFilter( root );
+
+        assertEquals( 3, condition.operands.size() );
+
+        RexCall gt = assertRexCall( condition, 0 );
+        RexCall not = assertRexCall( condition, 1 );
+        RexCall lt = assertRexCall( condition, 2 );
+
+        testJsonValueCond( gt, "key", 3, SqlKind.GREATER_THAN );
+        assertEquals( SqlKind.NOT, not.op.kind );
+        assertEquals( 1, not.operands.size() );
+        RexCall subNot = assertRexCall( not, 0 );
+        testJsonValueCond( subNot, "key.sub", 4, SqlKind.EQUALS );
+
+        testJsonValueCond( lt, "key", 15, SqlKind.LESS_THAN );
+    }
+
 
     @Test
     public void testFunctionalOperators() {
-        
+        RelRoot root = translate( find( "\"key\": 2-3*10" ) );
+
+        RexCall condition = getConditionTestFilter( root );
+
+        root = translate( find( "\"key\": $subtract:[3, 10]" ) );
     }
 
     /////////// only projection /////////////
+
 
     @Test
     public void testEmptyProjection() {
         RelRoot root = translate( find( "", "" ) );
     }
 
+
     @Test
     public void testSingleInclusion() {
         RelRoot root = translate( find( "", "\"key\": 1" ) );
-        
+
     }
+
 
     @Test
     public void testMultipleInclusion() {
         RelRoot root = translate( find( "", "\"key\": 1, \"key1\": 1" ) );
-        
+
     }
+
 
     @Test
     public void testNestedInclusion() {
         RelRoot root = translate( find( "", "\"key.subkey\": 1" ) );
 
+        root = translate( find( "", "\"key: {subkey\": 1" ) );
 
-        root = translate( find( "", "\"key: {subkey\": 1"} ) );
-        
     }
+
 
     @Test
     public void testSingleExclusion() {
         RelRoot root = translate( find( "", "\"key\": 0" ) );
     }
 
+
     @Test
-    public void testMultipleInclusion() {
+    public void testMultipleExclusion() {
         RelRoot root = translate( find( "", "\"key\": 0, \"key1\": 0" ) );
-        
+
     }
+
 
     @Test
     public void testMixedExAndInclusion() {
         RelRoot root = translate( find( "", "\"key\": 1, \"key1\": 0" ) );
-        
+
     }
+
 
     @Test
     public void testNestedExclusion() {
         RelRoot root = translate( find( "", "\"key.subkey\": 0" ) );
 
+        root = translate( find( "", "\"key: {subkey\": 0}" ) );
 
-        root = translate( find( "", "\"key: {subkey\": 0"} ) );
-        
     }
+
 
     @Test
     public void testSingleRename() {
         RelRoot root = translate( find( "", "\"key\": \"$newName\"" ) );
     }
 
+
     @Test
     public void testMultipleRename() {
         RelRoot root = translate( find( "", "\"key\": \"$newName\", \"key1\": \"$newName1\"" ) );
     }
+
 
     @Test
     public void testLiteral() {
@@ -308,8 +370,8 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
 
     private void testNot( RexCall condition ) {
-        assertEquals( condition.op.kind, SqlKind.NOT );
-        assertEquals( condition.operands.size(), 1 );
+        assertEquals( SqlKind.NOT, condition.op.kind );
+        assertEquals( 1, condition.operands.size() );
     }
 
 
@@ -323,7 +385,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
     private void testJsonExists( RexCall condition, String key ) {
         assertTrue( condition.op instanceof SqlJsonExistsFunction );
-        assertEquals( condition.operands.size(), 1 );
+        assertEquals( 1, condition.operands.size() );
 
         RexCall common = assertRexCall( condition, 0 );
         testJsonCommon( key, common );
@@ -331,13 +393,13 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
 
     private void testJsonValue( RexCall cast, String key ) {
-        assertEquals( cast.operands.size(), 1 );
+        assertEquals( 1, cast.operands.size() );
 
         RexCall jsonValue = assertRexCall( cast, 0 );
         assertTrue( jsonValue.op instanceof SqlJsonValueFunction );
 
         // test json ref logic
-        assertEquals( jsonValue.operands.size(), 5 );
+        assertEquals( 5, jsonValue.operands.size() );
 
         RexCall jsonApi = assertRexCall( jsonValue, 0 );
         testJsonCommon( key, jsonApi );
@@ -350,47 +412,47 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
 
     private void testJsonCommon( String key, RexCall jsonApi ) {
-        assertEquals( jsonApi.op.kind, SqlKind.JSON_API_COMMON_SYNTAX );
-        assertEquals( jsonApi.operands.size(), 2 );
+        assertEquals( SqlKind.JSON_API_COMMON_SYNTAX, jsonApi.op.kind );
+        assertEquals( 2, jsonApi.operands.size() );
 
         RexCall jsonExpr = assertRexCall( jsonApi, 0 );
-        assertEquals( jsonExpr.op.kind, SqlKind.JSON_VALUE_EXPRESSION );
-        assertEquals( jsonExpr.operands.size(), 1 );
+        assertEquals( SqlKind.JSON_VALUE_EXPRESSION, jsonExpr.op.kind );
+        assertEquals( 1, jsonExpr.operands.size() );
         assertTrue( jsonExpr.operands.get( 0 ).isA( SqlKind.INPUT_REF ) );
         RexInputRef ref = (RexInputRef) jsonExpr.operands.get( 0 );
-        assertEquals( ref.getIndex(), 1 );
+        assertEquals( 1, ref.getIndex() );
 
         // test json comp string
 
         assertTrue( jsonApi.operands.get( 1 ).isA( SqlKind.LITERAL ) );
         RexLiteral cond = (RexLiteral) jsonApi.operands.get( 1 );
-        assertEquals( cond.getValueAs( String.class ), "strict $." + key );
+        assertEquals( "strict $." + key, cond.getValueAs( String.class ) );
     }
 
 
     private void testCastLiteral( RexNode node, Object value, Class<?> clazz ) {
-        assertTrue (node.isA( SqlKind.LITERAL ));
-        assertEquals (((RexLiteral) node).getValueAs( clazz ), value );
+        assertTrue( node.isA( SqlKind.LITERAL ) );
+        assertEquals( value, ((RexLiteral) node).getValueAs( clazz ) );
     }
 
 
-    private void testJsonValueCond( RexCall condition, String key, String value, SqlKind kind ) {
-        assertEquals (condition.op.kind, kind);
+    private void testJsonValueCond( RexCall condition, String key, Object value, SqlKind kind ) {
+        assertEquals( kind, condition.op.kind );
 
         // test json value
-        assertTrue (condition.operands.get( 0 ).isA( SqlKind.CAST ));
+        assertTrue( condition.operands.get( 0 ).isA( SqlKind.CAST ) );
         RexCall cast = (RexCall) condition.operands.get( 0 );
         testJsonValue( cast, key );
 
         // test initial comp value
-        testCastLiteral( condition.operands.get( 1 ), value, String.class );
+        testCastLiteral( condition.operands.get( 1 ), value, value.getClass() );
     }
 
 
     private void testNoncastLiteral( RexCall jsonValue, int i, Object object ) {
-        assertTrue (jsonValue.operands.get( i ).isA( SqlKind.LITERAL ));
-        RexLiteral flag1 = (RexLiteral) jsonValue.operands.get( i );
-        assertEquals (flag1.getValue(), object);
+        assertTrue( jsonValue.operands.get( i ).isA( SqlKind.LITERAL ) );
+        RexLiteral flag = (RexLiteral) jsonValue.operands.get( i );
+        assertEquals( object, flag.getValue() );
     }
 
 }
