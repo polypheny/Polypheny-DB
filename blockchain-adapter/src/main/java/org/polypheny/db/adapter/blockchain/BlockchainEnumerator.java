@@ -201,6 +201,7 @@ class BlockchainEnumerator<E> implements Enumerator<E> {
                     if ( string.length() == 0 ) {
                         return null;
                     }
+
                     return new BigInteger(string);
                 case FLOAT:
                     if ( string.length() == 0 ) {
