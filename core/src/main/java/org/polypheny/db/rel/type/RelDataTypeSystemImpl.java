@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 package org.polypheny.db.rel.type;
 
 
+import java.io.Serializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 
@@ -49,7 +50,7 @@ import org.polypheny.db.type.PolyTypeFamily;
  * <tr><td>MAX_NUMERIC_SCALE</td> <td>19</td></tr>
  * </table>
  */
-public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem {
+public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem, Serializable {
 
     @Override
     public int getMaxScale( PolyType typeName ) {

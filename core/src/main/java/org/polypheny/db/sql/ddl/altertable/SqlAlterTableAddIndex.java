@@ -116,6 +116,10 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
 
         CatalogTable catalogTable = getCatalogTable( context, table );
 
+        if ( catalogTable.isView() ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE with Views" );
+        }
+
         DataStore storeInstance = null;
         if ( storeName != null ) {
             storeInstance = getDataStoreInstance( storeName );

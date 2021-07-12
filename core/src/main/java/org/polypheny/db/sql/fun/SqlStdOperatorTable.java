@@ -53,7 +53,6 @@ import org.polypheny.db.sql.SqlLateralOperator;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNumericLiteral;
-import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlOperatorTable;
 import org.polypheny.db.sql.SqlOverOperator;
@@ -74,6 +73,7 @@ import org.polypheny.db.sql.util.ReflectiveSqlOperatorTable;
 import org.polypheny.db.sql.validate.SqlConformance;
 import org.polypheny.db.sql.validate.SqlModality;
 import org.polypheny.db.sql2rel.AuxiliaryConverter;
+import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.OperandTypes;
@@ -1259,7 +1259,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
     public static final SqlSpecialOperator REINTERPRET =
             new SqlSpecialOperator( "Reinterpret", SqlKind.REINTERPRET ) {
                 @Override
-                public SqlOperandCountRange getOperandCountRange() {
+                public OperandCountRange getOperandCountRange() {
                     return PolyOperandCountRanges.between( 1, 2 );
                 }
             };

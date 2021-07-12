@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,10 @@
 package org.polypheny.db.type.checker;
 
 
+import java.io.Serializable;
 import org.polypheny.db.sql.SqlCallBinding;
-import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.type.OperandCountRange;
 
 
 /**
@@ -27,7 +28,7 @@ import org.polypheny.db.sql.SqlOperator;
  * <p>
  * This interface is an example of the {@link org.polypheny.db.util.Glossary#STRATEGY_PATTERN strategy pattern}.
  */
-public interface PolyOperandTypeChecker {
+public interface PolyOperandTypeChecker extends Serializable {
 
     /**
      * Checks the types of all operands to an operator call.
@@ -41,7 +42,7 @@ public interface PolyOperandTypeChecker {
     /**
      * @return range of operand counts allowed in a call
      */
-    SqlOperandCountRange getOperandCountRange();
+    OperandCountRange getOperandCountRange();
 
     /**
      * Returns a string describing the allowed formal signatures of a call, e.g. "SUBSTR(VARCHAR, INTEGER, INTEGER)".
@@ -80,5 +81,6 @@ public interface PolyOperandTypeChecker {
          */
         LEAST_RESTRICTIVE
     }
+
 }
 

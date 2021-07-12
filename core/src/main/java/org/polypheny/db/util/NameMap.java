@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ package org.polypheny.db.util;
 import static org.polypheny.db.util.CaseInsensitiveComparator.COMPARATOR;
 
 import com.google.common.collect.ImmutableSortedMap;
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -49,7 +50,7 @@ import org.apache.calcite.linq4j.function.Experimental;
  *
  * @param <V> Value type
  */
-public class NameMap<V> {
+public class NameMap<V> implements Serializable {
 
     private final NavigableMap<String, V> map;
 
@@ -141,4 +142,5 @@ public class NameMap<V> {
     public V remove( String key ) {
         return map.remove( key );
     }
+
 }

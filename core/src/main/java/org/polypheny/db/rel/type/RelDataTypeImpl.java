@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -265,6 +265,12 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
 
 
     @Override
+    public int getRawPrecision() {
+        return PRECISION_NOT_SPECIFIED;
+    }
+
+
+    @Override
     public int getScale() {
         return SCALE_NOT_SPECIFIED;
     }
@@ -354,7 +360,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
      */
     public static RelProtoDataType proto( final RelDataType protoType ) {
         assert protoType != null;
-        return typeFactory -> typeFactory.copyType( protoType );
+        return (RelProtoDataType & Serializable) typeFactory -> typeFactory.copyType( protoType );
     }
 
 
@@ -369,7 +375,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
      */
     public static RelProtoDataType proto( final PolyType typeName, final boolean nullable ) {
         assert typeName != null;
-        return typeFactory -> {
+        return (RelProtoDataType & Serializable) typeFactory -> {
             final RelDataType type = typeFactory.createPolyType( typeName );
             return typeFactory.createTypeWithNullability( type, nullable );
         };
@@ -381,14 +387,14 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
      * <p>
      * For example, {@code proto(PolyType.VARCHAR, 100, false)} will create {@code VARCHAR(100) NOT NULL}.
      *
-     * @param typeName  Type name
+     * @param typeName Type name
      * @param precision Precision
-     * @param nullable  Whether nullable
+     * @param nullable Whether nullable
      * @return Proto data type
      */
     public static RelProtoDataType proto( final PolyType typeName, final int precision, final boolean nullable ) {
         assert typeName != null;
-        return typeFactory -> {
+        return (RelProtoDataType & Serializable) typeFactory -> {
             final RelDataType type = typeFactory.createPolyType( typeName, precision );
             return typeFactory.createTypeWithNullability( type, nullable );
         };
@@ -400,14 +406,14 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
      * <p>
      * For example, {@code proto(PolyType.DECIMAL, 7, 2, false)} will create {@code DECIMAL(7, 2) NOT NULL}.
      *
-     * @param typeName  Type name
+     * @param typeName Type name
      * @param precision Precision
-     * @param scale     Scale
-     * @param nullable  Whether nullable
+     * @param scale Scale
+     * @param nullable Whether nullable
      * @return Proto data type
      */
     public static RelProtoDataType proto( final PolyType typeName, final int precision, final int scale, final boolean nullable ) {
-        return typeFactory -> {
+        return (RelProtoDataType & Serializable) typeFactory -> {
             final RelDataType type = typeFactory.createPolyType( typeName, precision, scale );
             return typeFactory.createTypeWithNullability( type, nullable );
         };
@@ -439,6 +445,8 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
 
         int count;
         RelDataTypeField field;
+
     }
+
 }
 
