@@ -22,17 +22,21 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.routing.Router;
+import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Statement;
 
-
+@Slf4j
 public class SimpleRouter extends AbstractRouter {
 
     private SimpleRouter() {
@@ -42,15 +46,24 @@ public class SimpleRouter extends AbstractRouter {
 
     @Override
     protected void analyze( Statement statement, RelRoot logicalRoot ) {
+        val shuttle = new QueryNameShuttle();
+        logicalRoot.rel.accept( shuttle );
+        log.info( "SR: analyze" );
+        log.info( shuttle.hashBasis.toString() );
         // Nothing to do. Simple router does nothing sophisticated...
     }
 
 
     @Override
     protected void wrapUp( Statement statement, RelNode routed ) {
+        log.info( "wrapUp" );
         // Nothing to do. Simple router does nothing sophisticated...
     }
 
+    @ Override
+    protected RelBuilder buildSelect( RelNode node, RelBuilder builder, Statement statement, RelOptCluster cluster ) {
+        return super.buildSelect( node, builder, statement, cluster );
+    }
 
     // Execute the table scan on the first placement of a table
     @Override
@@ -109,6 +122,8 @@ public class SimpleRouter extends AbstractRouter {
         public Router createInstance() {
             return new SimpleRouter();
         }
+
+        public static SimpleRouter createSimpleRouterInstance(){return new SimpleRouter();}
 
     }
 

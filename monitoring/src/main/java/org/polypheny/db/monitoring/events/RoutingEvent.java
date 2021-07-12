@@ -18,6 +18,7 @@ package org.polypheny.db.monitoring.events;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import lombok.AllArgsConstructor;
@@ -26,8 +27,9 @@ import org.polypheny.db.monitoring.events.metrics.RoutingDataPoint;
 @AllArgsConstructor()
 public class RoutingEvent extends BaseEvent {
 
-    private  String queryClassString;
-    private Set<Integer> adapterId;
+    private String queryClassString;
+    private Set<Integer> adapterIds;
+    protected HashMap<Integer, Integer> tableToAdapterIdMapping; // tableId -> adapterId
     private double nanoTime;
 
     @Override
@@ -49,7 +51,8 @@ public class RoutingEvent extends BaseEvent {
                 RoutingDataPoint.builder()
                         .Id( this.getId() )
                         .recordedTimestamp( this.getRecordedTimestamp() )
-                        .adapterId( this.adapterId )
+                        .adapterIds( this.adapterIds )
+                        .tableToAdapterIdMapping( tableToAdapterIdMapping )
                         .queryClassString( this.queryClassString )
                         .nanoTime( this.nanoTime )
                         .build() );

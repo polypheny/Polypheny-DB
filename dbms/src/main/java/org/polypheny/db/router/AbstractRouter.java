@@ -108,6 +108,8 @@ public abstract class AbstractRouter implements Router {
         this.executionTimeMonitor = executionTimeMonitor;
         this.selectedAdapter = new HashMap<>();
 
+        log.info( "Start Routing" );
+
         if ( statement.getTransaction().isAnalyze() ) {
             InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
             page = new InformationPage( "Routing" );
@@ -116,19 +118,25 @@ public abstract class AbstractRouter implements Router {
         }
 
         RelNode routed;
+        log.info( "Start Analyze: " );
         analyze( statement, logicalRoot );
-        if ( logicalRoot.rel instanceof LogicalTableModify ) {
+        log.info( "End Analyze" );
 
+        if ( logicalRoot.rel instanceof LogicalTableModify ) {
             routed = routeDml( logicalRoot.rel, statement );
         } else if ( logicalRoot.rel instanceof ConditionalExecute ) {
             routed = handleConditionalExecute( logicalRoot.rel, statement );
         } else {
+            log.info( "Start build DQL" );
             RelBuilder builder = RelBuilder.create( statement, logicalRoot.rel.getCluster() );
             builder = buildDql( logicalRoot.rel, builder, statement, logicalRoot.rel.getCluster() );
             routed = builder.build();
+            log.info( "End DQL" );
         }
 
+        log.info( "Start WrapUp" );
         wrapUp( statement, routed );
+        log.info( "End Wrap Up" );
 
         // Add information to query analyzer
         if ( statement.getTransaction().isAnalyze() ) {

@@ -145,6 +145,7 @@ public class MapDbRepository implements MonitoringRepository {
             return table.values()
                     .stream()
                     .map( monitoringPersistentData ->  (RoutingDataPoint) monitoringPersistentData )
+                    .filter( elem -> elem.getQueryClassString().equals( queryClassString ) )
                     .collect( Collectors.toList() );
         }
 

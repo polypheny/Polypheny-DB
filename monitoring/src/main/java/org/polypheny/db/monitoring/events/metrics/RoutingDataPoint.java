@@ -18,6 +18,7 @@ package org.polypheny.db.monitoring.events.metrics;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -34,8 +35,9 @@ import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @AllArgsConstructor(access = AccessLevel.MODULE)
 public class RoutingDataPoint implements MonitoringDataPoint, Serializable {
-    protected  String queryClassString;
-    protected Set<Integer> adapterId;
+    protected String queryClassString;
+    protected Set<Integer> adapterIds;
+    protected HashMap<Integer, Integer> tableToAdapterIdMapping; // tableId -> adapterId
     protected double nanoTime;
 
     private UUID Id;
