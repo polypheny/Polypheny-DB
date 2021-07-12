@@ -38,6 +38,7 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.commons.lang3.time.FastDateFormat;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
@@ -56,6 +57,7 @@ class BlockchainEnumerator<E> implements Enumerator<E> {
     private final String[] filterValues;
     private final AtomicBoolean cancelFlag;
     private final RowConverter<E> rowConverter;
+    private final int blocks;
     private E current;
 
     private static final FastDateFormat TIME_FORMAT_DATE;
@@ -76,12 +78,13 @@ class BlockchainEnumerator<E> implements Enumerator<E> {
     }
 
 
-        BlockchainEnumerator(String clientUrl, AtomicBoolean cancelFlag, boolean stream, String[] filterValues,BlockchainMapper mapper,RowConverter<E> rowConverter ) {
+        BlockchainEnumerator(String clientUrl,int blocks, AtomicBoolean cancelFlag, boolean stream, String[] filterValues,BlockchainMapper mapper,RowConverter<E> rowConverter ) {
         this.clientUrl = clientUrl;
         this.cancelFlag = cancelFlag;
         this.rowConverter = rowConverter;
         this.filterValues = filterValues;
-        this.reader = mapper.makeReader(clientUrl);
+        this.reader = mapper.makeReader(clientUrl,blocks);
+        this.blocks = blocks;
     }
 
 
@@ -142,7 +145,7 @@ class BlockchainEnumerator<E> implements Enumerator<E> {
         try {
             reader.close();
         } catch ( IOException e ) {
-            throw new RuntimeException( "Error closing CSV reader", e );
+            throw new RuntimeException( "Error closing Blockchain reader", e );
         }
     }
 
@@ -198,7 +201,7 @@ class BlockchainEnumerator<E> implements Enumerator<E> {
                     if ( string.length() == 0 ) {
                         return null;
                     }
-                    return Long.parseLong( string );
+                    return new BigInteger(string);
                 case FLOAT:
                     if ( string.length() == 0 ) {
                         return null;
@@ -234,9 +237,9 @@ class BlockchainEnumerator<E> implements Enumerator<E> {
                         return null;
                     }
                     try {
-                        Date date = TIME_FORMAT_TIMESTAMP.parse( string );
+                        Date date = new Date(Long.parseLong(string) * 1000);
                         return date.getTime();
-                    } catch ( ParseException e ) {
+                    } catch ( Exception e ) {
                         return null;
                     }
                 case STRING:
@@ -286,18 +289,18 @@ class BlockchainEnumerator<E> implements Enumerator<E> {
             final Object[] objects = new Object[fields.length];
             for ( int i = 0; i < fields.length; i++ ) {
                 int field = fields[i];
-                objects[i] = convert( fieldTypes[i], strings[field - 1] );
+                objects[i] = convert( fieldTypes[i], strings[field] );
             }
             return objects;
         }
 
 
         public Object[] convertStreamRow( String[] strings ) {
-            final Object[] objects = new Object[fields.length + 1];
+            final Object[] objects = new Object[fields.length];
             objects[0] = System.currentTimeMillis();
             for ( int i = 0; i < fields.length; i++ ) {
                 int field = fields[i];
-                objects[i + 1] = convert( fieldTypes[i], strings[field - 1] );
+                objects[i] = convert( fieldTypes[i], strings[field] );
             }
             return objects;
         }

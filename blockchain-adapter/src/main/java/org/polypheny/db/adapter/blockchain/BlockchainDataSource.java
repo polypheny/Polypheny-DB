@@ -9,8 +9,10 @@ import java.util.List;
 import java.util.Map;
 
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingString;
+import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -35,15 +37,18 @@ import org.web3j.protocol.http.HttpService;
         description = "An adapter for querying the ethereum blockchain.It uses the ethereum JSON-RPC API. Currently, this adapter only supports read operations.",
         usedModes = DeployMode.EMBEDDED)
 @AdapterSettingString(name = "ClientUrl", description = "The URL of the ethereum JSONRPC client",defaultValue = "https://mainnet.infura.io/v3/4d06589e97064040b5da99cf4051ef04", position = 1)
+@AdapterSettingInteger(name = "Blocks", description = "The number of Blocks to fetch when processing a query",defaultValue = 10, position = 2)
 public class BlockchainDataSource extends DataSource {
 
     private String clientURL;
+    private int blocks;
     private BlockchainSchema currentSchema;
 
     public BlockchainDataSource(final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );
 
         setClientURL( settings );
+        this.blocks = Integer.parseInt(settings.get("Blocks"));
         registerInformationPage( uniqueName );
         enableInformationPage();
     }
@@ -64,7 +69,7 @@ public class BlockchainDataSource extends DataSource {
 
     @Override
     public void createNewSchema( SchemaPlus rootSchema, String name ) {
-        currentSchema = new BlockchainSchema(this.clientURL);
+        currentSchema = new BlockchainSchema(this.clientURL,this.blocks);
     }
 
 
@@ -90,7 +95,9 @@ public class BlockchainDataSource extends DataSource {
     public Map<String, List<ExportedColumn>> getExportedColumns() {
         Map<String, List<ExportedColumn>> map = new HashMap<>();
         String[] blockColumns = {"number","hash","parentHash","nonce","sha3Uncles","logsBloom","transactionsRoot","stateRoot","receiptsRoot","author","miner","mixHash","difficulty","totalDifficulty","extraData","size","gasLimit","gasUsed","timestamp"};
+        PolyType[] blockTypes = {PolyType.BIGINT, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.BIGINT, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.BIGINT, PolyType.BIGINT, PolyType.VARCHAR, PolyType.BIGINT, PolyType.BIGINT, PolyType.BIGINT, PolyType.TIMESTAMP};
         String[] transactionColumns = {"hash","nonce","blockHash","blockNumber","transactionIndex","from","to","value","gasPrice","gas","input","creates","publicKey","raw","r","s"};
+        PolyType[] transactionTypes = {PolyType.VARCHAR, PolyType.BIGINT, PolyType.VARCHAR, PolyType.BIGINT, PolyType.BIGINT, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.BIGINT, PolyType.BIGINT, PolyType.BIGINT, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR};
 
         PolyType type = PolyType.VARCHAR;
         PolyType collectionsType = null;
@@ -101,10 +108,9 @@ public class BlockchainDataSource extends DataSource {
         int position = 0;
         List<ExportedColumn> blockCols = new ArrayList<>();
         for(String blockCol:blockColumns){
-            position ++ ;
             blockCols.add( new ExportedColumn(
                     blockCol,
-                    type,
+                    blockTypes[position],
                     collectionsType,
                     length,
                     scale,
@@ -115,17 +121,17 @@ public class BlockchainDataSource extends DataSource {
                     "block",
                     blockCol,
                     position,
-                    position == 1 ) );
+                    position == 0 ) );
+            position++;
 
         }
         map.put("block",blockCols);
         List<ExportedColumn> transactCols = new ArrayList<>();
         position=0;
         for(String transactCol:transactionColumns){
-            position ++ ;
             transactCols.add( new ExportedColumn(
                     transactCol,
-                    type,
+                    transactionTypes[position],
                     collectionsType,
                     length,
                     scale,
@@ -136,7 +142,8 @@ public class BlockchainDataSource extends DataSource {
                     "transaction",
                     transactCol,
                     position,
-                    position == 1 ) );
+                    position == 0 ) );
+            position++;
         }
         map.put("transaction",transactCols);
         return map;

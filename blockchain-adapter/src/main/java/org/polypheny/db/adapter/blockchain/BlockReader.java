@@ -34,12 +34,6 @@
 package org.polypheny.db.adapter.blockchain;
 
 
-import au.com.bytecode.opencsv.CSVParser;
-import au.com.bytecode.opencsv.CSVReader;
-import org.apache.commons.io.input.Tailer;
-import org.apache.commons.io.input.TailerListener;
-import org.apache.commons.io.input.TailerListenerAdapter;
-import org.polypheny.db.util.Source;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.methods.response.EthBlock;
@@ -47,15 +41,7 @@ import org.web3j.protocol.http.HttpService;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.StringReader;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.math.BigInteger;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Queue;
 
 class BlockReader implements Closeable {
 
@@ -75,11 +61,11 @@ class BlockReader implements Closeable {
     public static final long DEFAULT_MONITOR_DELAY = 2000;
 
 
-    BlockReader(String clientUrl) {
+    BlockReader(String clientUrl, int blocks) {
         this.web3j = Web3j.build(new HttpService(clientUrl));
         try {
             this.latestBlock = web3j.ethBlockNumber().send().getBlockNumber();
-            this.lastBlock = this.latestBlock.subtract(BigInteger.valueOf(10));
+            this.lastBlock = this.latestBlock.subtract(BigInteger.valueOf(blocks));
             this.currentBlock  = latestBlock;
         } catch (IOException e) {
             throw new RuntimeException("Unable to connect to server: "+clientUrl);
@@ -92,6 +78,7 @@ class BlockReader implements Closeable {
         if(this.currentBlock.compareTo(this.lastBlock) == -1)
             return null;
         EthBlock.Block block = web3j.ethGetBlockByNumber(DefaultBlockParameter.valueOf(this.currentBlock),false).send().getBlock();
+
         this.currentBlock = this.currentBlock.subtract(BigInteger.ONE);
         return BlockchainMapper.BLOCK.map(block);
     }

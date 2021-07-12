@@ -16,6 +16,7 @@
 
 package org.polypheny.db.adapter.blockchain;
 
+import org.polypheny.db.type.PolyType;
 import org.web3j.protocol.core.methods.response.EthBlock;
 
 import java.math.BigInteger;
@@ -30,18 +31,23 @@ public enum BlockchainMapper {
         }
         return TRANSACTION;
     }
+
+    static String safeToString(Object x){
+        if (x == null)
+            return null;
+        return x.toString();
+    }
     public String[] map(Object obj){
         String[] str = null;
 
         if(this == BLOCK){
 
             EthBlock.Block blk = (EthBlock.Block) obj;
-
             str = new String[]{
-                    new BigInteger(blk.getNumberRaw().substring(2),16).toString(),
+                    safeToString(blk.getNumber()),
                     blk.getHash(),
                     blk.getParentHash(),
-                    blk.getNonceRaw(),
+                    safeToString(blk.getNonce()),
                     blk.getSha3Uncles(),
                     blk.getLogsBloom(),
                     blk.getTransactionsRoot(),
@@ -50,33 +56,33 @@ public enum BlockchainMapper {
                     blk.getAuthor(),
                     blk.getMiner(),
                     blk.getMixHash(),
-                    blk.getDifficultyRaw(),
-                    blk.getTotalDifficultyRaw(),
+                    safeToString(blk.getDifficulty()),
+                    safeToString(blk.getTotalDifficulty()),
                     blk.getExtraData(),
-                    blk.getSizeRaw(),
-                    blk.getGasLimitRaw(),
-                    blk.getGasUsedRaw(),
-                    blk.getTimestampRaw(),
+                    safeToString(blk.getSize()),
+                    safeToString(blk.getGasLimit()),
+                    safeToString(blk.getGasUsed()),
+                    safeToString(blk.getTimestamp()),
             };
         } else {
             EthBlock.TransactionObject tnx = (EthBlock.TransactionObject) obj;
             str = new String[]{
                     tnx.getHash(),
-                    tnx.getNonceRaw(),
+                    safeToString(tnx.getNonce()),
                     tnx.getBlockHash(),
-                    tnx.getBlockNumberRaw(),
-                    new BigInteger(tnx.getTransactionIndexRaw().substring(2),16).toString(),
+                    safeToString(tnx.getBlockNumber()),
+                    safeToString(tnx.getTransactionIndex()),
                     tnx.getFrom(),
                     tnx.getTo(),
-                    tnx.getValueRaw(),
-                    tnx.getGasPriceRaw(),
-                    tnx.getGasRaw(),
+                    safeToString(tnx.getValue()),
+                    safeToString(tnx.getGasPrice()),
+                    safeToString(tnx.getGas()),
                     tnx.getInput(),
                     tnx.getCreates(),
                     tnx.getPublicKey(),
                     tnx.getRaw(),
                     tnx.getR(),
-                    tnx.getS(),
+                    tnx.getS()
             };
         }
 
@@ -84,10 +90,10 @@ public enum BlockchainMapper {
         return str;
     }
 
-    public BlockReader makeReader(String clientUrl) {
+    public BlockReader makeReader(String clientUrl, int blocks) {
         if (this == BLOCK){
-            return new BlockReader(clientUrl);
+            return new BlockReader(clientUrl,blocks);
         }
-        return new TransactionReader(clientUrl);
+        return new TransactionReader(clientUrl,blocks);
     }
 }

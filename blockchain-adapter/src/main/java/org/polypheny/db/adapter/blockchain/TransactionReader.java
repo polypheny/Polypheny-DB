@@ -28,8 +28,8 @@ public class TransactionReader extends BlockReader {
     private List<EthBlock.TransactionResult> transactionsList;
     private int transactionIndex;
 
-    TransactionReader(String clientUrl) {
-        super(clientUrl);
+    TransactionReader(String clientUrl,int blocks) {
+        super(clientUrl, blocks);
         transactionIndex = -1;
     }
 
