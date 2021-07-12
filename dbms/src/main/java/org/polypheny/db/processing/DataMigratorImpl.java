@@ -97,8 +97,19 @@ public class DataMigratorImpl implements DataMigrator {
         }
 
         // Execute Query
+        executeQuery( selectColumnList, sourceRel, sourceStatement, targetStatement, targetRel, false );
+    }
+
+
+    @Override
+    public void executeQuery( List<CatalogColumn> selectColumnList, RelRoot sourceRel, Statement sourceStatement, Statement targetStatement, RelRoot targetRel, boolean isMaterializedView ) {
         try {
-            PolyphenyDbSignature signature = sourceStatement.getQueryProcessor().prepareQuery( sourceRel, sourceRel.rel.getCluster().getTypeFactory().builder().build(), true );
+            PolyphenyDbSignature signature;
+            if ( isMaterializedView ) {
+                signature = sourceStatement.getQueryProcessor().prepareQuery( sourceRel, sourceRel.validatedRowType, false );
+            } else {
+                signature = sourceStatement.getQueryProcessor().prepareQuery( sourceRel, sourceRel.rel.getCluster().getTypeFactory().builder().build(), true );
+            }
             final Enumerable enumerable = signature.enumerable( sourceStatement.getDataContext() );
             //noinspection unchecked
             Iterator<Object> sourceIterator = enumerable.iterator();
@@ -145,7 +156,8 @@ public class DataMigratorImpl implements DataMigrator {
     }
 
 
-    private RelRoot buildInsertStatement( Statement statement, List<CatalogColumnPlacement> to ) {
+    @Override
+    public RelRoot buildInsertStatement( Statement statement, List<CatalogColumnPlacement> to ) {
         List<String> qualifiedTableName = ImmutableList.of(
                 PolySchemaBuilder.buildAdapterSchemaName(
                         to.get( 0 ).adapterUniqueName,

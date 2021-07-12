@@ -23,11 +23,13 @@ import java.util.Map;
 import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.PartitionType;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 
-public class CatalogMaterializedView extends CatalogTable{
+public class CatalogMaterializedView extends CatalogView {
 
     private static final long serialVersionUID = -303234050987260484L;
     @Getter
@@ -37,7 +39,7 @@ public class CatalogMaterializedView extends CatalogTable{
     @Getter
     private final RelCollation relCollation;
     @Getter
-    RelNode definition;
+    public RelNode definition;
 
 
     public CatalogMaterializedView(
@@ -56,13 +58,116 @@ public class CatalogMaterializedView extends CatalogTable{
             RelCollation relCollation,
             Map<Long, List<Long>> underlyingTables,
             RelDataType fieldList ) {
-        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, primaryKey, placementsByAdapter, modifiable );
+        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, definition, primaryKey, placementsByAdapter, modifiable, relCollation, underlyingTables, fieldList );
         this.definition = definition;
         this.relCollation = relCollation;
         this.underlyingTables = underlyingTables;
         this.fieldList = fieldList;
     }
-    
-    
-    
+
+
+    public CatalogMaterializedView(
+            long id,
+            String name,
+            ImmutableList<Long> columnIds,
+            long schemaId,
+            long databaseId,
+            int ownerId,
+            String ownerName,
+            TableType tableType,
+            RelNode definition,
+            Long primaryKey,
+            ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
+            boolean modifiable,
+            long numPartitions,
+            PartitionType partitionType,
+            ImmutableList<Long> partitionIds,
+            long partitionColumnId,
+            boolean isPartitioned,
+            RelCollation relCollation,
+            ImmutableList<Long> connectedViews,
+            Map<Long, List<Long>> underlyingTables,
+            RelDataType fieldList ) {
+        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, definition, primaryKey, placementsByAdapter, modifiable, numPartitions, partitionType, partitionIds, partitionColumnId, isPartitioned, relCollation, connectedViews, underlyingTables, fieldList );
+        this.definition = definition;
+        this.relCollation = relCollation;
+        this.underlyingTables = underlyingTables;
+        this.fieldList = fieldList;
+    }
+
+
+    @Override
+    public CatalogTable getTableWithColumns( ImmutableList<Long> newColumnIds ) {
+        return new CatalogMaterializedView(
+                id,
+                name,
+                newColumnIds,
+                schemaId,
+                databaseId,
+                ownerId,
+                ownerName,
+                tableType,
+                definition,
+                primaryKey,
+                placementsByAdapter,
+                modifiable,
+                relCollation,
+                underlyingTables,
+                fieldList );
+    }
+
+
+    @Override
+    public CatalogTable getConnectedViews( ImmutableList<Long> newConnectedViews ) {
+        return new CatalogMaterializedView(
+                id,
+                name,
+                columnIds,
+                schemaId,
+                databaseId,
+                ownerId,
+                ownerName,
+                tableType,
+                definition,
+                primaryKey,
+                placementsByAdapter,
+                modifiable,
+                numPartitions,
+                partitionType,
+                partitionIds,
+                partitionColumnId,
+                isPartitioned,
+                relCollation,
+                newConnectedViews,
+                underlyingTables,
+                fieldList );
+    }
+
+
+    @Override
+    public CatalogTable getRenamed( String newName ) {
+        return new CatalogMaterializedView(
+                id,
+                newName,
+                columnIds,
+                schemaId,
+                databaseId,
+                ownerId,
+                ownerName,
+                tableType,
+                definition,
+                primaryKey,
+                placementsByAdapter,
+                modifiable,
+                numPartitions,
+                partitionType,
+                partitionIds,
+                partitionColumnId,
+                isPartitioned,
+                relCollation,
+                connectedViews,
+                underlyingTables,
+                fieldList );
+    }
+
 }

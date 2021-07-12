@@ -36,8 +36,6 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.processing.SqlProcessor;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.sql.SqlCreate;
 import org.polypheny.db.sql.SqlExecutableStatement;
@@ -121,9 +119,6 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
                 statement,
                 sqlProcessor.validate(
                         statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left );
-
-        RelNode relNode = relRoot.rel;
-        RelCollation relCollation = relRoot.collation;
 
         List<String> columns = null;
 

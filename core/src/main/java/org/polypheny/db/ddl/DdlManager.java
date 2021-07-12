@@ -450,7 +450,7 @@ public abstract class DdlManager {
      *
      * @param viewName the name of the new view
      * @param schemaId the id of the schema to which the view belongs
-     * @param relNode the relNode which was built form the Select part of the view
+     * @param relRoot the relNode which was built form the Select part of the view
      * @param statement the used Statement
      */
     public abstract void createMaterializedView( String viewName, long schemaId, RelRoot relRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException;
@@ -495,6 +495,13 @@ public abstract class DdlManager {
      * Drop View
      */
     public abstract void dropView( CatalogTable catalogTable, Statement statement ) throws DdlOnSourceException;
+
+
+    /**
+     * @param materializedView to be dropped
+     * @param statement the used statement
+     */
+    public abstract void dropMaterializedView( CatalogTable materializedView, Statement statement ) throws DdlOnSourceException;
 
     /**
      * Truncate a table

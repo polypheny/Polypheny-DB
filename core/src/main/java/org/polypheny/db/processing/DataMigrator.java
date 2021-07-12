@@ -19,10 +19,18 @@ package org.polypheny.db.processing;
 import java.util.List;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 
 public interface DataMigrator {
 
     void copyData( Transaction transaction, CatalogAdapter store, List<CatalogColumn> columns );
+
+    RelRoot buildInsertStatement( Statement statement, List<CatalogColumnPlacement> to );
+
+    //is used within copyData
+    void executeQuery( List<CatalogColumn> columns, RelRoot sourceRel, Statement sourceStatement, Statement targetStatement, RelRoot targetRel, boolean isMaterializedView );
 
 }

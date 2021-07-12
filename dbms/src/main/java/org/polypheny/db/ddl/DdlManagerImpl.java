@@ -52,6 +52,7 @@ import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
+import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
@@ -132,6 +133,13 @@ public class DdlManagerImpl extends DdlManager {
 
     private void checkIfViewType( TableType tableType ) throws DdlOnSourceException {
         if ( tableType != TableType.VIEW ) {
+            throw new DdlOnSourceException();
+        }
+    }
+
+
+    private void checkIfMaterializedViewType( TableType tableType ) throws DdlOnSourceException {
+        if ( tableType != TableType.MATERIALIZEDVIEW ) {
             throw new DdlOnSourceException();
         }
     }
@@ -1393,7 +1401,7 @@ public class DdlManagerImpl extends DdlManager {
                 findUnderlyingTablesOfView( relRoot.rel, underlyingTables, fieldList ),
                 fieldList
         );
-
+        CatalogTable table = catalog.getTable( tableId );
         List<CatalogColumn> addedColumns = new LinkedList<>();
 
         for ( ColumnInformation column : columns ) {
@@ -1423,9 +1431,10 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        CatalogTable catalogTable = catalog.getTable( tableId );
+        CatalogTable table1 = catalog.getTable( tableId );
+        CatalogMaterializedView catalogMaterializedView = (CatalogMaterializedView) catalog.getTable( tableId );
         for ( DataStore store : stores ) {
-            store.createTable( statement.getPrepareContext(), catalogTable );
+            store.createTable( statement.getPrepareContext(), catalogMaterializedView );
         }
 
         MaterializedViewManager materializedViewManager = statement.getTransaction().getMaterializedViewManager();
@@ -1770,6 +1779,20 @@ public class DdlManagerImpl extends DdlManager {
 
         // Rest plan cache and implementation cache
         statement.getQueryProcessor().resetCaches();
+    }
+
+
+    @Override
+    public void dropMaterializedView( CatalogTable materializedView, Statement statement ) throws DdlOnSourceException {
+        // Make sure that this is a table of type VIEW
+        checkIfMaterializedViewType( materializedView.tableType );
+
+        // Check if views are dependent from this view
+        checkViewDependencies( materializedView );
+
+        catalog.deleteViewDependencies( (CatalogView) materializedView );
+
+        dropTable( materializedView, statement );
     }
 
 

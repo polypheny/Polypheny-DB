@@ -60,7 +60,7 @@ public class SqlDropMaterializedView extends SqlDropObject {
         }
 
         try {
-            DdlManager.getInstance().dropTable( table, statement );
+            DdlManager.getInstance().dropMaterializedView( table, statement );
         } catch ( DdlOnSourceException e ) {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.ddlOnSourceTable() );
         }
