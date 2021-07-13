@@ -81,6 +81,7 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlDialect.IntervalParameterStrategy;
 import org.polypheny.db.type.IntervalPolyType;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.FileInputHandle;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Static;
@@ -291,7 +292,11 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             if ( connectionHandler.getDialect().supportsNestedArrays() ) {
                 SqlType componentType;
                 if ( type != null ) {
-                    componentType = SqlType.valueOf( type.getComponentType().getPolyType().getJdbcOrdinal() );
+                    RelDataType t = type;
+                    while ( t.getComponentType().getPolyType() == PolyType.ARRAY ) {
+                        t = t.getComponentType();
+                    }
+                    componentType = SqlType.valueOf( t.getComponentType().getPolyType().getJdbcOrdinal() );
                 } else {
                     if ( ((List<?>) value).get( 0 ) instanceof String ) {
                         componentType = SqlType.VARCHAR;

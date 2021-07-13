@@ -22,6 +22,7 @@ import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -267,6 +268,11 @@ public class CottontailTypeUtil {
         if ( value instanceof List ) {
             log.trace( "Attempting to convert an array to data." );
             // TODO js(ct): add list.size() == 0 handling
+            /*if ( actualType != PolyType.DECIMAL && ((List) value).get( 0 ) instanceof BigDecimal ) {
+                ArrayList<Double> arrayList = new ArrayList<>( ((List)value).size() );
+                ((List) value).forEach( e -> arrayList.add( ( (BigDecimal) e).doubleValue() ) );
+                value = arrayList;
+            }*/
             final Vector vector = toVectorData( value );
             if ( vector != null ) {
                 return builder.setVectorData( vector ).build();
@@ -321,6 +327,8 @@ public class CottontailTypeUtil {
                     return builder.setDoubleData( (Double) value ).build();
                 } else if ( value instanceof Integer ) {
                     return builder.setDoubleData( ((Integer) value).doubleValue() ).build();
+                } else if ( value instanceof BigDecimal ) {
+                    return builder.setDoubleData( ((BigDecimal) value).doubleValue() ).build();
                 }
                 break;
             }
@@ -330,6 +338,8 @@ public class CottontailTypeUtil {
                     return builder.setFloatData( (Float) value ).build();
                 } else if ( value instanceof Double ) {
                     return builder.setFloatData( ((Double) value).floatValue() ).build();
+                } else if ( value instanceof BigDecimal ) {
+                    return builder.setFloatData( ((BigDecimal) value).floatValue() ).build();
                 }
                 break;
             }
@@ -362,6 +372,9 @@ public class CottontailTypeUtil {
                     return builder.setIntData( timeString.getMillisOfDay() ).build();
                 } else if ( value instanceof Integer ) {
                     return builder.setIntData( (Integer) value ).build();
+                } else if ( value instanceof GregorianCalendar ) {
+                    GregorianCalendar calendar = (GregorianCalendar) value;
+                    return builder.setIntData( TimeString.fromCalendarFields( calendar ).getMillisOfDay() ).build();
                 }
                 break;
             }
@@ -373,6 +386,9 @@ public class CottontailTypeUtil {
                     return builder.setIntData( dateString.getDaysSinceEpoch() ).build();
                 } else if ( value instanceof Integer ) {
                     return builder.setIntData( (Integer) value ).build();
+                } else if ( value instanceof GregorianCalendar ) {
+                    GregorianCalendar calendar = (GregorianCalendar) value;
+                    return builder.setIntData( DateString.fromCalendarFields( calendar ).getDaysSinceEpoch() ).build();
                 }
                 break;
             }
