@@ -280,6 +280,7 @@ public class JdbcArrayTest {
 
 
     @Test
+    @Ignore
     @Category({ FileExcluded.class, HsqldbExcluded.class, MonetdbExcluded.class, CassandraExcluded.class })
     public void itemOperatorTest2() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
