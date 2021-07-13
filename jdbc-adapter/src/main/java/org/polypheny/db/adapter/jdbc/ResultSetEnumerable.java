@@ -82,9 +82,12 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlDialect.IntervalParameterStrategy;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.FileInputHandle;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Static;
+import org.polypheny.db.util.TimeString;
+import org.polypheny.db.util.TimestampString;
 
 
 /**
@@ -393,6 +396,12 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             } else {
                 throw new RuntimeException( "Unsupported use of Calendar" );
             }
+        } else if ( value instanceof DateString ) {
+            preparedStatement.setDate( i, new java.sql.Date( ((DateString) value).getMillisSinceEpoch() ) );
+        } else if ( value instanceof TimestampString ) {
+            preparedStatement.setTimestamp( i, new java.sql.Timestamp( ((TimestampString) value).getMillisSinceEpoch() ), ((TimestampString) value).toCalendar() );
+        } else if ( value instanceof TimeString ) {
+            preparedStatement.setTime( i, new java.sql.Time( ((TimeString) value).getMillisOfDay() ), ((TimeString) value).toCalendar() );
         } else {
             preparedStatement.setObject( i, value );
         }

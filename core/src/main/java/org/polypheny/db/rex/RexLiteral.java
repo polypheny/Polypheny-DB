@@ -884,9 +884,11 @@ public class RexLiteral extends RexNode {
         }
         switch ( type.getPolyType() ) {
             case TIME:
+                return getValueAs( TimeString.class );
             case DATE:
+                return getValueAs( DateString.class );
             case TIMESTAMP:
-                return getValueAs( Calendar.class );
+                return getValueAs( TimestampString.class );
             case CHAR:
             case VARCHAR:
                 return getValueAs( String.class );
