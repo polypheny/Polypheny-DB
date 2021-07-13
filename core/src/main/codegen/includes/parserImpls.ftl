@@ -479,10 +479,14 @@ SqlAlterTable SqlAlterTable(Span s) :
                                                     <RPAREN> {partitionQualifierList.add(partitionQualifiers); partitionQualifiers = new ArrayList<SqlNode>();}
                                                     <RPAREN>
                                                         <USING> <FREQUENCY>
-                                                                    (
-                                                                         tmpIdent = SimpleIdentifier()
-                                                                    ) { ((RawTemperaturePartitionInformation)rawPartitionInfo).setAccessPattern( tmpIdent ); tmpIdent = null; }
-                                                                <INTERVAL>
+                                                                (
+                                                                    <ALL> { ((RawTemperaturePartitionInformation)rawPartitionInfo).setAccessPattern( new SqlIdentifier( "ALL", s.end(this) ) ); tmpIdent = null; }
+                                                                |
+                                                                    <WRITE> { ((RawTemperaturePartitionInformation)rawPartitionInfo).setAccessPattern( new SqlIdentifier( "WRITE", s.end(this) ) ); tmpIdent = null; }
+                                                                |
+                                                                    <READ> { ((RawTemperaturePartitionInformation)rawPartitionInfo).setAccessPattern( new SqlIdentifier( "READ", s.end(this) ) ); tmpIdent = null;}
+                                                                )
+                                                            <INTERVAL>
                                                                     tmpInt = UnsignedIntLiteral() { ((RawTemperaturePartitionInformation)rawPartitionInfo).setInterval( tmpInt ); tmpInt = 0; }
                                                                     tmpIdent = SimpleIdentifier() { ((RawTemperaturePartitionInformation)rawPartitionInfo).setIntervalUnit( tmpIdent ); tmpIdent = null; }
                                                         <WITH>  numPartitions = UnsignedIntLiteral() {rawPartitionInfo.setNumPartitions( numPartitions );}

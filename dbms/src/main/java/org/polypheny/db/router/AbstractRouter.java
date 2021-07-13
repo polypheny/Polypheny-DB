@@ -387,6 +387,7 @@ public abstract class AbstractRouter implements Router {
                     List<String> updateColumnList = ((LogicalTableModify) node).getUpdateColumnList();
                     List<RexNode> sourceExpressionList = ((LogicalTableModify) node).getSourceExpressionList();
                     if ( placementsOnAdapter.size() != catalogTable.columnIds.size() ) {
+
                         if ( ((LogicalTableModify) node).getOperation() == Operation.UPDATE ) {
                             updateColumnList = new LinkedList<>( ((LogicalTableModify) node).getUpdateColumnList() );
                             sourceExpressionList = new LinkedList<>( ((LogicalTableModify) node).getSourceExpressionList() );
@@ -412,6 +413,7 @@ public abstract class AbstractRouter implements Router {
                     }
 
                     long identPart = -1;
+                    long tmpIdentPart = -1;
                     List <Long> accessedPartitionList = new ArrayList<>();
                     // Identify where clause of UPDATE
                     if ( catalogTable.isPartitioned ) {
@@ -446,6 +448,7 @@ public abstract class AbstractRouter implements Router {
                         String partitionValue = "";
                         //set true if partitionColumn is part of UPDATE Statement, else assume worst case routing
                         boolean partitionColumnIdentified = false;
+
                         if ( ((LogicalTableModify) node).getOperation() == Operation.UPDATE ) {
                             // In case of update always use worst case routing for now.
                             // Since you have to identify the current partition to delete the entry and then create a new entry on the correct partitions
@@ -465,6 +468,8 @@ public abstract class AbstractRouter implements Router {
                                                     partitionManager.getTargetPartitionId( catalogTable, partitionValue ) );
                                         }
                                         identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
+                                        //needed to verify if UPDATE shall be executed on two partitions or not
+                                        tmpIdentPart = identPart;
                                         accessedPartitionList.add( identPart );
                                         break;
                                     }
@@ -568,7 +573,7 @@ public abstract class AbstractRouter implements Router {
                         if ( !worstCaseRouting ) {
                             log.debug( "Get all Placements by identified Partition: {}", identPart );
                             List<CatalogPartitionPlacement> cpps = catalog.getAllPartitionPlacementsByTable( catalogTable.id );
-                            if ( !catalog.getPartitionGroupsOnDataPlacement( pkPlacement.adapterId, catalogTable.id ).contains( identPart ) ) {
+                            if ( !catalog.getPartitionsOnDataPlacement( pkPlacement.adapterId, catalogTable.id ).contains( identPart ) ) {
                                 if ( log.isDebugEnabled() ) {
                                     log.debug( "DataPlacement: {}.{} SKIPPING since it does NOT contain identified partition: '{}' {}",
                                             pkPlacement.adapterUniqueName,
@@ -592,9 +597,8 @@ public abstract class AbstractRouter implements Router {
                     }else{
                         //unpartitioned tables only have one partition anyway
                         identPart = catalogTable.partitionProperty.partitionIds.get( 0 );
+                        accessedPartitionList.add( identPart );
                     }
-
-
 
 
 

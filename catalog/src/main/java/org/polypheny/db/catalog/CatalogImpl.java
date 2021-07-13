@@ -3323,6 +3323,37 @@ public class CatalogImpl extends Catalog {
         }
     }
 
+    /**
+     * Updates the specified partition group with the attached partitionIds
+     *
+     * @param partitionGroupId
+     * @param partitionIds List of new partitionIds
+     *
+     */
+    @Override
+    public  void updatePartitionGroup( long partitionGroupId, List<Long> partitionIds )throws UnknownPartitionGroupIdRuntimeException {
+
+        // Check whether there this partition id exists
+        CatalogPartitionGroup partitionGroup = getPartitionGroup( partitionGroupId );
+
+        synchronized ( this ) {
+
+            CatalogPartitionGroup updatedCatalogPartitionGroup = new CatalogPartitionGroup(
+                    partitionGroup.id,
+                    partitionGroup.partitionGroupName,
+                    partitionGroup.tableId,
+                    partitionGroup.schemaId,
+                    partitionGroup.databaseId,
+                    partitionGroup.partitionKey,
+                    partitionGroup.partitionQualifiers,
+                    ImmutableList.copyOf( partitionIds ),
+                    partitionGroup.isUnbound );
+
+            partitionGroups.replace( partitionGroupId ,  updatedCatalogPartitionGroup);
+
+        }
+    }
+
 
     /**
      * Get a partition object by its unique id

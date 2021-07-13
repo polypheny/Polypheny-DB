@@ -1480,7 +1480,7 @@ public class DdlManagerImpl extends DdlManager {
         //catalog.getPartitionGroups( partitionInfo.table.id ).forEach( pg -> partitionIds.forEach( p -> partitionIds.add( p ) ) );
         partitionGroupIds.forEach( pg -> catalog.getPartitions(pg).forEach( p -> partitionIds.add( p.id) ) );
 
-        //TODO Find better place to work with Property handling
+
         PartitionProperty partitionProperty;
         if ( actualPartitionType == PartitionType.TEMPERATURE ){
             long frequencyInterval = ((RawTemperaturePartitionInformation)partitionInfo.rawPartitionInformation).getInterval();
@@ -1497,6 +1497,41 @@ public class DdlManagerImpl extends DdlManager {
                     frequencyInterval = frequencyInterval * 60;
                     break;
             }
+
+            int hotPercentageIn = Integer.valueOf( ((RawTemperaturePartitionInformation)partitionInfo.rawPartitionInformation).getHotAccessPercentageIn().toString());
+            int hotPercentageOut = Integer.valueOf( ((RawTemperaturePartitionInformation)partitionInfo.rawPartitionInformation).getHotAccessPercentageOut().toString());
+
+            //Initially distribute partitions as intended in a running system
+            long numberOfPartitionsInHot = numberOfPartitions * hotPercentageIn / 100;
+            long numberOfPartitionsInCold = numberOfPartitions - numberOfPartitionsInHot;
+
+            //-1 because one partition is already created in COLD
+            List<Long> partitionsForHot  =  new ArrayList<>();
+            catalog.getPartitions( partitionGroupIds.get( 0 ) ).forEach( p -> partitionsForHot.add(p.id) );
+
+            //-1 because one partition is already created in HOT
+            for ( int i = 0; i < numberOfPartitionsInHot-1; i++ ) {
+                long tempId;
+                tempId = catalog.addPartition( partitionInfo.table.id, partitionInfo.table.schemaId, partitionGroupIds.get( 0 ), partitionInfo.qualifiers.get( 0 ), false);
+                partitionIds.add(tempId);
+                partitionsForHot.add( tempId );
+            }
+
+            catalog.updatePartitionGroup( partitionGroupIds.get( 0 ), partitionsForHot );
+
+            //-1 because one partition is already created in COLD
+            List<Long> partitionsForCold  =  new ArrayList<>();
+            catalog.getPartitions( partitionGroupIds.get( 1 ) ).forEach( p -> partitionsForCold.add(p.id) );
+
+            for ( int i = 0; i < numberOfPartitionsInCold-1; i++ ) {
+                long tempId;
+                tempId = catalog.addPartition( partitionInfo.table.id, partitionInfo.table.schemaId, partitionGroupIds.get( 1 ), partitionInfo.qualifiers.get( 1 ), false);
+                partitionIds.add(tempId);
+                partitionsForCold.add( tempId );
+            }
+
+            catalog.updatePartitionGroup( partitionGroupIds.get( 1 ), partitionsForCold );
+
             partitionProperty = TemperaturePartitionProperty.builder()
                     .partitionType( actualPartitionType )
                     .internalPartitionFunction( PartitionType.valueOf(((RawTemperaturePartitionInformation)partitionInfo.rawPartitionInformation).getInternalPartitionFunction().toString().toUpperCase()) )
@@ -1505,11 +1540,13 @@ public class DdlManagerImpl extends DdlManager {
                     .partitionIds( ImmutableList.copyOf( partitionIds ) )
                     .partitionCostIndication( PartitionCostIndication.valueOf( ((RawTemperaturePartitionInformation)partitionInfo.rawPartitionInformation).getAccessPattern().toString().toUpperCase()) )
                     .frequencyInterval( frequencyInterval )
-                    .hotAccessPercentageIn(  Integer.valueOf( ((RawTemperaturePartitionInformation)partitionInfo.rawPartitionInformation).getHotAccessPercentageIn().toString()) )
-                    .hotAccessPercentageOut( Integer.valueOf( ((RawTemperaturePartitionInformation)partitionInfo.rawPartitionInformation).getHotAccessPercentageOut().toString())  )
+                    .hotAccessPercentageIn(  hotPercentageIn )
+                    .hotAccessPercentageOut( hotPercentageOut )
                     .reliesOnPeriodicChecks(true)
                     .hotPartitionGroupId( partitionGroupIds.get( 0 ) )
                     .coldPartitionGroupId( partitionGroupIds.get( 1 ) )
+                    .numPartitions( partitionIds.size() )
+                    .numPartitionGroups( partitionGroupIds.size() )
                     .build();
         }
         else{

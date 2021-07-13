@@ -951,4 +951,17 @@ public abstract class MockCatalog extends Catalog {
     public boolean checkIfExistsPartitionPlacement( int adapterId, long partitionId ) {
         throw new NotImplementedException();    }
 
+
+    @Override
+    public void removeTableFromPeriodicProcessing( long tableId ) { throw new NotImplementedException();}
+
+
+    @Override
+    public void addTableToPeriodicProcessing( long tableId )  { throw new NotImplementedException();}
+
+    @Override
+    public List<CatalogTable> getTablesForPeriodicProcessing()  { throw new NotImplementedException();}
+
+    @Override
+    public List<CatalogPartition> getPartitionsByTable(long tableId){ throw new NotImplementedException(); }
 }

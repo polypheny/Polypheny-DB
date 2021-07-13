@@ -1120,6 +1120,15 @@ public abstract class Catalog {
     public abstract List<CatalogPartitionGroup> getPartitionGroups( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern );
 
     /**
+     * Updates the specified partition group with the attached partitionIds
+     *
+     * @param partitionGroupId
+     * @param partitionIds List of new partitionIds
+     *
+     */
+    public abstract void updatePartitionGroup( long partitionGroupId, List<Long> partitionIds );
+
+    /**
      * Get a List of all partitions belonging to a specific table
      *
      * @param partitionGroupId Table to be queried

@@ -152,44 +152,6 @@ public class FrequencyMapImpl extends FrequencyMap {
 
         }
 
-        //For every partition get accessValues
-        /*for ( Long partitionId : table.partitionProperty.partitionIds ) {
-            long tempValue = accessCounter.get( partitionId );
-
-            //Only start replacing partitions if List (with percentage of allowed partitions) is already full
-            if ( partitionsFromColdToHot.size() >=  numberOfPartitionsInHot ){
-
-                //Swap out entries in List
-                if ( tempValue > thresholdValue ){
-                    partitionsFromColdToHot.remove( thresholdPartitionId );
-                    partitionsFromColdToHot.add( partitionId );
-
-                    long tempThresholdValue = Long.MAX_VALUE;
-                    long tempThresholdPartitionid = -1;
-
-                    //After replacement now find partition with lowest AccessFrequency
-                    for ( long comparePartitionId : partitionsFromColdToHot ) {
-                        long tempCounter = accessCounter.get( comparePartitionId );
-
-                        if ( tempCounter < tempThresholdValue){
-                            tempThresholdValue = tempCounter;
-                            tempThresholdPartitionid = comparePartitionId;
-                        }
-                    }
-                    thresholdValue = tempThresholdValue;
-                    thresholdPartitionId = tempThresholdPartitionid;
-                }
-
-            }else{ //When list is not full, no need to check for constraints
-                partitionsFromColdToHot.add( partitionId );
-
-                //Update thresholdValue until list is full then start "sorting"
-                if ( tempValue < thresholdValue ) {
-                    thresholdValue = tempValue;
-                    thresholdPartitionId = partitionId;
-                }
-            }
-        }*/
 
 
         //Which partitions are in top X % ( to be placed in HOT)
@@ -229,7 +191,7 @@ public class FrequencyMapImpl extends FrequencyMap {
     }
 
     public void determinePartitionFrequency( CatalogTable table, long invocationTimestamp ){
-        Timestamp queryStart = new Timestamp(  invocationTimestamp - ((TemperaturePartitionProperty) table.partitionProperty).getFrequencyInterval() );
+        Timestamp queryStart = new Timestamp(  invocationTimestamp - ((TemperaturePartitionProperty) table.partitionProperty).getFrequencyInterval()*1000 );
 
         accessCounter = new HashMap<>();
         table.partitionProperty.partitionIds.forEach( p -> accessCounter.put( p, (long) 0 ) );
@@ -260,8 +222,8 @@ public class FrequencyMapImpl extends FrequencyMap {
                 for ( DMLDataPoint dmlDataPoint: writeAccesses ) {
                     dmlDataPoint.getAccessedPartitions().forEach( p -> incrementPartitionAccess( p ) );
                 }
-                break;
         }
+
         redistributePartitions(table);
     }
 

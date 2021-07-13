@@ -513,6 +513,7 @@ FOUND,
 FRAC_SECOND,
 **FRAME_ROW**,
 **FREE**,
+**FREQUENCY**,
 **FROM**,
 **FULL**,
 **FUNCTION**,
@@ -897,6 +898,7 @@ SUBSTITUTE,
 **TABLE**,
 **TABLESAMPLE**,
 TABLE_NAME,
+**TEMPERATURE**,
 TEMPORARY,
 **THEN**,
 TIES,
@@ -1790,7 +1792,7 @@ Not implemented:
 
 * ST_ZMax(geom) Returns the maximum z-value of *geom*
 * ST_ZMin(geom) Returns the minimum z-value of *geom*
-
+ 
 ### Geometry predicates
 
 | C | Operator syntax      | Description
