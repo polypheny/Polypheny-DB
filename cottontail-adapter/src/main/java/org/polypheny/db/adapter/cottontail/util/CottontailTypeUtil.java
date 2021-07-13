@@ -78,7 +78,7 @@ public class CottontailTypeUtil {
     public static final Method COTTONTAIL_SIMPLE_CONSTANT_TO_DATA_METHOD = Types.lookupMethod(
             CottontailTypeUtil.class,
             "toData",
-            Object.class, PolyType.class );
+            Object.class, PolyType.class, PolyType.class );
 
     public static final Method COTTONTAIL_SIMPLE_LIST_TO_VECTOR_METHOD = Types.lookupMethod(
             CottontailTypeUtil.class,
@@ -186,8 +186,16 @@ public class CottontailTypeUtil {
 
     public static Expression rexDynamicParamToDataExpression( RexDynamicParam dynamicParam, ParameterExpression dynamicParameterMap_, PolyType actualType ) {
         return Expressions.call( COTTONTAIL_SIMPLE_CONSTANT_TO_DATA_METHOD,
-                Expressions.call( dynamicParameterMap_, BuiltInMethod.MAP_GET.method,
-                        Expressions.constant( dynamicParam.getIndex() ) ), Expressions.constant( actualType ) );
+                Expressions.call(
+                        dynamicParameterMap_,
+                        BuiltInMethod.MAP_GET.method,
+                        Expressions.constant( dynamicParam.getIndex() ) ),
+                Expressions.constant( actualType ),
+                Expressions.constant( dynamicParam.getType() != null ?
+                        dynamicParam.getType().getComponentType() != null ?
+                                dynamicParam.getType().getComponentType().getPolyType()
+                                : null
+                        : null ) );
     }
 
 
@@ -247,17 +255,17 @@ public class CottontailTypeUtil {
             }
         }
 
-        return Expressions.call( COTTONTAIL_SIMPLE_CONSTANT_TO_DATA_METHOD, constantExpression, Expressions.constant( actualType ) );
+        return Expressions.call( COTTONTAIL_SIMPLE_CONSTANT_TO_DATA_METHOD, constantExpression, Expressions.constant( actualType ), Expressions.constant( null ) );
     }
 
 
     public static Expression rexArrayConstructorToExpression( RexCall rexCall, PolyType innerType ) {
         Expression constantExpression = arrayListToExpression( rexCall.getOperands(), innerType );
-        return Expressions.call( COTTONTAIL_SIMPLE_CONSTANT_TO_DATA_METHOD, constantExpression, Expressions.constant( innerType ) );
+        return Expressions.call( COTTONTAIL_SIMPLE_CONSTANT_TO_DATA_METHOD, constantExpression, Expressions.constant( innerType ), Expressions.constant( null ) );
     }
 
 
-    public static CottontailGrpc.Literal toData( Object value, PolyType actualType ) {
+    public static CottontailGrpc.Literal toData( Object value, PolyType actualType, PolyType parameterComponentType ) {
         final CottontailGrpc.Literal.Builder builder = Literal.newBuilder();
         if ( value == null ) {
             return builder.setNullData( Null.newBuilder().build() ).build();
@@ -268,11 +276,13 @@ public class CottontailTypeUtil {
         if ( value instanceof List ) {
             log.trace( "Attempting to convert an array to data." );
             // TODO js(ct): add list.size() == 0 handling
-            /*if ( actualType != PolyType.DECIMAL && ((List) value).get( 0 ) instanceof BigDecimal ) {
-                ArrayList<Double> arrayList = new ArrayList<>( ((List)value).size() );
-                ((List) value).forEach( e -> arrayList.add( ( (BigDecimal) e).doubleValue() ) );
+            // Check whether the decimal array should be converted to a double array (i.e. when we are not comparing to a column of
+            // type decimal (which is encoded as string since cottontail does not support the data type decimal))
+            if ( parameterComponentType != null && parameterComponentType == PolyType.DECIMAL && actualType != PolyType.DECIMAL && actualType != PolyType.ARRAY && ((List) value).get( 0 ) instanceof BigDecimal ) {
+                ArrayList<Double> arrayList = new ArrayList<>( ((List) value).size() );
+                ((List) value).forEach( e -> arrayList.add( ((BigDecimal) e).doubleValue() ) );
                 value = arrayList;
-            }*/
+            }
             final Vector vector = toVectorData( value );
             if ( vector != null ) {
                 return builder.setVectorData( vector ).build();
