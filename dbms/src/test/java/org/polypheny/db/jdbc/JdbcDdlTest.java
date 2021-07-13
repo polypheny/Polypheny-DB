@@ -526,7 +526,7 @@ public class JdbcDdlTest {
 
 
     @Test
-    @Category({ FileExcluded.class })
+    @Category({ FileExcluded.class, MonetdbExcluded.class })
     public void changeColumnTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

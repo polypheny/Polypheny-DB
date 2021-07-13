@@ -856,7 +856,7 @@ public class ComplexViewTest {
 
 
     @Test
-    @Category(CottontailExcluded.class)
+    @Category({ CottontailExcluded.class, MonetdbExcluded.class })
     public void testQ3() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -1056,7 +1056,7 @@ public class ComplexViewTest {
 
     // deleted "or (n1.n_name = ? and n2.n_name = ?) " because there is only one nation in this table
     @Test
-    @Category({ FileExcluded.class, CottontailExcluded.class })
+    @Category({ FileExcluded.class, MonetdbExcluded.class, CottontailExcluded.class })
     public void testQ7() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -1158,7 +1158,7 @@ public class ComplexViewTest {
 
 
     @Test
-    @Category({ FileExcluded.class, CottontailExcluded.class })
+    @Category({ FileExcluded.class, MonetdbExcluded.class, CottontailExcluded.class })
     public void testQ8() throws SQLException {
         Assume.assumeFalse( System.getProperty( "java.version" ).startsWith( "1.8" ) ); // Out of memory error on Java 8
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -1263,7 +1263,7 @@ public class ComplexViewTest {
 
 
     @Test
-    @Category(FileExcluded.class)
+    @Category({ FileExcluded.class, MonetdbExcluded.class })
     public void testQ9() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
