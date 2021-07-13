@@ -856,7 +856,7 @@ public class ComplexViewTest {
 
 
     @Test
-    @Category({ MonetdbExcluded.class })
+    @Category({ FileExcluded.class, MonetdbExcluded.class })
     public void testQ3() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
