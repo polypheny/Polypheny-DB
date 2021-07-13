@@ -69,6 +69,16 @@ public class BsonUtil {
     }
 
 
+    /**
+     * operations which include /*+_ cannot be parsed by the bsonDocument parser
+     * so they need to be replace by a equivalent bson compatible operation
+     * 1-3*10 -> {$subtract: [1, {$multiply:[3,10]}]}
+     *
+     * @param bson the full bson string
+     * @return the initial bson string with the exchanged calculation
+     *
+     * TODO DL: edge-case in string is not handled properly
+     */
     public static String fixBson( String bson ) {
         String reg = "\\d+\\s*([*/+-]\\s*\\d+)+";
 

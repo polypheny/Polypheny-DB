@@ -281,7 +281,25 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
         RexCall condition = getConditionTestFilter( root );
 
-        root = translate( find( "\"key\": $subtract:[3, 10]" ) );
+        assertEquals( 2, condition.operands.size() );
+        assertEquals( SqlKind.EQUALS, condition.op.kind );
+
+        RexCall json = assertRexCall( condition, 0 );
+        RexCall calc = assertRexCall( condition, 1 );
+
+        testJsonValue( json, "key" );
+
+        assertEquals( SqlKind.MINUS, calc.op.kind );
+        assertEquals( 2, calc.operands.size() );
+
+        testCastLiteral( calc.operands.get( 0 ), 2, Integer.class );
+        RexCall mult = assertRexCall( calc, 1 );
+
+        assertEquals( 2, mult.operands.size() );
+
+        assertEquals( SqlKind.TIMES, mult.op.kind );
+        testCastLiteral( mult.operands.get( 0 ), 3, Integer.class );
+        testCastLiteral( mult.operands.get( 1 ), 10, Integer.class );
     }
 
     /////////// only projection /////////////

@@ -77,6 +77,7 @@ public class MqlToRelConverter {
     private final static Map<String, SqlOperator> mappings;
     private final static List<String> operators;
     private final static Map<String, List<SqlOperator>> gates;
+    private final static Map<String, SqlOperator> mathOperators;
 
 
     static {
@@ -100,9 +101,16 @@ public class MqlToRelConverter {
 
         mappings.put( "$exists", SqlStdOperatorTable.EXISTS );
 
+        mathOperators = new HashMap<>();
+        mathOperators.put( "$subtract", SqlStdOperatorTable.MINUS );
+        mathOperators.put( "$add", SqlStdOperatorTable.PLUS );
+        mathOperators.put( "$multiply", SqlStdOperatorTable.MULTIPLY );
+        mathOperators.put( "$divide", SqlStdOperatorTable.DIVIDE );
+
         operators = new ArrayList<>();
         operators.addAll( mappings.keySet() );
         operators.addAll( gates.keySet() );
+        operators.addAll( mathOperators.keySet() );
     }
 
 
@@ -328,9 +336,27 @@ public class MqlToRelConverter {
         if ( !key.startsWith( "$" ) ) {
             return convertField( parentKey == null ? key : parentKey + "." + key, bsonValue, rowType, field );
         } else {
+
             if ( operators.contains( key ) ) {
                 if ( gates.containsKey( key ) ) {
                     return convertGate( key, parentKey, bsonValue, rowType, field );
+                } else if ( mathOperators.containsKey( key ) ) {
+
+                    boolean losesContext = parentKey != null;
+                    RexNode id = null;
+                    if ( losesContext ) {
+                        // we lose context to the parent and have to "drop it" as we move into $subtract or $eq
+                        id = attachParentIdentifier( parentKey, rowType, field );
+                    }
+                    RexNode node = convertMath( key, null, bsonValue, rowType, field );
+
+                    if ( losesContext ) {
+                        RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
+                        return new RexCall( type, SqlStdOperatorTable.EQUALS, Arrays.asList( id, node ) );
+                    } else {
+                        return node;
+                    }
+
                 } else {
                     return translateLogical( key, parentKey, bsonValue, rowType, field );
                 }
@@ -343,8 +369,21 @@ public class MqlToRelConverter {
     }
 
 
+    private RexNode convertMath( String key, String parentKey, BsonValue bsonValue, RelDataType rowType, RelDataTypeField field ) {
+        SqlOperator op = mathOperators.get( key );
+        String errorMsg = "After a " + String.join( ",", mathOperators.keySet() ) + " a list of literal or documents is needed.";
+        if ( bsonValue.isArray() ) {
+            List<RexNode> nodes = convertArray( parentKey, bsonValue.asArray(), true, rowType, field, errorMsg );
+
+            return getFixedCall( nodes, op );
+        } else {
+            throw new RuntimeException( errorMsg );
+        }
+    }
+
+
     private RexNode convertGate( String key, String parentKey, BsonValue bsonValue, RelDataType rowType, RelDataTypeField field ) {
-        RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
+
         SqlOperator op;
         switch ( key ) {
             case "$and":
@@ -359,6 +398,7 @@ public class MqlToRelConverter {
             case "$not":
                 op = SqlStdOperatorTable.NOT;
                 if ( bsonValue.isDocument() ) {
+                    RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
                     return new RexCall( type, op, Collections.singletonList( translateDocument( bsonValue.asDocument(), rowType, field, parentKey ) ) );
                 } else {
                     throw new RuntimeException( "After a $not a document is needed" );
@@ -371,24 +411,31 @@ public class MqlToRelConverter {
 
 
     private RexNode convertLogicalArray( String parentKey, BsonValue bsonValue, RelDataType rowType, SqlOperator op, boolean isNegated, RelDataTypeField field ) {
-        List<RexNode> operands = new ArrayList<>();
+        String errorMsg = "After logical operators \"$and\",\"$or\" and \"nor\" an array of documents is needed";
         if ( bsonValue.isArray() ) {
-            for ( BsonValue value : bsonValue.asArray() ) {
-                if ( value.isDocument() ) {
-                    RexNode node = translateDocument( value.asDocument(), rowType, field, parentKey );
-                    if ( isNegated ) {
-                        node = negate( node );
-                    }
-
-                    operands.add( node );
-                } else {
-                    throw new RuntimeException( "After logical operators \"$and\",\"$or\" and \"nor\" an array of documents is needed" );
-                }
+            List<RexNode> operands = convertArray( parentKey, bsonValue.asArray(), false, rowType, field, errorMsg );
+            if ( isNegated ) {
+                operands = operands.stream().map( this::negate ).collect( Collectors.toList() );
             }
+            return getFixedCall( operands, op );
         } else {
-            throw new RuntimeException( "After logical operators \"$and\",\"$or\" and \"nor\" an array of documents is needed" );
+            throw new RuntimeException( errorMsg );
         }
-        return getFixedCall( operands, op );
+    }
+
+
+    private List<RexNode> convertArray( String parentKey, BsonArray bsonValue, boolean allowsLiteral, RelDataType rowType, RelDataTypeField field, String errorMsg ) {
+        List<RexNode> operands = new ArrayList<>();
+        for ( BsonValue value : bsonValue ) {
+            if ( value.isDocument() ) {
+                operands.add( translateDocument( value.asDocument(), rowType, field, parentKey ) );
+            } else if ( allowsLiteral ) {
+                operands.add( convertLiteral( value ) );
+            } else {
+                throw new RuntimeException( errorMsg );
+            }
+        }
+        return operands;
     }
 
 
@@ -465,18 +512,21 @@ public class MqlToRelConverter {
         SqlOperator op;
         List<RexNode> nodes = new ArrayList<>();
         op = mappings.get( key );
-        if ( op == SqlStdOperatorTable.IN || op == SqlStdOperatorTable.NOT_IN ) {
-            return convertIn( bsonValue, (SqlBinaryOperator) op, parentKey, rowType, field );
-        } else if ( op.kind == SqlKind.EXISTS ) {
-            return convertExists( bsonValue, parentKey, rowType, field );
-        } else if ( bsonValue.isArray() ) {
-            return convertGate( key, parentKey, bsonValue, rowType, field );
-        } else {
-            nodes.add( attachParentIdentifier( parentKey, rowType, field ) );
-            nodes.add( convertLiteral( bsonValue ) );
+        switch ( op.kind ) {
+            case IN:
+            case NOT_IN:
+                return convertIn( bsonValue, (SqlBinaryOperator) op, parentKey, rowType, field );
+            case EXISTS:
+                return convertExists( bsonValue, parentKey, rowType, field );
+            default:
+                if ( parentKey != null ) {
+                    nodes.add( attachParentIdentifier( parentKey, rowType, field ) );
+                }
+                nodes.add( convertLiteral( bsonValue ) );
+                return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), op, nodes );
         }
 
-        return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), op, nodes );
+        //return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), op, nodes );
     }
 
 
