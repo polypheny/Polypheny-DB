@@ -128,16 +128,22 @@ public class PostgresqlSqlDialect extends SqlDialect {
                 castSpec = "_BYTEA";
                 break;
             case ARRAY:
-                PolyType t = type.getComponentType().getPolyType();
+                RelDataType tt = type;
+                StringBuilder brackets = new StringBuilder( "[]" );
+                while ( tt.getComponentType().getPolyType() == PolyType.ARRAY ) {
+                    tt = tt.getComponentType();
+                    brackets.append( "[]" );
+                }
+                PolyType t = tt.getComponentType().getPolyType();
                 switch ( t ) {
                     case TINYINT:
-                        castSpec = "_smallint[]";
+                        castSpec = "_smallint" + brackets;
                         break;
                     case DOUBLE:
-                        castSpec = "_double precision[]";
+                        castSpec = "_double precision" + brackets;
                         break;
                     default:
-                        castSpec = "_" + type.getComponentType().getPolyType().getName() + "[]";
+                        castSpec = "_" + t.getName() + brackets;
                 }
                 break;
             case INTERVAL_YEAR_MONTH:
