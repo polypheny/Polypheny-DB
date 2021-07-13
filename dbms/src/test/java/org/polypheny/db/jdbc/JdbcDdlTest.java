@@ -543,7 +543,8 @@ public class JdbcDdlTest {
                     statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN tdouble SET TYPE DECIMAL(15,6)" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT tdouble FROM ddltest" ),
-                            ImmutableList.of( new Object[]{ BigDecimal.valueOf( (double) DDLTEST_DATA[4] ) } ) );
+                            ImmutableList.of( new Object[]{ BigDecimal.valueOf( (double) DDLTEST_DATA[4] ) } ),
+                            true );
 
                     // Real --> Double
                     statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN treal SET TYPE DOUBLE" );

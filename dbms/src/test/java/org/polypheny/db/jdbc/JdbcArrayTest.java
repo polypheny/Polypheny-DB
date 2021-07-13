@@ -258,6 +258,28 @@ public class JdbcArrayTest {
                             statement.executeQuery( "SELECT varchararray[1] FROM arraytest WHERE varchararray[1] = '" + ((Object[]) ARRAYTEST_DATA[9])[0] + "'" ),
                             ImmutableList.of( new Object[]{ ((Object[]) ARRAYTEST_DATA[9])[0] } ) );
 
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE arraytest" );
+                    connection.commit();
+                }
+
+            }
+        }
+    }
+
+
+    @Test
+    @Category({ FileExcluded.class, HsqldbExcluded.class, MonetdbExcluded.class, CassandraExcluded.class })
+    public void itemOperatorTest2() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( ARRAYTEST_SQL );
+
+                try {
+                    statement.executeUpdate( ARRAYTEST_DATA_SQL );
+
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT bigintarray FROM arraytest WHERE bigintarray[1] = " + ((Object[]) ARRAYTEST_DATA[1])[0] ),
                             ImmutableList.of( new Object[]{ ARRAYTEST_DATA[1] } ) );
