@@ -32,7 +32,6 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
-import org.polypheny.db.excluded.PostgresqlExcluded;
 
 
 @SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
@@ -122,7 +121,7 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Category({ FileExcluded.class, PostgresqlExcluded.class, CassandraExcluded.class })
+    @Category({ FileExcluded.class, CassandraExcluded.class })
     public void arrayTypesTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -183,7 +182,7 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Category({ FileExcluded.class, PostgresqlExcluded.class, CassandraExcluded.class })
+    @Category({ FileExcluded.class, CassandraExcluded.class })
     public void arrayTypesViewTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
