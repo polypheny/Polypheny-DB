@@ -1,4 +1,4 @@
-name: Polypheny-DB Adapter Matrix CI
+name: Polypheny-DB Docker CI
 
 on:
     push:
@@ -8,11 +8,7 @@ on:
 jobs:
     build:
         runs-on: ubuntu-latest
-        strategy:
-            fail-fast: false
-            matrix:
-                adapter: [ mongodb, hsqldb, monetdb, postgresql, file, cottontail, cassandra ]
-        name: Integration Tests (Java 11)
+        name: Docker Tests (Java 11)
         steps:
             -   name: Checkout
                 uses: actions/checkout@v2
@@ -35,10 +31,10 @@ jobs:
                     max_attempts: 2
                     timeout_minutes: 15
                     command: ./gradlew assemble
-
-            -   name: Execute integration tests for ${{ matrix.adapter }}
+            -   name: Execute Docker tests
                 uses: nick-invision/retry@v2
                 with:
                     max_attempts: 2
-                    timeout_minutes: 20
-                    command: ./gradlew integrationTests -Dstore.default=${{ matrix.adapter }}
+                    timeout_minutes: 15
+                    command: ./gradlew dockerTests
+

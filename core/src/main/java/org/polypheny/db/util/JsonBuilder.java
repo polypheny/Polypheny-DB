@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,10 +34,12 @@
 package org.polypheny.db.util;
 
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Setter;
 import org.apache.calcite.avatica.util.Spaces;
 
 
@@ -45,6 +47,10 @@ import org.apache.calcite.avatica.util.Spaces;
  * Builder for JSON documents (represented as {@link List}, {@link Map}, {@link String}, {@link Boolean}, {@link Long}).
  */
 public class JsonBuilder {
+
+    @Setter
+    boolean isMongo = false;
+
 
     /**
      * Creates a JSON object (represented by a {@link Map}).
@@ -111,6 +117,8 @@ public class JsonBuilder {
             buf.append( '"' )
                     .append( ((String) o).replace( "\"", "\\\"" ).replace( "\n", "\\n" ) )
                     .append( '"' );
+        } else if ( isMongo && o instanceof BigDecimal ) {
+            buf.append( "{\"$numberDecimal\":\"" ).append( o ).append( "\"}" );
         } else {
             assert o instanceof Number || o instanceof Boolean;
             buf.append( o );
@@ -163,5 +171,6 @@ public class JsonBuilder {
         newline( buf, indent );
         buf.append( "]" );
     }
+
 }
 
