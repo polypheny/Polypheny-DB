@@ -101,7 +101,6 @@ public class BsonFunctionHelper extends BsonDocument {
     private static BsonValue getDynamicFunction( RexNode rexNode ) {
         if ( rexNode.isA( SqlKind.DYNAMIC_PARAM ) ) {
             return new BsonDynamic( (RexDynamicParam) rexNode ).setIsFunc( true );
-
         } else if ( rexNode.isA( SqlKind.CAST ) ) {
             RexCall call = (RexCall) rexNode;
             return getDynamicFunction( call.operands.get( 0 ) );
@@ -132,7 +131,6 @@ public class BsonFunctionHelper extends BsonDocument {
         if ( operands.size() == 3 ) {
             array.add( getVal( operands.get( 0 ), rowType, implementor ) );
             array.add( getVal( operands.get( 1 ), rowType, implementor ) );
-
             return array;
         }
         throw new IllegalArgumentException( "This function is not supported yet" );
@@ -143,11 +141,9 @@ public class BsonFunctionHelper extends BsonDocument {
         if ( rexNode.isA( SqlKind.INPUT_REF ) ) {
             RexInputRef rex = (RexInputRef) rexNode;
             return new BsonString( "$" + rowType.getPhysicalName( rowType.getFieldNames().get( rex.getIndex() ), implementor ) );
-
         } else if ( rexNode.isA( SqlKind.ARRAY_VALUE_CONSTRUCTOR ) ) {
             RexCall rex = (RexCall) rexNode;
             return MongoTypeUtil.getBsonArray( rex, implementor.getBucket() );
-
         } else if ( rexNode.isA( SqlKind.DYNAMIC_PARAM ) ) {
             RexDynamicParam rex = (RexDynamicParam) rexNode;
             return new BsonDynamic( rex );

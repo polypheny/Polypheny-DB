@@ -244,17 +244,17 @@ public class MongoFilter extends Filter implements MongoRel {
 
             switch ( right.getKind() ) {
                 case DYNAMIC_PARAM:
-                    this.ors.add(
-                            new BsonDocument()
-                                    .append(
-                                            getPhysicalName( (RexInputRef) left ),
-                                            new BsonDynamic( (RexDynamicParam) right ).setIsRegex( true ) ) );
+                    this.ors.add( new BsonDocument().append(
+                            getPhysicalName( (RexInputRef) left ),
+                            new BsonDynamic( (RexDynamicParam) right ).setIsRegex( true ) ) );
                     return null;
-                case LITERAL:
 
+                case LITERAL:
                     this.ors.add( new BsonDocument(
-                            getPhysicalName( (RexInputRef) left ), MongoTypeUtil.replaceLikeWithRegex( ((RexLiteral) right).getValueAs( String.class ) ) ) );
+                            getPhysicalName( (RexInputRef) left ),
+                            MongoTypeUtil.replaceLikeWithRegex( ((RexLiteral) right).getValueAs( String.class ) ) ) );
                     return null;
+
                 default:
                     throw new IllegalStateException( "Unexpected value: " + right.getKind() );
             }
@@ -431,16 +431,18 @@ public class MongoFilter extends Filter implements MongoRel {
                 case INPUT_REF:
                     translateOp2( op, getPhysicalName( (RexInputRef) left ), right );
                     return true;
+
                 case CAST:
                     return translateBinary2( op, ((RexCall) left).operands.get( 0 ), right );
-                case OTHER_FUNCTION:
 
+                case OTHER_FUNCTION:
                     String itemName = MongoRules.isItem( (RexCall) left );
                     if ( itemName != null ) {
                         translateOp2( op, itemName, right );
                         return true;
                     }
                     // fall through
+
                 default:
                     return false;
             }
@@ -450,19 +452,13 @@ public class MongoFilter extends Filter implements MongoRel {
         private boolean translateDynamic( String op, RexNode left, RexDynamicParam right ) {
             if ( left.getKind() == INPUT_REF ) {
                 if ( op == null ) {
-                    this.ors
-                            .add(
-                                    new BsonDocument()
-                                            .append(
-                                                    getPhysicalName( (RexInputRef) left ),
-                                                    new BsonDynamic( right ) ) );
+                    this.ors.add( new BsonDocument().append(
+                            getPhysicalName( (RexInputRef) left ),
+                            new BsonDynamic( right ) ) );
                 } else {
-                    this.ors
-                            .add(
-                                    new BsonDocument()
-                                            .append(
-                                                    getPhysicalName( (RexInputRef) left ),
-                                                    new BsonDocument().append( op, new BsonDynamic( right ) ) ) );
+                    this.ors.add( new BsonDocument().append(
+                            getPhysicalName( (RexInputRef) left ),
+                            new BsonDocument().append( op, new BsonDynamic( right ) ) ) );
                 }
                 return true;
             }

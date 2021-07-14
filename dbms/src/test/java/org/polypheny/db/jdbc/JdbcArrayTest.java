@@ -32,7 +32,8 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
-import org.polypheny.db.excluded.PostgresqlExcluded;
+import org.polypheny.db.excluded.HsqldbExcluded;
+import org.polypheny.db.excluded.MonetdbExcluded;
 
 
 @SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
@@ -90,7 +91,6 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Category(PostgresqlExcluded.class)
     public void basicTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -123,7 +123,7 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Category({ PostgresqlExcluded.class, FileExcluded.class, CassandraExcluded.class })
+    @Category({ FileExcluded.class, CassandraExcluded.class })
     public void arrayTypesTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -184,7 +184,7 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Category({ PostgresqlExcluded.class, FileExcluded.class, CassandraExcluded.class })
+    @Category({ FileExcluded.class, CassandraExcluded.class })
     public void arrayTypesViewTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -281,6 +281,7 @@ public class JdbcArrayTest {
 
     @Test
     @Ignore
+    @Category({ FileExcluded.class, HsqldbExcluded.class, MonetdbExcluded.class, CassandraExcluded.class })
     public void itemOperatorTest2() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -334,7 +335,7 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Category({ PostgresqlExcluded.class, FileExcluded.class, CassandraExcluded.class })
+    @Category({ FileExcluded.class, CassandraExcluded.class })
     public void arrayFilterTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

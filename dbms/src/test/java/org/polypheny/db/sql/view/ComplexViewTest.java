@@ -35,14 +35,13 @@ import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.CottontailExcluded;
 import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.excluded.MonetdbExcluded;
-import org.polypheny.db.excluded.PostgresqlExcluded;
 
 /*
  * Table and Queries from https://github.com/polypheny/OLTPBench/tree/polypheny/src/com/oltpbenchmark/benchmarks/tpch
  */
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-@Category({ AdapterTestSuite.class, MonetdbExcluded.class, PostgresqlExcluded.class, CassandraExcluded.class })
+@Category({ AdapterTestSuite.class, CassandraExcluded.class })
 public class ComplexViewTest {
 
     private final static String DROP_TABLES_NATION = "DROP TABLE IF EXISTS nation";
@@ -423,17 +422,15 @@ public class ComplexViewTest {
     }
 
 
-    public void dropTables( Connection connection ) throws SQLException {
-        try ( Statement statement = connection.createStatement() ) {
-            statement.executeUpdate( DROP_TABLES_NATION );
-            statement.executeUpdate( DROP_TABLES_REGION );
-            statement.executeUpdate( DROP_TABLES_PART );
-            statement.executeUpdate( DROP_TABLES_SUPPLIER );
-            statement.executeUpdate( DROP_TABLES_PARTSUPP );
-            statement.executeUpdate( DROP_TABLES_ORDERS );
-            statement.executeUpdate( DROP_TABLES_CUSTOMER );
-            statement.executeUpdate( DROP_TABLES_LINEITEM );
-        }
+    public void dropTables( Statement statement ) throws SQLException {
+        statement.executeUpdate( DROP_TABLES_NATION );
+        statement.executeUpdate( DROP_TABLES_REGION );
+        statement.executeUpdate( DROP_TABLES_PART );
+        statement.executeUpdate( DROP_TABLES_SUPPLIER );
+        statement.executeUpdate( DROP_TABLES_PARTSUPP );
+        statement.executeUpdate( DROP_TABLES_ORDERS );
+        statement.executeUpdate( DROP_TABLES_CUSTOMER );
+        statement.executeUpdate( DROP_TABLES_LINEITEM );
     }
 
 
@@ -482,7 +479,7 @@ public class ComplexViewTest {
                     connection.commit();
                 } finally {
                     connection.rollback();
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -520,7 +517,7 @@ public class ComplexViewTest {
                 } finally {
                     connection.rollback();
                     statement.executeUpdate( "DROP VIEW IF EXISTS date_VIEW" );
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -559,7 +556,7 @@ public class ComplexViewTest {
                 } finally {
                     connection.rollback();
                     statement.executeUpdate( "DROP VIEW IF EXISTS decimal_VIEW" );
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -599,7 +596,7 @@ public class ComplexViewTest {
                 } finally {
                     connection.rollback();
                     statement.executeUpdate( "DROP VIEW IF EXISTS decimalDate_VIEW" );
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -642,7 +639,7 @@ public class ComplexViewTest {
                 } finally {
                     connection.rollback();
                     statement.executeUpdate( "DROP VIEW IF EXISTS decimalDateInt_VIEW" );
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -650,7 +647,7 @@ public class ComplexViewTest {
 
 
     @Test
-    @Category({ FileExcluded.class, CottontailExcluded.class })
+    @Category({ FileExcluded.class })
     public void testDateOrderBy() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -691,7 +688,7 @@ public class ComplexViewTest {
                 } finally {
                     connection.rollback();
                     statement.executeUpdate( "DROP VIEW dateOrderby_VIEW" );
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -728,7 +725,7 @@ public class ComplexViewTest {
                 } finally {
                     connection.rollback();
                     statement.executeUpdate( "DROP VIEW IF EXISTS timeIntervall_VIEW" );
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -782,7 +779,7 @@ public class ComplexViewTest {
                 } finally {
                     connection.rollback();
                     statement.executeUpdate( "DROP VIEW IF EXISTS q1_VIEW" );
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -851,7 +848,7 @@ public class ComplexViewTest {
                     connection.commit();
                 } finally {
                     connection.rollback();
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -859,7 +856,7 @@ public class ComplexViewTest {
 
 
     @Test
-    @Category(CottontailExcluded.class)
+    @Category({ FileExcluded.class, MonetdbExcluded.class })
     public void testQ3() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -927,7 +924,7 @@ public class ComplexViewTest {
                 } finally {
                     connection.rollback();
                     statement.executeUpdate( "DROP VIEW IF EXISTS q3_VIEW" );
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -1000,7 +997,7 @@ public class ComplexViewTest {
                 } finally {
                     connection.rollback();
                     statement.executeUpdate( "DROP VIEW IF EXISTS q4_VIEW" );
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -1050,7 +1047,7 @@ public class ComplexViewTest {
                 } finally {
                     connection.rollback();
                     statement.executeUpdate( "DROP VIEW IF EXISTS q6_VIEW" );
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -1059,7 +1056,7 @@ public class ComplexViewTest {
 
     // deleted "or (n1.n_name = ? and n2.n_name = ?) " because there is only one nation in this table
     @Test
-    @Category({ FileExcluded.class, CottontailExcluded.class })
+    @Category({ FileExcluded.class, MonetdbExcluded.class })
     public void testQ7() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -1153,7 +1150,7 @@ public class ComplexViewTest {
                 } finally {
                     connection.rollback();
                     statement.executeUpdate( "DROP VIEW IF EXISTS q7_VIEW" );
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -1161,7 +1158,7 @@ public class ComplexViewTest {
 
 
     @Test
-    @Category({ FileExcluded.class, CottontailExcluded.class })
+    @Category({ FileExcluded.class, MonetdbExcluded.class })
     public void testQ8() throws SQLException {
         Assume.assumeFalse( System.getProperty( "java.version" ).startsWith( "1.8" ) ); // Out of memory error on Java 8
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -1258,7 +1255,7 @@ public class ComplexViewTest {
                 } finally {
                     connection.rollback();
                     statement.executeUpdate( "DROP VIEW IF EXISTS q8_VIEW" );
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -1266,7 +1263,7 @@ public class ComplexViewTest {
 
 
     @Test
-    @Category(FileExcluded.class)
+    @Category({ FileExcluded.class, MonetdbExcluded.class })
     public void testQ9() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -1352,7 +1349,7 @@ public class ComplexViewTest {
                 } finally {
                     connection.rollback();
                     statement.executeUpdate( "DROP VIEW IF EXISTS q9_VIEW" );
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -1441,11 +1438,12 @@ public class ComplexViewTest {
                             statement.executeQuery( "SELECT * FROM q10_VIEW" ),
                             ImmutableList.of( q10_TEST_DATA )
                     );
+
                     connection.commit();
                 } finally {
                     connection.rollback();
                     statement.executeUpdate( "DROP VIEW IF EXISTS q10_VIEW" );
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -1498,7 +1496,7 @@ public class ComplexViewTest {
                     connection.commit();
                 } finally {
                     connection.rollback();
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -1552,7 +1550,7 @@ public class ComplexViewTest {
                     connection.commit();
                 } finally {
                     connection.rollback();
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -1622,7 +1620,7 @@ public class ComplexViewTest {
                 } finally {
                     connection.rollback();
                     statement.executeUpdate( "DROP VIEW IF EXISTS q13_VIEW" );
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -1678,7 +1676,7 @@ public class ComplexViewTest {
                 } finally {
                     connection.rollback();
                     statement.executeUpdate( "DROP VIEW IF EXISTS q14_VIEW" );
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -1733,7 +1731,7 @@ public class ComplexViewTest {
                 } finally {
                     connection.rollback();
                     statement.executeUpdate( "DROP VIEW IF EXISTS revenue0" );
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -1788,7 +1786,7 @@ public class ComplexViewTest {
                     connection.commit();
                 } finally {
                     connection.rollback();
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -1826,11 +1824,11 @@ public class ComplexViewTest {
 
                     // @formatter:off
                     statement.executeUpdate( "CREATE VIEW q17_VIEW AS "
-                            + "select "
-                            + "sum(l_extendedprice) / 7.0 as avg_yearly "
+                            +"select "
+                            +     "sum(l_extendedprice) / 7.0 as avg_yearly "
                             + "from "
-                            + "lineitem, "
-                            + "part "
+                            +     "lineitem, "
+                            +     "part "
                             + "where "
                             + "p_partkey = l_partkey "
                             + "and p_brand = 'Logitec'  "
@@ -1853,7 +1851,7 @@ public class ComplexViewTest {
                 } finally {
                     connection.rollback();
                     statement.executeUpdate( "DROP VIEW IF EXISTS q17_VIEW" );
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -1912,7 +1910,7 @@ public class ComplexViewTest {
                     connection.commit();
                 } finally {
                     connection.rollback();
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -1985,7 +1983,7 @@ public class ComplexViewTest {
                 } finally {
                     connection.rollback();
                     statement.executeUpdate( "DROP VIEW IF EXISTS q19_VIEW" );
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -2047,7 +2045,7 @@ public class ComplexViewTest {
                     connection.commit();
                 } finally {
                     connection.rollback();
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -2087,7 +2085,7 @@ public class ComplexViewTest {
                     connection.commit();
                 } finally {
                     connection.rollback();
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }
@@ -2149,7 +2147,7 @@ public class ComplexViewTest {
                     connection.commit();
                 } finally {
                     connection.rollback();
-                    dropTables( connection );
+                    dropTables( statement );
                 }
             }
         }

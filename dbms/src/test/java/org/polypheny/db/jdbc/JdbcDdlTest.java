@@ -37,13 +37,12 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.excluded.MonetdbExcluded;
-import org.polypheny.db.excluded.PostgresqlExcluded;
 import org.polypheny.db.type.PolyType;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-@Category({ AdapterTestSuite.class, PostgresqlExcluded.class, CassandraExcluded.class })
+@Category({ AdapterTestSuite.class, CassandraExcluded.class })
 public class JdbcDdlTest {
 
 
@@ -101,7 +100,6 @@ public class JdbcDdlTest {
 
 
     @Test
-    @Category(MonetdbExcluded.class)
     public void testTypes() throws SQLException {
         // Check if there are new types missing in this test
         Assert.assertEquals( "Unexpected number of available types", PolyType.availableTypes().size(), 16 );
@@ -166,7 +164,6 @@ public class JdbcDdlTest {
 
 
     @Test
-    @Category(MonetdbExcluded.class)
     public void viewTestTypes() throws SQLException {
         // Check if there are new types missing in this test
         Assert.assertEquals( "Unexpected number of available types", PolyType.availableTypes().size(), 16 );
@@ -369,7 +366,6 @@ public class JdbcDdlTest {
 
 
     @Test
-    @Category(MonetdbExcluded.class)
     public void renameTableTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -434,7 +430,7 @@ public class JdbcDdlTest {
 
 
     @Test
-    @Category({ MonetdbExcluded.class, FileExcluded.class })
+    @Category({ FileExcluded.class })
     public void addColumnTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -489,7 +485,7 @@ public class JdbcDdlTest {
 
 
     @Test
-    @Category({ MonetdbExcluded.class, FileExcluded.class })
+    @Category({ FileExcluded.class })
     public void addColumnArrayTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -530,7 +526,7 @@ public class JdbcDdlTest {
 
 
     @Test
-    @Category({ MonetdbExcluded.class, FileExcluded.class })
+    @Category({ FileExcluded.class, MonetdbExcluded.class })
     public void changeColumnTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -586,7 +582,6 @@ public class JdbcDdlTest {
 
 
     @Test
-    @Category(MonetdbExcluded.class)
     public void testReorderColumns() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -628,7 +623,6 @@ public class JdbcDdlTest {
 
 
     @Test
-    @Category(MonetdbExcluded.class)
     public void testTruncate() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

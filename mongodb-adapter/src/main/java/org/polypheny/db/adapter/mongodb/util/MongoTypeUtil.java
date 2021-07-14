@@ -364,7 +364,6 @@ public class MongoTypeUtil {
         }
 
         switch ( finalType ) {
-
             case BOOLEAN:
                 return el.getValueAs( Boolean.class );
             case TINYINT:
