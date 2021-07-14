@@ -128,8 +128,15 @@ public class DockerInstance extends DockerManager {
             for ( String name : names ) {
                 String[] splits = name.split( "_polypheny_" );
                 if ( splits.length == 2 ) {
-                    int adapterId = Integer.parseInt( splits[1] );
-                    if ( !catalog.checkIfExistsAdapter( adapterId ) || !catalog.getAdapter( adapterId ).uniqueName.equals( splits[0] ) ) {
+                    String unparsedAdapterId = splits[1];
+                    boolean isTestContainer = splits[1].contains( "_test" );
+                    // if the container was annotate with "_test", it has to be deleted if a new run in testMode was started
+                    if ( isTestContainer ) {
+                        unparsedAdapterId = unparsedAdapterId.replace( "_test", "" );
+                    }
+
+                    int adapterId = Integer.parseInt( unparsedAdapterId );
+                    if ( !catalog.checkIfExistsAdapter( adapterId ) || !catalog.getAdapter( adapterId ).uniqueName.equals( splits[0] ) || isTestContainer ) {
                         idsToRemove.put( container.getId(), container.getState().equalsIgnoreCase( "running" ) );
                         // as we remove this container later we skip the name and port adding
                         continue outer;
@@ -186,7 +193,6 @@ public class DockerInstance extends DockerManager {
 
 
     private boolean testDockerRunning( DockerClient client ) {
-        // todo dl, better checking, exceptions for code flow is bad practice
         try {
             return null != client.infoCmd().exec();
         } catch ( Exception e ) {
@@ -264,6 +270,7 @@ public class DockerInstance extends DockerManager {
             }
         }
 
+        container.setContainerId( containerInfo.getId() );
         container.setStatus( ContainerStatus.RUNNING );
     }
 
@@ -441,7 +448,7 @@ public class DockerInstance extends DockerManager {
             stop( container );
         }
 
-        client.removeContainerCmd( container.getPhysicalName() ).exec();
+        client.removeContainerCmd( container.getPhysicalName() ).withRemoveVolumes( true ).exec();
         container.setStatus( ContainerStatus.DESTROYED );
 
         usedNames.remove( container.uniqueName );

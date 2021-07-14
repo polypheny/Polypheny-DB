@@ -241,29 +241,23 @@ public class FileAdapterTest {
                     statement.executeUpdate( "ALTER TABLE public.partitioned ADD PLACEMENT (username) ON STORE \"hsqldb\"" );
                     statement.executeUpdate( "ALTER TABLE public.partitioned MODIFY PLACEMENT (pic) ON STORE \"mm\"" );
 
-                    //TODO: fix: The number of changed rows is not equal for all stores
-                    /*
                     PreparedStatement ps = connection.prepareStatement( "INSERT INTO public.partitioned (id, username, pic) VALUES(?,?,?)" );
                     ps.setInt( 1, 1 );
                     ps.setString( 2, "user1" );
-                    ps.setBytes( 3, "user1".getBytes() );
+                    ps.setBytes( 3, "polypheny".getBytes() );
                     ps.addBatch();
                     ps.clearParameters();
                     ps.setInt( 1, 2 );
                     ps.setString( 2, "user2" );
-                    ps.setBytes( 3, "user2".getBytes() );
+                    ps.setBytes( 3, "basel".getBytes() );
                     ps.addBatch();
                     ps.executeBatch();
-                    */
-
-                    statement.executeUpdate( "INSERT INTO public.partitioned (id, username, pic) VALUES(1, 'user1', x'6869')" );
-                    statement.executeUpdate( "INSERT INTO public.partitioned (id, username, pic) VALUES(2, 'user2', x'6869')" );
 
                     ResultSet rs = statement.executeQuery( "SELECT username, pic FROM public.partitioned WHERE id = 1" );
-                    TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ "user1", "hi".getBytes() } ) );
+                    TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ "user1", "polypheny".getBytes() } ) );
                     rs.close();
                     rs = statement.executeQuery( "SELECT username, pic FROM public.partitioned WHERE id = 2" );
-                    TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ "user2", "hi".getBytes() } ) );
+                    TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ "user2", "basel".getBytes() } ) );
                     rs.close();
                 } finally {
                     statement.executeUpdate( "DROP TABLE public.partitioned" );

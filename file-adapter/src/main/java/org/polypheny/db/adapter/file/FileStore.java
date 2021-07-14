@@ -30,6 +30,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
+import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.information.InformationGraph;
 import org.polypheny.db.information.InformationGraph.GraphData;
@@ -188,6 +189,20 @@ public class FileStore extends DataStore {
         if ( !newColumnFolder.mkdir() ) {
             throw new RuntimeException( "Could not create column folder " + newColumnFolder.getName() );
         }
+
+        // Add default values
+        if ( catalogColumn.defaultValue != null ) {
+            try {
+                CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
+                File primaryKeyDir = new File( rootDir, getPhysicalColumnName( primaryKey.columnIds.get( 0 ) ) );
+                for ( File entry : primaryKeyDir.listFiles() ) {
+                    FileModifier.write( new File( newColumnFolder, entry.getName() ), catalogColumn.defaultValue.value );
+                }
+            } catch ( IOException e ) {
+                throw new RuntimeException( "Caught exception while inserting default values", e );
+            }
+        }
+
         catalog.updateColumnPlacementPhysicalNames(
                 getAdapterId(),
                 catalogColumn.id,
