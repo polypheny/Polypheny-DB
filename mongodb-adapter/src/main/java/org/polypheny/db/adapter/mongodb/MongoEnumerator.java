@@ -163,16 +163,38 @@ class MongoEnumerator implements Enumerator<Object> {
      * This method is needed to translate the special types back to their initial ones in Arrays,
      * for example Float is not available in MongoDB and has to be stored as Double,
      * This needs to be fixed when retrieving the arrays.
+     * Additionally for array we cannot be sure how the value is stored, as we lose this information on insert
      *
      * @param objects
      * @param arrayFieldClass
      * @return
      */
-    static List<Object> arrayGetter( List<Object> objects, Class arrayFieldClass ) {
+    static List<Object> arrayGetter( List<Object> objects, Class<?> arrayFieldClass ) {
         if ( arrayFieldClass == Float.class || arrayFieldClass == float.class ) {
-            return objects.stream().map( obj -> ((Double) obj).floatValue() ).collect( Collectors.toList() );
+            if ( objects.size() > 1 ) {
+                if ( objects.get( 0 ) instanceof Double ) {
+                    return objects.stream().map( o -> ((Double) o).floatValue() ).collect( Collectors.toList() );
+                } else if ( objects.get( 0 ) instanceof Decimal128 ) {
+                    return objects.stream().map( obj -> ((Decimal128) obj).floatValue() ).collect( Collectors.toList() );
+                }
+            }
+            return objects;
         } else if ( arrayFieldClass == BigDecimal.class ) {
             return objects.stream().map( obj -> ((Decimal128) obj).bigDecimalValue() ).collect( Collectors.toList() );
+        } else if ( arrayFieldClass == double.class ) {
+            if ( objects.size() > 1 ) {
+                if ( objects.get( 0 ) instanceof Decimal128 ) {
+                    return objects.stream().map( o -> ((Decimal128) o).doubleValue() ).collect( Collectors.toList() );
+                }
+            }
+            return objects;
+        } else if ( arrayFieldClass == long.class ) {
+            if ( objects.size() > 1 ) {
+                if ( objects.get( 0 ) instanceof Integer ) {
+                    return objects.stream().map( o -> Long.valueOf( (Integer) o ) ).collect( Collectors.toList() );
+                }
+            }
+            return objects;
         } else {
             return objects;
         }
@@ -240,7 +262,11 @@ class MongoEnumerator implements Enumerator<Object> {
             return primitive.number( (Number) o );
         }
         if ( clazz == BigDecimal.class ) {
-            return ((Decimal128) o).bigDecimalValue();
+            if ( o instanceof Decimal128 ) {
+                return ((Decimal128) o).bigDecimalValue();
+            } else {
+                return BigDecimal.valueOf( (Double) o );
+            }
         }
 
         return o;

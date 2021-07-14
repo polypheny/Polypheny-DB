@@ -33,22 +33,41 @@ import org.polypheny.db.sql.SqlKind;
 
 public class BsonFunctionHelper extends BsonDocument {
 
-    static String l2Function = "function(arr1, arr2){var result = 0;\n"
+    static String decimalCast = "if( arr1.length > 1) {\n"
+            + "                if ( arr1[0].toString().includes('NumberDecimal')) {\n"
+            + "                    arr1 = arr1.map( a => parseFloat(a.toString().replace('NumberDecimal(\\\"','').replace('\\\")', '')))\n"
+            + "                }\n"
+            + "            }\n"
+            + "            if( arr1.length > 1) {\n"
+            + "                if ( arr2[0].toString().includes('NumberDecimal')) {\n"
+            + "                    arr2 = arr2.map( a => parseFloat(a.toString().replace('NumberDecimal(\\\"','').replace('\\\")', '')))\n"
+            + "                }\n"
+            + "            }";
+
+    static String l2Function = "function(arr1, arr2){"
+            + decimalCast
+            + "        var result = 0;\n"
             + "        for ( var i = 0; i < arr1.length; i++){\n"
             + "            result += Math.pow(arr1[i] - arr2[i], 2);\n"
             + "        }\n"
             + "        return result;}";
-    static String l2squaredFunction = "function(arr1, arr2){var result = 0;\n"
+    static String l2squaredFunction = "function(arr1, arr2){"
+            + decimalCast
+            + "        var result = 0;\n"
             + "        for ( var i = 0; i < arr1.length; i++){\n"
             + "            result += Math.pow(arr1[i] - arr2[i], 2);\n"
             + "        }\n"
             + "        return Math.sqrt(result);}";
-    static String l1Function = "function(arr1, arr2){var result = 0;\n"
+    static String l1Function = "function(arr1, arr2){"
+            + decimalCast
+            + "        var result = 0;\n"
             + "        for ( var i = 0; i < arr1.length; i++){\n"
             + "            result += Math.abs(arr1[i] - arr2[i]);\n"
             + "        }\n"
             + "        return result;}";
-    static String chiFunction = "function(arr1, arr2){var result = 0;\n"
+    static String chiFunction = "function(arr1, arr2){"
+            + decimalCast
+            + "        var result = 0;\n"
             + "        for ( var i = 0; i < arr1.length; i++){\n"
             + "            result += Math.pow(arr1[i] - arr2[i], 2)/(arr1[i] + arr2[i]);\n"
             + "        }\n"

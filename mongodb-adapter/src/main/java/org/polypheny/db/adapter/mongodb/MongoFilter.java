@@ -352,6 +352,8 @@ public class MongoFilter extends Filter implements MongoRel {
                     return MongoTypeUtil.getAsBson( (RexLiteral) el, bucket );
                 } else if ( el.isA( DYNAMIC_PARAM ) ) {
                     return new BsonDynamic( (RexDynamicParam) el );
+                } else if ( el.isA( LITERAL ) ) {
+                    return MongoTypeUtil.getAsBson( (RexLiteral) el, bucket );
                 } else {
                     throw new RuntimeException( "Input in array is not translatable." );
                 }
