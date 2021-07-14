@@ -147,8 +147,9 @@ public class FileStore extends DataStore {
 
 
     @Override
-    public void createTable( Context context, CatalogTable catalogTable ) {
+    public void createTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
+
         for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ) ) {
             catalog.updateColumnPlacementPhysicalNames(
                     getAdapterId(),
@@ -168,7 +169,7 @@ public class FileStore extends DataStore {
 
 
     @Override
-    public void dropTable( Context context, CatalogTable catalogTable ) {
+    public void dropTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         //todo check if it is on this store?
         for ( Long colId : catalogTable.columnIds ) {

@@ -196,7 +196,7 @@ public class CottontailStore extends DataStore {
 
 
     @Override
-    public void createTable( Context context, CatalogTable combinedTable ) {
+    public void createTable( Context context, CatalogTable combinedTable, List<Long> partitionIds ) {
 
 //        ColumnDefinition.Builder columnBuilder = ColumnDefinition.newBuilder();
         /*for ( CatalogColumnPlacement placement : this.catalog.getColumnPlacementsOnStore( this.getStoreId(), combinedTable.id ) ) {
@@ -265,7 +265,7 @@ public class CottontailStore extends DataStore {
 
 
     @Override
-    public void dropTable( Context context, CatalogTable combinedTable ) {
+    public void dropTable( Context context, CatalogTable combinedTable, List<Long> partitionIds ) {
         String physicalTableName = CottontailNameUtil.getPhysicalTableName( this.getAdapterId(), combinedTable.id );
         Entity tableEntity = Entity.newBuilder()
                 .setSchema( this.currentSchema.getCottontailSchema() )

@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
@@ -717,7 +716,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Create table on store
-        dataStore.createTable( statement.getPrepareContext(), catalogTable );
+        dataStore.createTable( statement.getPrepareContext(), catalogTable, catalogTable.partitionProperty.partitionIds);
         // Copy data to the newly added placements
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
         dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( dataStore.getAdapterId() ), addedColumns, partitionIds );
@@ -910,7 +909,7 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
         // Physically delete the data from the store
-        storeInstance.dropTable( statement.getPrepareContext(), catalogTable );
+        storeInstance.dropTable( statement.getPrepareContext(), catalogTable, catalogTable.partitionProperty.partitionIds);
         // Inform routing
         statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id ) );
         // Delete placement in the catalog
@@ -1141,16 +1140,13 @@ public class DdlManagerImpl extends DdlManager {
                 }
                 catalog.updatePartitionGroupsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id, tempPartitionGroupList );
             }
+        }else{
+            tempPartitionGroupList.add( catalogTable.partitionProperty.partitionGroupIds.get( 0 ) );
         }
 
         //all internal partitions placed on this store
         List<Long> partitionIds = new ArrayList<>();
-        /*partitionIds = catalog.getPartitionsOnDataPlacement(storeInstance.getAdapterId(), catalogTable.id );
 
-        if ( partitionIds.isEmpty() ){
-            partitionIds.add( (long) -1 );
-            //add default value for non-partitioned otherwise CCP wouldn't be created at all
-        }*/
 
         //Gather all partitions relevant to add depending on the specified partitionGroup
         tempPartitionGroupList.forEach( pg -> catalog.getPartitions(pg).forEach( p -> partitionIds.add( p.id ) ) );
@@ -1364,7 +1360,7 @@ public class DdlManagerImpl extends DdlManager {
             CatalogTable catalogTable = catalog.getTable( tableId );
 
             for ( DataStore store : stores ) {
-                store.createTable( statement.getPrepareContext(), catalogTable );
+                store.createTable( statement.getPrepareContext(), catalogTable, catalogTable.partitionProperty.partitionIds);
             }
 
         } catch ( GenericCatalogException | UnknownColumnException | UnknownCollationException e ) {
@@ -1394,6 +1390,8 @@ public class DdlManagerImpl extends DdlManager {
         if ( log.isDebugEnabled() ) {
             log.debug( "Creating partition group for table: {} with id {} on schema: {} on column: {}", partitionInfo.table.name, partitionInfo.table.id, partitionInfo.table.getSchemaName(), catalogColumn.id );
         }
+
+        CatalogTable unPartitionedTable = catalog.getTable( partitionInfo.table.id );
 
         // Get partition manager
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
@@ -1580,12 +1578,12 @@ public class DdlManagerImpl extends DdlManager {
             if ( fillStores ) {
                 // Ask router on which store(s) the table should be placed
                 Adapter adapter = AdapterManager.getInstance().getAdapter( ccp.adapterId );
-                DataStore store;
                 if ( adapter instanceof DataStore ) {
                     stores.add((DataStore) adapter);
                 }
             }
         }
+
 
 
         //Now get the partitioned table, partionInfo still contains the basic/unpartitioned table.
@@ -1596,9 +1594,14 @@ public class DdlManagerImpl extends DdlManager {
 
 
         for ( DataStore store : stores ) {
-            store.dropTable( statement.getPrepareContext(), partitionedTable );
-            store.createTable( statement.getPrepareContext(), partitionedTable );
 
+            //First create new tables
+            store.createTable( statement.getPrepareContext(), partitionedTable, partitionedTable.partitionProperty.partitionIds);
+
+            //Copy data from unpartitioned to partitioned
+
+            //Drop all unpartitionedTables
+            //store.dropTable( statement.getPrepareContext(), unPartitionedTable, unPartitionedTable.partitionProperty.partitionIds);
             //TODO Migrate data from standard table to unpartitioned table
             //Shadow based operation
 
@@ -1730,7 +1733,7 @@ public class DdlManagerImpl extends DdlManager {
         catalog.flagTableForDeletion( catalogTable.id, true );
         for ( int storeId : catalogTable.placementsByAdapter.keySet() ) {
             // Delete table on store
-            AdapterManager.getInstance().getStore( storeId ).dropTable( statement.getPrepareContext(), catalogTable );
+            AdapterManager.getInstance().getStore( storeId ).dropTable( statement.getPrepareContext(), catalogTable, catalogTable.partitionProperty.partitionIds);
             // Inform routing
             statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnAdapterPerTable( storeId, catalogTable.id ) );
             // Delete column placement in catalog

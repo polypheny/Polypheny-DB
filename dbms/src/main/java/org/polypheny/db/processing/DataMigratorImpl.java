@@ -36,6 +36,9 @@ import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.partition.PartitionManager;
+import org.polypheny.db.partition.PartitionManagerFactory;
+import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.ViewExpanders;
@@ -68,15 +71,20 @@ public class DataMigratorImpl implements DataMigrator {
         Statement sourceStatement = transaction.createStatement();
         Statement targetStatement = transaction.createStatement();
 
+
+        CatalogTable table = Catalog.getInstance().getTable( columns.get( 0 ).tableId );
+        CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( table.primaryKey );
+
+
+
         // Check Lists
         List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
         for ( CatalogColumn catalogColumn : columns ) {
             columnPlacements.add( Catalog.getInstance().getColumnPlacement( store.id, catalogColumn.id) );
         }
 
+
         List<CatalogColumn> selectColumnList = new LinkedList<>( columns );
-        CatalogTable table = Catalog.getInstance().getTable( columnPlacements.get( 0 ).tableId );
-        CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( table.primaryKey );
 
         // Add primary keys to select column list
         for ( long cid : primaryKey.columnIds ) {
@@ -86,9 +94,22 @@ public class DataMigratorImpl implements DataMigrator {
             }
         }
 
+
+        //We need a columnPlacement for every partition
+        Map <Long,List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
+        if ( table.isPartitioned) {
+            PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
+            PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( table.partitionProperty.partitionType );
+            placementDistribution = partitionManager.getRelevantPlacements( table, partitionIds );
+        }else {
+            placementDistribution.put( table.partitionProperty.partitionIds.get( 0 ), selectSourcePlacements( table, selectColumnList, columnPlacements.get( 0 ).adapterId ) );
+        }
+
         for ( long partitionId : partitionIds ) {
 
-            RelRoot sourceRel = getSourceIterator( sourceStatement, selectSourcePlacements( table, selectColumnList, columnPlacements.get( 0 ).adapterId ),partitionId );
+
+
+            RelRoot sourceRel = getSourceIterator( sourceStatement, placementDistribution.get( partitionId ),partitionId );
             RelRoot targetRel;
             if ( Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( store.id, table.id ).size() == columns.size() ) {
                 // There have been no placements for this table on this store before. Build insert statement
@@ -144,6 +165,7 @@ public class DataMigratorImpl implements DataMigrator {
             } catch ( Throwable t ) {
                 throw new RuntimeException( t );
             }
+
         }
     }
 

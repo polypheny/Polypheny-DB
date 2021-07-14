@@ -116,7 +116,7 @@ public abstract class AbstractJdbcStore extends DataStore {
 
 
     @Override
-    public void createTable( Context context, CatalogTable catalogTable ) {
+    public void createTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
         List<String> qualifiedNames = new LinkedList<>();
         qualifiedNames.add( catalogTable.getSchemaName() );
         qualifiedNames.add( catalogTable.name );
@@ -131,7 +131,7 @@ public abstract class AbstractJdbcStore extends DataStore {
         List<CatalogColumnPlacement> existingPlacements = catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id );
 
         //Remove the unpartitioned table name again, otherwise it would cause, table already exist due to create statement
-        for ( long partitionId : catalogTable.partitionProperty.partitionIds ){
+        for ( long partitionId : partitionIds ){
             String physicalTableName = getPhysicalTableName( catalogTable.id, partitionId );
 
             if ( log.isDebugEnabled() ) {
@@ -337,14 +337,17 @@ public abstract class AbstractJdbcStore extends DataStore {
 
 
     @Override
-    public void dropTable( Context context, CatalogTable catalogTable ) {
+    public void dropTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows dropping linked tables.
         String physicalTableName = Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ).get( 0 ).physicalTableName;
         String physicalSchemaName = Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ).get( 0 ).physicalSchemaName;
 
-        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable(getAdapterId(), catalogTable.id) ) {
+        List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
+        partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id )) );
+
+        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
             catalog.deletePartitionPlacement( getAdapterId(), partitionPlacement.partitionId );
             physicalSchemaName = partitionPlacement.physicalSchemaName;
             physicalTableName = partitionPlacement.physicalTableName;

@@ -222,7 +222,7 @@ public class CassandraStore extends DataStore {
 
 
     @Override
-    public void createTable( Context context, CatalogTable catalogTable ) {
+    public void createTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
         // This check is probably not required due to the check below it.
         if ( catalogTable.primaryKey == null ) {
             throw new UnsupportedOperationException( "Cannot create Cassandra Table without a primary key!" );
@@ -289,7 +289,7 @@ public class CassandraStore extends DataStore {
 
 
     @Override
-    public void dropTable( Context context, CatalogTable catalogTable ) {
+    public void dropTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
         CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( this.getAdapterId() );
         String physicalTableName = physicalNameProvider.getPhysicalTableName( catalogTable.id );
         SimpleStatement dropTable = SchemaBuilder.dropTable( this.dbKeyspace, physicalTableName ).build();

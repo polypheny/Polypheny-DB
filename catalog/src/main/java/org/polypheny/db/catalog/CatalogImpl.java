@@ -354,11 +354,11 @@ public class CatalogImpl extends Catalog {
                         // TODO only full placements atm here
 
                         if ( !restoredTables.containsKey( store.getAdapterId() ) ) {
-                            store.createTable( transaction.createStatement().getPrepareContext(), catalogTable );
+                            store.createTable( transaction.createStatement().getPrepareContext(), catalogTable, catalogTable.partitionProperty.partitionIds);
                             restoredTables.put( store.getAdapterId(), Collections.singletonList( catalogTable.id ) );
 
                         } else if ( !(restoredTables.containsKey( store.getAdapterId() ) && restoredTables.get( store.getAdapterId() ).contains( catalogTable.id )) ) {
-                            store.createTable( transaction.createStatement().getPrepareContext(), catalogTable );
+                            store.createTable( transaction.createStatement().getPrepareContext(), catalogTable, catalogTable.partitionProperty.partitionIds);
                             List<Long> ids = new ArrayList<>( restoredTables.get( store.getAdapterId() ) );
                             ids.add( catalogTable.id );
                             restoredTables.put( store.getAdapterId(), ids );
@@ -374,13 +374,13 @@ public class CatalogImpl extends Catalog {
                         DataStore store = manager.getStore( p.adapterId );
 
                         if ( !restoredTables.containsKey( store.getAdapterId() ) ) {
-                            store.createTable( transaction.createStatement().getPrepareContext(), table );
+                            store.createTable( transaction.createStatement().getPrepareContext(), table, table.partitionProperty.partitionIds);
                             List<Long> ids = new ArrayList<>();
                             ids.add( table.id );
                             restoredTables.put( store.getAdapterId(), ids );
 
                         } else if ( !(restoredTables.containsKey( store.getAdapterId() ) && restoredTables.get( store.getAdapterId() ).contains( table.id )) ) {
-                            store.createTable( transaction.createStatement().getPrepareContext(), table );
+                            store.createTable( transaction.createStatement().getPrepareContext(), table, table.partitionProperty.partitionIds);
                             List<Long> ids = new ArrayList<>( restoredTables.get( store.getAdapterId() ) );
                             ids.add( table.id );
                             restoredTables.put( store.getAdapterId(), ids );
