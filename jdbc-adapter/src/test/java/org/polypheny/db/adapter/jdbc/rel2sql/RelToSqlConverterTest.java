@@ -1074,7 +1074,7 @@ public class RelToSqlConverterTest {
         String query = "select * from \"product\" where \"product_id\" = ? AND ? >= \"shelf_width\"";
         final String expected = "SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\"\n"
                 + "FROM \"foodmart\".\"product\"\n"
-                + "WHERE \"product_id\" = ? AND ? >= \"shelf_width\"";
+                + "WHERE \"product_id\" = CAST(? AS INTEGER) AND CAST(? AS INTEGER) >= \"shelf_width\"";
         sql( query ).ok( expected );
     }
 
@@ -3220,7 +3220,7 @@ public class RelToSqlConverterTest {
         String query = "select json_value(\"product_name\", 'lax $') from \"product\"";
         // TODO: translate to JSON_VALUE rather than CAST
         final String expected = "SELECT CAST(JSON_VALUE_ANY(\"product_name\" FORMAT JSON, "
-                + "'lax $' NULL ON EMPTY NULL ON ERROR) AS VARCHAR(2000) CHARACTER SET \"ISO-8859-1\")\n"
+                + "'lax $' NULL ON EMPTY NULL ON ERROR) AS VARCHAR(2000))\n"
                 + "FROM \"foodmart\".\"product\"";
         sql( query ).ok( expected );
     }

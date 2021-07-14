@@ -63,6 +63,7 @@ public enum Adapter {
                 settings.put( "type", "mongo" );
                 settings.put( "instanceId", "0" );
                 settings.put( "mode", "docker" );
+                settings.put( "trxLifetimeLimit", "1209600" );
                 break;
             case HSQLDB:
                 settings.put( "type", "Memory" );

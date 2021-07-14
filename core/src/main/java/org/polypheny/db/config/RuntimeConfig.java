@@ -264,6 +264,18 @@ public enum RuntimeConfig {
             ConfigType.INTEGER,
             "implementationCachingGroup" ),
 
+    PARAMETERIZE_DML( "runtime/parameterizeDML",
+            "Whether DML queries should be parameterized.",
+            true,
+            ConfigType.BOOLEAN,
+            "queryParameterizationGroup" ),
+
+    PARAMETERIZE_INTERVALS( "runtime/parameterizeIntervals",
+            "Whether intervals should be parameterized.",
+            false,
+            ConfigType.BOOLEAN,
+            "queryParameterizationGroup" ),
+
     JOINED_TABLE_SCAN_CACHE( "runtime/joinedTableScanCache",
             "Whether to use the joined table scan caching.",
             false,
@@ -349,6 +361,8 @@ public enum RuntimeConfig {
         queryPlanCachingGroup.withTitle( "Query Plan Caching" );
         final WebUiGroup implementationCachingGroup = new WebUiGroup( "implementationCachingGroup", processingPage.getId() );
         implementationCachingGroup.withTitle( "Implementation Caching" );
+        final WebUiGroup queryParameterizationGroup = new WebUiGroup( "queryParameterizationGroup", processingPage.getId() );
+        queryParameterizationGroup.withTitle( "Query Parameterization" );
         final WebUiGroup constraintEnforcementGroup = new WebUiGroup( "constraintEnforcementGroup", processingPage.getId() );
         constraintEnforcementGroup.withTitle( "Constraint Enforcement" );
         final WebUiGroup polystoreIndexGroup = new WebUiGroup( "polystoreIndexGroup", processingPage.getId() );
@@ -360,6 +374,7 @@ public enum RuntimeConfig {
         configManager.registerWebUiGroup( planningGroup );
         configManager.registerWebUiGroup( queryPlanCachingGroup );
         configManager.registerWebUiGroup( implementationCachingGroup );
+        configManager.registerWebUiGroup( queryParameterizationGroup );
         configManager.registerWebUiGroup( constraintEnforcementGroup );
         configManager.registerWebUiGroup( polystoreIndexGroup );
         configManager.registerWebUiGroup( validationGroup );

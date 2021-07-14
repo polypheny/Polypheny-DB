@@ -75,11 +75,12 @@ import org.polypheny.db.type.PolyTypeFamily;
 @Slf4j
 @AdapterProperties(
         name = "MongoDB",
-        description = "MongoDB is a document-based and distributed database.",
+        description = "MongoDB is a document-based database system.",
         usedModes = { DeployMode.REMOTE, DeployMode.DOCKER })
 @AdapterSettingBoolean(name = "persistent", defaultValue = false)
 @AdapterSettingInteger(name = "port", defaultValue = 27017)
 @AdapterSettingString(name = "host", defaultValue = "localhost", appliesTo = DeploySetting.REMOTE)
+@AdapterSettingInteger(name = "trxLifetimeLimit", defaultValue = 1209600) // two weeks
 public class MongoStore extends DataStore {
 
     private final String host;
@@ -98,7 +99,7 @@ public class MongoStore extends DataStore {
 
         DockerManager.Container container = new ContainerBuilder( getAdapterId(), "mongo:latest", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
                 .withMappedPort( 27017, port )
-                .withInitCommands( Arrays.asList( "mongod", "--replSet", "test" ) )
+                .withInitCommands( Arrays.asList( "mongod", "--replSet", "poly" ) )
                 .withReadyTest( this::testConnection, 20000 )
                 .withAfterCommands( Arrays.asList( "mongo", "--eval", "rs.initiate()" ) )
                 .build();
@@ -114,6 +115,10 @@ public class MongoStore extends DataStore {
         resetDockerConnection( RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, Integer.parseInt( settings.get( "instanceId" ) ) ) );
 
         this.transactionProvider = new TransactionProvider( this.client );
+        MongoDatabase db = this.client.getDatabase( "admin" );
+        Document configs = new Document( "setParameter", 1 );
+        configs.put( "transactionLifetimeLimitSeconds", Integer.parseInt( settings.get( "trxLifetimeLimit" ) ) );
+        db.runCommand( configs );
     }
 
 
@@ -323,19 +328,19 @@ public class MongoStore extends DataStore {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         HASH_FUNCTION type = HASH_FUNCTION.valueOf( catalogIndex.method.toUpperCase( Locale.ROOT ) );
         switch ( type ) {
-
             case SINGLE:
                 List<String> columns = catalogIndex.key.getColumnNames();
                 if ( columns.size() > 1 ) {
                     throw new RuntimeException( "A \"SINGLE INDEX\" can not have multiple columns." );
                 }
                 addCompositeIndex( catalogIndex, columns );
-
                 break;
+
             case DEFAULT:
             case COMPOUND:
                 addCompositeIndex( catalogIndex, catalogIndex.key.getColumnNames() );
                 break;
+
             case MULTIKEY:
                 //array
             case GEOSPATIAL:
@@ -445,7 +450,7 @@ public class MongoStore extends DataStore {
 
     private enum HASH_FUNCTION {
         DEFAULT,
-        COMPOUND, //COMPOUND
+        COMPOUND,
         SINGLE,
         MULTIKEY,
         GEOSPATIAL,

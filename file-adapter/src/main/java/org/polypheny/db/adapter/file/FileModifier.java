@@ -21,13 +21,17 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
 import org.apache.commons.io.IOUtils;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.FileInputHandle;
+import org.polypheny.db.util.TimeString;
+import org.polypheny.db.util.TimestampString;
 
 
 public class FileModifier extends FileEnumerator {
@@ -117,6 +121,12 @@ public class FileModifier extends FileEnumerator {
         } else if ( FileHelper.isSqlDateOrTimeOrTS( value ) ) {
             Long l = FileHelper.sqlToLong( value );
             Files.write( newFile.toPath(), l.toString().getBytes( FileStore.CHARSET ) );
+        } else if ( value instanceof TimestampString ) {
+            Files.write( newFile.toPath(), ("" + ((TimestampString) value).getMillisSinceEpoch()).getBytes( StandardCharsets.UTF_8 ) );
+        } else if ( value instanceof DateString ) {
+            Files.write( newFile.toPath(), ("" + ((DateString) value).getDaysSinceEpoch()).getBytes( StandardCharsets.UTF_8 ) );
+        } else if ( value instanceof TimeString ) {
+            Files.write( newFile.toPath(), ("" + ((TimeString) value).getMillisOfDay()).getBytes( StandardCharsets.UTF_8 ) );
         } else {
             String writeString = value.toString();
             Files.write( newFile.toPath(), writeString.getBytes( FileStore.CHARSET ) );

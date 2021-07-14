@@ -48,6 +48,9 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.DateString;
+import org.polypheny.db.util.TimeString;
+import org.polypheny.db.util.TimestampString;
 
 
 /**
@@ -90,7 +93,7 @@ public class MongoTypeUtil {
     private static Function<Object, BsonValue> getBsonTransformerPrimitive( PolyType type, GridFSBucket bucket ) {
         switch ( type ) {
             case BIGINT:
-                return ( o ) -> new BsonInt64( (Long) o );
+                return MongoTypeUtil::handleBigInt;
             case DECIMAL:
                 return MongoTypeUtil::handleDecimal;
             case TINYINT:
@@ -103,7 +106,7 @@ public class MongoTypeUtil {
             case REAL:
                 return ( o ) -> new BsonDouble( Double.parseDouble( o.toString() ) );
             case DOUBLE:
-                return ( o ) -> new BsonDouble( (Double) o );
+                return MongoTypeUtil::handleDouble;
             case DATE:
                 return MongoTypeUtil::handleDate;
             case TIME:
@@ -133,6 +136,16 @@ public class MongoTypeUtil {
     }
 
 
+    private static BsonValue handleBigInt( Object obj ) {
+        if ( obj instanceof Long ) {
+            return new BsonInt64( (Long) obj );
+        } else {
+            return new BsonInt64( (Integer) obj );
+        }
+
+    }
+
+
     /**
      * Direct transformation of an untyped input to the correct Bson format according to the
      * provided PolyType.
@@ -152,21 +165,20 @@ public class MongoTypeUtil {
         }
         switch ( type ) {
             case BIGINT:
-                return new BsonInt64( (Long) obj );
+                return handleBigInt( obj );
             case DECIMAL:
                 return handleDecimal( obj );
             case TINYINT:
                 return handleTinyInt( obj );
             case SMALLINT:
                 return handleSmallInt( obj );
-
             case INTEGER:
                 return handleInteger( obj );
             case FLOAT:
             case REAL:
                 return new BsonDouble( Double.parseDouble( obj.toString() ) );
             case DOUBLE:
-                return new BsonDouble( (Double) obj );
+                return handleDouble( obj );
             case DATE:
                 return handleDate( obj );
             case TIME:
@@ -196,6 +208,15 @@ public class MongoTypeUtil {
     }
 
 
+    private static BsonValue handleDouble( Object obj ) {
+        if ( obj instanceof Double ) {
+            return new BsonDouble( (Double) obj );
+        } else {
+            return new BsonDouble( ((BigDecimal) obj).doubleValue() );
+        }
+    }
+
+
     private static BsonValue handleMultimedia( GridFSBucket bucket, InputStream o ) {
         ObjectId id = bucket.uploadFromStream( "_", o );
         return new BsonDocument()
@@ -217,7 +238,7 @@ public class MongoTypeUtil {
         if ( o instanceof BigDecimal ) {
             return new BsonDecimal128( new Decimal128( ((BigDecimal) o).multiply( BigDecimal.valueOf( 30 ) ) ) );
         } else {
-            return new BsonDecimal128( new Decimal128( ((int) o) * 30L ) );
+            return new BsonDecimal128( new Decimal128( ((Integer) o) * 30L ) );
         }
     }
 
@@ -243,8 +264,10 @@ public class MongoTypeUtil {
     private static BsonValue handleTinyInt( Object o ) {
         if ( o instanceof Long ) {
             return new BsonInt32( Math.toIntExact( (Long) o ) );
-        } else {
+        } else if ( o instanceof Byte ) {
             return new BsonInt32( (Byte) o );
+        } else {
+            return new BsonInt32( (Integer) o );
         }
     }
 
@@ -267,6 +290,8 @@ public class MongoTypeUtil {
             return new BsonInt64( ((Date) o).toLocalDate().toEpochDay() );
         } else if ( o instanceof GregorianCalendar ) {
             return new BsonInt64( ((GregorianCalendar) o).toZonedDateTime().toLocalDate().toEpochDay() );
+        } else if ( o instanceof DateString ) {
+            return new BsonInt64( ((DateString) o).getDaysSinceEpoch() );
         } else {
             return new BsonInt64( new Date( ((Time) o).getTime() ).toLocalDate().toEpochDay() );
         }
@@ -278,6 +303,10 @@ public class MongoTypeUtil {
             return new BsonInt64( ((Integer) o) );
         } else if ( o instanceof GregorianCalendar ) {
             return new BsonInt64( ((GregorianCalendar) o).toZonedDateTime().toEpochSecond() );
+        } else if ( o instanceof DateString ) {
+            return new BsonInt64( ((DateString) o).toCalendar().getTime().getTime() );
+        } else if ( o instanceof TimeString ) {
+            return new BsonInt64( ((TimeString) o).getMillisOfDay() );
         } else {
             return new BsonInt64( ((Time) o).toLocalTime().toNanoOfDay() / 1000000 );
         }
@@ -293,6 +322,8 @@ public class MongoTypeUtil {
             return new BsonInt64( ((Timestamp) o).getTime() + offset );
         } else if ( o instanceof Calendar ) {
             return new BsonInt64( ((Calendar) o).getTime().getTime() );
+        } else if ( o instanceof TimestampString ) {
+            return new BsonInt64( ((TimestampString) o).getMillisSinceEpoch() );
         } else {
             return new BsonInt64( (Long) o );
         }
@@ -333,7 +364,6 @@ public class MongoTypeUtil {
         }
 
         switch ( finalType ) {
-
             case BOOLEAN:
                 return el.getValueAs( Boolean.class );
             case TINYINT:

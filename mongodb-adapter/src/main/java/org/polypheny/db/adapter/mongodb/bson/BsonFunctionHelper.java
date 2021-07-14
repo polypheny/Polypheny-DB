@@ -33,22 +33,41 @@ import org.polypheny.db.sql.SqlKind;
 
 public class BsonFunctionHelper extends BsonDocument {
 
-    static String l2Function = "function(arr1, arr2){var result = 0;\n"
+    static String decimalCast = "if( arr1.length > 1) {\n"
+            + "                if ( arr1[0].toString().includes('NumberDecimal')) {\n"
+            + "                    arr1 = arr1.map( a => parseFloat(a.toString().replace('NumberDecimal(\\\"','').replace('\\\")', '')))\n"
+            + "                }\n"
+            + "            }\n"
+            + "            if( arr1.length > 1) {\n"
+            + "                if ( arr2[0].toString().includes('NumberDecimal')) {\n"
+            + "                    arr2 = arr2.map( a => parseFloat(a.toString().replace('NumberDecimal(\\\"','').replace('\\\")', '')))\n"
+            + "                }\n"
+            + "            }";
+
+    static String l2Function = "function(arr1, arr2){"
+            + decimalCast
+            + "        var result = 0;\n"
             + "        for ( var i = 0; i < arr1.length; i++){\n"
             + "            result += Math.pow(arr1[i] - arr2[i], 2);\n"
             + "        }\n"
             + "        return result;}";
-    static String l2squaredFunction = "function(arr1, arr2){var result = 0;\n"
+    static String l2squaredFunction = "function(arr1, arr2){"
+            + decimalCast
+            + "        var result = 0;\n"
             + "        for ( var i = 0; i < arr1.length; i++){\n"
             + "            result += Math.pow(arr1[i] - arr2[i], 2);\n"
             + "        }\n"
             + "        return Math.sqrt(result);}";
-    static String l1Function = "function(arr1, arr2){var result = 0;\n"
+    static String l1Function = "function(arr1, arr2){"
+            + decimalCast
+            + "        var result = 0;\n"
             + "        for ( var i = 0; i < arr1.length; i++){\n"
             + "            result += Math.abs(arr1[i] - arr2[i]);\n"
             + "        }\n"
             + "        return result;}";
-    static String chiFunction = "function(arr1, arr2){var result = 0;\n"
+    static String chiFunction = "function(arr1, arr2){"
+            + decimalCast
+            + "        var result = 0;\n"
             + "        for ( var i = 0; i < arr1.length; i++){\n"
             + "            result += Math.pow(arr1[i] - arr2[i], 2)/(arr1[i] + arr2[i]);\n"
             + "        }\n"
@@ -82,7 +101,6 @@ public class BsonFunctionHelper extends BsonDocument {
     private static BsonValue getDynamicFunction( RexNode rexNode ) {
         if ( rexNode.isA( SqlKind.DYNAMIC_PARAM ) ) {
             return new BsonDynamic( (RexDynamicParam) rexNode ).setIsFunc( true );
-
         } else if ( rexNode.isA( SqlKind.CAST ) ) {
             RexCall call = (RexCall) rexNode;
             return getDynamicFunction( call.operands.get( 0 ) );
@@ -113,7 +131,6 @@ public class BsonFunctionHelper extends BsonDocument {
         if ( operands.size() == 3 ) {
             array.add( getVal( operands.get( 0 ), rowType, implementor ) );
             array.add( getVal( operands.get( 1 ), rowType, implementor ) );
-
             return array;
         }
         throw new IllegalArgumentException( "This function is not supported yet" );
@@ -124,11 +141,9 @@ public class BsonFunctionHelper extends BsonDocument {
         if ( rexNode.isA( SqlKind.INPUT_REF ) ) {
             RexInputRef rex = (RexInputRef) rexNode;
             return new BsonString( "$" + rowType.getPhysicalName( rowType.getFieldNames().get( rex.getIndex() ), implementor ) );
-
         } else if ( rexNode.isA( SqlKind.ARRAY_VALUE_CONSTRUCTOR ) ) {
             RexCall rex = (RexCall) rexNode;
             return MongoTypeUtil.getBsonArray( rex, implementor.getBucket() );
-
         } else if ( rexNode.isA( SqlKind.DYNAMIC_PARAM ) ) {
             RexDynamicParam rex = (RexDynamicParam) rexNode;
             return new BsonDynamic( rex );

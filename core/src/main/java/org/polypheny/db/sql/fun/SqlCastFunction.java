@@ -40,6 +40,7 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFamily;
+import org.polypheny.db.sql.SqlBasicCall;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlDynamicParam;
@@ -111,6 +112,9 @@ public class SqlCastFunction extends SqlFunction {
 
             // dynamic parameters and null constants need their types assigned to them using the type they are casted to.
             if ( ((operand0 instanceof SqlLiteral) && (((SqlLiteral) operand0).getValue() == null)) || (operand0 instanceof SqlDynamicParam) ) {
+                final SqlValidatorImpl validator = (SqlValidatorImpl) callBinding.getValidator();
+                validator.setValidatedNodeType( operand0, ret );
+            } else if ( ((operand0 instanceof SqlBasicCall) && (((SqlBasicCall) operand0).getOperator() instanceof SqlArrayValueConstructor)) ) {
                 final SqlValidatorImpl validator = (SqlValidatorImpl) callBinding.getValidator();
                 validator.setValidatedNodeType( operand0, ret );
             }

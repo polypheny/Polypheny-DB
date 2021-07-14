@@ -577,11 +577,11 @@ public class JdbcPreparedStatementsTest {
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( "CREATE TABLE psarrtest( "
                         + "tinteger INTEGER NOT NULL, "
-                        + "tintarr VARCHAR ARRAY(1,2) NOT NULL, "
+                        + "tvarchararr VARCHAR ARRAY(1,2) NOT NULL, "
                         + "PRIMARY KEY (tinteger) )" );
 
                 try {
-                    PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO psarrtest(tinteger,tintarr) VALUES (?, ?)" );
+                    PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO psarrtest(tinteger,tvarchararr) VALUES (?, ?)" );
 
                     final ArrayFactoryImpl arrayFactory = new ArrayFactoryImpl( Unsafe.localCalendar().getTimeZone() );
 
@@ -599,7 +599,7 @@ public class JdbcPreparedStatementsTest {
 
                     preparedInsert.executeBatch();
 
-                    PreparedStatement preparedSelect = connection.prepareStatement( "SELECT tinteger,tintarr FROM psarrtest WHERE tinteger < ?" );
+                    PreparedStatement preparedSelect = connection.prepareStatement( "SELECT tinteger,tvarchararr FROM psarrtest WHERE tinteger < ?" );
                     preparedSelect.setInt( 1, 3 );
                     TestHelper.checkResultSet(
                             preparedSelect.executeQuery(),

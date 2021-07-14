@@ -205,10 +205,12 @@ public class MongoDynamic {
         final String key;
         final BsonDocument doc;
 
+
         DocWrapper( String key, BsonDocument doc ) {
             this.key = key;
             this.doc = doc;
         }
+
 
         public void insert( BsonValue value ) {
             doc.put( key, value );
@@ -226,10 +228,12 @@ public class MongoDynamic {
         final int index;
         final BsonArray array;
 
+
         ArrayWrapper( int index, BsonArray array ) {
             this.index = index;
             this.array = array;
         }
+
 
         public void insert( BsonValue value ) {
             array.set( index, value );
