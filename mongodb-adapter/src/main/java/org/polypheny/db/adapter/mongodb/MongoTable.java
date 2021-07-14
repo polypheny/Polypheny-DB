@@ -396,9 +396,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                         assert operations.size() == 1;
                         // prepared
                         MongoDynamic util = new MongoDynamic( BsonDocument.parse( operations.get( 0 ) ), bucket );
-
                         List<Document> inserts = util.getAll( dataContext.getParameterValues() );
-
                         mongoTable.getCollection().insertMany( session, inserts );
                         changes = inserts.size();
                     } else {
@@ -418,7 +416,6 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                         for ( Map<Long, Object> parameterValue : dataContext.getParameterValues() ) {
                             changes += mongoTable.getCollection().updateMany( session, filterUtil.insert( parameterValue ), Collections.singletonList( docUtil.insert( parameterValue ) ) ).getModifiedCount();
                         }
-
                     } else {
                         // direct
                         changes = mongoTable.getCollection().updateMany( session, BsonDocument.parse( filter ), Collections.singletonList( BsonDocument.parse( operations.get( 0 ) ) ) ).getModifiedCount();
@@ -430,7 +427,6 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                         // prepared
                         MongoDynamic filterUtil = new MongoDynamic( BsonDocument.parse( filter ), bucket );
                         List<? extends WriteModel<Document>> filters = filterUtil.getAll( dataContext.getParameterValues(), DeleteManyModel::new );
-
                         changes = mongoTable.getCollection().bulkWrite( session, filters ).getDeletedCount();
                     } else {
                         // direct

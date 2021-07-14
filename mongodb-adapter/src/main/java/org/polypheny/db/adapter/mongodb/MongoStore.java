@@ -75,7 +75,7 @@ import org.polypheny.db.type.PolyTypeFamily;
 @Slf4j
 @AdapterProperties(
         name = "MongoDB",
-        description = "MongoDB is a document-based and distributed database.",
+        description = "MongoDB is a document-based database system.",
         usedModes = { DeployMode.REMOTE, DeployMode.DOCKER })
 @AdapterSettingBoolean(name = "persistent", defaultValue = false)
 @AdapterSettingInteger(name = "port", defaultValue = 27017)
@@ -313,19 +313,19 @@ public class MongoStore extends DataStore {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         HASH_FUNCTION type = HASH_FUNCTION.valueOf( catalogIndex.method.toUpperCase( Locale.ROOT ) );
         switch ( type ) {
-
             case SINGLE:
                 List<String> columns = catalogIndex.key.getColumnNames();
                 if ( columns.size() > 1 ) {
                     throw new RuntimeException( "A \"SINGLE INDEX\" can not have multiple columns." );
                 }
                 addCompositeIndex( catalogIndex, columns );
-
                 break;
+
             case DEFAULT:
             case COMPOUND:
                 addCompositeIndex( catalogIndex, catalogIndex.key.getColumnNames() );
                 break;
+
             case MULTIKEY:
                 //array
             case GEOSPATIAL:
@@ -432,7 +432,7 @@ public class MongoStore extends DataStore {
 
     private enum HASH_FUNCTION {
         DEFAULT,
-        COMPOUND, //COMPOUND
+        COMPOUND,
         SINGLE,
         MULTIKEY,
         GEOSPATIAL,

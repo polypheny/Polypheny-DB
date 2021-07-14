@@ -159,7 +159,6 @@ public class MongoTypeUtil {
                 return handleTinyInt( obj );
             case SMALLINT:
                 return handleSmallInt( obj );
-
             case INTEGER:
                 return handleInteger( obj );
             case FLOAT:
@@ -333,7 +332,6 @@ public class MongoTypeUtil {
         }
 
         switch ( finalType ) {
-
             case BOOLEAN:
                 return el.getValueAs( Boolean.class );
             case TINYINT:
