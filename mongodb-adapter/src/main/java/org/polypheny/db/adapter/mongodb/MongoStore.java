@@ -80,7 +80,7 @@ import org.polypheny.db.type.PolyTypeFamily;
 @AdapterSettingBoolean(name = "persistent", defaultValue = false)
 @AdapterSettingInteger(name = "port", defaultValue = 27017)
 @AdapterSettingString(name = "host", defaultValue = "localhost", appliesTo = DeploySetting.REMOTE)
-@AdapterSettingInteger(name = "trxLifetimeLimit", defaultValue = 120)
+@AdapterSettingInteger(name = "trxLifetimeLimit", defaultValue = 1209600) // two weeks
 public class MongoStore extends DataStore {
 
     private final String host;
