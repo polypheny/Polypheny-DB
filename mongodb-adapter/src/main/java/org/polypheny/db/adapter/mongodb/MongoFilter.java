@@ -244,7 +244,7 @@ public class MongoFilter extends Filter implements MongoRel {
 
             switch ( right.getKind() ) {
                 case DYNAMIC_PARAM:
-                    this.ors.add( new BsonDocument().append(
+                    this.ors.add( new BsonDocument(
                             getPhysicalName( (RexInputRef) left ),
                             new BsonDynamic( (RexDynamicParam) right ).setIsRegex( true ) ) );
                     return null;
