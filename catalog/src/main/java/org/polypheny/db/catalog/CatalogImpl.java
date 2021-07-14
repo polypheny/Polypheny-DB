@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -62,6 +63,7 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
+import org.polypheny.db.catalog.entity.MaterializedViewCriteria;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
@@ -1375,7 +1377,8 @@ public class CatalogImpl extends Catalog {
                     modifiable,
                     relCollation,
                     ImmutableMap.copyOf( underlyingTables ),
-                    fieldList
+                    fieldList,
+                    new MaterializedViewCriteria( 1L, TimeUnit.MINUTES )
             );
             addConnectedViews( underlyingTables, materializedViewTable.id );
             updateTableLogistics( name, schemaId, id, schema, materializedViewTable );
@@ -1651,7 +1654,9 @@ public class CatalogImpl extends Catalog {
                             ((CatalogMaterializedView) old).getRelCollation(),
                             old.connectedViews,
                             ((CatalogMaterializedView) old).getUnderlyingTables(),
-                            ((CatalogMaterializedView) old).getFieldList() );
+                            ((CatalogMaterializedView) old).getFieldList(),
+                            ((CatalogMaterializedView) old).getMaterializedViewCriteria()
+                    );
                 } else {
                     table = new CatalogTable(
                             old.id,
@@ -1717,7 +1722,9 @@ public class CatalogImpl extends Catalog {
                             ((CatalogMaterializedView) old).getRelCollation(),
                             old.connectedViews,
                             ((CatalogMaterializedView) old).getUnderlyingTables(),
-                            ((CatalogMaterializedView) old).getFieldList() );
+                            ((CatalogMaterializedView) old).getFieldList(),
+                            ((CatalogMaterializedView) old).getMaterializedViewCriteria()
+                    );
                 } else {
                     table = new CatalogTable(
                             old.id,

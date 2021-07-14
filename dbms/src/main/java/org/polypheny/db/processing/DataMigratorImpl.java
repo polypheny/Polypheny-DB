@@ -157,6 +157,48 @@ public class DataMigratorImpl implements DataMigrator {
 
 
     @Override
+    public RelRoot buildDeleteStatement( Statement statement, List<CatalogColumnPlacement> to ) {
+        List<String> qualifiedTableName = ImmutableList.of(
+                PolySchemaBuilder.buildAdapterSchemaName(
+                        to.get( 0 ).adapterUniqueName,
+                        to.get( 0 ).getLogicalSchemaName(),
+                        to.get( 0 ).physicalSchemaName ),
+                to.get( 0 ).getLogicalTableName() );
+        RelOptTable physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
+        ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
+
+        RelOptCluster cluster = RelOptCluster.create(
+                statement.getQueryProcessor().getPlanner(),
+                new RexBuilder( statement.getTransaction().getTypeFactory() ) );
+        RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+
+        List<String> columnNames = new LinkedList<>();
+        List<RexNode> values = new LinkedList<>();
+        for ( CatalogColumnPlacement ccp : to ) {
+            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( ccp.columnId );
+            columnNames.add( ccp.getLogicalColumnName() );
+            values.add( new RexDynamicParam( catalogColumn.getRelDataType( typeFactory ), (int) catalogColumn.id ) );
+        }
+        RelBuilder builder = RelBuilder.create( statement, cluster );
+        builder.push( LogicalValues.createOneRow( cluster ) );
+        builder.project( values, columnNames );
+
+        RelNode node = modifiableTable.toModificationRel(
+                cluster,
+                physical,
+                statement.getTransaction().getCatalogReader(),
+                builder.build(),
+                Operation.DELETE,
+                null,
+                null,
+                true
+        );
+
+        return RelRoot.of( node, SqlKind.DELETE );
+    }
+
+
+    @Override
     public RelRoot buildInsertStatement( Statement statement, List<CatalogColumnPlacement> to ) {
         List<String> qualifiedTableName = ImmutableList.of(
                 PolySchemaBuilder.buildAdapterSchemaName(

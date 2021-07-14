@@ -19,11 +19,34 @@ package org.polypheny.db.materializedView;
 import java.util.List;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.MaterializedViewCriteria;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.transaction.Transaction;
 
-public interface MaterializedViewManager {
+public abstract class MaterializedViewManager {
 
-    void insertData( Transaction transaction, List<DataStore> stores, List<CatalogColumn> columns, RelRoot sourceRelRoot );
+    public static MaterializedViewManager INSTANCE = null;
+
+
+    public static MaterializedViewManager setAndGetInstance( MaterializedViewManager transaction ) {
+        if ( INSTANCE != null ) {
+            throw new RuntimeException( "Overwriting the MaterializedViewManager, when already set is not permitted." );
+        }
+        INSTANCE = transaction;
+        return INSTANCE;
+    }
+
+
+    public static MaterializedViewManager getInstance() {
+        if ( INSTANCE == null ) {
+            throw new RuntimeException( "MaterializedViewManager was not set correctly on Polypheny-DB start-up" );
+        }
+        return INSTANCE;
+    }
+
+
+    public abstract void updateData( Transaction transaction, List<DataStore> stores, List<CatalogColumn> columns, RelRoot sourceRelRoot );
+
+    public abstract void addData( Transaction transaction, List<DataStore> stores, List<CatalogColumn> addedColumns, RelRoot relRoot, long tableId, MaterializedViewCriteria materializedViewCriteria );
 
 }

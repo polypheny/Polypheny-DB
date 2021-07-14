@@ -18,12 +18,17 @@ package org.polypheny.db.materializedView;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.MaterializedViewCriteria;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -39,15 +44,31 @@ import org.polypheny.db.rel.logical.LogicalViewTableScan;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.transaction.TransactionManager;
 
-public class MaterializedViewImpl implements MaterializedViewManager {
+@Slf4j
+public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
-    public MaterializedViewImpl() {
+    @Getter
+    private final Map<Long, MaterializedViewCriteria> materializedViewInfo;
 
+    @Getter
+    private final TransactionManager transactionManager;
+
+
+    public MaterializedViewManagerImpl( TransactionManager transactionManager ) {
+        this.transactionManager = transactionManager;
+        this.materializedViewInfo = new HashMap<>();
+        MaterializedFreshnessLoop materializedFreshnessLoop = new MaterializedFreshnessLoop( this );
+        Thread t = new Thread( materializedFreshnessLoop );
+        t.start();
     }
 
 
-    public void insertData( Transaction transaction, List<DataStore> stores, List<CatalogColumn> columns, RelRoot sourceRel ) {
+    @Override
+    public void addData( Transaction transaction, List<DataStore> stores, List<CatalogColumn> columns, RelRoot sourceRel, long tableId, MaterializedViewCriteria materializedViewCriteria ) {
+        materializedViewInfo.put( tableId, materializedViewCriteria );
 
         Statement sourceStatement = transaction.createStatement();
         Statement targetStatement = transaction.createStatement();
@@ -79,6 +100,42 @@ public class MaterializedViewImpl implements MaterializedViewManager {
     }
 
 
+    @Override
+    public void updateData( Transaction transaction, List<DataStore> stores, List<CatalogColumn> columns, RelRoot sourceRel ) {
+        Statement sourceStatement = transaction.createStatement();
+        Statement targetStatement = transaction.createStatement();
+        List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
+        DataMigrator dataMigrator = transaction.getDataMigrator();
+
+        List<Integer> ids = new ArrayList<>();
+        for ( DataStore store : stores ) {
+            ids.add( store.getAdapterId() );
+        }
+
+        //TODO IG: handle if you have more than one id
+        for ( int id : ids ) {
+            for ( CatalogColumn catalogColumn : columns ) {
+                columnPlacements.add( Catalog.getInstance().getColumnPlacement( id, catalogColumn.id ) );
+            }
+        }
+
+        RelOptCluster cluster = RelOptCluster.create(
+                sourceStatement.getQueryProcessor().getPlanner(),
+                new RexBuilder( sourceStatement.getTransaction().getTypeFactory() ) );
+
+        prepareNode( sourceRel.rel, cluster, null );
+
+        RelRoot targetRel = dataMigrator.buildDeleteStatement( targetStatement, columnPlacements );
+
+        dataMigrator.executeQuery( columns, sourceRel, sourceStatement, targetStatement, targetRel, true );
+
+        targetRel = dataMigrator.buildInsertStatement( targetStatement, columnPlacements );
+        dataMigrator.executeQuery( columns, sourceRel, sourceStatement, targetStatement, targetRel, true );
+
+        commitTransaction( transaction );
+    }
+
+
     public void prepareNode( RelNode viewLogicalRoot, RelOptCluster relOptCluster, RelCollation relCollation ) {
         if ( viewLogicalRoot instanceof AbstractRelNode ) {
             ((AbstractRelNode) viewLogicalRoot).setCluster( relOptCluster );
@@ -105,6 +162,21 @@ public class MaterializedViewImpl implements MaterializedViewManager {
         }
         if ( viewLogicalRoot instanceof LogicalViewTableScan ) {
             prepareNode( ((LogicalViewTableScan) viewLogicalRoot).getRelNode(), relOptCluster, relCollation );
+        }
+    }
+
+
+    public void commitTransaction( Transaction transaction ) {
+
+        try {
+            transaction.commit();
+        } catch ( TransactionException e ) {
+            log.error( "Caught exception while executing a query from the console", e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Caught exception while rollback", e );
+            }
         }
     }
 

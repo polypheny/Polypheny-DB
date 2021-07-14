@@ -38,8 +38,6 @@ import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
-import org.polypheny.db.materializedView.MaterializedViewImpl;
-import org.polypheny.db.materializedView.MaterializedViewManager;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
@@ -299,12 +297,6 @@ public class TransactionImpl implements Transaction, Comparable {
     @Override
     public DataMigrator getDataMigrator() {
         return new DataMigratorImpl();
-    }
-
-
-    @Override
-    public MaterializedViewManager getMaterializedViewManager() {
-        return new MaterializedViewImpl();
     }
 
 }

@@ -1401,7 +1401,7 @@ public class DdlManagerImpl extends DdlManager {
                 findUnderlyingTablesOfView( relRoot.rel, underlyingTables, fieldList ),
                 fieldList
         );
-        CatalogTable table = catalog.getTable( tableId );
+
         List<CatalogColumn> addedColumns = new LinkedList<>();
 
         for ( ColumnInformation column : columns ) {
@@ -1431,15 +1431,13 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        CatalogTable table1 = catalog.getTable( tableId );
         CatalogMaterializedView catalogMaterializedView = (CatalogMaterializedView) catalog.getTable( tableId );
         for ( DataStore store : stores ) {
             store.createTable( statement.getPrepareContext(), catalogMaterializedView );
         }
 
-        MaterializedViewManager materializedViewManager = statement.getTransaction().getMaterializedViewManager();
-        materializedViewManager.insertData( statement.getTransaction(), stores, addedColumns, relRoot );
-
+        MaterializedViewManager materializedViewManager = MaterializedViewManager.getInstance();
+        materializedViewManager.addData( statement.getTransaction(), stores, addedColumns, relRoot, tableId, catalogMaterializedView.getMaterializedViewCriteria() );
 
     }
 

@@ -32,14 +32,21 @@ import org.polypheny.db.rel.type.RelDataType;
 public class CatalogMaterializedView extends CatalogView {
 
     private static final long serialVersionUID = -303234050987260484L;
+
     @Getter
     private final Map<Long, List<Long>> underlyingTables;
+
     @Getter
     private final RelDataType fieldList;
+
     @Getter
     private final RelCollation relCollation;
+
     @Getter
-    public RelNode definition;
+    private final RelNode definition;
+
+    @Getter
+    private final MaterializedViewCriteria materializedViewCriteria;
 
 
     public CatalogMaterializedView(
@@ -57,12 +64,15 @@ public class CatalogMaterializedView extends CatalogView {
             boolean modifiable,
             RelCollation relCollation,
             Map<Long, List<Long>> underlyingTables,
-            RelDataType fieldList ) {
+            RelDataType fieldList,
+            MaterializedViewCriteria materializedViewCriteria
+    ) {
         super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, definition, primaryKey, placementsByAdapter, modifiable, relCollation, underlyingTables, fieldList );
         this.definition = definition;
         this.relCollation = relCollation;
         this.underlyingTables = underlyingTables;
         this.fieldList = fieldList;
+        this.materializedViewCriteria = materializedViewCriteria;
     }
 
 
@@ -87,12 +97,15 @@ public class CatalogMaterializedView extends CatalogView {
             RelCollation relCollation,
             ImmutableList<Long> connectedViews,
             Map<Long, List<Long>> underlyingTables,
-            RelDataType fieldList ) {
+            RelDataType fieldList,
+            MaterializedViewCriteria materializedViewCriteria
+    ) {
         super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, definition, primaryKey, placementsByAdapter, modifiable, numPartitions, partitionType, partitionIds, partitionColumnId, isPartitioned, relCollation, connectedViews, underlyingTables, fieldList );
         this.definition = definition;
         this.relCollation = relCollation;
         this.underlyingTables = underlyingTables;
         this.fieldList = fieldList;
+        this.materializedViewCriteria = materializedViewCriteria;
     }
 
 
@@ -113,7 +126,8 @@ public class CatalogMaterializedView extends CatalogView {
                 modifiable,
                 relCollation,
                 underlyingTables,
-                fieldList );
+                fieldList,
+                materializedViewCriteria );
     }
 
 
@@ -140,7 +154,8 @@ public class CatalogMaterializedView extends CatalogView {
                 relCollation,
                 newConnectedViews,
                 underlyingTables,
-                fieldList );
+                fieldList,
+                materializedViewCriteria );
     }
 
 
@@ -167,7 +182,8 @@ public class CatalogMaterializedView extends CatalogView {
                 relCollation,
                 connectedViews,
                 underlyingTables,
-                fieldList );
+                fieldList,
+                materializedViewCriteria );
     }
 
 }
