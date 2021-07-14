@@ -92,6 +92,35 @@ SqlAlterView SqlAlterView(Span s) :
 }
 
 /**
+* Parses a ALTER MATERIALIZED VIEW statement.
+**/
+SqlAlterMaterializedView SqlAlterMaterializedView(Span s) :
+{
+    final SqlIdentifier materializedview;
+    final SqlIdentifier name;
+    final SqlIdentifier column;
+}
+{
+    <MATERIALIZED><VIEW>
+    materializedview = CompoundIdentifier()
+    (
+        <RENAME><TO>
+        name = SimpleIdentifier()
+        {
+        return new SqlAlterMaterializedViewRename(s.end(this), materializedview, name);
+        }
+    |
+        <RENAME> <COLUMN>
+            column = SimpleIdentifier()
+            <TO>
+            name = SimpleIdentifier()
+            {
+                return new SqlAlterMaterializedViewRenameColumn(s.end(this), materializedview, column, name);
+            }
+    )
+}
+
+/**
 * Parses a ALTER TABLE statement.
 */
 SqlAlterTable SqlAlterTable(Span s) :

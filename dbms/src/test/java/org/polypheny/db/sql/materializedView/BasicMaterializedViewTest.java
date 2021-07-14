@@ -22,14 +22,13 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-public class MaterializedViewTest {
+public class BasicMaterializedViewTest {
 
     private final static String VIEWTESTEMPTABLE_SQL = "CREATE TABLE viewTestEmpTable ("
             + "empId INTEGER NOT NULL,"
@@ -124,8 +123,6 @@ public class MaterializedViewTest {
         }
     }
 
-
-    @Ignore
     @Test
     public void renameColumnTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -177,7 +174,6 @@ public class MaterializedViewTest {
     }
 
 
-    @Ignore
     @Test
     public void renameViewTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -188,7 +184,7 @@ public class MaterializedViewTest {
                 statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
                 statement.executeUpdate( VIEWTESTDEPTABLE_DATA_SQL );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
-                statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestDep AS SELECT * FROM viewTestDepTable" );
+                //statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestDep AS SELECT * FROM viewTestDepTable" );
 
                 try {
                     statement.executeUpdate( "ALTER MATERIALIZED VIEW viewTestEmp RENAME TO viewRenameEmpTest" );
@@ -214,8 +210,8 @@ public class MaterializedViewTest {
                      */
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP VIEW viewRenameEmpTest" );
-                    statement.executeUpdate( "DROP VIEW viewRenameDepTest" );
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW viewRenameEmpTest" );
+                    //statement.executeUpdate( "DROP VIEW viewRenameDepTest" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
                     statement.executeUpdate( "DROP TABLE viewTestDepTable" );
                 }
