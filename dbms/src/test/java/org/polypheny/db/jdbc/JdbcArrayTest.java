@@ -64,7 +64,7 @@ public class JdbcArrayTest {
             + "ARRAY[2.0, 2.5],"
             + "ARRAY[56,44],"
             + "ARRAY[33,22],"
-            + "ARRAY['foo', 'bar']"
+            + "ARRAY[CAST('foo' as VARCHAR), CAST('bar' as VARCHAR)]"
             + ")";
 
     @SuppressWarnings({ "SqlNoDataSourceInspection" })
@@ -268,18 +268,35 @@ public class JdbcArrayTest {
                             statement.executeQuery( "SELECT varchararray[1] FROM arraytest WHERE varchararray[1] = '" + ((Object[]) ARRAYTEST_DATA[9])[0] + "'" ),
                             ImmutableList.of( new Object[]{ ((Object[]) ARRAYTEST_DATA[9])[0] } ) );
 
-                    // TODO
-                /*
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT intarray FROM arraytest WHERE intarray[1] = " + ((Object[]) ARRAYTEST_DATA[1])[0] ),
-                        ImmutableList.of( new Object[] { ARRAYTEST_DATA[1] } ) );*/
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE arraytest" );
+                    connection.commit();
+                }
 
-                    // TODO
-                /*
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT varchararray FROM arraytest ORDER BY varchararray[1]" ),
-                        ImmutableList.of( new Object[] {
-                                new Object[] { ((Object[]) ARRAYTEST_DATA[3])[1], ((Object[]) ARRAYTEST_DATA[3])[0] } } ) );*/
+            }
+        }
+    }
+
+
+    @Test
+    @Ignore
+    public void itemOperatorTest2() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( ARRAYTEST_SQL );
+
+                try {
+                    statement.executeUpdate( ARRAYTEST_DATA_SQL );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT bigintarray FROM arraytest WHERE bigintarray[1] = " + ((Object[]) ARRAYTEST_DATA[1])[0] ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[1] } ) );
+
+                    /*TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT varchararray FROM arraytest ORDER BY varchararray[1]" ),
+                            ImmutableList.of( new Object[] { ARRAYTEST_DATA[3] } ) );*/
 
                     connection.commit();
                 } finally {
@@ -332,7 +349,7 @@ public class JdbcArrayTest {
                             ImmutableList.of( new Object[]{ 1 } ) );
 
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT id FROM arraytest WHERE bigintarray = array[9999999,8888888]" ),
+                            statement.executeQuery( "SELECT id FROM arraytest WHERE bigintarray = array[CAST(9999999 as BIGINT),CAST(8888888 as BIGINT)]" ),
                             ImmutableList.of( new Object[]{ 1 } ) );
 
                     TestHelper.checkResultSet(
@@ -348,15 +365,16 @@ public class JdbcArrayTest {
                             ImmutableList.of( new Object[]{ 1 } ) );
 
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT id FROM arraytest WHERE smallintarray = array[56,44]" ),
+                            statement.executeQuery( "SELECT id FROM arraytest WHERE smallintarray = array[CAST(56 as SMALLINT),CAST(44 as SMALLINT)]" ),
                             ImmutableList.of( new Object[]{ 1 } ) );
 
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT intarray FROM arraytest WHERE varchararray = array[ 'foo', 'bar' ]" ),
+                            statement.executeQuery( "SELECT intarray FROM arraytest WHERE varchararray = array[CAST('foo' as VARCHAR), CAST('bar' as VARCHAR)]" ),
                             ImmutableList.of( new Object[]{ new Object[]{ 1, 2 } } ) );
 
                     connection.commit();
                 } finally {
+                    connection.rollback();
                     statement.executeUpdate( "DROP TABLE arraytest" );
                     connection.commit();
                 }
@@ -410,6 +428,7 @@ public class JdbcArrayTest {
 
                     connection.commit();
                 } finally {
+                    connection.rollback();
                     statement.executeUpdate( "DROP TABLE arraytest" );
                     connection.commit();
                 }

@@ -60,7 +60,6 @@ public class JdbcDdlTest {
             + "ttimestamp TIMESTAMP NOT NULL, "
             + "ttinyint TINYINT NOT NULL, "
             + "tvarchar VARCHAR(20) NOT NULL, "
-            + "tfile FILE NOT NULL, "
             + "PRIMARY KEY (tinteger) )";
 
     private final static String DDLTEST_DATA_SQL = "INSERT INTO ddltest VALUES ("
@@ -75,8 +74,7 @@ public class JdbcDdlTest {
             + "time '11:59:32',"
             + "timestamp '2021-01-01 10:11:15',"
             + "22,"
-            + "'hallo',"
-            + "x'6869'"
+            + "'hallo'"
             + ")";
 
     private final static Object[] DDLTEST_DATA = new Object[]{
@@ -91,8 +89,7 @@ public class JdbcDdlTest {
             Time.valueOf( "11:59:32" ),
             Timestamp.valueOf( "2021-01-01 10:11:15" ),
             (byte) 22,
-            "hallo",
-            "hi".getBytes() };
+            "hallo" };
 
 
     @BeforeClass
@@ -287,7 +284,7 @@ public class JdbcDdlTest {
                 try {
                     boolean failed = false;
                     try {
-                        statement.executeUpdate( "INSERT INTO ddltest(tprimary) VALUES ( null, null, null, null, null, 1, null, null, null, null, null, null )" );
+                        statement.executeUpdate( "INSERT INTO ddltest(tprimary) VALUES ( null, null, null, null, null, 1, null, null, null, null, null )" );
                     } catch ( AvaticaSqlException e ) {
                         failed = true;
                     }
@@ -412,7 +409,6 @@ public class JdbcDdlTest {
                     statement.executeUpdate( "ALTER TABLE ddltest DROP COLUMN tbigint" );
                     statement.executeUpdate( "ALTER TABLE ddltest DROP COLUMN tdate" );
                     statement.executeUpdate( "ALTER TABLE ddltest DROP COLUMN tvarchar" );
-                    statement.executeUpdate( "ALTER TABLE ddltest DROP COLUMN tfile" );
 
                     // Check
                     TestHelper.checkResultSet(
@@ -451,7 +447,7 @@ public class JdbcDdlTest {
                     // Add columns
                     statement.executeUpdate( "ALTER TABLE ddltest ADD COLUMN foo1 INTEGER NOT NULL DEFAULT 5 BEFORE tbigint" );
                     statement.executeUpdate( "ALTER TABLE ddltest ADD COLUMN foo2 VARCHAR(10) NULL AFTER tinteger" );
-                    statement.executeUpdate( "ALTER TABLE ddltest ADD COLUMN foo3 BOOLEAN NOT NULL DEFAULT false AFTER tfile" );
+                    statement.executeUpdate( "ALTER TABLE ddltest ADD COLUMN foo3 BOOLEAN NOT NULL DEFAULT false AFTER tvarchar" );
 
                     // Check
                     TestHelper.checkResultSet(
@@ -471,7 +467,6 @@ public class JdbcDdlTest {
                                     DDLTEST_DATA[9],
                                     DDLTEST_DATA[10],
                                     DDLTEST_DATA[11],
-                                    DDLTEST_DATA[12],
                                     false
                             } ) );
 
@@ -524,7 +519,6 @@ public class JdbcDdlTest {
                                     DDLTEST_DATA[9],
                                     DDLTEST_DATA[10],
                                     DDLTEST_DATA[11],
-                                    DDLTEST_DATA[12],
                             } ) );
                 } finally {
                     // Drop ddltest table
@@ -562,7 +556,8 @@ public class JdbcDdlTest {
                     statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN tdouble SET TYPE DECIMAL(15,6)" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT tdouble FROM ddltest" ),
-                            ImmutableList.of( new Object[]{ BigDecimal.valueOf( (double) DDLTEST_DATA[4] ) } ) );
+                            ImmutableList.of( new Object[]{ BigDecimal.valueOf( (double) DDLTEST_DATA[4] ) } ),
+                            true );
 
                     // Real --> Double
                     statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN treal SET TYPE DOUBLE" );
@@ -604,7 +599,7 @@ public class JdbcDdlTest {
                     // Reorder columns
                     statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN tbigint SET POSITION AFTER tboolean" );
                     statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN tdecimal SET POSITION BEFORE tdate" );
-                    statement.executeUpdate( "ALTER TABLE \"ddltest\" MODIFY COLUMN \"ttinyint\" SET POSITION AFTER \"tfile\"" );
+                    statement.executeUpdate( "ALTER TABLE \"ddltest\" MODIFY COLUMN \"ttinyint\" SET POSITION AFTER \"tvarchar\"" );
 
                     // Check
                     TestHelper.checkResultSet(
@@ -621,7 +616,6 @@ public class JdbcDdlTest {
                                     DDLTEST_DATA[8],
                                     DDLTEST_DATA[9],
                                     DDLTEST_DATA[11],
-                                    DDLTEST_DATA[12],
                                     DDLTEST_DATA[10],
                             } ) );
                 } finally {
@@ -660,7 +654,6 @@ public class JdbcDdlTest {
                                     DDLTEST_DATA[9],
                                     DDLTEST_DATA[10],
                                     DDLTEST_DATA[11],
-                                    DDLTEST_DATA[12],
                             } ) );
 
                     // Truncate

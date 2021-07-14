@@ -481,6 +481,7 @@ public class ComplexViewTest {
 
                     connection.commit();
                 } finally {
+                    connection.rollback();
                     dropTables( connection );
                 }
             }
@@ -514,9 +515,11 @@ public class ComplexViewTest {
                             statement.executeQuery( "SELECT * FROM date_VIEW" ),
                             ImmutableList.of( date_TEST_DATA )
                     );
-                    statement.executeUpdate( "DROP VIEW date_VIEW" );
+
                     connection.commit();
                 } finally {
+                    connection.rollback();
+                    statement.executeUpdate( "DROP VIEW IF EXISTS date_VIEW" );
                     dropTables( connection );
                 }
             }
@@ -552,9 +555,10 @@ public class ComplexViewTest {
                             ImmutableList.of( decimal_TEST_DATA )
                     );
 
-                    statement.executeUpdate( "DROP VIEW decimal_VIEW" );
                     connection.commit();
                 } finally {
+                    connection.rollback();
+                    statement.executeUpdate( "DROP VIEW IF EXISTS decimal_VIEW" );
                     dropTables( connection );
                 }
             }
@@ -591,9 +595,10 @@ public class ComplexViewTest {
                             ImmutableList.of( decimalDate_TEST_DATA )
                     );
 
-                    statement.executeUpdate( "DROP VIEW decimalDate_VIEW" );
                     connection.commit();
                 } finally {
+                    connection.rollback();
+                    statement.executeUpdate( "DROP VIEW IF EXISTS decimalDate_VIEW" );
                     dropTables( connection );
                 }
             }
@@ -633,9 +638,10 @@ public class ComplexViewTest {
                             ImmutableList.of( decimalDateInt_TEST_DATA )
                     );
 
-                    statement.executeUpdate( "DROP VIEW decimalDateInt_VIEW" );
                     connection.commit();
                 } finally {
+                    connection.rollback();
+                    statement.executeUpdate( "DROP VIEW IF EXISTS decimalDateInt_VIEW" );
                     dropTables( connection );
                 }
             }
@@ -681,9 +687,10 @@ public class ComplexViewTest {
                             } )
                     );
 
-                    statement.executeUpdate( "DROP VIEW dateOrderby_VIEW" );
                     connection.commit();
                 } finally {
+                    connection.rollback();
+                    statement.executeUpdate( "DROP VIEW dateOrderby_VIEW" );
                     dropTables( connection );
                 }
             }
@@ -717,9 +724,10 @@ public class ComplexViewTest {
                             } )
                     );
 
-                    statement.executeUpdate( "DROP VIEW timeIntervall_VIEW" );
                     connection.commit();
                 } finally {
+                    connection.rollback();
+                    statement.executeUpdate( "DROP VIEW IF EXISTS timeIntervall_VIEW" );
                     dropTables( connection );
                 }
             }
@@ -770,9 +778,10 @@ public class ComplexViewTest {
                             ImmutableList.of( q1_TEST_DATA )
                     );
 
-                    statement.executeUpdate( "DROP VIEW q1_VIEW" );
                     connection.commit();
                 } finally {
+                    connection.rollback();
+                    statement.executeUpdate( "DROP VIEW IF EXISTS q1_VIEW" );
                     dropTables( connection );
                 }
             }
@@ -841,6 +850,7 @@ public class ComplexViewTest {
                     );
                     connection.commit();
                 } finally {
+                    connection.rollback();
                     dropTables( connection );
                 }
             }
@@ -913,9 +923,10 @@ public class ComplexViewTest {
                             ImmutableList.of( q3_TEST_DATA )
                     );
 
-                    statement.executeUpdate( "DROP VIEW q3_VIEW" );
                     connection.commit();
                 } finally {
+                    connection.rollback();
+                    statement.executeUpdate( "DROP VIEW IF EXISTS q3_VIEW" );
                     dropTables( connection );
                 }
             }
@@ -923,7 +934,6 @@ public class ComplexViewTest {
     }
 
 
-    //java.lang.ClassCastException: class org.apache.calcite.linq4j.EnumerableDefaults$LookupResultEnumerable$1 cannot be cast to class java.lang.AutoCloseable (org.apache.calcite.linq4j.EnumerableDefaults$LookupResultEnumerable$1 is in unnamed module of loader 'app'; java.lang.AutoCloseable is in module java.base of loader 'bootstrap')
     @Test
     @Category(FileExcluded.class)
     public void testQ4() throws SQLException {
@@ -988,7 +998,8 @@ public class ComplexViewTest {
                     // statement.executeUpdate( "DROP VIEW q4_VIEW" );
                     connection.commit();
                 } finally {
-                    statement.executeUpdate( "DROP VIEW q4_VIEW" );
+                    connection.rollback();
+                    statement.executeUpdate( "DROP VIEW IF EXISTS q4_VIEW" );
                     dropTables( connection );
                 }
             }
@@ -1035,9 +1046,10 @@ public class ComplexViewTest {
                             ImmutableList.of( q6_TEST_DATA )
                     );
 
-                    statement.executeUpdate( "DROP VIEW q6_VIEW" );
                     connection.commit();
                 } finally {
+                    connection.rollback();
+                    statement.executeUpdate( "DROP VIEW IF EXISTS q6_VIEW" );
                     dropTables( connection );
                 }
             }
@@ -1046,7 +1058,6 @@ public class ComplexViewTest {
 
 
     // deleted "or (n1.n_name = ? and n2.n_name = ?) " because there is only one nation in this table
-    //java.lang.ClassCastException: class org.apache.calcite.linq4j.EnumerableDefaults$LookupResultEnumerable$1 cannot be cast to class java.lang.AutoCloseable
     @Test
     @Category({ FileExcluded.class, CottontailExcluded.class })
     public void testQ7() throws SQLException {
@@ -1138,9 +1149,10 @@ public class ComplexViewTest {
                             ImmutableList.of( q7_TEST_DATA )
                     );
 
-                    statement.executeUpdate( "DROP VIEW q7_VIEW" );
                     connection.commit();
                 } finally {
+                    connection.rollback();
+                    statement.executeUpdate( "DROP VIEW IF EXISTS q7_VIEW" );
                     dropTables( connection );
                 }
             }
@@ -1242,11 +1254,11 @@ public class ComplexViewTest {
                             ImmutableList.of( q8_TEST_DATA_VIEW )
                     );
 
-                    statement.executeUpdate( "DROP VIEW q8_VIEW" );
                     connection.commit();
                 } finally {
+                    connection.rollback();
+                    statement.executeUpdate( "DROP VIEW IF EXISTS q8_VIEW" );
                     dropTables( connection );
-
                 }
             }
         }
@@ -1336,9 +1348,10 @@ public class ComplexViewTest {
                             ImmutableList.of( q9_TEST_DATA )
                     );
 
-                    statement.executeUpdate( "DROP VIEW q9_VIEW" );
                     connection.commit();
                 } finally {
+                    connection.rollback();
+                    statement.executeUpdate( "DROP VIEW IF EXISTS q9_VIEW" );
                     dropTables( connection );
                 }
             }
@@ -1428,10 +1441,10 @@ public class ComplexViewTest {
                             statement.executeQuery( "SELECT * FROM q10_VIEW" ),
                             ImmutableList.of( q10_TEST_DATA )
                     );
-
-                    statement.executeUpdate( "DROP VIEW q10_VIEW" );
                     connection.commit();
                 } finally {
+                    connection.rollback();
+                    statement.executeUpdate( "DROP VIEW IF EXISTS q10_VIEW" );
                     dropTables( connection );
                 }
             }
@@ -1484,6 +1497,7 @@ public class ComplexViewTest {
 
                     connection.commit();
                 } finally {
+                    connection.rollback();
                     dropTables( connection );
                 }
             }
@@ -1537,6 +1551,7 @@ public class ComplexViewTest {
 
                     connection.commit();
                 } finally {
+                    connection.rollback();
                     dropTables( connection );
                 }
             }
@@ -1603,9 +1618,10 @@ public class ComplexViewTest {
                             ImmutableList.of( q13_TEST_DATA )
                     );
 
-                    statement.executeUpdate( "DROP VIEW q13_VIEW" );
                     connection.commit();
                 } finally {
+                    connection.rollback();
+                    statement.executeUpdate( "DROP VIEW IF EXISTS q13_VIEW" );
                     dropTables( connection );
                 }
             }
@@ -1658,9 +1674,10 @@ public class ComplexViewTest {
                             ImmutableList.of( q14_TEST_DATA )
                     );
 
-                    statement.executeUpdate( "DROP VIEW q14_VIEW" );
                     connection.commit();
                 } finally {
+                    connection.rollback();
+                    statement.executeUpdate( "DROP VIEW IF EXISTS q14_VIEW" );
                     dropTables( connection );
                 }
             }
@@ -1712,9 +1729,10 @@ public class ComplexViewTest {
                                     + "s_suppkey" ),
                             ImmutableList.of( q15_TEST_DATA )
                     );
-                    statement.executeUpdate( "DROP VIEW revenue0" );
                     connection.commit();
                 } finally {
+                    connection.rollback();
+                    statement.executeUpdate( "DROP VIEW IF EXISTS revenue0" );
                     dropTables( connection );
                 }
             }
@@ -1769,6 +1787,7 @@ public class ComplexViewTest {
 
                     connection.commit();
                 } finally {
+                    connection.rollback();
                     dropTables( connection );
                 }
             }
@@ -1805,6 +1824,7 @@ public class ComplexViewTest {
                             ImmutableList.of( q17_TEST_DATA )
                     );
 
+                    // @formatter:off
                     statement.executeUpdate( "CREATE VIEW q17_VIEW AS "
                             + "select "
                             + "sum(l_extendedprice) / 7.0 as avg_yearly "
@@ -1823,14 +1843,16 @@ public class ComplexViewTest {
                             + "where "
                             + "l_partkey = p_partkey "
                             + ")" );
+                    //@formatter:on
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM q17_VIEW" ),
                             ImmutableList.of( q17_TEST_DATA )
                     );
 
-                    statement.executeUpdate( "DROP VIEW q17_VIEW" );
                     connection.commit();
                 } finally {
+                    connection.rollback();
+                    statement.executeUpdate( "DROP VIEW IF EXISTS q17_VIEW" );
                     dropTables( connection );
                 }
             }
@@ -1889,6 +1911,7 @@ public class ComplexViewTest {
 
                     connection.commit();
                 } finally {
+                    connection.rollback();
                     dropTables( connection );
                 }
             }
@@ -1958,9 +1981,10 @@ public class ComplexViewTest {
                             ImmutableList.of( q19_TEST_DATA )
                     );
 
-                    statement.executeUpdate( "DROP VIEW q19_VIEW" );
                     connection.commit();
                 } finally {
+                    connection.rollback();
+                    statement.executeUpdate( "DROP VIEW IF EXISTS q19_VIEW" );
                     dropTables( connection );
                 }
             }
@@ -2022,6 +2046,7 @@ public class ComplexViewTest {
 
                     connection.commit();
                 } finally {
+                    connection.rollback();
                     dropTables( connection );
                 }
             }
@@ -2061,6 +2086,7 @@ public class ComplexViewTest {
 
                     connection.commit();
                 } finally {
+                    connection.rollback();
                     dropTables( connection );
                 }
             }
@@ -2122,6 +2148,7 @@ public class ComplexViewTest {
 
                     connection.commit();
                 } finally {
+                    connection.rollback();
                     dropTables( connection );
                 }
             }

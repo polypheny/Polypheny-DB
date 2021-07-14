@@ -337,7 +337,7 @@ public class CottontailStore extends DataStore {
             defaultValue = null;
             actualDefaultType = null;
         }
-        CottontailGrpc.Literal defaultData = CottontailTypeUtil.toData( defaultValue, actualDefaultType );
+        CottontailGrpc.Literal defaultData = CottontailTypeUtil.toData( defaultValue, actualDefaultType, null );
 
         final QueryMessage query = QueryMessage.newBuilder().setTxId( txId ).setQuery( Query.newBuilder().setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( tableEntity ) ) ) ).build();
         final Iterator<QueryResponseMessage> queryResponse = this.wrapper.query( query );

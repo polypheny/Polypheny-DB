@@ -1705,7 +1705,7 @@ public class DdlManagerImpl extends DdlManager {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfTableType( catalogTable.tableType );
 
-        // Check if tables are dependent from this table
+        // Check if views dependent on this table
         checkViewDependencies( catalogTable );
 
         // Check if there are foreign keys referencing this table
