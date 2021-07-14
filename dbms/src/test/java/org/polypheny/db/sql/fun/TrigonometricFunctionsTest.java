@@ -17,7 +17,6 @@
 package org.polypheny.db.sql.fun;
 
 
-
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -31,12 +30,15 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
 
+@SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 public class TrigonometricFunctionsTest {
 
 
     @BeforeClass
     public static void start() throws SQLException {
+        // Ensures that Polypheny-DB is running
+        //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
         addTestData();
     }
@@ -56,10 +58,9 @@ public class TrigonometricFunctionsTest {
                 statement.executeUpdate( "INSERT INTO trigotestdouble VALUES (30, 0.52)" );
                 statement.executeUpdate( "INSERT INTO trigotestdouble VALUES (45, 0.61)" );
 
-               statement.executeUpdate( "CREATE TABLE trigotestinteger( AngleinDegree INTEGER NOT NULL, AngleinRadian INTEGER, PRIMARY KEY (AngleinDegree) )" );
-               statement.executeUpdate( "INSERT INTO trigotestinteger VALUES (0,  0)" );
-               statement.executeUpdate( "INSERT INTO trigotestinteger VALUES (58, 1)" );
-
+                statement.executeUpdate( "CREATE TABLE trigotestinteger( AngleinDegree INTEGER NOT NULL, AngleinRadian INTEGER, PRIMARY KEY (AngleinDegree) )" );
+                statement.executeUpdate( "INSERT INTO trigotestinteger VALUES (0,  0)" );
+                statement.executeUpdate( "INSERT INTO trigotestinteger VALUES (58, 1)" );
 
                 connection.commit();
             }
@@ -76,6 +77,7 @@ public class TrigonometricFunctionsTest {
                 statement.executeUpdate( "DROP TABLE trigotestdouble" );
                 statement.executeUpdate( "DROP TABLE trigotestinteger" );
             }
+            connection.commit();
         }
     }
 
@@ -83,329 +85,270 @@ public class TrigonometricFunctionsTest {
 
 
     @Test
-    public void Sine() throws SQLException {
+    public void sine() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
 
             try ( Statement statement = connection.createStatement() ) {
 
-
-                //For Decimal
+                // For Decimal
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{ 0, 0.0},
-                        new Object[]{ 30, 0.49688013784373675},
-                        new Object[]{ 45, 0.5728674601004813}
+                        new Object[]{ 0, 0.0 },
+                        new Object[]{ 30, 0.49688013784373675 },
+                        new Object[]{ 45, 0.5728674601004813 }
                 );
-
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT Angleindegree, SIN(AngleinRadian) FROM trigotestdecimal"),
+                        statement.executeQuery( "SELECT Angleindegree, SIN(AngleinRadian) FROM trigotestdecimal" ),
                         expectedResult
                 );
 
-                //For Double
-                List<Object[]> expectedResult1 = ImmutableList.of(
-                        new Object[]{ 0, 0.0},
-                        new Object[]{ 30, 0.49688},
-                        new Object[]{ 45, 0.572867}
+                // For Double
+                expectedResult = ImmutableList.of(
+                        new Object[]{ 0, 0.0 },
+                        new Object[]{ 30, 0.49688 },
+                        new Object[]{ 45, 0.572867 }
                 );
-
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT AngleinDegree, ROUND(SIN(AngleinRadian),6) FROM trigotestdouble"),
-                        expectedResult1
+                        statement.executeQuery( "SELECT AngleinDegree, ROUND(SIN(AngleinRadian),6) FROM trigotestdouble" ),
+                        expectedResult
                 );
 
-
-
-                //For Integer
-                List<Object[]> expectedResult2 = ImmutableList.of(
-                        new Object[]{ 0, 0.0},
-                        new Object[]{ 58, 0.841471}
-
+                // For Integer
+                expectedResult = ImmutableList.of(
+                        new Object[]{ 0, 0.0 },
+                        new Object[]{ 58, 0.841471 }
                 );
-
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT AngleinDegree,SIN(AngleinRadian) FROM trigotestinteger"),
-                        expectedResult2
+                        statement.executeQuery( "SELECT AngleinDegree,SIN(AngleinRadian) FROM trigotestinteger" ),
+                        expectedResult
                 );
-
-
 
             }
         }
-
     }
 
 
     @Test
-    public void Cos() throws SQLException {
+    public void cosine() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
 
             try ( Statement statement = connection.createStatement() ) {
 
-                //For Decimal
+                // For Decimal
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{ 0, 1.0},
-                        new Object[]{ 30, 0.8678191796776499},
-                        new Object[]{ 45, 0.8196480178454796}
+                        new Object[]{ 0, 1.0 },
+                        new Object[]{ 30, 0.8678191796776499 },
+                        new Object[]{ 45, 0.8196480178454796 }
                 );
-
-
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT AngleinDegree, COS(AngleinRadian) FROM trigotestdecimal" ),
                         expectedResult
                 );
 
-
-                //For Double
-                List<Object[]> expectedResult1 = ImmutableList.of(
-                        new Object[]{ 0, 1.0},
-                        new Object[]{ 30, 0.867819},
-                        new Object[]{ 45, 0.819648}
+                // For Double
+                expectedResult = ImmutableList.of(
+                        new Object[]{ 0, 1.0 },
+                        new Object[]{ 30, 0.867819 },
+                        new Object[]{ 45, 0.819648 }
                 );
-
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT AngleinDegree, ROUND(COS(AngleinRadian),6) FROM trigotestdouble" ),
-                        expectedResult1
+                        expectedResult
                 );
 
-                //For Integer
-                List<Object[]> expectedResult2 = ImmutableList.of(
-                        new Object[]{ 0, 1.0},
-                        new Object[]{ 58, 0.540302}
+                // For Integer
+                expectedResult = ImmutableList.of(
+                        new Object[]{ 0, 1.0 },
+                        new Object[]{ 58, 0.540302 }
 
                 );
-
-
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT AngleinDegree, COS(AngleinRadian) FROM trigotestinteger" ),
-                        expectedResult2
+                        expectedResult
                 );
 
-
             }
-
         }
-
     }
 
+
     @Test
-    public void Tan() throws SQLException {
+    public void tangent() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
 
             try ( Statement statement = connection.createStatement() ) {
 
-                //For Decimal
+                // For Decimal
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{ 0, 0.0},
-                        new Object[]{ 30, 0.5725618302516684},
-                        new Object[]{ 45, 0.698918862277391}
+                        new Object[]{ 0, 0.0 },
+                        new Object[]{ 30, 0.5725618302516684 },
+                        new Object[]{ 45, 0.698918862277391 }
 
                 );
-
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT AngleinDegree, TAN(AngleinRadian) FROM trigotestdecimal" ),
                         expectedResult
                 );
 
-
-                //For Double
-                List<Object[]> expectedResult1 = ImmutableList.of(
-                        new Object[]{ 0, 0.0},
-                        new Object[]{ 30, 0.572562},
-                        new Object[]{ 45, 0.698919}
+                // For Double
+                expectedResult = ImmutableList.of(
+                        new Object[]{ 0, 0.0 },
+                        new Object[]{ 30, 0.572562 },
+                        new Object[]{ 45, 0.698919 }
 
                 );
-
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT AngleinDegree, ROUND(TAN(AngleinRadian),6) FROM trigotestdouble" ),
-                        expectedResult1
+                        expectedResult
                 );
 
-
-                //For Integer
-                List<Object[]> expectedResult2 = ImmutableList.of(
-                        new Object[]{ 0, 0.0},
-                        new Object[]{ 58, 1.557408}
-
+                // For Integer
+                expectedResult = ImmutableList.of(
+                        new Object[]{ 0, 0.0 },
+                        new Object[]{ 58, 1.557408 }
 
                 );
-
-
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT AngleinDegree, ROUND(TAN(AngleinRadian),6) FROM trigotestinteger" ),
-                        expectedResult2
+                        expectedResult
                 );
 
             }
-
-
-
-
         }
-
     }
+
+
     @Test
-    public void Asin() throws SQLException {
+    public void arcsine() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
 
             try ( Statement statement = connection.createStatement() ) {
 
-                //For Decimal
+                // For Decimal
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{ 0, 0.0},
-                        new Object[]{ 30, 0.5468509506959441},
-                        new Object[]{ 45, 0.6560605909249226}
-
+                        new Object[]{ 0, 0.0 },
+                        new Object[]{ 30, 0.5468509506959441 },
+                        new Object[]{ 45, 0.6560605909249226 }
                 );
-
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT AngleinDegree, ASIN(AngleinRadian) FROM trigotestdecimal" ),
                         expectedResult
                 );
 
-
-                List<Object[]> expectedResult1 = ImmutableList.of(
-                        new Object[]{ 0, 0.0},
-                        new Object[]{ 30, 0.546851},
-                        new Object[]{ 45, 0.656061}
-
+                // For Double
+                expectedResult = ImmutableList.of(
+                        new Object[]{ 0, 0.0 },
+                        new Object[]{ 30, 0.546851 },
+                        new Object[]{ 45, 0.656061 }
                 );
-
-                //For Double
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT AngleinDegree, ROUND(ASIN(AngleinRadian),6) FROM trigotestdouble" ),
-                        expectedResult1
+                        expectedResult
                 );
 
-                List<Object[]> expectedResult2 = ImmutableList.of(
-                        new Object[]{ 0, 0.0},
-                        new Object[]{ 58, 1.570796}
-
-
+                // For Integer
+                expectedResult = ImmutableList.of(
+                        new Object[]{ 0, 0.0 },
+                        new Object[]{ 58, 1.570796 }
                 );
-
-                //For Integer
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT AngleinDegree, ROUND(ASIN(AngleinRadian),6) FROM trigotestinteger" ),
-                        expectedResult2
+                        expectedResult
                 );
 
             }
-
         }
-
     }
+
+
     @Test
-    public void Acos() throws SQLException {
+    public void arccosine() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
 
             try ( Statement statement = connection.createStatement() ) {
 
-                //For Decimal
+                // For Decimal
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{ 0, 1.5707963267948966},
-                        new Object[]{ 30, 1.0239453760989525},
-                        new Object[]{ 45, 0.914735735869974}
-
+                        new Object[]{ 0, 1.5707963267948966 },
+                        new Object[]{ 30, 1.0239453760989525 },
+                        new Object[]{ 45, 0.914735735869974 }
                 );
-
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT AngleinDegree, ROUND(ACOS(AngleinRadian),6) FROM trigotestdecimal" ),
                         expectedResult
                 );
 
-                //For Double
-                List<Object[]> expectedResult1 = ImmutableList.of(
-                        new Object[]{ 0, 1},
-                        new Object[]{ 30, 0.867819},
-                        new Object[]{ 45, 0.819648}
-
+                // For Double
+                expectedResult = ImmutableList.of(
+                        new Object[]{ 0, 1.0 },
+                        new Object[]{ 30, 0.867819 },
+                        new Object[]{ 45, 0.819648 }
                 );
-
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT AngleinDegree, ROUND(ACOS(AngleinRadian),6) FROM trigotestdouble" ),
                         expectedResult
                 );
 
-
-                //For Integer
-                List<Object[]> expectedResult2 = ImmutableList.of(
-                        new Object[]{ 0,  1.570796},
-                        new Object[]{ 58, 0.0}
-
-
+                // For Integer
+                expectedResult = ImmutableList.of(
+                        new Object[]{ 0, 1.570796 },
+                        new Object[]{ 58, 0.0 }
                 );
-
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT AngleinDegree, ROUND(ACOS(AngleinRadian),6) FROM trigotestinteger" ),
-                        expectedResult2
+                        expectedResult
                 );
 
-
-
-
             }
-
         }
-
     }
+
+
     @Test
-    public void Atan() throws SQLException {
+    public void arctangent() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
 
             try ( Statement statement = connection.createStatement() ) {
 
-                //For Decimal
+                // For Decimal
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{ 0, 0.0},
-                        new Object[]{ 30, 0.4795192919925962},
-                        new Object[]{ 45, 0.5477400137159024}
-
+                        new Object[]{ 0, 0.0 },
+                        new Object[]{ 30, 0.4795192919925962 },
+                        new Object[]{ 45, 0.5477400137159024 }
                 );
-
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT AngleinDegree, ATAN(AngleinRadian) FROM trigotestdecimal" ),
                         expectedResult
                 );
 
-                //For Double
-                List<Object[]> expectedResult1 = ImmutableList.of(
-                        new Object[]{ 0, 0.0},
-                        new Object[]{ 30, 0.479519},
-                        new Object[]{ 45, 0.54774}
-
+                // For Double
+                expectedResult = ImmutableList.of(
+                        new Object[]{ 0, 0.0 },
+                        new Object[]{ 30, 0.479519 },
+                        new Object[]{ 45, 0.54774 }
                 );
-
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT AngleinDegree, ROUND(ATAN(AngleinRadian),6) FROM trigotestdouble" ),
-                        expectedResult1
+                        expectedResult
                 );
 
-
-                //For Integer
-                List<Object[]> expectedResult2 = ImmutableList.of(
-                        new Object[]{ 0, 0.0},
-                        new Object[]{ 58, 0.785398}
-
+                // For Integer
+                expectedResult = ImmutableList.of(
+                        new Object[]{ 0, 0.0 },
+                        new Object[]{ 58, 0.785398 }
                 );
-
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT AngleinDegree, ROUND(ATAN(AngleinRadian),6) FROM trigotestinteger" ),
-                        expectedResult2
+                        expectedResult
                 );
 
             }
-
-
         }
-
     }
-
-
 
 }
