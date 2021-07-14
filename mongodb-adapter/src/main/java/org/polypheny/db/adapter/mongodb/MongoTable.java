@@ -233,7 +233,6 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 
         }
 
-
         if ( logicalCols.size() != 0 ) {
             list.add( 0, MongoTypeUtil.getPhysicalProjections( logicalCols, catalogTable ) );
         }

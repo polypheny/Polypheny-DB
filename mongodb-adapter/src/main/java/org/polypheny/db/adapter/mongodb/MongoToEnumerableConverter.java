@@ -114,6 +114,7 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
                                                 return physType.fieldClass( index );
                                             }
 
+
                                             @Override
                                             public int size() {
                                                 return rowType.getFieldCount();
@@ -139,6 +140,7 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
                                                 }
 
                                             }
+
 
                                             @Override
                                             public int size() {
