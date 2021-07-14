@@ -109,7 +109,7 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
                 .fieldType( PartitionFunctionInfoColumnType.STRING )
                 .mandatory( true )
                 .modifiable( true )
-                .sqlPrefix( "" )
+                .sqlPrefix( "(PARTITION" )
                 .sqlSuffix( "" )
                 .valueSeparation( "" )
                 .defaultValue( "HOT" )
@@ -131,7 +131,7 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
                 .fieldType( PartitionFunctionInfoColumnType.STRING )
                 .mandatory( true )
                 .modifiable( true )
-                .sqlPrefix( "" )
+                .sqlPrefix( "PARTITION" )
                 .sqlSuffix( "" )
                 .valueSeparation( "" )
                 .defaultValue( "COLD" )
@@ -145,38 +145,6 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
                 .valueSeparation( "" )
                 .defaultValue( "COLD" )
                 .build() );
-
-
-        rowsBefore.add( hotRow );
-        rowsBefore.add( coldRow );
-
-
-
-        //COST MODEL
-        //Fixed rows to display after dynamically generated ones
-        List<List<PartitionFunctionInfoColumn>> rowsAfter = new ArrayList<>();
-
-        List<PartitionFunctionInfoColumn> unboundRow = new ArrayList<>();
-        unboundRow.add( PartitionFunctionInfoColumn.builder()
-                .fieldType( PartitionFunctionInfoColumnType.LABEL )
-                .mandatory( false )
-                .modifiable( false )
-                .sqlPrefix( "" )
-                .sqlSuffix( "" )
-                .valueSeparation( "" )
-                .defaultValue( "Internal Partitioning" )
-                .build() );
-
-        unboundRow.add( PartitionFunctionInfoColumn.builder()
-                .fieldType( PartitionFunctionInfoColumnType.STRING )
-                .mandatory( false )
-                .modifiable( false )
-                .sqlPrefix( "" )
-                .sqlSuffix( "" )
-                .valueSeparation( "" )
-                .defaultValue( "HASH" )
-                .build() );
-
 
 
         List<PartitionFunctionInfoColumn> rowInHot = new ArrayList<>();
@@ -195,8 +163,8 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
                 .fieldType( PartitionFunctionInfoColumnType.STRING )
                 .mandatory( false )
                 .modifiable( true )
-                .sqlPrefix( "" )
-                .sqlSuffix( "" )
+                .sqlPrefix( "VALUES(" )
+                .sqlSuffix( "%)," )
                 .valueSeparation( "" )
                 .defaultValue( "10" )
                 .build() );
@@ -216,32 +184,31 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
                 .fieldType( PartitionFunctionInfoColumnType.STRING )
                 .mandatory( false )
                 .modifiable( true )
-                .sqlPrefix( "" )
-                .sqlSuffix( "" )
+                .sqlPrefix( "VALUES(" )
+                .sqlSuffix( "%))" )
                 .valueSeparation( "" )
                 .defaultValue( "15" )
                 .build() );
 
-        List<PartitionFunctionInfoColumn> chunkRow = new ArrayList<>();
-        chunkRow.add( PartitionFunctionInfoColumn.builder()
-                .fieldType( PartitionFunctionInfoColumnType.LABEL )
-                .mandatory( false )
-                .modifiable( false )
-                .sqlPrefix( "" )
-                .sqlSuffix( "" )
-                .valueSeparation( "" )
-                .defaultValue( "Number of internal  data chunks" )
-                .build() );
+        rowsBefore.add( hotRow );
+        rowsBefore.add( rowInHot );
+        rowsBefore.add( coldRow );
+        rowsBefore.add( rowOutHot );
 
-        chunkRow.add( PartitionFunctionInfoColumn.builder()
-                .fieldType( PartitionFunctionInfoColumnType.STRING )
-                .mandatory( false )
-                .modifiable( true )
-                .sqlPrefix( "" )
-                .sqlSuffix( "" )
-                .valueSeparation( "" )
-                .defaultValue( "-04071993" )
-                .build() );
+
+
+        //COST MODEL
+        //Fixed rows to display after dynamically generated ones
+        List<List<PartitionFunctionInfoColumn>> rowsAfter = new ArrayList<>();
+
+
+
+
+
+
+
+
+
 
 
         List<PartitionFunctionInfoColumn> costRow = new ArrayList<>();
@@ -259,10 +226,10 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
                 .fieldType( PartitionFunctionInfoColumnType.LIST )
                 .mandatory( false )
                 .modifiable( true )
-                .sqlPrefix( "" )
+                .sqlPrefix( "USING FREQUENCY" )
                 .sqlSuffix( "" )
                 .valueSeparation( "" )
-                .options(new ArrayList<>( Arrays.asList( "Total Access Frequency", "Write Frequency", "Read Frequency" )  ))
+                .options(new ArrayList<>( Arrays.asList( "ALL", "WRITE", "READ" )  ))
                 .build() );
 
         List<PartitionFunctionInfoColumn> extendedCostRow = new ArrayList<>();
@@ -281,7 +248,7 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
                 .fieldType( PartitionFunctionInfoColumnType.STRING )
                 .mandatory( false )
                 .modifiable( true )
-                .sqlPrefix( "" )
+                .sqlPrefix( "INTERVAL" )
                 .sqlSuffix( "" )
                 .valueSeparation( "" )
                 .defaultValue( "2" )
@@ -298,15 +265,56 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
                 .build() );
 
 
+        List<PartitionFunctionInfoColumn> chunkRow = new ArrayList<>();
+        chunkRow.add( PartitionFunctionInfoColumn.builder()
+                .fieldType( PartitionFunctionInfoColumnType.LABEL )
+                .mandatory( false )
+                .modifiable( false )
+                .sqlPrefix( "" )
+                .sqlSuffix( "" )
+                .valueSeparation( "" )
+                .defaultValue( "Number of internal  data chunks" )
+                .build() );
+
+        chunkRow.add( PartitionFunctionInfoColumn.builder()
+                .fieldType( PartitionFunctionInfoColumnType.STRING )
+                .mandatory( false )
+                .modifiable( true )
+                .sqlPrefix( "WITH" )
+                .sqlSuffix( "" )
+                .valueSeparation( "" )
+                .defaultValue( "-04071993" )
+                .build() );
+
+        List<PartitionFunctionInfoColumn> unboundRow = new ArrayList<>();
+        unboundRow.add( PartitionFunctionInfoColumn.builder()
+                .fieldType( PartitionFunctionInfoColumnType.LABEL )
+                .mandatory( false )
+                .modifiable( false )
+                .sqlPrefix( "" )
+                .sqlSuffix( "" )
+                .valueSeparation( "" )
+                .defaultValue( "Internal Partitioning" )
+                .build() );
+
+        unboundRow.add( PartitionFunctionInfoColumn.builder()
+                .fieldType( PartitionFunctionInfoColumnType.LIST )
+                .mandatory( false )
+                .modifiable( true )
+                .sqlPrefix( "" )
+                .sqlSuffix( "PARTITIONS" )
+                .valueSeparation( "" )
+                .options(new ArrayList<>( Arrays.asList( "HASH")  ))
+                .build() );
 
 
-        rowsAfter.add( unboundRow );
-        rowsAfter.add( rowInHot );
-        rowsAfter.add( rowOutHot );
-        rowsAfter.add( chunkRow );
+
+
+
         rowsAfter.add( costRow );
         rowsAfter.add( extendedCostRow );
-
+        rowsAfter.add( chunkRow );
+        rowsAfter.add( unboundRow );
 
 
 
@@ -317,9 +325,9 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
                         + "the values of the partition column. "
                         + "Further the data inside the table will be internally partitioned into chunks to apply the cost model on. "
                         + "Therefore a secondary partitioning can be used" )
-                .sqlPrefix( "WITH (" )
-                .sqlSuffix( ")" )
-                .rowSeparation( "," )
+                .sqlPrefix( "" )
+                .sqlSuffix( "" )
+                .rowSeparation( "" )
                 .rowsBefore( rowsBefore )
                 .rowsAfter( rowsAfter )
                 .headings( new ArrayList<>( Arrays.asList( "Partition Name", "Classification" ) ) )
