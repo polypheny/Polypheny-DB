@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 
@@ -126,6 +127,16 @@ public abstract class DockerManager {
 
         public String getFullName() {
             return this.name + ":" + this.version;
+        }
+
+
+        @Override
+        public boolean equals( Object obj ) {
+            if ( obj instanceof Image ) {
+                Image image = (Image) obj;
+                return name.equals( image.name ) && version.equals( image.version );
+            }
+            return false;
         }
 
 
@@ -389,7 +400,12 @@ public abstract class DockerManager {
 
         public static String getPhysicalUniqueName( Container container ) {
             // while not all Docker containers belong to an adapter we annotate it anyway
-            return container.uniqueName + "_polypheny_" + container.adapterId;
+            String name = container.uniqueName + "_polypheny_" + container.adapterId;
+            if ( !Catalog.testMode ) {
+                return name;
+            } else {
+                return name + "_test";
+            }
         }
 
 
