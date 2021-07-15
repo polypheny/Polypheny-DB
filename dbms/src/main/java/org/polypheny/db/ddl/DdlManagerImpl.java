@@ -16,6 +16,7 @@
 
 package org.polypheny.db.ddl;
 
+import static org.polypheny.db.util.Static.RESOURCE;
 import static org.reflections.Reflections.log;
 
 import com.google.common.collect.ImmutableList;
@@ -96,6 +97,7 @@ import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.PolyType;
@@ -1185,6 +1187,51 @@ public class DdlManagerImpl extends DdlManager {
         if ( addedColumns.size() > 0 ) {
             dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( storeInstance.getAdapterId() ), addedColumns, partitionIds);
         }
+    }
+
+
+    public void modifyPartitionPlacement(CatalogTable catalogTable, List<Long> partitionGroupIds, DataStore storeInstance, Statement statement){
+
+        int storeId = storeInstance.getAdapterId();
+        List<Long> newPartitions = new ArrayList<>();
+        List<Long> removedPartitions = new ArrayList<>();
+
+        List<Long> currentPartitionGroupsOnStore = catalog.getPartitionGroupsOnDataPlacement( storeId, catalogTable.id );
+
+        //Get PartitionGroups that have been removed
+        for ( long partitionGroupId : currentPartitionGroupsOnStore ) {
+            if ( !partitionGroupIds.contains( partitionGroupId ) ){
+                catalog.getPartitions( partitionGroupId ).forEach( p -> removedPartitions.add( p.id ) );
+
+            }
+        }
+
+        //Get PartitionGroups that have been newly added
+        for ( Long partitionGroupId : partitionGroupIds ) {
+            if ( !currentPartitionGroupsOnStore.contains( partitionGroupId ) ){
+                catalog.getPartitions( partitionGroupId ).forEach( p -> newPartitions.add( p.id ) );
+            }
+        }
+
+
+        // Copy the data to the newly added column placements
+        DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
+        if ( newPartitions.size() > 0 ) {
+            storeInstance.createTable( statement.getPrepareContext(), catalogTable, newPartitions );
+
+
+            // Get only columns that are actually on that store
+            List<CatalogColumn> necessaryColumns = new LinkedList<>();
+            catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id ).forEach( cp -> necessaryColumns.add( catalog.getColumn( cp.columnId ) ) );
+            dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( storeId ) , necessaryColumns, newPartitions);
+        }
+
+        if ( removedPartitions.size() > 0 ) {
+            storeInstance.dropTable( statement.getPrepareContext(), catalogTable, removedPartitions );
+        }
+
+        // Update
+        catalog.updatePartitionGroupsOnDataPlacement( storeId, catalogTable.id, partitionGroupIds );
     }
 
 

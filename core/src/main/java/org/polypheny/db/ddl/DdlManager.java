@@ -369,6 +369,8 @@ public abstract class DdlManager {
      */
     public abstract void modifyColumnPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement ) throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException;
 
+    public abstract void modifyPartitionPlacement(CatalogTable catalogTable, List<Long> partitionGroupIds, DataStore storeInstance, Statement statement);
+
     /**
      * Add a column placement for a specified column on a specified data store. If the store already contains a placement of
      * the column with type automatic, the placement type is changed to manual.
