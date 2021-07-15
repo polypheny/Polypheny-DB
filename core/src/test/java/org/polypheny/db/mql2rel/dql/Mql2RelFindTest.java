@@ -25,6 +25,7 @@ import org.polypheny.db.mql.MqlTest;
 import org.polypheny.db.mql2rel.Mql2RelTest;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.core.Project;
 import org.polypheny.db.rel.core.TableScan;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
@@ -308,12 +309,20 @@ public class Mql2RelFindTest extends Mql2RelTest {
     @Test
     public void testEmptyProjection() {
         RelRoot root = translate( find( "", "" ) );
+
+        assertTrue( root.rel instanceof TableScan );
+
+        TableScan scan = (TableScan) root.rel;
+        assertTrue( scan.getRowType().getFieldNames().contains( "_id" ) );
+        assertTrue( scan.getRowType().getFieldNames().contains( "_data" ) );
     }
 
 
     @Test
     public void testSingleInclusion() {
         RelRoot root = translate( find( "", "\"key\": 1" ) );
+
+        assertTrue( root.rel instanceof Project );
 
     }
 

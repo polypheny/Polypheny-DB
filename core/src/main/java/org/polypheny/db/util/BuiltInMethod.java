@@ -246,6 +246,7 @@ public enum BuiltInMethod {
     LOWER( SqlFunctions.class, "lower", String.class ),
     JSONIZE( SqlFunctions.class, "jsonize", Object.class ),
     JSON_VALUE_EXPRESSION( SqlFunctions.class, "jsonValueExpression", String.class ),
+    JSON_VALUE_EXPRESSION_EXCLUDE( SqlFunctions.class, "jsonValueExpressionExclude", String.class, String.class ),
     JSON_STRUCTURED_VALUE_EXPRESSION( SqlFunctions.class, "jsonStructuredValueExpression", Object.class ),
     JSON_API_COMMON_SYNTAX( SqlFunctions.class, "jsonApiCommonSyntax", Object.class, String.class ),
     JSON_EXISTS( SqlFunctions.class, "jsonExists", Object.class ),

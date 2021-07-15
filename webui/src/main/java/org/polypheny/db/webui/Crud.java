@@ -539,7 +539,7 @@ public class Crud implements InformationObserver {
         Transaction transaction = getTransaction();
         Result result;
         StringBuilder query = new StringBuilder();
-        if ( request.action.equalsIgnoreCase( "drop" ) && request.tableType.equals( "VIEW" ) ) {
+        if ( request.tableType != null && request.action.equalsIgnoreCase( "drop" ) && request.tableType.equals( "VIEW" ) ) {
             query.append( "DROP VIEW " );
         } else if ( request.action.equalsIgnoreCase( "drop" ) ) {
             query.append( "DROP TABLE " );

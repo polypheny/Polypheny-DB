@@ -1193,6 +1193,8 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
 
     public static final SqlJsonValueExpressionOperator JSON_VALUE_EXPRESSION = new SqlJsonValueExpressionOperator( "JSON_VALUE_EXPRESSION", false );
 
+    public static final SqlJsonValueExpressionOperator JSON_VALUE_EXPRESSION_EXCLUDED = new SqlJsonValueExpressionOperator( "JSON_VALUE_EXPRESSION_EXCLUDE", false );
+
     public static final SqlJsonValueExpressionOperator JSON_STRUCTURED_VALUE_EXPRESSION = new SqlJsonValueExpressionOperator( "JSON_STRUCTURED_VALUE_EXPRESSION", true );
 
     public static final SqlJsonApiCommonSyntaxOperator JSON_API_COMMON_SYNTAX = new SqlJsonApiCommonSyntaxOperator();

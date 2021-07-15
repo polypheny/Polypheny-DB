@@ -215,11 +215,6 @@ public class MongoStore extends DataStore {
         commitAll();
         //ClientSession session = transactionProvider.startTransaction( context.getStatement().getTransaction().getXid() );
         //context.getStatement().getTransaction().registerInvolvedAdapter( this );
-        if ( currentSchema == null ) {
-            // this can only happen when default is not set ? TODO DL reevaluate
-            createNewSchema( null, catalogTable.getDatabaseName() + "_" + catalogTable.getSchemaName() );
-        }
-
         this.currentSchema.database.createCollection( getPhysicalTableName( catalogTable.id ) );
 
         for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ) ) {
@@ -298,7 +293,6 @@ public class MongoStore extends DataStore {
                 false );
 
     }
-
 
     private String getPhysicalColumnName( CatalogColumn catalogColumn ) {
         return getPhysicalColumnName( catalogColumn.name, catalogColumn.id );

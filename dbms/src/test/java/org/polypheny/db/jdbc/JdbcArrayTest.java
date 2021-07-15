@@ -26,6 +26,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
@@ -36,6 +38,7 @@ import org.polypheny.db.excluded.MonetdbExcluded;
 
 @SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
 @Slf4j
+@Category(AdapterTestSuite.class)
 public class JdbcArrayTest {
 
 

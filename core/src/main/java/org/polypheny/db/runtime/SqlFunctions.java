@@ -80,6 +80,7 @@ import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
@@ -3303,6 +3304,16 @@ public class SqlFunctions {
     public static Object jsonValueExpression( String input ) {
         try {
             return dejsonize( input );
+        } catch ( Exception e ) {
+            return e;
+        }
+    }
+
+
+    public static Object jsonValueExpressionExclude( String input, String excluded ) {
+        try {
+            Map<String, ?> map = (Map<String, ?>) dejsonize( input );
+            return map.entrySet().stream().filter( e -> !e.getKey().equals( excluded ) ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) );
         } catch ( Exception e ) {
             return e;
         }

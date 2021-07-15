@@ -290,6 +290,7 @@ public class RexImpTable {
 
         // Json Operators
         defineMethod( SqlStdOperatorTable.JSON_VALUE_EXPRESSION, BuiltInMethod.JSON_VALUE_EXPRESSION.method, NullPolicy.STRICT );
+        defineMethod( SqlStdOperatorTable.JSON_VALUE_EXPRESSION_EXCLUDED, BuiltInMethod.JSON_VALUE_EXPRESSION_EXCLUDE.method, NullPolicy.STRICT );
         defineMethod( SqlStdOperatorTable.JSON_STRUCTURED_VALUE_EXPRESSION, BuiltInMethod.JSON_STRUCTURED_VALUE_EXPRESSION.method, NullPolicy.STRICT );
         defineMethod( SqlStdOperatorTable.JSON_API_COMMON_SYNTAX, BuiltInMethod.JSON_API_COMMON_SYNTAX.method, NullPolicy.NONE );
         defineMethod( SqlStdOperatorTable.JSON_EXISTS, BuiltInMethod.JSON_EXISTS.method, NullPolicy.NONE );
