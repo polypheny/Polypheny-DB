@@ -79,6 +79,8 @@ import org.polypheny.db.type.PolyType;
 
 public abstract class Catalog {
 
+    public static Adapter defaultStore;
+    public static Adapter defaultSource;
     protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
     public boolean isPersistent = false;
     public static Catalog INSTANCE = null;
@@ -132,7 +134,6 @@ public abstract class Catalog {
     /**
      * Validates that all columns have a valid placement,
      * else deletes them.
-     * TODO DL check
      */
     public abstract void validateColumns();
 

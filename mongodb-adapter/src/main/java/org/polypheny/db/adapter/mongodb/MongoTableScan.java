@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.TableScan;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelRecordType;
 
 
 /**
@@ -100,7 +101,6 @@ public class MongoTableScan extends TableScan implements MongoRel {
 
     @Override
     public void register( RelOptPlanner planner ) {
-        planner.addRule( MongoToEnumerableConverterRule.INSTANCE );
         for ( RelOptRule rule : MongoRules.RULES ) {
             planner.addRule( rule );
         }
@@ -111,6 +111,9 @@ public class MongoTableScan extends TableScan implements MongoRel {
     public void implement( Implementor implementor ) {
         implementor.mongoTable = mongoTable;
         implementor.table = table;
+        implementor.setStaticRowType( (RelRecordType) rowType );
+        implementor.physicalMapper.addAll( rowType.getFieldNames() );
     }
+
 }
 

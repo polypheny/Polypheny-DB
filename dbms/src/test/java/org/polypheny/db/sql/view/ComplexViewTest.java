@@ -27,14 +27,21 @@ import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.excluded.CassandraExcluded;
+import org.polypheny.db.excluded.CottontailExcluded;
+import org.polypheny.db.excluded.FileExcluded;
+import org.polypheny.db.excluded.MonetdbExcluded;
 
 /*
  * Table and Queries from https://github.com/polypheny/OLTPBench/tree/polypheny/src/com/oltpbenchmark/benchmarks/tpch
  */
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
+@Category({ AdapterTestSuite.class, CassandraExcluded.class })
 public class ComplexViewTest {
 
     private final static String DROP_TABLES_NATION = "DROP TABLE IF EXISTS nation";
@@ -518,6 +525,7 @@ public class ComplexViewTest {
 
 
     @Test
+    @Category(FileExcluded.class)
     public void testDecimal() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -596,6 +604,7 @@ public class ComplexViewTest {
 
 
     @Test
+    @Category(FileExcluded.class)
     public void testDecimalDateInt() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -638,6 +647,7 @@ public class ComplexViewTest {
 
 
     @Test
+    @Category({ FileExcluded.class })
     public void testDateOrderBy() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -686,6 +696,7 @@ public class ComplexViewTest {
 
 
     @Test
+    @Category(FileExcluded.class)
     public void testTimeInterval() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -722,6 +733,7 @@ public class ComplexViewTest {
 
 
     @Test
+    @Category({ FileExcluded.class, CottontailExcluded.class })
     public void testQ1() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -844,6 +856,7 @@ public class ComplexViewTest {
 
 
     @Test
+    @Category({ FileExcluded.class, MonetdbExcluded.class })
     public void testQ3() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -919,6 +932,7 @@ public class ComplexViewTest {
 
 
     @Test
+    @Category(FileExcluded.class)
     public void testQ4() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -993,6 +1007,7 @@ public class ComplexViewTest {
     // Original TPC-H query with l_discount between 20.15 - 0.01 and ? + 0.01 does not return a result
     // changed to and l_discount between 20.14 and 20.16
     @Test
+    @Category(FileExcluded.class)
     public void testQ6() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -1041,6 +1056,7 @@ public class ComplexViewTest {
 
     // deleted "or (n1.n_name = ? and n2.n_name = ?) " because there is only one nation in this table
     @Test
+    @Category({ FileExcluded.class, MonetdbExcluded.class })
     public void testQ7() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -1142,6 +1158,7 @@ public class ComplexViewTest {
 
 
     @Test
+    @Category({ FileExcluded.class, MonetdbExcluded.class })
     public void testQ8() throws SQLException {
         Assume.assumeFalse( System.getProperty( "java.version" ).startsWith( "1.8" ) ); // Out of memory error on Java 8
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -1246,6 +1263,7 @@ public class ComplexViewTest {
 
 
     @Test
+    @Category({ FileExcluded.class, MonetdbExcluded.class })
     public void testQ9() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -1339,6 +1357,7 @@ public class ComplexViewTest {
 
 
     @Test
+    @Category(FileExcluded.class)
     public void testQ10() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -1419,6 +1438,7 @@ public class ComplexViewTest {
                             statement.executeQuery( "SELECT * FROM q10_VIEW" ),
                             ImmutableList.of( q10_TEST_DATA )
                     );
+
                     connection.commit();
                 } finally {
                     connection.rollback();
@@ -1608,6 +1628,7 @@ public class ComplexViewTest {
 
 
     @Test
+    @Category(FileExcluded.class)
     public void testQ14() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -1664,6 +1685,7 @@ public class ComplexViewTest {
 
     // changed max(total_revenue) to total_revenue // Not possible in normal to SELECT aggregate within inner query
     @Test
+    @Category(FileExcluded.class)
     public void testQ15() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -1808,17 +1830,17 @@ public class ComplexViewTest {
                             +     "lineitem, "
                             +     "part "
                             + "where "
-                            +     "p_partkey = l_partkey "
-                            +     "and p_brand = 'Logitec'  "
-                            +     "and p_container = 'container' "
-                            +     "and l_quantity > ( "
-                            +         "select "
-                            +             "0.2 * avg(l_quantity) "
-                            +         "from "
-                            +             "lineitem "
-                            +         "where "
-                            +             "l_partkey = p_partkey "
-                            +     ")"  );
+                            + "p_partkey = l_partkey "
+                            + "and p_brand = 'Logitec'  "
+                            + "and p_container = 'container' "
+                            + "and l_quantity > ( "
+                            + "select "
+                            + "0.2 * avg(l_quantity) "
+                            + "from "
+                            + "lineitem "
+                            + "where "
+                            + "l_partkey = p_partkey "
+                            + ")" );
                     //@formatter:on
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM q17_VIEW" ),
