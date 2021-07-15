@@ -17,6 +17,8 @@
 package org.polypheny.db.catalog;
 
 
+import static java.util.stream.Collectors.toCollection;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.io.File;
@@ -3336,24 +3338,99 @@ public class CatalogImpl extends Catalog {
         // Check whether there this partition id exists
         CatalogPartitionGroup partitionGroup = getPartitionGroup( partitionGroupId );
 
+
+        CatalogPartitionGroup updatedCatalogPartitionGroup = new CatalogPartitionGroup(
+                partitionGroup.id,
+                partitionGroup.partitionGroupName,
+                partitionGroup.tableId,
+                partitionGroup.schemaId,
+                partitionGroup.databaseId,
+                partitionGroup.partitionKey,
+                partitionGroup.partitionQualifiers,
+                ImmutableList.copyOf( partitionIds ),
+                partitionGroup.isUnbound );
+
         synchronized ( this ) {
-
-            CatalogPartitionGroup updatedCatalogPartitionGroup = new CatalogPartitionGroup(
-                    partitionGroup.id,
-                    partitionGroup.partitionGroupName,
-                    partitionGroup.tableId,
-                    partitionGroup.schemaId,
-                    partitionGroup.databaseId,
-                    partitionGroup.partitionKey,
-                    partitionGroup.partitionQualifiers,
-                    ImmutableList.copyOf( partitionIds ),
-                    partitionGroup.isUnbound );
-
             partitionGroups.replace( partitionGroupId ,  updatedCatalogPartitionGroup);
+
+        }
+        listeners.firePropertyChange( "partitionGroup", partitionGroup, updatedCatalogPartitionGroup );
+    }
+
+
+    @Override
+    public void addPartitionToGroup( long partitionGroupId, Long partitionId ) {
+
+        // Check whether there this partition id exists
+        CatalogPartitionGroup partitionGroup = getPartitionGroup( partitionGroupId );
+        List<Long> newPartitionIds = partitionGroup.partitionIds.stream().collect(toCollection(ArrayList::new));
+
+        CatalogPartition partition = getPartition( partitionId );
+
+        if ( !newPartitionIds.contains( partitionId ) ) {
+            newPartitionIds.add( partitionId );
+
+            updatePartitionGroup(partitionGroupId, newPartitionIds);
+        }
+
+    }
+
+
+    @Override
+    public void removePartitionFromGroup( long partitionGroupId, Long partitionId ) {
+// Check whether there this partition id exists
+        CatalogPartitionGroup partitionGroup = getPartitionGroup( partitionGroupId );
+        List<Long> newPartitionIds = partitionGroup.partitionIds.stream().collect(toCollection(ArrayList::new));
+
+        if ( newPartitionIds.contains( partitionId ) ) {
+            newPartitionIds.remove( partitionId );
+
+            updatePartitionGroup(partitionGroupId, newPartitionIds);
 
         }
     }
 
+
+    /**
+     * Updates the partition to with new partitionGroup
+     *
+     * @param partitionId
+     * @param partitionGroupId
+     */
+    public void updatePartition( long partitionId, Long partitionGroupId ){
+
+        // Check whether there this partition id exists
+        CatalogPartitionGroup partitionGroup = getPartitionGroup( partitionGroupId );
+        List<Long> newPartitionIds = partitionGroup.partitionIds.stream().collect(toCollection(ArrayList::new));
+
+        CatalogPartition oldPartition = getPartition( partitionId );
+
+
+        if ( !newPartitionIds.contains( partitionId ) ) {
+            newPartitionIds.add( partitionId );
+
+
+            addPartitionToGroup( partitionGroupId,partitionId );
+            removePartitionFromGroup( oldPartition.partitionGroupId, partitionId );
+
+            CatalogPartition updatedPartition = new CatalogPartition(
+                    oldPartition.id,
+                    oldPartition.tableId,
+                    oldPartition.schemaId,
+                    oldPartition.databaseId,
+                    oldPartition.partitionQualifiers,
+                    oldPartition.isUnbound,
+                    partitionGroupId
+            );
+
+            synchronized ( this ) {
+                partitions.put( updatedPartition.id, updatedPartition );
+            }
+            listeners.firePropertyChange( "partition", oldPartition, updatedPartition );
+        }
+
+
+    }
 
     /**
      * Get a partition object by its unique id

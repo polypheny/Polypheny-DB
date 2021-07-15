@@ -36,7 +36,7 @@ public final class CatalogPartitionGroup implements CatalogEntity {
     public final long schemaId;
     public final long databaseId;
     public final List<String> partitionQualifiers;
-    public final ImmutableList<Long> partitionIds;
+    public final List<Long> partitionIds;
     public final boolean isUnbound;
 
     public final long partitionKey;
@@ -50,7 +50,8 @@ public final class CatalogPartitionGroup implements CatalogEntity {
             final long databaseId,
             final long partitionKey,
             final List<String> partitionQualifiers,
-            ImmutableList<Long> partitionIds, final boolean isUnbound ) {
+            List<Long> partitionIds,
+            final boolean isUnbound ) {
         this.id = id;
         this.partitionGroupName = partitionGroupName;
         this.tableId = tableId;

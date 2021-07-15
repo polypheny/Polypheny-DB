@@ -1128,6 +1128,18 @@ public abstract class Catalog {
      */
     public abstract void updatePartitionGroup( long partitionGroupId, List<Long> partitionIds );
 
+    public abstract void addPartitionToGroup( long partitionGroupId, Long partitionId );
+
+    public abstract void removePartitionFromGroup( long partitionGroupId, Long partitionId );
+
+    /**
+     * Assigne the partition to a new partitionGroup
+     *
+     * @param partitionId
+     * @param partitionGroupId
+     */
+    public abstract void updatePartition( long partitionId, Long partitionGroupId );
+
     /**
      * Get a List of all partitions belonging to a specific table
      *

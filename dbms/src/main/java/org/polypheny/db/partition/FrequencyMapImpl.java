@@ -21,9 +21,12 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
@@ -44,6 +47,7 @@ import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.TransactionManagerImpl;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
@@ -59,6 +63,7 @@ import org.polypheny.db.util.background.BackgroundTaskManager;
  * Which gets created once the first TEMPERATURE partitioned table gets created. (Including creation of BackgroundTask)
  * and consequently will be shutdown when no TEMPERATURE partitioned tables exist anymore
  */
+@Slf4j
 public class FrequencyMapImpl extends FrequencyMap {
 
     public static FrequencyMap INSTANCE = null;
@@ -78,6 +83,13 @@ public class FrequencyMapImpl extends FrequencyMap {
     public void terminate() {
         BackgroundTaskManager.INSTANCE.removeBackgroundTask( backgroundTaskId );
     }
+
+
+    @Override
+    public void determineTableFrequency() {
+
+    }
+
 
     public static FrequencyMap getInstance() {
         if ( INSTANCE == null ) {
@@ -118,10 +130,10 @@ public class FrequencyMapImpl extends FrequencyMap {
     private void determinePartitionDistribution(CatalogTable table){
 
         //Get percentage of tables which can remain in HOT
-        long numberOfPartitionsInHot = table.partitionProperty.partitionIds.size() * ( ((TemperaturePartitionProperty)table.partitionProperty).getHotAccessPercentageIn() / 100);
+        long numberOfPartitionsInHot = ( table.partitionProperty.partitionIds.size() *  ((TemperaturePartitionProperty)table.partitionProperty).getHotAccessPercentageIn() ) / 100;
 
         //These are the tables than can remain in HOT
-        long allowedTablesInHot = table.partitionProperty.partitionIds.size() * ( ((TemperaturePartitionProperty)table.partitionProperty).getHotAccessPercentageOut() / 100);
+        long allowedTablesInHot = ( table.partitionProperty.partitionIds.size() *  ((TemperaturePartitionProperty)table.partitionProperty).getHotAccessPercentageOut() ) / 100;
 
 
 
@@ -136,9 +148,17 @@ public class FrequencyMapImpl extends FrequencyMap {
 
 
 
-        HashMap<Long, Long> descSortedMap = new HashMap<>();
-        accessCounter.entrySet().stream().sorted(Map.Entry.comparingByValue( Comparator.reverseOrder()))
-                .forEachOrdered( x -> descSortedMap.put( x.getKey(),x.getValue() ) );
+        HashMap<Long, Long> descSortedMap = accessCounter
+                .entrySet()
+                .stream()
+                .sorted( (Map.Entry.<Long,Long>comparingByValue().reversed()) )
+                .collect( Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new) );
+
+
+                //= new HashMap<>();
+        //accessCounter.entrySet().stream().sorted(Map.Entry.comparingByValue( Comparator.reverseOrder()))
+         //       .forEachOrdered( x -> descSortedMap.put( x.getKey(),x.getValue() ) );
+
 
 
 
@@ -189,32 +209,46 @@ public class FrequencyMapImpl extends FrequencyMap {
 
         }
 
-        redistributePartitions( table, partitionsFromColdToHot, partitionsFromHotToCold );
+        if ( !partitionsFromColdToHot.isEmpty() || !partitionsFromHotToCold.isEmpty()) {
+            redistributePartitions( table, partitionsFromColdToHot, partitionsFromHotToCold );
+        }
     }
 
     private void redistributePartitions(CatalogTable table, List<Long> partitionsFromColdToHot, List<Long> partitionsFromHotToCold){
         // Invoke DdlManager/dataMigrator to copy data with both new Lists
 
         TransactionManager transactionManager = new TransactionManagerImpl();
+        Transaction transaction = null;
         try {
-            Transaction transaction = transactionManager.startTransaction( "pa", table.getDatabaseName(),false,"FrequencyMap" );
-
+            transaction = transactionManager.startTransaction( "pa", table.getDatabaseName(),false,"FrequencyMap" );
 
 
             Statement statement = transaction.createStatement();
 
+            List<CatalogAdapter> adaptersWithHot = Catalog.getInstance().getAdaptersByPartitionGroup( table.id, ((TemperaturePartitionProperty)table.partitionProperty).getHotPartitionGroupId() );
+            List<CatalogAdapter> adaptersWithCold = Catalog.getInstance().getAdaptersByPartitionGroup( table.id, ((TemperaturePartitionProperty)table.partitionProperty).getColdPartitionGroupId() );
+
             //Validate that partition does not already exist on store
-            for ( CatalogAdapter catalogAdapter : Catalog.getInstance().getAdaptersByPartitionGroup( table.id, ((TemperaturePartitionProperty)table.partitionProperty).getHotPartitionGroupId() )){
+            for ( CatalogAdapter catalogAdapter : adaptersWithHot){
+
+                // Skip creation/deletion because this adapter contains both groups HOT & COLD
+                if ( adaptersWithCold.contains( catalogAdapter ) ){
+                    continue;
+                }
+
                 //First create new HOT tables
                 Adapter adapter = AdapterManager.getInstance().getAdapter( catalogAdapter.id );
                 if ( adapter instanceof DataStore ) {
                     DataStore store = (DataStore) adapter;
 
+                    List<Long> HotPartitionsToCreate = filterList( catalogAdapter.id, table.id, partitionsFromColdToHot );
+                    //List<Long> coldPartitionsToDelete = filterList( catalogAdapter.id, table.id, partitionsFromHotToCold );
 
-                    List<Long> partitionsToCreate = filterList( catalogAdapter.id, table.id, partitionsFromColdToHot );
-                    if (partitionsToCreate.size() != 0) {
+                    //IF this store contains both Groups HOT & COLD do nothing
+                    if (HotPartitionsToCreate.size() != 0) {
                         Catalog.getInstance().getPartitionsOnDataPlacement( store.getAdapterId(), table.id );
-                        store.createTable( statement.getPrepareContext(), table, partitionsToCreate );
+                        store.createTable( statement.getPrepareContext(), table, HotPartitionsToCreate );
+                        store.dropTable( statement.getPrepareContext(),table, partitionsFromHotToCold );
                     }
                     //Copy data
 
@@ -226,26 +260,49 @@ public class FrequencyMapImpl extends FrequencyMap {
 
                     //DELETE TABLEs based on moved partitions in HOT
                 }
-
             }
 
-            for ( CatalogAdapter catalogAdapter : Catalog.getInstance().getAdaptersByPartitionGroup( table.id, ((TemperaturePartitionProperty)table.partitionProperty).getColdPartitionGroupId() )) {
+            for ( CatalogAdapter catalogAdapter : adaptersWithCold) {
+
+                // Skip creation/deletion because this adapter contains both groups HOT & COLD
+                if ( adaptersWithHot.contains( catalogAdapter ) ){
+                    continue;
+                }
                 //First create new HOT tables
                 Adapter adapter = AdapterManager.getInstance().getAdapter( catalogAdapter.id );
                 if ( adapter instanceof DataStore ) {
                     DataStore store = (DataStore) adapter;
-
                     List<Long> partitionsToCreate = filterList( catalogAdapter.id, table.id, partitionsFromHotToCold );
                     if (partitionsToCreate.size() != 0) {
                         Catalog.getInstance().getPartitionsOnDataPlacement( store.getAdapterId(), table.id );
                         store.createTable( statement.getPrepareContext(), table, partitionsToCreate );
+                        store.dropTable( statement.getPrepareContext(),table, partitionsFromColdToHot );
                     }
                 }
             }
 
-        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
+            long hotPartitionGroupId = ((TemperaturePartitionProperty) table.partitionProperty).getHotPartitionGroupId();
+            long coldPartitionGroupId = ((TemperaturePartitionProperty) table.partitionProperty).getColdPartitionGroupId();
+
+            //Update catalogInformation
+            partitionsFromColdToHot.forEach( p -> Catalog.getInstance().updatePartition( p, hotPartitionGroupId ) );
+            partitionsFromHotToCold.forEach( p -> Catalog.getInstance().updatePartition( p, coldPartitionGroupId ) );
+
+
+            transaction.commit();
+        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException | TransactionException e ) {
             e.printStackTrace();
+            if ( transaction != null ) {
+                try {
+                    transaction.rollback();
+                } catch ( TransactionException ex ) {
+                    log.error( "Error while rolling back the transaction", e );
+                }
+            }
         }
+
+
+
 
     }
 
@@ -260,9 +317,6 @@ public class FrequencyMapImpl extends FrequencyMap {
         return partitionsToFilter;
     }
 
-    public void determineTableFrequency(){
-
-    }
 
     public void determinePartitionFrequency( CatalogTable table, long invocationTimestamp ){
         Timestamp queryStart = new Timestamp(  invocationTimestamp - ((TemperaturePartitionProperty) table.partitionProperty).getFrequencyInterval()*1000 );
@@ -301,7 +355,9 @@ public class FrequencyMapImpl extends FrequencyMap {
         determinePartitionDistribution(table);
     }
 
-    public void determinePartitionFrequencyOnStore(){
+
+    @Override
+    public void determinePartitionFrequencyOnStore() {
 
     }
 
