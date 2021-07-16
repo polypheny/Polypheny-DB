@@ -23,6 +23,7 @@ import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.monitoring.events.DMLEvent;
 import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelRoot;
 
 @Slf4j
 public class DMLEventAnalyzer {
@@ -41,7 +42,12 @@ public class DMLEventAnalyzer {
                 .recordedTimestamp( dmlEvent.getRecordedTimestamp()  )
                 .build();
 
-        RelNode node = dmlEvent.getRouted().rel;
+        RelRoot relRoot =dmlEvent.getRouted();
+        if(relRoot == null){
+            return metric;
+        }
+
+        RelNode node = relRoot.rel;
         processRelNode( node, dmlEvent, metric );
 
         // TODO: read even more data

@@ -19,6 +19,7 @@ package org.polypheny.db.processing;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import java.lang.reflect.Type;
 import java.sql.DatabaseMetaData;
 import java.sql.Types;
@@ -31,10 +32,12 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.ColumnMetaData.Rep;
@@ -66,9 +69,6 @@ import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.monitoring.events.DMLEvent;
-import org.polypheny.db.monitoring.events.QueryEvent;
-import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.RelTraitSet;
@@ -206,11 +206,60 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
     @Override
     public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted ) {
-        return prepareQuery( logicalRoot, parameterRowType, isRouted, false );
+        List<PolyphenyDbSignature> signatureList =  prepareQueryList( logicalRoot, parameterRowType, isRouted, false );
+
+        // TODO:
+        // 1. calculate costs of all the available signatures and return best
+        // 2. Do the monitoring:
+        //TODO @Cedric this produces an error causing several checks to fail. Please investigate
+        //needed for row results
+        //final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
+        //Iterator<Object> iterator = enumerable.iterator();
+        /*if ( statement.getTransaction().getMonitoringData() != null ) {
+            StatementEvent eventData = statement.getTransaction().getMonitoringData();
+            eventData.setMonitoringType( parameterizedRoot.kind.sql );
+            eventData.setDescription( "Test description: " + signature.statementType.toString() );
+            eventData.setRouted( logicalRoot );
+            eventData.setFieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames() ) );
+            //eventData.setRows( MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() ) );
+            eventData.setAnalyze( isAnalyze );
+            eventData.setSubQuery( isSubquery );
+            eventData.setDurations( statement.getDuration().asJson() );
+        }*/
+
+        return signatureList.get( 0 );
+    }
+
+    private PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery ) {
+        List<PolyphenyDbSignature> signatureList = prepareQueryList( logicalRoot, parameterRowType, isRouted, isSubquery );
+        return signatureList.get(0);
+    }
+
+    private void acquireLock( boolean isAnalyze, RelRoot logicalRoot ){
+        // Locking
+        if ( isAnalyze ) {
+            statement.getDuration().start( "Locking" );
+        }
+        try {
+            // Get a shared global schema lock (only DDLs acquire a exclusive global schema lock)
+            LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
+            // Get locks for individual tables
+            TableAccessMap accessMap = new TableAccessMap( logicalRoot.rel );
+            for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
+                Mode mode = accessMap.getTableAccessMode( tableIdentifier );
+                if ( mode == Mode.READ_ACCESS ) {
+                    LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
+                } else if ( mode == Mode.WRITE_ACCESS || mode == Mode.READWRITE_ACCESS ) {
+                    LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
+                }
+            }
+        } catch ( DeadlockException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 
-    protected PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery ) {
+    protected List<PolyphenyDbSignature> prepareQueryList( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery ) {
         boolean isAnalyze = statement.getTransaction().isAnalyze() && !isSubquery;
         boolean lock = !isSubquery;
 
@@ -228,29 +277,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                         ? BindableConvention.INSTANCE
                         : EnumerableConvention.INSTANCE;
 
-        RelRoot routedRoot;
-        if ( !isRouted ) {
+        List<RelRoot> routedRootList;
+        if ( isRouted ) {
+            routedRootList = Lists.newArrayList(logicalRoot);
+
+        }else{
             if ( lock ) {
-                // Locking
-                if ( isAnalyze ) {
-                    statement.getDuration().start( "Locking" );
-                }
-                try {
-                    // Get a shared global schema lock (only DDLs acquire a exclusive global schema lock)
-                    LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
-                    // Get locks for individual tables
-                    TableAccessMap accessMap = new TableAccessMap( logicalRoot.rel );
-                    for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
-                        Mode mode = accessMap.getTableAccessMode( tableIdentifier );
-                        if ( mode == Mode.READ_ACCESS ) {
-                            LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
-                        } else if ( mode == Mode.WRITE_ACCESS || mode == Mode.READWRITE_ACCESS ) {
-                            LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
-                        }
-                    }
-                } catch ( DeadlockException e ) {
-                    throw new RuntimeException( e );
-                }
+               this.acquireLock(isAnalyze, logicalRoot);
             }
 
             // Index Update
@@ -289,69 +322,67 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 statement.getDuration().stop( "Index Lookup Rewrite" );
                 statement.getDuration().start( "Routing" );
             }
-            routedRoot = route( indexLookupRoot, statement, executionTimeMonitor );
+            routedRootList = route( indexLookupRoot, statement, executionTimeMonitor );
+            routedRootList = routedRootList.stream()
+                    .map( routedRoot -> {
+                        RelStructuredTypeFlattener typeFlattener = new RelStructuredTypeFlattener(
+                                RelBuilder.create( statement, routedRoot.rel.getCluster() ),
+                                routedRoot.rel.getCluster().getRexBuilder(),
+                                ViewExpanders.toRelContext( this, routedRoot.rel.getCluster() ),
+                                true );
+                        return routedRoot.withRel( typeFlattener.rewrite( routedRoot.rel ) );
+                    } )
+                    .collect( Collectors.toList());
 
-            RelStructuredTypeFlattener typeFlattener = new RelStructuredTypeFlattener(
-                    RelBuilder.create( statement, routedRoot.rel.getCluster() ),
-                    routedRoot.rel.getCluster().getRexBuilder(),
-                    ViewExpanders.toRelContext( this, routedRoot.rel.getCluster() ),
-                    true );
-            routedRoot = routedRoot.withRel( typeFlattener.rewrite( routedRoot.rel ) );
             if ( isAnalyze ) {
                 statement.getDuration().stop( "Routing" );
             }
-        } else {
-            routedRoot = logicalRoot;
         }
 
         // Validate parameterValues
-        ParameterValueValidator pmValidator = new ParameterValueValidator( routedRoot.validatedRowType, statement.getDataContext() );
-        pmValidator.visit( routedRoot.rel );
-
+        routedRootList.forEach( routedRoot -> new ParameterValueValidator( routedRoot.validatedRowType, statement.getDataContext() ).visit( routedRoot.rel ));
         //
         // Implementation Caching
         if ( isAnalyze ) {
             statement.getDuration().start( "Implementation Caching" );
         }
-        RelRoot parameterizedRoot = null;
-        if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
-            if ( statement.getDataContext().getParameterValues().size() == 0 ) {
-                Pair<RelRoot, RelDataType> parameterized = parameterize( routedRoot, parameterRowType );
-                parameterizedRoot = parameterized.left;
-                parameterRowType = parameterized.right;
+
+        // Add optional parameterizedRoots and signatures for all routed RelRoots.
+        // Index of routedRoot, parameterizedRootList and signatures correspond!
+        List<Optional<RelRoot>> parameterizedRootList = new ArrayList<>();
+        List<Optional<PolyphenyDbSignature>> signatures = new ArrayList<>();
+
+        for(RelRoot routedRoot : routedRootList){
+            if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
+                RelRoot currentElement;
+                if ( statement.getDataContext().getParameterValues().size() == 0 ) {
+                    Pair<RelRoot, RelDataType> parameterized = parameterize( routedRoot, parameterRowType );
+                    currentElement = parameterized.left;
+                    parameterRowType = parameterized.right;
+                } else {
+                    // This query is an execution of a prepared statement
+                    currentElement = routedRoot;
+                }
+                PreparedResult preparedResult = ImplementationCache.INSTANCE.getIfPresent( currentElement.rel );
+                parameterizedRootList.add( Optional.of( currentElement) );
+
+                if ( preparedResult != null ) {
+                    PolyphenyDbSignature signature = createSignature( preparedResult, routedRoot, resultConvention, executionTimeMonitor );
+                    if ( isAnalyze ) {
+                        statement.getDuration().stop( "Implementation Caching" );
+                    }
+
+                    signatures.add( Optional.of( signature ) );
+                }else {
+                    signatures.add( Optional.empty() );
+                }
             } else {
-                // This query is an execution of a prepared statement
-                parameterizedRoot = routedRoot;
-            }
-            PreparedResult preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.rel );
-            if ( preparedResult != null ) {
-                PolyphenyDbSignature signature = createSignature( preparedResult, routedRoot, resultConvention, executionTimeMonitor );
-                if ( isAnalyze ) {
-                    statement.getDuration().stop( "Implementation Caching" );
-                }
-
-
-                //TODO @Cedric this produces an error causing several checks to fail. Please investigate
-                //needed for row results
-                //final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
-                //Iterator<Object> iterator = enumerable.iterator();
-
-
-
-                if ( statement.getTransaction().getMonitoringData() != null ) {
-                    StatementEvent eventData = statement.getTransaction().getMonitoringData();
-                    eventData.setMonitoringType( parameterizedRoot.kind.sql );
-                    eventData.setDescription( "Test description: " + signature.statementType.toString() );
-                    eventData.setRouted( logicalRoot );
-                    eventData.setFieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames() ) );
-                    //eventData.setRows( MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() ) );
-                    eventData.setAnalyze( isAnalyze );
-                    eventData.setSubQuery( isSubquery );
-                    eventData.setDurations( statement.getDuration().asJson() );
-                }
-                return signature;
+                parameterizedRootList.add( Optional.empty() );
+                signatures.add( Optional.empty() );
             }
         }
+
+
 
         //
         // Plan Caching
@@ -359,24 +390,39 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             statement.getDuration().stop( "Implementation Caching" );
             statement.getDuration().start( "Plan Caching" );
         }
-        RelNode optimalNode;
-        if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
-            if ( parameterizedRoot == null ) {
-                if ( statement.getDataContext().getParameterValues().size() == 0 ) {
-                    Pair<RelRoot, RelDataType> parameterized = parameterize( routedRoot, parameterRowType );
-                    parameterizedRoot = parameterized.left;
-                    parameterRowType = parameterized.right;
-                } else {
-                    // This query is an execution of a prepared statement
-                    parameterizedRoot = routedRoot;
+        List<Optional<RelNode>> optimalNodeList = new ArrayList<>();
+        for(int i = 0; i < routedRootList.size(); i++) {
+            val routedRoot = routedRootList.get( i );
+            val parameterizedRoot = parameterizedRootList.get( i );
+            if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
+                if ( !parameterizedRoot.isPresent() ) {
+                    if ( statement.getDataContext().getParameterValues().size() == 0 ) {
+                        Pair<RelRoot, RelDataType> parameterized = parameterize( routedRoot, parameterRowType );
+                        parameterizedRootList.set( i, Optional.of(  parameterized.left ));
+                        parameterRowType = parameterized.right;
+                    } else {
+                        // This query is an execution of a prepared statement
+                        parameterizedRootList.set( i, Optional.of(  routedRoot ));
+                    }
                 }
-            }
-            optimalNode = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRoot.rel );
-        } else {
-            parameterizedRoot = routedRoot;
-            optimalNode = null;
-        }
+                // should always be the case
+                if( parameterizedRootList.get( i ).isPresent() ){
+                    val cachedElem = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRootList.get( i ).get().rel);
+                    if ( cachedElem == null ) {
+                        optimalNodeList.add( Optional.empty() );
+                    } else {
+                        optimalNodeList.add( Optional.of( cachedElem ) );
+                    }
 
+
+                }
+
+            } else {
+                parameterizedRootList.set( i, Optional.of(  routedRoot ));
+                optimalNodeList.add( Optional.empty() );
+            }
+
+        }
         //
         // Planning & Optimization
         if ( isAnalyze ) {
@@ -384,22 +430,21 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             statement.getDuration().start( "Planning & Optimization" );
         }
 
-        if ( optimalNode == null ) {
-            optimalNode = optimize( parameterizedRoot, resultConvention );
 
-            // For transformation from DML -> DML, use result of rewrite (e.g. UPDATE -> MERGE). For anything else (e.g. CALL -> SELECT), use original kind.
-            //if ( !optimalRoot.kind.belongsTo( SqlKind.DML ) ) {
-            //    optimalRoot = optimalRoot.withKind( sqlNodeOriginal.getKind() );
-            //}
+        // optimalNode same size as routed, parametrized and signature
+        for(int i = 0; i < optimalNodeList.size(); i++) {
+            val optimalNode = optimalNodeList.get( i );
+            val parameterizedRoot = parameterizedRootList.get( i ).get();
+            val routedRoot = routedRootList.get( i );
+            if ( !optimalNode.isPresent() ) {
+                optimalNodeList.set( i, Optional.of( optimize( parameterizedRoot, resultConvention ) ) ) ;
 
-            if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
-                QueryPlanCache.INSTANCE.put( parameterizedRoot.rel, optimalNode );
+                if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
+                    QueryPlanCache.INSTANCE.put( parameterizedRoot.rel, optimalNodeList.get( i ).get() );
+                }
             }
         }
 
-        final RelDataType rowType = parameterizedRoot.rel.getRowType();
-        final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
-        RelRoot optimalRoot = new RelRoot( optimalNode, rowType, parameterizedRoot.kind, fields, relCollation( parameterizedRoot.rel ) );
 
         //
         // Implementation
@@ -408,19 +453,28 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             statement.getDuration().start( "Implementation" );
         }
 
-        PreparedResult preparedResult = implement( optimalRoot, parameterRowType );
+        for(int i = 0; i < optimalNodeList.size(); i++) {
+            val optimalNode = optimalNodeList.get( i ).get();
+            val parameterizedRoot = parameterizedRootList.get( i ).get();
+            val routedRoot = routedRootList.get( i );
 
-        // Cache implementation
-        if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
-            if ( optimalRoot.rel.isImplementationCacheable() ) {
-                ImplementationCache.INSTANCE.put( parameterizedRoot.rel, preparedResult );
-            } else {
-                ImplementationCache.INSTANCE.countUncacheable();
+            final RelDataType rowType = parameterizedRoot.rel.getRowType();
+            final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
+            RelRoot optimalRoot = new RelRoot( optimalNode, rowType, parameterizedRoot.kind, fields, relCollation( parameterizedRoot.rel ) );
+
+            PreparedResult preparedResult = implement( optimalRoot, parameterRowType );
+
+            // Cache implementation
+            if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
+                if ( optimalRoot.rel.isImplementationCacheable() ) {
+                    ImplementationCache.INSTANCE.put( parameterizedRoot.rel, preparedResult );
+                } else {
+                    ImplementationCache.INSTANCE.countUncacheable();
+                }
             }
+
+            signatures.set( i, Optional.of( createSignature( preparedResult, optimalRoot, resultConvention, executionTimeMonitor ) ) );
         }
-
-        PolyphenyDbSignature signature = createSignature( preparedResult, optimalRoot, resultConvention, executionTimeMonitor );
-
         if ( isAnalyze ) {
             statement.getDuration().stop( "Implementation" );
         }
@@ -431,27 +485,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         }
 
 
-        //TODO @Cedric this produces an error causing severall checks to fail. Please investigate
-        //needed for row results
-        //final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
-        //Iterator<Object> iterator = enumerable.iterator();
-
-
-
-        TransactionImpl transaction = (TransactionImpl) statement.getTransaction();
-        if ( transaction.getMonitoringData() != null ) {
-            StatementEvent eventData = transaction.getMonitoringData();
-            eventData.setMonitoringType( parameterizedRoot.kind.sql );
-            eventData.setDescription( "Test description: " + signature.statementType.toString() );
-            eventData.setRouted( logicalRoot );
-            eventData.setFieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames() ) );
-            //eventData.setRows( MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() ) );
-            eventData.setAnalyze( isAnalyze );
-            eventData.setSubQuery( isSubquery );
-            eventData.setDurations( statement.getDuration().asJson() );
-        }
-
-        return signature;
+        return signatures.stream().filter( Optional::isPresent ).map( Optional::get ).collect( Collectors.toList());
     }
 
 
@@ -829,10 +863,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     }
 
 
-    private RelRoot route( RelRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
-        RelRoot routedRoot = statement.getRouter().route( logicalRoot, statement, executionTimeMonitor );
+    private List<RelRoot> route( RelRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
+        List<RelRoot> routedRootList = statement.getRouter().route( logicalRoot, statement, executionTimeMonitor );
         if ( log.isTraceEnabled() ) {
-            log.trace( "Routed query plan: [{}]", RelOptUtil.dumpPlan( "-- Routed Plan", routedRoot.rel, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
+            routedRootList.forEach( routedRoot ->
+                log.trace( "Routed query plan: [{}]", RelOptUtil.dumpPlan( "-- Routed Plan", routedRoot.rel, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) ));
         }
         if ( statement.getTransaction().isAnalyze() ) {
             InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
@@ -841,12 +876,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             InformationGroup group = new InformationGroup( page, "Routed Query Plan" );
             queryAnalyzer.addPage( page );
             queryAnalyzer.addGroup( group );
-            InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
-                    group,
-                    RelOptUtil.dumpPlan( "Routed Query Plan", routedRoot.rel, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
-            queryAnalyzer.registerInformation( informationQueryPlan );
+            routedRootList.forEach( routedRoot -> {
+                InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
+                        group,
+                        RelOptUtil.dumpPlan( "Routed Query Plan", routedRoot.rel, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+                queryAnalyzer.registerInformation( informationQueryPlan );
+            });
+
         }
-        return routedRoot;
+        return routedRootList;
     }
 
 

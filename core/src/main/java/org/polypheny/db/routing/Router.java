@@ -27,7 +27,7 @@ import org.polypheny.db.transaction.Statement;
 
 public interface Router {
 
-    RelRoot route( RelRoot relRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor );
+    List<RelRoot> route( RelRoot relRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor );
 
     List<DataStore> createTable( long schemaId, Statement statement );
 

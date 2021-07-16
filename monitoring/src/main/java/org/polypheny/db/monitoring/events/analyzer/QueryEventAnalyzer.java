@@ -22,6 +22,7 @@ import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelRoot;
 
 @Slf4j
 public class QueryEventAnalyzer {
@@ -38,6 +39,11 @@ public class QueryEventAnalyzer {
                 .isSubQuery( queryEvent.isSubQuery() )
                 .recordedTimestamp( queryEvent.getRecordedTimestamp()  )
                 .build();
+
+        RelRoot relRoot = queryEvent.getRouted();
+        if(relRoot == null){
+            return metric;
+        }
 
         RelNode node = queryEvent.getRouted().rel;
         processRelNode( node, queryEvent, metric );

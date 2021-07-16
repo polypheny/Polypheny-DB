@@ -34,7 +34,6 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.monitoring.core.MonitoringQueue;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
-import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
@@ -120,7 +119,12 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
                 try {
                     field.setAccessible( true );
                     val value = field.get( element );
-                    row.add( value.toString() );
+                    if(value != null){
+                        row.add( value.toString() );
+                    }
+                    else{
+                        row.add( "-" );
+                    }
                 } catch ( IllegalAccessException e ) {
                     e.printStackTrace();
                 }

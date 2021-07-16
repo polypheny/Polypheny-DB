@@ -19,6 +19,7 @@ package org.polypheny.db.router;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Deque;
@@ -104,7 +105,7 @@ public abstract class AbstractRouter implements Router {
 
 
     @Override
-    public RelRoot route( RelRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
+    public List<RelRoot> route( RelRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
         this.executionTimeMonitor = executionTimeMonitor;
         this.selectedAdapter = new HashMap<>();
 
@@ -128,6 +129,7 @@ public abstract class AbstractRouter implements Router {
             routed = handleConditionalExecute( logicalRoot.rel, statement );
         } else {
             log.info( "Start build DQL" );
+            // TODO: get many version
             RelBuilder builder = RelBuilder.create( statement, logicalRoot.rel.getCluster() );
             builder = buildDql( logicalRoot.rel, builder, statement, logicalRoot.rel.getCluster() );
             routed = builder.build();
@@ -152,12 +154,13 @@ public abstract class AbstractRouter implements Router {
             statement.getTransaction().getQueryAnalyzer().registerInformation( table );
         }
 
-        return new RelRoot(
-                routed,
-                logicalRoot.validatedRowType,
-                logicalRoot.kind,
-                logicalRoot.fields,
-                logicalRoot.collation );
+        return Lists.newArrayList(
+                new RelRoot(
+                    routed,
+                    logicalRoot.validatedRowType,
+                    logicalRoot.kind,
+                    logicalRoot.fields,
+                    logicalRoot.collation ));
     }
 
 
