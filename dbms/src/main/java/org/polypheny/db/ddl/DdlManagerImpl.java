@@ -16,6 +16,7 @@
 
 package org.polypheny.db.ddl;
 
+import static java.util.stream.Collectors.toCollection;
 import static org.polypheny.db.util.Static.RESOURCE;
 import static org.reflections.Reflections.log;
 
@@ -54,6 +55,7 @@ import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -1212,6 +1214,29 @@ public class DdlManagerImpl extends DdlManager {
         for ( Long partitionGroupId : partitionGroupIds ) {
             if ( !currentPartitionGroupsOnStore.contains( partitionGroupId ) ){
                 catalog.getPartitions( partitionGroupId ).forEach( p -> newPartitions.add( p.id ) );
+            }
+        }
+
+
+        //Check for the specified columnId if we still have a ColumnPlacement for every partitionGroup
+        //Check for removed partitions if every CCP  still has all partitions somewhere
+        for ( long partitionId : removedPartitions ) {
+            List<Long> tempIds = catalogTable.columnIds.stream().collect(toCollection(ArrayList::new));
+            boolean partitionChecked = false;
+
+            for ( CatalogPartitionPlacement cpp : catalog.getPartitionPlacements( partitionId ) ) {
+                if ( cpp.adapterId == storeId ){
+                    continue;
+                }
+                catalog.getColumnPlacementsOnAdapter( cpp.adapterId ).forEach( ccp -> tempIds.remove( ccp.columnId ) );
+                if ( tempIds.isEmpty() ){
+                    partitionChecked = true;
+                    break;
+                }
+            }
+
+            if ( partitionChecked == false ){
+                throw new RuntimeException("Invalid partition distribution");
             }
         }
 

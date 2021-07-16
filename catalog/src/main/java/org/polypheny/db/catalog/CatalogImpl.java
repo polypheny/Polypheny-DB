@@ -3858,7 +3858,7 @@ public class CatalogImpl extends Catalog {
                 // Check if partition change has impact on the complete partition distribution for current Part.Type
                 for ( CatalogColumnPlacement ccp : getColumnPlacementsOnAdapterPerTable( adapterId, tableId ) ) {
                     long columnId = ccp.columnId;
-                    if ( !validatePartitionGroupDistribution( adapterId, tableId, columnId,1 ) ) {
+                    if ( !validatePartitionGroupDistribution( adapterId, tableId, columnId,0 ) ) {
                         dataPartitionGroupPlacement.replace( new Object[]{ adapterId, tableId }, ImmutableList.copyOf( tempPartition ) );
                         throw new RuntimeException( "Validation of PartitionGroup distribution failed for column: '" + ccp.getLogicalColumnName() + "'" );
                     }
