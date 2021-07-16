@@ -30,6 +30,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.core.TableModify;
+import org.polypheny.db.rel.logical.LogicalDocuments;
 import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalTableModify;
@@ -110,7 +111,7 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
                 }
             }
             RelNode input = modify.getInput();
-            if ( input instanceof LogicalValues ) {
+            if ( input instanceof LogicalValues && !(input instanceof LogicalDocuments) ) { //todo dl: handle documents differently
                 List<RexNode> projects = new ArrayList<>();
                 boolean firstRow = true;
                 for ( ImmutableList<RexLiteral> node : ((LogicalValues) input).getTuples() ) {

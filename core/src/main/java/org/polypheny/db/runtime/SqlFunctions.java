@@ -3310,13 +3310,44 @@ public class SqlFunctions {
     }
 
 
-    public static Object jsonValueExpressionExclude( String input, String excluded ) {
+    public static Object jsonValueExpressionExclude( String input, List<String> excluded ) {
         try {
+            List<List<String>> collect = excluded.stream().map( e -> Arrays.asList( e.split( "\\." ) ) ).collect( Collectors.toList() );
+
             Map<String, ?> map = (Map<String, ?>) dejsonize( input );
-            return map.entrySet().stream().filter( e -> !e.getKey().equals( excluded ) ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) );
+            return rebuildMap( map, collect ); // TODO DL: exchange with a direct filter on deserialization
         } catch ( Exception e ) {
             return e;
         }
+    }
+
+
+    private static Map<String, ?> rebuildMap( Map<String, ?> map, List<List<String>> collect ) {
+        Map<String, Object> newMap = new HashMap<>();
+        List<String> firsts = collect.stream().map( c -> c.get( 0 ) ).collect( Collectors.toList() );
+        for ( Entry<String, ?> entry : map.entrySet() ) {
+            if ( firsts.contains( entry.getKey() ) ) {
+                List<List<String>> entries = new ArrayList<>();
+                for ( List<String> excludes : collect ) {
+                    if ( excludes.get( 0 ).equals( entry.getKey() ) && entry.getValue() instanceof Map ) {
+                        // if it matches but has more child-keys we have to go deeper
+                        if ( excludes.size() > 1 ) {
+                            entries.add( excludes.subList( 1, excludes.size() ) );
+                        }
+                    }
+                }
+                if ( entries.size() > 0 ) {
+                    Map rebuild = rebuildMap( (Map<String, ?>) entry.getValue(), entries );
+                    if ( rebuild.size() > 0 ) {
+                        newMap.put( entry.getKey(), rebuild );
+                    }
+                }
+
+            } else {
+                newMap.put( entry.getKey(), entry.getValue() );
+            }
+        }
+        return newMap;
     }
 
 

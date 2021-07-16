@@ -62,7 +62,6 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlBinaryOperator;
-import org.polypheny.db.sql.SqlCollation;
 import org.polypheny.db.sql.SqlJsonQueryEmptyOrErrorBehavior;
 import org.polypheny.db.sql.SqlJsonQueryWrapperBehavior;
 import org.polypheny.db.sql.SqlJsonValueEmptyOrErrorBehavior;
@@ -70,7 +69,6 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
 
 public class MqlToRelConverter {
@@ -114,6 +112,7 @@ public class MqlToRelConverter {
         operators.addAll( mappings.keySet() );
         operators.addAll( gates.keySet() );
         operators.addAll( mathOperators.keySet() );
+        operators.add( "$literal" );
     }
 
 
@@ -350,7 +349,7 @@ public class MqlToRelConverter {
                     RexNode id = null;
                     if ( losesContext ) {
                         // we lose context to the parent and have to "drop it" as we move into $subtract or $eq
-                        id = attachParentIdentifier( parentKey, rowType, field );
+                        id = getIdentifier( parentKey, rowType, field );
                     }
                     RexNode node = convertMath( key, null, bsonValue, rowType, field );
 
@@ -369,7 +368,7 @@ public class MqlToRelConverter {
             }
         }
 
-        return getFixedCall( operands, SqlStdOperatorTable.AND );
+        return getFixedCall( operands, SqlStdOperatorTable.AND, PolyType.BOOLEAN );
     }
 
 
@@ -379,12 +378,15 @@ public class MqlToRelConverter {
 
 
     private RexNode convertMath( String key, String parentKey, BsonValue bsonValue, RelDataType rowType, RelDataTypeField field ) {
+        if ( key.equals( "$literal" ) ) {
+            return convertLiteral( bsonValue );
+        }
         SqlOperator op = mathOperators.get( key );
         String errorMsg = "After a " + String.join( ",", mathOperators.keySet() ) + " a list of literal or documents is needed.";
         if ( bsonValue.isArray() ) {
             List<RexNode> nodes = convertArray( parentKey, bsonValue.asArray(), true, rowType, field, errorMsg );
 
-            return getFixedCall( nodes, op );
+            return getFixedCall( nodes, op, PolyType.ANY );
         } else {
             throw new RuntimeException( errorMsg );
         }
@@ -426,7 +428,7 @@ public class MqlToRelConverter {
             if ( isNegated ) {
                 operands = operands.stream().map( this::negate ).collect( Collectors.toList() );
             }
-            return getFixedCall( operands, op );
+            return getFixedCall( operands, op, PolyType.BOOLEAN );
         } else {
             throw new RuntimeException( errorMsg );
         }
@@ -457,7 +459,7 @@ public class MqlToRelConverter {
         } else {
             // we have a simple assignment to a value, can attach and translate the value
             List<RexNode> nodes = new ArrayList<>();
-            nodes.add( attachParentIdentifier( parentKey, rowType, field ) );
+            nodes.add( getIdentifier( parentKey, rowType, field ) );
             nodes.add( convertLiteral( bsonValue ) );
             return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), SqlStdOperatorTable.EQUALS, nodes );
         }
@@ -465,7 +467,7 @@ public class MqlToRelConverter {
     }
 
 
-    private RexNode attachParentIdentifier( String parentKey, RelDataType rowType, RelDataTypeField field ) {
+    private RexNode getIdentifier( String parentKey, RelDataType rowType, RelDataTypeField field ) {
         if ( !rowType.getFieldNames().contains( parentKey ) ) {
             return translateJsonValue( field.getIndex(), rowType, parentKey );
         } else {
@@ -480,7 +482,7 @@ public class MqlToRelConverter {
     }
 
 
-    private RexNode getFixedCall( List<RexNode> operands, SqlOperator op ) {
+    private RexNode getFixedCall( List<RexNode> operands, SqlOperator op, PolyType polyType ) {
         if ( operands.size() == 1 ) {
             if ( op.kind == SqlKind.NOT && operands.get( 0 ) instanceof RexCall && ((RexCall) operands.get( 0 )).op.kind == SqlKind.NOT ) {
                 // we have a nested NOT, which can be removed
@@ -503,7 +505,7 @@ public class MqlToRelConverter {
                 operands.removeAll( toRemove );
             }
 
-            return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), op, operands );
+            return new RexCall( cluster.getTypeFactory().createPolyType( polyType ), op, operands );
         }
     }
 
@@ -513,7 +515,7 @@ public class MqlToRelConverter {
         for ( Entry<String, BsonValue> entry : bsonDocument.entrySet() ) {
             operands.add( convertEntry( entry.getKey(), parentKey, entry.getValue(), rowType, field ) );
         }
-        return getFixedCall( operands, SqlStdOperatorTable.AND );
+        return getFixedCall( operands, SqlStdOperatorTable.AND, PolyType.BOOLEAN );
     }
 
 
@@ -529,7 +531,7 @@ public class MqlToRelConverter {
                 return convertExists( bsonValue, parentKey, rowType, field );
             default:
                 if ( parentKey != null ) {
-                    nodes.add( attachParentIdentifier( parentKey, rowType, field ) );
+                    nodes.add( getIdentifier( parentKey, rowType, field ) );
                 }
                 nodes.add( convertLiteral( bsonValue ) );
                 return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), op, nodes );
@@ -565,7 +567,7 @@ public class MqlToRelConverter {
         RelDataType type = factory.createPolyType( PolyType.ANY );
         RelDataType anyType = factory.createTypeWithNullability( type, true );
 
-        RexCall common = getJsonCommonApi( index, rowType, key, factory, anyType );
+        RexCall common = getJsonCommonApi( index, rowType, key, anyType );
 
         return new RexCall(
                 factory.createPolyType( PolyType.BOOLEAN ),
@@ -580,32 +582,78 @@ public class MqlToRelConverter {
         RelDataType anyType = factory.createTypeWithNullability( type, true );
 
         // match part
-        RexCall common = getJsonCommonApi( index, rowType, key, factory, anyType );
+        RexCall common = getJsonCommonApi( index, rowType, key, anyType );
 
         RexLiteral flag = new RexLiteral( SqlJsonValueEmptyOrErrorBehavior.NULL, factory.createPolyType( PolyType.SYMBOL ), PolyType.SYMBOL );
 
-        RexCall value = new RexCall(
+        return new RexCall(
                 anyType,
                 SqlStdOperatorTable.JSON_VALUE_ANY,
-                Arrays.asList( common, flag, new RexLiteral( null, anyType, PolyType.NULL, true ),
+                Arrays.asList(
+                        common,
+                        flag,
+                        new RexLiteral( null, anyType, PolyType.NULL, true ),
                         flag,
                         new RexLiteral( null, anyType, PolyType.NULL, true ) ) );
-
-        RelDataType returnAny = factory.createTypeWithNullability( factory.createPolyType( PolyType.VARCHAR, 2000 ), true );
-        return new RexCall( returnAny, SqlStdOperatorTable.CAST, Collections.singletonList( value ) );
 
     }
 
 
-    private RexCall getJsonCommonApi( int index, RelDataType rowType, String key, RelDataTypeFactory factory, RelDataType anyType ) {
-        RexCall ref = new RexCall(
-                anyType,
-                SqlStdOperatorTable.JSON_VALUE_EXPRESSION,
-                Collections.singletonList( RexInputRef.of( index, rowType ) ) );
-        String jsonFilter = RuntimeConfig.JSON_MODE.getString() + " $." + key;
-        NlsString nlsString = new NlsString( jsonFilter, "ISO-8859-1", SqlCollation.IMPLICIT );
-        RexLiteral filter = new RexLiteral( nlsString, factory.createPolyType( PolyType.CHAR, jsonFilter.length() ), PolyType.CHAR );
-        return new RexCall( anyType, SqlStdOperatorTable.JSON_API_COMMON_SYNTAX, Arrays.asList( ref, filter ) );
+    private RexNode translateJsonQuery( int index, RelDataType rowType, String key, List<String> excludes ) {
+        RelDataTypeFactory factory = cluster.getTypeFactory();
+        RelDataType type = factory.createPolyType( PolyType.ANY );
+        RelDataType anyType = factory.createTypeWithNullability( type, true );
+
+        RelDataType polySymbol = factory.createPolyType( PolyType.SYMBOL );
+        RelDataType symbolType = factory.createTypeWithNullability( polySymbol, true );
+
+        RexCall jsonCommon = getJsonCommonApi( index, rowType, key, anyType, excludes );
+
+        RexLiteral without = new RexLiteral( SqlJsonQueryWrapperBehavior.WITHOUT_ARRAY, symbolType, PolyType.SYMBOL );
+        RexLiteral emptyOrError = new RexLiteral( SqlJsonQueryEmptyOrErrorBehavior.NULL, symbolType, PolyType.SYMBOL );
+
+        return new RexCall( factory.createPolyType( PolyType.ANY ), SqlStdOperatorTable.JSON_QUERY, Arrays.asList( jsonCommon, without, emptyOrError, emptyOrError ) );
+
+    }
+
+
+    private RexCall getJsonCommonApi( int index, RelDataType rowType, String key, RelDataType anyType ) {
+        return getJsonCommonApi( index, rowType, key, anyType, new ArrayList<>() );
+    }
+
+
+    private RexCall getJsonCommonApi( int index, RelDataType rowType, String key, RelDataType anyType, List<String> excludes ) {
+        RexCall ref;
+        if ( excludes.size() > 0 ) {
+            RexCall excludesCall = getExcludes( excludes );
+            ref = new RexCall(
+                    anyType,
+                    SqlStdOperatorTable.JSON_VALUE_EXPRESSION_EXCLUDED,
+                    Arrays.asList( RexInputRef.of( index, rowType ), excludesCall ) );
+        } else {
+            ref = new RexCall(
+                    anyType,
+                    SqlStdOperatorTable.JSON_VALUE_EXPRESSION,
+                    Collections.singletonList( RexInputRef.of( index, rowType ) ) );
+        }
+        String jsonFilter = RuntimeConfig.JSON_MODE.getString() + (key == null ? " $" : " $." + key);
+        return new RexCall( anyType, SqlStdOperatorTable.JSON_API_COMMON_SYNTAX, Arrays.asList( ref, convertLiteral( new BsonString( jsonFilter ) ) ) );
+    }
+
+
+    private RexCall getExcludes( List<String> excludes ) {
+        List<RexNode> rexExcludes = new ArrayList<>();
+        int maxSize = 0;
+        for ( String name : excludes ) {
+            rexExcludes.add( convertLiteral( new BsonString( name ) ) );
+            maxSize = Math.max( name.length(), maxSize );
+        }
+
+        return new RexCall(
+                cluster.getTypeFactory().createArrayType(
+                        cluster.getTypeFactory().createPolyType( PolyType.CHAR, maxSize ),
+                        rexExcludes.size() ),
+                SqlStdOperatorTable.ARRAY_VALUE_CONSTRUCTOR, rexExcludes );
     }
 
 
@@ -623,7 +671,7 @@ public class MqlToRelConverter {
         List<RexNode> operands = new ArrayList<>();
         boolean isIn = op == SqlStdOperatorTable.IN;
         op = isIn ? SqlStdOperatorTable.OR : SqlStdOperatorTable.AND;
-        RexNode id = attachParentIdentifier( key, rowType, field );
+        RexNode id = getIdentifier( key, rowType, field );
 
         for ( BsonValue literal : bsonValue.asArray() ) {
             if ( literal.isDocument() ) {
@@ -692,96 +740,64 @@ public class MqlToRelConverter {
 
 
     private RelNode combineProjection( BsonDocument projection, RelNode node, RelDataType rowType ) {
-        List<RelDataTypeField> includes = new ArrayList<>();
-        List<RelDataTypeField> excludes = new ArrayList<>();
-        List<Pair<String, RelDataTypeField>> renaming = new ArrayList<>();
+        Map<String, RexNode> includes = new HashMap<>();
+        List<String> excludes = new ArrayList<>();
+
         for ( Entry<String, BsonValue> entry : projection.entrySet() ) {
-            RelDataTypeField field;
-            if ( rowType.getFieldNames().contains( entry.getKey() ) ) {
-                field = rowType.getField( entry.getKey(), false, false );
-            } else {
-                field = getDefaultDataField( rowType );
-            }
             BsonValue value = entry.getValue();
-            // either [name] : 1 (or bigger) means column is included ore [name]: 0 means excluded
-            // cannot be mixed so we have to handle that as well
             if ( value.isInt32() ) {
-                // included fields
-                if ( value.asInt32().getValue() > 0 ) {
-                    includes.add( field );
-                } else {
-                    excludes.add( field );
+                // we have a simple projection; [name]: 1 (include) or [name]:0 (exclude)
+                RelDataTypeField field = getTypeFieldOrDefault( rowType, entry.getKey() );
+
+                if ( value.asInt32().getValue() == 1 ) {
+                    includes.put( entry.getKey(), getIdentifier( entry.getKey(), rowType, field ) );
+                } else if ( value.asInt32().getValue() == 0 ) {
+                    excludes.add( entry.getKey() );
                 }
-            } else { // we can also have renaming with [new name]:$[name]
-                if ( value.isString() && value.asString().getValue().startsWith( "$" ) ) {
-                    String fieldName = value.asString().getValue().substring( 1 );
-                    renaming.add( Pair.of( entry.getKey(), rowType.getField( fieldName, false, false ) ) );
-                } else {
-                    throw new RuntimeException( "After a projection there needs to be either a number or a renaming." );
-                }
+
+            } else if ( value.isString() && value.asString().getValue().startsWith( "$" ) ) {
+                // we have a renaming; [new name]: $[old name] ( this counts as a inclusion projection
+                String oldName = value.asString().getValue().substring( 1 );
+                RelDataTypeField field = getTypeFieldOrDefault( rowType, oldName );
+
+                includes.put( entry.getKey(), getIdentifier( oldName, rowType, field ) );
+            } else if ( value.isDocument() && value.asDocument().size() == 1 && value.asDocument().getFirstKey().startsWith( "$" ) ) {
+                String func = value.asDocument().getFirstKey();
+                RelDataTypeField field = getDefaultDataField( rowType );
+                includes.put( entry.getKey(), convertMath( func, entry.getKey(), value.asDocument().get( func ), rowType, field ) );
+            } else {
+                throw new RuntimeException( "After a projection there needs to be either a number, a renaming, a literal or a function." );
             }
+
         }
+
         if ( includes.size() != 0 && excludes.size() != 0 ) {
-            throw new RuntimeException( "It is not possible to include and exclude different fields at the same time." );
-        }
-        List<Pair<Integer, String>> indexes = new ArrayList<>();
-        // we have defined which fields have to be projected
-        if ( includes.size() != 0 ) {
-            for ( RelDataTypeField field : includes ) {
-                indexes.add( Pair.of( field.getIndex(), field.getName() ) );
-            }
-        } else if ( excludes.size() != 0 ) {
-            // we have to include all fields except the excluded ones
-            for ( RelDataTypeField field : rowType.getFieldList() ) {
-                if ( !excludes.contains( field ) ) {
-                    indexes.add( Pair.of( field.getIndex(), field.getName() ) );
-                }
-            }
+            throw new RuntimeException( "Include projection and exclude projections are not possible at the same time." );
         }
 
-        List<Integer> includesIndexes = indexes.stream().map( field -> field.left ).collect( Collectors.toList() );
-        for ( Pair<String, RelDataTypeField> pair : renaming ) {
-            if ( Pair.left( indexes ).contains( pair.right.getIndex() ) && !includesIndexes.contains( pair.right.getIndex() ) ) {
-                // if we have already included the field we have to remove it,
-                // except if it is explicitly included and renamed at the same time
-                indexes.remove( Pair.left( indexes ).indexOf( pair.right.getIndex() ) );
-            }
-            indexes.add( Pair.of( pair.right.getIndex(), pair.left ) );
-            // if for some reason we rename the same field multiple times we stop the removal after the first by adding it here
-            includesIndexes.add( pair.right.getIndex() );
+        if ( excludes.size() > 0 ) {
+            // exclusion projections only work for the underlying _data field
+            RelDataTypeField defaultDataField = getDefaultDataField( rowType );
+            return LogicalProject.create(
+                    node,
+                    Collections.singletonList( translateJsonQuery( defaultDataField.getIndex(), rowType, null, excludes ) ),
+                    Collections.singletonList( defaultDataField.getName() )
+            );
         }
 
-        /*List<RexInputRef> inputRefs = indexes.stream()
-                .map( i -> RexInputRef.of( i.left, rowType ) )
-                .collect( Collectors.toList() );*/
-
-        return LogicalProject.create( node, Collections.singletonList( getSpecialJsonQuery( rowType, getDefaultDataField( rowType ) ) ), Collections.singletonList( "EXPR$0" ) );
+        return LogicalProject.create( node, new ArrayList<>( includes.values() ), new ArrayList<>( includes.keySet() ) );
     }
 
 
-    private RexNode getSpecialJsonQuery( RelDataType rowType, RelDataTypeField field ) {
-        RelDataTypeFactory factory = cluster.getTypeFactory();
-        RelDataType type = factory.createPolyType( PolyType.ANY );
-        RelDataType anyType = factory.createTypeWithNullability( type, true );
-
-        RelDataType polySymbol = factory.createPolyType( PolyType.SYMBOL );
-        RelDataType symbolType = factory.createTypeWithNullability( polySymbol, true );
-
-        RexNode input = new RexInputRef( field.getIndex(), rowType );
-
-        RexNode exclude = convertLiteral( new BsonString( "test" ) );
-        RexCall jsonValue = new RexCall( anyType, SqlStdOperatorTable.JSON_VALUE_EXPRESSION_EXCLUDED, Arrays.asList( input, exclude ) );
-
-        RexNode first = convertLiteral( new BsonString( "strict $" ) );
-
-        RexCall jsonCommon = new RexCall( anyType, SqlStdOperatorTable.JSON_API_COMMON_SYNTAX, Arrays.asList( jsonValue, first ) );
-        RexLiteral without = new RexLiteral( SqlJsonQueryWrapperBehavior.WITHOUT_ARRAY, symbolType, PolyType.SYMBOL );
-        RexLiteral emptyOrError = new RexLiteral( SqlJsonQueryEmptyOrErrorBehavior.NULL, symbolType, PolyType.SYMBOL );
-        //RexLiteral defaultEmpty = new RexLiteral( null, anyType, PolyType.NULL, true );
-
-        return new RexCall( factory.createPolyType( PolyType.VARCHAR, 2000 ), SqlStdOperatorTable.JSON_QUERY, Arrays.asList( jsonCommon, without, emptyOrError, emptyOrError ) );
-
-        //return new RexCall( factory.createTypeWithNullability( factory.createPolyType( PolyType.VARCHAR, 2000 ), true), SqlStdOperatorTable.CAST, Collections.singletonList( value ) );
+    private RelDataTypeField getTypeFieldOrDefault( RelDataType rowType, String name ) {
+        RelDataTypeField field;
+        if ( rowType.getFieldNames().contains( name ) ) {
+            field = rowType.getField( name, false, false );
+        } else {
+            field = getDefaultDataField( rowType );
+        }
+        return field;
     }
+
 
 }
