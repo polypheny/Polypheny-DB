@@ -1070,6 +1070,8 @@ public class DdlManagerImpl extends DdlManager {
             throw new PlacementNotExistsException();
         }
 
+        //check before physical removal if placement would be correct
+
         // Which columns to remove
         for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id ) ) {
             if ( !columnIds.contains( placement.columnId ) ) {
@@ -1214,6 +1216,9 @@ public class DdlManagerImpl extends DdlManager {
         }
 
 
+        // Update
+        catalog.updatePartitionGroupsOnDataPlacement( storeId, catalogTable.id, partitionGroupIds );
+
         // Copy the data to the newly added column placements
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
         if ( newPartitions.size() > 0 ) {
@@ -1230,8 +1235,7 @@ public class DdlManagerImpl extends DdlManager {
             storeInstance.dropTable( statement.getPrepareContext(), catalogTable, removedPartitions );
         }
 
-        // Update
-        catalog.updatePartitionGroupsOnDataPlacement( storeId, catalogTable.id, partitionGroupIds );
+
     }
 
 

@@ -68,8 +68,7 @@ public class DataMigratorImpl implements DataMigrator {
     @Override
     public void copyData( Transaction transaction, CatalogAdapter store, List<CatalogColumn> columns, List<Long> partitionIds ) {
 
-        Statement sourceStatement = transaction.createStatement();
-        Statement targetStatement = transaction.createStatement();
+
 
 
         CatalogTable table = Catalog.getInstance().getTable( columns.get( 0 ).tableId );
@@ -78,9 +77,9 @@ public class DataMigratorImpl implements DataMigrator {
 
 
         // Check Lists
-        List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
+        List<CatalogColumnPlacement> targetColumnPlacements = new LinkedList<>();
         for ( CatalogColumn catalogColumn : columns ) {
-            columnPlacements.add( Catalog.getInstance().getColumnPlacement( store.id, catalogColumn.id) );
+            targetColumnPlacements.add( Catalog.getInstance().getColumnPlacement( store.id, catalogColumn.id) );
         }
 
 
@@ -102,21 +101,23 @@ public class DataMigratorImpl implements DataMigrator {
             PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( table.partitionProperty.partitionType );
             placementDistribution = partitionManager.getRelevantPlacements( table, partitionIds );
         }else {
-            placementDistribution.put( table.partitionProperty.partitionIds.get( 0 ), selectSourcePlacements( table, selectColumnList, columnPlacements.get( 0 ).adapterId ) );
+            placementDistribution.put( table.partitionProperty.partitionIds.get( 0 ), selectSourcePlacements( table, selectColumnList, targetColumnPlacements.get( 0 ).adapterId ) );
         }
 
         for ( long partitionId : partitionIds ) {
 
 
+            Statement sourceStatement = transaction.createStatement();
+            Statement targetStatement = transaction.createStatement();
 
             RelRoot sourceRel = getSourceIterator( sourceStatement, placementDistribution.get( partitionId ),partitionId );
             RelRoot targetRel;
             if ( Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( store.id, table.id ).size() == columns.size() ) {
                 // There have been no placements for this table on this store before. Build insert statement
-                targetRel = buildInsertStatement( targetStatement, columnPlacements, partitionId);
+                targetRel = buildInsertStatement( targetStatement, targetColumnPlacements, partitionId);
             } else {
                 // Build update statement
-                targetRel = buildUpdateStatement( targetStatement, columnPlacements, partitionId );
+                targetRel = buildUpdateStatement( targetStatement, targetColumnPlacements, partitionId );
             }
 
             // Execute Query

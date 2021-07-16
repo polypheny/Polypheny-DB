@@ -942,7 +942,9 @@ public abstract class AbstractRouter implements Router {
                 throw new RuntimeException( "The table '" + currentPlacements.get( 0 ).getLogicalTableName() + "' seems to have no placement. This should not happen!" );
             }
         }
+
         builder.union( true, placements.size() );
+
 
         RelNode node = builder.build();
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
