@@ -243,7 +243,7 @@ public class PolyphenyDb {
 
         //Intialize PartitionMangerFactory
         PartitionManagerFactory.setAndGetInstance( new PartitionManagerFactoryImpl() );
-        FrequencyMap.setAndGetInstance( new FrequencyMapImpl() );
+        FrequencyMap.setAndGetInstance( new FrequencyMapImpl(catalog) );
 
         // Start Polypheny UI
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator );

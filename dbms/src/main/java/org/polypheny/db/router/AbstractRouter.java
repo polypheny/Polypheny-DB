@@ -16,6 +16,8 @@
 
 package org.polypheny.db.router;
 
+import static java.util.stream.Collectors.toCollection;
+
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
@@ -593,6 +595,7 @@ public abstract class AbstractRouter implements Router {
                             }
                         } else {
                             log.debug( "PartitionColumnID was not an explicit part of statement, partition routing will therefore assume worst-case: Routing to ALL PARTITIONS" );
+                            accessedPartitionList = catalogTable.partitionProperty.partitionIds.stream().collect(toCollection(ArrayList::new));
                         }
                     }else{
                         //unpartitioned tables only have one partition anyway

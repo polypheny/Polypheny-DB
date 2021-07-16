@@ -138,6 +138,7 @@ public abstract class AbstractJdbcStore extends DataStore {
                 log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), qualifiedNames, physicalTableName );
             }
             StringBuilder query = buildCreateTableQuery( getDefaultPhysicalSchemaName(), physicalTableName, catalogTable );
+            log.info( query.toString() + " on store " + this.getUniqueName() );
             executeUpdate( query, context );
 
 
@@ -360,7 +361,7 @@ public abstract class AbstractJdbcStore extends DataStore {
                     .append( "." )
                     .append( dialect.quoteIdentifier( physicalTableName ) );
 
-            System.out.println( "\t dropTable() " + builder.toString() );
+            log.info( builder.toString() + " from store " + this.getUniqueName() );
             executeUpdate( builder, context );
         }
     }
@@ -459,7 +460,6 @@ public abstract class AbstractJdbcStore extends DataStore {
         if ( partitionId >= 0  ) {
             physicalTableName += "_part" + partitionId;
         }
-        System.out.println( "HENNLO Abstract JDBC Store - getPhysicalTableName: " + physicalTableName );
         return physicalTableName;
     }
 

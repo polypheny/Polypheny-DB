@@ -913,7 +913,7 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
         // Physically delete the data from the store
-        storeInstance.dropTable( statement.getPrepareContext(), catalogTable, catalogTable.partitionProperty.partitionIds);
+        storeInstance.dropTable( statement.getPrepareContext(), catalogTable, catalog.getPartitionsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id ));
         // Inform routing
         statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id ) );
         // Delete placement in the catalog
@@ -1415,22 +1415,6 @@ public class DdlManagerImpl extends DdlManager {
                 addConstraint( constraint.name, constraint.type, constraint.columnNames, tableId );
             }
 
-/*
-
-            //Technically every Table is partitioned. But tables classified as UNPARTITIONED only consist of one PartitionGroup and one large partition
-            List<Long> partitionGroupIds = new ArrayList<>();
-            partitionGroupIds.add(catalog.addPartitionGroup( tableId,"full", schemaId, PartitionType.NONE, 1, new ArrayList<>(), true));
-
-            List<Long> partitionIds = new ArrayList<>();
-            //get All(only one) PartitoinGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
-            CatalogPartitionGroup defaultUnpartitionedGroup = catalog.getPartitionGroup( partitionGroupIds.get( 0 ) );
-
-            PartitionProperty partitionProperty = PartitionProperty.builder()
-                    .partitionType( PartitionType.NONE )
-                    .partitionGroupIds( ImmutableList.copyOf( partitionGroupIds ))
-                    .partitionIds( ImmutableList.copyOf( defaultUnpartitionedGroup.partitionIds ) )
-                    .build();
-*/
 
             //catalog.updateTablePartitionProperties(tableId, partitionProperty);
             CatalogTable catalogTable = catalog.getTable( tableId );
@@ -1577,6 +1561,8 @@ public class DdlManagerImpl extends DdlManager {
 
             //Initially distribute partitions as intended in a running system
             long numberOfPartitionsInHot = numberOfPartitions * hotPercentageIn / 100;
+            if( numberOfPartitionsInHot == 0 ){ numberOfPartitionsInHot = 1; }
+
             long numberOfPartitionsInCold = numberOfPartitions - numberOfPartitionsInHot;
 
             //-1 because one partition is already created in COLD

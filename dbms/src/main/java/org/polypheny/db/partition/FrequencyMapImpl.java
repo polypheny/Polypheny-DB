@@ -34,6 +34,7 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -46,6 +47,7 @@ import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
 import org.polypheny.db.monitoring.events.metrics.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
+import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -69,10 +71,14 @@ public class FrequencyMapImpl extends FrequencyMap {
 
     public static FrequencyMap INSTANCE = null;
 
+    private final Catalog catalog;
+
     //Make use of central configuration
     private final long checkInterval = 20; //in seconds
     private String backgroundTaskId;
     private Map<Long,Long> accessCounter = new HashMap<>();
+
+    public FrequencyMapImpl(Catalog catalog){ this.catalog = catalog; }
 
     @Override
     public void initialize() {
@@ -89,14 +95,6 @@ public class FrequencyMapImpl extends FrequencyMap {
     @Override
     public void determineTableFrequency() {
 
-    }
-
-
-    public static FrequencyMap getInstance() {
-        if ( INSTANCE == null ) {
-            INSTANCE = new FrequencyMapImpl();
-        }
-        return INSTANCE;
     }
 
     private void startBackgroundTask() {
@@ -138,7 +136,8 @@ public class FrequencyMapImpl extends FrequencyMap {
         //These are the tables than can remain in HOT
         long allowedTablesInHot = ( table.partitionProperty.partitionIds.size() *  ((TemperaturePartitionProperty)table.partitionProperty).getHotAccessPercentageOut() ) / 100;
 
-
+        if( numberOfPartitionsInHot == 0 ){ numberOfPartitionsInHot = 1; }
+        if( allowedTablesInHot == 0 ){ allowedTablesInHot = 1; }
 
 
         long thresholdValue = Long.MAX_VALUE;
@@ -231,6 +230,8 @@ public class FrequencyMapImpl extends FrequencyMap {
 
 
             Statement statement = transaction.createStatement();
+            DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
+
 
             List<CatalogAdapter> adaptersWithHot = Catalog.getInstance().getAdaptersByPartitionGroup( table.id, ((TemperaturePartitionProperty)table.partitionProperty).getHotPartitionGroupId() );
             List<CatalogAdapter> adaptersWithCold = Catalog.getInstance().getAdaptersByPartitionGroup( table.id, ((TemperaturePartitionProperty)table.partitionProperty).getColdPartitionGroupId() );
@@ -250,13 +251,18 @@ public class FrequencyMapImpl extends FrequencyMap {
                 if ( adapter instanceof DataStore ) {
                     DataStore store = (DataStore) adapter;
 
-                    List<Long> HotPartitionsToCreate = filterList( catalogAdapter.id, table.id, partitionsFromColdToHot );
+                    List<Long> hotPartitionsToCreate = filterList( catalogAdapter.id, table.id, partitionsFromColdToHot );
                     //List<Long> coldPartitionsToDelete = filterList( catalogAdapter.id, table.id, partitionsFromHotToCold );
 
                     //IF this store contains both Groups HOT & COLD do nothing
-                    if (HotPartitionsToCreate.size() != 0) {
+                    if (hotPartitionsToCreate.size() != 0) {
                         Catalog.getInstance().getPartitionsOnDataPlacement( store.getAdapterId(), table.id );
-                        store.createTable( statement.getPrepareContext(), table, HotPartitionsToCreate );
+                        store.createTable( statement.getPrepareContext(), table, hotPartitionsToCreate );
+
+                        List<CatalogColumn> catalogColumns =  new ArrayList<>();
+                        catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> catalogColumns.add( catalog.getColumn( cp.columnId ) ) );
+
+                        dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), catalogColumns, hotPartitionsToCreate);
 
                         if (  !partitionsToRemoveFromStore.containsKey( store )) {
                             partitionsToRemoveFromStore.put( store, partitionsFromHotToCold );
@@ -294,10 +300,15 @@ public class FrequencyMapImpl extends FrequencyMap {
                 Adapter adapter = AdapterManager.getInstance().getAdapter( catalogAdapter.id );
                 if ( adapter instanceof DataStore ) {
                     DataStore store = (DataStore) adapter;
-                    List<Long> partitionsToCreate = filterList( catalogAdapter.id, table.id, partitionsFromHotToCold );
-                    if (partitionsToCreate.size() != 0) {
+                    List<Long> coldPartitionsToCreate = filterList( catalogAdapter.id, table.id, partitionsFromHotToCold );
+                    if (coldPartitionsToCreate.size() != 0) {
                         Catalog.getInstance().getPartitionsOnDataPlacement( store.getAdapterId(), table.id );
-                        store.createTable( statement.getPrepareContext(), table, partitionsToCreate );
+                        store.createTable( statement.getPrepareContext(), table, coldPartitionsToCreate );
+
+                        List<CatalogColumn> catalogColumns =  new ArrayList<>();
+                        catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> catalogColumns.add( catalog.getColumn( cp.columnId ) ) );
+
+                        dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), catalogColumns, coldPartitionsToCreate);
 
                         if (  !partitionsToRemoveFromStore.containsKey( store )) {
                             partitionsToRemoveFromStore.put( store, partitionsFromColdToHot );
