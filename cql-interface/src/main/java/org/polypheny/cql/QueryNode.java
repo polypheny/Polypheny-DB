@@ -16,42 +16,36 @@
 
 package org.polypheny.cql;
 
-public class QueryNode {
+import lombok.SneakyThrows;
+import org.polypheny.cql.contextset.utils.Tree;
+import org.polypheny.cql.contextset.utils.UnexpectedTypeException;
 
-    public final BooleanGroup booleanGroup;
-    public final SearchClause searchClause;
-    public final QueryNode left;
-    public final QueryNode right;
-
-    private final boolean leaf;
-
+public class QueryNode extends Tree<BooleanGroup, SearchClause> {
 
     public QueryNode( QueryNode left, BooleanGroup booleanGroup, QueryNode right ) {
-        this.booleanGroup = booleanGroup;
-        this.searchClause = null;
-        this.left = left;
-        this.right = right;
-        this.leaf = false;
+        super( left, booleanGroup, right );
     }
 
 
     public QueryNode( SearchClause searchClause ) {
-        this.booleanGroup = null;
-        this.searchClause = searchClause;
-        this.left = null;
-        this.right = null;
-        this.leaf = true;
+        super( searchClause );
     }
 
 
-    public boolean isLeaf() {
-        return this.leaf;
+    public SearchClause getSearchClause() throws UnexpectedTypeException {
+        return super.getExternalNode();
     }
 
 
+    public BooleanGroup getBooleanGroup() throws UnexpectedTypeException {
+        return super.getInternalNode();
+    }
+
+
+    @SneakyThrows
     @Override
     public String toString() {
-        return (isLeaf() ? searchClause.toString() : booleanGroup.toString());
+        return (isLeaf() ? getExternalNode().toString() : getInternalNode().toString());
     }
 
 }

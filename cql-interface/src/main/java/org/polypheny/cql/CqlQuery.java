@@ -51,14 +51,14 @@ public class CqlQuery {
         if ( root == null ) {
             return "";
         }
+
         StringBuilder stringBuilder = new StringBuilder();
-        if ( root.isLeaf() ) {
-            stringBuilder.append( root ).append( " " );
-            return stringBuilder.toString();
-        } else {
-            stringBuilder.append( "( " ).append( queryString( root.left ) ).append( " " ).append( root ).append( " " ).append( queryString( root.right ) ).append( " )" );
-            return stringBuilder.toString();
-        }
+
+        root.TraverseInPlace( treeNode -> {
+            stringBuilder.append( "( " ).append( treeNode ).append( " )" );
+        } );
+
+        return stringBuilder.toString();
     }
 
 }
