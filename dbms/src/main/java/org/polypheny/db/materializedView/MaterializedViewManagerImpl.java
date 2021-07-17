@@ -42,9 +42,15 @@ import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.SingleRel;
 import org.polypheny.db.rel.logical.LogicalViewTableScan;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.transaction.DeadlockException;
+import org.polypheny.db.transaction.Lock.LockMode;
+import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.TableAccessMap;
+import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.transaction.TransactionManager;
 
 @Slf4j
@@ -127,6 +133,24 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
         RelRoot targetRel = dataMigrator.buildDeleteStatement( targetStatement, columnPlacements );
 
+        try {
+            // Get a shared global schema lock
+            LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) transaction, LockMode.SHARED );
+            // Get locks for individual tables
+            TableAccessMap accessMapSource = new TableAccessMap( sourceRel.rel );
+            for ( TableIdentifier tableIdentifier : accessMapSource.getTablesAccessed() ) {
+                //shared Lock for all underlying tables
+                LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) transaction, LockMode.SHARED );
+            }
+            TableAccessMap accessMapTarget = new TableAccessMap( targetRel.rel );
+            for ( TableIdentifier tableIdentifier : accessMapTarget.getTablesAccessed() ) {
+                //exclusive Lock for all materialized views
+                LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) transaction, LockMode.EXCLUSIVE );
+            }
+        } catch ( DeadlockException e ) {
+            throw new RuntimeException( e );
+        }
+
         dataMigrator.executeQuery( columns, sourceRel, sourceStatement, targetStatement, targetRel, true );
 
         targetRel = dataMigrator.buildInsertStatement( targetStatement, columnPlacements );
@@ -169,6 +193,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
     public void commitTransaction( Transaction transaction ) {
 
         try {
+            //locks are released within commit
             transaction.commit();
         } catch ( TransactionException e ) {
             log.error( "Caught exception while executing a query from the console", e );
