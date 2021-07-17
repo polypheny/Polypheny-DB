@@ -21,12 +21,16 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.entity.MaterializedViewCriteria;
+import org.polypheny.db.catalog.entity.MaterializedViewCriteria.CriteriaType;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -59,13 +63,15 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
     @Getter
     private final SqlNode query;
     private final SqlIdentifier store;
+    private String freshnessType;
+    private final Integer freshnessTime;
+    private final SqlIdentifier freshnessId;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE MATERIALIZED VIEW", SqlKind.CREATE_MATERIALIZED_VIEW );
 
 
     /**
      * Creates a SqlCreateMaterializedView.
-     *
      */
     SqlCreateMaterializedView(
             SqlParserPos pos,
@@ -73,12 +79,18 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
             SqlIdentifier name,
             SqlNodeList columnList,
             SqlNode query,
-            SqlIdentifier store ) {
+            SqlIdentifier store,
+            String freshnessType,
+            Integer freshnessTime,
+            SqlIdentifier freshnessId ) {
         super( OPERATOR, pos, replace, false );
         this.name = Objects.requireNonNull( name );
         this.columnList = columnList; // may be null
         this.query = Objects.requireNonNull( query );
         this.store = store; // ON STORE [store name]; may be null
+        this.freshnessType = freshnessType; // may be null, then standard values are used
+        this.freshnessTime = freshnessTime;
+        this.freshnessId = freshnessId;
     }
 
 
@@ -126,6 +138,28 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
             columns = getColumnInfo();
         }
 
+        MaterializedViewCriteria materializedViewCriteria;
+
+        if ( freshnessType != null ) {
+            switch ( freshnessType ) {
+                case "UPDATE":
+                    materializedViewCriteria = new MaterializedViewCriteria( CriteriaType.UPDATE, freshnessTime );
+                    System.out.println( freshnessType );
+                    break;
+                case "INTERVAL":
+                    materializedViewCriteria = new MaterializedViewCriteria( CriteriaType.INTERVAL, freshnessTime, getFreshnessType( freshnessId.toString().toLowerCase( Locale.ROOT ) ) );
+                    System.out.println( freshnessType );
+                    break;
+                default:
+                    materializedViewCriteria = new MaterializedViewCriteria();
+                    System.out.println( freshnessType );
+                    break;
+            }
+        } else {
+            materializedViewCriteria = new MaterializedViewCriteria();
+            System.out.println( freshnessType );
+        }
+
         try {
             DdlManager.getInstance().createMaterializedView(
                     viewName,
@@ -135,7 +169,8 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
                     statement,
                     stores,
                     placementType,
-                    columns );
+                    columns,
+                    materializedViewCriteria );
         } catch ( TableAlreadyExistsException e ) {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( viewName ) );
         } catch ( GenericCatalogException | UnknownColumnException e ) {
@@ -145,6 +180,37 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
 
 
     }
+
+
+    private TimeUnit getFreshnessType( String freshnessId ) {
+        TimeUnit timeUnit;
+        switch ( freshnessId ) {
+            case "min":
+            case "minutes":
+                timeUnit = TimeUnit.MINUTES;
+                break;
+            case "hours":
+                timeUnit = TimeUnit.HOURS;
+                break;
+            case "sec":
+            case "seconds":
+                timeUnit = TimeUnit.SECONDS;
+                break;
+            case "days":
+            case "day":
+                timeUnit = TimeUnit.DAYS;
+                break;
+            case "millisec":
+            case "milliseconds":
+                timeUnit = TimeUnit.MILLISECONDS;
+                break;
+            default:
+                timeUnit = TimeUnit.MINUTES;
+                break;
+        }
+        return timeUnit;
+    }
+
 
     private List<String> getColumnInfo() {
         List<String> columnName = new ArrayList<>();
@@ -188,6 +254,14 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
         if ( store != null ) {
             writer.keyword( "ON STORE" );
             store.unparse( writer, 0, 0 );
+        }
+        if ( freshnessType != null ) {
+            writer.keyword( "FRESHNESS" );
+
+            if ( freshnessId != null ) {
+                freshnessId.unparse( writer, leftPrec, rightPrec );
+            }
+
         }
     }
 

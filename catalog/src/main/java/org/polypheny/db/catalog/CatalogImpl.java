@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -1345,7 +1344,7 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList ) {
+    public long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, MaterializedViewCriteria materializedViewCriteria ) {
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( schemaId );
         CatalogUser owner = getUser( ownerId );
@@ -1367,7 +1366,7 @@ public class CatalogImpl extends Catalog {
                     relCollation,
                     ImmutableMap.copyOf( underlyingTables ),
                     fieldList,
-                    new MaterializedViewCriteria( 1L, TimeUnit.MINUTES )
+                    materializedViewCriteria
             );
             addConnectedViews( underlyingTables, materializedViewTable.id );
             updateTableLogistics( name, schemaId, id, schema, materializedViewTable );

@@ -342,13 +342,28 @@ SqlCreate SqlCreateMaterializedView(Span s, boolean replace) :
     SqlNodeList columnList = null;
     final SqlNode query;
     SqlIdentifier store = null;
+    String freshnessType = null;
+    Integer time = null;
+    SqlIdentifier freshnessId = null;
 }
 {
     <MATERIALIZED><VIEW> id = CompoundIdentifier()
     [ columnList = ParenthesizedSimpleIdentifierList() ]
     <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
-    [ <ON> <STORE> store = SimpleIdentifier() ]{
-        return SqlDdlNodes.createMaterializedView(s.end(this), replace, id, columnList, query, store);
+    [ <ON> <STORE> store = SimpleIdentifier() ]
+    [ <FRESHNESS>
+                    (
+                        (<INTERVAL> time=UnsignedIntLiteral() freshnessId=CompoundIdentifier())
+                            {
+                                freshnessType="INTERVAL";
+                            }
+                        |
+                        (<UPDATE> time=UnsignedIntLiteral())
+                            {
+                                freshnessType="UPDATE";
+                            }
+                    ) ]{
+        return SqlDdlNodes.createMaterializedView(s.end(this), replace, id, columnList, query, store, freshnessType, time, freshnessId);
     }
 }
 

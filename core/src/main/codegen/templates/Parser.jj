@@ -6286,6 +6286,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < FRAME_ROW: "FRAME_ROW" >
 |   < FREE: "FREE" >
 |   < FROM: "FROM" >
+|   < FRESHNESS: "FRESHNESS">
 |   < FULL: "FULL" >
 |   < FUNCTION: "FUNCTION" >
 |   < FUSION: "FUSION" >

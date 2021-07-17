@@ -248,6 +248,7 @@ public class SqlParserTest {
             "FOUND", "92", "99",
             "FRAME_ROW", "2014", "c",
             "FREE", "99", "2003", "2011", "2014", "c",
+            "FRESHNESS", "c",                                   //IG: Added for Materialized Views
             "FROM", "92", "99", "2003", "2011", "2014", "c",
             "FULL", "92", "99", "2003", "2011", "2014", "c",
             "FUNCTION", "92", "99", "2003", "2011", "2014", "c",

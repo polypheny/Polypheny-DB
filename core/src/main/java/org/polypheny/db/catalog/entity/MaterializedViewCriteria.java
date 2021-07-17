@@ -34,7 +34,7 @@ public class MaterializedViewCriteria implements Serializable {
     private final CriteriaType criteriaType;
 
     @Getter
-    private final Long interval;
+    private final Integer interval;
 
     @Getter
     private final TimeUnit timeUnit;
@@ -43,8 +43,17 @@ public class MaterializedViewCriteria implements Serializable {
     private final Long timeInMillis;
 
 
-    public MaterializedViewCriteria( Long interval, TimeUnit timeUnit ) {
+    public MaterializedViewCriteria() {
         this.criteriaType = CriteriaType.INTERVAL;
+        this.interval = 1;
+        this.timeUnit = TimeUnit.DAYS;
+        this.lastUpdate = new Timestamp( System.currentTimeMillis() );
+        this.timeInMillis = timeUnit.toMillis( interval );
+    }
+
+
+    public MaterializedViewCriteria( CriteriaType type, Integer interval, TimeUnit timeUnit ) {
+        this.criteriaType = type;
         this.interval = interval;
         this.timeUnit = timeUnit;
         this.lastUpdate = new Timestamp( System.currentTimeMillis() );
@@ -52,8 +61,17 @@ public class MaterializedViewCriteria implements Serializable {
     }
 
 
+    public MaterializedViewCriteria( CriteriaType type, Integer interval ) {
+        this.criteriaType = type;
+        this.interval = interval;
+        this.timeUnit = null;
+        this.lastUpdate = new Timestamp( System.currentTimeMillis() );
+        this.timeInMillis = null;
+    }
+
+
     public enum CriteriaType {
-        TIME, INTERVAL
+        UPDATE, INTERVAL
     }
 
 
