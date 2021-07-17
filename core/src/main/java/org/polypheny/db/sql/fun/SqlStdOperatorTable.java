@@ -1231,6 +1231,12 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
 
     public static final SqlSpecialOperator SIMILAR_TO = new SqlLikeOperator( "SIMILAR TO", SqlKind.SIMILAR, false );
 
+    // document model operators TODO DL move
+
+    public static final SqlJsonValueExpressionOperator DOC_JSON_MATCH = new SqlJsonValueExpressionOperator( "DOC_JSON_MATCH", false );
+
+    public static final SqlJsonValueExpressionOperator DOC_REGEX_MATCH = new SqlJsonValueExpressionOperator( "DOC_REGEX_MATCH", false );
+
     public static final SqlJsonValueExpressionOperator DOC_TYPE_MATCH = new SqlJsonValueExpressionOperator( "DOC_TYPE_MATCH", false );
 
     public static final SqlJsonValueExpressionOperator DOC_QUERY_VALUE = new SqlJsonValueExpressionOperator( "DOC_QUERY_VALUE", false );

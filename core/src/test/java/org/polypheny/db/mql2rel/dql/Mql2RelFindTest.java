@@ -349,6 +349,25 @@ public class Mql2RelFindTest extends Mql2RelTest {
         testCastLiteral( types.operands.get( 1 ), 18, Integer.class );
     }
 
+
+    @Test
+    public void testSingleExpressionProjection() {
+        RelRoot root = translate( find( "\"$expr\":{\"$lt\":[ \"$key1\", \"$key2\"]}" ) );
+
+        RexCall condition = getConditionTestFilter( root );
+
+        assertEquals( SqlKind.LESS_THAN, condition.op.kind );
+
+        assertEquals( 2, condition.operands.size() );
+
+        RexCall key1 = assertRexCall( condition, 0 );
+        testJsonValue( key1, "key1" );
+
+        RexCall key2 = assertRexCall( condition, 1 );
+        testJsonValue( key2, "key2" );
+
+    }
+
     /////////// only projection /////////////
 
 

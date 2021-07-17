@@ -779,6 +779,11 @@ public class SqlFunctions {
     }
 
 
+    public static boolean lt( Object b0, Object b1 ) {
+        return ltAny( b0, b1 );
+    }
+
+
     /**
      * SQL <code>&lt;</code> operator applied to Object values.
      */
@@ -3668,8 +3673,9 @@ public class SqlFunctions {
     }
 
 
-    public static Object docQueryValue( String input, List<String> filters ) {
-        BsonValue doc = BsonDocument.parse( input );
+    public static Object docQueryValue( Object input, List<String> filters ) {
+        assert (input instanceof String);
+        BsonValue doc = BsonDocument.parse( (String) input );
         while ( filters.size() != 0 && doc != null ) {
             if ( doc.isDocument() ) {
                 if ( doc.asDocument().containsKey( filters.get( 0 ) ) ) {
@@ -3699,7 +3705,7 @@ public class SqlFunctions {
     }
 
 
-    public static Boolean docTypeMatch( Object input, List<Integer> typeNumbers ) {
+    public static boolean docTypeMatch( Object input, List<Integer> typeNumbers ) {
 
         if ( input == null ) {
             // if we look for nullType
@@ -3719,6 +3725,21 @@ public class SqlFunctions {
 
         return Pair.right( clazzPairs ).stream().anyMatch( clazz -> clazz.isInstance( input ) );
 
+    }
+
+
+    public static boolean docRegexMatch( Object input, String regex, String options ) {
+        // todo DL options
+        if ( input instanceof String ) {
+            return Pattern.matches( regex, (String) input );
+        }
+        return false;
+    }
+
+
+    public static boolean docJsonMatch( Object input, String json ) {
+        // use schema validator library TODO DL
+        throw new RuntimeException( "NOT IMPLEMENTED" );
     }
 
 

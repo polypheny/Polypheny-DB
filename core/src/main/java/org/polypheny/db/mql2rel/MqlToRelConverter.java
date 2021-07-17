@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
+import org.bson.BsonRegularExpression;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.polypheny.db.config.RuntimeConfig;
@@ -61,7 +62,6 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlBinaryOperator;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
@@ -116,7 +116,12 @@ public class MqlToRelConverter {
         // special cases
         operators.add( "$literal" );
         operators.add( "$type" );
+        operators.add( "$expr" );
+        operators.add( "$jsonSchema" );
     }
+
+
+    private boolean inQuery = false;
 
 
     public MqlToRelConverter( MqlProcessor mqlProcessor, PolyphenyDbCatalogReader catalogReader, RelOptCluster cluster ) {
@@ -232,6 +237,7 @@ public class MqlToRelConverter {
 
     private RelNode convertFind( MqlFind query, RelDataType rowType, RelNode node ) {
         if ( query.getQuery() != null && !query.getQuery().isEmpty() ) {
+            this.inQuery = true;
             node = combineFilter( query.getQuery(), node, rowType );
         }
 
@@ -338,7 +344,7 @@ public class MqlToRelConverter {
                         // we lose context to the parent and have to "drop it" as we move into $subtract or $eq
                         id = getIdentifier( parentKey, rowType, field );
                     }
-                    RexNode node = convertMath( key, null, bsonValue, rowType, field );
+                    RexNode node = convertMath( key, null, bsonValue, rowType, field, false );
 
                     if ( losesContext ) {
                         RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
@@ -352,6 +358,11 @@ public class MqlToRelConverter {
                         return convertExists( bsonValue, parentKey, rowType, field );
                     } else if ( key.equals( "$type" ) ) {
                         return convertType( bsonValue, parentKey, rowType, field );
+                    } else if ( key.equals( "$expr" ) ) {
+                        return convertExpr( bsonValue, parentKey, rowType, field );
+                    } else if ( key.equals( "$jsonSchema" ) ) {
+                        // jsonSchema is a general match
+                        return convertJsonSchema( bsonValue, rowType, field );
                     }
 
                     return translateLogical( key, parentKey, bsonValue, rowType, field );
@@ -375,16 +386,22 @@ public class MqlToRelConverter {
     }
 
 
-    private RexNode convertMath( String key, String parentKey, BsonValue bsonValue, RelDataType rowType, RelDataTypeField field ) {
+    private RexNode convertMath( String key, String parentKey, BsonValue bsonValue, RelDataType rowType, RelDataTypeField field, boolean isExpr ) {
         if ( key.equals( "$literal" ) ) {
             return convertLiteral( bsonValue );
         }
-        SqlOperator op = mathOperators.get( key );
+        SqlOperator op;
+        if ( !isExpr ) {
+            op = mathOperators.get( key );
+        } else {
+            op = mappings.get( key );
+        }
+
         String errorMsg = "After a " + String.join( ",", mathOperators.keySet() ) + " a list of literal or documents is needed.";
         if ( bsonValue.isArray() ) {
             List<RexNode> nodes = convertArray( parentKey, bsonValue.asArray(), true, rowType, field, errorMsg );
 
-            return getFixedCall( nodes, op, PolyType.ANY );
+            return getFixedCall( nodes, op, isExpr ? PolyType.BOOLEAN : PolyType.ANY );
         } else {
             throw new RuntimeException( errorMsg );
         }
@@ -505,15 +522,25 @@ public class MqlToRelConverter {
                 operands.removeAll( toRemove );
             }
 
-            return new RexCall( cluster.getTypeFactory().createPolyType( polyType ), op, operands );
+            return new RexCall( cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( polyType ), true ), op, operands );
         }
     }
 
 
     private RexNode translateDocument( BsonDocument bsonDocument, RelDataType rowType, RelDataTypeField field, String parentKey ) {
         ArrayList<RexNode> operands = new ArrayList<>();
+
+        if ( bsonDocument.getFirstKey().equals( "$regex" ) ) {
+            operands.add( convertRegex( bsonDocument, parentKey, field, rowType ) );
+        }
+
         for ( Entry<String, BsonValue> entry : bsonDocument.entrySet() ) {
-            operands.add( convertEntry( entry.getKey(), parentKey, entry.getValue(), rowType, field ) );
+            if ( entry.getKey().equals( "$regex" ) ) {
+                operands.add( convertRegex( bsonDocument, parentKey, field, rowType ) );
+            } else if ( !entry.getKey().equals( "$options" ) ) {
+                // normal handling
+                operands.add( convertEntry( entry.getKey(), parentKey, entry.getValue(), rowType, field ) );
+            }
         }
         return getFixedCall( operands, SqlStdOperatorTable.AND, PolyType.BOOLEAN );
     }
@@ -526,7 +553,7 @@ public class MqlToRelConverter {
         switch ( op.kind ) {
             case IN:
             case NOT_IN:
-                return convertIn( bsonValue, (SqlBinaryOperator) op, parentKey, rowType, field );
+                return convertIn( bsonValue, op, parentKey, rowType, field );
             default:
                 if ( parentKey != null ) {
                     nodes.add( getIdentifier( parentKey, rowType, field ) );
@@ -535,6 +562,39 @@ public class MqlToRelConverter {
                 return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), op, nodes );
         }
 
+    }
+
+
+    private RexNode convertRegex( BsonDocument bsonDocument, String parentKey, RelDataTypeField field, RelDataType rowType ) {
+        String options = "";
+        if ( bsonDocument.size() == 2 && bsonDocument.containsKey( "$regex" ) && bsonDocument.containsKey( "$options" ) ) {
+            options = bsonDocument.get( "$options" ).isString() ? bsonDocument.get( "$options" ).asString().getValue() : "";
+        }
+        BsonValue regex = bsonDocument.get( "$regex" );
+
+        String stringRegex;
+        if ( regex.isString() ) {
+            stringRegex = regex.asString().getValue();
+        } else if ( regex.isRegularExpression() ) {
+            BsonRegularExpression bson = regex.asRegularExpression();
+            stringRegex = bson.getPattern();
+            options += bson.getOptions();
+        } else {
+            throw new RuntimeException( "$regex needs to be either a regular expression or a string" );
+        }
+
+        return getRegex( stringRegex, options, parentKey, field, rowType );
+    }
+
+
+    private RexCall getRegex( String stringRegex, String options, String parentKey, RelDataTypeField field, RelDataType rowType ) {
+        return new RexCall(
+                cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
+                SqlStdOperatorTable.DOC_REGEX_MATCH,
+                Arrays.asList(
+                        getIdentifier( parentKey, rowType, field ),
+                        convertLiteral( new BsonString( stringRegex ) ),
+                        convertLiteral( new BsonString( options ) ) ) );
     }
 
 
@@ -550,6 +610,26 @@ public class MqlToRelConverter {
 
         } else {
             throw new RuntimeException( "$exist without a boolean is not supported" );
+        }
+    }
+
+
+    private RexNode convertExpr( BsonValue bsonValue, String parentKey, RelDataType rowType, RelDataTypeField field ) {
+        if ( bsonValue.isDocument() && bsonValue.asDocument().size() == 1 ) {
+            BsonDocument doc = bsonValue.asDocument();
+            return convertMath( doc.getFirstKey(), parentKey, doc.get( doc.getFirstKey() ), rowType, field, true );
+
+        } else {
+            throw new RuntimeException( "After $expr there needs to be a document with a single entry" );
+        }
+    }
+
+
+    private RexNode convertJsonSchema( BsonValue bsonValue, RelDataType rowType, RelDataTypeField field ) {
+        if ( bsonValue.isDocument() ) {
+            return new RexCall( nullableAny, SqlStdOperatorTable.DOC_JSON_MATCH, Collections.singletonList( RexInputRef.of( field.getIndex(), rowType ) ) );
+        } else {
+            throw new RuntimeException( "After $jsonSchema there needs to follow a document" );
         }
     }
 
@@ -601,12 +681,9 @@ public class MqlToRelConverter {
 
 
     private RexNode translateJsonValue( int index, RelDataType rowType, String key ) {
-        RelDataTypeFactory factory = cluster.getTypeFactory();
-        RelDataType type = factory.createPolyType( PolyType.ANY );
-        RelDataType anyType = factory.createTypeWithNullability( type, true );
 
         RexCall filter = getStringArray( Arrays.asList( key.split( "\\." ) ) );
-        return new RexCall( anyType, SqlStdOperatorTable.DOC_QUERY_VALUE, Arrays.asList( RexInputRef.of( index, rowType ), filter ) );
+        return new RexCall( nullableAny, SqlStdOperatorTable.DOC_QUERY_VALUE, Arrays.asList( RexInputRef.of( index, rowType ), filter ) );
 
     }
 
@@ -702,8 +779,8 @@ public class MqlToRelConverter {
     }
 
 
-    private RexNode convertIn( BsonValue bsonValue, SqlBinaryOperator op, String key, RelDataType rowType, RelDataTypeField field ) {
-        RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
+    private RexNode convertIn( BsonValue bsonValue, SqlOperator op, String key, RelDataType rowType, RelDataTypeField field ) {
+        RelDataType type = cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), true );
 
         List<RexNode> operands = new ArrayList<>();
         boolean isIn = op == SqlStdOperatorTable.IN;
@@ -714,7 +791,15 @@ public class MqlToRelConverter {
             if ( literal.isDocument() ) {
                 throw new RuntimeException( "Non-literal in $in clauses are not supported" );
             }
-            operands.add( new RexCall( type, isIn ? SqlStdOperatorTable.EQUALS : SqlStdOperatorTable.NOT_EQUALS, Arrays.asList( id, convertLiteral( literal ) ) ) );
+            if ( literal.isRegularExpression() ) {
+                RexNode filter = getRegex( literal.asRegularExpression().getPattern(), literal.asRegularExpression().getOptions(), key, field, rowType );
+                if ( !isIn ) {
+                    filter = negate( filter );
+                }
+                operands.add( filter );
+            } else {
+                operands.add( new RexCall( type, isIn ? SqlStdOperatorTable.EQUALS : SqlStdOperatorTable.NOT_EQUALS, Arrays.asList( id, convertLiteral( literal ) ) ) );
+            }
         }
         if ( operands.size() == 1 ) {
             return operands.get( 0 );
@@ -801,7 +886,7 @@ public class MqlToRelConverter {
             } else if ( value.isDocument() && value.asDocument().size() == 1 && value.asDocument().getFirstKey().startsWith( "$" ) ) {
                 String func = value.asDocument().getFirstKey();
                 RelDataTypeField field = getDefaultDataField( rowType );
-                includes.put( entry.getKey(), convertMath( func, entry.getKey(), value.asDocument().get( func ), rowType, field ) );
+                includes.put( entry.getKey(), convertMath( func, entry.getKey(), value.asDocument().get( func ), rowType, field, false ) );
             } else {
                 throw new RuntimeException( "After a projection there needs to be either a number, a renaming, a literal or a function." );
             }
