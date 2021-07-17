@@ -36,9 +36,6 @@ public abstract class FrequencyMap {
 
     public abstract void terminate();
 
-    public abstract void determineTableFrequency();
-
     public abstract void determinePartitionFrequency( CatalogTable table, long invocationTimestamp );
 
-    public abstract void determinePartitionFrequencyOnStore();
 }

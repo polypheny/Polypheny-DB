@@ -92,11 +92,6 @@ public class FrequencyMapImpl extends FrequencyMap {
     }
 
 
-    @Override
-    public void determineTableFrequency() {
-
-    }
-
     private void startBackgroundTask() {
         if ( backgroundTaskId == null ) {
             backgroundTaskId = BackgroundTaskManager.INSTANCE.registerTask(
@@ -375,14 +370,11 @@ public class FrequencyMapImpl extends FrequencyMap {
 
         switch ( ((TemperaturePartitionProperty) table.partitionProperty).getPartitionCostIndication() ){
             case ALL:
-                List<MonitoringDataPoint> totalAccesses = MonitoringServiceProvider.getInstance().getDataPointsAfter( MonitoringDataPoint.class, queryStart );
-                for ( MonitoringDataPoint monitoringDataPoint: totalAccesses ) {
-                    if ( monitoringDataPoint instanceof QueryDataPoint ) {
-                        ((QueryDataPoint) monitoringDataPoint).getAccessedPartitions().forEach( p -> incrementPartitionAccess( p ) );
-                    }
-                    else if ( monitoringDataPoint instanceof DMLDataPoint  ){
-                        ((DMLDataPoint) monitoringDataPoint).getAccessedPartitions().forEach( p -> incrementPartitionAccess( p ) );
-                    }
+                for ( QueryDataPoint queryDataPoint: MonitoringServiceProvider.getInstance().getDataPointsAfter( QueryDataPoint.class, queryStart ) ) {
+                    queryDataPoint.getAccessedPartitions().forEach( p -> incrementPartitionAccess( p ) );
+                }
+                for ( DMLDataPoint dmlDataPoint: MonitoringServiceProvider.getInstance().getDataPointsAfter( DMLDataPoint.class, queryStart ) ) {
+                    dmlDataPoint.getAccessedPartitions().forEach( p -> incrementPartitionAccess( p ) );
                 }
 
                 break;
@@ -402,12 +394,6 @@ public class FrequencyMapImpl extends FrequencyMap {
         }
 
         determinePartitionDistribution(table);
-    }
-
-
-    @Override
-    public void determinePartitionFrequencyOnStore() {
-
     }
 
 }
