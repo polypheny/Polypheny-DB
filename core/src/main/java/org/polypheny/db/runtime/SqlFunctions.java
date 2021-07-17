@@ -96,8 +96,11 @@ import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.NonDeterministic;
 import org.apache.calcite.linq4j.tree.Primitive;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.enumerable.JavaRowFormat;
+import org.polypheny.db.document.DocumentTypeUtil;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.runtime.FlatLists.ComparableList;
 import org.polypheny.db.sql.SqlJsonConstructorNullClause;
@@ -107,6 +110,7 @@ import org.polypheny.db.sql.SqlJsonQueryWrapperBehavior;
 import org.polypheny.db.sql.SqlJsonValueEmptyOrErrorBehavior;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.NumberUtil;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.TimeWithTimeZoneString;
 import org.polypheny.db.util.TimestampWithTimeZoneString;
@@ -1424,6 +1428,19 @@ public class SqlFunctions {
     public static BigDecimal mod( BigDecimal b0, BigDecimal b1 ) {
         final BigDecimal[] bigDecimals = b0.divideAndRemainder( b1 );
         return bigDecimals[1];
+    }
+
+
+    public static Object mod( Object b0, Object b1 ) {
+        if ( b0 == null || b1 == null ) {
+            return null;
+        }
+
+        if ( allAssignable( Number.class, b0, b1 ) ) {
+            return mod( toBigDecimal( (Number) b0 ), toBigDecimal( (Number) b1 ) );
+        }
+
+        throw notArithmetic( "mod", b0, b1 );
     }
 
     // FLOOR
@@ -3648,6 +3665,114 @@ public class SqlFunctions {
             return (RuntimeException) e;
         }
         return new RuntimeException( e );
+    }
+
+
+    public static Object docQueryValue( String input, List<String> filters ) {
+        BsonValue doc = BsonDocument.parse( input );
+        while ( filters.size() != 0 && doc != null ) {
+            if ( doc.isDocument() ) {
+                if ( doc.asDocument().containsKey( filters.get( 0 ) ) ) {
+                    doc = doc.asDocument().get( filters.get( 0 ) );
+                    filters.remove( 0 );
+                } else {
+                    doc = null;
+                }
+            } else {
+                doc = null;
+            }
+        }
+        return transformBsonToPrimitive( doc );
+
+    }
+
+
+    public static Object docQueryExclude( String input, List<List<String>> excluded ) {
+        if ( excluded.size() == 0 ) {
+            return input;
+        }
+
+        BsonValue doc = BsonDocument.parse( input );
+
+        excludeBson( doc, excluded );
+        return transformBsonToPrimitive( doc );
+    }
+
+
+    public static Boolean docTypeMatch( Object input, List<Integer> typeNumbers ) {
+
+        if ( input == null ) {
+            // if we look for nullType
+            return typeNumbers.contains( 10 );
+        }
+
+        if ( typeNumbers.contains( 99 ) ) {
+            // number type matches to double, 32int, 64int, decimal
+            typeNumbers.remove( (Integer) 99 );
+            typeNumbers.add( 1 );
+            typeNumbers.add( 16 );
+            typeNumbers.add( 18 );
+            typeNumbers.add( 19 );
+        }
+
+        List<Pair<Class<? extends BsonValue>, Class<?>>> clazzPairs = typeNumbers.stream().map( DocumentTypeUtil::getBsonClass ).collect( Collectors.toList() );
+
+        return Pair.right( clazzPairs ).stream().anyMatch( clazz -> clazz.isInstance( input ) );
+
+    }
+
+
+    private static void excludeBson( BsonValue doc, List<List<String>> excluded ) {
+        if ( doc.isDocument() ) {
+            List<String> firsts = excluded.stream().map( e -> e.get( 0 ) ).collect( Collectors.toList() );
+            List<String> toRemove = new ArrayList<>();
+            doc.asDocument().forEach( ( key, value ) -> {
+                int pos = 0;
+                List<Integer> matches = new ArrayList<>();
+                boolean remove = false;
+                for ( String first : firsts ) {
+                    if ( key.equals( first ) ) {
+                        if ( excluded.get( pos ).size() > 1 ) {
+                            // the matching goes deeper
+                            matches.add( pos );
+                        } else {
+                            // it an exact match and we exclude all underlying
+                            remove = true;
+                        }
+                    }
+                    pos++;
+                }
+                if ( !remove && matches.size() > 0 ) {
+                    excludeBson( value, matches.stream().map( i -> excluded.get( i ).subList( 1, excluded.get( i ).size() ) ).collect( Collectors.toList() ) );
+                } else if ( remove ) {
+                    toRemove.add( key );
+                }
+            } );
+            toRemove.forEach( r -> doc.asDocument().remove( r ) );
+        }
+    }
+
+
+    private static Object transformBsonToPrimitive( BsonValue doc ) {
+        if ( doc == null ) {
+            return null;
+        }
+        switch ( doc.getBsonType() ) {
+            case INT32:
+                return doc.asInt32().getValue();
+            case INT64:
+                return doc.asInt64().getValue();
+            case STRING:
+                return doc.asString().getValue();
+            case DECIMAL128:
+                return doc.asDecimal128().decimal128Value().bigDecimalValue();
+            case DOCUMENT:
+                return doc.asDocument().toJson();
+            case ARRAY:
+                return doc.asArray().stream().map( SqlFunctions::transformBsonToPrimitive ).collect( Collectors.toList() );
+            default:
+                return null;
+        }
     }
 
 

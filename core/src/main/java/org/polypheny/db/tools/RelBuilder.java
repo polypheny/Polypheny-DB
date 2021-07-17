@@ -61,6 +61,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Experimental;
+import org.bson.BsonValue;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.plan.RelOptCluster;
@@ -2133,8 +2134,8 @@ public class RelBuilder {
     }
 
 
-    public RelBuilder documents( ImmutableList<ImmutableList<Object>> tuples, List<RelDataType> rowTypes, RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
-        RelNode documents = documentsFactory.createDocuments( cluster, rowTypes, copy( tuples ), rowType, copy( normalizedTuples ) );
+    public RelBuilder documents( ImmutableList<BsonValue> tuples, RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
+        RelNode documents = documentsFactory.createDocuments( cluster, tuples, rowType, copy( normalizedTuples ) );
         push( documents );
         return this;
     }

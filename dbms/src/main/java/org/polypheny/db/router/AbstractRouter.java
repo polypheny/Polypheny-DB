@@ -903,7 +903,7 @@ public abstract class AbstractRouter implements Router {
 
 
     protected RelBuilder handleDocuments( LogicalDocuments node, RelBuilder builder ) {
-        return builder.documents( node.getDocumentTuples(), node.getRowTypes(), node.getRowType(), node.getTuples() );
+        return builder.documents( node.getDocumentTuples(), node.getRowType(), node.getTuples() );
     }
 
 

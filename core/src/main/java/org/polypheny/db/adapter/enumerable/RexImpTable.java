@@ -309,6 +309,10 @@ public class RexImpTable {
         defineImplementor( SqlStdOperatorTable.IS_NOT_JSON_ARRAY, NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_ARRAY.method ) ), false );
         defineImplementor( SqlStdOperatorTable.IS_NOT_JSON_SCALAR, NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_SCALAR.method ) ), false );
 
+        defineImplementor( SqlStdOperatorTable.DOC_TYPE_MATCH, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_TYPE_MATCH.method ), false );
+        defineMethod( SqlStdOperatorTable.DOC_QUERY_VALUE, BuiltInMethod.DOC_QUERY_VALUE.method, NullPolicy.STRICT );
+        defineMethod( SqlStdOperatorTable.DOC_QUERY_EXCLUDE, BuiltInMethod.DOC_QUERY_EXCLUDE.method, NullPolicy.STRICT );
+
         // System functions
         final SystemFunctionImplementor systemFunctionImplementor = new SystemFunctionImplementor();
         map.put( SqlStdOperatorTable.USER, systemFunctionImplementor );

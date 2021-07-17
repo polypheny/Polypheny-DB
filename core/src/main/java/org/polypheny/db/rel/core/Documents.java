@@ -17,13 +17,9 @@
 package org.polypheny.db.rel.core;
 
 import com.google.common.collect.ImmutableList;
-import java.util.List;
-import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexLiteral;
 
 public interface Documents {
-
-    List<RelDataType> getRowTypes();
 
     ImmutableList<ImmutableList<RexLiteral>> getTuples();
 

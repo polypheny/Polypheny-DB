@@ -37,13 +37,8 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlJsonQueryEmptyOrErrorBehavior;
-import org.polypheny.db.sql.SqlJsonQueryWrapperBehavior;
-import org.polypheny.db.sql.SqlJsonValueEmptyOrErrorBehavior;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.fun.SqlJsonExistsFunction;
-import org.polypheny.db.sql.fun.SqlJsonQueryFunction;
-import org.polypheny.db.sql.fun.SqlJsonValueFunction;
 
 public class Mql2RelFindTest extends Mql2RelTest {
 
@@ -311,6 +306,49 @@ public class Mql2RelFindTest extends Mql2RelTest {
         testCastLiteral( mult.operands.get( 1 ), 10, Integer.class );
     }
 
+
+    @Test
+    public void testSingleTypeProjection() {
+        // select only when key is string ( 2 )
+        RelRoot root = translate( find( "\"key\": {\"$type\":2}" ) );
+
+        RexCall condition = getConditionTestFilter( root );
+
+        assertEquals( "DOC_TYPE_MATCH", condition.op.getName() );
+        assertEquals( 2, condition.operands.size() );
+
+        RexCall query = assertRexCall( condition, 0 );
+        testJsonValue( query, "key" );
+
+        RexCall types = assertRexCall( condition, 1 );
+        assertEquals( 1, types.operands.size() );
+        assertEquals( SqlKind.ARRAY_VALUE_CONSTRUCTOR, types.getKind() );
+
+        testCastLiteral( types.operands.get( 0 ), 2, Integer.class );
+    }
+
+
+    @Test
+    public void testMultipleTypeProjection() {
+        // select only when key is either int32 or int64
+        RelRoot root = translate( find( "\"key\": {\"$type\":[16, 18]}" ) );
+
+        RexCall condition = getConditionTestFilter( root );
+
+        assertEquals( "DOC_TYPE_MATCH", condition.op.getName() );
+        assertEquals( 2, condition.operands.size() );
+
+        RexCall query = assertRexCall( condition, 0 );
+        testJsonValue( query, "key" );
+
+        RexCall types = assertRexCall( condition, 1 );
+        assertEquals( 2, types.operands.size() );
+        assertEquals( SqlKind.ARRAY_VALUE_CONSTRUCTOR, types.getKind() );
+
+        testCastLiteral( types.operands.get( 0 ), 16, Integer.class );
+        testCastLiteral( types.operands.get( 1 ), 18, Integer.class );
+    }
+
     /////////// only projection /////////////
 
 
@@ -330,7 +368,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
     public void testSingleInclusion() {
         RelRoot root = translate( find( "", "\"key\": 1" ) );
 
-        RexCall projection = getUnderlyingProjection( root, 0 );
+        RexCall projection = getUnderlyingProjection( root, 1 );
 
         testJsonValue( projection, "key" );
 
@@ -365,11 +403,11 @@ public class Mql2RelFindTest extends Mql2RelTest {
     public void testMultipleInclusion() {
         RelRoot root = translate( find( "", "\"key\": 1, \"key1\": 1" ) );
 
-        RexCall projection1 = getUnderlyingProjection( root, 1 );
+        RexCall projection1 = getUnderlyingProjection( root, 2 );
 
         testJsonValue( projection1, "key" );
 
-        RexCall projection2 = getUnderlyingProjection( root, 0 );
+        RexCall projection2 = getUnderlyingProjection( root, 1 );
 
         testJsonValue( projection2, "key1" );
 
@@ -380,7 +418,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
     public void testNestedInclusion() {
         RelRoot root = translate( find( "", "\"key.subkey\": 1" ) );
 
-        RexCall projection = getUnderlyingProjection( root, 0 );
+        RexCall projection = getUnderlyingProjection( root, 1 );
         testJsonValue( projection, "key.subkey" );
 
     }
@@ -390,7 +428,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
     public void testSingleExclusion() {
         RelRoot root = translate( find( "", "\"key\": 0" ) );
 
-        RexCall projection = getUnderlyingProjection( root, 0 );
+        RexCall projection = getUnderlyingProjection( root, 1 );
 
         testJsonQuery( null, projection, Collections.singletonList( "key" ) );
     }
@@ -400,7 +438,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
     public void testMultipleExclusion() {
         RelRoot root = translate( find( "", "\"key\": 0, \"key1\": 0" ) );
 
-        RexCall projection = getUnderlyingProjection( root, 0 );
+        RexCall projection = getUnderlyingProjection( root, 1 );
 
         testJsonQuery( null, projection, Arrays.asList( "key", "key1" ) );
 
@@ -411,7 +449,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
     public void testMultipleNestedExclusion() {
         RelRoot root = translate( find( "", "\"key.subkey\": 0, \"key1.subkey1\": 0" ) );
 
-        RexCall projection = getUnderlyingProjection( root, 0 );
+        RexCall projection = getUnderlyingProjection( root, 1 );
 
         testJsonQuery( null, projection, Arrays.asList( "key.subkey", "key1.subkey1" ) );
 
@@ -436,7 +474,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
     public void testNestedExclusion() {
         RelRoot root = translate( find( "", "\"key.subkey\": 0" ) );
 
-        RexCall projection = getUnderlyingProjection( root, 0 );
+        RexCall projection = getUnderlyingProjection( root, 1 );
 
         testJsonQuery( null, projection, Collections.singletonList( "key.subkey" ) );
     }
@@ -446,7 +484,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
     public void testSingleRename() {
         RelRoot root = translate( find( "", "\"newName\": \"$key\"" ) );
 
-        RexCall projection = getUnderlyingProjection( root, 0 );
+        RexCall projection = getUnderlyingProjection( root, 1 );
 
         testJsonValue( projection, "key" );
 
@@ -458,11 +496,11 @@ public class Mql2RelFindTest extends Mql2RelTest {
     public void testMultipleRename() {
         RelRoot root = translate( find( "", "\"newName\": \"$key\", \"newName1\": \"$key1\"" ) );
 
-        RexCall key = getUnderlyingProjection( root, 0 );
+        RexCall key = getUnderlyingProjection( root, 1 );
 
         testJsonValue( key, "key" );
 
-        RexCall key1 = getUnderlyingProjection( root, 1 );
+        RexCall key1 = getUnderlyingProjection( root, 2 );
 
         testJsonValue( key1, "key1" );
 
@@ -474,11 +512,11 @@ public class Mql2RelFindTest extends Mql2RelTest {
     public void testMixRenameAndInclusion() {
         RelRoot root = translate( find( "", "\"newName\": \"$key\", \"key1\": 1" ) );
 
-        RexCall key = getUnderlyingProjection( root, 1 );
+        RexCall key = getUnderlyingProjection( root, 2 );
 
         testJsonValue( key, "key" );
 
-        RexCall key1 = getUnderlyingProjection( root, 0 );
+        RexCall key1 = getUnderlyingProjection( root, 1 );
 
         testJsonValue( key1, "key1" );
 
@@ -490,7 +528,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
     public void testLiteral() {
         RelRoot root = translate( find( "", "\"key\": {\"$literal\": 1}" ) );
 
-        RexNode literal = getUncastUnderlyingProjection( root, 0 );
+        RexNode literal = getUncastUnderlyingProjection( root, 1 );
         assertTrue( literal instanceof RexLiteral );
 
         testCastLiteral( literal, 1, Integer.class );
@@ -501,7 +539,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
     public void testMathProjection() {
         RelRoot root = translate( find( "", "\"key\": {\"$multiply\":[1,3]}" ) );
 
-        RexCall condition = getUnderlyingProjection( root, 0 );
+        RexCall condition = getUnderlyingProjection( root, 1 );
 
         assertEquals( SqlKind.TIMES, condition.op.kind );
         assertEquals( 2, condition.operands.size() );
@@ -512,19 +550,32 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
 
     private void testJsonQuery( String key, RexCall projection, List<String> excludes ) {
-        assertTrue( projection.op instanceof SqlJsonQueryFunction );
-        assertEquals( 4, projection.operands.size() );
+        assertEquals( "DOC_QUERY_EXCLUDE", projection.op.getName() );
+        assertEquals( 2, projection.operands.size() );
 
-        RexCall common = assertRexCall( projection, 0 );
-        if ( excludes.size() > 0 ) {
-            testJsonCommon( key, common, excludes );
-        } else {
-            testJsonCommon( key, common );
+        assertEquals( SqlKind.INPUT_REF, projection.operands.get( 0 ).getKind() );
+        assertEquals( 1, ((RexInputRef) projection.operands.get( 0 )).getIndex() );
+
+        RexCall arrayArray = assertRexCall( projection, 1 );
+
+        assertEquals( SqlKind.ARRAY_VALUE_CONSTRUCTOR, arrayArray.op.kind );
+
+        List<List<String>> excludedKeys = excludes
+                .stream()
+                .map( e -> Arrays.asList( e.split( "\\." ) ) )
+                .collect( Collectors.toList() );
+
+        int pos = 0;
+        for ( RexNode array : arrayArray.operands ) {
+            assertTrue( array instanceof RexCall );
+            assertEquals( SqlKind.ARRAY_VALUE_CONSTRUCTOR, ((RexCall) array).op.kind );
+            int innerPos = 0;
+            for ( RexNode operand : ((RexCall) array).operands ) {
+                testCastLiteral( operand, excludedKeys.get( pos ).get( innerPos ), String.class );
+                innerPos++;
+            }
+            pos++;
         }
-
-        testNoncastLiteral( projection, 1, SqlJsonQueryWrapperBehavior.WITHOUT_ARRAY );
-        testNoncastLiteral( projection, 2, SqlJsonQueryEmptyOrErrorBehavior.NULL );
-        testNoncastLiteral( projection, 3, SqlJsonQueryEmptyOrErrorBehavior.NULL );
     }
 
 
@@ -558,18 +609,24 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
 
     private void testJsonValue( RexCall jsonValue, String key ) {
-        assertTrue( jsonValue.op instanceof SqlJsonValueFunction );
+        assertEquals( "DOC_QUERY_VALUE", jsonValue.op.getName() );
 
-        // test json ref logic
-        assertEquals( 5, jsonValue.operands.size() );
+        assertEquals( 2, jsonValue.operands.size() );
+        assertEquals( SqlKind.INPUT_REF, jsonValue.operands.get( 0 ).getKind() );
+        assertEquals( 1, ((RexInputRef) jsonValue.operands.get( 0 )).getIndex() );
 
-        RexCall jsonApi = assertRexCall( jsonValue, 0 );
-        testJsonCommon( key, jsonApi );
+        RexCall array = assertRexCall( jsonValue, 1 );
 
-        testNoncastLiteral( jsonValue, 1, SqlJsonValueEmptyOrErrorBehavior.NULL );
-        testNoncastLiteral( jsonValue, 2, null );
-        testNoncastLiteral( jsonValue, 3, SqlJsonValueEmptyOrErrorBehavior.NULL );
-        testNoncastLiteral( jsonValue, 4, null );
+        List<String> keys = Arrays.asList( key.split( "\\." ) );
+
+        assertEquals( keys.size(), array.operands.size() );
+
+        int pos = 0;
+        for ( RexNode operand : array.operands ) {
+            assertTrue( operand.isA( SqlKind.LITERAL ) );
+            testCastLiteral( operand, keys.get( pos ), String.class );
+            pos++;
+        }
     }
 
 

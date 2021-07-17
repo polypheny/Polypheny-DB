@@ -1231,6 +1231,13 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
 
     public static final SqlSpecialOperator SIMILAR_TO = new SqlLikeOperator( "SIMILAR TO", SqlKind.SIMILAR, false );
 
+    public static final SqlJsonValueExpressionOperator DOC_TYPE_MATCH = new SqlJsonValueExpressionOperator( "DOC_TYPE_MATCH", false );
+
+    public static final SqlJsonValueExpressionOperator DOC_QUERY_VALUE = new SqlJsonValueExpressionOperator( "DOC_QUERY_VALUE", false );
+
+    public static final SqlJsonValueExpressionOperator DOC_QUERY_EXCLUDE = new SqlJsonValueExpressionOperator( "DOC_QUERY_EXCLUDE", false );
+
+
     /**
      * Internal operator used to represent the ESCAPE clause of a LIKE or SIMILAR TO expression.
      */

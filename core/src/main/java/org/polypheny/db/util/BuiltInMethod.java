@@ -407,7 +407,10 @@ public enum BuiltInMethod {
     AGG_LAMBDA_FACTORY_ACC_RESULT_SELECTOR( AggregateLambdaFactory.class, "resultSelector", Function2.class ),
     AGG_LAMBDA_FACTORY_ACC_SINGLE_GROUP_RESULT_SELECTOR( AggregateLambdaFactory.class, "singleGroupResultSelector", Function1.class ),
     RESULTSET_GETBYTES( ResultSet.class, "getBytes", int.class ),
-    RESULTSET_GETBINARYSTREAM( ResultSet.class, "getBinaryStream", int.class );
+    RESULTSET_GETBINARYSTREAM( ResultSet.class, "getBinaryStream", int.class ),
+    DOC_TYPE_MATCH( SqlFunctions.class, "docTypeMatch", String.class, List.class ),
+    DOC_QUERY_VALUE( SqlFunctions.class, "docQueryValue", String.class, List.class ),
+    DOC_QUERY_EXCLUDE( SqlFunctions.class, "docQueryExclude", String.class, List.class );
 
     public final Method method;
     public final Constructor constructor;

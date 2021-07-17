@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import javax.annotation.Nonnull;
+import org.bson.BsonValue;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -465,9 +466,8 @@ public class RelFactories {
 
         RelNode createDocuments(
                 RelOptCluster cluster,
-                List<RelDataType> rowTypes,
-                ImmutableList<ImmutableList<Object>> tuples,
-                RelDataType defaultRowType,
+                ImmutableList<BsonValue> tuples,
+                RelDataType rowType,
                 ImmutableList<ImmutableList<RexLiteral>> normalizedTuple );
 
     }
@@ -479,11 +479,10 @@ public class RelFactories {
         @Override
         public RelNode createDocuments(
                 RelOptCluster cluster,
-                List<RelDataType> rowTypes,
-                ImmutableList<ImmutableList<Object>> tuples,
-                RelDataType defaultRowType,
+                ImmutableList<BsonValue> tuples,
+                RelDataType rowType,
                 ImmutableList<ImmutableList<RexLiteral>> normalizedTuple ) {
-            return LogicalDocuments.create( cluster, rowTypes, ImmutableList.copyOf( tuples ), defaultRowType, ImmutableList.copyOf( normalizedTuple ) );
+            return LogicalDocuments.create( cluster, ImmutableList.copyOf( tuples ), rowType, ImmutableList.copyOf( normalizedTuple ) );
         }
 
     }

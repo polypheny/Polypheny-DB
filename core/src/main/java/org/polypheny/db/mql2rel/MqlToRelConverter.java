@@ -29,10 +29,11 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.document.DocumentTypeUtil;
 import org.polypheny.db.mql.Mql;
 import org.polypheny.db.mql.MqlAggregate;
 import org.polypheny.db.mql.MqlFind;
@@ -53,7 +54,6 @@ import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalSort;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
-import org.polypheny.db.rel.type.DynamicRecordTypeImpl;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
@@ -62,9 +62,6 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlBinaryOperator;
-import org.polypheny.db.sql.SqlJsonQueryEmptyOrErrorBehavior;
-import org.polypheny.db.sql.SqlJsonQueryWrapperBehavior;
-import org.polypheny.db.sql.SqlJsonValueEmptyOrErrorBehavior;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
@@ -79,6 +76,8 @@ public class MqlToRelConverter {
     private final static List<String> operators;
     private final static Map<String, List<SqlOperator>> gates;
     private final static Map<String, SqlOperator> mathOperators;
+    private final RelDataType any;
+    private final RelDataType nullableAny;
 
 
     static {
@@ -107,19 +106,24 @@ public class MqlToRelConverter {
         mathOperators.put( "$add", SqlStdOperatorTable.PLUS );
         mathOperators.put( "$multiply", SqlStdOperatorTable.MULTIPLY );
         mathOperators.put( "$divide", SqlStdOperatorTable.DIVIDE );
+        mathOperators.put( "$mod", SqlStdOperatorTable.MOD );
 
         operators = new ArrayList<>();
         operators.addAll( mappings.keySet() );
         operators.addAll( gates.keySet() );
         operators.addAll( mathOperators.keySet() );
+
+        // special cases
         operators.add( "$literal" );
+        operators.add( "$type" );
     }
 
 
     public MqlToRelConverter( MqlProcessor mqlProcessor, PolyphenyDbCatalogReader catalogReader, RelOptCluster cluster ) {
         this.catalogReader = catalogReader;
         this.cluster = Objects.requireNonNull( cluster );
-
+        this.any = this.cluster.getTypeFactory().createPolyType( PolyType.ANY );
+        this.nullableAny = this.cluster.getTypeFactory().createTypeWithNullability( any, true );
     }
 
 
@@ -159,27 +163,7 @@ public class MqlToRelConverter {
 
 
     private RelNode convertMultipleValues( BsonArray array ) {
-        List<ImmutableList<Object>> values = new ArrayList<>();
-        List<RelDataType> rowTypes = new ArrayList<>();
-        for ( BsonValue value : array ) {
-            RelDataType rowType = new DynamicRecordTypeImpl( new JavaTypeFactoryImpl() );
-            values.add( convertValues( value.asDocument(), rowType ) );
-            rowTypes.add( rowType );
-        }
-
-        return LogicalDocuments.create( cluster, rowTypes, ImmutableList.copyOf( values ) );
-    }
-
-
-    private ImmutableList<Object> convertValues( BsonDocument doc, RelDataType rowType ) {
-        List<Object> values = new ArrayList<>();
-
-        for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
-            rowType.getField( entry.getKey(), false, false );
-            values.add( convertSingleEntry( entry ) );
-        }
-
-        return ImmutableList.copyOf( values );
+        return LogicalDocuments.create( cluster, ImmutableList.copyOf( array.asArray() ) );
     }
 
 
@@ -190,6 +174,9 @@ public class MqlToRelConverter {
                 entries.put( docEntry.getKey(), convertSingleEntry( docEntry ) );
             }
             return entries;
+        } else if ( entry.getValue().isArray() ) {
+            //handle
+            return new ArrayList<>();
         } else {
             RelDataType type = getRelDataType( entry.getValue() );
             Pair<Comparable, PolyType> valuePair = RexLiteral.convertType( getComparable( entry.getValue() ), type );
@@ -361,6 +348,12 @@ public class MqlToRelConverter {
                     }
 
                 } else {
+                    if ( key.equals( "$exists" ) ) {
+                        return convertExists( bsonValue, parentKey, rowType, field );
+                    } else if ( key.equals( "$type" ) ) {
+                        return convertType( bsonValue, parentKey, rowType, field );
+                    }
+
                     return translateLogical( key, parentKey, bsonValue, rowType, field );
                 }
             } else {
@@ -374,6 +367,11 @@ public class MqlToRelConverter {
 
     private RelDataTypeField getDefaultDataField( RelDataType rowType ) {
         return rowType.getField( "_data", false, false );
+    }
+
+
+    private RelDataTypeField getDefaultIdField( RelDataType rowType ) {
+        return rowType.getField( "_id", false, false );
     }
 
 
@@ -440,6 +438,8 @@ public class MqlToRelConverter {
         for ( BsonValue value : bsonValue ) {
             if ( value.isDocument() ) {
                 operands.add( translateDocument( value.asDocument(), rowType, field, parentKey ) );
+            } else if ( value.isString() && value.asString().getValue().startsWith( "$" ) ) {
+                operands.add( getIdentifier( value.asString().getValue().substring( 1 ), rowType, field ) );
             } else if ( allowsLiteral ) {
                 operands.add( convertLiteral( value ) );
             } else {
@@ -527,8 +527,6 @@ public class MqlToRelConverter {
             case IN:
             case NOT_IN:
                 return convertIn( bsonValue, (SqlBinaryOperator) op, parentKey, rowType, field );
-            case EXISTS:
-                return convertExists( bsonValue, parentKey, rowType, field );
             default:
                 if ( parentKey != null ) {
                     nodes.add( getIdentifier( parentKey, rowType, field ) );
@@ -537,7 +535,6 @@ public class MqlToRelConverter {
                 return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), op, nodes );
         }
 
-        //return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), op, nodes );
     }
 
 
@@ -554,6 +551,33 @@ public class MqlToRelConverter {
         } else {
             throw new RuntimeException( "$exist without a boolean is not supported" );
         }
+    }
+
+
+    private RexNode convertType( BsonValue value, String parentKey, RelDataType rowType, RelDataTypeField field ) {
+        String errorMsg = "$type needs either a array of type names or numbers or a single number";
+        RexCall types;
+        if ( value.isArray() ) {
+            List<Integer> numbers = new ArrayList<>();
+            for ( BsonValue bsonValue : value.asArray() ) {
+                if ( bsonValue.isString() || bsonValue.isInt32() ) {
+                    numbers.add( bsonValue.isInt32() ? bsonValue.asInt32().getValue() : DocumentTypeUtil.getTypeNumber( bsonValue.asString().getValue() ) );
+                } else {
+                    throw new RuntimeException( errorMsg );
+                }
+            }
+            types = getIntArray( numbers );
+        } else if ( value.isInt32() || value.isString() ) {
+            int typeNumber = value.isInt32() ? value.asInt32().getValue() : DocumentTypeUtil.getTypeNumber( value.asString().getValue() );
+            types = getIntArray( Collections.singletonList( typeNumber ) );
+        } else {
+            throw new RuntimeException( errorMsg );
+        }
+        return new RexCall(
+                cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
+                SqlStdOperatorTable.DOC_TYPE_MATCH,
+                Arrays.asList( getIdentifier( parentKey, rowType, field ), types ) );
+
     }
 
 
@@ -581,20 +605,8 @@ public class MqlToRelConverter {
         RelDataType type = factory.createPolyType( PolyType.ANY );
         RelDataType anyType = factory.createTypeWithNullability( type, true );
 
-        // match part
-        RexCall common = getJsonCommonApi( index, rowType, key, anyType );
-
-        RexLiteral flag = new RexLiteral( SqlJsonValueEmptyOrErrorBehavior.NULL, factory.createPolyType( PolyType.SYMBOL ), PolyType.SYMBOL );
-
-        return new RexCall(
-                anyType,
-                SqlStdOperatorTable.JSON_VALUE_ANY,
-                Arrays.asList(
-                        common,
-                        flag,
-                        new RexLiteral( null, anyType, PolyType.NULL, true ),
-                        flag,
-                        new RexLiteral( null, anyType, PolyType.NULL, true ) ) );
+        RexCall filter = getStringArray( Arrays.asList( key.split( "\\." ) ) );
+        return new RexCall( anyType, SqlStdOperatorTable.DOC_QUERY_VALUE, Arrays.asList( RexInputRef.of( index, rowType ), filter ) );
 
     }
 
@@ -604,15 +616,8 @@ public class MqlToRelConverter {
         RelDataType type = factory.createPolyType( PolyType.ANY );
         RelDataType anyType = factory.createTypeWithNullability( type, true );
 
-        RelDataType polySymbol = factory.createPolyType( PolyType.SYMBOL );
-        RelDataType symbolType = factory.createTypeWithNullability( polySymbol, true );
-
-        RexCall jsonCommon = getJsonCommonApi( index, rowType, key, anyType, excludes );
-
-        RexLiteral without = new RexLiteral( SqlJsonQueryWrapperBehavior.WITHOUT_ARRAY, symbolType, PolyType.SYMBOL );
-        RexLiteral emptyOrError = new RexLiteral( SqlJsonQueryEmptyOrErrorBehavior.NULL, symbolType, PolyType.SYMBOL );
-
-        return new RexCall( factory.createPolyType( PolyType.ANY ), SqlStdOperatorTable.JSON_QUERY, Arrays.asList( jsonCommon, without, emptyOrError, emptyOrError ) );
+        RexCall filter = getNestedArray( excludes.stream().map( e -> Arrays.asList( e.split( "\\." ) ) ).collect( Collectors.toList() ) );
+        return new RexCall( anyType, SqlStdOperatorTable.DOC_QUERY_EXCLUDE, Arrays.asList( RexInputRef.of( index, rowType ), filter ) );
 
     }
 
@@ -625,7 +630,7 @@ public class MqlToRelConverter {
     private RexCall getJsonCommonApi( int index, RelDataType rowType, String key, RelDataType anyType, List<String> excludes ) {
         RexCall ref;
         if ( excludes.size() > 0 ) {
-            RexCall excludesCall = getExcludes( excludes );
+            RexCall excludesCall = getStringArray( excludes );
             ref = new RexCall(
                     anyType,
                     SqlStdOperatorTable.JSON_VALUE_EXPRESSION_EXCLUDED,
@@ -641,19 +646,51 @@ public class MqlToRelConverter {
     }
 
 
-    private RexCall getExcludes( List<String> excludes ) {
-        List<RexNode> rexExcludes = new ArrayList<>();
-        int maxSize = 0;
-        for ( String name : excludes ) {
-            rexExcludes.add( convertLiteral( new BsonString( name ) ) );
-            maxSize = Math.max( name.length(), maxSize );
+    private RexCall getNestedArray( List<List<String>> lists ) {
+        List<RexNode> nodes = new ArrayList<>();
+        for ( List<String> list : lists ) {
+            nodes.add( getStringArray( list ) );
         }
 
         return new RexCall(
-                cluster.getTypeFactory().createArrayType(
-                        cluster.getTypeFactory().createPolyType( PolyType.CHAR, maxSize ),
-                        rexExcludes.size() ),
-                SqlStdOperatorTable.ARRAY_VALUE_CONSTRUCTOR, rexExcludes );
+                cluster.getTypeFactory().createArrayType( cluster.getTypeFactory().createArrayType(
+                        cluster.getTypeFactory().createPolyType( PolyType.CHAR, 200 ),
+                        -1 ), nodes.size() ),
+                SqlStdOperatorTable.ARRAY_VALUE_CONSTRUCTOR, nodes );
+    }
+
+
+    private RexCall getIntArray( List<Integer> elements ) {
+        List<RexNode> rexNodes = new ArrayList<>();
+        for ( Integer name : elements ) {
+            rexNodes.add( convertLiteral( new BsonInt32( name ) ) );
+        }
+
+        RelDataType type = cluster.getTypeFactory().createArrayType(
+                cluster.getTypeFactory().createPolyType( PolyType.INTEGER ),
+                rexNodes.size() );
+        return getArray( rexNodes, type );
+    }
+
+
+    private RexCall getStringArray( List<String> elements ) {
+        List<RexNode> rexNodes = new ArrayList<>();
+        int maxSize = 0;
+        for ( String name : elements ) {
+            rexNodes.add( convertLiteral( new BsonString( name ) ) );
+            maxSize = Math.max( name.length(), maxSize );
+        }
+
+        RelDataType type = cluster.getTypeFactory().createArrayType(
+                cluster.getTypeFactory().createPolyType( PolyType.CHAR, maxSize ),
+                rexNodes.size() );
+        return getArray( rexNodes, type );
+    }
+
+
+    private RexCall getArray( List<RexNode> elements, RelDataType type ) {
+
+        return new RexCall( type, SqlStdOperatorTable.ARRAY_VALUE_CONSTRUCTOR, elements );
     }
 
 
@@ -778,14 +815,28 @@ public class MqlToRelConverter {
         if ( excludes.size() > 0 ) {
             // exclusion projections only work for the underlying _data field
             RelDataTypeField defaultDataField = getDefaultDataField( rowType );
-            return LogicalProject.create(
-                    node,
-                    Collections.singletonList( translateJsonQuery( defaultDataField.getIndex(), rowType, null, excludes ) ),
-                    Collections.singletonList( defaultDataField.getName() )
-            );
-        }
 
-        return LogicalProject.create( node, new ArrayList<>( includes.values() ), new ArrayList<>( includes.keySet() ) );
+            List<RexNode> values = new ArrayList<>( Collections.singletonList( translateJsonQuery( defaultDataField.getIndex(), rowType, null, excludes ) ) );
+            List<String> names = new ArrayList<>( Collections.singletonList( defaultDataField.getName() ) );
+
+            if ( !excludes.contains( "_id" ) ) {
+                names.add( 0, "_id" );
+                values.add( 0, RexInputRef.of( 0, rowType ) );
+            }
+
+            return LogicalProject.create( node, values, names );
+        } else if ( includes.size() > 0 ) {
+            List<RexNode> values = new ArrayList<>( includes.values() );
+            List<String> names = new ArrayList<>( includes.keySet() );
+
+            if ( !includes.containsKey( "_id" ) ) {
+                names.add( 0, "_id" );
+                values.add( 0, RexInputRef.of( 0, rowType ) );
+            }
+
+            return LogicalProject.create( node, values, names );
+        }
+        return node;
     }
 
 

@@ -23,6 +23,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
+import org.bson.BsonValue;
+import org.bson.json.JsonMode;
+import org.bson.json.JsonWriterSettings;
 import org.bson.types.ObjectId;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.document.DocumentTypeUtil;
@@ -51,49 +54,43 @@ public class LogicalDocuments extends LogicalValues implements Documents {
     private final static PolyTypeFactoryImpl typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
     private final static Gson gson = new Gson();
 
+    private final RelDataType rowType;
     @Getter
-    private final List<RelDataType> rowTypes;
-    @Getter
-    private final RelDataType defaultRowType;
-    @Getter
-    private final ImmutableList<ImmutableList<Object>> documentTuples;
+    private final ImmutableList<BsonValue> documentTuples;
 
 
     /**
      * Creates an <code>AbstractRelNode</code>.
      *
      * @param cluster
-     * @param rowTypes
-     * @param defaultRowType
      * @param traitSet
      * @param tuples
      */
-    public LogicalDocuments( RelOptCluster cluster, List<RelDataType> rowTypes, RelDataType defaultRowType, RelTraitSet traitSet, ImmutableList<ImmutableList<Object>> tuples, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
+    public LogicalDocuments( RelOptCluster cluster, RelDataType defaultRowType, RelTraitSet traitSet, ImmutableList<BsonValue> tuples, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
         super( cluster, traitSet, defaultRowType, normalizedTuples );
         this.documentTuples = tuples;
-        this.rowTypes = rowTypes;
-        this.defaultRowType = defaultRowType;
+        this.rowType = defaultRowType;
         this.tuples = normalizedTuples;
     }
 
 
-    public static RelNode create( RelOptCluster cluster, final List<RelDataType> rowTypes, final ImmutableList<ImmutableList<Object>> tuples ) {
+    public static RelNode create( RelOptCluster cluster, ImmutableList<BsonValue> values ) {
         List<RelDataTypeField> fields = new ArrayList<>();
         fields.add( new RelDataTypeFieldImpl( "_id", 0, typeFactory.createPolyType( PolyType.VARCHAR, 24 ) ) );
         fields.add( new RelDataTypeFieldImpl( "_data", 1, typeFactory.createPolyType( PolyType.JSON ) ) );
         RelDataType defaultRowType = new RelRecordType( fields );
 
-        ImmutableList<ImmutableList<RexLiteral>> normalizedTuples = normalize( tuples, rowTypes, defaultRowType );
+        //ImmutableList<ImmutableList<RexLiteral>> normalizedTuples = normalize( tuples, rowTypes, defaultRowType );
 
-        return create( cluster, rowTypes, tuples, defaultRowType, normalizedTuples );
+        return create( cluster, values, defaultRowType, normalize( values ) );
     }
 
 
-    public static RelNode create( RelOptCluster cluster, List<RelDataType> rowTypes, ImmutableList<ImmutableList<Object>> tuples, RelDataType defaultRowType, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
+    public static RelNode create( RelOptCluster cluster, ImmutableList<BsonValue> tuples, RelDataType defaultRowType, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
         final RelMetadataQuery mq = cluster.getMetadataQuery();
         final RelTraitSet traitSet = cluster.traitSetOf( Convention.NONE )
                 .replaceIfs( RelCollationTraitDef.INSTANCE, () -> RelMdCollation.values( mq, defaultRowType, normalizedTuples ) );
-        return new LogicalDocuments( cluster, rowTypes, defaultRowType, traitSet, tuples, normalizedTuples );
+        return new LogicalDocuments( cluster, defaultRowType, traitSet, tuples, normalizedTuples );
     }
 
 
@@ -109,7 +106,6 @@ public class LogicalDocuments extends LogicalValues implements Documents {
     }
 
 
-
     @Override
     public ImmutableList<ImmutableList<RexLiteral>> getFlatTuples() {
         return this.tuples;
@@ -120,7 +116,7 @@ public class LogicalDocuments extends LogicalValues implements Documents {
     public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
         assert inputs.isEmpty();
-        return new LogicalDocuments( getCluster(), rowTypes, defaultRowType, traitSet, documentTuples, tuples );
+        return new LogicalDocuments( getCluster(), rowType, traitSet, documentTuples, tuples );
     }
 
 
@@ -165,6 +161,23 @@ public class LogicalDocuments extends LogicalValues implements Documents {
             normalizedTuple.add( literal );
 
             pos++;
+            normalized.add( ImmutableList.copyOf( normalizedTuple ) );
+        }
+
+        return ImmutableList.copyOf( normalized );
+    }
+
+
+    private static ImmutableList<ImmutableList<RexLiteral>> normalize( List<BsonValue> tuples ) {
+        List<ImmutableList<RexLiteral>> normalized = new ArrayList<>();
+
+        JsonWriterSettings writerSettings = JsonWriterSettings.builder().outputMode( JsonMode.STRICT ).build();
+
+        for ( BsonValue tuple : tuples ) {
+            List<RexLiteral> normalizedTuple = new ArrayList<>();
+            normalizedTuple.add( 0, new RexLiteral( new NlsString( ObjectId.get().toString(), "ISO-8859-1", SqlCollation.IMPLICIT ), typeFactory.createPolyType( PolyType.CHAR, 24 ), PolyType.CHAR ) );
+            String parsed = tuple.asDocument().toJson( writerSettings );
+            normalizedTuple.add( new RexLiteral( new NlsString( parsed, "ISO-8859-1", SqlCollation.IMPLICIT ), typeFactory.createPolyType( PolyType.CHAR, parsed.length() ), PolyType.CHAR ) );
             normalized.add( ImmutableList.copyOf( normalizedTuple ) );
         }
 
