@@ -1235,6 +1235,20 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
 
     public static final SqlDocEqualExpressionOperator DOC_EQ = new SqlDocEqualExpressionOperator( "DOC_EQ", SqlKind.EQUALS );
 
+    public static final SqlDocEqualExpressionOperator DOC_ELEM_EQ = new SqlDocEqualExpressionOperator( "DOC_ELEM_EQ", SqlKind.CONTAINS );
+
+    public static final SqlDocEqualExpressionOperator DOC_ELEM_NE = new SqlDocEqualExpressionOperator( "DOC_ELEM_NE", SqlKind.CONTAINS );
+
+    public static final SqlDocEqualExpressionOperator DOC_ELEM_LT = new SqlDocEqualExpressionOperator( "DOC_ELEM_LT", SqlKind.CONTAINS );
+
+    public static final SqlDocEqualExpressionOperator DOC_ELEM_LTE = new SqlDocEqualExpressionOperator( "DOC_ELEM_LTE", SqlKind.CONTAINS );
+
+    public static final SqlDocEqualExpressionOperator DOC_ELEM_GT = new SqlDocEqualExpressionOperator( "DOC_ELEM_GT", SqlKind.CONTAINS );
+
+    public static final SqlDocEqualExpressionOperator DOC_ELEM_GTE = new SqlDocEqualExpressionOperator( "DOC_ELEM_GTE", SqlKind.CONTAINS );
+
+    public static final SqlJsonValueExpressionOperator DOC_SIZE_MATCH = new SqlJsonValueExpressionOperator( "DOC_SIZE_MATCH", false );
+
     public static final SqlJsonValueExpressionOperator DOC_JSON_MATCH = new SqlJsonValueExpressionOperator( "DOC_JSON_MATCH", false );
 
     public static final SqlJsonValueExpressionOperator DOC_REGEX_MATCH = new SqlJsonValueExpressionOperator( "DOC_REGEX_MATCH", false );
@@ -1242,6 +1256,8 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
     public static final SqlJsonValueExpressionOperator DOC_TYPE_MATCH = new SqlJsonValueExpressionOperator( "DOC_TYPE_MATCH", false );
 
     public static final SqlJsonValueExpressionOperator DOC_QUERY_VALUE = new SqlJsonValueExpressionOperator( "DOC_QUERY_VALUE", false );
+
+    public static final SqlJsonValueExpressionOperator DOC_SLICE = new SqlJsonValueExpressionOperator( "DOC_SLICE", false );
 
     public static final SqlJsonValueExpressionOperator DOC_QUERY_EXCLUDE = new SqlJsonValueExpressionOperator( "DOC_QUERY_EXCLUDE", false );
 

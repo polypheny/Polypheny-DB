@@ -310,9 +310,11 @@ public class RexImpTable {
         defineImplementor( SqlStdOperatorTable.IS_NOT_JSON_SCALAR, NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_SCALAR.method ) ), false );
 
         defineImplementor( SqlStdOperatorTable.DOC_EQ, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_EQ.method ), false );
+        defineImplementor( SqlStdOperatorTable.DOC_SIZE_MATCH, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_SIZE_MATCH.method ), false );
         defineImplementor( SqlStdOperatorTable.DOC_REGEX_MATCH, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_REGEX_MATCH.method ), false );
         defineImplementor( SqlStdOperatorTable.DOC_JSON_MATCH, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_JSON_MATCH.method ), false );
         defineImplementor( SqlStdOperatorTable.DOC_TYPE_MATCH, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_TYPE_MATCH.method ), false );
+        defineMethod( SqlStdOperatorTable.DOC_SLICE, BuiltInMethod.DOC_SLICE.method, NullPolicy.STRICT );
         defineMethod( SqlStdOperatorTable.DOC_QUERY_VALUE, BuiltInMethod.DOC_QUERY_VALUE.method, NullPolicy.STRICT );
         defineMethod( SqlStdOperatorTable.DOC_QUERY_EXCLUDE, BuiltInMethod.DOC_QUERY_EXCLUDE.method, NullPolicy.STRICT );
 

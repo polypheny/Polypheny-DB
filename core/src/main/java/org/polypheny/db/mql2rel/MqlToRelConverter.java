@@ -31,6 +31,7 @@ import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
+import org.bson.BsonNumber;
 import org.bson.BsonRegularExpression;
 import org.bson.BsonString;
 import org.bson.BsonValue;
@@ -77,8 +78,10 @@ public class MqlToRelConverter {
     private final static List<String> operators;
     private final static Map<String, List<SqlOperator>> gates;
     private final static Map<String, SqlOperator> mathOperators;
+    private final static Map<String, SqlOperator> elemMathOperators;
     private final RelDataType any;
     private final RelDataType nullableAny;
+    private Map<String, SqlOperator> tempMappings;
 
 
     static {
@@ -114,12 +117,25 @@ public class MqlToRelConverter {
         operators.addAll( gates.keySet() );
         operators.addAll( mathOperators.keySet() );
 
+        // list/array predicates $elemMatch$
+
+        elemMathOperators = new HashMap<>();
+
+        elemMathOperators.put( "$lt", SqlStdOperatorTable.DOC_ELEM_LT );
+        elemMathOperators.put( "$gt", SqlStdOperatorTable.DOC_ELEM_GT );
+        elemMathOperators.put( "$eq", SqlStdOperatorTable.DOC_ELEM_EQ );
+        elemMathOperators.put( "$ne", SqlStdOperatorTable.DOC_ELEM_NE );
+        elemMathOperators.put( "$lte", SqlStdOperatorTable.DOC_ELEM_LTE );
+        elemMathOperators.put( "$gte", SqlStdOperatorTable.DOC_ELEM_GTE );
+
         // special cases
         operators.add( "$literal" );
         operators.add( "$type" );
         operators.add( "$expr" );
         operators.add( "$jsonSchema" );
         operators.add( "$all" );
+        operators.add( "$elemMatch" );
+        operators.add( "$size" );
     }
 
 
@@ -131,6 +147,7 @@ public class MqlToRelConverter {
         this.cluster = Objects.requireNonNull( cluster );
         this.any = this.cluster.getTypeFactory().createPolyType( PolyType.ANY );
         this.nullableAny = this.cluster.getTypeFactory().createTypeWithNullability( any, true );
+        this.tempMappings = mappings;
     }
 
 
@@ -367,6 +384,10 @@ public class MqlToRelConverter {
                         return convertJsonSchema( bsonValue, rowType, field );
                     } else if ( key.equals( "$all" ) ) {
                         return convertAll( bsonValue, parentKey, rowType, field );
+                    } else if ( key.equals( "$elemMatch" ) ) {
+                        return convertElemMatch( bsonValue, parentKey, rowType, field );
+                    } else if ( key.equals( "$size" ) ) {
+                        return convertSize( bsonValue, parentKey, rowType, field );
                     }
 
                     return translateLogical( key, parentKey, bsonValue, rowType, field );
@@ -387,6 +408,23 @@ public class MqlToRelConverter {
 
     private RelDataTypeField getDefaultIdField( RelDataType rowType ) {
         return rowType.getField( "_id", false, false );
+    }
+
+
+    private RexNode convertSlice( String key, BsonValue value, RelDataType rowType, RelDataTypeField field ) {
+        BsonNumber skip = new BsonInt32( 0 );
+        BsonNumber elements;
+        RexNode id = getIdentifier( key, rowType, field );
+        if ( value.isNumber() ) {
+            elements = value.asInt32();
+        } else if ( value.isArray() && value.asArray().size() == 2 ) {
+            skip = value.asArray().get( 0 ).asInt32();
+            elements = value.asArray().get( 1 ).asInt32();
+        } else {
+            throw new RuntimeException( "After a $slice projection a number or an array of 2 is needed" );
+        }
+
+        return new RexCall( any, SqlStdOperatorTable.DOC_SLICE, Arrays.asList( id, convertLiteral( skip ), convertLiteral( elements ) ) );
     }
 
 
@@ -646,6 +684,27 @@ public class MqlToRelConverter {
             return new RexCall( nullableAny, SqlStdOperatorTable.DOC_JSON_MATCH, Collections.singletonList( RexInputRef.of( field.getIndex(), rowType ) ) );
         } else {
             throw new RuntimeException( "After $jsonSchema there needs to follow a document" );
+        }
+    }
+
+
+    private RexNode convertSize( BsonValue bsonValue, String parentKey, RelDataType rowType, RelDataTypeField field ) {
+        if ( bsonValue.isNumber() ) {
+            RexNode id = getIdentifier( parentKey, rowType, field );
+            return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), SqlStdOperatorTable.DOC_SIZE_MATCH, Arrays.asList( id, convertLiteral( bsonValue ) ) );
+        } else {
+            throw new RuntimeException( "After $size there needs to follow a number" );
+        }
+
+    }
+
+
+    private RexNode convertElemMatch( BsonValue bsonValue, String parentKey, RelDataType rowType, RelDataTypeField field ) {
+        if ( bsonValue.isDocument() ) {
+            // todo dl
+            return null;
+        } else {
+            throw new RuntimeException( "After $elemMatch there needs to follow a document" );
         }
     }
 
@@ -922,7 +981,11 @@ public class MqlToRelConverter {
             } else if ( value.isDocument() && value.asDocument().size() == 1 && value.asDocument().getFirstKey().startsWith( "$" ) ) {
                 String func = value.asDocument().getFirstKey();
                 RelDataTypeField field = getDefaultDataField( rowType );
-                includes.put( entry.getKey(), convertMath( func, entry.getKey(), value.asDocument().get( func ), rowType, field, false ) );
+                if ( mathOperators.containsKey( func ) ) {
+                    includes.put( entry.getKey(), convertMath( func, entry.getKey(), value.asDocument().get( func ), rowType, field, false ) );
+                } else if ( func.equals( "$slice" ) ) {
+                    includes.put( entry.getKey(), convertSlice( entry.getKey(), value.asDocument().get( func ), rowType, field ) );
+                }
             } else {
                 throw new RuntimeException( "After a projection there needs to be either a number, a renaming, a literal or a function." );
             }

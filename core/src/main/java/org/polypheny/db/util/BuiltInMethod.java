@@ -409,9 +409,11 @@ public enum BuiltInMethod {
     RESULTSET_GETBYTES( ResultSet.class, "getBytes", int.class ),
     RESULTSET_GETBINARYSTREAM( ResultSet.class, "getBinaryStream", int.class ),
     DOC_EQ( SqlFunctions.class, "docEq", Object.class, Object.class ),
+    DOC_SIZE_MATCH( SqlFunctions.class, "docSizeMatch", Object.class, int.class ),
     DOC_JSON_MATCH( SqlFunctions.class, "docJsonMatch", Object.class, String.class ),
     DOC_REGEX_MATCH( SqlFunctions.class, "docRegexMatch", Object.class, String.class, boolean.class, boolean.class, boolean.class, boolean.class ),
     DOC_TYPE_MATCH( SqlFunctions.class, "docTypeMatch", Object.class, List.class ),
+    DOC_SLICE( SqlFunctions.class, "docSlice", Object.class, int.class, int.class ),
     DOC_QUERY_VALUE( SqlFunctions.class, "docQueryValue", Object.class, List.class ),
     DOC_QUERY_EXCLUDE( SqlFunctions.class, "docQueryExclude", Object.class, List.class );
 

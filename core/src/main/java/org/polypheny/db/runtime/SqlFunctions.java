@@ -3761,11 +3761,40 @@ public class SqlFunctions {
     }
 
 
+    public static boolean docSizeMatch( Object input, int size ) {
+        if ( input instanceof List ) {
+            return ((List<?>) input).size() == size;
+        }
+        return false;
+    }
+
+
     public static boolean docEq( Object b0, Object b1 ) {
         if ( b0 instanceof List && !(b1 instanceof List) ) {
             return ((List<?>) b0).contains( b1 );
         }
         return eq( b0, b1 );
+    }
+
+
+    public static Object docSlice( Object input, int skip, int elements ) {
+        if ( !(input instanceof List) ) {
+            return null;
+        } else {
+            List<?> list = ((List<?>) input);
+            // if elements is negative the selection starts from the end
+            int end;
+            int start;
+            if ( elements > 0 ) {
+                start = Math.min( skip, list.size() );
+                end = Math.min( list.size(), skip + elements );
+            } else {
+                end = Math.max( 0, list.size() - skip );
+                start = Math.max( 0, end + elements );
+            }
+            return list.subList( start, end );
+
+        }
     }
 
 

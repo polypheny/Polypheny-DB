@@ -25,6 +25,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.fun.SqlDocEqualExpressionOperator;
 import org.polypheny.db.sql.fun.SqlJsonValueFunction;
 
 public class DocumentRules {
@@ -68,7 +69,7 @@ public class DocumentRules {
         @Override
         public Void visitCall( RexCall call ) {
             SqlOperator operator = call.getOperator();
-            if ( operator.kind == SqlKind.JSON_VALUE_EXPRESSION || operator instanceof SqlJsonValueFunction || operator.kind == SqlKind.JSON_API_COMMON_SYNTAX ) {
+            if ( operator.kind == SqlKind.JSON_VALUE_EXPRESSION || operator instanceof SqlJsonValueFunction || operator.kind == SqlKind.JSON_API_COMMON_SYNTAX || operator instanceof SqlDocEqualExpressionOperator ) {
                 containsJson = true;
             }
             return super.visitCall( call );
