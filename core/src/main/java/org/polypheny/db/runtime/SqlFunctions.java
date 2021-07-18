@@ -98,6 +98,8 @@ import org.apache.calcite.linq4j.function.NonDeterministic;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.bson.json.JsonMode;
+import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.enumerable.JavaRowFormat;
 import org.polypheny.db.document.DocumentTypeUtil;
@@ -3690,6 +3692,18 @@ public class SqlFunctions {
         }
         return transformBsonToPrimitive( doc );
 
+    }
+
+
+    public static Object docAddFields( Object input, String name, Object object ) {
+        if ( input instanceof String ) {
+            BsonDocument document = BsonDocument.parse( (String) input );
+            document.put( name, DocumentTypeUtil.getBson( object ) );
+
+            return document.toJson( JsonWriterSettings.builder().outputMode( JsonMode.EXTENDED ).build() );
+        }
+
+        return null;
     }
 
 

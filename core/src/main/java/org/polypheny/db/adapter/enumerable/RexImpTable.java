@@ -317,6 +317,7 @@ public class RexImpTable {
         defineMethod( SqlStdOperatorTable.DOC_SLICE, BuiltInMethod.DOC_SLICE.method, NullPolicy.STRICT );
         defineMethod( SqlStdOperatorTable.DOC_QUERY_VALUE, BuiltInMethod.DOC_QUERY_VALUE.method, NullPolicy.STRICT );
         defineMethod( SqlStdOperatorTable.DOC_QUERY_EXCLUDE, BuiltInMethod.DOC_QUERY_EXCLUDE.method, NullPolicy.STRICT );
+        defineMethod( SqlStdOperatorTable.DOC_ADD_FIELDS, BuiltInMethod.DOC_ADD_FIELDS.method, NullPolicy.STRICT );
 
         // System functions
         final SystemFunctionImplementor systemFunctionImplementor = new SystemFunctionImplementor();

@@ -50,7 +50,9 @@ import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.rel.core.AggregateCall;
 import org.polypheny.db.rel.core.TableModify.Operation;
+import org.polypheny.db.rel.logical.LogicalAggregate;
 import org.polypheny.db.rel.logical.LogicalDocuments;
 import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalProject;
@@ -68,6 +70,7 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
 
 public class MqlToRelConverter {
@@ -140,6 +143,8 @@ public class MqlToRelConverter {
 
 
     private boolean inQuery = false;
+    private boolean excludedId = false;
+    private boolean _dataExists = true;
 
 
     public MqlToRelConverter( MqlProcessor mqlProcessor, PolyphenyDbCatalogReader catalogReader, RelOptCluster cluster ) {
@@ -163,7 +168,7 @@ public class MqlToRelConverter {
                 RelNode find = convertFind( (MqlFind) query, table.getRowType(), node );
                 return RelRoot.of( find, find.getRowType(), SqlKind.SELECT );
             case AGGREGATE:
-                table = catalogReader.getTable( Collections.singletonList( ((MqlAggregate) query).getCollection() ) );
+                table = catalogReader.getTable( ImmutableList.of( "private", ((MqlAggregate) query).getCollection() ) );
                 node = LogicalTableScan.create( cluster, table );
                 return RelRoot.of( convertAggregate( (MqlAggregate) query, table.getRowType(), node ), SqlKind.SELECT );
             case INSERT:
@@ -226,31 +231,77 @@ public class MqlToRelConverter {
 
 
     private RelNode convertAggregate( MqlAggregate query, RelDataType rowType, RelNode node ) {
-
+        this.excludedId = false;
+        boolean updateRowType;
         for ( BsonValue value : query.getPipeline() ) {
             if ( !value.isDocument() && ((BsonDocument) value).size() > 1 ) {
                 throw new RuntimeException( "The aggregation pipeline is not used correctly." );
             }
+            updateRowType = true;
             switch ( ((BsonDocument) value).getFirstKey() ) {
                 case "$match":
                     node = combineFilter( value.asDocument().getDocument( "$match" ), node, rowType );
+                    updateRowType = false;
                     break;
                 case "$project":
-                    node = combineProjection( value.asDocument().getDocument( "$project" ), node, rowType ); // todo dl change rowtype when renames happened
-
-                    // update the rowType due to potential renamings
-                    if ( rowType != null ) {
-                        rowType = node.getRowType();
-                    }
-
+                    node = combineProjection( value.asDocument().getDocument( "$project" ), node, rowType, false );
+                    break;
+                case "$addFields":
+                    node = combineProjection( value.asDocument().getDocument( "$addFields" ), node, rowType, true );
+                    break;
+                case "$count":
+                    node = combineCount( value.asDocument().get( "$count" ), node, rowType );
+                    break;
+                case "$group":
+                    node = combineGroup( value.asDocument().get( "$group" ), node, rowType );
                     break;
                 // todo dl add more pipeline statements
                 default:
                     throw new IllegalStateException( "Unexpected value: " + ((BsonDocument) value).getFirstKey() );
             }
+            if ( updateRowType ) {
+                if ( rowType != null ) {
+                    rowType = node.getRowType();
+                }
+            }
         }
 
         return node;
+    }
+
+
+    private RelNode combineGroup( BsonValue value, RelNode node, RelDataType rowType ) {
+        if ( value.isDocument() ) {
+            for ( Entry<String, BsonValue> entry : value.asDocument().entrySet() ) {
+
+            }
+            return null;
+        } else {
+            throw new RuntimeException( "$group pipeline stage needs a document after" );
+        }
+    }
+
+
+    private RelNode combineCount( BsonValue value, RelNode node, RelDataType rowType ) {
+        if ( value.isString() ) {
+            return LogicalAggregate.create(
+                    node,
+                    ImmutableBitSet.of(),
+                    Collections.singletonList( ImmutableBitSet.of() ),
+                    Collections.singletonList(
+                            AggregateCall.create(
+                                    SqlStdOperatorTable.COUNT,
+                                    false,
+                                    false,
+                                    new ArrayList<>(),
+                                    -1,
+                                    RelCollations.EMPTY,
+                                    cluster.getTypeFactory().createPolyType( PolyType.BIGINT ),
+                                    value.asString().getValue()
+                            ) ) );
+        } else {
+            throw new RuntimeException( "$count pipeline stage needs only a string" );
+        }
     }
 
 
@@ -261,7 +312,7 @@ public class MqlToRelConverter {
         }
 
         if ( query.getProjection() != null && !query.getProjection().isEmpty() ) {
-            node = combineProjection( query.getProjection(), node, rowType );
+            node = combineProjection( query.getProjection(), node, rowType, false );
         }
 
         return node;
@@ -293,7 +344,7 @@ public class MqlToRelConverter {
     }
 
 
-    private Comparable<?> getComparable( BsonValue value ) {
+    private static Comparable<?> getComparable( BsonValue value ) {
         switch ( value.getBsonType() ) {
             case DOUBLE:
                 return value.asDouble().getValue();
@@ -535,11 +586,12 @@ public class MqlToRelConverter {
 
 
     private RexNode getIdentifier( String parentKey, RelDataType rowType, RelDataTypeField field ) {
-        if ( !rowType.getFieldNames().contains( parentKey ) ) {
-            return translateJsonValue( field.getIndex(), rowType, parentKey );
-        } else {
+        if ( rowType.getFieldNames().contains( parentKey ) ) {
             return attachRef( parentKey, rowType );
+        } else {
+            return translateJsonValue( field.getIndex(), rowType, parentKey );
         }
+
     }
 
 
@@ -783,13 +835,8 @@ public class MqlToRelConverter {
 
 
     private RexNode translateJsonQuery( int index, RelDataType rowType, String key, List<String> excludes ) {
-        RelDataTypeFactory factory = cluster.getTypeFactory();
-        RelDataType type = factory.createPolyType( PolyType.ANY );
-        RelDataType anyType = factory.createTypeWithNullability( type, true );
-
         RexCall filter = getNestedArray( excludes.stream().map( e -> Arrays.asList( e.split( "\\." ) ) ).collect( Collectors.toList() ) );
-        return new RexCall( anyType, SqlStdOperatorTable.DOC_QUERY_EXCLUDE, Arrays.asList( RexInputRef.of( index, rowType ), filter ) );
-
+        return new RexCall( any, SqlStdOperatorTable.DOC_QUERY_EXCLUDE, Arrays.asList( RexInputRef.of( index, rowType ), filter ) );
     }
 
 
@@ -956,13 +1003,13 @@ public class MqlToRelConverter {
     }
 
 
-    private RelNode combineProjection( BsonDocument projection, RelNode node, RelDataType rowType ) {
+    private RelNode combineProjection( BsonDocument projection, RelNode node, RelDataType rowType, boolean isAddFields ) {
         Map<String, RexNode> includes = new HashMap<>();
         List<String> excludes = new ArrayList<>();
 
         for ( Entry<String, BsonValue> entry : projection.entrySet() ) {
             BsonValue value = entry.getValue();
-            if ( value.isInt32() ) {
+            if ( value.isInt32() && !isAddFields ) {
                 // we have a simple projection; [name]: 1 (include) or [name]:0 (exclude)
                 RelDataTypeField field = getTypeFieldOrDefault( rowType, entry.getKey() );
 
@@ -986,8 +1033,25 @@ public class MqlToRelConverter {
                 } else if ( func.equals( "$slice" ) ) {
                     includes.put( entry.getKey(), convertSlice( entry.getKey(), value.asDocument().get( func ), rowType, field ) );
                 }
+            } else if ( isAddFields && !value.isDocument() ) {
+                if ( value.isArray() ) {
+                    List<RexNode> nodes = new ArrayList<>();
+                    for ( BsonValue bsonValue : value.asArray() ) {
+                        nodes.add( convertLiteral( bsonValue ) );
+                    }
+                    includes.put( entry.getKey(), getArray( nodes, any ) );
+                } else {
+                    includes.put( entry.getKey(), convertLiteral( value ) );
+                }
+
             } else {
-                throw new RuntimeException( "After a projection there needs to be either a number, a renaming, a literal or a function." );
+                String msg;
+                if ( !isAddFields ) {
+                    msg = "After a projection there needs to be either a number, a renaming, a literal or a function.";
+                } else {
+                    msg = "After a projection there needs to be either a renaming, a literal or a function.";
+                }
+                throw new RuntimeException( msg );
             }
 
         }
@@ -997,26 +1061,79 @@ public class MqlToRelConverter {
         }
 
         if ( excludes.size() > 0 ) {
-            // exclusion projections only work for the underlying _data field
-            RelDataTypeField defaultDataField = getDefaultDataField( rowType );
+            if ( _dataExists ) {
+                // we have still the _data field, where the fields need to be extracted
+                // exclusion projections only work for the underlying _data field
+                RelDataTypeField defaultDataField = getDefaultDataField( rowType );
 
-            List<RexNode> values = new ArrayList<>( Collections.singletonList( translateJsonQuery( defaultDataField.getIndex(), rowType, null, excludes ) ) );
-            List<String> names = new ArrayList<>( Collections.singletonList( defaultDataField.getName() ) );
+                List<RexNode> values = new ArrayList<>( Collections.singletonList( translateJsonQuery( defaultDataField.getIndex(), rowType, null, excludes ) ) );
+                List<String> names = new ArrayList<>( Collections.singletonList( defaultDataField.getName() ) );
 
-            if ( !excludes.contains( "_id" ) ) {
-                names.add( 0, "_id" );
-                values.add( 0, RexInputRef.of( 0, rowType ) );
+                // we only need to do this if it is the second time
+                if ( !excludes.contains( "_id" ) && !excludedId ) {
+                    names.add( 0, "_id" );
+                    values.add( 0, RexInputRef.of( 0, rowType ) );
+                }
+
+                if ( excludes.contains( "_id" ) ) {
+                    this.excludedId = true;
+                }
+
+                return LogicalProject.create( node, values, names );
+            } else {
+                // we already projected the _data field away and have to work with what we got
+                List<RexNode> values = new ArrayList<>();
+                List<String> names = new ArrayList<>();
+
+                for ( RelDataTypeField field : rowType.getFieldList() ) {
+                    if ( !excludes.contains( field.getName() ) ) {
+                        names.add( field.getName() );
+                        values.add( RexInputRef.of( field.getIndex(), rowType ) );
+                    }
+                }
+
+                return LogicalProject.create( node, values, names );
+            }
+        } else if ( isAddFields && _dataExists ) {
+            List<String> names = rowType.getFieldNames();
+
+            // we have to implement the added fields into the _data field
+            // as this is later used to retrieve them when projecting
+
+            int dataIndex = rowType.getFieldNames().indexOf( "_data" );
+
+            for ( Entry<String, RexNode> entry : includes.entrySet() ) {
+                List<RexNode> values = new ArrayList<>();
+                for ( RelDataTypeField field : rowType.getFieldList() ) {
+                    if ( field.getIndex() != dataIndex ) {
+                        values.add( RexInputRef.of( field.getIndex(), rowType ) );
+                    } else {
+                        // we attach the new values to the input bson
+                        values.add( new RexCall(
+                                any,
+                                SqlStdOperatorTable.DOC_ADD_FIELDS,
+                                Arrays.asList(
+                                        RexInputRef.of( dataIndex, rowType ),
+                                        convertLiteral( new BsonString( entry.getKey() ) ),
+                                        entry.getValue() ) ) );
+                    }
+                }
+
+                node = LogicalProject.create( node, values, names );
             }
 
-            return LogicalProject.create( node, values, names );
+            return node;
         } else if ( includes.size() > 0 ) {
             List<RexNode> values = new ArrayList<>( includes.values() );
             List<String> names = new ArrayList<>( includes.keySet() );
 
-            if ( !includes.containsKey( "_id" ) ) {
+            if ( !includes.containsKey( "_id" ) && !excludedId ) {
                 names.add( 0, "_id" );
                 values.add( 0, RexInputRef.of( 0, rowType ) );
             }
+
+            // the _data field does not longer exist, as we made a projection "out" of it
+            this._dataExists = false;
 
             return LogicalProject.create( node, values, names );
         }

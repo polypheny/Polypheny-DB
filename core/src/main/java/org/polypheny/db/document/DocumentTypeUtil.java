@@ -40,6 +40,7 @@ import org.bson.BsonRegularExpression;
 import org.bson.BsonString;
 import org.bson.BsonTimestamp;
 import org.bson.BsonValue;
+import org.bson.types.Decimal128;
 import org.bson.types.ObjectId;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -275,5 +276,24 @@ public class DocumentTypeUtil {
                 throw new RuntimeException( "This type does not exist." );
         }
     }
+
+
+    public static BsonValue getBson( Object object ) {
+        // TODO DL add missing casts
+        if ( object instanceof String ) {
+            return new BsonString( (String) object );
+        } else if ( object instanceof Integer ) {
+            return new BsonInt32( (Integer) object );
+        } else if ( object instanceof Long ) {
+            return new BsonInt64( (Long) object );
+        } else if ( object instanceof BigDecimal ) {
+            return new BsonDecimal128( new Decimal128( ((BigDecimal) object) ) );
+        } else if ( object instanceof Double ) {
+            return new BsonDouble( (Double) object );
+        } else {
+            throw new RuntimeException( "Type not considered" );
+        }
+    }
+
 
 }

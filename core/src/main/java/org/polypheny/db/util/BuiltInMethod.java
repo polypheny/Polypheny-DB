@@ -415,7 +415,8 @@ public enum BuiltInMethod {
     DOC_TYPE_MATCH( SqlFunctions.class, "docTypeMatch", Object.class, List.class ),
     DOC_SLICE( SqlFunctions.class, "docSlice", Object.class, int.class, int.class ),
     DOC_QUERY_VALUE( SqlFunctions.class, "docQueryValue", Object.class, List.class ),
-    DOC_QUERY_EXCLUDE( SqlFunctions.class, "docQueryExclude", Object.class, List.class );
+    DOC_QUERY_EXCLUDE( SqlFunctions.class, "docQueryExclude", Object.class, List.class ),
+    DOC_ADD_FIELDS( SqlFunctions.class, "docAddFields", Object.class, String.class, Object.class );
 
     public final Method method;
     public final Constructor constructor;

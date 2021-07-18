@@ -1261,6 +1261,8 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
 
     public static final SqlJsonValueExpressionOperator DOC_QUERY_EXCLUDE = new SqlJsonValueExpressionOperator( "DOC_QUERY_EXCLUDE", false );
 
+    public static final SqlJsonValueExpressionOperator DOC_ADD_FIELDS = new SqlJsonValueExpressionOperator( "DOC_ADD_FIELDS", false );
+
 
     /**
      * Internal operator used to represent the ESCAPE clause of a LIKE or SIMILAR TO expression.
