@@ -256,6 +256,23 @@ public class PostgresqlStore extends AbstractJdbcStore {
     }
 
 
+    protected void createColumnDefinition( CatalogColumn catalogColumn, StringBuilder builder ) {
+        builder.append( " " ).append( getTypeString( catalogColumn.type ) );
+        if ( catalogColumn.length != null ) {
+            builder.append( "(" ).append( catalogColumn.length );
+            if ( catalogColumn.scale != null ) {
+                builder.append( "," ).append( catalogColumn.scale );
+            }
+            builder.append( ")" );
+        }
+        if ( catalogColumn.collectionsType != null ) {
+            for ( int i = 0; i < catalogColumn.dimension; i++ ) {
+                builder.append( "[" ).append( catalogColumn.cardinality ).append( "]" );
+            }
+        }
+    }
+
+
     @Override
     protected String getTypeString( PolyType type ) {
         if ( type.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
@@ -288,6 +305,8 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 return "TIME";
             case TIMESTAMP:
                 return "TIMESTAMP";
+            case ARRAY:
+                return "ARRAY";
         }
         throw new RuntimeException( "Unknown type: " + type.name() );
     }

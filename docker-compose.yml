@@ -10,5 +10,5 @@ services:
             - CREATE_CERTS_WITH_PW=supersecret
             - CERT_HOSTNAME=localhost
         volumes:
-            - ~/.polypheny/certs/localhost:/data/certs
+            - ${POLYPHENY_HOME:-~}/.polypheny/certs/localhost:/data/certs
             - /var/run/docker.sock:/var/run/docker.sock:ro

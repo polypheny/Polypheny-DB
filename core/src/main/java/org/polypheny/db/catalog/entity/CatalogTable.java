@@ -32,7 +32,7 @@ import org.polypheny.db.catalog.Catalog.TableType;
 
 
 @EqualsAndHashCode
-public final class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
+public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
 
     private static final long serialVersionUID = 5426944084650275437L;
 
@@ -44,7 +44,6 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     public final int ownerId;
     public final String ownerName;
     public final TableType tableType;
-    public final String definition;
     public final Long primaryKey;
     public final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter;
     public final boolean modifiable;
@@ -56,6 +55,8 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
 
     public final long numPartitions;
 
+    public final ImmutableList<Long> connectedViews;
+
 
     public CatalogTable(
             final long id,
@@ -66,7 +67,6 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
             final int ownerId,
             @NonNull final String ownerName,
             @NonNull final TableType type,
-            final String definition,
             final Long primaryKey,
             @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             boolean modifiable ) {
@@ -78,7 +78,6 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         this.ownerId = ownerId;
         this.ownerName = ownerName;
         this.tableType = type;
-        this.definition = definition;
         this.primaryKey = primaryKey;
         this.placementsByAdapter = placementsByAdapter;
         this.modifiable = modifiable;
@@ -88,6 +87,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         this.partitionIds = null;
         this.partitionColumnId = 0;
         this.numPartitions = 0;
+        this.connectedViews = ImmutableList.<Long>builder().build();
 
         if ( type == TableType.TABLE && !modifiable ) {
             throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
@@ -106,14 +106,14 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
             final int ownerId,
             @NonNull final String ownerName,
             @NonNull final TableType type,
-            final String definition,
             final Long primaryKey,
             @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             boolean modifiable,
             final long numPartitions,
             final PartitionType partitionType,
             final ImmutableList<Long> partitionIds,
-            final long partitionColumnId ) {
+            final long partitionColumnId,
+            ImmutableList<Long> connectedViews ) {
         this.id = id;
         this.name = name;
         this.columnIds = columnIds;
@@ -122,7 +122,6 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         this.ownerId = ownerId;
         this.ownerName = ownerName;
         this.tableType = type;
-        this.definition = definition;
         this.primaryKey = primaryKey;
         this.placementsByAdapter = placementsByAdapter;
         this.modifiable = modifiable;
@@ -132,6 +131,56 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         this.numPartitions = numPartitions;
         this.isPartitioned = true;
 
+        this.connectedViews = connectedViews;
+
+        if ( type == TableType.TABLE && !modifiable ) {
+            throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
+        }
+
+    }
+
+
+    public CatalogTable(
+            final long id,
+            @NonNull final String name,
+            final ImmutableList<Long> columnIds,
+            final long schemaId,
+            final long databaseId,
+            final int ownerId,
+            @NonNull final String ownerName,
+            @NonNull final TableType type,
+            final Long primaryKey,
+            @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
+            boolean modifiable,
+            final long numPartitions,
+            final PartitionType partitionType,
+            final ImmutableList<Long> partitionIds,
+            final long partitionColumnId,
+            boolean isPartitioned,
+            ImmutableList<Long> connectedViews ) {
+        this.id = id;
+        this.name = name;
+        this.columnIds = columnIds;
+        this.schemaId = schemaId;
+        this.databaseId = databaseId;
+        this.ownerId = ownerId;
+        this.ownerName = ownerName;
+        this.tableType = type;
+        this.primaryKey = primaryKey;
+        this.placementsByAdapter = placementsByAdapter;
+        this.modifiable = modifiable;
+
+        this.isPartitioned = isPartitioned;
+        this.partitionType = partitionType;
+        this.partitionIds = partitionIds;
+        this.partitionColumnId = partitionColumnId;
+        this.numPartitions = numPartitions;
+
+        this.connectedViews = connectedViews;
+
+        if ( type == TableType.TABLE && !modifiable ) {
+            throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
+        }
     }
 
 
@@ -172,8 +221,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
                 null,
                 null,
                 null,
-                ownerName,
-                definition };
+                ownerName };
     }
 
 
@@ -197,6 +245,77 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     }
 
 
+    public boolean isView() {
+        return this.tableType == TableType.VIEW;
+    }
+
+
+    public CatalogTable getRenamed( String newName ) {
+        return new CatalogTable(
+                id,
+                newName,
+                columnIds,
+                schemaId,
+                databaseId,
+                ownerId,
+                ownerName,
+                tableType,
+                primaryKey,
+                placementsByAdapter,
+                modifiable,
+                numPartitions,
+                partitionType,
+                partitionIds,
+                partitionColumnId,
+                isPartitioned,
+                connectedViews );
+    }
+
+
+    public CatalogTable getConnectedViews( ImmutableList<Long> newConnectedViews ) {
+        return new CatalogTable(
+                id,
+                name,
+                columnIds,
+                schemaId,
+                databaseId,
+                ownerId,
+                ownerName,
+                tableType,
+                primaryKey,
+                placementsByAdapter,
+                modifiable,
+                numPartitions,
+                partitionType,
+                partitionIds,
+                partitionColumnId,
+                isPartitioned,
+                newConnectedViews );
+    }
+
+
+    public CatalogTable getTableWithColumns( ImmutableList<Long> newColumnIds ) {
+        return new CatalogTable(
+                id,
+                name,
+                newColumnIds,
+                schemaId,
+                databaseId,
+                ownerId,
+                ownerName,
+                tableType,
+                primaryKey,
+                placementsByAdapter,
+                modifiable,
+                numPartitions,
+                partitionType,
+                partitionIds,
+                partitionColumnId,
+                isPartitioned,
+                connectedViews );
+    }
+
+
     @RequiredArgsConstructor
     public static class PrimitiveCatalogTable {
 
@@ -211,7 +330,6 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         public final String selfReferencingColName;
         public final String refGeneration;
         public final String owner;
-        public final String definition;
 
     }
 
