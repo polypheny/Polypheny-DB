@@ -75,7 +75,7 @@ public class RequestParserTest {
         RequestParser requestParser = new RequestParser( mockedCatalog, null, null, "testdb", "username" );
         HashMap<String, Pair<SqlOperator, String>> operationMap = new HashMap<>();
         operationMap.put( ">=10", new Pair<>( SqlStdOperatorTable.GREATER_THAN_OR_EQUAL, "10" ) );
-        operationMap.put( ">10", new Pair<>( SqlStdOperatorTable.GREATER_THAN_OR_EQUAL, "10" ) );
+        operationMap.put( ">10", new Pair<>( SqlStdOperatorTable.GREATER_THAN, "10" ) );
         operationMap.put( "<=10", new Pair<>( SqlStdOperatorTable.LESS_THAN_OR_EQUAL, "10" ) );
         operationMap.put( "<10", new Pair<>( SqlStdOperatorTable.LESS_THAN, "10" ) );
         operationMap.put( "=10", new Pair<>( SqlStdOperatorTable.EQUALS, "10" ) );
@@ -85,7 +85,7 @@ public class RequestParserTest {
 
         operationMap.forEach( ( k, v ) -> {
             Pair<SqlOperator, String> operationPair = requestParser.parseFilterOperation( k );
-            assertEquals( "", operationPair, v );
+            assertEquals( v, operationPair );
         } );
     }
 
