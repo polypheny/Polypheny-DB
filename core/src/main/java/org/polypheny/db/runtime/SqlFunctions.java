@@ -3693,12 +3693,16 @@ public class SqlFunctions {
     }
 
 
-    public static Object docQueryExclude( String input, List<List<String>> excluded ) {
+    public static Object docQueryExclude( Object input, List<List<String>> excluded ) {
+        if ( !(input instanceof String) ) {
+            return null;
+        }
+
         if ( excluded.size() == 0 ) {
             return input;
         }
 
-        BsonValue doc = BsonDocument.parse( input );
+        BsonValue doc = BsonDocument.parse( (String) input );
 
         excludeBson( doc, excluded );
         return transformBsonToPrimitive( doc );
@@ -3728,10 +3732,24 @@ public class SqlFunctions {
     }
 
 
-    public static boolean docRegexMatch( Object input, String regex, String options ) {
+    public static boolean docRegexMatch( Object input, String regex, boolean isInsensitive, boolean isMultiline, boolean doesIgnoreWhitespace, boolean allowsDot ) {
         // todo DL options
         if ( input instanceof String ) {
-            return Pattern.matches( regex, (String) input );
+            int flags = 0;
+            if ( isInsensitive ) {
+                flags |= Pattern.CASE_INSENSITIVE;
+            }
+            if ( isMultiline ) {
+                flags |= Pattern.MULTILINE;
+            }
+            if ( doesIgnoreWhitespace ) {
+                throw new RuntimeException( "NOT SUPPORTED" );
+            }
+            if ( allowsDot ) {
+                flags |= Pattern.DOTALL;
+            }
+
+            return Pattern.compile( regex, flags ).matcher( (String) input ).matches();
         }
         return false;
     }
@@ -3740,6 +3758,14 @@ public class SqlFunctions {
     public static boolean docJsonMatch( Object input, String json ) {
         // use schema validator library TODO DL
         throw new RuntimeException( "NOT IMPLEMENTED" );
+    }
+
+
+    public static boolean docEq( Object b0, Object b1 ) {
+        if ( b0 instanceof List && !(b1 instanceof List) ) {
+            return ((List<?>) b0).contains( b1 );
+        }
+        return eq( b0, b1 );
     }
 
 

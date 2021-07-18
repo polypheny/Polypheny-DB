@@ -1233,6 +1233,8 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
 
     // document model operators TODO DL move
 
+    public static final SqlDocEqualExpressionOperator DOC_EQ = new SqlDocEqualExpressionOperator( "DOC_EQ", SqlKind.EQUALS );
+
     public static final SqlJsonValueExpressionOperator DOC_JSON_MATCH = new SqlJsonValueExpressionOperator( "DOC_JSON_MATCH", false );
 
     public static final SqlJsonValueExpressionOperator DOC_REGEX_MATCH = new SqlJsonValueExpressionOperator( "DOC_REGEX_MATCH", false );

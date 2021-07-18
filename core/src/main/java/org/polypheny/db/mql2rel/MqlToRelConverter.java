@@ -28,6 +28,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.bson.BsonArray;
+import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonRegularExpression;
@@ -91,7 +92,7 @@ public class MqlToRelConverter {
 
         mappings.put( "$lt", SqlStdOperatorTable.LESS_THAN );
         mappings.put( "$gt", SqlStdOperatorTable.GREATER_THAN );
-        mappings.put( "$eq", SqlStdOperatorTable.EQUALS );
+        mappings.put( "$eq", SqlStdOperatorTable.DOC_EQ );
         mappings.put( "$ne", SqlStdOperatorTable.NOT_EQUALS );
         mappings.put( "$lte", SqlStdOperatorTable.LESS_THAN_OR_EQUAL );
         mappings.put( "$gte", SqlStdOperatorTable.GREATER_THAN_OR_EQUAL );
@@ -118,6 +119,7 @@ public class MqlToRelConverter {
         operators.add( "$type" );
         operators.add( "$expr" );
         operators.add( "$jsonSchema" );
+        operators.add( "$all" );
     }
 
 
@@ -348,7 +350,7 @@ public class MqlToRelConverter {
 
                     if ( losesContext ) {
                         RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
-                        return new RexCall( type, SqlStdOperatorTable.EQUALS, Arrays.asList( id, node ) );
+                        return new RexCall( type, SqlStdOperatorTable.DOC_EQ, Arrays.asList( id, node ) );
                     } else {
                         return node;
                     }
@@ -363,6 +365,8 @@ public class MqlToRelConverter {
                     } else if ( key.equals( "$jsonSchema" ) ) {
                         // jsonSchema is a general match
                         return convertJsonSchema( bsonValue, rowType, field );
+                    } else if ( key.equals( "$all" ) ) {
+                        return convertAll( bsonValue, parentKey, rowType, field );
                     }
 
                     return translateLogical( key, parentKey, bsonValue, rowType, field );
@@ -477,8 +481,16 @@ public class MqlToRelConverter {
             // we have a simple assignment to a value, can attach and translate the value
             List<RexNode> nodes = new ArrayList<>();
             nodes.add( getIdentifier( parentKey, rowType, field ) );
-            nodes.add( convertLiteral( bsonValue ) );
-            return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), SqlStdOperatorTable.EQUALS, nodes );
+
+            if ( bsonValue.isArray() ) {
+                List<RexNode> arr = convertArray( parentKey, bsonValue.asArray(), true, rowType, field, "" );
+                nodes.add( getArray( arr,
+                        cluster.getTypeFactory().createArrayType( nullableAny, arr.size() ) ) );
+            } else {
+                nodes.add( convertLiteral( bsonValue ) );
+            }
+
+            return getFixedCall( nodes, SqlStdOperatorTable.DOC_EQ, PolyType.BOOLEAN );
         }
 
     }
@@ -512,7 +524,7 @@ public class MqlToRelConverter {
             List<RexNode> toAdd = new ArrayList<>();
             // maybe we have to fix nested AND or OR combinations
             for ( RexNode operand : operands ) {
-                if ( operand instanceof RexCall && ((RexCall) operand).op.kind == op.kind ) {
+                if ( operand instanceof RexCall && ((RexCall) operand).op.getName().equals( op.getName() ) ) { // TODO DL maybe remove if not longer same type
                     toAdd.addAll( ((RexCall) operand).operands );
                     toRemove.add( operand );
                 }
@@ -594,7 +606,11 @@ public class MqlToRelConverter {
                 Arrays.asList(
                         getIdentifier( parentKey, rowType, field ),
                         convertLiteral( new BsonString( stringRegex ) ),
-                        convertLiteral( new BsonString( options ) ) ) );
+                        convertLiteral( new BsonBoolean( options.contains( "i" ) ) ),
+                        convertLiteral( new BsonBoolean( options.contains( "m" ) ) ),
+                        convertLiteral( new BsonBoolean( options.contains( "x" ) ) ),
+                        convertLiteral( new BsonBoolean( options.contains( "s" ) ) )
+                ) );
     }
 
 
@@ -631,6 +647,25 @@ public class MqlToRelConverter {
         } else {
             throw new RuntimeException( "After $jsonSchema there needs to follow a document" );
         }
+    }
+
+
+    private RexNode convertAll( BsonValue bsonValue, String parentKey, RelDataType rowType, RelDataTypeField field ) {
+        RelDataType type = cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), true );
+        if ( bsonValue.isArray() ) {
+            List<RexNode> arr = convertArray( parentKey, bsonValue.asArray(), true, rowType, field, "" );
+            RexNode id = getIdentifier( parentKey, rowType, field );
+
+            List<RexNode> operands = new ArrayList<>();
+            for ( RexNode rexNode : arr ) {
+                operands.add( new RexCall( type, SqlStdOperatorTable.DOC_EQ, Arrays.asList( id, rexNode ) ) );
+            }
+
+            return getFixedCall( operands, SqlStdOperatorTable.AND, PolyType.BOOLEAN );
+        } else {
+            throw new RuntimeException( "After $all there needs to follow a array" );
+        }
+
     }
 
 
@@ -683,7 +718,7 @@ public class MqlToRelConverter {
     private RexNode translateJsonValue( int index, RelDataType rowType, String key ) {
 
         RexCall filter = getStringArray( Arrays.asList( key.split( "\\." ) ) );
-        return new RexCall( nullableAny, SqlStdOperatorTable.DOC_QUERY_VALUE, Arrays.asList( RexInputRef.of( index, rowType ), filter ) );
+        return new RexCall( any, SqlStdOperatorTable.DOC_QUERY_VALUE, Arrays.asList( RexInputRef.of( index, rowType ), filter ) );
 
     }
 
@@ -772,7 +807,6 @@ public class MqlToRelConverter {
 
 
     private RexNode convertLiteral( BsonValue bsonValue ) {
-
         RelDataType type = getRelDataType( bsonValue );
         Pair<Comparable, PolyType> valuePair = RexLiteral.convertType( getComparable( bsonValue ), type );
         return new RexLiteral( valuePair.left, type, valuePair.right );
@@ -798,14 +832,16 @@ public class MqlToRelConverter {
                 }
                 operands.add( filter );
             } else {
-                operands.add( new RexCall( type, isIn ? SqlStdOperatorTable.EQUALS : SqlStdOperatorTable.NOT_EQUALS, Arrays.asList( id, convertLiteral( literal ) ) ) );
+                operands.add( new RexCall( type, isIn ? SqlStdOperatorTable.DOC_EQ : SqlStdOperatorTable.NOT_EQUALS, Arrays.asList( id, convertLiteral( literal ) ) ) );
             }
         }
-        if ( operands.size() == 1 ) {
+
+        return getFixedCall( operands, op, PolyType.BOOLEAN );
+        /*if ( operands.size() == 1 ) {
             return operands.get( 0 );
         }
 
-        return new RexCall( type, op, operands );
+        return new RexCall( type, op, operands );*/
     }
 
 

@@ -358,6 +358,7 @@ public class MongoFilter extends Filter implements MongoRel {
                     throw new RuntimeException( "Input in array is not translatable." );
                 }
             } ).collect( Collectors.toList() ) );
+
             return new BsonDocument( getOp( right.op ), array );
         }
 
@@ -372,6 +373,8 @@ public class MongoFilter extends Filter implements MongoRel {
                     return "$multiply";
                 case DIVIDE:
                     return "$divide";
+                case ARRAY_VALUE_CONSTRUCTOR:
+                    return "$eq";
                 default:
                     throw new RuntimeException( "Sql operation is not supported" );
             }

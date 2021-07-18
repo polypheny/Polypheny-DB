@@ -23,15 +23,24 @@ import org.polypheny.db.mql.parser.MqlParseException;
 import org.polypheny.db.mql.parser.MqlParser;
 import org.polypheny.db.mql.parser.MqlParser.MqlParserConfig;
 import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.util.SourceStringReader;
 
 public abstract class MqlTest {
 
     private static final MqlParserConfig parserConfig;
     @Getter
-    private static final Map<String, SqlKind> biComparisons;
+    private static final Map<String, SqlOperator> biComparisons;
     @Getter
     private static final Map<String, SqlKind> logicalOperators;
+
+    public static final SqlOperator eq = SqlStdOperatorTable.DOC_EQ;
+    public static final SqlOperator ne = SqlStdOperatorTable.NOT_EQUALS;
+    public static final SqlOperator gt = SqlStdOperatorTable.GREATER_THAN;
+    public static final SqlOperator gte = SqlStdOperatorTable.GREATER_THAN_OR_EQUAL;
+    public static final SqlOperator lt = SqlStdOperatorTable.LESS_THAN;
+    public static final SqlOperator lte = SqlStdOperatorTable.LESS_THAN_OR_EQUAL;
 
 
     static {
@@ -39,12 +48,12 @@ public abstract class MqlTest {
         parserConfig = configConfigBuilder.build();
         biComparisons = new HashMap<>();
 
-        biComparisons.put( "$eq", SqlKind.EQUALS );
-        biComparisons.put( "$ne", SqlKind.NOT_EQUALS );
-        biComparisons.put( "$gt", SqlKind.GREATER_THAN );
-        biComparisons.put( "$gte", SqlKind.GREATER_THAN_OR_EQUAL );
-        biComparisons.put( "$lt", SqlKind.LESS_THAN );
-        biComparisons.put( "$lte", SqlKind.LESS_THAN_OR_EQUAL );
+        biComparisons.put( "$eq", eq );
+        biComparisons.put( "$ne", ne );
+        biComparisons.put( "$gt", gt );
+        biComparisons.put( "$gte", gte );
+        biComparisons.put( "$lt", lt );
+        biComparisons.put( "$lte", lte );
 
         logicalOperators = new HashMap<>();
 

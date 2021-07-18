@@ -38,9 +38,12 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlJsonExistsFunction;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 
 public class Mql2RelFindTest extends Mql2RelTest {
+
 
     public String find( String match ) {
         return "db.secrets.find({" + match + "})";
@@ -63,7 +66,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
     public void testSingleMatch() {
         RelRoot root = translate( find( "\"_id\":\"value\"" ) );
         RexCall condition = getConditionTestFilter( root );
-        assertEquals( SqlKind.EQUALS, condition.op.kind );
+        assertEquals( SqlStdOperatorTable.DOC_EQ, condition.op );
 
         assertTrue( condition.operands.get( 0 ).isA( SqlKind.INPUT_REF ) );
         assertEquals( 0, ((RexInputRef) condition.operands.get( 0 )).getIndex() );
@@ -182,12 +185,12 @@ public class Mql2RelFindTest extends Mql2RelTest {
     @Test
     public void testBiComparisons() {
         // some make no sense, maybe fix in the future TODO DL
-        for ( Entry<String, SqlKind> entry : MqlTest.getBiComparisons().entrySet() ) {
+        for ( Entry<String, SqlOperator> entry : MqlTest.getBiComparisons().entrySet() ) {
             RelRoot root = translate( find( "\"key\": { \"" + entry.getKey() + "\": \"value\"}" ) );
 
             RexCall condition = getConditionTestFilter( root );
 
-            testJsonValueCond( condition, "key", "value", entry.getValue() );
+            testJsonValueCond( condition, "key", "value", entry.getValue().getKind() );
         }
     }
 

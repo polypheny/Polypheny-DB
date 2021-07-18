@@ -97,7 +97,6 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
@@ -288,10 +287,7 @@ public class MongoRules {
                 final RexNode op1 = call.operands.get( 1 );
                 // normal
                 if ( op1 instanceof RexLiteral && op1.getType().getPolyType() == PolyType.INTEGER ) {
-                    if ( !Bug.CALCITE_194_FIXED ) {
-                        return "'" + stripQuotes( strings.get( 0 ) ) + "[" + ((RexLiteral) op1).getValue2() + "]'";
-                    }
-                    return "{$arrayElemAt:[" + strings.get( 0 ) + "," + strings.get( 1 ) + "]}";
+                    return "{$arrayElemAt:[" + strings.get( 0 ) + "," + (((RexLiteral) op1).getValueAs( Integer.class ) - 1) + "]}";
                 }
                 // prepared
                 if ( op1 instanceof RexDynamicParam ) {

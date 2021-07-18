@@ -408,11 +408,12 @@ public enum BuiltInMethod {
     AGG_LAMBDA_FACTORY_ACC_SINGLE_GROUP_RESULT_SELECTOR( AggregateLambdaFactory.class, "singleGroupResultSelector", Function1.class ),
     RESULTSET_GETBYTES( ResultSet.class, "getBytes", int.class ),
     RESULTSET_GETBINARYSTREAM( ResultSet.class, "getBinaryStream", int.class ),
-    DOC_JSON_MATCH( SqlFunctions.class, "docJsonMatch", String.class, String.class ),
-    DOC_REGEX_MATCH( SqlFunctions.class, "docRegexMatch", String.class, String.class, String.class ),
-    DOC_TYPE_MATCH( SqlFunctions.class, "docTypeMatch", String.class, List.class ),
-    DOC_QUERY_VALUE( SqlFunctions.class, "docQueryValue", String.class, List.class ),
-    DOC_QUERY_EXCLUDE( SqlFunctions.class, "docQueryExclude", String.class, List.class );
+    DOC_EQ( SqlFunctions.class, "docEq", Object.class, Object.class ),
+    DOC_JSON_MATCH( SqlFunctions.class, "docJsonMatch", Object.class, String.class ),
+    DOC_REGEX_MATCH( SqlFunctions.class, "docRegexMatch", Object.class, String.class, boolean.class, boolean.class, boolean.class, boolean.class ),
+    DOC_TYPE_MATCH( SqlFunctions.class, "docTypeMatch", Object.class, List.class ),
+    DOC_QUERY_VALUE( SqlFunctions.class, "docQueryValue", Object.class, List.class ),
+    DOC_QUERY_EXCLUDE( SqlFunctions.class, "docQueryExclude", Object.class, List.class );
 
     public final Method method;
     public final Constructor constructor;

@@ -81,6 +81,7 @@ public abstract class Catalog {
 
     public static Adapter defaultStore;
     public static Adapter defaultSource;
+    public static boolean resetDocker;
     protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
     public boolean isPersistent = false;
     public static Catalog INSTANCE = null;
