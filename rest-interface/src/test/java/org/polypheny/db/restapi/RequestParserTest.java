@@ -42,20 +42,22 @@ public class RequestParserTest {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
+
     @Test
     public void testBasicAuthorizationDecoding() {
         Pair<String, String> unibasDbis = RequestParser.decodeBasicAuthorization( "Basic dW5pYmFzOmRiaXM=" );
-        assertEquals("Username was decoded incorrectly.", "unibas", unibasDbis.left );
-        assertEquals("Password was decoded incorrectly.", "dbis", unibasDbis.right );
+        assertEquals( "Username was decoded incorrectly.", "unibas", unibasDbis.left );
+        assertEquals( "Password was decoded incorrectly.", "dbis", unibasDbis.right );
     }
+
 
     @Test
     public void testBasicAuthorizationDecodingGarbageHeader() {
         thrown.expect( UnauthorizedAccessException.class );
         thrown.expectMessage( "Basic Authorization header is not properly encoded." );
         Pair<String, String> unibasDbis = RequestParser.decodeBasicAuthorization( "Basic dW5pY!mFzOmRi!" );
-        assertEquals("Username was decoded incorrectly.", "unibas", unibasDbis.left );
-        assertEquals("Password was decoded incorrectly.", "dbis", unibasDbis.right );
+        assertEquals( "Username was decoded incorrectly.", "unibas", unibasDbis.left );
+        assertEquals( "Password was decoded incorrectly.", "dbis", unibasDbis.right );
     }
 
 
