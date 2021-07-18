@@ -596,6 +596,7 @@ public class RequestParser {
     }
 
 
+    @VisibleForTesting
     Pair<SqlOperator, String> parseFilterOperation( String filterString ) throws ParserException {
         log.debug( "Starting to parse filter operation. Value: {}.", filterString );
 
