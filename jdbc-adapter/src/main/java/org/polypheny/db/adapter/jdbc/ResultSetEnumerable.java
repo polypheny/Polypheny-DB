@@ -325,7 +325,14 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
                 preparedStatement.setString( i, gson.toJson( value ) );
             }
         } else if ( value instanceof BigDecimal ) {
-            preparedStatement.setBigDecimal( i, (BigDecimal) value );
+            BigDecimal bigDecimal = (BigDecimal) value;
+            if ( type.getPolyType() == PolyType.REAL ) {
+                preparedStatement.setFloat( i, bigDecimal.floatValue() );
+            } else if ( type.getPolyType() == PolyType.DOUBLE ) {
+                preparedStatement.setDouble( i, bigDecimal.doubleValue() );
+            } else {
+                preparedStatement.setBigDecimal( i, (BigDecimal) value );
+            }
         } else if ( value instanceof Boolean ) {
             preparedStatement.setBoolean( i, (Boolean) value );
         } else if ( value instanceof Blob ) {
