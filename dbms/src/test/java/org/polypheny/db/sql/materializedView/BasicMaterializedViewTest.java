@@ -20,6 +20,8 @@ import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -29,6 +31,8 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 public class BasicMaterializedViewTest {
+
+    private final CountDownLatch waiter = new CountDownLatch( 1 );
 
     private final static String VIEWTESTEMPTABLE_SQL = "CREATE TABLE viewTestEmpTable ("
             + "empId INTEGER NOT NULL,"
@@ -122,6 +126,7 @@ public class BasicMaterializedViewTest {
             }
         }
     }
+
 
     @Test
     public void renameColumnTest() throws SQLException {
@@ -369,6 +374,81 @@ public class BasicMaterializedViewTest {
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
                     statement.executeUpdate( "DROP TABLE viewTestDepTable" );
                 }
+            }
+        }
+    }
+
+
+    @Test
+    public void testBasicFreshnessInterval() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
+                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
+
+                try {
+                    statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 100 \"milliseconds\" " );
+                    waiter.await( 1000, TimeUnit.MILLISECONDS );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3 }
+                            )
+                    );
+                } catch ( InterruptedException e ) {
+                    e.printStackTrace();
+                } finally {
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
+                    statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testComplexFreshnessInterval() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
+
+                statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 100 \"milliseconds\" " );
+                waiter.await( 1, TimeUnit.SECONDS );
+                try {
+
+                    statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
+                    connection.commit();
+
+                    waiter.await( 1, TimeUnit.SECONDS );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1 }
+                            ) );
+
+                    statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
+                    connection.commit();
+
+                    waiter.await( 1, TimeUnit.SECONDS );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3 }
+                            )
+                    );
+
+                } finally {
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
+                    statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
+                }
+            } catch ( InterruptedException e ) {
+                e.printStackTrace();
             }
         }
     }

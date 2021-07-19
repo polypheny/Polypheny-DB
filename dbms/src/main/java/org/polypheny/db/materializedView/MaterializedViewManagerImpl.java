@@ -42,15 +42,8 @@ import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.SingleRel;
 import org.polypheny.db.rel.logical.LogicalViewTableScan;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.transaction.DeadlockException;
-import org.polypheny.db.transaction.Lock.LockMode;
-import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.TableAccessMap;
-import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionException;
-import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.transaction.TransactionManager;
 
 @Slf4j
@@ -69,6 +62,24 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         MaterializedFreshnessLoop materializedFreshnessLoop = new MaterializedFreshnessLoop( this );
         Thread t = new Thread( materializedFreshnessLoop );
         t.start();
+    }
+
+
+    public Map<Long, MaterializedViewCriteria> updateMaterializedViewInfo() {
+        List<Long> toRemove = new ArrayList<>();
+        for ( Long id : materializedViewInfo.keySet() ) {
+            if ( Catalog.getInstance().getTable( id ) == null ) {
+                toRemove.add( id );
+            }
+        }
+        toRemove.forEach( materializedViewInfo::remove );
+        return materializedViewInfo;
+    }
+
+
+    @Override
+    public void deleteMaterializedViewFromInfo( Long tableId ) {
+        materializedViewInfo.remove( tableId );
     }
 
 
@@ -107,7 +118,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
 
     @Override
-    public void updateData( Transaction transaction, List<DataStore> stores, List<CatalogColumn> columns, RelRoot sourceRel ) {
+    public void updateData( Transaction transaction, List<DataStore> stores, List<CatalogColumn> columns, RelRoot sourceRel, RelCollation relCollation ) {
         Statement sourceStatement = transaction.createStatement();
         Statement targetStatement = transaction.createStatement();
         List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
@@ -129,34 +140,18 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 sourceStatement.getQueryProcessor().getPlanner(),
                 new RexBuilder( sourceStatement.getTransaction().getTypeFactory() ) );
 
-        prepareNode( sourceRel.rel, cluster, null );
+        prepareNode( sourceRel.rel, cluster, relCollation );
 
-        RelRoot targetRel = dataMigrator.buildDeleteStatement( targetStatement, columnPlacements );
+        RelRoot targetRel;
 
-        try {
-            // Get a shared global schema lock
-            LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) transaction, LockMode.SHARED );
-            // Get locks for individual tables
-            TableAccessMap accessMapSource = new TableAccessMap( sourceRel.rel );
-            for ( TableIdentifier tableIdentifier : accessMapSource.getTablesAccessed() ) {
-                //shared Lock for all underlying tables
-                LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) transaction, LockMode.SHARED );
-            }
-            TableAccessMap accessMapTarget = new TableAccessMap( targetRel.rel );
-            for ( TableIdentifier tableIdentifier : accessMapTarget.getTablesAccessed() ) {
-                //exclusive Lock for all materialized views
-                LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) transaction, LockMode.EXCLUSIVE );
-            }
-        } catch ( DeadlockException e ) {
-            throw new RuntimeException( e );
-        }
-
+        //delete all data
+        targetRel = dataMigrator.buildDeleteStatement( targetStatement, columnPlacements );
         dataMigrator.executeQuery( columns, sourceRel, sourceStatement, targetStatement, targetRel, true );
 
+        //insert new data
         targetRel = dataMigrator.buildInsertStatement( targetStatement, columnPlacements );
         dataMigrator.executeQuery( columns, sourceRel, sourceStatement, targetStatement, targetRel, true );
 
-        commitTransaction( transaction );
     }
 
 
@@ -186,22 +181,6 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         }
         if ( viewLogicalRoot instanceof LogicalViewTableScan ) {
             prepareNode( ((LogicalViewTableScan) viewLogicalRoot).getRelNode(), relOptCluster, relCollation );
-        }
-    }
-
-
-    public void commitTransaction( Transaction transaction ) {
-
-        try {
-            //locks are released within commit
-            transaction.commit();
-        } catch ( TransactionException e ) {
-            log.error( "Caught exception while executing a query from the console", e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-            }
         }
     }
 

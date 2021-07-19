@@ -22,6 +22,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.materializedView.MaterializedViewManager;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlKind;
@@ -58,6 +59,8 @@ public class SqlDropMaterializedView extends SqlDropObject {
                 throw e;
             }
         }
+        MaterializedViewManager materializedViewManager = MaterializedViewManager.getInstance();
+        materializedViewManager.deleteMaterializedViewFromInfo( table.id );
 
         try {
             DdlManager.getInstance().dropMaterializedView( table, statement );

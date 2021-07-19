@@ -20,6 +20,7 @@ import java.util.List;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.MaterializedViewCriteria;
+import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.transaction.Transaction;
 
@@ -45,7 +46,9 @@ public abstract class MaterializedViewManager {
     }
 
 
-    public abstract void updateData( Transaction transaction, List<DataStore> stores, List<CatalogColumn> columns, RelRoot sourceRelRoot );
+    public abstract void deleteMaterializedViewFromInfo( Long tableId );
+
+    public abstract void updateData( Transaction transaction, List<DataStore> stores, List<CatalogColumn> columns, RelRoot sourceRelRoot, RelCollation relCollation );
 
     public abstract void addData( Transaction transaction, List<DataStore> stores, List<CatalogColumn> addedColumns, RelRoot relRoot, long tableId, MaterializedViewCriteria materializedViewCriteria );
 

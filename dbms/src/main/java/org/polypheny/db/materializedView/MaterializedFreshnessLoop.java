@@ -16,6 +16,7 @@
 
 package org.polypheny.db.materializedView;
 
+import com.google.common.collect.ImmutableMap;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -33,9 +34,15 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.transaction.DeadlockException;
+import org.polypheny.db.transaction.Lock.LockMode;
+import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.transaction.TransactionImpl;
 
 @Slf4j
 public class MaterializedFreshnessLoop implements Runnable {
@@ -61,10 +68,11 @@ public class MaterializedFreshnessLoop implements Runnable {
 
 
     private void startEventLoop() throws InterruptedException {
-        Map<Long, MaterializedViewCriteria> materializedViewInfo = manager.getMaterializedViewInfo();
+        Map<Long, MaterializedViewCriteria> materializedViewInfo;
         Catalog catalog = Catalog.getInstance();
         AdapterManager adapterManager = AdapterManager.getInstance();
         while ( true ) {
+            materializedViewInfo = ImmutableMap.copyOf( manager.updateMaterializedViewInfo() );
             materializedViewInfo.forEach( ( k, v ) -> {
                 if ( v.getCriteriaType() == CriteriaType.INTERVAL ) {
                     if ( v.getLastUpdate().getTime() + v.getTimeInMillis() < System.currentTimeMillis() ) {
@@ -84,10 +92,22 @@ public class MaterializedFreshnessLoop implements Runnable {
                             dataStores.add( adapterManager.getStore( id ) );
                         }
 
+                        String databaseName = catalog.getDatabase( catalogMaterializedView.databaseId ).name;
+                        RelCollation relCollation = catalogMaterializedView.getRelCollation();
+
                         Transaction transaction;
+
                         try {
-                            transaction = manager.getTransactionManager().startTransaction( catalogMaterializedView.ownerName, "APP", true, "Materialized View" );
-                            manager.updateData( transaction, dataStores, columns, RelRoot.of( catalogMaterializedView.getDefinition(), SqlKind.SELECT ) );
+                            transaction = manager.getTransactionManager().startTransaction( catalogMaterializedView.ownerName, databaseName, true, "Materialized View" );
+
+                            try {
+                                // Get a exclusive global schema lock
+                                LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) transaction, LockMode.EXCLUSIVE );
+                            } catch ( DeadlockException e ) {
+                                throw new RuntimeException( e );
+                            }
+                            manager.updateData( transaction, dataStores, columns, RelRoot.of( catalogMaterializedView.getDefinition(), SqlKind.SELECT ), relCollation );
+                            commitTransaction( transaction );
 
                         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
                             e.printStackTrace();
@@ -101,6 +121,25 @@ public class MaterializedFreshnessLoop implements Runnable {
             Thread.sleep( 1000 );
         }
 
+    }
+
+
+    public void commitTransaction( Transaction transaction ) {
+
+        try {
+            //locks are released within commit
+            transaction.commit();
+        } catch ( TransactionException e ) {
+            log.error( "Caught exception while executing a query from the console", e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Caught exception while rollback", e );
+            }
+        } finally {
+            // Release lock
+            LockManager.INSTANCE.unlock( LockManager.GLOBAL_LOCK, (TransactionImpl) transaction );
+        }
     }
 
 
