@@ -3,10 +3,11 @@ name: Polypheny-DB Adapter Matrix CI
 on:
     push:
     pull_request:
-        types: [ unlabeled ]
+        types: [ opened, synchronize, reopened, ready_for_review ]
 
 jobs:
     build:
+        if: ${{ github.event.type != 'PullRequestEvent' || github.event.pull_request.draft == false }}
         runs-on: ubuntu-latest
         strategy:
             fail-fast: false
