@@ -49,15 +49,15 @@ public class StringFunctionsTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "CREATE TABLE TableA(ID BIGINT NOT NULL, DataA VARCHAR(255), PRIMARY KEY (ID))" );
+                statement.executeUpdate( "CREATE TABLE TableA(ID INTEGER NOT NULL, DataA VARCHAR(255), PRIMARY KEY (ID))" );
                 statement.executeUpdate( "INSERT INTO TableA VALUES (1, 'First')" );
                 statement.executeUpdate( "INSERT INTO TableA VALUES (2, 'Second')" );
                 statement.executeUpdate( "INSERT INTO TableA VALUES (3, 'Third')" );
-                statement.executeUpdate( "CREATE TABLE TableB(ID BIGINT NOT NULL, DataB VARCHAR(255), PRIMARY KEY (ID))" );
+                statement.executeUpdate( "CREATE TABLE TableB(ID INTEGER NOT NULL, DataB VARCHAR(255), PRIMARY KEY (ID))" );
                 statement.executeUpdate( "INSERT INTO TableB VALUES (1, 'Fourth')" );
                 statement.executeUpdate( "INSERT INTO TableB VALUES (2, 'Fifth')" );
                 statement.executeUpdate( "INSERT INTO TableB VALUES (3, 'Sixth')" );
-                statement.executeUpdate( "CREATE TABLE TableC(ID BIGINT NOT NULL, DataC VARCHAR(255), PRIMARY KEY (ID))" );
+                statement.executeUpdate( "CREATE TABLE TableC(ID INTEGER NOT NULL, DataC VARCHAR(255), PRIMARY KEY (ID))" );
                 statement.executeUpdate( "INSERT INTO TableC VALUES (1, ' Seventh')" );
                 statement.executeUpdate( "INSERT INTO TableC VALUES (2, 'Eighth ')" );
                 statement.executeUpdate( "INSERT INTO TableC VALUES (3, ' ninth ')" );
