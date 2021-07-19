@@ -109,6 +109,10 @@ public class PolyphenyDb {
 
 
     public void runPolyphenyDb() throws GenericCatalogException {
+        if ( resetDocker ) {
+            log.warn( "-resetDocker option is set, this option is only for development." );
+        }
+
         // Move data folder
         if ( FileSystemManager.getInstance().checkIfExists( "data.backup" ) ) {
             FileSystemManager.getInstance().recursiveDeleteFolder( "data" );

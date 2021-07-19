@@ -80,7 +80,7 @@ public class BsonUtil {
      * TODO DL: edge-case in string is not handled properly
      */
     public static String fixBson( String bson ) {
-        String reg = "\\d+\\s*([*/+-]\\s*\\d+)+";
+        String reg = "[a-zA-B0-9$\"]+(\\s*[*/+-]\\s*[a-zA-B0-9$\"]+)+";
 
         if ( bson.split( reg ).length == 1 ) {
             return bson;

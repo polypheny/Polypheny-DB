@@ -96,6 +96,7 @@ import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.NonDeterministic;
 import org.apache.calcite.linq4j.tree.Primitive;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.bson.json.JsonMode;
@@ -3676,8 +3677,12 @@ public class SqlFunctions {
 
 
     public static Object docQueryValue( Object input, List<String> filters ) {
-        assert (input instanceof String);
-        BsonValue doc = BsonDocument.parse( (String) input );
+        assert input instanceof String;
+        return docQueryValue( BsonDocument.parse( (String) input ), filters );
+    }
+
+
+    public static Object docQueryValue( BsonValue doc, List<String> filters ) {
         while ( filters.size() != 0 && doc != null ) {
             if ( doc.isDocument() ) {
                 if ( doc.asDocument().containsKey( filters.get( 0 ) ) ) {
@@ -3691,7 +3696,6 @@ public class SqlFunctions {
             }
         }
         return transformBsonToPrimitive( doc );
-
     }
 
 
@@ -3707,19 +3711,33 @@ public class SqlFunctions {
     }
 
 
-    public static Object docQueryExclude( Object input, List<List<String>> excluded ) {
+    public static BsonValue docQueryExclude( Object input, List<List<String>> excluded ) {
         if ( !(input instanceof String) ) {
             return null;
+        }
+
+        BsonValue doc = BsonDocument.parse( (String) input );
+
+        if ( excluded.size() == 0 ) {
+            return doc;
+        }
+
+        excludeBson( doc, excluded );
+        return doc;
+    }
+
+
+    public static BsonValue docQueryExclude( BsonValue input, List<List<String>> excluded ) {
+        if ( !input.isDocument() ) {
+            return input;
         }
 
         if ( excluded.size() == 0 ) {
             return input;
         }
 
-        BsonValue doc = BsonDocument.parse( (String) input );
-
-        excludeBson( doc, excluded );
-        return transformBsonToPrimitive( doc );
+        excludeBson( input, excluded );
+        return input;
     }
 
 
@@ -3772,6 +3790,45 @@ public class SqlFunctions {
     public static boolean docJsonMatch( Object input, String json ) {
         // use schema validator library TODO DL
         throw new RuntimeException( "NOT IMPLEMENTED" );
+    }
+
+
+    private static Object docItemAny( List input, int index ) {
+        // mongo starts at 0 and allows to retrieve from behind with negative
+        if ( input.size() > Math.abs( index ) ) {
+            if ( index < 0 ) {
+                index = input.size() + index;
+            }
+            return input.get( index );
+        }
+        return null;
+    }
+
+
+    public static Object docItemAny( Object input, Object index ) {
+        if ( index instanceof BigDecimal ) {
+            return docItem( input, ((BigDecimal) index).intValue() );
+        }
+        return docItem( input, (Integer) index );
+    }
+
+
+    public static Object docItem( Object input, int index ) {
+        if ( input instanceof String ) {
+            BsonDocument doc = BsonDocument.parse( (String) input );
+            if ( doc.isArray() ) {
+                return docItemAny( doc.asArray(), index );
+            }
+        } else if ( input instanceof List ) {
+            return docItemAny( (List<?>) input, index );
+        }
+
+        return null;
+    }
+
+
+    public static Object docItem( BsonArray input, int index ) {
+        return docItemAny( input, index );
     }
 
 

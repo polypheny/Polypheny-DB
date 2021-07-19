@@ -1259,6 +1259,8 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
 
     public static final SqlJsonValueExpressionOperator DOC_SLICE = new SqlJsonValueExpressionOperator( "DOC_SLICE", false );
 
+    public static final SqlJsonValueExpressionOperator DOC_ITEM = new SqlJsonValueExpressionOperator( "DOC_ITEM", false );
+
     public static final SqlJsonValueExpressionOperator DOC_QUERY_EXCLUDE = new SqlJsonValueExpressionOperator( "DOC_QUERY_EXCLUDE", false );
 
     public static final SqlJsonValueExpressionOperator DOC_ADD_FIELDS = new SqlJsonValueExpressionOperator( "DOC_ADD_FIELDS", false );

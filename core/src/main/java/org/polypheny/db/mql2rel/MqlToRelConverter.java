@@ -82,6 +82,7 @@ public class MqlToRelConverter {
     private final static Map<String, List<SqlOperator>> gates;
     private final static Map<String, SqlOperator> mathOperators;
     private final static Map<String, SqlOperator> elemMathOperators;
+    private static final Map<String, SqlOperator> accumulators;
     private final RelDataType any;
     private final RelDataType nullableAny;
     private Map<String, SqlOperator> tempMappings;
@@ -130,6 +131,20 @@ public class MqlToRelConverter {
         elemMathOperators.put( "$ne", SqlStdOperatorTable.DOC_ELEM_NE );
         elemMathOperators.put( "$lte", SqlStdOperatorTable.DOC_ELEM_LTE );
         elemMathOperators.put( "$gte", SqlStdOperatorTable.DOC_ELEM_GTE );
+
+        accumulators = new HashMap<>();
+        //$addToSet
+        accumulators.put( "$avg", SqlStdOperatorTable.AVG );
+        accumulators.put( "$count", SqlStdOperatorTable.COUNT );
+        accumulators.put( "$first", SqlStdOperatorTable.FIRST_VALUE );
+        accumulators.put( "$last", SqlStdOperatorTable.LAST_VALUE );
+        accumulators.put( "$max", SqlStdOperatorTable.MAX );
+        //$mergeObjects
+        accumulators.put( "$min", SqlStdOperatorTable.MIN );
+        //$push
+        accumulators.put( "$stdDevPop", SqlStdOperatorTable.STDDEV_POP );
+        accumulators.put( "$stdDevSamp", SqlStdOperatorTable.STDDEV_SAMP );
+        accumulators.put( "$sum", SqlStdOperatorTable.SUM );
 
         // special cases
         operators.add( "$literal" );
@@ -272,10 +287,23 @@ public class MqlToRelConverter {
 
     private RelNode combineGroup( BsonValue value, RelNode node, RelDataType rowType ) {
         if ( value.isDocument() ) {
-            for ( Entry<String, BsonValue> entry : value.asDocument().entrySet() ) {
+            BsonValue groupBy = value.asDocument().get( "_id" );
+            if ( !groupBy.isNull() ) {
+                String groupName = groupBy.asString().getValue().substring( 1 );
 
+                RexNode id = getIdentifier( groupName, rowType, null );
+
+                node = LogicalProject.create( node, Collections.singletonList( id ), Collections.singletonList( groupName ) );
+
+                node = LogicalAggregate.create(
+                        node,
+                        ImmutableBitSet.of( 0 ),
+                        Collections.singletonList( ImmutableBitSet.of( 0 ) ),
+                        new ArrayList<>() );
             }
-            return null;
+            // if null no group by only aggs
+            return node;
+
         } else {
             throw new RuntimeException( "$group pipeline stage needs a document after" );
         }
@@ -408,7 +436,8 @@ public class MqlToRelConverter {
                     return convertGate( key, parentKey, bsonValue, rowType, field );
                 } else if ( mathOperators.containsKey( key ) ) {
 
-                    boolean losesContext = parentKey != null;
+                    // special cases have to id in the array, like $arrayElem
+                    boolean losesContext = parentKey != null || field == null;
                     RexNode id = null;
                     if ( losesContext ) {
                         // we lose context to the parent and have to "drop it" as we move into $subtract or $eq
@@ -416,7 +445,7 @@ public class MqlToRelConverter {
                     }
                     RexNode node = convertMath( key, null, bsonValue, rowType, field, false );
 
-                    if ( losesContext ) {
+                    if ( losesContext && id != null ) {
                         RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
                         return new RexCall( type, SqlStdOperatorTable.DOC_EQ, Arrays.asList( id, node ) );
                     } else {
@@ -476,6 +505,22 @@ public class MqlToRelConverter {
         }
 
         return new RexCall( any, SqlStdOperatorTable.DOC_SLICE, Arrays.asList( id, convertLiteral( skip ), convertLiteral( elements ) ) );
+    }
+
+
+    private RexNode convertArrayAt( String key, BsonValue value, RelDataType rowType, RelDataTypeField field ) {
+        String msg = "$arrayElemAt has following structure { $arrayElemAt: [ <array>, <idx> ] }";
+        if ( value.isArray() ) {
+            List<RexNode> nodes = convertArray( key, (BsonArray) value, true, rowType, field, msg );
+            if ( nodes.size() > 2 ) {
+                throw new RuntimeException( msg );
+            }
+            return new RexCall( any, SqlStdOperatorTable.DOC_ITEM, Arrays.asList( nodes.get( 0 ), nodes.get( 1 ) ) );
+
+        } else {
+            throw new RuntimeException( msg );
+        }
+
     }
 
 
@@ -588,10 +633,13 @@ public class MqlToRelConverter {
     private RexNode getIdentifier( String parentKey, RelDataType rowType, RelDataTypeField field ) {
         if ( rowType.getFieldNames().contains( parentKey ) ) {
             return attachRef( parentKey, rowType );
-        } else {
+        } else if ( rowType.getFieldNames().contains( parentKey.split( "\\." )[0] ) ) {
+            return translateJsonValue( rowType.getFieldNames().indexOf( parentKey.split( "\\." )[0] ), rowType, parentKey );
+        } else if ( field != null ) {
             return translateJsonValue( field.getIndex(), rowType, parentKey );
+        } else {
+            return null;
         }
-
     }
 
 
@@ -1030,6 +1078,8 @@ public class MqlToRelConverter {
                 RelDataTypeField field = getDefaultDataField( rowType );
                 if ( mathOperators.containsKey( func ) ) {
                     includes.put( entry.getKey(), convertMath( func, entry.getKey(), value.asDocument().get( func ), rowType, field, false ) );
+                } else if ( func.equals( "$arrayElemAt" ) ) {
+                    includes.put( entry.getKey(), convertArrayAt( entry.getKey(), value.asDocument().get( func ), rowType, field ) );
                 } else if ( func.equals( "$slice" ) ) {
                     includes.put( entry.getKey(), convertSlice( entry.getKey(), value.asDocument().get( func ), rowType, field ) );
                 }
@@ -1130,6 +1180,15 @@ public class MqlToRelConverter {
             if ( !includes.containsKey( "_id" ) && !excludedId ) {
                 names.add( 0, "_id" );
                 values.add( 0, RexInputRef.of( 0, rowType ) );
+            }
+
+            if ( isAddFields ) {
+                for ( RelDataTypeField field : rowType.getFieldList() ) {
+                    if ( !names.contains( field.getName() ) ) {
+                        names.add( field.getName() );
+                        values.add( RexInputRef.of( field.getIndex(), rowType ) );
+                    }
+                }
             }
 
             // the _data field does not longer exist, as we made a projection "out" of it
