@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -205,12 +205,13 @@ public class SqlBinaryOperator extends SqlOperator {
     public boolean validRexOperands( int count, Litmus litmus ) {
         if ( count != 2 ) {
             // Special exception for AND and OR.
-            if ( (this == SqlStdOperatorTable.AND || this == SqlStdOperatorTable.OR) && count > 2 ) {
+            if ( (this.equals( SqlStdOperatorTable.AND ) || this.equals( SqlStdOperatorTable.OR )) && count > 2 ) {
                 return true;
             }
             return litmus.fail( "wrong operand count {} for {}", count, this );
         }
         return litmus.succeed();
     }
+
 }
 

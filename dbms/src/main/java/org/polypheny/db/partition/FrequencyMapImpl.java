@@ -42,6 +42,7 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
 import org.polypheny.db.monitoring.events.metrics.MonitoringDataPoint;
@@ -98,7 +99,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                     this::processAllPeriodicTables,
                     "Send monitoring jobs to job consumers",
                     TaskPriority.MEDIUM,
-                    TaskSchedulingType.EVERY_THIRTY_SECONDS );
+                    (TaskSchedulingType) RuntimeConfig.TEMPERATURE_FREQUENCY_PROCESSING_INTERVAL.getEnum() );
         }
     }
 

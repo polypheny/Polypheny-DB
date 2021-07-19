@@ -22,10 +22,14 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.excluded.CassandraExcluded;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
+@Category({ AdapterTestSuite.class, CassandraExcluded.class })
 public class DataMigratorTest {
 
 

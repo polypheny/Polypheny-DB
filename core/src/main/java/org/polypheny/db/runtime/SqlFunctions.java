@@ -2300,7 +2300,9 @@ public class SqlFunctions {
                 : o instanceof Number ? toInt( (Number) o )
                         : o instanceof String ? toInt( (String) o )
                                 : o instanceof java.util.Date ? toInt( (java.util.Date) o )
-                                        : (Integer) cannotConvert( o, int.class );
+                                        : o instanceof java.util.GregorianCalendar ? toInt( ((java.util.GregorianCalendar) o).getTime() ) // hack for views for now
+                                                : o instanceof org.polypheny.db.util.DateString ? toInt( new Date( ((org.polypheny.db.util.DateString) o).getMillisSinceEpoch() ) ) // hack for views for now
+                                                        : (Integer) cannotConvert( o, int.class );
     }
 
 

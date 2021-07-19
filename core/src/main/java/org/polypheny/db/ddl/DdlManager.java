@@ -54,6 +54,8 @@ import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
 import org.polypheny.db.partition.raw.RawPartitionInformation;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlLiteral;
@@ -436,6 +438,16 @@ public abstract class DdlManager {
 
 
     /**
+     * Create a new view
+     *
+     * @param viewName the name of the new view
+     * @param schemaId the id of the schema to which the view belongs
+     * @param relNode the relNode which was built form the Select part of the view
+     * @param statement the used Statement
+     */
+    public abstract void createView( String viewName, long schemaId, RelNode relNode, RelCollation relCollation, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException;
+
+    /**
      * Add new partitions for the column
      *
      * @param partitionInfo the information concerning the partition
@@ -471,6 +483,11 @@ public abstract class DdlManager {
     public abstract void dropTable( CatalogTable catalogTable, Statement statement ) throws DdlOnSourceException;
 
     /**
+     * Drop View
+     */
+    public abstract void dropView( CatalogTable catalogTable, Statement statement ) throws DdlOnSourceException;
+
+    /**
      * Truncate a table
      *
      * @param catalogTable the table to be truncated
@@ -487,16 +504,6 @@ public abstract class DdlManager {
      * Drop a type
      */
     public abstract void dropType();
-
-    /**
-     * Create a new view
-     */
-    public abstract void createView();
-
-    /**
-     * Drop a view
-     */
-    public abstract void dropView();
 
     /**
      * Drop a function
@@ -577,9 +584,9 @@ public abstract class DdlManager {
                 Integer cardinality,
                 Boolean nullable ) {
             this.type = type;
-            this.collectionType = collectionType;
+            this.collectionType = collectionType == type ? null : collectionType;
             this.precision = precision == -1 ? null : precision;
-            this.scale = scale == -1 ? null : scale;
+            this.scale = scale == -1 || scale == Integer.MIN_VALUE ? null : scale;
             this.dimension = dimension == -1 ? null : dimension;
             this.cardinality = cardinality == -1 ? null : cardinality;
             this.nullable = nullable;

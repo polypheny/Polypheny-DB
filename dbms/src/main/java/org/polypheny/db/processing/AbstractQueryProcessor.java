@@ -44,6 +44,7 @@ import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.DataContext.ParameterValue;
 import org.polypheny.db.adapter.enumerable.EnumerableCalc;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableInterpretable;
@@ -221,6 +222,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         }
         stopWatch.start();
 
+        if ( logicalRoot.rel.hasView() ) {
+            logicalRoot = logicalRoot.tryExpandView();
+        }
+
         ExecutionTimeMonitor executionTimeMonitor = new ExecutionTimeMonitor();
 
         final Convention resultConvention =
@@ -309,20 +314,23 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         pmValidator.visit( routedRoot.rel );
 
         //
+        // Parameterize
+        RelRoot parameterizedRoot = null;
+        if ( statement.getDataContext().getParameterValues().size() == 0 && (RuntimeConfig.PARAMETERIZE_DML.getBoolean() || !routedRoot.kind.belongsTo( SqlKind.DML )) ) {
+            Pair<RelRoot, RelDataType> parameterized = parameterize( routedRoot, parameterRowType );
+            parameterizedRoot = parameterized.left;
+            parameterRowType = parameterized.right;
+        } else {
+            // This query is an execution of a prepared statement
+            parameterizedRoot = routedRoot;
+        }
+
+        //
         // Implementation Caching
         if ( isAnalyze ) {
             statement.getDuration().start( "Implementation Caching" );
         }
-        RelRoot parameterizedRoot = null;
         if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
-            if ( statement.getDataContext().getParameterValues().size() == 0 ) {
-                Pair<RelRoot, RelDataType> parameterized = parameterize( routedRoot, parameterRowType );
-                parameterizedRoot = parameterized.left;
-                parameterRowType = parameterized.right;
-            } else {
-                // This query is an execution of a prepared statement
-                parameterizedRoot = routedRoot;
-            }
             PreparedResult preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.rel );
             if ( preparedResult != null ) {
                 PolyphenyDbSignature signature = createSignature( preparedResult, routedRoot, resultConvention, executionTimeMonitor );
@@ -363,16 +371,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         }
         RelNode optimalNode;
         if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
-            if ( parameterizedRoot == null ) {
-                if ( statement.getDataContext().getParameterValues().size() == 0 ) {
-                    Pair<RelRoot, RelDataType> parameterized = parameterize( routedRoot, parameterRowType );
-                    parameterizedRoot = parameterized.left;
-                    parameterRowType = parameterized.right;
-                } else {
-                    // This query is an execution of a prepared statement
-                    parameterizedRoot = routedRoot;
-                }
-            }
             optimalNode = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRoot.rel );
         } else {
             parameterizedRoot = routedRoot;
@@ -863,8 +861,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         List<RelDataType> types = queryParameterizer.getTypes();
 
         // Add values to data context
-        for ( DataContext.ParameterValue value : queryParameterizer.getValues() ) {
-            statement.getDataContext().addParameterValues( value.getIndex(), value.getType(), Collections.singletonList( value.getValue() ) );
+        for ( List<DataContext.ParameterValue> values : queryParameterizer.getValues().values() ) {
+            List<Object> o = new ArrayList<>();
+            for ( ParameterValue v : values ) {
+                o.add( v.getValue() );
+            }
+            statement.getDataContext().addParameterValues( values.get( 0 ).getIndex(), values.get( 0 ).getType(), o );
         }
 
         // parameterRowType
@@ -899,7 +901,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                     new AvaticaParameter(
                             false,
                             getPrecision( type ),
-                            getScale( type ),
+                            0, // This is a workaround for a bug in Avatica with Decimals. There is no need to change the scale //getScale( type ),
                             getTypeOrdinal( type ),
                             type.getPolyType().getTypeName(),
                             getClassName( type ),
@@ -1157,7 +1159,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 origin( origins, 0 ),
                 origin( origins, 2 ),
                 getPrecision( type ),
-                getScale( type ),
+                0, // This is a workaround for a bug in Avatica with Decimals. There is no need to change the scale //getScale( type ),
                 origin( origins, 1 ),
                 null,
                 avaticaType,

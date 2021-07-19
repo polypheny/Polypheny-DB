@@ -62,6 +62,34 @@ SqlAlterSchema SqlAlterSchema(Span s) :
     )
 }
 
+/**
+* Parses a ALTER VIEW statement.
+**/
+SqlAlterView SqlAlterView(Span s) :
+{
+    final SqlIdentifier view;
+    final SqlIdentifier name;
+    final SqlIdentifier column;
+}
+{
+    <VIEW>
+    view = CompoundIdentifier()
+    (
+        <RENAME><TO>
+        name = SimpleIdentifier()
+        {
+            return new SqlAlterViewRename(s.end(this), view, name);
+        }
+    |
+        <RENAME> <COLUMN>
+        column = SimpleIdentifier()
+        <TO>
+        name = SimpleIdentifier()
+        {
+            return new SqlAlterViewRenameColumn(s.end(this), view, column, name);
+        }
+    )
+}
 
 /**
 * Parses a ALTER TABLE statement.

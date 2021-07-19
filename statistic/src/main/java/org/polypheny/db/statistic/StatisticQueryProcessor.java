@@ -140,7 +140,7 @@ public class StatisticQueryProcessor {
         List<QueryColumn> columns = new ArrayList<>();
 
         List<CatalogColumn> catalogColumns = catalog.getColumns( new Pattern( databaseName ), null, null, null );
-        columns.addAll( catalogColumns.stream().map( c -> new QueryColumn( c.getSchemaName(), c.getTableName(), c.name, c.type ) ).collect( Collectors.toList() ) );
+        columns.addAll( catalogColumns.stream().map( c -> new QueryColumn( c.getSchemaName(), c.getTableName(), c.name, c.type, c.collectionsType ) ).collect( Collectors.toList() ) );
 
         return columns;
     }
@@ -251,7 +251,9 @@ public class StatisticQueryProcessor {
         } catch ( Throwable t ) {
             if ( iterator != null ) {
                 try {
-                    ((AutoCloseable) iterator).close();
+                    if ( iterator instanceof AutoCloseable ) {
+                        ((AutoCloseable) iterator).close();
+                    }
                 } catch ( Exception e ) {
                     log.error( "Exception while closing result iterator", e );
                 }
@@ -291,7 +293,9 @@ public class StatisticQueryProcessor {
             return new StatisticResult( names, types, d );
         } finally {
             try {
-                ((AutoCloseable) iterator).close();
+                if ( iterator instanceof AutoCloseable ) {
+                    ((AutoCloseable) iterator).close();
+                }
             } catch ( Exception e ) {
                 log.error( "Exception while closing result iterator2", e );
             }
@@ -356,4 +360,5 @@ public class StatisticQueryProcessor {
         }
 
     }
+
 }

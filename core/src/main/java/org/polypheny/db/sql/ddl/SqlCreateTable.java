@@ -283,7 +283,13 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
                 String defaultValue = columnDeclaration.getExpression() == null ? null : columnDeclaration.getExpression().toString();
 
-                columnInformations.add( new ColumnInformation( columnDeclaration.getName().getSimple(), ColumnTypeInformation.fromSqlDataTypeSpec( columnDeclaration.getDataType() ), columnDeclaration.getCollation(), defaultValue, position ) );
+                columnInformations.add(
+                        new ColumnInformation(
+                                columnDeclaration.getName().getSimple(),
+                                ColumnTypeInformation.fromSqlDataTypeSpec( columnDeclaration.getDataType() ),
+                                columnDeclaration.getCollation(),
+                                defaultValue,
+                                position ) );
 
             } else if ( c.e instanceof SqlKeyConstraint ) {
                 SqlKeyConstraint constraint = (SqlKeyConstraint) c.e;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,17 +41,21 @@ class QueryColumn {
     @Getter
     private PolyType type;
 
+    @Getter
+    private PolyType collectionType;
 
-    QueryColumn( String schema, String table, String name, PolyType type ) {
+
+    QueryColumn( String schema, String table, String name, PolyType type, PolyType collectionType ) {
         this.schema = schema.replace( "\\", "" ).replace( "\"", "" );
         this.table = table.replace( "\\", "" ).replace( "\"", "" );
         this.name = name.replace( "\\", "" ).replace( "\"", "" );
         this.type = type;
+        this.collectionType = collectionType;
     }
 
 
-    QueryColumn( String schemaTableName, PolyType type ) {
-        this( schemaTableName.split( "\\." )[0], schemaTableName.split( "\\." )[1], schemaTableName.split( "\\." )[2], type );
+    QueryColumn( String schemaTableName, PolyType type, PolyType collectionType ) {
+        this( schemaTableName.split( "\\." )[0], schemaTableName.split( "\\." )[1], schemaTableName.split( "\\." )[2], type, collectionType );
     }
 
 
@@ -91,7 +95,7 @@ class QueryColumn {
 
 
     public static QueryColumn fromCatalogColumn( CatalogColumn column ) {
-        return new QueryColumn( column.getSchemaName(), column.getTableName(), column.name, column.type );
+        return new QueryColumn( column.getSchemaName(), column.getTableName(), column.name, column.type, column.collectionsType );
     }
 
 

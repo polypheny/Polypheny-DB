@@ -90,6 +90,7 @@ public class RelJson {
                     "org.polypheny.db.adapter.cassandra.",
                     "org.polypheny.db.adapter.cottontail.",
                     "org.polypheny.db.adapter.cottontail.rel.",
+                    "org.polypheny.db.adapter.mongodb.",
                     "org.polypheny.db.adapter.file.rel.",
                     "org.polypheny.db.adapter.enumerable.",
                     "org.polypheny.db.adapter.jdbc.",

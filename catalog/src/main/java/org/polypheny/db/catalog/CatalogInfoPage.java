@@ -61,7 +61,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
         this.adapterInformation = addCatalogInformationTable( page, "Adapters", Arrays.asList( "ID", "Name", "Type" ) );
         this.databaseInformation = addCatalogInformationTable( page, "Databases", Arrays.asList( "ID", "Name", "Default SchemaID" ) );
         this.schemaInformation = addCatalogInformationTable( page, "Schemas", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaType" ) );
-        this.tableInformation = addCatalogInformationTable( page, "Tables", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "PartitionType", "Partition Groups" ) );
+        this.tableInformation = addCatalogInformationTable( page, "Tables", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "TableType", "PartitionType", "PartitionGroups" ) );
         this.columnInformation = addCatalogInformationTable( page, "Columns", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "TableID", "Placements" ) );
         this.indexInformation = addCatalogInformationTable( page, "Indexes", Arrays.asList( "ID", "Name", "KeyID", "Location", "Method", "Unique" ) );
         this.partitionGroupInformation = addCatalogInformationTable( page, "Partition Groups", Arrays.asList( "ID", "Name", "TableID", "Partitions" ) );
@@ -137,7 +137,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
                 schemaInformation.addRow( s.id, s.name, s.databaseId, s.schemaType );
             } );
             catalog.getTables( null, null, null ).forEach( t -> {
-                tableInformation.addRow( t.id, t.name, t.databaseId, t.schemaId, t.partitionProperty.partitionType.toString(), t.partitionProperty.partitionGroupIds.size() );
+                tableInformation.addRow( t.id, t.name, t.databaseId, t.schemaId, t.tableType, t.partitionProperty.partitionType.toString(), t.partitionProperty.partitionGroupIds.size() );
             } );
             catalog.getColumns( null, null, null, null ).forEach( c -> {
                 String placements = catalog.getColumnPlacement( c.id ).stream().map( plac -> String.valueOf( plac.adapterId ) ).collect( Collectors.joining( "," ) );

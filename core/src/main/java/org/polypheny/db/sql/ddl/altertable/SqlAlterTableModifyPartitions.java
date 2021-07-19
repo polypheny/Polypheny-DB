@@ -91,6 +91,11 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
     public void execute( Context context, Statement statement ) {
         Catalog catalog = Catalog.getInstance();
         CatalogTable catalogTable = getCatalogTable( context, table );
+
+        if ( catalogTable.isView() ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE with Views" );
+        }
+
         if ( !catalogTable.isPartitioned ) {
             throw new RuntimeException( "Table '" + catalogTable.name + "' is not partitioned" );
         }

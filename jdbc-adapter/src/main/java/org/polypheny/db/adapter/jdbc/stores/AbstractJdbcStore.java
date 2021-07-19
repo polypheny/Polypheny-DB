@@ -70,7 +70,6 @@ public abstract class AbstractJdbcStore extends DataStore {
         if ( deployMode == DeployMode.DOCKER ) {
             dockerInstanceId = Integer.parseInt( settings.get( "instanceId" ) );
             connectionFactory = deployDocker( dockerInstanceId );
-            addInformationPhysicalNames();
         } else if ( deployMode == DeployMode.EMBEDDED ) {
             connectionFactory = deployEmbedded();
         } else if ( deployMode == DeployMode.REMOTE ) {
@@ -179,30 +178,7 @@ public abstract class AbstractJdbcStore extends DataStore {
             first = false;
             builder.append( dialect.quoteIdentifier( getPhysicalColumnName( placement.columnId ) ) ).append( " " );
 
-            if ( !this.dialect.supportsNestedArrays() && catalogColumn.collectionsType != null ) {
-                //returns e.g. TEXT if arrays are not supported
-                builder.append( getTypeString( PolyType.ARRAY ) );
-            } else {
-                builder.append( getTypeString( catalogColumn.type ) );
-                if ( catalogColumn.length != null ) {
-                    builder.append( "(" ).append( catalogColumn.length );
-                    if ( catalogColumn.scale != null ) {
-                        builder.append( "," ).append( catalogColumn.scale );
-                    }
-                    builder.append( ")" );
-                }
-                if ( catalogColumn.collectionsType != null ) {
-                    builder.append( " " ).append( catalogColumn.collectionsType.toString() );
-                    //TODO NH check if can apply dimension / cardinality
-                    /*if ( catalogColumn.dimension != null ) {
-                        builder.append( "(" ).append( catalogColumn.dimension );
-                        if ( catalogColumn.cardinality != null ) {
-                            builder.append( "," ).append( catalogColumn.cardinality );
-                        }
-                        builder.append( ")" );
-                    }*/
-                }
-            }
+            createColumnDefinition( catalogColumn, builder );
         }
         builder.append( " )" );
         return builder;
@@ -252,11 +228,18 @@ public abstract class AbstractJdbcStore extends DataStore {
                 .append( "." )
                 .append( dialect.quoteIdentifier( physicalTableName ) );
         builder.append( " ADD " ).append( dialect.quoteIdentifier( physicalColumnName ) ).append( " " );
+        createColumnDefinition( catalogColumn, builder );
+        builder.append( " NULL" );
+        return builder;
+    }
+
+
+    protected void createColumnDefinition( CatalogColumn catalogColumn, StringBuilder builder ) {
         if ( !this.dialect.supportsNestedArrays() && catalogColumn.collectionsType != null ) {
             //returns e.g. TEXT if arrays are not supported
             builder.append( getTypeString( PolyType.ARRAY ) );
         } else {
-            builder.append( getTypeString( catalogColumn.type ) );
+            builder.append( " " ).append( getTypeString( catalogColumn.type ) );
             if ( catalogColumn.length != null ) {
                 builder.append( "(" ).append( catalogColumn.length );
                 if ( catalogColumn.scale != null ) {
@@ -265,11 +248,9 @@ public abstract class AbstractJdbcStore extends DataStore {
                 builder.append( ")" );
             }
             if ( catalogColumn.collectionsType != null ) {
-                builder.append( " " ).append( catalogColumn.collectionsType.toString() );
+                builder.append( " " ).append( getTypeString( catalogColumn.collectionsType ) );
             }
         }
-        builder.append( " NULL" );
-        return builder;
     }
 
 

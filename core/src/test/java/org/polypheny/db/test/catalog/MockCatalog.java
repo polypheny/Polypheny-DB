@@ -37,6 +37,7 @@ import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
@@ -50,6 +51,9 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -219,7 +223,19 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, String definition ) {
+    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void deleteViewDependencies( CatalogView catalogView ) {
         throw new NotImplementedException();
     }
 
@@ -964,4 +980,35 @@ public abstract class MockCatalog extends Catalog {
 
     @Override
     public List<CatalogPartition> getPartitionsByTable(long tableId){ throw new NotImplementedException(); }
+
+    /**
+     * Updates the specified partition group with the attached partitionIds
+     *
+     * @param partitionIds List of new partitionIds
+     */
+    @Override
+    public void updatePartitionGroup( long partitionGroupId, List<Long> partitionIds ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void addPartitionToGroup( long partitionGroupId, Long partitionId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void removePartitionFromGroup( long partitionGroupId, Long partitionId ) {
+        throw new NotImplementedException();
+    }
+
+
+    /**
+     * Assigne the partition to a new partitionGroup
+     */
+    @Override
+    public void updatePartition( long partitionId, Long partitionGroupId ) {
+        throw new NotImplementedException();
+    }
 }

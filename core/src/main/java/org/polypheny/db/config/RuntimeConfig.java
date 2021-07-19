@@ -263,6 +263,18 @@ public enum RuntimeConfig {
             ConfigType.INTEGER,
             "implementationCachingGroup" ),
 
+    PARAMETERIZE_DML( "runtime/parameterizeDML",
+            "Whether DML queries should be parameterized.",
+            true,
+            ConfigType.BOOLEAN,
+            "queryParameterizationGroup" ),
+
+    PARAMETERIZE_INTERVALS( "runtime/parameterizeIntervals",
+            "Whether intervals should be parameterized.",
+            false,
+            ConfigType.BOOLEAN,
+            "queryParameterizationGroup" ),
+
     JOINED_TABLE_SCAN_CACHE( "runtime/joinedTableScanCache",
             "Whether to use the joined table scan caching.",
             false,
@@ -309,11 +321,35 @@ public enum RuntimeConfig {
             ConfigType.INSTANCE_LIST,
             "dockerGroup" ),
 
+
     FILE_HANDLE_CACHE_SIZE( "runtime/fileHandleCacheSize",
             "Size (in Bytes) up to which media files are cached in-memory instead of creating a temporary file. Needs to be >= 0 and smaller than Integer.MAX_SIZE. Setting to zero disables caching of media files.",
             0,
             ConfigType.INTEGER,
-            "runtimExecutionGroup" );
+            "runtimExecutionGroup" ),
+
+
+    QUEUE_PROCESSING_INTERVAL( "runtime/queueProcessingInterval",
+            "Time interval in seconds, how often the monitoring queues is processed and analyzed and data points are created . Restart is required",
+            BackgroundTask.TaskSchedulingType.EVERY_TEN_SECONDS,
+            ConfigType.ENUM,
+            "monitoringSettingsQueueGroup"),
+
+    QUEUE_PROCESSING_ELEMENTS( "runtime/queueProcessingElements",
+            "Number of elements in workload queue to process per time.",
+            50,
+            ConfigType.INTEGER,
+            "monitoringSettingsQueueGroup" ),
+
+    TEMPERATURE_FREQUENCY_PROCESSING_INTERVAL( "runtime/partitionFrequencyProcessingInterval",
+            "Time interval in seconds, how often the access frequency of all TEMPERATURE-partitioned tables is analyzed and redistributed",
+            BackgroundTask.TaskSchedulingType.EVERY_TEN_SECONDS,
+            ConfigType.ENUM,
+            "temperaturePartitionProcessingSettingsGroup");
+
+
+
+
 
 
     private final String key;
@@ -338,6 +374,8 @@ public enum RuntimeConfig {
         queryPlanCachingGroup.withTitle( "Query Plan Caching" );
         final WebUiGroup implementationCachingGroup = new WebUiGroup( "implementationCachingGroup", processingPage.getId() );
         implementationCachingGroup.withTitle( "Implementation Caching" );
+        final WebUiGroup queryParameterizationGroup = new WebUiGroup( "queryParameterizationGroup", processingPage.getId() );
+        queryParameterizationGroup.withTitle( "Query Parameterization" );
         final WebUiGroup constraintEnforcementGroup = new WebUiGroup( "constraintEnforcementGroup", processingPage.getId() );
         constraintEnforcementGroup.withTitle( "Constraint Enforcement" );
         final WebUiGroup polystoreIndexGroup = new WebUiGroup( "polystoreIndexGroup", processingPage.getId() );
@@ -349,6 +387,7 @@ public enum RuntimeConfig {
         configManager.registerWebUiGroup( planningGroup );
         configManager.registerWebUiGroup( queryPlanCachingGroup );
         configManager.registerWebUiGroup( implementationCachingGroup );
+        configManager.registerWebUiGroup( queryParameterizationGroup );
         configManager.registerWebUiGroup( constraintEnforcementGroup );
         configManager.registerWebUiGroup( polystoreIndexGroup );
         configManager.registerWebUiGroup( validationGroup );
@@ -402,6 +441,27 @@ public enum RuntimeConfig {
         uiSettingsDataViewGroup.withTitle( "Data View" );
         configManager.registerWebUiPage( uiSettingsPage );
         configManager.registerWebUiGroup( uiSettingsDataViewGroup );
+
+
+        // Workload Monitoring specific setting
+        final WebUiPage monitoringSettingsPage = new WebUiPage(
+                "monitoringSettings",
+                "Workload Monitoring",
+                "Settings for workload monitoring." );
+        final WebUiGroup monitoringSettingsQueueGroup = new WebUiGroup( "monitoringSettingsQueueGroup", monitoringSettingsPage.getId() );
+        monitoringSettingsQueueGroup.withTitle( "Queue Processing" );
+        configManager.registerWebUiPage( monitoringSettingsPage );
+        configManager.registerWebUiGroup( monitoringSettingsQueueGroup );
+
+        // Partitioning specific setting
+        final WebUiPage partitionSettingsPage = new WebUiPage(
+                "partitionSettings",
+                "Partitioning",
+                "Settings for partitioning" );
+        final WebUiGroup temperaturePartitionProcessingSettingsGroup = new WebUiGroup( "temperaturePartitionProcessingSettingsGroup", partitionSettingsPage.getId() );
+        temperaturePartitionProcessingSettingsGroup.withTitle( "TEMPERATURE Partition Processing" );
+        configManager.registerWebUiPage( partitionSettingsPage );
+        configManager.registerWebUiGroup( temperaturePartitionProcessingSettingsGroup );
     }
 
 

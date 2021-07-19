@@ -722,7 +722,7 @@ public abstract class AbstractRouter implements Router {
 
 
                     List<CatalogPartitionPlacement> debugPlacements = catalog.getAllPartitionPlacementsByTable( t.getTableId() );
-
+                    statement.getTransaction().getMonitoringData().setAccessedPartitions( accessedPartitionList.stream().collect( Collectors.toList()) );
 
                     if ( !operationWasRewritten ) {
 
