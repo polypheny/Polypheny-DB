@@ -18,20 +18,15 @@ package org.polypheny.db.sql.fun;
 
 
 import com.google.common.collect.ImmutableList;
-
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.List;
-
 import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+
+import java.sql.*;
+import java.util.List;
 
 
 @Slf4j
@@ -52,10 +47,23 @@ public class DayTimeFunctionsTest {
         try (JdbcConnection jdbcConnection = new JdbcConnection(false)) {
             Connection connection = jdbcConnection.getConnection();
             try (Statement statement = connection.createStatement()) {
-                statement.executeUpdate("CREATE TABLE TableA(ID INTEGER NOT NULL, StartDate DATE, PRIMARY KEY (ID))");
-                statement.executeUpdate("INSERT INTO TableA VALUES (1, '2000-01-01')");
-                statement.executeUpdate("INSERT INTO TableA VALUES (2, '2001-02-02')");
-                statement.executeUpdate("INSERT INTO TableA VALUES (3, '2002-03-03')");
+                statement.executeUpdate("CREATE TABLE DateTestTable(ID INTEGER NOT NULL, DateData DATE,  PRIMARY KEY (ID))");
+                statement.executeUpdate("INSERT INTO DateTestTable VALUES (1,Date '2000-01-01')");
+                statement.executeUpdate("INSERT INTO DateTestTable VALUES (2,Date '2001-02-02')");
+                statement.executeUpdate("INSERT INTO DateTestTable VALUES (3,Date '2002-03-03')");
+
+                statement.executeUpdate("CREATE TABLE TimeTestTable(ID INTEGER NOT NULL, TimeData TIME,  PRIMARY KEY (ID))");
+                statement.executeUpdate("INSERT INTO TimeTestTable VALUES (1,TIME '12:30:35')");
+                statement.executeUpdate("INSERT INTO TimeTestTable VALUES (2,TIME '06:34:59')");
+                statement.executeUpdate("INSERT INTO TimeTestTable VALUES (3,TIME '23:59:59')");
+
+                statement.executeUpdate("CREATE TABLE TimeStampTestTable(ID INTEGER NOT NULL, TimeStampData TIMESTAMP,TimeStampDataToo TIMESTAMP,  PRIMARY KEY (ID))");
+                statement.executeUpdate("INSERT INTO TimeStampTestTable VALUES (1,TIMESTAMP '2000-01-01 12:30:35',TIMESTAMP '2002-03-03 23:59:59')");
+                statement.executeUpdate("INSERT INTO TimeStampTestTable VALUES (2,TIMESTAMP '2001-02-02 06:34:59',TIMESTAMP '2001-02-02 06:34:59')");
+                statement.executeUpdate("INSERT INTO TimeStampTestTable VALUES (3,TIMESTAMP '2002-03-03 23:59:59',TIMESTAMP '2000-01-01 12:30:35')");
+
+
+
 
                 connection.commit();
             }
@@ -68,36 +76,287 @@ public class DayTimeFunctionsTest {
         try (JdbcConnection jdbcConnection = new JdbcConnection(true)) {
             Connection connection = jdbcConnection.getConnection();
             try (Statement statement = connection.createStatement()) {
-                statement.executeUpdate("DROP TABLE TableA");
+                statement.executeUpdate("DROP TABLE DateTestTable");
+                statement.executeUpdate("DROP TABLE TimeTestTable");
+                statement.executeUpdate("DROP TABLE TimeStampTestTable");
+                connection.commit();
             }
         }
     }
 
     // --------------- Tests ---------------
 
-    @Ignore
+
     @Test
-    public void AssertDateTest() throws SQLException {
-        try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
+    public void dateTest() throws SQLException {
+        try (JdbcConnection polyphenyDbConnection = new JdbcConnection(true)) {
             Connection connection = polyphenyDbConnection.getConnection();
 
             try (Statement statement = connection.createStatement()) {
 
+                //Select Test Is working
+                List<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{1,Date.valueOf("2000-01-01")},
+                        new Object[]{2,Date.valueOf("2001-02-02")},
+                        new Object[]{3,Date.valueOf("2002-03-03")}
 
-                List<Object[]> expectedResult1 = ImmutableList.of(
-                        new Object[]{1, "2000-01-01"},
-                        new Object[]{2, "2001-02-02"},
-                        new Object[]{3, "2002-03-03"}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT id,DateData FROM DateTestTable"),
+                        expectedResult
+                );
+
+                //YEAR() Equivalent to EXTRACT(YEAR FROM date)
+                expectedResult = ImmutableList.of(
+                        new Object[]{1,Long.valueOf(2000)},
+                        new Object[]{2,Long.valueOf(2001)},
+                        new Object[]{3,Long.valueOf(2002)}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT id, YEAR(DateData) FROM DateTestTable"),
+                        expectedResult
+                );
+
+                //QUARTER(date) Equivalent to  EXTRACT(MONTH FROM date)
+                expectedResult = ImmutableList.of(
+                        new Object[]{1, Long.valueOf(1)},
+                        new Object[]{2, Long.valueOf(1)},
+                        new Object[]{3, Long.valueOf(1)}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT id, QUARTER(DateData) FROM DateTestTable"),
+                        expectedResult
+                );
+
+                //MONTH(date) Equivalent to EXTRACT(MONTH FROM date)
+                expectedResult = ImmutableList.of(
+                        new Object[]{1,Long.valueOf(1)},
+                        new Object[]{2,Long.valueOf(2)},
+                        new Object[]{3,Long.valueOf(3)}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT id, MONTH(DateData) FROM DateTestTable"),
+                        expectedResult
+                );
+
+              // WEEK(date) Equivalent to EXTRACT(WEEK FROM date) NOT WORKING
+//                expectedResult = ImmutableList.of(
+//                        new Object[]{1,Long.valueOf(1)},
+//                        new Object[]{2,Long.valueOf(5)},
+//                        new Object[]{3,Long.valueOf(9)}
+//                );
+//
+//                TestHelper.checkResultSet(
+//                        statement.executeQuery("SELECT id, WEEK(DateData) FROM DateTestTable"),
+//                        expectedResult
+//                );
+
+
+                //DAYOFYEAR(date) Equivalent to EXTRACT(DOY FROM date) NOT WORKING
+//                List<Object[]> expectedResult1 = ImmutableList.of(
+//                        new Object[]{Long.valueOf(2)},
+//                        new Object[]{Long.valueOf(3)},
+//                        new Object[]{Long.valueOf(4)}
+//                );
+//
+//                TestHelper.checkResultSet(
+//                        statement.executeQuery("SELECT DAYOFYEAR(DateData) FROM DateTestTable"),
+//                        expectedResult1
+//                );
+
+
+                //DAYOFMONTH(date) Equivalent to EXTRACT(DAY FROM date)
+                expectedResult = ImmutableList.of(
+                        new Object[]{1,Long.valueOf(1)},
+                        new Object[]{2,Long.valueOf(2)},
+                        new Object[]{3,Long.valueOf(3)}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT id,DAYOFMONTH(DateData) FROM DateTestTable"),
+                        expectedResult
                 );
 
 
-                ResultSet rs;
-                rs = statement.executeQuery("SELECT * FROM TableA");
+                //DAYOFWEEK(date) Equivalent to EXTRACT(DOW FROM date)
+                expectedResult = ImmutableList.of(
+                        new Object[]{1,Long.valueOf(1)},
+                        new Object[]{2,Long.valueOf(2)},
+                        new Object[]{3,Long.valueOf(3)}
+                );
 
-                while (rs.next()) {
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT id,DAYOFMONTH(DateData) FROM DateTestTable"),
+                        expectedResult
+                );
 
-                    System.out.println(rs.getInt(2));
+
+            }
+
+        }
+
+    }
+
+    @Test
+    public void timeTest() throws SQLException {
+        try (JdbcConnection polyphenyDbConnection = new JdbcConnection(true)) {
+            Connection connection = polyphenyDbConnection.getConnection();
+
+            try (Statement statement = connection.createStatement()) {
+
+                //Select IS working
+                List<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{1,Time.valueOf("12:30:35")},
+                        new Object[]{2,Time.valueOf("6:34:59")},
+                        new Object[]{3,Time.valueOf("23:59:59")}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT id, TimeData FROM TimeTestTable"),
+                        expectedResult
+                );
+
+
+                //HOUR() Equivalent to EXTRACT(HOUR FROM date)
+                expectedResult = ImmutableList.of(
+                        new Object[]{1,Long.valueOf(12)},
+                        new Object[]{2,Long.valueOf(6)},
+                        new Object[]{3,Long.valueOf(23)}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT id, HOUR(TimeData) FROM TimeTestTable"),
+                        expectedResult
+                );
+
+                //MINUTE() Equivalent to EXTRACT(HOUR FROM date)
+                expectedResult = ImmutableList.of(
+                        new Object[]{1,Long.valueOf(30)},
+                        new Object[]{2,Long.valueOf(34)},
+                        new Object[]{3,Long.valueOf(59)}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT id, MINUTE(TimeData) FROM TimeTestTable"),
+                        expectedResult
+                );
+
+
+                //SECOND() Equivalent to EXTRACT(HOUR FROM date)
+                 expectedResult = ImmutableList.of(
+                        new Object[]{1,Long.valueOf(35)},
+                        new Object[]{2,Long.valueOf(59)},
+                        new Object[]{3,Long.valueOf(59)}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT id, SECOND(TimeData) FROM TimeTestTable"),
+                        expectedResult
+                );
+
+
+                ResultSet rs = statement.executeQuery("SELECT ID FROM DateTestTable");
+                while(rs.next()) {
+                    System.out.println(rs.getInt(1));
                 }
+
+
+            }
+
+        }
+
+    }
+
+    @Test
+    public void timeStampTest() throws SQLException {
+        try (JdbcConnection polyphenyDbConnection = new JdbcConnection(true)) {
+            Connection connection = polyphenyDbConnection.getConnection();
+
+            try (Statement statement = connection.createStatement()) {
+
+                //Select IS working
+                List<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{1,Timestamp.valueOf("2000-01-01 12:30:35")},
+                        new Object[]{2,Timestamp.valueOf("2001-02-02 06:34:59")},
+                        new Object[]{3,Timestamp.valueOf("2002-03-03 23:59:59")}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT id, TimeStampData FROM TimeStampTestTable"),
+                        expectedResult
+                );
+
+
+                //EXTRACT(timeUnit FROM timestamp) Extracts and returns the value of a specified timestamp field from a timestamp value expression.
+                expectedResult = ImmutableList.of(
+                        new Object[]{1,Long.valueOf("2000")},
+                        new Object[]{2,Long.valueOf("2001")},
+                        new Object[]{3,Long.valueOf("2002")}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT id, EXTRACT(Year FROM TimeStampData) FROM TimeStampTestTable"),
+                        expectedResult
+                );
+
+//                //CEIL(timestamp TO timeUnit) Rounds timestamp up to timeUnit. NOT WORKING COULD BE DUE TO WRONG SYNTAX
+//                expectedResult = ImmutableList.of(
+//                        new Object[]{1,Long.valueOf("2000")},
+//                        new Object[]{2,Long.valueOf("2001")},
+//                        new Object[]{3,Long.valueOf("2002")}
+//                );
+//
+//                TestHelper.checkResultSet(
+//                        statement.executeQuery("SELECT id, CEIL(TimeStampData TO YEAR) FROM TimeStampTestTable"),
+//                        expectedResult
+//                );
+
+
+                //FLOOR(timestamp TO timeUnit)Rounds timestamp down to timeUnit
+                expectedResult = ImmutableList.of(
+                        new Object[]{1,Timestamp.valueOf("2000-01-01 00:00:00.0")},
+                        new Object[]{2,Timestamp.valueOf("2001-01-01 00:00:00.0")},
+                        new Object[]{3,Timestamp.valueOf("2002-01-01 00:00:00.0")}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT id, FLOOR(TimeStampData TO YEAR) FROM TimeStampTestTable"),
+                        expectedResult
+                );
+
+
+                //TIMESTAMPADD(timeUnit, integer, timestamp) Returns timestamp with an interval of (signed) integer timeUnits added.
+                expectedResult = ImmutableList.of(
+                        new Object[]{1,Timestamp.valueOf("2005-01-01 12:30:35")},
+                        new Object[]{2,Timestamp.valueOf("2006-02-02 06:34:59")},
+                        new Object[]{3,Timestamp.valueOf("2007-03-03 23:59:59")}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT id, TIMESTAMPADD(YEAR,5,TimeStampData) FROM TimeStampTestTable"),
+                        expectedResult
+                );
+
+
+//                //TIMESTAMPDIFF(timeUnit, timestamp, timestamp2) Returns the (signed) number of timeUnit intervals between timestamp and timestamp2. Equivalent to (timestamp2 - timestamp) timeUnit
+//                NOT WORKING
+//                expectedResult = ImmutableList.of(
+//                        new Object[]{1,Timestamp.valueOf("2000-01-01 12:30:35")},
+//                        new Object[]{2,Timestamp.valueOf("2001-02-02 06:34:59")},
+//                        new Object[]{3,Timestamp.valueOf("2002-03-03 23:59:59")}
+//                );
+//
+//                TestHelper.checkResultSet(
+//                        statement.executeQuery("SELECT id, TIMESTAMPDIFF(YEAR,TimeStampData,TimeStampDataToo) FROM TimeStampTestTable"),
+//                        expectedResult
+//                );
+//
+
+
 
             }
 

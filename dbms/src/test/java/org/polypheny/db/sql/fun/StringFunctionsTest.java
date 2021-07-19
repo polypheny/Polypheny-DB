@@ -77,6 +77,7 @@ public class StringFunctionsTest {
                 statement.executeUpdate( "DROP TABLE TableB" );
                 statement.executeUpdate( "DROP TABLE TableC" );
             }
+            connection.commit();
         }
     }
 
@@ -89,6 +90,8 @@ public class StringFunctionsTest {
             Connection connection = polyphenyDbConnection.getConnection();
 
             try ( Statement statement = connection.createStatement() ) {
+
+                //String Concatenate ||
                 List<Object[]> expectedResult = ImmutableList.of(
                         new Object[]{ 1, "FirstFourth" },
                         new Object[]{ 2, "SecondFifth" },
@@ -109,6 +112,8 @@ public class StringFunctionsTest {
             Connection connection = polyphenyDbConnection.getConnection();
 
             try ( Statement statement = connection.createStatement() ) {
+
+                //CHARLENGTH() WITH String Concatenate ||
                 List<Object[]> expectedResult = ImmutableList.of(
                         new Object[]{ 1, 11 },
                         new Object[]{ 2, 11 },
@@ -118,10 +123,12 @@ public class StringFunctionsTest {
                         statement.executeQuery( "SELECT S.id ,CHAR_LENGTH(S.DataA||T.DataB) FROM TableA AS S NATURAL JOIN TableB AS T" ),
                         expectedResult );
 
+
+
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, 11 },
-                        new Object[]{ 2, 11 },
-                        new Object[]{ 3, 10 }
+                        new Object[]{ 1, 5 },
+                        new Object[]{ 2, 6 },
+                        new Object[]{ 3, 5 }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT S.id ,CHAR_LENGTH(S.DataA) FROM TableA AS S" ),
@@ -138,6 +145,8 @@ public class StringFunctionsTest {
             Connection connection = polyphenyDbConnection.getConnection();
 
             try ( Statement statement = connection.createStatement() ) {
+
+                //UPPER(CONCATENATED STRING) MAKES STRING UPPERCASE
                 List<Object[]> expectedResult = ImmutableList.of(
                         new Object[]{ 1, "FIRSTFOURTH" },
                         new Object[]{ 2, "SECONDFIFTH" },
@@ -147,6 +156,7 @@ public class StringFunctionsTest {
                         statement.executeQuery( "SELECT S.id , Upper(S.DataA||T.DataB) FROM TableA AS S NATURAL JOIN TableB AS T" ),
                         expectedResult );
 
+                //LOWER(CONCATENATED STRING) MAKES STRING LOWER CASE
                 expectedResult = ImmutableList.of(
                         new Object[]{ 1, "firstfourth" },
                         new Object[]{ 2, "secondfifth" },
@@ -167,6 +177,8 @@ public class StringFunctionsTest {
             Connection connection = polyphenyDbConnection.getConnection();
 
             try ( Statement statement = connection.createStatement() ) {
+
+                //POSITION(string1 IN string2) Returns the position of the first occurrence of string1 in string2
                 List<Object[]> expectedResult = ImmutableList.of(
                         new Object[]{ 1, 10 },
                         new Object[]{ 2, 10 },
@@ -176,14 +188,15 @@ public class StringFunctionsTest {
                         statement.executeQuery( "SELECT S.id ,POSITION('th' IN S.DataA||T.DataB) FROM TableA AS S NATURAL JOIN TableB AS T" ),
                         expectedResult );
 
-//                List<Object[]> expectedResult1 = ImmutableList.of(
+                //POSITION(string1 IN string2 FROM integer) Returns the position of the first occurrence of string1 in string2 starting at a given point (not standard SQL)
+//                expectedResult = ImmutableList.of(
 //                        new Object[]{1, 2},
 //                        new Object[]{2, 2},
 //                        new Object[]{3, 1}
 //                );
 //                TestHelper.checkResultSet(
 //                        statement.executeQuery("SELECT S.id ,POSITION('th' IN S.DataA||T.DataB FROM 9) FROM TableA AS S NATURAL JOIN TableB AS T"),
-//                        expectedResult1);
+//                        expectedResult);
 //
             }
         }
@@ -197,6 +210,8 @@ public class StringFunctionsTest {
             Connection connection = polyphenyDbConnection.getConnection();
 
             try ( Statement statement = connection.createStatement() ) {
+
+                //TRIM( { BOTH | LEADING | TRAILING } string1 FROM string2) Removes the longest string containing only the characters in string1 from the start/end/both ends of string1
                 List<Object[]> expectedResult = ImmutableList.of(
                         new Object[]{ 1, "Seventh" },
                         new Object[]{ 2, "Eighth " },
@@ -217,15 +232,18 @@ public class StringFunctionsTest {
             Connection connection = polyphenyDbConnection.getConnection();
 
             try ( Statement statement = connection.createStatement() ) {
+
+                //OVERLAY(string1 PLACING string2 FROM integer [ FOR integer2 ])
                 List<Object[]> expectedResult = ImmutableList.of(
                         new Object[]{ 1, "Foutyh" },
-                        new Object[]{ 2, "Fityh" },
+                        new Object[]{ 2, "Fifty" },
                         new Object[]{ 3, "Sixty" }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT T.id ,Overlay(T.DataB placing 'ty' from 4) FROM TableB AS T" ),
                         expectedResult );
 
+                //OVERLAY() with Concatenated String Inside
                 expectedResult = ImmutableList.of(
                         new Object[]{ 1, "FirstFoutyh" },
                         new Object[]{ 2, "SecondFityh" },
@@ -246,6 +264,8 @@ public class StringFunctionsTest {
             Connection connection = polyphenyDbConnection.getConnection();
 
             try ( Statement statement = connection.createStatement() ) {
+
+                //SUBSTRING(string FROM integer) Returns a substring of a character string starting at a given point
                 List<Object[]> expectedResult = ImmutableList.of(
                         new Object[]{ 1, "First" },
                         new Object[]{ 2, "Secon" },
@@ -255,6 +275,7 @@ public class StringFunctionsTest {
                         statement.executeQuery( "SELECT S.id ,SUBSTRING(S.DataA,1,5) FROM TableA AS S" ),
                         expectedResult );
 
+                //SUBSTRING(string FROM integer FOR integer) Returns a substring of a character string starting at a given point with a given length
                 expectedResult = ImmutableList.of(
                         new Object[]{ 1, "First" },
                         new Object[]{ 2, "Secon" },
@@ -268,7 +289,6 @@ public class StringFunctionsTest {
         }
     }
 
-
     @Ignore
     @Test
     public void stringInitcap() throws SQLException {
@@ -276,16 +296,18 @@ public class StringFunctionsTest {
             Connection connection = polyphenyDbConnection.getConnection();
 
             try ( Statement statement = connection.createStatement() ) {
+
+                //INITCAP(string)
                 List<Object[]> expectedResult = ImmutableList.of(
                         new Object[]{ 1, "First" },
                         new Object[]{ 2, "Second" },
                         new Object[]{ 3, "Third" }
                 );
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id , INITCAP(DataA) 'INITCAP' FROM TableA" ),
+                        statement.executeQuery( "SELECT id , INITCAP(DataA) FROM TableA" ),
                         expectedResult );
 
-                // With String concatenation
+                //INITCAP(string) With String concatenation
                 List<Object[]> expectedResult1 = ImmutableList.of(
                         new Object[]{ 1, "Firstfourth" },
                         new Object[]{ 2, "Secondfifth" },

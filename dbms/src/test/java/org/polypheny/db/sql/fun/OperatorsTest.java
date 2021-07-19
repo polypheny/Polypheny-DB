@@ -71,6 +71,7 @@ public class OperatorsTest {
                 statement.executeUpdate("DROP TABLE TestTable");
                 statement.executeUpdate("DROP TABLE TestTableB");
             }
+            connection.commit();
         }
     }
 
@@ -83,6 +84,7 @@ public class OperatorsTest {
             Connection connection = polyphenyDbConnection.getConnection();
 
             try (Statement statement = connection.createStatement()) {
+
                 //Equals (=)
                 List<Object[]> expectedResult = ImmutableList.of(
                         new Object[]{0, "dataA"}
@@ -94,7 +96,7 @@ public class OperatorsTest {
                 );
 
                 //Not Equal (<>)
-                List<Object[]> expectedResult1 = ImmutableList.of(
+                expectedResult = ImmutableList.of(
                         new Object[]{1, "dataB"},
                         new Object[]{2, "dataC"}
 
@@ -102,7 +104,7 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable AS A Where A.ID<>A.NumberData"),
-                        expectedResult1
+                        expectedResult
                 );
 
                 //NOT Equal(!=) only available at some conformance levels
@@ -118,32 +120,32 @@ public class OperatorsTest {
                 //                );
 
                 //Greater than or Equal (>=)
-                List<Object[]> expectedResult3 = ImmutableList.of(
-                        new Object[]{0, "dataA"},
-                        new Object[]{1, "dataB"}
-
-                );
-
-                TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT ID, TextData FROM TestTable AS A Where A.ID >= A.NumberData"),
-                        expectedResult3
-                );
-
-                //Less than or Equal (<=)
-                List<Object[]> expectedResult4 = ImmutableList.of(
+                expectedResult = ImmutableList.of(
                         new Object[]{0, "dataA"},
                         new Object[]{2, "dataC"}
 
                 );
 
                 TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT ID, TextData FROM TestTable AS A Where A.ID >= A.NumberData"),
+                        expectedResult
+                );
+
+                //Less than or Equal (<=)
+                expectedResult = ImmutableList.of(
+                        new Object[]{0, "dataA"},
+                        new Object[]{1, "dataB"}
+
+                );
+
+                TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable AS A Where A.ID <= A.NumberData"),
-                        expectedResult4
+                        expectedResult
                 );
 
 
                 //Not Null (IS NOT NULL)
-                List<Object[]> expectedResult5 = ImmutableList.of(
+                expectedResult = ImmutableList.of(
                         new Object[]{0, "dataA"},
                         new Object[]{1, "dataB"},
                         new Object[]{2, "dataC"}
@@ -152,87 +154,88 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable AS A Where A.NumberData IS NOT NULL"),
-                        expectedResult5
+                        expectedResult
                 );
 
 
                 //Null (IS NULL)
-                List<Object[]> expectedResult6 = ImmutableList.of(
+                expectedResult = ImmutableList.of(
 
                 );
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable AS A Where A.NumberData IS NULL"),
-                        expectedResult6
+                        expectedResult
                 );
 
                 //DISTINCT (IS DISTINCT FROM)
-                List<Object[]> expectedResult7 = ImmutableList.of(
+                expectedResult = ImmutableList.of(
                         new Object[]{1, "dataB"},
                         new Object[]{2, "dataC"}
                 );
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable AS A Where A.NumberData IS DISTINCT FROM ID"),
-                        expectedResult7
+                        expectedResult
                 );
 
                 //NOT DISTINCT (IS NOT DISTINCT FROM)
-                List<Object[]> expectedResult8 = ImmutableList.of(
+                expectedResult = ImmutableList.of(
                         new Object[]{0, "dataA"}
                 );
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable AS A Where A.NumberData IS NOT DISTINCT FROM ID"),
-                        expectedResult8
+                        expectedResult
                 );
+
                 //BETWEEN (BETWEEN VALUE1 AND VALUE2)
-                List<Object[]> expectedResult9 = ImmutableList.of(
+                expectedResult = ImmutableList.of(
                         new Object[]{1, "dataB"},
                         new Object[]{2, "dataC"}
                 );
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable AS A Where A.NumberData BETWEEN 1 AND 11"),
-                        expectedResult9
+                        expectedResult
                 );
 
 
                 //NOT BETWEEN (NOT BETWEEN VALUE1 AND VALUE2)
-                List<Object[]> expectedResult10 = ImmutableList.of(
+                expectedResult = ImmutableList.of(
                         new Object[]{0, "dataA"}
                 );
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable AS A Where A.NumberData NOT BETWEEN 1 AND 11"),
-                        expectedResult10
+                        expectedResult
                 );
 
                 //LIKE (string1 LIKE string 2)
-                List<Object[]> expectedResult11 = ImmutableList.of(
-                        new Object[]{5, "dataA"}
+                expectedResult = ImmutableList.of(
+                        new Object[]{4, "dataA"}
                 );
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextDataA FROM TestTableB AS B Where B.TextDataA LIKE B.TextDataB"),
-                        expectedResult11
+                        expectedResult
                 );
 
                 //NOT LIKE (string1 NOT LIKE string 2)
-                List<Object[]> expectedResult12 = ImmutableList.of(
-                        new Object[]{6, "dataB"},
-                        new Object[]{7, "dataC"}
+                expectedResult = ImmutableList.of(
+                        new Object[]{5, "dataB"},
+                        new Object[]{6, "dataC"}
                 );
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextDataA FROM TestTableB AS B Where B.TextDataA NOT LIKE B.TextDataB"),
-                        expectedResult12
+                        expectedResult
                 );
 
 
                 //NOT WORKING
                 //SIMILAR(string1 SIMILAR TO string 2)
-//                List<Object[]> expectedResult13 = ImmutableList.of(
+//                expectedResult = ImmutableList.of(
 //                        new Object[]{5, "data"},
 //                        new Object[]{6, "data"},
 //                        new Object[]{7, "data"}
@@ -240,17 +243,17 @@ public class OperatorsTest {
 //
 //                TestHelper.checkResultSet(
 //                        statement.executeQuery("SELECT ID, TextDataB FROM TestTableB AS B WHERE TextDataA SIMILAR TO TextDataB"),
-//                        expectedResult13
+//                        expectedResult
 //                );
 
                 //NOT WORKING
                 //NOT SIMILAR(string1 NOT SIMILAR TO string 2)
-//                List<Object[]> expectedResult14 = ImmutableList.of(
+//                expectedResult = ImmutableList.of(
 //                );
 //
 //                TestHelper.checkResultSet(
 //                        statement.executeQuery("SELECT ID, TextDataA FROM TestTableB AS B Where B.TextDataA NOT SIMILAR TO B.TextDataB"),
-//                        expectedResult14
+//                        expectedResult
 //                );
 
 
@@ -269,9 +272,9 @@ public class OperatorsTest {
 
                 //OR(boolean1 OR boolean2)
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{0, "DataA"},
-                        new Object[]{1, "DataB"},
-                        new Object[]{2, "DataC"}
+                        new Object[]{0, "dataA"},
+                        new Object[]{1, "dataB"},
+                        new Object[]{2, "dataC"}
                 );
 
                 TestHelper.checkResultSet(
@@ -292,9 +295,9 @@ public class OperatorsTest {
 
                 //NOT(NOT boolean)
                 List<Object[]> expectedResult2 = ImmutableList.of(
-                        new Object[]{0, "DataA"},
-                        new Object[]{1, "DataB"},
-                        new Object[]{2, "DataC"}
+                        new Object[]{0, "dataA"},
+                        new Object[]{1, "dataB"},
+                        new Object[]{2, "dataC"}
                 );
 
                 TestHelper.checkResultSet(
@@ -316,9 +319,9 @@ public class OperatorsTest {
 
                 //IS NOT FALSE(boolean is NOT FALSE)
                 List<Object[]> expectedResult4 = ImmutableList.of(
-                        new Object[]{0, "DataA"},
-                        new Object[]{1, "DataB"},
-                        new Object[]{2, "DataC"}
+                        new Object[]{0, "dataA"},
+                        new Object[]{1, "dataB"},
+                        new Object[]{2, "dataC"}
                 );
 
                 TestHelper.checkResultSet(
@@ -329,9 +332,9 @@ public class OperatorsTest {
 
                 //IS TRUE(boolean is TRUE)
                 List<Object[]> expectedResult5 = ImmutableList.of(
-                        new Object[]{0, "DataA"},
-                        new Object[]{1, "DataB"},
-                        new Object[]{2, "DataC"}
+                        new Object[]{0, "dataA"},
+                        new Object[]{1, "dataB"},
+                        new Object[]{2, "dataC"}
                 );
 
                 TestHelper.checkResultSet(
@@ -341,9 +344,9 @@ public class OperatorsTest {
 
                 //NOT TRUE(boolean is NOT TRUE)
                 List<Object[]> expectedResult6 = ImmutableList.of(
-                        new Object[]{0, "DataA"},
-                        new Object[]{1, "DataB"},
-                        new Object[]{2, "DataC"}
+                        new Object[]{0, "dataA"},
+                        new Object[]{1, "dataB"},
+                        new Object[]{2, "dataC"}
                 );
 
                 TestHelper.checkResultSet(
@@ -367,9 +370,9 @@ public class OperatorsTest {
 
                 // + (numeric1 + numeric2)
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{0, 6},
-                        new Object[]{1, 16},
-                        new Object[]{2, 13}
+                        new Object[]{4, 6},
+                        new Object[]{5, 16},
+                        new Object[]{6, 13}
                 );
 
                 TestHelper.checkResultSet(
@@ -380,9 +383,9 @@ public class OperatorsTest {
 
                 // - (numeric1 - numeric2)
                 List<Object[]> expectedResult1 = ImmutableList.of(
-                        new Object[]{0, 2},
-                        new Object[]{1, -6},
-                        new Object[]{2, -1}
+                        new Object[]{4, 2},
+                        new Object[]{5, -6},
+                        new Object[]{6, -1}
 
                 );
 
@@ -393,9 +396,9 @@ public class OperatorsTest {
 
                 // * (numeric1 * numeric2)
                 List<Object[]> expectedResult2 = ImmutableList.of(
-                        new Object[]{0, 8},
-                        new Object[]{1, 55},
-                        new Object[]{2, 42}
+                        new Object[]{4, 8},
+                        new Object[]{5, 55},
+                        new Object[]{6, 42}
                 );
 
                 TestHelper.checkResultSet(
@@ -406,9 +409,9 @@ public class OperatorsTest {
 
                 // / (numeric/numeric2)
                 List<Object[]> expectedResult3 = ImmutableList.of(
-                        new Object[]{0, 2},
-                        new Object[]{1, 0},
-                        new Object[]{2, 7}
+                        new Object[]{4, 2},
+                        new Object[]{5, 0},
+                        new Object[]{6, 0}
                 );
 
                 TestHelper.checkResultSet(
@@ -417,17 +420,17 @@ public class OperatorsTest {
                 );
 
 
-                //% (numeric1 % numeric2)
-                List<Object[]> expectedResult4 = ImmutableList.of(
-                        new Object[]{0, 0},
-                        new Object[]{1, 1},
-                        new Object[]{2, 1}
-                );
-
-                TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT ID, NumberData/ID FROM TestTableB"),
-                        expectedResult4
-                );
+//                //% (numeric1 % numeric2) ERROR= Percent remainder '%' is not allowed under the current SQL conformance level
+//                List<Object[]> expectedResult4 = ImmutableList.of(
+//                        new Object[]{4, 0},
+//                        new Object[]{5, 1},
+//                        new Object[]{6, 1}
+//                );
+//
+//                TestHelper.checkResultSet(
+//                        statement.executeQuery("SELECT ID, NumberData%ID FROM TestTableB"),
+//                        expectedResult4
+//                );
 
             }
 

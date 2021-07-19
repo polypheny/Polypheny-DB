@@ -34,6 +34,7 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
 
+@SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 public class CeilFloorSignFunctionsTest {
 
@@ -81,8 +82,9 @@ public class CeilFloorSignFunctionsTest {
                 statement.executeUpdate("DROP TABLE TableDecimal");
                 statement.executeUpdate("DROP TABLE TableDouble");
                 statement.executeUpdate("DROP TABLE TableInteger");
-
             }
+
+            connection.commit();
         }
     }
 
@@ -112,23 +114,8 @@ public class CeilFloorSignFunctionsTest {
                         expectedResult
                 );
 
-                ResultSet rs;
-                rs = statement.executeQuery("SELECT ID, SIGN(Data) FROM TableDouble");
-
-                while (rs.next()) {
-                    System.out.println(rs.getInt(2));
-
-                }
-                rs = statement.executeQuery("SELECT ID,CEIL(Data) FROM TableInteger");
-
-                while (rs.next()) {
-                    System.out.println(rs.getInt(2));
-
-                }
-
-
                 //For Double
-                List<Object[]> expectedResult1 = ImmutableList.of(
+                expectedResult = ImmutableList.of(
                         new Object[]{0, 3.0},
                         new Object[]{1, -3.0},
                         new Object[]{2, 5.0}
@@ -136,21 +123,21 @@ public class CeilFloorSignFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, CEIL(Data) FROM TableDouble"),
-                        expectedResult1
+                        expectedResult
                 );
 
 
                 //For Integer
-                List<Object[]> expectedResult2 = ImmutableList.of(
-                        new Object[]{0, 2.0},
-                        new Object[]{1, 3.0},
-                        new Object[]{2, -4.0}
+                expectedResult = ImmutableList.of(
+                        new Object[]{0, 2},
+                        new Object[]{1, 3},
+                        new Object[]{2, -4}
 
                 );
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID,CEIL(Data) FROM TableInteger"),
-                        expectedResult2
+                        expectedResult
                 );
 
 
@@ -185,7 +172,7 @@ public class CeilFloorSignFunctionsTest {
 
 
                 //For Double
-                List<Object[]> expectedResult1 = ImmutableList.of(
+                expectedResult = ImmutableList.of(
                         new Object[]{0, 2.0},
                         new Object[]{1, -3.0},
                         new Object[]{2, 4.0}
@@ -193,21 +180,21 @@ public class CeilFloorSignFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, FLOOR(Data) FROM TableDouble"),
-                        expectedResult1
+                        expectedResult
                 );
 
 
                 //For Integer
-                List<Object[]> expectedResult2 = ImmutableList.of(
-                        new Object[]{0, 2.0},
-                        new Object[]{1, 3.0},
-                        new Object[]{2, -4.0}
+                expectedResult = ImmutableList.of(
+                        new Object[]{0, 2},
+                        new Object[]{1, 3},
+                        new Object[]{2, -4}
 
                 );
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID,FLOOR(Data) FROM TableInteger"),
-                        expectedResult2
+                        expectedResult
                 );
 
 
@@ -242,7 +229,7 @@ public class CeilFloorSignFunctionsTest {
 
 
                 //For Double
-                List<Object[]> expectedResult1 = ImmutableList.of(
+                expectedResult = ImmutableList.of(
                         new Object[]{0, 1.0},
                         new Object[]{1, -1.0},
                         new Object[]{2, 1.0}
@@ -250,21 +237,21 @@ public class CeilFloorSignFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, SIGN(Data) FROM TableDouble"),
-                        expectedResult1
+                        expectedResult
                 );
 
 
                 //For Integer
-                List<Object[]> expectedResult2 = ImmutableList.of(
-                        new Object[]{0, 1.0},
-                        new Object[]{1, 1.0},
-                        new Object[]{2, -1.0}
+                expectedResult = ImmutableList.of(
+                        new Object[]{0, 1},
+                        new Object[]{1, 1},
+                        new Object[]{2, -1}
 
                 );
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID,SIGN(Data) FROM TableInteger"),
-                        expectedResult2
+                        expectedResult
                 );
 
 

@@ -33,7 +33,7 @@ import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
-
+@SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 public class LogExponentialFunctionsTest {
 
@@ -82,6 +82,7 @@ public class LogExponentialFunctionsTest {
                 statement.executeUpdate("DROP TABLE TableDouble");
                 statement.executeUpdate("DROP TABLE TableInteger");
             }
+            connection.commit();
         }
     }
 
@@ -108,7 +109,7 @@ public class LogExponentialFunctionsTest {
                 );
 
 //                //For Double
-//                List<Object[]> expectedResult1 = ImmutableList.of(
+//                expectedResult = ImmutableList.of(
 //                        new Object[]{0, 0.3010299956639812},
 //                        new Object[]{2, 0.6020599913279624}
 //                );
@@ -120,7 +121,7 @@ public class LogExponentialFunctionsTest {
 
 //
 //                //For Integer
-//                List<Object[]> expectedResult2 = ImmutableList.of(
+//                expectedResult = ImmutableList.of(
 //                        new Object[]{0, 0.3010299956639812},
 //                        new Object[]{1, 0.47712125471966244}
 //
@@ -158,7 +159,7 @@ public class LogExponentialFunctionsTest {
                 );
 
 //                //For Double
-//                List<Object[]> expectedResult1 = ImmutableList.of(
+//                expectedResult = ImmutableList.of(
 //                        new Object[]{0, 7.389056},
 //                        new Object[]{1, 0.049787},
 //                        new Object[]{2, 54.59815}
@@ -171,7 +172,7 @@ public class LogExponentialFunctionsTest {
 //
 //
 //                //For Integer
-//                List<Object[]> expectedResult2 = ImmutableList.of(
+//                expectedResult = ImmutableList.of(
 //                        new Object[]{0, 7.38905609893065},
 //                        new Object[]{1, 20.085536923187668},
 //                        new Object[]{2, 0.01831563888873418}

@@ -79,6 +79,7 @@ public class PowerAbsModFunctionTest {
                 statement.executeUpdate("DROP TABLE TableDouble");
                 statement.executeUpdate("DROP TABLE TableInteger");
             }
+            connection.commit();
         }
     }
 
@@ -106,7 +107,7 @@ public class PowerAbsModFunctionTest {
                 );
 
                 //For Double
-                List<Object[]> expectedResult1 = ImmutableList.of(
+                expectedResult = ImmutableList.of(
                         new Object[]{0, 4.0},
                         new Object[]{1, 9.0},
                         new Object[]{2, 16.0}
@@ -119,10 +120,10 @@ public class PowerAbsModFunctionTest {
 
 
                 //For Integer
-                List<Object[]> expectedResult2 = ImmutableList.of(
-                        new Object[]{0, 4},
-                        new Object[]{1, 9},
-                        new Object[]{2, 16}
+                expectedResult = ImmutableList.of(
+                        new Object[]{0, 4.0},
+                        new Object[]{1, 9.0},
+                        new Object[]{2, 16.0}
 
                 );
 
@@ -164,7 +165,7 @@ public class PowerAbsModFunctionTest {
                 );
 
                 //For Double
-                List<Object[]> expectedResult1 = ImmutableList.of(
+                expectedResult= ImmutableList.of(
                         new Object[]{0, 2.0},
                         new Object[]{1, 3.0},
                         new Object[]{2, 4.0}
@@ -172,21 +173,21 @@ public class PowerAbsModFunctionTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, Abs(Data) FROM TableDouble"),
-                        expectedResult1
+                        expectedResult
                 );
 
 
                 //For Integer
-                List<Object[]> expectedResult2 = ImmutableList.of(
-                        new Object[]{0, 2.0},
-                        new Object[]{1, 3.0},
-                        new Object[]{2, 4.0}
+                expectedResult = ImmutableList.of(
+                        new Object[]{0, 2},
+                        new Object[]{1, 3},
+                        new Object[]{2, 4}
 
                 );
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, Abs(Data) FROM TableInteger"),
-                        expectedResult2
+                        expectedResult
                 );
 
 
@@ -206,9 +207,9 @@ public class PowerAbsModFunctionTest {
 
                 //For Decimal
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{0, 1.0},
-                        new Object[]{1, 1.0},
-                        new Object[]{2, 2.0}
+                        new Object[]{0, 0},
+                        new Object[]{1, 1},
+                        new Object[]{2, 0}
                 );
 
                 TestHelper.checkResultSet(
@@ -218,7 +219,7 @@ public class PowerAbsModFunctionTest {
 
 //MOD DOES NOT WOK ON DOUBLE AS THEY ARE NOT EXACT
                 //For Double
-//                List<Object[]> expectedResult1 = ImmutableList.of(
+//                expectedResult = ImmutableList.of(
 //                        new Object[]{ 0, 1.0},
 //                        new Object[]{ 1, 1.0},
 //                        new Object[]{ 2, 2.0}
@@ -231,10 +232,10 @@ public class PowerAbsModFunctionTest {
 
 
                 //For Integer
-                List<Object[]> expectedResult2 = ImmutableList.of(
-                        new Object[]{0, 1},
+                expectedResult = ImmutableList.of(
+                        new Object[]{0, 0},
                         new Object[]{1, 1},
-                        new Object[]{2, 2}
+                        new Object[]{2, 0}
 
                 );
 
