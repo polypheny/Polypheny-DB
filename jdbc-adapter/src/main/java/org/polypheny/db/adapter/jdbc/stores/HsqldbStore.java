@@ -94,33 +94,37 @@ public class HsqldbStore extends AbstractJdbcStore {
     @Override
     public void addIndex( Context context, CatalogIndex catalogIndex ) {
         List<CatalogColumnPlacement> ccps = Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogIndex.key.tableId );
-        StringBuilder builder = new StringBuilder();
-        builder.append( "CREATE " );
-        if ( catalogIndex.unique ) {
-            builder.append( "UNIQUE INDEX " );
-        } else {
-            builder.append( "INDEX " );
-        }
-        String physicalIndexName = getPhysicalIndexName( catalogIndex.key.tableId, catalogIndex.id );
-        builder.append( dialect.quoteIdentifier( physicalIndexName ) );
-        builder.append( " ON " )
-                .append( dialect.quoteIdentifier( ccps.get( 0 ).physicalSchemaName ) )
-                .append( "." )
-                .append( dialect.quoteIdentifier( ccps.get( 0 ).physicalTableName ) );
+        List<CatalogPartitionPlacement> cpps = Catalog.getInstance().getPartitionPlacementByTable( getAdapterId(), catalogIndex.key.tableId );
+        for ( CatalogPartitionPlacement partitionPlacement : cpps ) {
 
-        builder.append( "(" );
-        boolean first = true;
-        for ( long columnId : catalogIndex.key.columnIds ) {
-            if ( !first ) {
-                builder.append( ", " );
+            StringBuilder builder = new StringBuilder();
+            builder.append( "CREATE " );
+            if ( catalogIndex.unique ) {
+                builder.append( "UNIQUE INDEX " );
+            } else {
+                builder.append( "INDEX " );
             }
-            first = false;
-            builder.append( dialect.quoteIdentifier( getPhysicalColumnName( columnId ) ) ).append( " " );
-        }
-        builder.append( ")" );
-        executeUpdate( builder, context );
+            String physicalIndexName = getPhysicalIndexName( catalogIndex.key.tableId, catalogIndex.id );
+            builder.append( dialect.quoteIdentifier( physicalIndexName ) );
+            builder.append( " ON " )
+                    .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
+                    .append( "." )
+                    .append( dialect.quoteIdentifier( partitionPlacement.physicalTableName ) );
 
-        Catalog.getInstance().setIndexPhysicalName( catalogIndex.id, physicalIndexName );
+            builder.append( "(" );
+            boolean first = true;
+            for ( long columnId : catalogIndex.key.columnIds ) {
+                if ( !first ) {
+                    builder.append( ", " );
+                }
+                first = false;
+                builder.append( dialect.quoteIdentifier( getPhysicalColumnName( columnId ) ) ).append( " " );
+            }
+            builder.append( ")" );
+            executeUpdate( builder, context );
+
+            Catalog.getInstance().setIndexPhysicalName( catalogIndex.id, physicalIndexName );
+        }
     }
 
 

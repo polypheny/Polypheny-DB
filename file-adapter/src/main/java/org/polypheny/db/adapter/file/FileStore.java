@@ -27,6 +27,7 @@ import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
@@ -140,6 +141,12 @@ public class FileStore extends DataStore {
     @Override
     public void createTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
+
+        if (partitionIds.size() != 1){
+            throw new RuntimeException("Files can't be partitioned but number of specified partitions where: " + partitionIds.size());
+        }
+
+        catalog.addPartitionPlacement( getAdapterId(),catalogTable.id,partitionIds.get( 0 ), PlacementType.AUTOMATIC, currentSchema.getSchemaName(), getPhysicalTableName( catalogTable.id ) );
 
         for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ) ) {
             catalog.updateColumnPlacementPhysicalNames(

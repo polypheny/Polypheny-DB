@@ -280,8 +280,9 @@ public abstract class AbstractRouter implements Router {
                     placementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ),placements );
                 }
 
-                statement.getTransaction().getMonitoringData().setAccessedPartitions( accessedPartitionList );
-
+                if ( statement.getTransaction().getMonitoringData() != null  ) {
+                    statement.getTransaction().getMonitoringData().setAccessedPartitions( accessedPartitionList );
+                }
                 return builder.push( buildJoinedTableScan( statement, cluster, placementDistribution ) );
 
             } else {
@@ -506,7 +507,11 @@ public abstract class AbstractRouter implements Router {
                                         log.debug( "oldValue and new value reside on same partition: " + identifiedPartitionForSetValue );
                                         worstCaseRouting = false;
                                     }else{
+                                        throw new RuntimeException("Updating partition key is not allowed");
 
+                                        /*
+                                        // IS currently blocked
+                                        //needs to to a insert into target partition select from all other partitoins first and then delte on source partiitons
                                         worstCaseRouting = false;
                                         log.debug( "oldValue and new value reside on same partition: " + identifiedPartitionForSetValue );
 
@@ -546,6 +551,8 @@ public abstract class AbstractRouter implements Router {
                                                     ((LogicalTableModify) node).isFlattened() );
 
                                             modifies.add( deleteModify );
+
+
                                         }
 
                                                 //Inject INSERT statement for identified SET partitionId
@@ -582,15 +589,20 @@ public abstract class AbstractRouter implements Router {
                                                     ((LogicalTableModify) node).isFlattened()
                                             );
 
-                                            modifies.add( insertModify );*/
+                                            modifies.add( insertModify );
                                         }
                                                 //operationWasRewritten = true;
+
+                                         */
                                     }
+
                                 }//WHERE clause only
                                 else{
+                                        throw new RuntimeException("Updating partition key is not allowed");
+
                                     //Simply execute the UPDATE on all identified partitions
                                     //Nothing to do
-                                    worstCaseRouting = false;
+                                    //worstCaseRouting = false;
                                 }
                             }// If only SET is specified
                             //changes the value of partition column of complete table to only reside on one partition
@@ -722,7 +734,11 @@ public abstract class AbstractRouter implements Router {
 
 
                     List<CatalogPartitionPlacement> debugPlacements = catalog.getAllPartitionPlacementsByTable( t.getTableId() );
-                    statement.getTransaction().getMonitoringData().setAccessedPartitions( accessedPartitionList.stream().collect( Collectors.toList()) );
+                    if (statement.getTransaction().getMonitoringData() != null) {
+                        statement.getTransaction()
+                                .getMonitoringData()
+                                .setAccessedPartitions( accessedPartitionList.stream().collect( Collectors.toList() ) );
+                    }
 
                     if ( !operationWasRewritten ) {
 

@@ -1992,7 +1992,10 @@ public class DdlManagerImpl extends DdlManager {
         catalog.flagTableForDeletion( catalogTable.id, true );
         for ( int storeId : catalogTable.placementsByAdapter.keySet() ) {
             // Delete table on store
-            AdapterManager.getInstance().getStore( storeId ).dropTable( statement.getPrepareContext(), catalogTable, catalogTable.partitionProperty.partitionIds);
+            List<Long> partitionIdsOnStore = new ArrayList<>();
+            catalog.getPartitionPlacementByTable( storeId,catalogTable.id ).forEach( p -> partitionIdsOnStore.add( p.partitionId ) );
+
+            AdapterManager.getInstance().getStore( storeId ).dropTable( statement.getPrepareContext(), catalogTable, partitionIdsOnStore );
             // Inform routing
             statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnAdapterPerTable( storeId, catalogTable.id ) );
             // Delete column placement in catalog

@@ -88,7 +88,7 @@ public class HorizontalPartitioningTest {
                 } finally {
                     // Drop tables and stores
                     statement.executeUpdate( "DROP TABLE horizontalparttest" );
-                    statement.executeUpdate( "DROP TABLE horizontalparttestfalsepartition" );
+                    //statement.executeUpdate( "DROP TABLE horizontalparttestfalsepartition" );
                 }
             }
         }
@@ -142,16 +142,28 @@ public class HorizontalPartitioningTest {
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"store2\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
                             + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
-                    // Merge partition
-                    statement.executeUpdate( "ALTER TABLE horizontalparttestextension MERGE PARTITIONs" );
+
 
                     // Add placement for second table
                     statement.executeUpdate( "ALTER TABLE \"horizontalparttestextension\" ADD PLACEMENT (tvarchar) ON STORE \"store2\"" );
 
+                    //TODO @HENNLO
+                    //add mergetable test
+
+                    //DROP Table to repartition
+                    statement.executeUpdate( "DROP TABLE \"horizontalparttestextension\" " );
+
                     // Partition by name
-                    statement.executeUpdate( "ALTER TABLE horizontalparttestextension "
+                    statement.executeUpdate( "CREATE TABLE horizontalparttestextension( "
+                            + "tprimary INTEGER NOT NULL, "
+                            + "tinteger INTEGER NULL, "
+                            + "tvarchar VARCHAR(20) NULL, "
+                            + "PRIMARY KEY (tprimary) )"
                             + "PARTITION BY HASH (tinteger) "
                             + " WITH (name1, name2, name3)" );
+
+                    // Add placement for second table
+                    statement.executeUpdate( "ALTER TABLE \"horizontalparttestextension\" ADD PLACEMENT (tvarchar) ON STORE \"store2\"" );
 
                     // name partitioning can be modified with index
                     statement.executeUpdate( "ALTER TABLE \"horizontalparttestextension\" MODIFY PARTITIONS (1) ON STORE \"store2\" " );
@@ -265,15 +277,6 @@ public class HorizontalPartitioningTest {
                     // Change placement on second store
                     statement.executeUpdate( "ALTER TABLE \"hashpartition\" MODIFY PARTITIONS (0,1) ON STORE \"storehash\"" );
 
-                    // Change placement on second store
-                    // Check partition distribution violation
-                    failed = false;
-                    try {
-                        statement.executeUpdate( "ALTER TABLE \"hashpartition\" MODIFY PARTITIONS (2) ON STORE \"hsqldb\"" );
-                    } catch ( AvaticaSqlException e ) {
-                        failed = true;
-                    }
-                    Assert.assertTrue( failed );
 
                     // You can't change the distribution unless there exists at least one full partition placement of each column as a fallback
                     failed = false;
@@ -293,7 +296,6 @@ public class HorizontalPartitioningTest {
                 } finally {
                     statement.executeUpdate( "DROP TABLE hashpartitioning" );
                     statement.executeUpdate( "DROP TABLE hashpartition" );
-                    statement.executeUpdate( "DROP TABLE hashpartitioningValidate" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"storehash\"" );
                 }
             }
@@ -381,16 +383,16 @@ public class HorizontalPartitioningTest {
                                     new Object[]{ 1, 3, "hans" },
                                     new Object[]{ 2, 7, "bob" } ) );
 
-                    statement.executeUpdate( "UPDATE rangepartitioning1 SET tinteger = 4 WHERE tinteger = 7" );
+                    statement.executeUpdate( "UPDATE rangepartitioning1 SET tinteger = 6 WHERE tinteger = 7" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM rangepartitioning1" ),
                             ImmutableList.of(
                                     new Object[]{ 1, 3, "hans" },
-                                    new Object[]{ 2, 4, "bob" } ) );
+                                    new Object[]{ 2, 6, "bob" } ) );
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM rangepartitioning1 WHERE tinteger = 4" ),
+                            statement.executeQuery( "SELECT * FROM rangepartitioning1 WHERE tinteger = 6" ),
                             ImmutableList.of(
-                                    new Object[]{ 2, 4, "bob" } ) );
+                                    new Object[]{ 2, 6, "bob" } ) );
 
                     // RANGE partitioning can't be created without specifying ranges
                     boolean failed = false;
@@ -408,7 +410,7 @@ public class HorizontalPartitioningTest {
                     Assert.assertTrue( failed );
                 } finally {
                     statement.executeUpdate( "DROP TABLE rangepartitioning1" );
-                    statement.executeUpdate( "DROP TABLE rangepartitioning2" );
+                    //statement.executeUpdate( "DROP TABLE rangepartitioning2" );
                 }
             }
         }

@@ -162,26 +162,42 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                     for ( long tableId : tableIds ) {
                         CatalogTable catalogTable = catalog.getTable( tableId );
 
-                        List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementByTable(adapter.getAdapterId(), tableId);
+                        List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementByTable( adapter.getAdapterId(), tableId );
 
-
-                        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements){
-
-                            final String schemaName = buildAdapterSchemaName( catalogAdapter.uniqueName, catalogSchema.name, physicalSchemaName, partitionPlacement.partitionId );
+                        if ( adapter instanceof FileStore ) {
+                            final String schemaName = buildAdapterSchemaName( catalogAdapter.uniqueName, catalogSchema.name, physicalSchemaName, catalogTable.partitionProperty.partitionIds.get( 0 ) );
 
                             adapter.createNewSchema( rootSchema, schemaName );
                             SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentSchema(), schemaName ).plus();
 
                             Table table = adapter.createTableSchema(
                                     catalogTable,
-                                    Catalog.getInstance().getColumnPlacementsOnAdapterSortedByPhysicalPosition( adapter.getAdapterId(), catalogTable.id), partitionPlacement );
+                                    Catalog.getInstance().getColumnPlacementsOnAdapterSortedByPhysicalPosition( adapter.getAdapterId(), catalogTable.id ), null );
 
                             physicalTables.put( catalog.getTable( tableId ).name, table );
-
 
                             rootSchema.add( schemaName, s );
                             physicalTables.forEach( rootSchema.getSubSchema( schemaName )::add );
                             rootSchema.getSubSchema( schemaName ).polyphenyDbSchema().setSchema( adapter.getCurrentSchema() );
+                        } else {
+
+                            for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
+
+                                final String schemaName = buildAdapterSchemaName( catalogAdapter.uniqueName, catalogSchema.name, physicalSchemaName, partitionPlacement.partitionId );
+
+                                adapter.createNewSchema( rootSchema, schemaName );
+                                SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentSchema(), schemaName ).plus();
+
+                                Table table = adapter.createTableSchema(
+                                        catalogTable,
+                                        Catalog.getInstance().getColumnPlacementsOnAdapterSortedByPhysicalPosition( adapter.getAdapterId(), catalogTable.id ), partitionPlacement );
+
+                                physicalTables.put( catalog.getTable( tableId ).name, table );
+
+                                rootSchema.add( schemaName, s );
+                                physicalTables.forEach( rootSchema.getSubSchema( schemaName )::add );
+                                rootSchema.getSubSchema( schemaName ).polyphenyDbSchema().setSchema( adapter.getCurrentSchema() );
+                            }
                         }
                     }
                 }
