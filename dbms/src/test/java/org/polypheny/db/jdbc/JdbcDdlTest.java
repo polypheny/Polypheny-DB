@@ -36,7 +36,6 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
-import org.polypheny.db.excluded.MonetdbExcluded;
 import org.polypheny.db.type.PolyType;
 
 
@@ -526,7 +525,7 @@ public class JdbcDdlTest {
 
 
     @Test
-    @Category({ FileExcluded.class, MonetdbExcluded.class })
+    @Category({ FileExcluded.class })
     public void changeColumnTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

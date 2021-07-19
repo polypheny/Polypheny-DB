@@ -291,7 +291,7 @@ public class MongoRules {
                 }
                 // prepared
                 if ( op1 instanceof RexDynamicParam ) {
-                    return "{$arrayElemAt:[" + strings.get( 0 ) + "," + new BsonDynamic( (RexDynamicParam) op1 ).toJson() + "]}";
+                    return "{$arrayElemAt:[" + strings.get( 0 ) + ", {$subtract:[" + new BsonDynamic( (RexDynamicParam) op1 ).toJson() + ", 1]}]}";
                 }
             }
             if ( call.getOperator() == SqlStdOperatorTable.CASE ) {
