@@ -326,9 +326,9 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             }
         } else if ( value instanceof BigDecimal ) {
             BigDecimal bigDecimal = (BigDecimal) value;
-            if ( type.getPolyType() == PolyType.REAL ) {
+            if ( type != null && type.getPolyType() == PolyType.REAL ) {
                 preparedStatement.setFloat( i, bigDecimal.floatValue() );
-            } else if ( type.getPolyType() == PolyType.DOUBLE ) {
+            } else if ( type != null && type.getPolyType() == PolyType.DOUBLE ) {
                 preparedStatement.setDouble( i, bigDecimal.doubleValue() );
             } else {
                 preparedStatement.setBigDecimal( i, (BigDecimal) value );
