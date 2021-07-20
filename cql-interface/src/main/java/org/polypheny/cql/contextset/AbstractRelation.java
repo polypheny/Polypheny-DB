@@ -18,8 +18,16 @@ package org.polypheny.cql.contextset;
 
 import org.polypheny.cql.contextset.utils.Tree;
 
-public interface IRelation {
+public abstract class AbstractRelation {
 
-    Tree<BooleanOperator, BooleanExpression> CreateBooleanTree( String searchTerm );
+    protected IModifierFetcher modifierFetcher;
+
+
+    public AbstractRelation( IModifierFetcher modifierFetcher ) {
+        this.modifierFetcher = modifierFetcher;
+    }
+
+
+    abstract Tree<BooleanOperator, BooleanExpression> CreateBooleanTree( String searchTerm );
 
 }
