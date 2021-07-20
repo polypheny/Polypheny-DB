@@ -99,8 +99,6 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.bson.json.JsonMode;
-import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.enumerable.JavaRowFormat;
 import org.polypheny.db.document.DocumentTypeUtil;
@@ -3704,7 +3702,7 @@ public class SqlFunctions {
             BsonDocument document = BsonDocument.parse( (String) input );
             document.put( name, DocumentTypeUtil.getBson( object ) );
 
-            return document.toJson( JsonWriterSettings.builder().outputMode( JsonMode.EXTENDED ).build() );
+            return document.toJson();
         }
 
         return null;
@@ -3765,7 +3763,6 @@ public class SqlFunctions {
 
 
     public static boolean docRegexMatch( Object input, String regex, boolean isInsensitive, boolean isMultiline, boolean doesIgnoreWhitespace, boolean allowsDot ) {
-        // todo DL options
         if ( input instanceof String ) {
             int flags = 0;
             if ( isInsensitive ) {

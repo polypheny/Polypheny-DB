@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonBinary;
 import org.bson.BsonBoolean;
@@ -290,6 +291,8 @@ public class DocumentTypeUtil {
             return new BsonDecimal128( new Decimal128( ((BigDecimal) object) ) );
         } else if ( object instanceof Double ) {
             return new BsonDouble( (Double) object );
+        } else if ( object instanceof List ) {
+            return new BsonArray( ((List<?>) object).stream().map( DocumentTypeUtil::getBson ).collect( Collectors.toList() ) );
         } else {
             throw new RuntimeException( "Type not considered" );
         }
