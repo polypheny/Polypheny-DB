@@ -16,6 +16,8 @@
 
 package org.polypheny.cql.contextset.utils;
 
+import org.polypheny.cql.contextset.exceptions.UnexpectedTypeException;
+
 /*
  * Tree is a tree node with M type nodes being internal nodes and N type
  * node being the external nodes. At any given time only one of these have a valid value.

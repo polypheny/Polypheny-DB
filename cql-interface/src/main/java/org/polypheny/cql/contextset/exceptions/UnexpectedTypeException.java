@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql.contextset.utils;
+package org.polypheny.cql.contextset.exceptions;
 
 public class UnexpectedTypeException extends Exception {
 
