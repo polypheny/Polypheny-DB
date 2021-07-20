@@ -554,7 +554,6 @@ public class Rest {
                 signature.getExecutionTimeMonitor().setExecutionTime( executionTime );
             }
 
-            ((QueryEvent) statement.getTransaction().getMonitoringData()).setExecutionTime( executionTime );
             statement.getTransaction().commit();
         } catch ( Throwable e ) {
             log.error( "Error during execution of REST query", e );

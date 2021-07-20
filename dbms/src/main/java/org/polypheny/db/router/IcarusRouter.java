@@ -640,6 +640,7 @@ public class IcarusRouter extends AbstractRouter {
             return new IcarusRouter();
         }
 
+        public static IcarusRouter creatIcarusRouterInstance(){return new IcarusRouter();}
     }
 
 

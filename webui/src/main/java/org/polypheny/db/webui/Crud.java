@@ -789,7 +789,6 @@ public class Crud implements InformationObserver {
                     temp = System.nanoTime();
                     int numOfRows = executeSqlUpdate( transaction, query );
                     executionTime += System.nanoTime() - temp;
-                    transaction.getMonitoringData().setExecutionTime( executionTime );
                     result = new Result( numOfRows ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
                     results.add( result );
                     if ( autoCommit ) {
@@ -3297,9 +3296,6 @@ public class Crud implements InformationObserver {
 
             long executionTime = stopWatch.getNanoTime();
             signature.getExecutionTimeMonitor().setExecutionTime( executionTime );
-
-            statement.getTransaction().getMonitoringData().setExecutionTime( executionTime );
-
         } catch ( Throwable t ) {
             if ( statement.getTransaction().isAnalyze() ) {
                 InformationManager analyzer = statement.getTransaction().getQueryAnalyzer();

@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
@@ -69,7 +70,9 @@ import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.plan.ViewExpanders;
@@ -103,6 +106,7 @@ import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalUnion;
 import org.polypheny.db.rel.logical.LogicalValues;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
@@ -113,6 +117,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
+import org.polypheny.db.routing.ExecutionTimeMonitor.ExecutionTimeObserver;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.sql.SqlExplainFormat;
@@ -140,7 +145,7 @@ import org.polypheny.db.util.Util;
 
 
 @Slf4j
-public abstract class AbstractQueryProcessor implements QueryProcessor {
+public abstract class AbstractQueryProcessor implements QueryProcessor, ExecutionTimeObserver {
 
     protected static final boolean ENABLE_BINDABLE = false;
     protected static final boolean ENABLE_COLLATION_TRAIT = true;
@@ -194,6 +199,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         return type.getPolyType().getJdbcOrdinal();
     }
 
+    @Override
+    public void executionTime( String reference, long nanoTime ) {
+        val id =statement.getTransaction().getMonitoringData().getId();
+        val referenceId = UUID.fromString(reference);
+        if(id.equals( referenceId )){
+            statement.getTransaction().getMonitoringData().setExecutionTime( nanoTime );
+        }
+    }
+
 
     @Override
     public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot ) {
@@ -206,33 +220,44 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
     @Override
     public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted ) {
-        List<PolyphenyDbSignature> signatureList =  prepareQueryList( logicalRoot, parameterRowType, isRouted, false );
+        return prepareQuery( logicalRoot, parameterRowType, isRouted, false );
 
-        // TODO:
-        // 1. calculate costs of all the available signatures and return best
-        // 2. Do the monitoring:
-        //TODO @Cedric this produces an error causing several checks to fail. Please investigate
-        //needed for row results
-        //final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
-        //Iterator<Object> iterator = enumerable.iterator();
-        /*if ( statement.getTransaction().getMonitoringData() != null ) {
-            StatementEvent eventData = statement.getTransaction().getMonitoringData();
-            eventData.setMonitoringType( parameterizedRoot.kind.sql );
-            eventData.setDescription( "Test description: " + signature.statementType.toString() );
-            eventData.setRouted( logicalRoot );
-            eventData.setFieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames() ) );
-            //eventData.setRows( MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() ) );
-            eventData.setAnalyze( isAnalyze );
-            eventData.setSubQuery( isSubquery );
-            eventData.setDurations( statement.getDuration().asJson() );
-        }*/
-
-        return signatureList.get( 0 );
     }
 
     private PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery ) {
-        List<PolyphenyDbSignature> signatureList = prepareQueryList( logicalRoot, parameterRowType, isRouted, isSubquery );
-        return signatureList.get(0);
+        boolean isAnalyze = statement.getTransaction().isAnalyze() && !isSubquery;
+
+        List<PolyphenyDbSignature> signatureList =  prepareQueryList( logicalRoot, parameterRowType, isRouted, isSubquery );
+        if(signatureList.size() == 1){
+            return signatureList.get( 0 );
+        }
+
+        // remove all signatures without relroot
+        val signatures = signatureList.stream().filter( elem -> elem.getRelRoot().isPresent() ).collect( Collectors.toList());
+
+        RelOptCost minCost = ((RelRoot)signatures.get( 0 ).getRelRoot().get()).rel.computeSelfCost( getPlanner(), RelMetadataQuery.instance() );
+        PolyphenyDbSignature minSignature = signatures.get( 0 );
+        for(int i = 1; i < signatures.size(); i++){
+            val cost = ((RelRoot)signatures.get( i ).getRelRoot().get()).rel.computeSelfCost( getPlanner(), RelMetadataQuery.instance() );
+            if(cost.isLt( minCost )){
+                minCost = cost;
+                minSignature = signatures.get( i );
+            }
+        }
+        val result =  minSignature != null ? minSignature : signatures.get( 0 );
+
+        if ( statement.getTransaction().getMonitoringData() != null ) {
+            val relRoot = (RelRoot)minSignature.getRelRoot().get();
+            StatementEvent eventData = statement.getTransaction().getMonitoringData();
+            eventData.setDescription( "Test description: " + result.statementType.toString() );
+            eventData.setRouted( relRoot);
+            eventData.setFieldNames( ImmutableList.copyOf( result.rowType.getFieldNames() ) );
+            eventData.setAnalyze( isAnalyze );
+            eventData.setSubQuery( isSubquery );
+            eventData.setDurations( statement.getDuration().asJson() );
+        }
+
+        return result;
     }
 
     private void acquireLock( boolean isAnalyze, RelRoot logicalRoot ){
@@ -271,6 +296,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         stopWatch.start();
 
         ExecutionTimeMonitor executionTimeMonitor = new ExecutionTimeMonitor();
+        val monitoringData = statement.getTransaction().getMonitoringData();
+        if(monitoringData != null){
+            executionTimeMonitor.subscribe( this, monitoringData.getId()  );
+        }
+
 
         final Convention resultConvention =
                 ENABLE_BINDABLE
@@ -368,10 +398,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
                 if ( preparedResult != null ) {
                     PolyphenyDbSignature signature = createSignature( preparedResult, routedRoot, resultConvention, executionTimeMonitor );
-                    if ( isAnalyze ) {
-                        statement.getDuration().stop( "Implementation Caching" );
-                    }
-
                     signatures.add( Optional.of( signature ) );
                 }else {
                     signatures.add( Optional.empty() );
@@ -382,9 +408,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             }
         }
 
-
-
-        //
         // Plan Caching
         if ( isAnalyze ) {
             statement.getDuration().stop( "Implementation Caching" );
@@ -971,6 +994,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
         return new PolyphenyDbSignature<Object[]>(
                 "",
+                optimalRoot,
                 parameters,
                 ImmutableMap.of(),
                 jdbcType,
