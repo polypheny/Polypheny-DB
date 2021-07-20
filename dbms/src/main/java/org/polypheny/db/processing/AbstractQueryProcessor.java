@@ -67,6 +67,8 @@ import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.materializedView.MaterializedManager;
+import org.polypheny.db.materializedView.MaterializedManager.TableUpdateVisitor;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.RelTraitSet;
@@ -183,6 +185,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         if ( logicalRoot.rel.hasView() ) {
             logicalRoot = logicalRoot.tryExpandView();
         }
+
+        TableUpdateVisitor visitor = new TableUpdateVisitor();
+        logicalRoot.rel.accept( visitor );
+        MaterializedManager.getInstance().addTables( statement.getTransaction(), visitor.getNames() );
 
         ExecutionTimeMonitor executionTimeMonitor = new ExecutionTimeMonitor();
 

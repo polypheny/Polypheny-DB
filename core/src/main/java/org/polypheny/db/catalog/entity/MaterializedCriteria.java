@@ -23,7 +23,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 
-public class MatViewCriteria implements Serializable {
+public class MaterializedCriteria implements Serializable {
 
 
     @Setter
@@ -43,7 +43,7 @@ public class MatViewCriteria implements Serializable {
     private final Long timeInMillis;
 
 
-    public MatViewCriteria() {
+    public MaterializedCriteria() {
         this.criteriaType = CriteriaType.INTERVAL;
         this.interval = 1;
         this.timeUnit = TimeUnit.DAYS;
@@ -52,7 +52,7 @@ public class MatViewCriteria implements Serializable {
     }
 
 
-    public MatViewCriteria( CriteriaType type, Integer interval, TimeUnit timeUnit ) {
+    public MaterializedCriteria( CriteriaType type, Integer interval, TimeUnit timeUnit ) {
         this.criteriaType = type;
         this.interval = interval;
         this.timeUnit = timeUnit;
@@ -61,7 +61,7 @@ public class MatViewCriteria implements Serializable {
     }
 
 
-    public MatViewCriteria( CriteriaType type, Integer interval ) {
+    public MaterializedCriteria( CriteriaType type, Integer interval ) {
         this.criteriaType = type;
         this.interval = interval;
         this.timeUnit = null;

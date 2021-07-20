@@ -28,7 +28,7 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.MatViewCriteria;
+import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -47,32 +47,35 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 
 @Slf4j
-public class MatViewManagerImpl extends MatViewManager {
+public class MaterializedManagerImpl extends MaterializedManager {
 
     @Getter
-    private final Map<Long, MatViewCriteria> matViewInfo;
+    private final Map<Long, MaterializedCriteria> matViewInfo;
 
     @Getter
     private final TransactionManager transactionManager;
 
+    private final Map<String, Integer> tableChanges;
 
-    public MatViewManagerImpl( TransactionManager transactionManager ) {
+
+    public MaterializedManagerImpl( TransactionManager transactionManager ) {
         this.transactionManager = transactionManager;
         this.matViewInfo = new HashMap<>();
-        MatFreshnessLoop matFreshnessLoop = new MatFreshnessLoop( this );
-        Thread t = new Thread( matFreshnessLoop );
+        this.tableChanges = new HashMap<>();
+        MaterializedFreshnessLoop materializedFreshnessLoop = new MaterializedFreshnessLoop( this );
+        Thread t = new Thread( materializedFreshnessLoop );
         t.start();
     }
 
 
-    public synchronized Map<Long, MatViewCriteria> updateMaterializedViewInfo() {
+    public Map<Long, MaterializedCriteria> updateMaterializedViewInfo() {
         List<Long> toRemove = new ArrayList<>();
         for ( Long id : matViewInfo.keySet() ) {
             if ( Catalog.getInstance().getTable( id ) == null ) {
                 toRemove.add( id );
             }
         }
-        toRemove.forEach( matViewInfo::remove );
+        toRemove.forEach( this::deleteMaterializedViewFromInfo );
         return matViewInfo;
     }
 
@@ -83,14 +86,23 @@ public class MatViewManagerImpl extends MatViewManager {
     }
 
 
-    public synchronized void addMatViewInfo( Long tableId, MatViewCriteria matViewCritera ) {
+    public synchronized void addMatViewInfo( Long tableId, MaterializedCriteria matViewCritera ) {
         matViewInfo.put( tableId, matViewCritera );
     }
 
 
     @Override
-    public void addData( Transaction transaction, List<DataStore> stores, List<CatalogColumn> columns, RelRoot sourceRel, long tableId, MatViewCriteria matViewCriteria ) {
-        addMatViewInfo( tableId, matViewCriteria );
+    public void addTables( Transaction transaction, List<List<String>> tableNames ) {
+        List<String> names = new ArrayList<>();
+        if ( !transaction.isActive() ) {
+
+        }
+    }
+
+
+    @Override
+    public void addData( Transaction transaction, List<DataStore> stores, List<CatalogColumn> columns, RelRoot sourceRel, long tableId, MaterializedCriteria materializedCriteria ) {
+        addMatViewInfo( tableId, materializedCriteria );
 
         Statement sourceStatement = transaction.createStatement();
         Statement targetStatement = transaction.createStatement();

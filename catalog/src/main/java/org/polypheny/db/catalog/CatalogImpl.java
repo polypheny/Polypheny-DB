@@ -62,7 +62,7 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
-import org.polypheny.db.catalog.entity.MatViewCriteria;
+import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
@@ -1344,7 +1344,7 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, MatViewCriteria matViewCriteria ) {
+    public long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, MaterializedCriteria materializedCriteria ) {
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( schemaId );
         CatalogUser owner = getUser( ownerId );
@@ -1366,7 +1366,7 @@ public class CatalogImpl extends Catalog {
                     relCollation,
                     ImmutableMap.copyOf( underlyingTables ),
                     fieldList,
-                    matViewCriteria
+                    materializedCriteria
             );
             addConnectedViews( underlyingTables, materializedViewTable.id );
             updateTableLogistics( name, schemaId, id, schema, materializedViewTable );
@@ -1643,7 +1643,7 @@ public class CatalogImpl extends Catalog {
                             old.connectedViews,
                             ((CatalogMaterializedView) old).getUnderlyingTables(),
                             ((CatalogMaterializedView) old).getFieldList(),
-                            ((CatalogMaterializedView) old).getMatViewCriteria()
+                            ((CatalogMaterializedView) old).getMaterializedCriteria()
                     );
                 } else {
                     table = new CatalogTable(
@@ -1711,7 +1711,7 @@ public class CatalogImpl extends Catalog {
                             old.connectedViews,
                             ((CatalogMaterializedView) old).getUnderlyingTables(),
                             ((CatalogMaterializedView) old).getFieldList(),
-                            ((CatalogMaterializedView) old).getMatViewCriteria()
+                            ((CatalogMaterializedView) old).getMaterializedCriteria()
                     );
                 } else {
                     table = new CatalogTable(

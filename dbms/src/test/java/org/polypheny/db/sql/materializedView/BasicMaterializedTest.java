@@ -30,7 +30,7 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-public class BasicMatViewTest {
+public class BasicMaterializedTest {
 
     private final CountDownLatch waiter = new CountDownLatch( 1 );
 
