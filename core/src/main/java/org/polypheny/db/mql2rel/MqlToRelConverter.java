@@ -261,6 +261,7 @@ public class MqlToRelConverter {
                 case "$project":
                     node = combineProjection( value.asDocument().getDocument( "$project" ), node, rowType, false );
                     break;
+                case "$sort":
                 case "$addFields":
                     node = combineProjection( value.asDocument().getDocument( "$addFields" ), node, rowType, true );
                     break;
@@ -269,6 +270,15 @@ public class MqlToRelConverter {
                     break;
                 case "$group":
                     node = combineGroup( value.asDocument().get( "$group" ), node, rowType );
+                    break;
+                case "$sort":
+                    node = combineSort( value.asDocument().get( "$sort" ), node, rowType );   
+                    break;
+                case "$limit":
+                    node = combineLimit( value.asDocument().get( "$limit" ), node, rowType );
+                    break;
+                case "$skip":
+                    node = combineSkip( value.asDocument().get( "$skip" ), node, rowType );
                     break;
                 // todo dl add more pipeline statements
                 default:
@@ -284,52 +294,73 @@ public class MqlToRelConverter {
         return node;
     }
 
+    private RelNode combineSkip( BsonValue value, RelNode node, RelDataType rowType ) {
+        if ( !value.isNumber() || value.asNumber() < 0 ) {
+            throw new RuntimeException( "$skip pipeline stage needs a positiv number after" );
+        }
+        
+        return null;
+    }
+
+    private RelNode combineLimit( BsonValue value, RelNode node, RelDataType rowType ) {
+        if ( !value.isNumber() || value.asNumber() < 0 ) {
+            throw new RuntimeException( "$limit pipeline stage needs a positiv number after" );
+        }
+
+        return null;
+    }
+
+    private RelNode combineSort( BsonValue value, RelNode node, RelDataType rowType ) {
+        if ( !value.isDocument() ) {
+            throw new RuntimeException( "$sort pipeline stage needs a document after" );
+        }
+
+
+        return null;
+    }
 
     private RelNode combineGroup( BsonValue value, RelNode node, RelDataType rowType ) {
-        if ( value.isDocument() ) {
-            BsonValue groupBy = value.asDocument().get( "_id" );
-            if ( !groupBy.isNull() ) {
-                String groupName = groupBy.asString().getValue().substring( 1 );
-
-                RexNode id = getIdentifier( groupName, rowType, null );
-
-                node = LogicalProject.create( node, Collections.singletonList( id ), Collections.singletonList( groupName ) );
-
-                node = LogicalAggregate.create(
-                        node,
-                        ImmutableBitSet.of( 0 ),
-                        Collections.singletonList( ImmutableBitSet.of( 0 ) ),
-                        new ArrayList<>() );
-            }
-            // if null no group by only aggs
-            return node;
-
-        } else {
+        if ( !value.isDocument() ) {
             throw new RuntimeException( "$group pipeline stage needs a document after" );
         }
+        BsonValue groupBy = value.asDocument().get( "_id" );
+        if ( !groupBy.isNull() ) {
+            String groupName = groupBy.asString().getValue().substring( 1 );
+
+            RexNode id = getIdentifier( groupName, rowType, null );
+
+            node = LogicalProject.create( node, Collections.singletonList( id ), Collections.singletonList( groupName ) );
+
+            node = LogicalAggregate.create(
+                    node,
+                    ImmutableBitSet.of( 0 ),
+                    Collections.singletonList( ImmutableBitSet.of( 0 ) ),
+                    new ArrayList<>() );
+        }
+        // if null no group by only aggs // todo dl aggregations
+        return node;
     }
 
 
     private RelNode combineCount( BsonValue value, RelNode node, RelDataType rowType ) {
         if ( value.isString() ) {
-            return LogicalAggregate.create(
-                    node,
-                    ImmutableBitSet.of(),
-                    Collections.singletonList( ImmutableBitSet.of() ),
-                    Collections.singletonList(
-                            AggregateCall.create(
-                                    SqlStdOperatorTable.COUNT,
-                                    false,
-                                    false,
-                                    new ArrayList<>(),
-                                    -1,
-                                    RelCollations.EMPTY,
-                                    cluster.getTypeFactory().createPolyType( PolyType.BIGINT ),
-                                    value.asString().getValue()
-                            ) ) );
-        } else {
             throw new RuntimeException( "$count pipeline stage needs only a string" );
         }
+        return LogicalAggregate.create(
+                node,
+                ImmutableBitSet.of(),
+                Collections.singletonList( ImmutableBitSet.of() ),
+                Collections.singletonList(
+                        AggregateCall.create(
+                                SqlStdOperatorTable.COUNT,
+                                false,
+                                false,
+                                new ArrayList<>(),
+                                -1,
+                                RelCollations.EMPTY,
+                                cluster.getTypeFactory().createPolyType( PolyType.BIGINT ),
+                                value.asString().getValue()
+                        ) ) );
     }
 
 
@@ -834,15 +865,15 @@ public class MqlToRelConverter {
         if ( value.isArray() ) {
             List<Integer> numbers = new ArrayList<>();
             for ( BsonValue bsonValue : value.asArray() ) {
-                if ( bsonValue.isString() || bsonValue.isInt32() ) {
-                    numbers.add( bsonValue.isInt32() ? bsonValue.asInt32().getValue() : DocumentTypeUtil.getTypeNumber( bsonValue.asString().getValue() ) );
+                if ( bsonValue.isString() || bsonValue.isNumber() ) {
+                    numbers.add( bsonValue.isNumber() ? bsonValue.asNumber().intValue() : DocumentTypeUtil.getTypeNumber( bsonValue.asString().getValue() ) );
                 } else {
                     throw new RuntimeException( errorMsg );
                 }
             }
             types = getIntArray( numbers );
-        } else if ( value.isInt32() || value.isString() ) {
-            int typeNumber = value.isInt32() ? value.asInt32().getValue() : DocumentTypeUtil.getTypeNumber( value.asString().getValue() );
+        } else if ( value.isNumber() || value.isString() ) {
+            int typeNumber = value.isNumber() ? value.asNumber().intValue() : DocumentTypeUtil.getTypeNumber( value.asString().getValue() );
             types = getIntArray( Collections.singletonList( typeNumber ) );
         } else {
             throw new RuntimeException( errorMsg );
@@ -1057,13 +1088,13 @@ public class MqlToRelConverter {
 
         for ( Entry<String, BsonValue> entry : projection.entrySet() ) {
             BsonValue value = entry.getValue();
-            if ( value.isInt32() && !isAddFields ) {
+            if ( value.isNumber() && !isAddFields ) {
                 // we have a simple projection; [name]: 1 (include) or [name]:0 (exclude)
                 RelDataTypeField field = getTypeFieldOrDefault( rowType, entry.getKey() );
 
-                if ( value.asInt32().getValue() == 1 ) {
+                if ( value.asNumber().intValue() == 1 ) {
                     includes.put( entry.getKey(), getIdentifier( entry.getKey(), rowType, field ) );
-                } else if ( value.asInt32().getValue() == 0 ) {
+                } else if ( value.asNumber().intValue()== 0 ) {
                     excludes.add( entry.getKey() );
                 }
 
