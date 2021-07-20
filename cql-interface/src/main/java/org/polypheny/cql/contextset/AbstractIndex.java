@@ -20,13 +20,14 @@ import java.util.HashMap;
 import org.polypheny.cql.contextset.exceptions.RelationNotFoundException;
 import org.polypheny.cql.contextset.utils.Tree;
 
-public abstract class Index {
+public abstract class AbstractIndex {
 
-    private final HashMap<String, IRelation> relations = new HashMap<>();
+    private final HashMap<String, AbstractRelation> relations = new HashMap<>();
+
 
     public Tree<BooleanOperator, BooleanExpression> getBooleanTree( String relationName, String searchTerm )
             throws RelationNotFoundException {
-        IRelation relation = relations.get( relationName );
+        AbstractRelation relation = relations.get( relationName );
 
         if ( relation == null ) {
             throw new RelationNotFoundException( "No relation defined for given relation name: " + relationName );
