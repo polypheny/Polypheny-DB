@@ -25,6 +25,6 @@ import java.lang.annotation.Target;
 @Target( ElementType.FIELD )
 public @interface Relation {
 
-    String Name();
+    String value();
 
 }
