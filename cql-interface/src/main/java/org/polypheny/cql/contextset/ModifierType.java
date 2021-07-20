@@ -17,9 +17,19 @@
 package org.polypheny.cql.contextset;
 
 public enum ModifierType {
-    BOOLEAN,
-    STRING,
-    INTEGER,
-    REAL,
-    ENUM
+
+    BOOLEAN( false, true ),
+    STRING( false, true ),
+    NUMBER( true, true ),
+    ENUM( false, true );
+
+    public boolean COMPARABLE;
+    public boolean ASSIGNABLE;
+
+
+    ModifierType( boolean comparable, boolean assignable ) {
+        this.COMPARABLE = comparable;
+        this.ASSIGNABLE = assignable;
+    }
+
 }
