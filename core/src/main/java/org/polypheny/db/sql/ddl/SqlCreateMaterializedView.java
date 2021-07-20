@@ -29,8 +29,8 @@ import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
-import org.polypheny.db.catalog.entity.MaterializedViewCriteria;
-import org.polypheny.db.catalog.entity.MaterializedViewCriteria.CriteriaType;
+import org.polypheny.db.catalog.entity.MatViewCriteria;
+import org.polypheny.db.catalog.entity.MatViewCriteria.CriteriaType;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -138,25 +138,25 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
             columns = getColumnInfo();
         }
 
-        MaterializedViewCriteria materializedViewCriteria;
+        MatViewCriteria matViewCriteria;
 
         if ( freshnessType != null ) {
             switch ( freshnessType ) {
                 case "UPDATE":
-                    materializedViewCriteria = new MaterializedViewCriteria( CriteriaType.UPDATE, freshnessTime );
+                    matViewCriteria = new MatViewCriteria( CriteriaType.UPDATE, freshnessTime );
                     System.out.println( freshnessType );
                     break;
                 case "INTERVAL":
-                    materializedViewCriteria = new MaterializedViewCriteria( CriteriaType.INTERVAL, freshnessTime, getFreshnessType( freshnessId.toString().toLowerCase( Locale.ROOT ) ) );
+                    matViewCriteria = new MatViewCriteria( CriteriaType.INTERVAL, freshnessTime, getFreshnessType( freshnessId.toString().toLowerCase( Locale.ROOT ) ) );
                     System.out.println( freshnessType );
                     break;
                 default:
-                    materializedViewCriteria = new MaterializedViewCriteria();
+                    matViewCriteria = new MatViewCriteria();
                     System.out.println( freshnessType );
                     break;
             }
         } else {
-            materializedViewCriteria = new MaterializedViewCriteria();
+            matViewCriteria = new MatViewCriteria();
             System.out.println( freshnessType );
         }
 
@@ -170,7 +170,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
                     stores,
                     placementType,
                     columns,
-                    materializedViewCriteria );
+                    matViewCriteria );
         } catch ( TableAlreadyExistsException e ) {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( viewName ) );
         } catch ( GenericCatalogException | UnknownColumnException e ) {

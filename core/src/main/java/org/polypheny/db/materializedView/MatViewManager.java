@@ -19,17 +19,17 @@ package org.polypheny.db.materializedView;
 import java.util.List;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.MaterializedViewCriteria;
+import org.polypheny.db.catalog.entity.MatViewCriteria;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.transaction.Transaction;
 
-public abstract class MaterializedViewManager {
+public abstract class MatViewManager {
 
-    public static MaterializedViewManager INSTANCE = null;
+    public static MatViewManager INSTANCE = null;
 
 
-    public static MaterializedViewManager setAndGetInstance( MaterializedViewManager transaction ) {
+    public static MatViewManager setAndGetInstance( MatViewManager transaction ) {
         if ( INSTANCE != null ) {
             throw new RuntimeException( "Overwriting the MaterializedViewManager, when already set is not permitted." );
         }
@@ -38,7 +38,7 @@ public abstract class MaterializedViewManager {
     }
 
 
-    public static MaterializedViewManager getInstance() {
+    public static MatViewManager getInstance() {
         if ( INSTANCE == null ) {
             throw new RuntimeException( "MaterializedViewManager was not set correctly on Polypheny-DB start-up" );
         }
@@ -50,6 +50,6 @@ public abstract class MaterializedViewManager {
 
     public abstract void updateData( Transaction transaction, List<DataStore> stores, List<CatalogColumn> columns, RelRoot sourceRelRoot, RelCollation relCollation );
 
-    public abstract void addData( Transaction transaction, List<DataStore> stores, List<CatalogColumn> addedColumns, RelRoot relRoot, long tableId, MaterializedViewCriteria materializedViewCriteria );
+    public abstract void addData( Transaction transaction, List<DataStore> stores, List<CatalogColumn> addedColumns, RelRoot relRoot, long tableId, MatViewCriteria matViewCriteria );
 
 }

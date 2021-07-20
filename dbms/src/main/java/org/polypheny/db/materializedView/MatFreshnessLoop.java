@@ -28,8 +28,8 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
-import org.polypheny.db.catalog.entity.MaterializedViewCriteria;
-import org.polypheny.db.catalog.entity.MaterializedViewCriteria.CriteriaType;
+import org.polypheny.db.catalog.entity.MatViewCriteria;
+import org.polypheny.db.catalog.entity.MatViewCriteria.CriteriaType;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -45,13 +45,13 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionImpl;
 
 @Slf4j
-public class MaterializedFreshnessLoop implements Runnable {
+public class MatFreshnessLoop implements Runnable {
 
 
-    private final MaterializedViewManagerImpl manager;
+    private final MatViewManagerImpl manager;
 
 
-    public MaterializedFreshnessLoop( MaterializedViewManagerImpl manager ) {
+    public MatFreshnessLoop( MatViewManagerImpl manager ) {
         this.manager = manager;
     }
 
@@ -68,7 +68,7 @@ public class MaterializedFreshnessLoop implements Runnable {
 
 
     private void startEventLoop() throws InterruptedException {
-        Map<Long, MaterializedViewCriteria> materializedViewInfo;
+        Map<Long, MatViewCriteria> materializedViewInfo;
         Catalog catalog = Catalog.getInstance();
         AdapterManager adapterManager = AdapterManager.getInstance();
         while ( true ) {

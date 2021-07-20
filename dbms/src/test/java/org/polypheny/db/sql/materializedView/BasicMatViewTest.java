@@ -30,7 +30,7 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-public class BasicMaterializedViewTest {
+public class BasicMatViewTest {
 
     private final CountDownLatch waiter = new CountDownLatch( 1 );
 
@@ -452,6 +452,46 @@ public class BasicMaterializedViewTest {
             }
         }
     }
+
+    /*
+
+    @Test
+    public void testDropFreshnessInterval() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
+                statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
+                statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 100 \"milliseconds\" " );
+                waiter.await( 1, TimeUnit.SECONDS );
+                try {
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1 }
+                            ) );
+
+                    statement.executeUpdate( "DELETE FROM viewTestEmpTable" );
+                    connection.commit();
+
+                    waiter.await( 1, TimeUnit.SECONDS );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            ImmutableList.of()
+                    );
+
+                } finally {
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
+                    statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
+                }
+            } catch ( InterruptedException e ) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+     */
 
 
 }

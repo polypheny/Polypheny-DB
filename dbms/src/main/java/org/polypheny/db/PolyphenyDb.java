@@ -44,8 +44,8 @@ import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.information.HostInformation;
 import org.polypheny.db.information.JavaInformation;
-import org.polypheny.db.materializedView.MaterializedViewManager;
-import org.polypheny.db.materializedView.MaterializedViewManagerImpl;
+import org.polypheny.db.materializedView.MatViewManager;
+import org.polypheny.db.materializedView.MatViewManagerImpl;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.statistic.StatisticQueryProcessor;
 import org.polypheny.db.statistic.StatisticsManager;
@@ -241,7 +241,7 @@ public class PolyphenyDb {
         DdlManager.setAndGetInstance( new DdlManagerImpl( catalog ) );
 
         //Initialize MaterializedViewManager
-        MaterializedViewManager.setAndGetInstance( new MaterializedViewManagerImpl( transactionManager ) );
+        MatViewManager.setAndGetInstance( new MatViewManagerImpl( transactionManager ) );
 
         // Start Polypheny UI
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator );

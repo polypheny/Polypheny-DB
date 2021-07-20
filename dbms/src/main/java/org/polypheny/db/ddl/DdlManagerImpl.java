@@ -59,7 +59,7 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
-import org.polypheny.db.catalog.entity.MaterializedViewCriteria;
+import org.polypheny.db.catalog.entity.MatViewCriteria;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.SchemaAlreadyExistsException;
@@ -90,7 +90,7 @@ import org.polypheny.db.ddl.exception.PlacementIsPrimaryException;
 import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
-import org.polypheny.db.materializedView.MaterializedViewManager;
+import org.polypheny.db.materializedView.MatViewManager;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.prepare.RelOptTableImpl;
@@ -1375,7 +1375,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createMaterializedView( String viewName, long schemaId, RelRoot relRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedViewCriteria materializedViewCriteria ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException {
+    public void createMaterializedView( String viewName, long schemaId, RelRoot relRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MatViewCriteria matViewCriteria ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException {
         if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
             throw new TableAlreadyExistsException();
         }
@@ -1401,7 +1401,7 @@ public class DdlManagerImpl extends DdlManager {
                 relRoot.collation,
                 findUnderlyingTablesOfView( relRoot.rel, underlyingTables, fieldList ),
                 fieldList,
-                materializedViewCriteria
+                matViewCriteria
         );
 
         List<CatalogColumn> addedColumns = new LinkedList<>();
@@ -1438,8 +1438,8 @@ public class DdlManagerImpl extends DdlManager {
             store.createTable( statement.getPrepareContext(), catalogMaterializedView );
         }
 
-        MaterializedViewManager materializedViewManager = MaterializedViewManager.getInstance();
-        materializedViewManager.addData( statement.getTransaction(), stores, addedColumns, relRoot, tableId, catalogMaterializedView.getMaterializedViewCriteria() );
+        MatViewManager matViewManager = MatViewManager.getInstance();
+        matViewManager.addData( statement.getTransaction(), stores, addedColumns, relRoot, tableId, catalogMaterializedView.getMatViewCriteria() );
 
     }
 

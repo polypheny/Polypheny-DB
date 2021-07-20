@@ -27,7 +27,7 @@ import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.entity.MaterializedViewCriteria;
+import org.polypheny.db.catalog.entity.MatViewCriteria;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.SchemaAlreadyExistsException;
@@ -454,7 +454,7 @@ public abstract class DdlManager {
      * @param relRoot the relNode which was built form the Select part of the view
      * @param statement the used Statement
      */
-    public abstract void createMaterializedView( String viewName, long schemaId, RelRoot relRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedViewCriteria materializedViewCriteria ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException;
+    public abstract void createMaterializedView( String viewName, long schemaId, RelRoot relRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MatViewCriteria matViewCriteria ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException;
 
 
     /**

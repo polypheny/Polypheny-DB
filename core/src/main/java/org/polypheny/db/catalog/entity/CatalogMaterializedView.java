@@ -46,7 +46,7 @@ public class CatalogMaterializedView extends CatalogView {
     private final RelNode definition;
 
     @Getter
-    private final MaterializedViewCriteria materializedViewCriteria;
+    private final MatViewCriteria matViewCriteria;
 
 
     public CatalogMaterializedView(
@@ -65,14 +65,14 @@ public class CatalogMaterializedView extends CatalogView {
             RelCollation relCollation,
             Map<Long, List<Long>> underlyingTables,
             RelDataType fieldList,
-            MaterializedViewCriteria materializedViewCriteria
+            MatViewCriteria matViewCriteria
     ) {
         super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, definition, primaryKey, placementsByAdapter, modifiable, relCollation, underlyingTables, fieldList );
         this.definition = definition;
         this.relCollation = relCollation;
         this.underlyingTables = underlyingTables;
         this.fieldList = fieldList;
-        this.materializedViewCriteria = materializedViewCriteria;
+        this.matViewCriteria = matViewCriteria;
     }
 
 
@@ -98,14 +98,14 @@ public class CatalogMaterializedView extends CatalogView {
             ImmutableList<Long> connectedViews,
             Map<Long, List<Long>> underlyingTables,
             RelDataType fieldList,
-            MaterializedViewCriteria materializedViewCriteria
+            MatViewCriteria matViewCriteria
     ) {
         super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, definition, primaryKey, placementsByAdapter, modifiable, numPartitions, partitionType, partitionIds, partitionColumnId, isPartitioned, relCollation, connectedViews, underlyingTables, fieldList );
         this.definition = definition;
         this.relCollation = relCollation;
         this.underlyingTables = underlyingTables;
         this.fieldList = fieldList;
-        this.materializedViewCriteria = materializedViewCriteria;
+        this.matViewCriteria = matViewCriteria;
     }
 
 
@@ -127,7 +127,7 @@ public class CatalogMaterializedView extends CatalogView {
                 relCollation,
                 underlyingTables,
                 fieldList,
-                materializedViewCriteria );
+                matViewCriteria );
     }
 
 
@@ -155,7 +155,7 @@ public class CatalogMaterializedView extends CatalogView {
                 newConnectedViews,
                 underlyingTables,
                 fieldList,
-                materializedViewCriteria );
+                matViewCriteria );
     }
 
 
@@ -183,7 +183,7 @@ public class CatalogMaterializedView extends CatalogView {
                 connectedViews,
                 underlyingTables,
                 fieldList,
-                materializedViewCriteria );
+                matViewCriteria );
     }
 
 }

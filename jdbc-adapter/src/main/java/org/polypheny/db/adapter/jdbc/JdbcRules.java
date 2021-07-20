@@ -1244,4 +1244,25 @@ public class JdbcRules {
 
     }
 
+    /*
+    private static class CheckingTableUpdateVisitor extends RexVisitorImpl<Void> {
+        private boolean containsTableUpdate = false;
+
+        CheckingTableUpdateVisitor(){super(true);}
+
+        public boolean containsTableUpdate(){return containsTableUpdate;}
+
+        @Override
+        public Void visitCall(RexCall call){
+            SqlOperator operator = call.getOperator();
+            if(operator instanceof ){
+                containsTableUpdate = true;
+            }
+            return super.visitCall( call );
+        }
+    }
+
+     */
+
+
 }
