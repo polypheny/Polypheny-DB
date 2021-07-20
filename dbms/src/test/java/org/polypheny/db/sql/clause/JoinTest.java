@@ -35,6 +35,7 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
 
+@SuppressWarnings({"SqlDialectInspection", "SqlNoDataSourceInspection"})
 @Slf4j
 public class JoinTest {
 
@@ -70,6 +71,7 @@ public class JoinTest {
             try (Statement statement = connection.createStatement()) {
                 statement.executeUpdate("DROP TABLE TableA");
             }
+            connection.commit();
         }
     }
 

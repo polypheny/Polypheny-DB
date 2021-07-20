@@ -19,6 +19,7 @@ package org.polypheny.db.sql.fun;
 
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
@@ -273,25 +274,27 @@ public class TrigonometricFunctionsTest {
 
                 // For Decimal
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{ 0, 1.5707963267948966 },
-                        new Object[]{ 30, 1.0239453760989525 },
-                        new Object[]{ 45, 0.914735735869974 }
+                        new Object[]{ 0, 1.570796000000000081087137004942633211612701416015625 },
+                        new Object[]{ 30, 1.0239450000000001050892706189188174903392791748046875 },
+                        new Object[]{ 45, 0.914735999999999993548271959298290312290191650390625 }
                 );
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT AngleinDegree, ROUND(ACOS(AngleinRadian),6) FROM trigotestdecimal" ),
+                        statement.executeQuery( "SELECT AngleinDegree, ACOS(AngleinRadian) FROM trigotestdecimal" ),
                         expectedResult
                 );
 
                 // For Double
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 0, 1.0 },
-                        new Object[]{ 30, 0.867819 },
-                        new Object[]{ 45, 0.819648 }
+                        new Object[]{ 0, 1.570796 },
+                        new Object[]{ 30, 1.023945 },
+                        new Object[]{ 45, 0.914736 }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT AngleinDegree, ROUND(ACOS(AngleinRadian),6) FROM trigotestdouble" ),
                         expectedResult
                 );
+
+
 
                 // For Integer
                 expectedResult = ImmutableList.of(
@@ -302,6 +305,7 @@ public class TrigonometricFunctionsTest {
                         statement.executeQuery( "SELECT AngleinDegree, ROUND(ACOS(AngleinRadian),6) FROM trigotestinteger" ),
                         expectedResult
                 );
+
 
             }
         }

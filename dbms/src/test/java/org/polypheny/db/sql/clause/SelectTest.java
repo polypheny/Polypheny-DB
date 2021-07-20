@@ -32,6 +32,7 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
 
+@SuppressWarnings({"SqlDialectInspection", "SqlNoDataSourceInspection"})
 @Slf4j
 public class SelectTest {
 
@@ -61,8 +62,6 @@ public class SelectTest {
                 statement.executeUpdate("INSERT INTO TableC VALUES (15, 'AB', 8200)");
                 statement.executeUpdate("INSERT INTO TableC VALUES (25, 'AB', 8201)");
                 statement.executeUpdate("INSERT INTO TableC VALUES (98, 'AC', 8203)");
-                statement.executeUpdate("INSERT INTO TableC VALUES (98, 'SC', 8204)");
-                statement.executeUpdate("INSERT INTO TableC VALUES (98, 'AC', 8202)");
 
 
                 connection.commit();
@@ -81,6 +80,7 @@ public class SelectTest {
                 statement.executeUpdate("DROP TABLE TableC");
                 //   statement.executeUpdate( "DROP TABLE trigotestinteger" );
             }
+            connection.commit();
         }
     }
 
@@ -123,10 +123,7 @@ public class SelectTest {
 
 
                 List<Object[]> expectedResult1 = ImmutableList.of(
-                        new Object[]{15},
-                        new Object[]{20}
-
-
+                        new Object[]{98}
                 );
 
 
