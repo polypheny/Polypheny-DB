@@ -150,7 +150,7 @@ public class TestHelper {
                         }
                     } else if ( columnType != Types.ARRAY ) {
                         if ( expectedRow[j] != null ) {
-                            if ( columnType == Types.FLOAT ) {
+                            if ( columnType == Types.FLOAT || columnType == Types.REAL ) {
                                 float diff = Math.abs( (float) expectedRow[j] - resultSet.getFloat( j + 1 ) );
                                 Assert.assertTrue(
                                         "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "': The difference between the expected float and the received float exceeds the epsilon. Difference: " + (diff - EPSILON),
@@ -171,6 +171,12 @@ public class TestHelper {
                                 } else {
                                     Assert.assertEquals( "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "'", 0, expectedResult.doubleValue() - result.doubleValue(), 0.0 );
                                 }
+                            } else {
+                                Assert.assertEquals(
+                                        "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "'",
+                                        expectedRow[j],
+                                        resultSet.getObject( j + 1 )
+                                );
                             }
                         } else {
                             Assert.assertEquals(
