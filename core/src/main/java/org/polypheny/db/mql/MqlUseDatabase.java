@@ -17,6 +17,11 @@
 package org.polypheny.db.mql;
 
 import lombok.Getter;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.exceptions.SchemaAlreadyExistsException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.mql.Mql.Type;
 import org.polypheny.db.transaction.Statement;
@@ -34,7 +39,17 @@ public class MqlUseDatabase extends MqlNode implements MqlExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement ) {
+        Catalog catalog = Catalog.getInstance();
 
+        int userId = catalog.getUser( Catalog.defaultUser ).id;
+
+        try {
+            DdlManager.getInstance().createSchema( database, Catalog.defaultDatabaseId, SchemaType.DOCUMENT, Catalog.defaultUser, true, false );
+            long schemaId = catalog.getSchema( Catalog.defaultDatabaseId, database ).id;
+            catalog.setUserSchema( userId, schemaId );
+        } catch ( UnknownSchemaException | SchemaAlreadyExistsException e ) {
+            throw new RuntimeException( "The schema creation failed" );
+        }
     }
 
 

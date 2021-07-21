@@ -309,12 +309,20 @@ MqlNode Input() :
 /** Brace matching production. */
 MqlNode Statement() :
 {
- MqlNode n;
+    MqlNode n;
+    String name;
 }
 {
     "db." n=Db_Statement()
     {return n;}
+    |
+    "use " name = Literal()
+    {return new MqlUseDatabase(name);}
+    |
+    "show db"
+    {return new MqlShowDatabase();}
 }
+
 
 MqlNode Db_Statement():
 {
@@ -338,16 +346,9 @@ MqlNode Db_Statement():
         "createView(" name = Literal() "," source = Literal() ("," doc=Document() )? ")"
         {n = new MqlCreateView(name, source, doc);}
     |
-        "use " name = Literal()
-        {n = new MqlUseDatabase(name);}
-    |
-        "show db"
-        {n = new MqlShowDatabase();}
-    |
         n = Collection_Statement(null)
     |
         name=Literal() "." n=Collection_Statement(name)
-
     )
     {return n;}
 }
@@ -362,11 +363,9 @@ MqlNode Collection_Statement(String collection):
     |
         n = Insert_Statement(collection)
     |
-        n = Insert_One_Statement(collection)
-    |
-        n = Insert_Many_Statement(collection)
-    |
         n = Count_Statement(collection)
+    |
+        n = Estimate_Count_Statement(collection)
     |
         n = Aggregate_Statement(collection)
     |
@@ -388,16 +387,35 @@ MqlNode Collection_Statement(String collection):
 
 MqlNode Delete_Statement(String collection):
 {
-    BsonDocument doc;
+    List<BsonDocument> docs = new ArrayList();
+    boolean onlyOne = true;
 }
 {
-    "deleteMany(" doc=Document() ")"
-    { return new MqlDelete(collection, doc);}
+    (
+        "deleteOne("
+        |
+        "deleteMany("
+        {onlyOne = false;}
+    )
+    [docs=Splitter()] ")"
+    {
+        if ( docs.size() == 2 ){
+            return new MqlDelete(collection, docs.get(0), docs.get(1), onlyOne);
+        }else if ( docs.size() == 1 ){
+            return new MqlDelete(collection, docs.get(0), null, onlyOne);
+        }else {
+            throw new RuntimeException( "The used operation needs a least one empty document." );
+        }
+
+    }
 }
 
-MqlNode Drop_Statement(String collection): {}
+MqlNode Drop_Statement(String collection):
 {
-    "drop()"
+    BsonDocument doc = null;
+}
+{
+    "drop(" [doc=Document()] ")"
     {return new MqlDrop(collection);}
 }
 
@@ -451,28 +469,62 @@ MqlNode Aggregate_Statement(String collection):
 
 MqlNode Count_Statement(String collection):
 {
-    BsonDocument doc;
+    List<BsonDocument> docs = new ArrayList();
+    boolean isEstimate = false;
 }
 {
-    "count(" doc=Document() ")"
-    {return new MqlCount(collection, doc, true);}
-|
-    "countDocuments(" doc=Document() ")"
-    {return new MqlCount(collection, doc);}
+    (
+    "count("
+    |
+    "countDocuments("
+    )
+    docs=Splitter() ")"
+    {
+        if ( docs.size() == 2 ){
+            return new MqlCount(collection, docs.get(0), docs.get(1), isEstimate);
+        }else if ( docs.size() == 1 ){
+            return new MqlCount(collection, docs.get(0), null, isEstimate);
+        }else {
+            throw new RuntimeException( "The used operation needs a least one empty document." );
+        }
+
+    }
+
 }
+
+MqlNode Estimate_Count_Statement(String collection):
+{
+    BsonDocument doc = null;
+}
+{
+    "estimatedDocumentCount(" [doc=Document()] ")"
+    {
+        return new MqlCount(collection, null, doc, true);
+    }
+
+}
+
 
 MqlNode Find_Statement(String collection):
 {
-    List<BsonDocument> statements;
+    List<BsonDocument> docs = new ArrayList();
+    boolean onlyOne = false;
 }
 {
-     "find(" statements=Splitter() ")"
+    (
+        "find("
+        |
+        "findOne("
+        {onlyOne = true;}
+    )
+    docs=Splitter() ")"
     {
-
-        if ( statements.size() >= 1 ){
-            return new MqlFind(collection, statements.get(0), statements.size() == 2 ? statements.get(1) : null);
+        if ( docs.size() == 2 ){
+            return new MqlFind( collection, docs.get(0), docs.get(1), onlyOne );
+        }else if ( docs.size() == 1 ){
+            return new MqlFind( collection, docs.get(0), null, onlyOne );
         }else {
-            throw new RuntimeException( "MqlFind needs a filter." );
+            return new MqlFind(collection, null, null, onlyOne );
         }
 
     }
@@ -480,36 +532,45 @@ MqlNode Find_Statement(String collection):
 
 MqlNode Insert_Statement(String collection):
 {
+    List<BsonDocument> docs = new ArrayList();
     BsonDocument doc = null;
     BsonArray array = null;
 }
 {
-    "insert(" ( doc=Document() | array=Array() ) ")"
+    (
+        (
+            "insert(" (
+                array=Array() ["," doc=Document() ]
+                {docs = Arrays.asList(doc);}
+                |
+                docs = Splitter()
+            )
+        )
+        |
+        (
+            "insertOne(" docs=Splitter()
+            |
+            "insertMany(" array=Array() ["," doc=Document() ]
+            {docs = Arrays.asList(doc);}
+        )
+    )
+    ")"
+
     {
-        if ( doc != null ) {
-            return new MqlInsert(collection, new BsonArray(Arrays.asList(doc)));
+        if ( array != null ) {
+            if ( docs.size() == 1 ){
+                return new MqlInsert( collection, array, docs.get(0) );
+            }else {
+                return new MqlInsert( collection, array, null );
+            }
         }else {
-            return new MqlInsert(collection, array);
+            if ( docs.size() == 2 ) {
+                return new MqlInsert( collection, new BsonArray(Arrays.asList(docs.get(0))), docs.get(1) );
+            }else {
+                return new MqlInsert( collection, new BsonArray(Arrays.asList(docs.get(0))), null );
+            }
         }
     }
-}
-
-MqlNode Insert_One_Statement(String collection):
-{
-    BsonDocument doc;
-}
-{
-    "insertOne(" doc=Document() ")"
-    {return new MqlInsert(collection, new BsonArray(Arrays.asList(doc)));}
-}
-
-MqlNode Insert_Many_Statement(String collection):
-{
-    BsonArray array;
-}
-{
-    "insertMany(" array=Array() ")"
-    {return new MqlInsert(collection, array);}
 }
 
 BsonDocument Document():

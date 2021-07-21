@@ -587,8 +587,9 @@ public class CatalogImpl extends Catalog {
         }
 
         if ( !userNames.containsKey( "pa" ) ) {
-            addUser( "pa", "" );
+             addUser( "pa", "" );
         }
+        Catalog.defaultUser = systemId;
 
         //////////////
         // init database
@@ -598,6 +599,7 @@ public class CatalogImpl extends Catalog {
         } else {
             databaseId = getDatabase( "APP" ).id;
         }
+        Catalog.defaultDatabaseId = databaseId;
 
         //////////////
         // init schema
@@ -851,14 +853,26 @@ public class CatalogImpl extends Catalog {
      * @param password of the user
      * @return the id of the created user
      */
+    @Override
     public int addUser( String name, String password ) {
-        CatalogUser user = new CatalogUser( userIdBuilder.getAndIncrement(), name, password );
+        CatalogUser user = new CatalogUser( userIdBuilder.getAndIncrement(), name, password, 1 );
         synchronized ( this ) {
             users.put( user.id, user );
             userNames.put( user.name, user );
         }
         listeners.firePropertyChange( "user", null, user );
         return user.id;
+    }
+
+
+    public void setUserSchema( int userId, long schemaId ) {
+        CatalogUser user = getUser( userId );
+        CatalogUser newUser = new CatalogUser( user.id, user.name, user.password, schemaId );
+        synchronized ( this ) {
+            users.put( user.id, newUser );
+            userNames.put( user.name, newUser );
+        }
+        listeners.firePropertyChange( "user", null, user );
     }
 
 

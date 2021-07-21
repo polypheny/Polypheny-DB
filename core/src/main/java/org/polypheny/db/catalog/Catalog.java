@@ -81,6 +81,8 @@ public abstract class Catalog {
 
     public static Adapter defaultStore;
     public static Adapter defaultSource;
+    public static int defaultUser = 0;
+    public static long defaultDatabaseId = 0;
     public static boolean resetDocker;
     protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
     public boolean isPersistent = false;
@@ -147,6 +149,11 @@ public abstract class Catalog {
     protected final boolean isValidIdentifier( final String str ) {
         return str.length() <= 100 && str.matches( "^[a-z_][a-z0-9_]*$" ) && !str.isEmpty();
     }
+
+
+    public abstract int addUser( String name, String password );
+
+    public abstract void setUserSchema( int userId, long schemaId );
 
 
     /**

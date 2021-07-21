@@ -36,13 +36,17 @@ import org.bson.BsonNumber;
 import org.bson.BsonRegularExpression;
 import org.bson.BsonString;
 import org.bson.BsonValue;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.document.DocumentTypeUtil;
 import org.polypheny.db.mql.Mql;
 import org.polypheny.db.mql.MqlAggregate;
+import org.polypheny.db.mql.MqlCount;
+import org.polypheny.db.mql.MqlDelete;
 import org.polypheny.db.mql.MqlFind;
 import org.polypheny.db.mql.MqlInsert;
 import org.polypheny.db.mql.MqlNode;
+import org.polypheny.db.mql.MqlQueryStatement;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
@@ -181,34 +185,85 @@ public class MqlToRelConverter {
         RelOptTable table;
         RelNode node;
         Mql.Type kind = query.getKind();
+        String dbSchemaName = Catalog.getInstance().getUser( Catalog.defaultUser ).getDefaultSchema().name;
 
         switch ( kind ) {
             case FIND:
-                table = catalogReader.getTable( ImmutableList.of( "private", ((MqlFind) query).getCollection() ) );
+                table = catalogReader.getTable( ImmutableList.of( dbSchemaName, ((MqlFind) query).getCollection() ) );
                 node = LogicalTableScan.create( cluster, table );
                 RelNode find = convertFind( (MqlFind) query, table.getRowType(), node );
                 return RelRoot.of( find, find.getRowType(), SqlKind.SELECT );
+            case COUNT:
+                table = catalogReader.getTable( ImmutableList.of( dbSchemaName, ((MqlCount) query).getCollection() ) );
+                node = LogicalTableScan.create( cluster, table );
+                RelNode count = convertCount( (MqlCount) query, table.getRowType(), node );
+                return RelRoot.of( count, count.getRowType(), SqlKind.SELECT );
             case AGGREGATE:
-                table = catalogReader.getTable( ImmutableList.of( "private", ((MqlAggregate) query).getCollection() ) );
+                table = catalogReader.getTable( ImmutableList.of( dbSchemaName, ((MqlAggregate) query).getCollection() ) );
                 node = LogicalTableScan.create( cluster, table );
                 return RelRoot.of( convertAggregate( (MqlAggregate) query, table.getRowType(), node ), SqlKind.SELECT );
+            /// dmls
             case INSERT:
-                table = catalogReader.getTable( ImmutableList.of( "private", ((MqlInsert) query).getCollection() ) );
-
-                return RelRoot.of(
-                        LogicalTableModify.create(
-                                table,
-                                catalogReader,
-                                convertMultipleValues( ((MqlInsert) query).getArray() ),
-                                Operation.INSERT,
-                                null,
-                                null,
-                                false ),
-                        SqlKind.INSERT );
+                table = catalogReader.getTable( ImmutableList.of( dbSchemaName, ((MqlInsert) query).getCollection() ) );
+                return RelRoot.of( convertInsert( (MqlInsert) query, table ), SqlKind.INSERT );
+            case DELETE:
+                table = catalogReader.getTable( ImmutableList.of( dbSchemaName, ((MqlDelete) query).getCollection() ) );
+                node = LogicalTableScan.create( cluster, table );
+                return RelRoot.of( convertDelete( (MqlDelete) query, table, node ), SqlKind.DELETE );
             default:
                 throw new IllegalStateException( "Unexpected value: " + kind );
         }
 
+    }
+
+
+    private RelNode convertDelete( MqlDelete query, RelOptTable table, RelNode node ) {
+        RelNode deleteQuery = node;
+        if ( !query.getQuery().isEmpty() ) {
+            deleteQuery = convertQuery( query, table.getRowType(), node );
+        }
+        return LogicalTableModify.create(
+                table,
+                catalogReader,
+                deleteQuery,
+                Operation.DELETE,
+                null,
+                null,
+                false );
+    }
+
+
+    private LogicalTableModify convertInsert( MqlInsert query, RelOptTable table ) {
+        LogicalTableModify modify = LogicalTableModify.create(
+                table,
+                catalogReader,
+                convertMultipleValues( query.getArray() ),
+                Operation.INSERT,
+                null,
+                null,
+                false );
+        return modify;
+    }
+
+
+    private RelNode convertCount( MqlCount query, RelDataType rowType, RelNode node ) {
+        node = convertQuery( query, rowType, node );
+
+        return LogicalAggregate.create(
+                node,
+                ImmutableBitSet.of(),
+                Collections.singletonList( ImmutableBitSet.of() ),
+                Collections.singletonList(
+                        AggregateCall.create(
+                                SqlStdOperatorTable.COUNT,
+                                false,
+                                query.isEstimate(),
+                                new ArrayList<>(),
+                                -1,
+                                RelCollations.EMPTY,
+                                cluster.getTypeFactory().createPolyType( PolyType.BIGINT ),
+                                query.isEstimate() ? "estimatedCount" : "count"
+                        ) ) );
     }
 
 
@@ -264,6 +319,7 @@ public class MqlToRelConverter {
                     node = combineFilter( value.asDocument().getDocument( "$match" ), node, rowType );
                     updateRowType = false;
                     break;
+                case "$unset":
                 case "$project":
                     node = combineProjection( value.asDocument().getDocument( "$project" ), node, rowType, false );
                     break;
@@ -286,6 +342,7 @@ public class MqlToRelConverter {
                 case "$skip":
                     node = combineSkip( value.asDocument().get( "$skip" ), node );
                     break;
+                // $unwind
                 // todo dl add more pipeline statements
                 default:
                     throw new IllegalStateException( "Unexpected value: " + ((BsonDocument) value).getFirstKey() );
@@ -435,7 +492,7 @@ public class MqlToRelConverter {
 
         node = LogicalProject.create( node, nodes, names );
 
-        return groupByIdPart( value, node, node.getRowType(), aggNames, ops );
+        return groupBy( value, node, node.getRowType(), aggNames, ops );
     }
 
 
@@ -454,7 +511,7 @@ public class MqlToRelConverter {
     }
 
 
-    private RelNode groupByIdPart( BsonValue value, RelNode node, RelDataType rowType, List<String> names, List<SqlAggFunction> aggs ) {
+    private RelNode groupBy( BsonValue value, RelNode node, RelDataType rowType, List<String> names, List<SqlAggFunction> aggs ) {
         BsonValue groupBy = value.asDocument().get( "_id" );
 
         if ( names.size() == 0 ) {
@@ -523,10 +580,7 @@ public class MqlToRelConverter {
 
 
     private RelNode convertFind( MqlFind query, RelDataType rowType, RelNode node ) {
-        if ( query.getQuery() != null && !query.getQuery().isEmpty() ) {
-            this.inQuery = true;
-            node = combineFilter( query.getQuery(), node, rowType );
-        }
+        node = convertQuery( query, rowType, node );
 
         if ( query.getProjection() != null && !query.getProjection().isEmpty() ) {
             node = combineProjection( query.getProjection(), node, rowType, false );
@@ -534,6 +588,15 @@ public class MqlToRelConverter {
 
         return node;
 
+    }
+
+
+    private RelNode convertQuery( MqlQueryStatement query, RelDataType rowType, RelNode node ) {
+        if ( query.getQuery() != null && !query.getQuery().isEmpty() ) {
+            this.inQuery = true;
+            node = combineFilter( query.getQuery(), node, rowType );
+        }
+        return node;
     }
 
 

@@ -5,6 +5,8 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
 import org.polypheny.db.mql.parser.MqlParserPos;
 
 @Accessors(fluent = true)
@@ -17,6 +19,33 @@ public abstract class MqlNode {
     @Setter
     @Getter
     List<String> primary = new ArrayList<>();
+
+
+    protected BsonDocument getDocumentOrNull( BsonDocument document, String name ) {
+        if ( document != null && document.containsKey( name ) && document.get( name ).isDocument() ) {
+            return document.getDocument( name );
+        } else {
+            return null;
+        }
+    }
+
+
+    protected BsonArray getArrayOrNull( BsonDocument document, String name ) {
+        if ( document != null && document.containsKey( name ) && document.get( name ).isArray() ) {
+            return document.getBoolean( name ).asArray();
+        } else {
+            return null;
+        }
+    }
+
+
+    protected boolean getBoolean( BsonDocument document, String name ) {
+        if ( document != null && document.containsKey( name ) && document.get( name ).isBoolean() ) {
+            return document.getBoolean( name ).asBoolean().getValue();
+        } else {
+            return false;
+        }
+    }
 
 
     public abstract Mql.Type getKind();
