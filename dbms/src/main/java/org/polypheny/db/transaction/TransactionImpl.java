@@ -38,6 +38,7 @@ import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.materializedView.MaterializedManager;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
@@ -168,6 +169,9 @@ public class TransactionImpl implements Transaction, Comparable {
         LockManager.INSTANCE.removeTransaction( this );
         // Remove transaction
         transactionManager.removeTransaction( xid );
+
+        //handover information about commit to Materialized Manager
+        MaterializedManager.getInstance().updateCommitedXid( xid );
     }
 
 

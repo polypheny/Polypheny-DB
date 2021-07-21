@@ -17,6 +17,7 @@
 package org.polypheny.db.materializedView;
 
 import com.google.common.collect.ImmutableList;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -24,11 +25,20 @@ import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogMaterialized;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -42,26 +52,33 @@ import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.SingleRel;
 import org.polypheny.db.rel.logical.LogicalViewTableScan;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.transaction.DeadlockException;
+import org.polypheny.db.transaction.Lock.LockMode;
+import org.polypheny.db.transaction.LockManager;
+import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.transaction.TransactionManager;
 
 @Slf4j
 public class MaterializedManagerImpl extends MaterializedManager {
 
     @Getter
-    private final Map<Long, MaterializedCriteria> matViewInfo;
+    private final Map<Long, MaterializedCriteria> materializedInfo;
 
     @Getter
     private final TransactionManager transactionManager;
 
-    private final Map<String, Integer> tableChanges;
+    Map<PolyXid, Long> potentialInteresting;
 
 
     public MaterializedManagerImpl( TransactionManager transactionManager ) {
         this.transactionManager = transactionManager;
-        this.matViewInfo = new HashMap<>();
-        this.tableChanges = new HashMap<>();
+        this.materializedInfo = new HashMap<>();
+        this.potentialInteresting = new HashMap<PolyXid, Long>();
         MaterializedFreshnessLoop materializedFreshnessLoop = new MaterializedFreshnessLoop( this );
         Thread t = new Thread( materializedFreshnessLoop );
         t.start();
@@ -70,39 +87,147 @@ public class MaterializedManagerImpl extends MaterializedManager {
 
     public Map<Long, MaterializedCriteria> updateMaterializedViewInfo() {
         List<Long> toRemove = new ArrayList<>();
-        for ( Long id : matViewInfo.keySet() ) {
+        for ( Long id : materializedInfo.keySet() ) {
             if ( Catalog.getInstance().getTable( id ) == null ) {
                 toRemove.add( id );
             }
         }
         toRemove.forEach( this::deleteMaterializedViewFromInfo );
-        return matViewInfo;
+        return materializedInfo;
     }
 
 
     @Override
     public synchronized void deleteMaterializedViewFromInfo( Long tableId ) {
-        matViewInfo.remove( tableId );
+        materializedInfo.remove( tableId );
     }
 
 
-    public synchronized void addMatViewInfo( Long tableId, MaterializedCriteria matViewCritera ) {
-        matViewInfo.put( tableId, matViewCritera );
+    public synchronized void updateMaterializedTime( Long materializedId ) {
+        materializedInfo.get( materializedId ).setLastUpdate( new Timestamp( System.currentTimeMillis() ) );
+    }
+
+
+    public synchronized void updateMaterializedUpdate( Long materializedId, int updates ) {
+        materializedInfo.get( materializedId ).setTimesUpdated( updates );
+    }
+
+
+    public synchronized void addMaterializedInfo( Long tableId, MaterializedCriteria matViewCritera ) {
+        materializedInfo.put( tableId, matViewCritera );
     }
 
 
     @Override
-    public void addTables( Transaction transaction, List<List<String>> tableNames ) {
-        List<String> names = new ArrayList<>();
-        if ( !transaction.isActive() ) {
+    public void addTables( Transaction transaction, List<String> tableNames ) {
+        if ( tableNames.size() > 1 ) {
+            try {
+                CatalogTable catalogTable = Catalog.getInstance().getTable( 1, tableNames.get( 0 ), tableNames.get( 1 ) );
+                long id = catalogTable.id;
+                if ( !catalogTable.getConnectedViews().isEmpty() ) {
+                    potentialInteresting.put( transaction.getXid(), id );
+                }
+            } catch ( UnknownTableException e ) {
+                throw new RuntimeException( "Not possible to getTable to update which Tables were changed.", e );
+            }
+        }
+    }
 
+
+    @Override
+    public void updateCommitedXid( PolyXid xid ) {
+        if ( potentialInteresting.containsKey( xid ) ) {
+            materializedUpdate( potentialInteresting.remove( xid ) );
+        }
+
+    }
+
+
+    public void materializedUpdate( Long potentialInteresting ) {
+        Catalog catalog = Catalog.getInstance();
+        CatalogTable catalogTable = catalog.getTable( potentialInteresting );
+        List<Long> connectedViews = catalogTable.getConnectedViews();
+
+        for ( Long id : connectedViews ) {
+            CatalogTable view = catalog.getTable( id );
+            if ( view.tableType == TableType.MATERIALIZEDVIEW ) {
+                MaterializedCriteria materializedCriteria = materializedInfo.get( view.id );
+
+                int numberUpdated = materializedCriteria.getTimesUpdated();
+                if ( numberUpdated == (materializedCriteria.getInterval() - 1) ) {
+                    prepareToUpdate( view.id );
+                    updateMaterializedUpdate( view.id, 0 );
+                } else {
+                    updateMaterializedUpdate( view.id, numberUpdated + 1 );
+                }
+            }
+        }
+    }
+
+
+    public void prepareToUpdate( Long k ) {
+        AdapterManager adapterManager = AdapterManager.getInstance();
+        Catalog catalog = Catalog.getInstance();
+        CatalogMaterialized catalogMaterialized = (CatalogMaterialized) catalog.getTable( k );
+
+        System.out.println( "Inside WhileLoop" );
+
+        List<CatalogColumn> columns = new LinkedList<>();
+
+        for ( Long id : catalogMaterialized.columnIds ) {
+            columns.add( catalog.getColumn( id ) );
+        }
+
+        List<DataStore> dataStores = new ArrayList<>();
+        for ( int id : catalogMaterialized.placementsByAdapter.keySet() ) {
+            dataStores.add( adapterManager.getStore( id ) );
+        }
+
+        String databaseName = catalog.getDatabase( catalogMaterialized.databaseId ).name;
+        RelCollation relCollation = catalogMaterialized.getRelCollation();
+
+        Transaction transaction;
+
+        try {
+            transaction = getTransactionManager().startTransaction( catalogMaterialized.ownerName, databaseName, true, "Materialized View" );
+
+            try {
+                // Get a exclusive global schema lock
+                LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) transaction, LockMode.EXCLUSIVE );
+            } catch ( DeadlockException e ) {
+                throw new RuntimeException( e );
+            }
+            updateData( transaction, dataStores, columns, RelRoot.of( catalogMaterialized.getDefinition(), SqlKind.SELECT ), relCollation );
+            commitTransaction( transaction );
+
+        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
+            e.printStackTrace();
+        }
+    }
+
+
+    public void commitTransaction( Transaction transaction ) {
+
+        try {
+            //locks are released within commit
+            transaction.commit();
+        } catch ( TransactionException e ) {
+            log.error( "Caught exception while executing a query from the console", e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Caught exception while rollback", e );
+            }
+        } finally {
+            // Release lock
+            LockManager.INSTANCE.unlock( LockManager.GLOBAL_LOCK, (TransactionImpl) transaction );
         }
     }
 
 
     @Override
     public void addData( Transaction transaction, List<DataStore> stores, List<CatalogColumn> columns, RelRoot sourceRel, long tableId, MaterializedCriteria materializedCriteria ) {
-        addMatViewInfo( tableId, materializedCriteria );
+        addMaterializedInfo( tableId, materializedCriteria );
 
         Statement sourceStatement = transaction.createStatement();
         Statement targetStatement = transaction.createStatement();
@@ -134,7 +259,6 @@ public class MaterializedManagerImpl extends MaterializedManager {
     }
 
 
-    @Override
     public void updateData( Transaction transaction, List<DataStore> stores, List<CatalogColumn> columns, RelRoot sourceRel, RelCollation relCollation ) {
         Statement sourceStatement = transaction.createStatement();
         Statement targetStatement = transaction.createStatement();

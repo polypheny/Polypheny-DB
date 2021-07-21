@@ -182,10 +182,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         }
         stopWatch.start();
 
+        //check if the relRoot includes a View
         if ( logicalRoot.rel.hasView() ) {
             logicalRoot = logicalRoot.tryExpandView();
         }
 
+        //Update which tables where changed
         TableUpdateVisitor visitor = new TableUpdateVisitor();
         logicalRoot.rel.accept( visitor );
         MaterializedManager.getInstance().addTables( statement.getTransaction(), visitor.getNames() );

@@ -17,32 +17,10 @@
 package org.polypheny.db.materializedView;
 
 import com.google.common.collect.ImmutableMap;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.AdapterManager;
-import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.transaction.DeadlockException;
-import org.polypheny.db.transaction.Lock.LockMode;
-import org.polypheny.db.transaction.LockManager;
-import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionException;
-import org.polypheny.db.transaction.TransactionImpl;
 
 @Slf4j
 public class MaterializedFreshnessLoop implements Runnable {
@@ -69,51 +47,15 @@ public class MaterializedFreshnessLoop implements Runnable {
 
     private void startEventLoop() throws InterruptedException {
         Map<Long, MaterializedCriteria> materializedViewInfo;
-        Catalog catalog = Catalog.getInstance();
-        AdapterManager adapterManager = AdapterManager.getInstance();
         while ( true ) {
             materializedViewInfo = ImmutableMap.copyOf( manager.updateMaterializedViewInfo() );
             materializedViewInfo.forEach( ( k, v ) -> {
+
                 if ( v.getCriteriaType() == CriteriaType.INTERVAL ) {
                     if ( v.getLastUpdate().getTime() + v.getTimeInMillis() < System.currentTimeMillis() ) {
 
-                        CatalogMaterializedView catalogMaterializedView = (CatalogMaterializedView) catalog.getTable( k );
-
-                        System.out.println( "Inside WhileLoop" );
-
-                        List<CatalogColumn> columns = new LinkedList<>();
-
-                        for ( Long id : catalogMaterializedView.columnIds ) {
-                            columns.add( catalog.getColumn( id ) );
-                        }
-
-                        List<DataStore> dataStores = new ArrayList<>();
-                        for ( int id : catalogMaterializedView.placementsByAdapter.keySet() ) {
-                            dataStores.add( adapterManager.getStore( id ) );
-                        }
-
-                        String databaseName = catalog.getDatabase( catalogMaterializedView.databaseId ).name;
-                        RelCollation relCollation = catalogMaterializedView.getRelCollation();
-
-                        Transaction transaction;
-
-                        try {
-                            transaction = manager.getTransactionManager().startTransaction( catalogMaterializedView.ownerName, databaseName, true, "Materialized View" );
-
-                            try {
-                                // Get a exclusive global schema lock
-                                LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) transaction, LockMode.EXCLUSIVE );
-                            } catch ( DeadlockException e ) {
-                                throw new RuntimeException( e );
-                            }
-                            manager.updateData( transaction, dataStores, columns, RelRoot.of( catalogMaterializedView.getDefinition(), SqlKind.SELECT ), relCollation );
-                            commitTransaction( transaction );
-
-                        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
-                            e.printStackTrace();
-                        }
-
-                        v.setLastUpdate( new Timestamp( System.currentTimeMillis() ) );
+                        manager.prepareToUpdate( k );
+                        manager.updateMaterializedTime( k );
                     }
                 }
             } );
@@ -122,25 +64,5 @@ public class MaterializedFreshnessLoop implements Runnable {
         }
 
     }
-
-
-    public void commitTransaction( Transaction transaction ) {
-
-        try {
-            //locks are released within commit
-            transaction.commit();
-        } catch ( TransactionException e ) {
-            log.error( "Caught exception while executing a query from the console", e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-            }
-        } finally {
-            // Release lock
-            LockManager.INSTANCE.unlock( LockManager.GLOBAL_LOCK, (TransactionImpl) transaction );
-        }
-    }
-
 
 }

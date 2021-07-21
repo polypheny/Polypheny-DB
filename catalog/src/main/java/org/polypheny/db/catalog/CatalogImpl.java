@@ -54,7 +54,7 @@ import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.CatalogMaterializedView;
+import org.polypheny.db.catalog.entity.CatalogMaterialized;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
@@ -1350,7 +1350,7 @@ public class CatalogImpl extends Catalog {
         CatalogUser owner = getUser( ownerId );
 
         if ( tableType == TableType.MATERIALIZEDVIEW ) {
-            CatalogMaterializedView materializedViewTable = new CatalogMaterializedView(
+            CatalogMaterialized materializedViewTable = new CatalogMaterialized(
                     id,
                     name,
                     ImmutableList.of(),
@@ -1621,7 +1621,7 @@ public class CatalogImpl extends Catalog {
             if ( old.isPartitioned ) {
                 log.debug( " Table '{}' is partitioned.", old.name );
                 if ( old.tableType == TableType.MATERIALIZEDVIEW ) {
-                    table = new CatalogMaterializedView(
+                    table = new CatalogMaterialized(
                             old.id,
                             old.name,
                             old.columnIds,
@@ -1630,7 +1630,7 @@ public class CatalogImpl extends Catalog {
                             old.ownerId,
                             old.ownerName,
                             old.tableType,
-                            ((CatalogMaterializedView) old).getDefinition(),
+                            ((CatalogMaterialized) old).getDefinition(),
                             old.primaryKey,
                             ImmutableMap.copyOf( placementsByStore ),
                             old.modifiable,
@@ -1639,11 +1639,11 @@ public class CatalogImpl extends Catalog {
                             old.partitionIds,
                             old.partitionColumnId,
                             old.isPartitioned,
-                            ((CatalogMaterializedView) old).getRelCollation(),
+                            ((CatalogMaterialized) old).getRelCollation(),
                             old.connectedViews,
-                            ((CatalogMaterializedView) old).getUnderlyingTables(),
-                            ((CatalogMaterializedView) old).getFieldList(),
-                            ((CatalogMaterializedView) old).getMaterializedCriteria()
+                            ((CatalogMaterialized) old).getUnderlyingTables(),
+                            ((CatalogMaterialized) old).getFieldList(),
+                            ((CatalogMaterialized) old).getMaterializedCriteria()
                     );
                 } else {
                     table = new CatalogTable(
@@ -1689,7 +1689,7 @@ public class CatalogImpl extends Catalog {
 
             } else {
                 if ( old.tableType == TableType.MATERIALIZEDVIEW ) {
-                    table = new CatalogMaterializedView(
+                    table = new CatalogMaterialized(
                             old.id,
                             old.name,
                             old.columnIds,
@@ -1698,7 +1698,7 @@ public class CatalogImpl extends Catalog {
                             old.ownerId,
                             old.ownerName,
                             old.tableType,
-                            ((CatalogMaterializedView) old).getDefinition(),
+                            ((CatalogMaterialized) old).getDefinition(),
                             old.primaryKey,
                             ImmutableMap.copyOf( placementsByStore ),
                             old.modifiable,
@@ -1707,11 +1707,11 @@ public class CatalogImpl extends Catalog {
                             old.partitionIds,
                             old.partitionColumnId,
                             old.isPartitioned,
-                            ((CatalogMaterializedView) old).getRelCollation(),
+                            ((CatalogMaterialized) old).getRelCollation(),
                             old.connectedViews,
-                            ((CatalogMaterializedView) old).getUnderlyingTables(),
-                            ((CatalogMaterializedView) old).getFieldList(),
-                            ((CatalogMaterializedView) old).getMaterializedCriteria()
+                            ((CatalogMaterialized) old).getUnderlyingTables(),
+                            ((CatalogMaterialized) old).getFieldList(),
+                            ((CatalogMaterialized) old).getMaterializedCriteria()
                     );
                 } else {
                     table = new CatalogTable(

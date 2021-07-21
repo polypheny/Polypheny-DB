@@ -52,7 +52,7 @@ import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.CatalogMaterializedView;
+import org.polypheny.db.catalog.entity.CatalogMaterialized;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
@@ -1433,13 +1433,14 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        CatalogMaterializedView catalogMaterializedView = (CatalogMaterializedView) catalog.getTable( tableId );
+        CatalogMaterialized catalogMaterialized = (CatalogMaterialized) catalog.getTable( tableId );
         for ( DataStore store : stores ) {
-            store.createTable( statement.getPrepareContext(), catalogMaterializedView );
+            store.createTable( statement.getPrepareContext(), catalogMaterialized );
         }
 
         MaterializedManager materializedManager = MaterializedManager.getInstance();
-        materializedManager.addData( statement.getTransaction(), stores, addedColumns, relRoot, tableId, catalogMaterializedView.getMaterializedCriteria() );
+        materializedManager.addData( statement.getTransaction(), stores, addedColumns, relRoot, tableId, catalogMaterialized.getMaterializedCriteria() );
+
 
     }
 

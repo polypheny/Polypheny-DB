@@ -29,7 +29,7 @@ import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 
-public class CatalogMaterializedView extends CatalogView {
+public class CatalogMaterialized extends CatalogView {
 
     private static final long serialVersionUID = -303234050987260484L;
 
@@ -49,7 +49,7 @@ public class CatalogMaterializedView extends CatalogView {
     private final MaterializedCriteria materializedCriteria;
 
 
-    public CatalogMaterializedView(
+    public CatalogMaterialized(
             long id,
             @NonNull String name,
             ImmutableList<Long> columnIds,
@@ -76,7 +76,7 @@ public class CatalogMaterializedView extends CatalogView {
     }
 
 
-    public CatalogMaterializedView(
+    public CatalogMaterialized(
             long id,
             String name,
             ImmutableList<Long> columnIds,
@@ -111,7 +111,7 @@ public class CatalogMaterializedView extends CatalogView {
 
     @Override
     public CatalogTable getTableWithColumns( ImmutableList<Long> newColumnIds ) {
-        return new CatalogMaterializedView(
+        return new CatalogMaterialized(
                 id,
                 name,
                 newColumnIds,
@@ -133,7 +133,7 @@ public class CatalogMaterializedView extends CatalogView {
 
     @Override
     public CatalogTable getConnectedViews( ImmutableList<Long> newConnectedViews ) {
-        return new CatalogMaterializedView(
+        return new CatalogMaterialized(
                 id,
                 name,
                 columnIds,
@@ -161,7 +161,7 @@ public class CatalogMaterializedView extends CatalogView {
 
     @Override
     public CatalogTable getRenamed( String newName ) {
-        return new CatalogMaterializedView(
+        return new CatalogMaterialized(
                 id,
                 newName,
                 columnIds,

@@ -21,7 +21,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogMaterializedView;
+import org.polypheny.db.catalog.entity.CatalogMaterialized;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.ddl.DdlManager;
@@ -74,9 +74,9 @@ public class SqlAlterMaterializedViewRenameColumn extends SqlAlterMaterializedVi
     @Override
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, materializedview );
-        CatalogMaterializedView catalogView;
+        CatalogMaterialized catalogView;
         if ( catalogTable.tableType == TableType.MATERIALIZEDVIEW ) {
-            catalogView = (CatalogMaterializedView) catalogTable;
+            catalogView = (CatalogMaterialized) catalogTable;
         } else {
             throw new RuntimeException( "Not Possible to use ALTER MATERIALIZED VIEW because " + catalogTable.name + " is not a Materialized View." );
         }

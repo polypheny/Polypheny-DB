@@ -209,6 +209,9 @@ public class PolyphenyDb {
         // Initialize interface manager
         QueryInterfaceManager.initialize( transactionManager, authenticator );
 
+        //Initialize MaterializedViewManager
+        MaterializedManager.setAndGetInstance( new MaterializedManagerImpl( transactionManager ) );
+
         // Startup and restore catalog
         Catalog catalog;
         Transaction trx = null;
@@ -239,9 +242,6 @@ public class PolyphenyDb {
 
         // Initialize DdlManager
         DdlManager.setAndGetInstance( new DdlManagerImpl( catalog ) );
-
-        //Initialize MaterializedViewManager
-        MaterializedManager.setAndGetInstance( new MaterializedManagerImpl( transactionManager ) );
 
         // Start Polypheny UI
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator );

@@ -22,11 +22,13 @@ import lombok.Getter;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
-import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.logical.LogicalTableModify;
+import org.polypheny.db.schema.LogicalTable;
+import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
 
 public abstract class MaterializedManager {
@@ -53,28 +55,36 @@ public abstract class MaterializedManager {
 
     public abstract void deleteMaterializedViewFromInfo( Long tableId );
 
-    public abstract void updateData( Transaction transaction, List<DataStore> stores, List<CatalogColumn> columns, RelRoot sourceRelRoot, RelCollation relCollation );
+    //public abstract void updateData( Transaction transaction, List<DataStore> stores, List<CatalogColumn> columns, RelRoot sourceRelRoot, RelCollation relCollation );
+
 
     public abstract void addData( Transaction transaction, List<DataStore> stores, List<CatalogColumn> addedColumns, RelRoot relRoot, long tableId, MaterializedCriteria materializedCriteria );
 
-    public abstract void addTables( Transaction transaction, List<List<String>> names );
+    public abstract void addTables( Transaction transaction, List<String> names );
+
+    //public abstract void prepareToUpdate( Long k );
 
 
     public static class TableUpdateVisitor extends RelShuttleImpl {
 
         @Getter
-        List<List<String>> names = new ArrayList<>();
+        List<String> names = new ArrayList<>();
 
 
         @Override
         public RelNode visit( RelNode other ) {
             if ( other instanceof LogicalTableModify ) {
-                names.add( other.getTable().getQualifiedName() );
-            }
+                if ( (((RelOptTableImpl) other.getTable()).getTable() instanceof LogicalTable) ) {
+                    names.addAll( other.getTable().getQualifiedName() );
+                }
 
+            }
             return super.visit( other );
         }
 
     }
+
+
+    public abstract void updateCommitedXid( PolyXid xid );
 
 }

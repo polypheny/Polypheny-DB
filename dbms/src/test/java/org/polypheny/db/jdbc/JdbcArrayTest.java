@@ -247,6 +247,68 @@ public class JdbcArrayTest {
 
     @Test
     @Category({ FileExcluded.class, CassandraExcluded.class })
+    public void arrayTypesMaterializedTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( ARRAYTEST_SQL );
+                statement.executeUpdate( ARRAYTEST_DATA_SQL );
+                statement.executeUpdate( "CREATE MATERIALIZED VIEW arrayTypesMaterializedTest AS SELECT * FROM arraytest FRESHNESS INTERVAL 100 \"milliseconds\"" );
+                try {
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT id FROM arrayTypesMaterializedTest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[0] } ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT bigintarray FROM arrayTypesMaterializedTest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[1] } ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT booleanarray FROM arrayTypesMaterializedTest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[2] } ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT decimalarray FROM arrayTypesMaterializedTest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[3] } ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT doublearray FROM arrayTypesMaterializedTest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[4] } ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT intarray FROM arrayTypesMaterializedTest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[5] } ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT realarray FROM arrayTypesMaterializedTest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[6] } ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT smallintarray FROM arrayTypesMaterializedTest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[7] } ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tinyintarray FROM arrayTypesMaterializedTest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[8] } ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT varchararray FROM arrayTypesMaterializedTest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[9] } ) );
+
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW arrayTypesMaterializedTest" );
+                    statement.executeUpdate( "DROP TABLE arraytest" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    @Test
+    @Category({ FileExcluded.class, CassandraExcluded.class })
     public void itemOperatorTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

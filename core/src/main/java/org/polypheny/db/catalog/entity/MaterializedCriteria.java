@@ -42,6 +42,10 @@ public class MaterializedCriteria implements Serializable {
     @Getter
     private final Long timeInMillis;
 
+    @Getter
+    @Setter
+    private int timesUpdated;
+
 
     public MaterializedCriteria() {
         this.criteriaType = CriteriaType.INTERVAL;
@@ -49,6 +53,7 @@ public class MaterializedCriteria implements Serializable {
         this.timeUnit = TimeUnit.DAYS;
         this.lastUpdate = new Timestamp( System.currentTimeMillis() );
         this.timeInMillis = timeUnit.toMillis( interval );
+        this.timesUpdated = 0;
     }
 
 
@@ -58,6 +63,7 @@ public class MaterializedCriteria implements Serializable {
         this.timeUnit = timeUnit;
         this.lastUpdate = new Timestamp( System.currentTimeMillis() );
         this.timeInMillis = timeUnit.toMillis( interval );
+        this.timesUpdated = 0;
     }
 
 
@@ -67,6 +73,7 @@ public class MaterializedCriteria implements Serializable {
         this.timeUnit = null;
         this.lastUpdate = new Timestamp( System.currentTimeMillis() );
         this.timeInMillis = null;
+        this.timesUpdated = 0;
     }
 
 
