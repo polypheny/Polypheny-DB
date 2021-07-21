@@ -145,7 +145,7 @@ public abstract class AbstractJdbcStore extends DataStore {
                     getAdapterId(),
                     catalogTable.id,
                     partitionId,
-                    PlacementType.MANUAL,
+                    PlacementType.AUTOMATIC,
                     getDefaultPhysicalSchemaName(),
                     physicalTableName);
 

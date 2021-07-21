@@ -22,6 +22,7 @@ import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -74,7 +75,7 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
 
         // Check if table is even partitioned
         if ( catalogTable.partitionType != Catalog.PartitionType.NONE ) {
-            long tableId = catalogTable.id;
+
 
             if ( log.isDebugEnabled() ) {
                 log.debug( "Merging partitions for table: {} with id {} on schema: {}", catalogTable.name, catalogTable.id, catalogTable.getSchemaName() );
@@ -86,12 +87,9 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
             //  Therefore we need to make sure(maybe with migrator?) to gather all data from all partitions, and stores. That at the end of mergeTable()
             //  there aren't any partitioned chunks of data left on a single store.
 
-            // Loop over **old.partitionIds** to delete all partitions which are part of table
-            for ( long partitionGroupId : catalogTable.partitionProperty.partitionGroupIds ) {
-                catalog.deletePartitionGroup( tableId, catalogTable.schemaId, partitionGroupId );
-            }
 
-            catalog.mergeTable( tableId );
+            DdlManager.getInstance().removePartitioning( catalogTable, statement );
+
 
             if ( log.isDebugEnabled() ) {
                 log.debug( "Table: '{}' has been merged", catalogTable.name );

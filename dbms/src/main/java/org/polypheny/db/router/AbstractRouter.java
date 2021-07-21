@@ -623,8 +623,6 @@ public abstract class AbstractRouter implements Router {
                         } else if ( ((LogicalTableModify) node).getOperation() == Operation.INSERT ) {
                             int i;
 
-                            LogicalTableModify ltm = ((LogicalTableModify) node);
-                            LogicalProject lproject = (LogicalProject) ltm.getInput();
 
                             if ( ((LogicalTableModify) node).getInput() instanceof LogicalValues ) {
 
@@ -648,6 +646,9 @@ public abstract class AbstractRouter implements Router {
 
                                 String partitionColumnName = catalog.getColumn( catalogTable.partitionColumnId ).name;
                                 List<String> fieldNames = ((LogicalTableModify) node).getInput().getRowType().getFieldNames();
+
+                                LogicalTableModify ltm = ((LogicalTableModify) node);
+                                LogicalProject lproject = (LogicalProject) ltm.getInput();
 
                                 List<RexNode> fieldValues = lproject.getProjects();
                                 Map<Long,RexDynamicParam> indexRemap = new HashMap<>();

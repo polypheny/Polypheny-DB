@@ -1898,7 +1898,7 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    /**TODO @HENNLO differentiate from colelctive
+    /**
      * Get column placements of a specific table on a specific adapter on column detail level.
      * Only returns one ColumnPlacement per column on adapter. Ignores multiplicity due to different partitionsIds
      *
@@ -3410,8 +3410,6 @@ public class CatalogImpl extends Catalog {
                 deletePartitionGroupsOnDataPlacement( adapter.id, partitionGroupId );
             }
 
-
-
             partitionGroups.remove( partitionGroupId );
         }
     }
@@ -3678,6 +3676,11 @@ public class CatalogImpl extends Catalog {
     public void mergeTable( long tableId ) {
         CatalogTable old = Objects.requireNonNull( tables.get( tableId ) );
 
+        if ( old.partitionProperty.reliesOnPeriodicChecks ) {
+            removeTableFromPeriodicProcessing( tableId );
+        }
+
+
     //Technically every Table is partitioned. But tables classified as UNPARTITIONED only consist of one PartitionGroup and one large partition
         List<Long> partitionGroupIds = new ArrayList<>();
         try{
@@ -3686,7 +3689,6 @@ public class CatalogImpl extends Catalog {
             throw new RuntimeException( e );
         }
 
-        List<Long> partitionIds = new ArrayList<>();
         //get All(only one) PartitionGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
         CatalogPartitionGroup defaultUnpartitionedGroup = getPartitionGroup( partitionGroupIds.get( 0 ) );
             PartitionProperty partitionProperty = PartitionProperty.builder()
@@ -3727,7 +3729,7 @@ public class CatalogImpl extends Catalog {
             CatalogColumn pkColumn = getColumn( pkColumnIds.get( 0 ) );
             // This gets us only one ccp per store (first part of PK)
             for ( CatalogColumnPlacement ccp : getColumnPlacement( pkColumn.id ) ) {
-                dataPartitionGroupPlacement.remove( new Object[]{ ccp.adapterId, ccp.tableId } );
+                dataPartitionGroupPlacement.replace( new Object[]{ ccp.adapterId, tableId }, ImmutableList.copyOf( partitionGroupIds ) );
             }
         }
         listeners.firePropertyChange( "table", old, table );

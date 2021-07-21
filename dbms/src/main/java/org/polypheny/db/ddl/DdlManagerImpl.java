@@ -1845,6 +1845,78 @@ public class DdlManagerImpl extends DdlManager {
         }
     }
 
+    public void removePartitioning( CatalogTable partitionedTable, Statement statement) {
+
+
+        long tableId = partitionedTable.id;
+
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Merging partitions for table: {} with id {} on schema: {}", partitionedTable.name, partitionedTable.id, partitionedTable.getSchemaName() );
+        }
+
+        // TODO : Data Migrate needed.
+        //  We have partitioned data throughout many stores. And now want to merge all partitions.
+        //  Currently although the table isn't partitioned anymore, the old data stays partitioned on the store.
+        //  Therefore we need to make sure(maybe with migrator?) to gather all data from all partitions, and stores. That at the end of mergeTable()
+        //  there aren't any partitioned chunks of data left on a single store.
+
+
+
+        // Update catalog table
+        catalog.mergeTable( tableId );
+
+
+
+        //Now get the merged table
+        CatalogTable mergedTable = catalog.getTable( tableId );
+
+        List<DataStore> stores = new ArrayList<>();
+        // Get primary key of table and use PK to find all DataPlacements of table
+        long pkid = partitionedTable.primaryKey;
+        List<Long> pkColumnIds = catalog.getPrimaryKey( pkid ).columnIds;
+        // Basically get first part of PK even if its compound of PK it is sufficient
+        CatalogColumn pkColumn = catalog.getColumn( pkColumnIds.get( 0 ) );
+        // This gets us only one ccp per store (first part of PK)
+
+        List<CatalogColumnPlacement> catalogColumnPlacements = catalog.getColumnPlacement( pkColumn.id );
+        for ( CatalogColumnPlacement ccp : catalogColumnPlacements ) {
+                // Ask router on which store(s) the table should be placed
+                Adapter adapter = AdapterManager.getInstance().getAdapter( ccp.adapterId );
+                if ( adapter instanceof DataStore ) {
+                    stores.add((DataStore) adapter);
+                }
+
+        }
+
+
+
+
+
+        //For merge create only full placements on the used stores. Otherwise partiton constraints might not hold
+        for ( DataStore store : stores ) {
+
+            //First create new tables
+            store.createTable( statement.getPrepareContext(), mergedTable, mergedTable.partitionProperty.partitionIds);
+
+
+            //TODO Migrate data from all source partitions to standard single partition table
+            //Currently would cleanse table if merged
+
+            //Drop all partitionedTables (table contains old partitionIds)
+            store.dropTable( statement.getPrepareContext(), partitionedTable, partitionedTable.partitionProperty.partitionIds);
+
+            // Loop over **old.partitionIds** to delete all partitions which are part of table
+            //Needs to be done separately because partitionPlacements will be recursiveley dropped in `deletePartitiongroup` but are needed in dropTable
+            for ( long partitionGroupId : partitionedTable.partitionProperty.partitionGroupIds ) {
+                catalog.deletePartitionGroup( tableId, partitionedTable.schemaId, partitionGroupId );
+            }
+
+
+        }
+
+
+    }
+
 
     private void addColumn( String columnName, ColumnTypeInformation typeInformation, Collation collation, String defaultValue, long tableId, int position, List<DataStore> stores, PlacementType placementType ) throws GenericCatalogException, UnknownCollationException, UnknownColumnException {
         long addedColumnId = catalog.addColumn(

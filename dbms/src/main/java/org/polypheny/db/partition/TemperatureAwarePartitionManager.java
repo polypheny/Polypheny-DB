@@ -37,11 +37,6 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
     public static final String FUNCTION_TITLE = "TEMPERATURE";
     public static final List<PolyType> SUPPORTED_TYPES = ImmutableList.of( PolyType.INTEGER, PolyType.BIGINT, PolyType.SMALLINT, PolyType.TINYINT, PolyType.VARCHAR );
 
-    //TODO HENNLO central config to define the thresholds when data is considered hot and when cold (15% and 20%)
-
-    //TODO also define default Settings
-    //E.g. HASH partitioning if nothing else is specified, or  cost model = access frequency
-
 
     @Override
     public long getTargetPartitionId( CatalogTable catalogTable, String columnValue ) {

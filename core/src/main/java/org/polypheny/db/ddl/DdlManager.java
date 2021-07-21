@@ -455,6 +455,15 @@ public abstract class DdlManager {
     public abstract void addPartitioning( PartitionInformation partitionInfo,List<DataStore> stores,  Statement statement) throws GenericCatalogException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException;
 
     /**
+     * Removes partitioning from Table
+     *
+     * @param catalogTable teh table to be merged
+     * @param statement the used Statement
+     */
+    public abstract void removePartitioning( CatalogTable catalogTable, Statement statement);
+
+
+    /**
      * Adds a new constraint to a table
      *
      * @param constraintName the name of the constraint
