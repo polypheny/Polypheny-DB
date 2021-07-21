@@ -28,7 +28,10 @@ import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.excluded.CassandraExcluded;
+import org.polypheny.db.util.background.BackgroundTask;
+import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
 
 @SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
@@ -345,6 +348,8 @@ public class HorizontalPartitioningTest {
                         failed = true;
                     }
                     Assert.assertTrue( failed );
+
+                    RuntimeConfig.TEMPERATURE_FREQUENCY_PROCESSING_INTERVAL = TaskSchedulingType.EVERY_SECOND;
 
                     // TODO: check partition distribution violation
 
