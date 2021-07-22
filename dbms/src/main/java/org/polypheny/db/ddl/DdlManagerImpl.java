@@ -1862,6 +1862,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
 
+
         // Update catalog table
         catalog.mergeTable( tableId );
 
@@ -1895,6 +1896,9 @@ public class DdlManagerImpl extends DdlManager {
         //For merge create only full placements on the used stores. Otherwise partiton constraints might not hold
         for ( DataStore store : stores ) {
 
+            List<Long> partitionIdsOnStore = new ArrayList<>();
+            catalog.getPartitionPlacementByTable( store.getAdapterId() ,partitionedTable.id ).forEach( p -> partitionIdsOnStore.add( p.partitionId ) );
+
             //First create new tables
             store.createTable( statement.getPrepareContext(), mergedTable, mergedTable.partitionProperty.partitionIds);
 
@@ -1902,16 +1906,14 @@ public class DdlManagerImpl extends DdlManager {
             //TODO Migrate data from all source partitions to standard single partition table
             //Currently would cleanse table if merged
 
+
             //Drop all partitionedTables (table contains old partitionIds)
-            store.dropTable( statement.getPrepareContext(), partitionedTable, partitionedTable.partitionProperty.partitionIds);
-
-            // Loop over **old.partitionIds** to delete all partitions which are part of table
-            //Needs to be done separately because partitionPlacements will be recursiveley dropped in `deletePartitiongroup` but are needed in dropTable
-            for ( long partitionGroupId : partitionedTable.partitionProperty.partitionGroupIds ) {
-                catalog.deletePartitionGroup( tableId, partitionedTable.schemaId, partitionGroupId );
-            }
-
-
+            store.dropTable( statement.getPrepareContext(), partitionedTable, partitionIdsOnStore);
+        }
+        // Loop over **old.partitionIds** to delete all partitions which are part of table
+        //Needs to be done separately because partitionPlacements will be recursiveley dropped in `deletePartitiongroup` but are needed in dropTable
+        for ( long partitionGroupId : partitionedTable.partitionProperty.partitionGroupIds ) {
+            catalog.deletePartitionGroup( tableId, partitionedTable.schemaId, partitionGroupId );
         }
 
 

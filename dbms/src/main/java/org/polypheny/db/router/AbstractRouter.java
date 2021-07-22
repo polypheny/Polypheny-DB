@@ -380,6 +380,7 @@ public abstract class AbstractRouter implements Router {
                 //Needed for partitioned updates when source partition and target partition are not equal
                 //SET Value is the new partition, where clause is the source
                 boolean operationWasRewritten = false;
+                List<Map<Long, Object>> tempParamValues = null;
 
                 for ( CatalogColumnPlacement pkPlacement : pkPlacements ) {
 
@@ -509,7 +510,7 @@ public abstract class AbstractRouter implements Router {
                                     }else{
                                         throw new RuntimeException("Updating partition key is not allowed");
 
-                                        /*
+                                        /* TODO add possibility to substitute the update as a insert into target partitoin from all source parttions
                                         // IS currently blocked
                                         //needs to to a insert into target partition select from all other partitoins first and then delte on source partiitons
                                         worstCaseRouting = false;
@@ -628,7 +629,7 @@ public abstract class AbstractRouter implements Router {
 
                                     for ( ImmutableList<RexLiteral> currentTuple: ((LogicalValues) ((LogicalTableModify) node).getInput()).tuples) {
 
-                                        System.out.println("currentTuple: " +currentTuple);
+
                                         for ( i = 0; i < catalogTable.columnIds.size(); i++ ) {
                                             if ( catalogTable.columnIds.get( i ) == catalogTable.partitionColumnId ) {
                                                 log.debug( "INSERT: Found PartitionColumnID: '{}' at column index: {}", catalogTable.partitionColumnId, i );
@@ -673,16 +674,17 @@ public abstract class AbstractRouter implements Router {
                                             //Needed to identify the column which contains the partition value
                                             long partitionValueIndex = ((RexDynamicParam)fieldValues.get( i )).getIndex();
 
-                                            List<Map<Long, Object>> tempParamValues = statement.getDataContext().getParameterValues().stream().collect( Collectors.toList());
-
+                                            if (tempParamValues == null) {
+                                                tempParamValues = statement.getDataContext().getParameterValues().stream().collect( Collectors.toList() );
+                                            }
                                             statement.getDataContext().resetParameterValues();
                                             long tempPartitionId = 0;
                                             //Get partitionValue per row/tuple to be inserted
                                             //Create as many independent TableModifies as there are entries in getParameterValues
-                                            boolean firstRound = true;
+
                                             for ( Map<Long,Object> currentRow : tempParamValues ) {
 
-                                                    log.debug( "partitionValue of current parameter row " + currentRow.get( partitionValueIndex ) );
+
                                                     tempPartitionId = partitionManager.getTargetPartitionId( catalogTable, currentRow.get( partitionValueIndex ).toString() );
 
                                                     if ( !catalog.getPartitionsOnDataPlacement( pkPlacement.adapterId, catalogTable.id ).contains( tempPartitionId ) ) {

@@ -120,21 +120,28 @@ public class FrequencyMapImpl extends FrequencyMap {
     }
 
     private void incrementPartitionAccess(long partitionId){
-        accessCounter.replace( partitionId, accessCounter.get( partitionId )+1 );
+        if ( accessCounter.containsKey( partitionId ) ){
+            accessCounter.replace( partitionId, accessCounter.get( partitionId ) + 1 );
+        }else{
+            accessCounter.put( partitionId, (long)1 );
+        }
     }
 
-    private void determinePartitionDistribution(CatalogTable table){
+    private void determinePartitionDistribution(CatalogTable table) {
         log.debug( "Determine access frequency of partitions of table: " + table.name );
 
         //Get percentage of tables which can remain in HOT
-        long numberOfPartitionsInHot = ( table.partitionProperty.partitionIds.size() *  ((TemperaturePartitionProperty)table.partitionProperty).getHotAccessPercentageIn() ) / 100;
+        long numberOfPartitionsInHot = (table.partitionProperty.partitionIds.size() * ((TemperaturePartitionProperty) table.partitionProperty).getHotAccessPercentageIn()) / 100;
 
         //These are the tables than can remain in HOT
-        long allowedTablesInHot = ( table.partitionProperty.partitionIds.size() *  ((TemperaturePartitionProperty)table.partitionProperty).getHotAccessPercentageOut() ) / 100;
+        long allowedTablesInHot = (table.partitionProperty.partitionIds.size() * ((TemperaturePartitionProperty) table.partitionProperty).getHotAccessPercentageOut()) / 100;
 
-        if( numberOfPartitionsInHot == 0 ){ numberOfPartitionsInHot = 1; }
-        if( allowedTablesInHot == 0 ){ allowedTablesInHot = 1; }
-
+        if ( numberOfPartitionsInHot == 0 ) {
+            numberOfPartitionsInHot = 1;
+        }
+        if ( allowedTablesInHot == 0 ) {
+            allowedTablesInHot = 1;
+        }
 
         long thresholdValue = Long.MAX_VALUE;
         long thresholdPartitionId = -1;
@@ -144,37 +151,38 @@ public class FrequencyMapImpl extends FrequencyMap {
 
         List<Long> partitionsAllowedInHot = new ArrayList<>();
 
-
-
         HashMap<Long, Long> descSortedMap = accessCounter
                 .entrySet()
                 .stream()
-                .sorted( (Map.Entry.<Long,Long>comparingByValue().reversed()) )
-                .collect( Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new) );
-
-
-                //= new HashMap<>();
-        //accessCounter.entrySet().stream().sorted(Map.Entry.comparingByValue( Comparator.reverseOrder()))
-         //       .forEachOrdered( x -> descSortedMap.put( x.getKey(),x.getValue() ) );
-
-
+                .sorted( (Map.Entry.<Long, Long>comparingByValue().reversed()) )
+                .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue, ( e1, e2 ) -> e1, LinkedHashMap::new ) );
 
 
         //Start gathering the partitions begining with the most frequently accessed
         int hotCounter = 0;
         int toleranceCounter = 0;
-        for ( Entry<Long,Long> currentEntry : descSortedMap.entrySet() ){
+        boolean skip =false;
+        boolean firstRound = true;
+        for ( Entry<Long, Long> currentEntry : descSortedMap.entrySet() ) {
 
+            if ( currentEntry.getValue() == 0 ) {
+                if ( firstRound ) {
+                    skip = true;
+                }
+                break;
+            }
+            firstRound = false;
             //Gather until you reach getHotAccessPercentageIn() #tables
-            if (hotCounter < numberOfPartitionsInHot ){
+            if ( hotCounter < numberOfPartitionsInHot ) {
                 //Tables that should be placed in HOT if not already there
-                partitionsFromColdToHot.add(  currentEntry.getKey() );
+                partitionsFromColdToHot.add( currentEntry.getKey() );
                 hotCounter++;
+
             }
 
-            if ( toleranceCounter >= allowedTablesInHot ){
+            if ( toleranceCounter >= allowedTablesInHot ) {
                 break;
-            }else {
+            } else {
                 //Tables that can remain in HOT if they happen to be in that threshold
                 partitionsAllowedInHot.add( currentEntry.getKey() );
                 toleranceCounter++;
@@ -182,31 +190,32 @@ public class FrequencyMapImpl extends FrequencyMap {
 
         }
 
-        //Which partitions are in top X % ( to be placed in HOT)
+        if( !skip ){
+            //Which partitions are in top X % ( to be placed in HOT)
 
             //Which of those are currently in cold --> action needed
 
-        List<CatalogPartition> currentHotPartitions = Catalog.INSTANCE.getPartitions( ((TemperaturePartitionProperty) table.partitionProperty).getHotPartitionGroupId() );
-        for ( CatalogPartition catalogPartition : currentHotPartitions ){
+            List<CatalogPartition> currentHotPartitions = Catalog.INSTANCE.getPartitions( ((TemperaturePartitionProperty) table.partitionProperty).getHotPartitionGroupId() );
+            for ( CatalogPartition catalogPartition : currentHotPartitions ) {
 
-            //Remove partitions from List if they are already in HOT (not necessary to send to DataMigrator)
-            if ( partitionsFromColdToHot.contains( catalogPartition.id ) ){
-                partitionsFromColdToHot.remove( catalogPartition.id );
+                //Remove partitions from List if they are already in HOT (not necessary to send to DataMigrator)
+                if ( partitionsFromColdToHot.contains( catalogPartition.id ) ) {
+                    partitionsFromColdToHot.remove( catalogPartition.id );
 
-            }else{ //If they are currently in hot but should not be placed in HOT anymore. This means that they should possibly be thrown out and placed in cold
+                } else { //If they are currently in hot but should not be placed in HOT anymore. This means that they should possibly be thrown out and placed in cold
 
-                if ( partitionsAllowedInHot.contains( catalogPartition.id )){
-                    continue;
+                    if ( partitionsAllowedInHot.contains( catalogPartition.id ) ) {
+                        continue;
+                    } else { // place from HOT to cold
+                        partitionsFromHotToCold.add( catalogPartition.id );
+                    }
                 }
-                else { // place from HOT to cold
-                    partitionsFromHotToCold.add( catalogPartition.id );
-                }
+
             }
 
-        }
-
-        if ( !partitionsFromColdToHot.isEmpty() || !partitionsFromHotToCold.isEmpty()) {
-            redistributePartitions( table, partitionsFromColdToHot, partitionsFromHotToCold );
+            if ( !partitionsFromColdToHot.isEmpty() || !partitionsFromHotToCold.isEmpty() ) {
+                redistributePartitions( table, partitionsFromColdToHot, partitionsFromHotToCold );
+            }
         }
     }
 
@@ -274,15 +283,6 @@ public class FrequencyMapImpl extends FrequencyMap {
 
                         //store.dropTable( statement.getPrepareContext(),table, partitionsFromHotToCold );
                     }
-                    //Copy data
-
-                    //Create new COLD tables
-
-                    //Copy data
-
-                    //DELETE TABLEs based on moved partitions in HOT
-
-                    //DELETE TABLEs based on moved partitions in HOT
                 }
             }
 

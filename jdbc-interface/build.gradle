@@ -5,6 +5,7 @@ version = versionMajor + "." + versionMinor + versionQualifier
 
 dependencies {
     implementation project(":core")
+    implementation project(":monitoring")
 
     ////// BYTE UNITS
     implementation group: "com.jakewharton.byteunits", name: "byteunits", version: byteunits_version  // Apache 2.0
