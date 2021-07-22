@@ -27,6 +27,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -54,6 +55,7 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.mongodb.util.MongoTypeUtil;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
@@ -168,8 +170,10 @@ public class MongoStore extends DataStore {
     public void truncate( Context context, CatalogTable table ) {
         commitAll();
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
-        // DDL is auto-committed
-        currentSchema.database.getCollection( getPhysicalTableName( table.id ) ).deleteMany( new Document() );
+        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable(getAdapterId(), table.id) ) {
+            // DDL is auto-committed
+            currentSchema.database.getCollection( partitionPlacement.physicalTableName ).deleteMany( new Document() );
+        }
     }
 
 
@@ -216,16 +220,26 @@ public class MongoStore extends DataStore {
         commitAll();
         //ClientSession session = transactionProvider.startTransaction( context.getStatement().getTransaction().getXid() );
         //context.getStatement().getTransaction().registerInvolvedAdapter( this );
-        this.currentSchema.database.createCollection( getPhysicalTableName( catalogTable.id ) );
+        if (partitionIds.size() != 1){
+            throw new RuntimeException("MongoDB Store can't be partitioned but number of specified partitions where: " + partitionIds.size());
+        }
 
-        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ) ) {
-            catalog.updateColumnPlacementPhysicalNames(
-                    getAdapterId(),
-                    placement.columnId,
-                    catalogTable.getSchemaName(),
-                    catalogTable.name,
-                    getPhysicalColumnName( placement.columnId ),
-                    true );
+        for ( long partitionId : partitionIds ) {
+
+
+            String physicalTableName = getPhysicalTableName(catalogTable.id,partitionId);
+            this.currentSchema.database.createCollection( physicalTableName );
+
+            catalog.addPartitionPlacement( getAdapterId(), catalogTable.id, partitionIds.get( 0 ), PlacementType.AUTOMATIC, catalogTable.getSchemaName(), physicalTableName );
+            for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ) ) {
+                catalog.updateColumnPlacementPhysicalNames(
+                        getAdapterId(),
+                        placement.columnId,
+                        catalogTable.getSchemaName(),
+                        null,
+                        physicalTableName,
+                        true );
+            }
         }
     }
 
@@ -235,7 +249,14 @@ public class MongoStore extends DataStore {
         commitAll();
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         //transactionProvider.startTransaction();
-        this.currentSchema.database.getCollection( getPhysicalTableName( combinedTable.id ) ).drop();
+        List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
+        partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id )) );
+
+        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
+            catalog.deletePartitionPlacement( getAdapterId(), partitionPlacement.partitionId );
+            //this.currentSchema.database.getCollection( getPhysicalTableName( combinedTable.id ) ).drop();
+            this.currentSchema.database.getCollection( partitionPlacement.physicalTableName ).drop();
+        }
     }
 
 
@@ -244,67 +265,74 @@ public class MongoStore extends DataStore {
         commitAll();
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         // updates all columns with this field if a default value is provided
-        Document field;
-        if ( catalogColumn.defaultValue != null ) {
-            CatalogDefaultValue defaultValue = catalogColumn.defaultValue;
-            BsonValue value;
-            if ( catalogColumn.type.getFamily() == PolyTypeFamily.CHARACTER ) {
-                value = new BsonString( defaultValue.value );
-            } else if ( PolyType.INT_TYPES.contains( catalogColumn.type ) ) {
-                value = new BsonInt32( Integer.parseInt( defaultValue.value ) );
-            } else if ( PolyType.FRACTIONAL_TYPES.contains( catalogColumn.type ) ) {
-                value = new BsonDouble( Double.parseDouble( defaultValue.value ) );
-            } else if ( catalogColumn.type.getFamily() == PolyTypeFamily.BOOLEAN ) {
-                value = new BsonBoolean( Boolean.parseBoolean( defaultValue.value ) );
-            } else if ( catalogColumn.type.getFamily() == PolyTypeFamily.DATE ) {
-                try {
-                    value = new BsonInt64( new SimpleDateFormat( "yyyy-MM-dd" ).parse( defaultValue.value ).getTime() );
-                } catch ( ParseException e ) {
-                    throw new RuntimeException( e );
+
+        List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
+        catalogTable.partitionProperty.partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id )) );
+
+        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
+            Document field;
+            if ( catalogColumn.defaultValue != null ) {
+                CatalogDefaultValue defaultValue = catalogColumn.defaultValue;
+                BsonValue value;
+                if ( catalogColumn.type.getFamily() == PolyTypeFamily.CHARACTER ) {
+                    value = new BsonString( defaultValue.value );
+                } else if ( PolyType.INT_TYPES.contains( catalogColumn.type ) ) {
+                    value = new BsonInt32( Integer.parseInt( defaultValue.value ) );
+                } else if ( PolyType.FRACTIONAL_TYPES.contains( catalogColumn.type ) ) {
+                    value = new BsonDouble( Double.parseDouble( defaultValue.value ) );
+                } else if ( catalogColumn.type.getFamily() == PolyTypeFamily.BOOLEAN ) {
+                    value = new BsonBoolean( Boolean.parseBoolean( defaultValue.value ) );
+                } else if ( catalogColumn.type.getFamily() == PolyTypeFamily.DATE ) {
+                    try {
+                        value = new BsonInt64( new SimpleDateFormat( "yyyy-MM-dd" ).parse( defaultValue.value ).getTime() );
+                    } catch ( ParseException e ) {
+                        throw new RuntimeException( e );
+                    }
+                } else if ( catalogColumn.type.getFamily() == PolyTypeFamily.TIME ) {
+                    value = new BsonInt32( (int) Time.valueOf( defaultValue.value ).getTime() );
+                } else if ( catalogColumn.type.getFamily() == PolyTypeFamily.TIMESTAMP ) {
+                    value = new BsonInt64( Timestamp.valueOf( defaultValue.value ).getTime() );
+                } else if ( catalogColumn.type.getFamily() == PolyTypeFamily.BINARY ) {
+                    value = new BsonBinary( ByteString.parseBase64( defaultValue.value ) );
+                } else {
+                    value = new BsonString( defaultValue.value );
                 }
-            } else if ( catalogColumn.type.getFamily() == PolyTypeFamily.TIME ) {
-                value = new BsonInt32( (int) Time.valueOf( defaultValue.value ).getTime() );
-            } else if ( catalogColumn.type.getFamily() == PolyTypeFamily.TIMESTAMP ) {
-                value = new BsonInt64( Timestamp.valueOf( defaultValue.value ).getTime() );
-            } else if ( catalogColumn.type.getFamily() == PolyTypeFamily.BINARY ) {
-                value = new BsonBinary( ByteString.parseBase64( defaultValue.value ) );
+                if ( catalogColumn.collectionsType == PolyType.ARRAY ) {
+                    throw new RuntimeException( "Default values are not supported for array types" );
+                }
+
+                field = new Document().append( getPhysicalColumnName( catalogColumn.id ), value );
             } else {
-                value = new BsonString( defaultValue.value );
+                field = new Document().append( getPhysicalColumnName( catalogColumn.id ), null );
             }
-            if ( catalogColumn.collectionsType == PolyType.ARRAY ) {
-                throw new RuntimeException( "Default values are not supported for array types" );
-            }
+            Document update = new Document().append( "$set", field );
 
-            field = new Document().append( getPhysicalColumnName( catalogColumn.id ), value );
-        } else {
-            field = new Document().append( getPhysicalColumnName( catalogColumn.id ), null );
+            // DDL is auto-commit
+            this.currentSchema.database.getCollection( partitionPlacement.physicalTableName ).updateMany( new Document(), update );
+
+            // Add physical name to placement
+            catalog.updateColumnPlacementPhysicalNames(
+                    getAdapterId(),
+                    catalogColumn.id,
+                    currentSchema.getDatabase().getName(),
+                    null,
+                    getPhysicalColumnName( catalogColumn.id ),
+                    false );
         }
-        Document update = new Document().append( "$set", field );
-
-        // DDL is auto-commit
-        this.currentSchema.database.getCollection( getPhysicalTableName( catalogTable.id ) ).updateMany( new Document(), update );
-
-        // Add physical name to placement
-        catalog.updateColumnPlacementPhysicalNames(
-                getAdapterId(),
-                catalogColumn.id,
-                currentSchema.getDatabase().getName(),
-                catalogTable.name,
-                getPhysicalColumnName( catalogColumn.id ),
-                false );
-
     }
 
 
     @Override
     public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
         commitAll();
-        Document field = new Document().append( getPhysicalColumnName( columnPlacement.columnId ), 1 );
-        Document filter = new Document().append( "$unset", field );
+        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable( columnPlacement.adapterId, columnPlacement.tableId ) ) {
+            Document field = new Document().append( partitionPlacement.physicalTableName, 1 );
+            Document filter = new Document().append( "$unset", field );
 
-        context.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( getAdapterId() ) );
-        // DDL is auto-commit
-        this.currentSchema.database.getCollection( getPhysicalTableName( columnPlacement.tableId ) ).updateMany( new Document(), filter );
+            context.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( getAdapterId() ) );
+            // DDL is auto-commit
+            this.currentSchema.database.getCollection( partitionPlacement.physicalTableName ).updateMany( new Document(), filter );
+        }
     }
 
 
@@ -341,24 +369,30 @@ public class MongoStore extends DataStore {
 
 
     private void addCompositeIndex( CatalogIndex catalogIndex, List<String> columns ) {
-        Document doc = new Document();
-        columns.forEach( name -> doc.append( name, 1 ) );
 
-        IndexOptions options = new IndexOptions();
-        options.unique( catalogIndex.unique );
-        options.name( catalogIndex.name );
+        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable( getAdapterId(), catalogIndex.key.tableId ) ) {
+            Document doc = new Document();
+            columns.forEach( name -> doc.append( name, 1 ) );
 
-        this.currentSchema.database
-                .getCollection( getPhysicalTableName( catalogIndex.key.tableId ) )
-                .createIndex( doc, options );
+            IndexOptions options = new IndexOptions();
+            options.unique( catalogIndex.unique );
+            options.name( catalogIndex.name );
+
+            this.currentSchema.database
+                    .getCollection( partitionPlacement.physicalTableName )
+                    .createIndex( doc, options );
+        }
     }
+
 
 
     @Override
     public void dropIndex( Context context, CatalogIndex catalogIndex ) {
         commitAll();
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
-        this.currentSchema.database.getCollection( getPhysicalTableName( catalogIndex.key.tableId ) ).dropIndex( catalogIndex.name );
+        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable( getAdapterId(), catalogIndex.key.tableId ) ) {
+            this.currentSchema.database.getCollection( partitionPlacement.physicalTableName ).dropIndex( catalogIndex.name );
+        }
     }
 
 
@@ -400,8 +434,13 @@ public class MongoStore extends DataStore {
     }
 
 
-    public static String getPhysicalTableName( long id ) {
-        return "tab-" + id;
+    public static String getPhysicalTableName( long tableId, long partitionId ) {
+
+        String physicalTableName ="tab-" + tableId;
+        if ( partitionId >= 0  ) {
+            physicalTableName += "_part" + partitionId;
+        }
+        return physicalTableName;
     }
 
 

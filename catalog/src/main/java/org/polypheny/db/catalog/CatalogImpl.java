@@ -1499,6 +1499,9 @@ public class CatalogImpl extends Catalog {
         synchronized ( this ) {
             schemaChildren.replace( table.schemaId, ImmutableList.copyOf( children ) );
 
+            if ( table.partitionProperty.reliesOnPeriodicChecks ) {
+                removeTableFromPeriodicProcessing( tableId );
+            }
 
             if ( table.isPartitioned ) {
                 for ( Long partitionGroupId : Objects.requireNonNull( table.partitionProperty.partitionGroupIds ) ) {
@@ -1510,10 +1513,6 @@ public class CatalogImpl extends Catalog {
                 deleteColumn( columnId );
             }
 
-
-            if ( table.partitionProperty.reliesOnPeriodicChecks ) {
-                removeTableFromPeriodicProcessing( tableId );
-            }
 
             tableChildren.remove( tableId );
             tables.remove( tableId );
@@ -4117,7 +4116,7 @@ public class CatalogImpl extends Catalog {
             synchronized ( this ) {
                 partitionPlacements.put( new Object[]{ adapterId, partitionId }, partitionPlacement );
             }
-            listeners.firePropertyChange( "partitionPlacement", null, partitionPlacements );
+            //listeners.firePropertyChange( "partitionPlacement", null, partitionPlacements );
         }
     }
 
@@ -4212,7 +4211,14 @@ public class CatalogImpl extends Catalog {
     @Override
     public List<CatalogTable> getTablesForPeriodicProcessing()  {
         List<CatalogTable> procTables = new ArrayList<>();
-        frequencyDependentTables.forEach( id -> procTables.add(getTable(id)) );
+
+        for ( Long tableId :frequencyDependentTables ) {
+            try{
+                procTables.add(getTable(tableId));
+            }catch ( UnknownTableIdRuntimeException e ){
+                frequencyDependentTables.remove( tableId );
+            }
+        }
 
         return procTables;
     }

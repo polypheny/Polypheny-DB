@@ -39,8 +39,12 @@ public class CottontailNameUtil {
     }
 
 
-    public static String createPhysicalTableName( long tableId ) {
-        return "tab" + tableId;
+    public static String createPhysicalTableName( long tableId, long partitionId ) {
+        String physicalTableName ="tab" + tableId;
+        if ( partitionId >= 0  ) {
+            physicalTableName += "_part" + partitionId;
+        }
+        return physicalTableName;
     }
 
 

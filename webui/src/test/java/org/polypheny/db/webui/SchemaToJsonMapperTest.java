@@ -34,6 +34,7 @@ import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.type.PolyType;
 
 
@@ -58,7 +59,8 @@ public class SchemaToJsonMapperTest {
                 TableType.TABLE,
                 23L,
                 ImmutableMap.of(),
-                true, );
+                true,
+                PartitionProperty.builder().build());
         Catalog catalog = Catalog.getInstance();
         Arrays.asList(
                 new CatalogColumn( 5, "sid", 4, 1, 1, 1, PolyType.INTEGER, null, null, null, null, null, false, null, null ),
