@@ -156,7 +156,7 @@ public class MongoStore extends DataStore {
 
     @Override
     public Table createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
-        return currentSchema.createTable( combinedTable, columnPlacementsOnStore, getAdapterId() );
+        return currentSchema.createTable( combinedTable, columnPlacementsOnStore, getAdapterId(), partitionPlacement );
     }
 
 
@@ -399,12 +399,13 @@ public class MongoStore extends DataStore {
     @Override
     public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn, PolyType polyType ) {
         String name = columnPlacement.physicalColumnName;
+        CatalogPartitionPlacement partitionPlacement = catalog.getPartitionPlacement( getAdapterId(), catalog.getTable( columnPlacement.tableId ).partitionProperty.partitionIds.get( 0 ) );
         BsonDocument filter = new BsonDocument();
         List<BsonDocument> updates = Collections.singletonList( new BsonDocument( "$set", new BsonDocument( name, new BsonDocument( "$convert", new BsonDocument()
                 .append( "input", new BsonString( "$" + name ) )
                 .append( "to", new BsonInt32( MongoTypeUtil.getTypeNumber( catalogColumn.type ) ) ) ) ) ) );
 
-        this.currentSchema.database.getCollection( columnPlacement.physicalTableName ).updateMany( filter, updates );
+        this.currentSchema.database.getCollection( partitionPlacement.physicalTableName ).updateMany( filter, updates );
     }
 
 

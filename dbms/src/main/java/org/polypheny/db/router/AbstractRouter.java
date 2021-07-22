@@ -886,7 +886,7 @@ public abstract class AbstractRouter implements Router {
         if ( log.isDebugEnabled() ) {
             log.debug( "List of Store specific ColumnPlacements: " );
             for ( CatalogColumnPlacement ccp : placements ) {
-                log.debug( "{}.{}.{}", ccp.adapterUniqueName, ccp.physicalTableName, ccp.getLogicalColumnName() );
+                log.debug( "{}.{}", ccp.adapterUniqueName, ccp.getLogicalColumnName() );
             }
         }
 

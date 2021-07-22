@@ -442,10 +442,13 @@ public abstract class Adapter {
         group.setRefreshFunction( () -> {
             physicalColumnNames.reset();
             Catalog.getInstance().getColumnPlacementsOnAdapter( adapterId ).forEach( placement -> {
-                physicalColumnNames.addRow(
-                        placement.columnId,
-                        Catalog.getInstance().getColumn( placement.columnId ).name,
-                        placement.physicalSchemaName + "." + placement.physicalTableName + "." + placement.physicalColumnName );
+                List<CatalogPartitionPlacement> cpps = Catalog.getInstance().getPartitionPlacementsByAdapter( adapterId );
+                cpps.forEach( cpp ->
+                                physicalColumnNames.addRow(
+                                        placement.columnId,
+                                        Catalog.getInstance().getColumn( placement.columnId ).name,
+                                        cpp.physicalSchemaName + "." + cpp.physicalTableName + "." + placement.physicalColumnName )
+                        );
             } );
         } );
 

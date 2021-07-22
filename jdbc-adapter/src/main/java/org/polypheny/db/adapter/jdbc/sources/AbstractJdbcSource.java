@@ -121,8 +121,8 @@ public abstract class AbstractJdbcSource extends DataSource {
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows truncating linked tables.
-        String physicalTableName = Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ).get( 0 ).physicalTableName;
-        String physicalSchemaName = Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ).get( 0 ).physicalSchemaName;
+        String physicalTableName = Catalog.getInstance().getPartitionPlacementByTable( getAdapterId(), catalogTable.id ).get( 0 ).physicalTableName;
+        String physicalSchemaName = Catalog.getInstance().getPartitionPlacementByTable( getAdapterId(), catalogTable.id ).get( 0 ).physicalSchemaName;
         StringBuilder builder = new StringBuilder();
         builder.append( "TRUNCATE TABLE " )
                 .append( dialect.quoteIdentifier( physicalSchemaName ) )

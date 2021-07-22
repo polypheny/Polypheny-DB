@@ -1661,7 +1661,6 @@ public class CatalogImpl extends Catalog {
                 store.uniqueName,
                 placementType,
                 physicalSchemaName,
-                physicalTableName,
                 physicalColumnName,
                 physicalPositionBuilder.getAndIncrement());
 
@@ -1989,7 +1988,6 @@ public class CatalogImpl extends Catalog {
                     old.adapterUniqueName,
                     placementType,
                     old.physicalSchemaName,
-                    old.physicalTableName,
                     old.physicalColumnName,
                     old.physicalPosition );
             synchronized ( this ) {
@@ -2022,7 +2020,6 @@ public class CatalogImpl extends Catalog {
                     old.adapterUniqueName,
                     old.placementType,
                     old.physicalSchemaName,
-                    old.physicalTableName,
                     old.physicalColumnName,
                     position );
             synchronized ( this ) {
@@ -2055,7 +2052,6 @@ public class CatalogImpl extends Catalog {
                     old.adapterUniqueName,
                     old.placementType,
                     old.physicalSchemaName,
-                    old.physicalTableName,
                     old.physicalColumnName,
                     physicalPositionBuilder.getAndIncrement() );
             synchronized ( this ) {
@@ -2093,7 +2089,6 @@ public class CatalogImpl extends Catalog {
                     old.adapterUniqueName,
                     old.placementType,
                     physicalSchemaName,
-                    physicalTableName,
                     physicalColumnName,
                     updatePhysicalColumnPosition ? physicalPositionBuilder.getAndIncrement() : old.physicalPosition);
             synchronized ( this ) {

@@ -326,7 +326,10 @@ public class CassandraStore extends DataStore {
     public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
 //        public void dropColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
 //        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getStatement().getTransaction().getCatalog(), this.getStoreId() );
-        String physicalTableName = columnPlacement.physicalTableName;
+
+        CatalogPartitionPlacement partitionPlacement = catalog.getPartitionPlacement( getAdapterId(), catalog.getTable( columnPlacement.tableId ).partitionProperty.partitionIds.get( 0 ) );
+
+        String physicalTableName = partitionPlacement.physicalTableName;
         String physicalColumnName = columnPlacement.physicalColumnName;
 
         SimpleStatement dropColumn = SchemaBuilder.alterTable( this.dbKeyspace, physicalTableName )

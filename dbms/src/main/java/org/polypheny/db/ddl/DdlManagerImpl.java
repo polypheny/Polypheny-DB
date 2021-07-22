@@ -382,7 +382,7 @@ public class DdlManagerImpl extends DdlManager {
         int adapterId = catalog.getColumnPlacement( catalogTable.columnIds.get( 0 ) ).get( 0 ).adapterId;
         DataSource dataSource = (DataSource) AdapterManager.getInstance().getAdapter( adapterId );
 
-        String physicalTableName = catalog.getColumnPlacement( catalogTable.columnIds.get( 0 ) ).get( 0 ).physicalTableName;
+        String physicalTableName = catalog.getPartitionPlacement( adapterId, catalogTable.partitionProperty.partitionIds.get( 0 )).physicalTableName;
         List<ExportedColumn> exportedColumns = dataSource.getExportedColumns().get( physicalTableName );
 
         // Check if physicalColumnName is valid

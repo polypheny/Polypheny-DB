@@ -29,16 +29,6 @@ public class CottontailNameUtil {
     private final static Pattern idRevPattern = Pattern.compile( "^(col|tab|sch)([0-9]+)(?>r([0-9]+))?$" );
 
 
-    public static String getPhysicalTableName( int storeId, long tableId ) {
-        List<CatalogColumnPlacement> placements = Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( storeId, tableId );
-        if ( placements.isEmpty() ) {
-            throw new RuntimeException( "Placements not registered in catalog. This should not happen!" );
-        }
-
-        return placements.get( 0 ).physicalTableName;
-    }
-
-
     public static String createPhysicalTableName( long tableId, long partitionId ) {
         String physicalTableName ="tab" + tableId;
         if ( partitionId >= 0  ) {

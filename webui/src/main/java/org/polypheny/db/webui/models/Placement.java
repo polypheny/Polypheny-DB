@@ -98,7 +98,6 @@ public class Placement {
         private final String storeUniqueName;
         private final PlacementType placementType;
         private final String physicalSchemaName;
-        private final String physicalTableName;
         private final String physicalColumnName;
 
 
@@ -111,7 +110,6 @@ public class Placement {
             this.storeUniqueName = catalogColumnPlacement.adapterUniqueName;
             this.placementType = catalogColumnPlacement.placementType;
             this.physicalSchemaName = catalogColumnPlacement.physicalSchemaName;
-            this.physicalTableName = catalogColumnPlacement.physicalTableName;
             this.physicalColumnName = catalogColumnPlacement.physicalColumnName;
         }
 
