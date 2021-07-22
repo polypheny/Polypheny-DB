@@ -20,6 +20,7 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import org.polypheny.db.rel.core.Filter;
 import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
@@ -48,6 +49,26 @@ public class DocumentRules {
             node.accept( visitor );
             if ( visitor.containsJson() ) {
                 return true;
+            }
+        }
+        return false;
+    }
+
+
+    public static boolean jsonInModify( TableModify modify ) {
+        JsonVisitor visitor = new JsonVisitor();
+        for ( RexNode node : modify.getChildExps() ) {
+            node.accept( visitor );
+            if ( visitor.containsJson() ) {
+                return true;
+            }
+        }
+        if ( modify.getSourceExpressionList() != null ) {
+            for ( RexNode rexNode : modify.getSourceExpressionList() ) {
+                rexNode.accept( visitor );
+                if ( visitor.containsJson() ) {
+                    return true;
+                }
             }
         }
         return false;

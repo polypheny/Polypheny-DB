@@ -18,6 +18,9 @@ package org.polypheny.db.mql2rel;
 
 import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,6 +35,7 @@ import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
+import org.bson.BsonInt64;
 import org.bson.BsonNumber;
 import org.bson.BsonRegularExpression;
 import org.bson.BsonString;
@@ -41,12 +45,14 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.document.DocumentTypeUtil;
 import org.polypheny.db.mql.Mql;
 import org.polypheny.db.mql.MqlAggregate;
+import org.polypheny.db.mql.MqlCollectionStatement;
 import org.polypheny.db.mql.MqlCount;
 import org.polypheny.db.mql.MqlDelete;
 import org.polypheny.db.mql.MqlFind;
 import org.polypheny.db.mql.MqlInsert;
 import org.polypheny.db.mql.MqlNode;
 import org.polypheny.db.mql.MqlQueryStatement;
+import org.polypheny.db.mql.MqlUpdate;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
@@ -58,6 +64,7 @@ import org.polypheny.db.rel.RelFieldCollation.Direction;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.AggregateCall;
+import org.polypheny.db.rel.core.CorrelationId;
 import org.polypheny.db.rel.core.TableModify.Operation;
 import org.polypheny.db.rel.logical.LogicalAggregate;
 import org.polypheny.db.rel.logical.LogicalDocuments;
@@ -69,6 +76,7 @@ import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -85,6 +93,7 @@ public class MqlToRelConverter {
 
     private final PolyphenyDbCatalogReader catalogReader;
     private final RelOptCluster cluster;
+    private RexBuilder builder;
     private final static Map<String, SqlOperator> mappings;
     private final static List<String> operators;
     private final static Map<String, List<SqlOperator>> gates;
@@ -182,34 +191,37 @@ public class MqlToRelConverter {
 
 
     public RelRoot convert( MqlNode query, boolean b, boolean b1 ) {
-        RelOptTable table;
-        RelNode node;
+        if ( query instanceof MqlCollectionStatement ) {
+            return convert( (MqlCollectionStatement) query, b, b1 );
+        }
+        throw new RuntimeException( "DML or DQL need a collection" );
+    }
+
+
+    public RelRoot convert( MqlCollectionStatement query, boolean b, boolean b1 ) {
         Mql.Type kind = query.getKind();
         String dbSchemaName = Catalog.getInstance().getUser( Catalog.defaultUser ).getDefaultSchema().name;
+        RelOptTable table = getTable( query, dbSchemaName );
+        RelNode node = LogicalTableScan.create( cluster, table );
+        this.builder = new RexBuilder( cluster.getTypeFactory() );
 
         switch ( kind ) {
             case FIND:
-                table = catalogReader.getTable( ImmutableList.of( dbSchemaName, ((MqlFind) query).getCollection() ) );
-                node = LogicalTableScan.create( cluster, table );
                 RelNode find = convertFind( (MqlFind) query, table.getRowType(), node );
                 return RelRoot.of( find, find.getRowType(), SqlKind.SELECT );
             case COUNT:
-                table = catalogReader.getTable( ImmutableList.of( dbSchemaName, ((MqlCount) query).getCollection() ) );
-                node = LogicalTableScan.create( cluster, table );
                 RelNode count = convertCount( (MqlCount) query, table.getRowType(), node );
                 return RelRoot.of( count, count.getRowType(), SqlKind.SELECT );
             case AGGREGATE:
-                table = catalogReader.getTable( ImmutableList.of( dbSchemaName, ((MqlAggregate) query).getCollection() ) );
-                node = LogicalTableScan.create( cluster, table );
                 return RelRoot.of( convertAggregate( (MqlAggregate) query, table.getRowType(), node ), SqlKind.SELECT );
             /// dmls
             case INSERT:
-                table = catalogReader.getTable( ImmutableList.of( dbSchemaName, ((MqlInsert) query).getCollection() ) );
                 return RelRoot.of( convertInsert( (MqlInsert) query, table ), SqlKind.INSERT );
             case DELETE:
-                table = catalogReader.getTable( ImmutableList.of( dbSchemaName, ((MqlDelete) query).getCollection() ) );
-                node = LogicalTableScan.create( cluster, table );
                 return RelRoot.of( convertDelete( (MqlDelete) query, table, node ), SqlKind.DELETE );
+            case UPDATE:
+                return RelRoot.of( convertUpdate( (MqlUpdate) query, table, node ), SqlKind.UPDATE );
+
             default:
                 throw new IllegalStateException( "Unexpected value: " + kind );
         }
@@ -217,10 +229,99 @@ public class MqlToRelConverter {
     }
 
 
+    private RelOptTable getTable( MqlCollectionStatement query, String dbSchemaName ) {
+        return catalogReader.getTable( ImmutableList.of( dbSchemaName, query.getCollection() ) );
+    }
+
+
+    private RelNode convertUpdate( MqlUpdate query, RelOptTable table, RelNode node ) {
+        if ( !query.getQuery().isEmpty() ) {
+            node = convertQuery( query, table.getRowType(), node );
+            if ( query.isOnlyOne() ) {
+                node = wrapLimit( node, 1 );
+            }
+        }
+        if ( query.isUsesPipeline() ) {
+            node = convertReducedPipeline( query, table.getRowType(), node );
+        } else {
+            node = translateUpdate( query, table.getRowType(), node, table );
+        }
+
+        return node;
+    }
+
+
+    private RelNode translateUpdate( MqlUpdate query, RelDataType rowType, RelNode node, RelOptTable table ) {
+        Map<String, RexNode> updates = new HashMap<>();
+        RexNode data = getIdentifier( "_data", rowType, true );
+        for ( Entry<String, BsonValue> entry : query.getUpdate().asDocument().entrySet() ) {
+            String op = entry.getKey();
+            switch ( op ) {
+                case ("$currentDate"):
+                    updates.putAll( translateCurrentDate( entry.getValue().asDocument(), rowType ) );
+                    break;
+                default:
+                    throw new RuntimeException( "The update operation is not supported." );
+            }
+        }
+
+        RexCall names = new RexCall(
+                cluster.getTypeFactory().createArrayType( cluster.getTypeFactory().createPolyType( PolyType.VARCHAR, 2000 ), updates.keySet().size() ),
+                SqlStdOperatorTable.ARRAY_VALUE_CONSTRUCTOR,
+                updates.keySet().stream().map( n -> convertLiteral( new BsonString( n ) ) ).collect( Collectors.toList() ) );
+
+        RexCall values = new RexCall(
+                cluster.getTypeFactory().createArrayType( cluster.getTypeFactory().createPolyType( PolyType.INTEGER ), updates.values().size() ),
+                SqlStdOperatorTable.ARRAY_VALUE_CONSTRUCTOR,
+                new ArrayList<>( updates.values() ) );
+
+        RexCall call = new RexCall(
+                cluster.getTypeFactory().createPolyType( PolyType.VARCHAR, 2000 ),
+                SqlStdOperatorTable.DOC_MERGE_UPDATE, Arrays.asList( data, names, values ) );
+
+        return LogicalTableModify.create(
+                table,
+                catalogReader,
+                node,
+                Operation.UPDATE,
+                Collections.singletonList( "_data" ),
+                Collections.singletonList( call ),
+                false );
+    }
+
+
+    private Map<String, RexNode> translateCurrentDate( BsonDocument value, RelDataType rowType ) {
+        Map<String, RexNode> updates = new HashMap<>();
+        for ( Entry<String, BsonValue> entry : value.entrySet() ) {
+            long timeOrDate;
+            if ( entry.getValue().isBoolean() ) {
+                timeOrDate = LocalDate.now().toEpochDay();
+            } else {
+                if ( entry.getValue().asDocument().get( "$type" ).asString().getValue().equals( "timestamp" ) ) {
+                    timeOrDate = LocalDateTime.now().toEpochSecond( ZoneOffset.UTC );
+                } else {
+                    timeOrDate = LocalDate.now().toEpochDay();
+                }
+
+            }
+            updates.put( entry.getKey(), convertLiteral( new BsonInt64( timeOrDate ) ) );
+        }
+        return updates;
+    }
+
+
+    private RelNode convertReducedPipeline( MqlUpdate query, RelDataType rowType, RelNode node ) {
+        return null;
+    }
+
+
     private RelNode convertDelete( MqlDelete query, RelOptTable table, RelNode node ) {
         RelNode deleteQuery = node;
         if ( !query.getQuery().isEmpty() ) {
             deleteQuery = convertQuery( query, table.getRowType(), node );
+            if ( query.isOnlyOne() ) {
+                deleteQuery = wrapLimit( node, 1 );
+            }
         }
         return LogicalTableModify.create(
                 table,
@@ -514,9 +615,6 @@ public class MqlToRelConverter {
     private RelNode groupBy( BsonValue value, RelNode node, RelDataType rowType, List<String> names, List<SqlAggFunction> aggs ) {
         BsonValue groupBy = value.asDocument().get( "_id" );
 
-        if ( names.size() == 0 ) {
-            return node;
-        }
 
         List<AggregateCall> convertedAggs = new ArrayList<>();
         int pos = 0;
@@ -525,7 +623,7 @@ public class MqlToRelConverter {
             convertedAggs.add(
                     AggregateCall.create(
                             aggs.get( pos ),
-                            false,
+                            true,
                             false,
                             Collections.singletonList( rowType.getFieldNames().indexOf( name ) ),
                             -1,
@@ -586,8 +684,11 @@ public class MqlToRelConverter {
             node = combineProjection( query.getProjection(), node, rowType, false );
         }
 
-        return node;
+        if ( query.isOnlyOne() ) {
+            node = wrapLimit( node, 1 );
+        }
 
+        return node;
     }
 
 
@@ -605,10 +706,7 @@ public class MqlToRelConverter {
         return LogicalSort.create(
                 node,
                 collation,
-                new RexLiteral(
-                        new BigDecimal( 0 ),
-                        cluster.getTypeFactory()
-                                .createPolyType( PolyType.INTEGER ), PolyType.DECIMAL ),
+                null,
                 new RexLiteral(
                         new BigDecimal( limit ),
                         cluster.getTypeFactory()
@@ -879,16 +977,25 @@ public class MqlToRelConverter {
 
 
     private RexNode getIdentifier( String parentKey, RelDataType rowType ) {
+        return getIdentifier( parentKey, rowType, false );
+    }
+
+
+    private RexNode getIdentifier( String parentKey, RelDataType rowType, boolean useAccess ) {
         List<String> rowNames = rowType.getFieldNames();
         if ( rowNames.contains( parentKey ) ) {
-            return attachRef( parentKey, rowType );
+            if ( useAccess ) {
+                return attachCorrel( parentKey, rowType );
+            } else {
+                return attachRef( parentKey, rowType );
+            }
         } else if ( rowNames.contains( parentKey.split( "\\." )[0] ) ) {
             this.attachedJson = true;
-            return translateJsonValue( rowNames.indexOf( parentKey.split( "\\." )[0] ), rowType, parentKey );
+            return translateJsonValue( rowNames.indexOf( parentKey.split( "\\." )[0] ), rowType, parentKey, useAccess );
         } else if ( _dataExists ) {
             // the default _data field does still exist
             this.attachedJson = true;
-            return translateJsonValue( getDefaultDataField( rowType ).getIndex(), rowType, parentKey );
+            return translateJsonValue( getDefaultDataField( rowType ).getIndex(), rowType, parentKey, useAccess );
         } else {
             return null;
         }
@@ -899,6 +1006,12 @@ public class MqlToRelConverter {
     private RexNode attachRef( String parentKey, RelDataType rowType ) {
         RelDataTypeField field = rowType.getField( parentKey, false, false );
         return RexInputRef.of( field.getIndex(), rowType );
+    }
+
+
+    private RexNode attachCorrel( String parentKey, RelDataType rowType ) {
+        RelDataTypeField field = rowType.getField( parentKey, false, false );
+        return builder.makeCorrel( rowType, new CorrelationId( field.getIndex() ) );
     }
 
 
@@ -1070,12 +1183,13 @@ public class MqlToRelConverter {
 
 
     private RexNode convertElemMatch( BsonValue bsonValue, String parentKey, RelDataType rowType ) {
-        if ( bsonValue.isDocument() ) {
-            // todo dl
-            return null;
-        } else {
+        if ( !bsonValue.isDocument() ) {
             throw new RuntimeException( "After $elemMatch there needs to follow a document" );
         }
+
+        RexCall op = new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), SqlStdOperatorTable.EQUALS, Arrays.asList( convertLiteral( new BsonInt32( 32 ) ), convertLiteral( new BsonInt32( 32 ) ) ) );
+
+        return null;
     }
 
 
@@ -1144,10 +1258,17 @@ public class MqlToRelConverter {
     }
 
 
-    private RexNode translateJsonValue( int index, RelDataType rowType, String key ) {
+    private RexNode translateJsonValue( int index, RelDataType rowType, String key, boolean useAccess ) {
 
         RexCall filter = getStringArray( Arrays.asList( key.split( "\\." ) ) );
-        return new RexCall( any, SqlStdOperatorTable.DOC_QUERY_VALUE, Arrays.asList( RexInputRef.of( index, rowType ), filter ) );
+        return new RexCall(
+                any,
+                SqlStdOperatorTable.DOC_QUERY_VALUE,
+                Arrays.asList(
+                        useAccess
+                                ? builder.makeCorrel( rowType, new CorrelationId( index ) )
+                                : RexInputRef.of( index, rowType ),
+                        filter ) );
 
     }
 

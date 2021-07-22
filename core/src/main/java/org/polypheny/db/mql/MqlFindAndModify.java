@@ -21,7 +21,7 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.polypheny.db.mql.Mql.Type;
 
-public class MqlFindModify extends MqlCollectionStatement implements MqlQueryStatement {
+public class MqlFindAndModify extends MqlCollectionStatement implements MqlQueryStatement {
 
     @Getter
     private final BsonDocument query;
@@ -47,7 +47,7 @@ public class MqlFindModify extends MqlCollectionStatement implements MqlQuerySta
     private final BsonDocument let;
 
 
-    public MqlFindModify( String collection, BsonDocument document ) {
+    public MqlFindAndModify( String collection, BsonDocument document ) {
         super( collection );
         this.query = getDocumentOrNull( document, "query" );
         this.sort = getDocumentOrNull( document, "sort" );

@@ -443,6 +443,7 @@ public class MongoRules {
                     project.getProjects(),
                     project.getRowType() );
         }
+
     }
 
 
@@ -454,7 +455,6 @@ public class MongoRules {
         private MongoValuesRule() {
             super( Values.class, r -> true, Convention.NONE, MongoRel.CONVENTION, "MongoValuesRule." + MongoRel.CONVENTION );
         }
-
 
 
         @Override
@@ -479,6 +479,7 @@ public class MongoRules {
         }
 
     }
+
 
     public static class MongoValues extends Values implements MongoRel {
 
@@ -522,8 +523,10 @@ public class MongoRules {
 
 
         MongoTableModificationRule() {
-            super( TableModify.class, r -> true, Convention.NONE, MongoRel.CONVENTION, "MongoTableModificationRule." + MongoRel.CONVENTION );
+            super( TableModify.class, r -> !DocumentRules.jsonInModify( r ), Convention.NONE, MongoRel.CONVENTION, "MongoTableModificationRule." + MongoRel.CONVENTION );
         }
+
+
         @Override
         public RelNode convert( RelNode rel ) {
             final TableModify modify = (TableModify) rel;
@@ -566,6 +569,7 @@ public class MongoRules {
                 boolean flattened ) {
             super( cluster, traitSet, table, catalogReader, input, operation, updateColumnList, sourceExpressionList, flattened );
         }
+
 
         @Override
         public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
@@ -659,6 +663,7 @@ public class MongoRules {
                     break;
             }
         }
+
 
         private void handleDocumentInsert( Implementor implementor, MongoDocuments documents ) {
             List<BsonDocument> docs = new ArrayList<>();
@@ -756,6 +761,7 @@ public class MongoRules {
             implementor.operations = Collections.singletonList( doc );
         }
 
+
         private Map<Integer, String> getPhysicalMap( List<RelDataTypeField> fieldList, CatalogTable catalogTable ) {
             Map<Integer, String> map = new HashMap<>();
             List<String> names = catalogTable.getColumnNames();
@@ -767,6 +773,7 @@ public class MongoRules {
             }
             return map;
         }
+
 
         private String getPhysicalName( MongoProject input, CatalogTable catalogTable, int pos ) {
             String logicalName = input.getRowType().getFieldNames().get( pos );

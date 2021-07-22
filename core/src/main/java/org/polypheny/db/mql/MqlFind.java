@@ -11,6 +11,7 @@ public class MqlFind extends MqlCollectionStatement implements MqlQueryStatement
 
     @Getter
     private final BsonDocument projection;
+    @Getter
     private final boolean onlyOne;
 
 

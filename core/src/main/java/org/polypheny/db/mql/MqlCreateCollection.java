@@ -44,7 +44,7 @@ public class MqlCreateCollection extends MqlNode implements MqlExecutableStateme
         Catalog catalog = Catalog.getInstance();
         AdapterManager adapterManager = AdapterManager.getInstance();
 
-        long schemaId = catalog.getUser( Catalog.defaultUser ).getDefaultSchema().id;
+        long schemaId = catalog.getUser( context.getCurrentUserId() ).getDefaultSchema().id;
 
         PlacementType placementType = PlacementType.AUTOMATIC;
 

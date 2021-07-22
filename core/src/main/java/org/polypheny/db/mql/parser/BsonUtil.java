@@ -23,6 +23,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.polypheny.db.util.Pair;
 
 public class BsonUtil {
@@ -35,37 +36,6 @@ public class BsonUtil {
         mappings.add( new Pair<>( "\\+", "$add" ) );
         mappings.add( new Pair<>( "\\*", "$multiply" ) );
         mappings.add( new Pair<>( "\\/", "$divide" ) );
-    }
-
-
-    public static List<BsonDocument> trySplit( String documents ) {
-        int openedCount = 0;
-        int lastEnd = 0;
-        List<Pair<Integer, Integer>> intervals = new ArrayList<>();
-        char now;
-        for ( int i = 0; i < documents.length(); i++ ) {
-            now = documents.charAt( i );
-
-            if ( now == '{' ) {
-                openedCount++;
-            } else if ( now == '}' && i != documents.length() - 1 ) {
-                openedCount--;
-            } else if ( (now == ',' && openedCount == 0) ) {
-                // we are either between two documents },{ or at the end of the last document }
-                // we are between two documents "},{"
-                intervals.add( new Pair<>( lastEnd, i - 1 ) );
-                lastEnd = i + 1;
-            } else if ( now == '}' && i == documents.length() - 1 && openedCount == 1 ) {
-                intervals.add( new Pair<>( lastEnd, i ) );
-            }
-
-        }
-
-        return intervals
-                .stream()
-                .map( interval -> BsonDocument.parse( BsonUtil.fixBson( documents.substring( interval.left, interval.right + 1 ) ) ) ) // +1 due to smaller than handling of substring
-                .collect( Collectors.toList() );
-
     }
 
 
@@ -113,6 +83,11 @@ public class BsonUtil {
         } else {
             return fixCalculation( calculation, depth + 1 );
         }
+    }
+
+
+    public static List<BsonDocument> asDocumentCollection( List<BsonValue> values ) {
+        return values.stream().map( BsonValue::asDocument ).collect( Collectors.toList() );
     }
 
 }

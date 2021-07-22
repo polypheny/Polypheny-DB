@@ -677,11 +677,13 @@ public class CatalogImpl extends Catalog {
             schemaId = getSchema( "APP", "private" ).id;
         }
 
+        setUserSchema( defaultUser, schemaId );
+
         if ( !testMode ) {
             if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "secrets" } ) ) {
                 CatalogAdapter store = getAdapter( "hsqldb" );
                 long tableId = addTable( "secrets", schemaId, systemId, TableType.TABLE, true );
-                addDefaultColumn( store, getTable( tableId ), "_id", PolyType.JSON, Collation.CASE_INSENSITIVE, 0, 24 ); // todo dl: add this automatically
+                addDefaultColumn( store, getTable( tableId ), "_id", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 0, 24 ); // todo dl: add this automatically
                 addDefaultColumn( store, getTable( tableId ), "_data", PolyType.JSON, Collation.CASE_INSENSITIVE, 1, 1024 );
                 addPrimaryKey( tableId, Collections.singletonList( getColumn( tableId, "_id" ).id ) );
             }

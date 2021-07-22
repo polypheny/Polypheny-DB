@@ -3709,6 +3709,11 @@ public class SqlFunctions {
     }
 
 
+    public static Object docMergeUpdate( Object input, List names, List value ) {
+        return null;
+    }
+
+
     public static BsonValue docQueryExclude( Object input, List<List<String>> excluded ) {
         if ( !(input instanceof String) ) {
             return null;
