@@ -536,7 +536,7 @@ public class HorizontalPartitioningTest {
                     Assert.assertEquals( 20, table.partitionProperty.getPartitionIds().size() );
 
 
-                    //Check if initially as many partitonPlacements are created as requested ansd stored in the partitionproperty
+                    //Check if initially as many partitonPlacements are created as requested and stored in the partitionproperty
                     Assert.assertEquals(  table.partitionProperty.getPartitionIds().size(), Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size()  );
 
 
