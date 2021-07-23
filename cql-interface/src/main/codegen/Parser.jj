@@ -67,53 +67,53 @@ CqlQuery parse() :
 {
     CqlQuery cqlQuery = null;
     QueryNode root = null;
-    HashMap<String, String> prefixURIPairs = new HashMap<String, String>();
+    HashMap<String, String> prefixQNPairs = new HashMap<String, String>();
     HashSet<String> indices = new HashSet<String>();
     ArrayList<SortSpecification> sortSpecs = null;
 }
 {
-    root = CQL_QUERY( prefixURIPairs, indices )
+    root = CQL_QUERY( prefixQNPairs, indices )
     [
         < SORT_BY >
         sortSpecs = SORT_SPECIFICATION_LIST( indices )
     ]
     < EOF >
     {
-        cqlQuery = new CqlQuery( root, sortSpecs, indices, prefixURIPairs );
+        cqlQuery = new CqlQuery( root, sortSpecs, indices, prefixQNPairs );
         return cqlQuery;
     }
 }
 
-QueryNode CQL_QUERY( HashMap<String, String> prefixURIPairs, HashSet<String> indices ) :
+QueryNode CQL_QUERY( HashMap<String, String> prefixQNPairs, HashSet<String> indices ) :
 {
     QueryNode root = null;
 }
 {
     (
-        PREFIX_ASSIGNMENT( prefixURIPairs )
+        PREFIX_ASSIGNMENT( prefixQNPairs )
     )*
 
-    root = SCOPED_CLAUSE( prefixURIPairs, indices )
+    root = SCOPED_CLAUSE( prefixQNPairs, indices )
     { return root; }
 }
 
-QueryNode SCOPED_CLAUSE( HashMap<String, String> prefixURIPairs, HashSet<String> indices ) :
+QueryNode SCOPED_CLAUSE( HashMap<String, String> prefixQNPairs, HashSet<String> indices ) :
 {
     QueryNode leftSearchClause = null;
     BooleanGroup booleanGroup = null;
     QueryNode rightSearchClause = null;
 }
 {
-    leftSearchClause = SEARCH_CLAUSE( prefixURIPairs, indices )
+    leftSearchClause = SEARCH_CLAUSE( prefixQNPairs, indices )
     (
         booleanGroup = BOOLEAN_GROUP()
-        rightSearchClause = SEARCH_CLAUSE( prefixURIPairs, indices )
+        rightSearchClause = SEARCH_CLAUSE( prefixQNPairs, indices )
         { leftSearchClause = new QueryNode( leftSearchClause, booleanGroup, rightSearchClause ); }
     )*
     { return leftSearchClause; }
 }
 
-QueryNode SEARCH_CLAUSE( HashMap<String, String> prefixURIPairs, HashSet<String> indices ) :
+QueryNode SEARCH_CLAUSE( HashMap<String, String> prefixQNPairs, HashSet<String> indices ) :
 {
     QueryNode queryNode = null;
     SearchClause searchClause = null;
@@ -124,7 +124,7 @@ QueryNode SEARCH_CLAUSE( HashMap<String, String> prefixURIPairs, HashSet<String>
 {
     (
         "("
-        queryNode = CQL_QUERY( prefixURIPairs, indices )
+        queryNode = CQL_QUERY( prefixQNPairs, indices )
         ")"
     |
         index = IDENTIFIER()
@@ -190,25 +190,25 @@ SortSpecification SORT_SPECIFICATION() :
     }
 }
 
-void PREFIX_ASSIGNMENT( HashMap<String, String> prefixURIPairs ) :
+void PREFIX_ASSIGNMENT( HashMap<String, String> prefixQNPairs ) :
 {
     String prefix = null;
-    String uri = null;
+    String qualifiedName = null;
 }
 {
     < COMPARATOR_GREATER_THAN >
     prefix = IDENTIFIER()
     [
         < COMPARATOR_SERVER_CHOICE >
-        uri = IDENTIFIER()
+        qualifiedName = IDENTIFIER()
     ]
     {
-        if ( uri == null ) {
-            uri = prefix;
+        if ( qualifiedName == null ) {
+            qualifiedName = prefix;
             prefix = "";
         }
 
-        prefixURIPairs.put( prefix, uri );
+        prefixQNPairs.put( prefix, qualifiedName );
     }
 }
 

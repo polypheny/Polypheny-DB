@@ -26,21 +26,21 @@ public class CqlQuery {
     public final QueryNode root;
     public final ArrayList<SortSpecification> sortSpecs;
     public final HashSet<String> indices;
-    public final HashMap<String, String> prefixURIPairs;
+    public final HashMap<String, String> prefixQNPairs;
 
 
     public CqlQuery( QueryNode root, ArrayList<SortSpecification> sortSpecs,
-            HashSet<String> indices, HashMap<String, String> prefixURIPairs ) {
+            HashSet<String> indices, HashMap<String, String> prefixQNPairs ) {
         this.root = root;
         this.sortSpecs = sortSpecs;
         this.indices = indices;
-        this.prefixURIPairs = prefixURIPairs;
+        this.prefixQNPairs = prefixQNPairs;
     }
 
 
     @Override
     public String toString() {
-        return "> " + prefixURIPairs.keySet().stream().map( k -> k + "=" + prefixURIPairs.get( k ) ).collect( Collectors.joining( " " ) ) + "\n" +
+        return "> " + prefixQNPairs.keySet().stream().map( k -> k + "=" + prefixQNPairs.get( k ) ).collect( Collectors.joining( " " ) ) + "\n" +
                 queryString( root ) + "\nsortby " +
                 sortSpecs.stream().map( Object::toString ).collect( Collectors.joining( " " ) ) + "\n"
                 + "[ " + indices.stream().map( Object::toString ).collect( Collectors.joining( ", " ) ) + " ]";
