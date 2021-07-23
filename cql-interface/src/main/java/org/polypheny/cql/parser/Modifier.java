@@ -14,11 +14,25 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql;
+package org.polypheny.cql.parser;
 
-public enum BooleanOperator {
-    AND,
-    OR,
-    NOT,
-    PROX
+public class Modifier {
+
+    public final String modifierName;
+    public final Comparator comparator;
+    public final String modifierValue;
+
+
+    public Modifier( String modifierName, Comparator comparator, String modifierValue ) {
+        this.modifierName = modifierName;
+        this.comparator = comparator;
+        this.modifierValue = modifierValue;
+    }
+
+
+    @Override
+    public String toString() {
+        return "/ " + modifierName + " " + comparator + " " + modifierValue;
+    }
+
 }

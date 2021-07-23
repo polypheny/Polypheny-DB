@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql;
+package org.polypheny.cql.parser;
 
 import java.util.ArrayList;
 import java.util.stream.Collectors;

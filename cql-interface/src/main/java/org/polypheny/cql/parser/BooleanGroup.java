@@ -14,32 +14,32 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql;
+package org.polypheny.cql.parser;
 
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
-public class Relation {
+public class BooleanGroup {
 
-    public final Comparator comparator;
+    public final BooleanOperator booleanOperator;
     public final ArrayList<Modifier> modifiers;
 
 
-    public Relation( Comparator comparator ) {
-        this.comparator = comparator;
+    public BooleanGroup( BooleanOperator booleanOperator ) {
+        this.booleanOperator = booleanOperator;
         this.modifiers = new ArrayList<>();
     }
 
 
-    public Relation( Comparator comparator, ArrayList<Modifier> modifiers ) {
-        this.comparator = comparator;
+    public BooleanGroup( BooleanOperator booleanOperator, ArrayList<Modifier> modifiers ) {
+        this.booleanOperator = booleanOperator;
         this.modifiers = modifiers;
     }
 
 
     @Override
     public String toString() {
-        return comparator.toString() + " " +
+        return booleanOperator.name() +
                 modifiers.stream().map( Object::toString ).collect( Collectors.joining( " " ) );
     }
 

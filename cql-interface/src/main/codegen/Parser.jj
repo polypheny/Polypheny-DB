@@ -7,24 +7,21 @@ PARSER_BEGIN(Parser)
 
 package org.polypheny.cql.parser;
 
-import org.polypheny.cql.parser.ParseException;
-
 import java.io.BufferedReader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.HashMap;
 
-import org.polypheny.cql.BooleanOperator;
-import org.polypheny.cql.BooleanGroup;
-import org.polypheny.cql.ComparatorSymbol;
-import org.polypheny.cql.Comparator;
-import org.polypheny.cql.Modifier;
-import org.polypheny.cql.Relation;
-import org.polypheny.cql.SortSpecification;
-import org.polypheny.cql.SearchClause;
-import org.polypheny.cql.QueryNode;
-import org.polypheny.cql.CqlQuery;
+import org.polypheny.cql.parser.BooleanGroup;
+import org.polypheny.cql.parser.ComparatorSymbol;
+import org.polypheny.cql.parser.Comparator;
+import org.polypheny.cql.parser.Modifier;
+import org.polypheny.cql.parser.Relation;
+import org.polypheny.cql.parser.SortSpecification;
+import org.polypheny.cql.parser.SearchClause;
+import org.polypheny.cql.parser.QueryNode;
+import org.polypheny.cql.parser.CqlQuery;
 
 public class Parser {
 
