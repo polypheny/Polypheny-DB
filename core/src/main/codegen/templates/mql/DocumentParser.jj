@@ -125,27 +125,95 @@ SKIP : {
 
 TOKEN : /* IDENTIFIERS */ // for nested documents check out Document_Splits()
 {
-  < DOCUMENT: "{" (<LETTER>|<DIGIT>|<SYMBOL>|<EOL>)* "}" >
+< USE_DB: "use db" >
 |
-  < ARRAY: "[" (<LETTER>|<DIGIT>|<SYMBOL>)* "]" >
+< USE: "use " >
 |
-  < #SYMBOL: [".", ",", ":", ";", "$", "\"", "'", "(", ")", " ", "\n", "{", "}", "[", "]" ] | <MATH> >
+< DB: "db" >
 |
-  < #MATH: ["*", "/", "-", "+"] >
+< DROP: "drop" >
 |
-  < IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>)* >
+< DROP_DATABASE: "dropDatabase" >
 |
-  < #LETTER: ["_","a"-"z","A"-"Z"] >
+< SAVE: "save" >
 |
-  < #DIGIT: ["0"-"9"] >
+< GET: "get" >
 |
-  < EOL: "\n" >
+< REMOVE: "remove" >
 |
-  < EOB: ")" >
+< UPDATE: "update" >
 |
-  < COMMA: "," >
+< UPDATE_ONE: "updateOne" >
 |
-  < DOT: "." >
+< UPDATE_MANY: "updateMany" >
+|
+< INSERT: "insert" >
+|
+< INSERT_MANY: "insertMany" >
+|
+< INSERT_ONE: "insertOne" >
+|
+< STORE: "store" >
+|
+< SHOWDB: "show db" >
+|
+< REPLACE_ONE: "replaceOne" >
+|
+< FIND: "find" >
+|
+< FIND_ONE: "findOne" >
+|
+< FIND_AND_MODIFY: "findAndModify" >
+|
+< FIND_ONE_AND_REPLACE: "findOneAndReplace" >
+|
+< FIND_ONE_AND_DELETE: "findOneAndDelete" >
+|
+< FIND_ONE_AND_UPDATE: "findOneAndUpdate" >
+|
+< PRIMARY: "primary" >
+|
+< DELETE_ONE: "deleteOne" >
+|
+< DELETE_MANY: "deleteMany" >
+|
+< CREATE_VIEW: "createView" >
+|
+< CREATE_COLLECTION : "createCollection" >
+|
+< GET_COLLECTION : "getCollection" >
+|
+< AGGREGATE : "aggregate" >
+|
+< COUNT : "count" >
+|
+< COUNT_DOC : "countDocument" >
+|
+< ESTIMATECOUNT : "estimatedDocumentCount" >
+|
+< DOCUMENT: "{" (<LETTER>|<DIGIT>|<SYMBOL>|<EOL>)* "}" >
+|
+< COMMANDS:  "(" (<LETTER>|<DIGIT>|<SYMBOL>|<EOL>)* ")" >
+|
+< ARRAY: "[" (<LETTER>|<DIGIT>|<SYMBOL>)* "]" >
+|
+< #SYMBOL: [".", ",", ":", ";", "$", "\"", "'", "(", ")", " ", "\n", "{", "}", "[", "]" ] | <MATH> >
+|
+< #MATH: ["*", "/", "-", "+"] >
+|
+< IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>)* >
+|
+< #LETTER: ["_","a"-"z","A"-"Z"] >
+|
+< #DIGIT: ["0"-"9"] >
+|
+< EOL: "\n" >
+|
+< EOB: ")" >
+|
+< COMMA: "," >
+|
+< DOT: "." >
 }
 
 ////////////////////////////////////////
@@ -325,13 +393,13 @@ MqlNode Statement() :
     String name;
 }
 {
-    "db." n=Db_Statement()
+    <DB> <DOT> n=Db_Statement()
     {return n;}
     |
-    "use " name = Literal()
+    <USE> name = Literal()
     {return new MqlUseDatabase(name);}
     |
-    "show db"
+    <USE_DB>
     {return new MqlShowDatabase();}
 }
 
@@ -345,20 +413,20 @@ MqlNode Db_Statement():
 }
 {
     (
-        "createCollection(" name = Literal() ")"
+        <CREATE_COLLECTION> "(" name = Literal() ")"
         {n = new MqlCreateCollection(name);}
         (Details(n))* (Primary(n))*
 
     |
-        "getCollection(" name = Literal() ")"
+        <GET_COLLECTION> "(" name = Literal() ")"
         < DOT > n = Collection_Statement(name)
         (Details(n))* (Primary(n))*
 
     |
-        "createView(" name = Literal() < COMMA > source = Literal() (< COMMA > doc=Document() )? ")"
+        <CREATE_VIEW> "(" name = Literal() < COMMA > source = Literal() (< COMMA > doc=Document() )? ")"
         {n = new MqlCreateView(name, source, doc);}
     |
-        "dropDatabase()"
+        <DROP_DATABASE> "()"
         {n = new MqlDropDatabase();}
     |
         n = Collection_Statement(null)
@@ -405,16 +473,16 @@ MqlNode Collection_Statement(String collection):
 MqlNode Delete_Statement(String collection):
 {
     List<BsonDocument> docs = new ArrayList();
-    boolean onlyOne = true;
+    boolean onlyOne = false;
 }
 {
     (
-        "deleteOne("
+        <DELETE_ONE>
+        {onlyOne = true;}
         |
-        "deleteMany("
-        {onlyOne = false;}
+        <DELETE_MANY>
     )
-    [docs=Document_Splits()] ")"
+    [docs=Document_Splits()]
     {
         if ( docs.size() == 2 ){
             return new MqlDelete(collection, docs.get(0), docs.get(1), onlyOne);
@@ -432,7 +500,7 @@ MqlNode Drop_Statement(String collection):
     BsonDocument doc = null;
 }
 {
-    "drop(" [doc=Document()] ")"
+    <DROP> "("[doc=Document()]")"
     {return new MqlDrop(collection);}
 }
 
@@ -441,7 +509,7 @@ MqlNode Remove_Statement(String collection):
     BsonDocument doc;
 }
 {
-    "remove(" doc=Document() ")"
+    <REMOVE> "("doc=Document()")"
     {return new MqlRemove(collection, doc);}
 }
 
@@ -451,7 +519,7 @@ MqlNode Save_Statement(String collection):
     BsonDocument doc;
 }
 {
-    "save(" doc=Document() ")"
+    <SAVE> doc=Document()
     {return new MqlSave(collection, doc);}
 }
 
@@ -461,30 +529,38 @@ MqlNode Replace_Statement(String collection):
     BsonDocument doc;
 }
 {
-    "replaceOne(" doc=Document() ")"
+    <REPLACE_ONE> doc=Document()
     {return new MqlReplace(collection, doc);}
 }
 
 MqlNode Update_Statement(String collection):
 {
-    List<BsonDocument> docs;
+    List<BsonValue> docs;
     boolean onlyOne = false;
 }
 {
     (
-        "update("
+        <UPDATE>
         |
-        "updateMany("
+        <UPDATE_MANY>
         |
-        "updateOne("
+        <UPDATE_ONE>
         {onlyOne = true;}
     )
-    docs=Document_Splits() ")"
+    docs=Bson_Splits()
     {
+        if ( docs.size() < 2 || !docs.get(0).isDocument() ){
+            throw new RuntimeException( "Update needs a query and update document." );
+        }
+
         if ( docs.size() == 3 ){
-            return new MqlUpdate( collection, docs.get(0), docs.get(1), docs.get(2), onlyOne );
+            if (!docs.get(2).isDocument()) {
+                throw new RuntimeException( "Options for update need to be a document." );
+            }
+
+            return new MqlUpdate( collection, docs.get(0).asDocument(), docs.get(1), docs.get(2).asDocument(), onlyOne );
         }else if ( docs.size() == 2 ) {
-            return new MqlUpdate( collection, docs.get(0), docs.get(1), null, onlyOne );
+            return new MqlUpdate( collection, docs.get(0).asDocument(), docs.get(1), null, onlyOne );
         }else {
             throw new RuntimeException( "An update needs at least a filter and a update document." );
         }
@@ -497,7 +573,7 @@ MqlNode Aggregate_Statement(String collection):
     BsonDocument option = null;
 }
 {
-    "aggregate(" pipeline=Array() [< COMMA > option=Document()] ")"
+    <AGGREGATE> pipeline=Array() [< COMMA > option=Document()]
     {return new MqlAggregate(collection, pipeline, option);}
 }
 
@@ -508,11 +584,11 @@ MqlNode Count_Statement(String collection):
 }
 {
     (
-    "count("
-    |
-    "countDocuments("
+        <COUNT>
+        |
+        <COUNT_DOC>
     )
-    docs=Document_Splits() ")"
+    docs=Document_Splits()
     {
         if ( docs.size() == 2 ){
             return new MqlCount(collection, docs.get(0), docs.get(1), isEstimate);
@@ -531,7 +607,7 @@ MqlNode Estimate_Count_Statement(String collection):
     BsonDocument doc = null;
 }
 {
-    "estimatedDocumentCount(" [doc=Document()] ")"
+    <ESTIMATECOUNT> [doc=Document()]
     {
         return new MqlCount(collection, null, doc, true);
     }
@@ -548,12 +624,12 @@ MqlNode Find_Statement(String collection):
 }
 {
     (
-        "find("
+        <FIND>
         |
-        "findOne("
+        <FIND_ONE>
         {onlyOne = true;}
     )
-    [docs=Document_Splits()] ")"
+    docs=Document_Splits()
     {
         if ( docs.size() == 2 ){
             return new MqlFind( collection, docs.get(0), docs.get(1), onlyOne );
@@ -573,10 +649,10 @@ MqlNode Find_And_Statement(String collection):
     List<BsonValue> mixed = new ArrayList();
 }
 {
-    "findAndModify(" doc=Document() ")"
+    < FIND_AND_MODIFY > "(" doc=Document() ")"
     {return new MqlFindAndModify(collection, doc);}
     |
-    "findOneAndDelete(" docs=Document_Splits() ")"
+    < FIND_ONE_AND_DELETE > docs=Document_Splits()
     {
         if( docs.size() == 2 ){
             return new MqlFindOneAndDelete(collection, docs.get(0), docs.get(1));
@@ -587,7 +663,7 @@ MqlNode Find_And_Statement(String collection):
         }
     }
     |
-    "findOneAndReplace(" docs=Document_Splits() ")"
+    <FIND_ONE_AND_REPLACE> docs=Document_Splits()
     {
         if ( docs.size() == 3 ) {
             return new MqlFindOneAndReplace(collection, docs.get(0), docs.get(1), docs.get(2));
@@ -598,7 +674,7 @@ MqlNode Find_And_Statement(String collection):
         }
     }
     |
-    "findOneAndUpdate(" mixed=Bson_Splits() ")"
+    <FIND_ONE_AND_UPDATE> mixed=Bson_Splits()
     {
         if ( mixed.size() == 3 ) {
             return new MqlFindOneAndUpdate(collection, docs.get(0).asDocument(), docs.get(1), docs.get(2).asDocument());
@@ -608,50 +684,35 @@ MqlNode Find_And_Statement(String collection):
             throw new RuntimeException("findOneAndDelete requires a filter document, and an update document");
         }
     }
-
 }
 
 MqlNode Insert_Statement(String collection):
 {
-    List<BsonDocument> docs = new ArrayList();
-    BsonDocument doc = null;
-    BsonArray array = null;
+    List<BsonValue> docs = new ArrayList();
 }
 {
     (
-        (
-            "insert(" (
-                array=Array() [< COMMA > doc=Document() ]
-                {docs = Arrays.asList(doc);}
-                |
-                docs = Document_Splits()
-            )
-        )
+        <INSERT>
         |
-        (
-            "insertOne(" docs=Document_Splits()
-            |
-            "insertMany(" array=Array() [< COMMA > doc=Document() ]
-            {docs = Arrays.asList(doc);}
-        )
+        <INSERT_MANY>
+        |
+        <INSERT_ONE>
     )
-    < EOB >
-
+    docs=Bson_Splits()
     {
-        if ( array != null ) {
-            if ( docs.size() == 1 ){
-                return new MqlInsert( collection, array, docs.get(0) );
-            }else {
-                return new MqlInsert( collection, array, null );
+        if ( docs.size() == 2 ){
+            if ( docs.get(1).isDocument() ) {
+                throw new RuntimeException( "Options need to be a document" );
             }
+            return new MqlInsert( collection, docs.get(0), docs.get(1).asDocument() );
+        }else if ( docs.size() == 1 ) {
+            return new MqlInsert( collection, docs.get(0), null );
         }else {
-            if ( docs.size() == 2 ) {
-                return new MqlInsert( collection, new BsonArray(Arrays.asList(docs.get(0))), docs.get(1) );
-            }else {
-                return new MqlInsert( collection, new BsonArray(Arrays.asList(docs.get(0))), null );
-            }
+            throw new RuntimeException( "Insert requires a least one document" );
         }
+
     }
+
 }
 
 BsonDocument Document():
@@ -659,9 +720,9 @@ BsonDocument Document():
     Token t;
 }
 {
-     t=<DOCUMENT>
+    t=<COMMANDS>
     {
-        return BsonDocument.parse( BsonUtil.fixBson(t.image ));
+        return BsonDocument.parse( BsonUtil.fixBson( t.image.substring(1, t.image.length() - 1 ) ));
     }
 }
 
@@ -681,9 +742,9 @@ List<BsonValue> Bson_Splits():
     Token t;
 }
 {
-    t=<DOCUMENT>
+    t=< COMMANDS >
     {
-        return BsonArray.parse( BsonUtil.fixBson( "[" + t.image + "]" ) );
+        return BsonArray.parse( BsonUtil.fixBson( "[" + t.image.substring(1, t.image.length() - 1 ) + "]" ) );
     }
 }
 

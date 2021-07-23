@@ -371,6 +371,15 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
     }
 
+
+    @Test
+    public void testLiteral() {
+        RelRoot root = translate( find( "\"key\": {$literal: 1}" ) );
+
+        RexCall literal = getConditionTestFilter( root );
+        testJsonValueCond( literal, "key", 1, SqlKind.EQUALS );
+    }
+
     /////////// only projection /////////////
 
 
@@ -546,15 +555,6 @@ public class Mql2RelFindTest extends Mql2RelTest {
     }
 
 
-    @Test
-    public void testLiteral() {
-        RelRoot root = translate( find( "", "\"key\": {\"$literal\": 1}" ) );
-
-        RexNode literal = getUncastUnderlyingProjection( root, 1 );
-        assertTrue( literal instanceof RexLiteral );
-
-        testCastLiteral( literal, 1, Integer.class );
-    }
 
 
     @Test

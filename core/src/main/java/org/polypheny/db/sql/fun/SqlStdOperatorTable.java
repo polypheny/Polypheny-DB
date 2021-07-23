@@ -1267,6 +1267,18 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
 
     public static final SqlJsonValueExpressionOperator DOC_MERGE_UPDATE = new SqlJsonValueExpressionOperator( "DOC_MERGE_UPDATE", false );
 
+    public static final SqlJsonValueExpressionOperator DOC_UPDATE_MIN = new SqlJsonValueExpressionOperator( "DOC_UPDATE_MIN", false );
+
+    public static final SqlJsonValueExpressionOperator DOC_UPDATE_MAX = new SqlJsonValueExpressionOperator( "DOC_UPDATE_MAX", false );
+
+    public static final SqlJsonValueExpressionOperator DOC_UPDATE_ADD_TO_SET = new SqlJsonValueExpressionOperator( "DOC_UPDATE_ADD_TO_SET", false );
+
+    public static final SqlJsonValueExpressionOperator DOC_UPDATE_RENAME = new SqlJsonValueExpressionOperator( "DOC_UPDATE_RENAME", false );
+
+    public static final SqlJsonValueExpressionOperator DOC_UPDATE_REPLACE = new SqlJsonValueExpressionOperator( "DOC_UPDATE_REPLACE", false );
+
+    public static final SqlJsonValueExpressionOperator DOC_UPDATE_REMOVE = new SqlJsonValueExpressionOperator( "DOC_UPDATE_REMOVE", false );
+
 
     /**
      * Internal operator used to represent the ESCAPE clause of a LIKE or SIMILAR TO expression.

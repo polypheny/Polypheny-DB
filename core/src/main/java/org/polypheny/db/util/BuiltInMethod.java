@@ -418,7 +418,12 @@ public enum BuiltInMethod {
     DOC_QUERY_VALUE( SqlFunctions.class, "docQueryValue", Object.class, List.class ),
     DOC_QUERY_EXCLUDE( SqlFunctions.class, "docQueryExclude", Object.class, List.class ),
     DOC_ADD_FIELDS( SqlFunctions.class, "docAddFields", Object.class, String.class, Object.class ),
-    DOC_MERGE_UPDATE( SqlFunctions.class, "docMergeUpdate", Object.class, List.class, List.class );
+    DOC_UPDATE_MIN( SqlFunctions.class, "docUpdateMin", Object.class, Long.class ),
+    DOC_UPDATE_MAX( SqlFunctions.class, "docUpdateMax", Object.class, Long.class ),
+    DOC_UPDATE_ADD_TO_SET( SqlFunctions.class, "docAddToSet", Object.class, Object.class ),
+    DOC_UPDATE_REMOVE( SqlFunctions.class, "docUpdateRemove", Object.class, List.class ),
+    DOC_UPDATE_REPLACE( SqlFunctions.class, "docUpdateReplace", Object.class, List.class, List.class ),
+    DOC_UPDATE_RENAME( SqlFunctions.class, "docUpdateRename", Object.class, List.class, List.class );
 
     public final Method method;
     public final Constructor constructor;

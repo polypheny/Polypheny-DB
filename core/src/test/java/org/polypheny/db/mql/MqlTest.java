@@ -19,9 +19,11 @@ package org.polypheny.db.mql;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.mql.parser.MqlParseException;
 import org.polypheny.db.mql.parser.MqlParser;
 import org.polypheny.db.mql.parser.MqlParser.MqlParserConfig;
+import org.polypheny.db.mql2rel.MqlMockCatalog;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
@@ -44,6 +46,7 @@ public abstract class MqlTest {
 
 
     static {
+        Catalog.setAndGetInstance( new MqlMockCatalog() );
         MqlParser.ConfigBuilder configConfigBuilder = MqlParser.configBuilder();
         parserConfig = configConfigBuilder.build();
         biComparisons = new HashMap<>();

@@ -320,7 +320,13 @@ public class RexImpTable {
         defineMethod( SqlStdOperatorTable.DOC_QUERY_VALUE, BuiltInMethod.DOC_QUERY_VALUE.method, NullPolicy.STRICT );
         defineMethod( SqlStdOperatorTable.DOC_QUERY_EXCLUDE, BuiltInMethod.DOC_QUERY_EXCLUDE.method, NullPolicy.STRICT );
         defineMethod( SqlStdOperatorTable.DOC_ADD_FIELDS, BuiltInMethod.DOC_ADD_FIELDS.method, NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.DOC_MERGE_UPDATE, BuiltInMethod.DOC_MERGE_UPDATE.method, NullPolicy.STRICT );
+
+        defineMethod( SqlStdOperatorTable.DOC_UPDATE_MIN, BuiltInMethod.DOC_UPDATE_MIN.method, NullPolicy.STRICT );
+        defineMethod( SqlStdOperatorTable.DOC_UPDATE_MAX, BuiltInMethod.DOC_UPDATE_MAX.method, NullPolicy.STRICT );
+        defineMethod( SqlStdOperatorTable.DOC_UPDATE_ADD_TO_SET, BuiltInMethod.DOC_UPDATE_ADD_TO_SET.method, NullPolicy.STRICT );
+        defineMethod( SqlStdOperatorTable.DOC_UPDATE_RENAME, BuiltInMethod.DOC_UPDATE_RENAME.method, NullPolicy.STRICT );
+        defineMethod( SqlStdOperatorTable.DOC_UPDATE_REPLACE, BuiltInMethod.DOC_UPDATE_REPLACE.method, NullPolicy.STRICT );
+        defineMethod( SqlStdOperatorTable.DOC_UPDATE_REMOVE, BuiltInMethod.DOC_UPDATE_REMOVE.method, NullPolicy.STRICT );
 
         // System functions
         final SystemFunctionImplementor systemFunctionImplementor = new SystemFunctionImplementor();

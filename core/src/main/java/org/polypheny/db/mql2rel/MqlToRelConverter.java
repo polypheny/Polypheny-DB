@@ -18,11 +18,9 @@ package org.polypheny.db.mql2rel;
 
 import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -31,11 +29,12 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import lombok.Getter;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
-import org.bson.BsonInt64;
 import org.bson.BsonNumber;
 import org.bson.BsonRegularExpression;
 import org.bson.BsonString;
@@ -86,8 +85,10 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.TimestampString;
 
 public class MqlToRelConverter {
 
@@ -102,6 +103,10 @@ public class MqlToRelConverter {
     private static final Map<String, SqlAggFunction> accumulators;
     private final RelDataType any;
     private final RelDataType nullableAny;
+
+    private final RelDataType jsonType;
+    private final RelDataType nullableJsonType;
+
     private Map<String, SqlOperator> tempMappings;
 
 
@@ -132,6 +137,7 @@ public class MqlToRelConverter {
         mathOperators.put( "$multiply", SqlStdOperatorTable.MULTIPLY );
         mathOperators.put( "$divide", SqlStdOperatorTable.DIVIDE );
         mathOperators.put( "$mod", SqlStdOperatorTable.MOD );
+        mathOperators.put( "$literal", null );
 
         operators = new ArrayList<>();
         operators.addAll( mappings.keySet() );
@@ -164,7 +170,6 @@ public class MqlToRelConverter {
         accumulators.put( "$sum", SqlStdOperatorTable.SUM );
 
         // special cases
-        operators.add( "$literal" );
         operators.add( "$type" );
         operators.add( "$expr" );
         operators.add( "$jsonSchema" );
@@ -178,7 +183,6 @@ public class MqlToRelConverter {
     private boolean excludedId = false;
     private boolean _dataExists = true;
     private boolean attachedJson = false;
-    private boolean complexOps;
 
 
     public MqlToRelConverter( MqlProcessor mqlProcessor, PolyphenyDbCatalogReader catalogReader, RelOptCluster cluster ) {
@@ -186,11 +190,25 @@ public class MqlToRelConverter {
         this.cluster = Objects.requireNonNull( cluster );
         this.any = this.cluster.getTypeFactory().createPolyType( PolyType.ANY );
         this.nullableAny = this.cluster.getTypeFactory().createTypeWithNullability( any, true );
+
+        this.jsonType = this.cluster.getTypeFactory().createPolyType( PolyType.JSON );
+        this.nullableJsonType = this.cluster.getTypeFactory().createTypeWithNullability( jsonType, true );
+
         this.tempMappings = mappings;
+        resetDefaults();
+    }
+
+
+    private void resetDefaults() {
+        inQuery = false;
+        excludedId = false;
+        _dataExists = true;
+        attachedJson = false;
     }
 
 
     public RelRoot convert( MqlNode query, boolean b, boolean b1 ) {
+        resetDefaults();
         if ( query instanceof MqlCollectionStatement ) {
             return convert( (MqlCollectionStatement) query, b, b1 );
         }
@@ -242,7 +260,7 @@ public class MqlToRelConverter {
             }
         }
         if ( query.isUsesPipeline() ) {
-            node = convertReducedPipeline( query, table.getRowType(), node );
+            node = convertReducedPipeline( query, table.getRowType(), node, table );
         } else {
             node = translateUpdate( query, table.getRowType(), node, table );
         }
@@ -251,67 +269,335 @@ public class MqlToRelConverter {
     }
 
 
+    // this method is implemented like the reduced update pipeline,
+    // but in fact could be combined and therefore optimized a lot more
     private RelNode translateUpdate( MqlUpdate query, RelDataType rowType, RelNode node, RelOptTable table ) {
         Map<String, RexNode> updates = new HashMap<>();
-        RexNode data = getIdentifier( "_data", rowType, true );
+
+        UpdateOperation updateOp;
         for ( Entry<String, BsonValue> entry : query.getUpdate().asDocument().entrySet() ) {
             String op = entry.getKey();
             switch ( op ) {
                 case ("$currentDate"):
                     updates.putAll( translateCurrentDate( entry.getValue().asDocument(), rowType ) );
+                    updateOp = UpdateOperation.REPLACE;
                     break;
+                case "$inc":
+                    updates.putAll( translateInc( entry.getValue().asDocument(), rowType ) );
+                    updateOp = UpdateOperation.REPLACE;
+                    break;
+                case "$min":
+                    updates.putAll( translateMinMaxMul( entry.getValue().asDocument(), rowType, SqlStdOperatorTable.DOC_UPDATE_MIN ) );
+                    updateOp = UpdateOperation.REPLACE;
+                    break;
+                case "$max":
+                    updates.putAll( translateMinMaxMul( entry.getValue().asDocument(), rowType, SqlStdOperatorTable.DOC_UPDATE_MAX ) );
+                    updateOp = UpdateOperation.REPLACE;
+                    break;
+                case "$mul":
+                    updates.putAll( translateMinMaxMul( entry.getValue().asDocument(), rowType, SqlStdOperatorTable.MULTIPLY ) );
+                    updateOp = UpdateOperation.REPLACE;
+                    break;
+                case "$rename":
+                    updates.putAll( translateRename( entry.getValue().asDocument(), rowType ) );
+                    updateOp = UpdateOperation.RENAME;
+                    break;
+                case "$set":
+                    updates.putAll( translateSet( entry.getValue().asDocument(), rowType ) );
+                    updateOp = UpdateOperation.REPLACE;
+                    break;
+                /*case ("$setOnInsert"):
+                    updates.putAll( translateSet(  ) );*/
+                case "$unset":
+                    updates.putAll( translateUnset( entry.getValue().asDocument(), rowType ) );
+                    updateOp = UpdateOperation.REMOVE;
+                    break;
+                case "$addToSet":
+                    updates.putAll( translateAddToSet( entry.getValue().asDocument(), rowType ) );
+                    updateOp = UpdateOperation.REPLACE;
+                    break;
+                /*case "$pop":
+                case "$pull":
+                case "$push":
+                case "$pullAll":
+                case "$each": UNSUPPORTED
+                case "$position":
+                case "$slice":
+                case "$sort":*/
                 default:
                     throw new RuntimeException( "The update operation is not supported." );
             }
+            node = transformUpdates( rowType, node, table, updates, updateOp );
         }
 
-        RexCall names = new RexCall(
-                cluster.getTypeFactory().createArrayType( cluster.getTypeFactory().createPolyType( PolyType.VARCHAR, 2000 ), updates.keySet().size() ),
-                SqlStdOperatorTable.ARRAY_VALUE_CONSTRUCTOR,
-                updates.keySet().stream().map( n -> convertLiteral( new BsonString( n ) ) ).collect( Collectors.toList() ) );
+        return node;
+    }
 
-        RexCall values = new RexCall(
-                cluster.getTypeFactory().createArrayType( cluster.getTypeFactory().createPolyType( PolyType.INTEGER ), updates.values().size() ),
-                SqlStdOperatorTable.ARRAY_VALUE_CONSTRUCTOR,
-                new ArrayList<>( updates.values() ) );
 
-        RexCall call = new RexCall(
-                cluster.getTypeFactory().createPolyType( PolyType.VARCHAR, 2000 ),
-                SqlStdOperatorTable.DOC_MERGE_UPDATE, Arrays.asList( data, names, values ) );
+    private RelNode transformUpdates( RelDataType rowType, RelNode node, RelOptTable table, Map<String, RexNode> updates, UpdateOperation updateOp ) {
+        List<String> names = rowType.getFieldNames();
 
-        return LogicalTableModify.create(
-                table,
-                catalogReader,
-                node,
-                Operation.UPDATE,
-                Collections.singletonList( "_data" ),
-                Collections.singletonList( call ),
-                false );
+        Map<String, Map<String, RexNode>> childUpdates = new HashMap<>();
+        Map<String, RexNode> directUpdates = new HashMap<>();
+
+        for ( Entry<String, RexNode> nodeEntry : updates.entrySet() ) {
+            String[] splits = nodeEntry.getKey().split( "\\." );
+            String parent = splits[0];
+            if ( names.contains( nodeEntry.getKey() ) ) {
+                // direct update to a field
+                directUpdates.put( nodeEntry.getKey(), nodeEntry.getValue() );
+                if ( updateOp == UpdateOperation.RENAME ) {
+                    throw new RuntimeException( "You cannot rename a fixed field in an update, as this is a ddl" );
+                    // TODO DL maybe find way to trigger ddl later
+                }
+            } else {
+                String childName = null;
+                if ( names.contains( parent ) ) {
+                    List<String> childNames = Arrays.asList( splits );
+                    childNames.remove( 0 );
+                    childName = String.join( ".", childNames );
+                } else if ( _dataExists ) {
+                    parent = "_data";
+                    childName = nodeEntry.getKey();
+                }
+
+                if ( childName == null ) {
+                    throw new RuntimeException( "the specified field in the update was not found" );
+                }
+
+                if ( childUpdates.containsKey( parent ) ) {
+                    childUpdates.get( parent ).put( childName, nodeEntry.getValue() );
+                } else {
+                    Map<String, RexNode> up = new HashMap<>();
+                    up.put( childName, nodeEntry.getValue() );
+                    childUpdates.put( parent, up );
+                }
+            }
+        }
+
+        if ( !Collections.disjoint( directUpdates.entrySet(), childUpdates.keySet() ) ) {
+            throw new RuntimeException( "DML of a field and its subfields at the same time is not possible" );
+        }
+
+        return mergeUpdates( node, table, updateOp, childUpdates, directUpdates );
+    }
+
+
+    private RelNode mergeUpdates( RelNode node, RelOptTable table, UpdateOperation updateOp, Map<String, Map<String, RexNode>> childUpdates, Map<String, RexNode> directUpdates ) {
+        // all updates for a specific field
+        //fields are in direct update which can be replaced directly or in childUpdates where additional logic is required
+        List<RexNode> nodes = new ArrayList<>();
+        switch ( updateOp ) {
+            case RENAME:
+                for ( Entry<String, Map<String, RexNode>> parentEntry : childUpdates.entrySet() ) {
+                    List<String> oldNames = new ArrayList<>();
+                    List<RexNode> newNames = new ArrayList<>();
+                    for ( Entry<String, RexNode> entry1 : parentEntry.getValue().entrySet() ) {
+                        oldNames.add( entry1.getKey() );
+                        newNames.add( entry1.getValue() );
+                    }
+                    nodes.add( new RexCall(
+                            jsonType,
+                            SqlStdOperatorTable.DOC_UPDATE_RENAME,
+                            Arrays.asList(
+                                    getIdentifier( parentEntry.getKey(), node.getRowType() ),
+                                    getStringArray( oldNames ),
+                                    getArray( newNames, jsonType ) ) ) );
+                }
+                node = LogicalTableModify.create(
+                        table,
+                        catalogReader,
+                        node,
+                        Operation.UPDATE,
+                        new ArrayList<>( childUpdates.keySet() ),
+                        nodes,
+                        false );
+                break;
+
+            case REPLACE:
+                for ( Entry<String, Map<String, RexNode>> parentEntry : childUpdates.entrySet() ) {
+                    List<String> names1 = new ArrayList<>();
+                    List<RexNode> values = new ArrayList<>();
+                    for ( Entry<String, RexNode> entry1 : parentEntry.getValue().entrySet() ) {
+                        names1.add( entry1.getKey() );
+                        values.add( entry1.getValue() );
+                    }
+                    nodes.add( new RexCall(
+                            jsonType,
+                            SqlStdOperatorTable.DOC_UPDATE_REPLACE,
+                            Arrays.asList(
+                                    getIdentifier( parentEntry.getKey(), node.getRowType() ),
+                                    getStringArray( names1 ),
+                                    getArray( values, any ) ) ) );
+                }
+
+                node = LogicalTableModify.create(
+                        table,
+                        catalogReader,
+                        node,
+                        Operation.UPDATE,
+                        new ArrayList<>( Stream.concat( childUpdates.keySet().stream(), directUpdates.keySet().stream() ).collect( Collectors.toList() ) ),
+                        new ArrayList<>( Stream.concat( nodes.stream(), directUpdates.values().stream() ).collect( Collectors.toList() ) ),
+                        false );
+                break;
+            case REMOVE:
+                for ( Entry<String, Map<String, RexNode>> parentEntry : childUpdates.entrySet() ) {
+                    List<String> names1 = new ArrayList<>();
+                    for ( Entry<String, RexNode> entry1 : parentEntry.getValue().entrySet() ) {
+                        names1.add( entry1.getKey() );
+                        ;
+                    }
+                    nodes.add( new RexCall(
+                            jsonType,
+                            SqlStdOperatorTable.DOC_UPDATE_REMOVE,
+                            Arrays.asList(
+                                    getIdentifier( parentEntry.getKey(), node.getRowType() ),
+                                    getStringArray( names1 ) ) ) );
+                }
+
+                node = LogicalTableModify.create(
+                        table,
+                        catalogReader,
+                        node,
+                        Operation.UPDATE,
+                        new ArrayList<>( Stream.concat( childUpdates.keySet().stream(), directUpdates.keySet().stream() ).collect( Collectors.toList() ) ),
+                        new ArrayList<>( Stream.concat( nodes.stream(), directUpdates.values().stream() ).collect( Collectors.toList() ) ),
+                        false );
+                break;
+        }
+
+        directUpdates.clear();
+        childUpdates.clear();
+        return node;
+    }
+
+
+    private Map<String, RexNode> translateAddToSet( BsonDocument doc, RelDataType rowType ) {
+        Map<String, RexNode> updates = new HashMap<>();
+        for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
+            RexNode id = getIdentifier( entry.getKey(), rowType );
+            RexNode value = convertLiteral( entry.getValue() );
+            RexCall addToSet = new RexCall( jsonType, SqlStdOperatorTable.DOC_UPDATE_ADD_TO_SET, Arrays.asList( id, value ) );
+
+            updates.put( entry.getKey(), addToSet );
+        }
+        return updates;
+    }
+
+
+    private Map<String, RexNode> translateUnset( BsonDocument doc, RelDataType rowType ) {
+        Map<String, RexNode> updates = new HashMap<>();
+        for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
+            updates.put( entry.getKey(), null );
+        }
+        return updates;
+    }
+
+
+    private Map<String, RexNode> translateSet( BsonDocument doc, RelDataType rowType ) {
+        Map<String, RexNode> updates = new HashMap<>();
+        for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
+            if ( entry.getValue().isDocument() ) {
+                updates.put( entry.getKey(), translateDocument( entry.getValue().asDocument(), rowType, entry.getKey() ) );
+            } else if ( entry.getValue().isArray() ) {
+                // todo this only handles normal or nested arrays with literals but not logic inside
+                updates.put( entry.getKey(), convertLiteral( entry.getValue() ) );
+            } else {
+                updates.put( entry.getKey(), convertLiteral( entry.getValue() ) );
+            }
+        }
+        return updates;
+    }
+
+
+    private Map<String, RexNode> translateRename( BsonDocument doc, RelDataType rowType ) {
+        Map<String, RexNode> updates = new HashMap<>();
+        for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
+            RexLiteral literal = builder.makeLiteral( entry.getValue().asString().getValue() );
+            updates.put( entry.getKey(), literal );
+        }
+        return updates;
+    }
+
+
+    private Map<String, RexNode> translateMinMaxMul( BsonDocument doc, RelDataType rowType, SqlOperator operator ) {
+        Map<String, RexNode> updates = new HashMap<>();
+        for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
+            RexNode id = getIdentifier( entry.getKey(), rowType, true );
+            RexLiteral literal = builder.makeBigintLiteral( entry.getValue().asNumber().decimal128Value().bigDecimalValue() );
+            updates.put( entry.getKey(), builder.makeCall( operator, id, literal ) );
+        }
+        return updates;
+    }
+
+
+    private Map<String, RexNode> translateInc( BsonDocument doc, RelDataType rowType ) {
+        Map<String, RexNode> updates = new HashMap<>();
+        for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
+            RexNode id = getIdentifier( entry.getKey(), rowType, true );
+            RexLiteral literal = builder.makeBigintLiteral( entry.getValue().asNumber().decimal128Value().bigDecimalValue() );
+            updates.put( entry.getKey(), builder.makeCall( SqlStdOperatorTable.PLUS, id, literal ) );
+        }
+        return updates;
     }
 
 
     private Map<String, RexNode> translateCurrentDate( BsonDocument value, RelDataType rowType ) {
         Map<String, RexNode> updates = new HashMap<>();
         for ( Entry<String, BsonValue> entry : value.entrySet() ) {
-            long timeOrDate;
+            RexLiteral timeOrDate;
             if ( entry.getValue().isBoolean() ) {
-                timeOrDate = LocalDate.now().toEpochDay();
+                timeOrDate = builder.makeDateLiteral( DateString.fromCalendarFields( Calendar.getInstance() ) );
             } else {
                 if ( entry.getValue().asDocument().get( "$type" ).asString().getValue().equals( "timestamp" ) ) {
-                    timeOrDate = LocalDateTime.now().toEpochSecond( ZoneOffset.UTC );
+                    timeOrDate = builder.makeTimestampLiteral( TimestampString.fromCalendarFields( Calendar.getInstance() ), 0 );
                 } else {
-                    timeOrDate = LocalDate.now().toEpochDay();
+                    timeOrDate = builder.makeDateLiteral( DateString.fromCalendarFields( Calendar.getInstance() ) );
                 }
 
             }
-            updates.put( entry.getKey(), convertLiteral( new BsonInt64( timeOrDate ) ) );
+            updates.put( entry.getKey(), timeOrDate );
         }
         return updates;
     }
 
 
-    private RelNode convertReducedPipeline( MqlUpdate query, RelDataType rowType, RelNode node ) {
-        return null;
+    private RelNode convertReducedPipeline( MqlUpdate query, RelDataType rowType, RelNode node, RelOptTable table ) {
+        Map<String, RexNode> updates = new HashMap<>();
+
+        UpdateOperation updateOp;
+
+        for ( BsonValue value : query.getPipeline() ) {
+            if ( !value.isDocument() || value.asDocument().size() != 1 ) {
+                throw new RuntimeException( "Each initial update steps document in the aggregate pipeline can only have one key." );
+            }
+            String key = value.asDocument().getFirstKey();
+            if ( !value.asDocument().get( key ).isDocument() ) {
+                throw new RuntimeException( "The update document needs one key and a document." );
+            }
+            BsonDocument doc = value.asDocument().get( key ).asDocument();
+            switch ( key ) {
+                case "$addFields":
+                case "$set":
+                    updates.putAll( translateAddToSet( doc, rowType ) );
+                    updateOp = UpdateOperation.REPLACE;
+                    break;
+                case "$project":
+                case "$unset":
+                    updates.putAll( translateUnset( doc, rowType ) );
+                    updateOp = UpdateOperation.REMOVE;
+                    break;
+                /*case "replaceRoot":
+                case "replaceWith":*/ // TODO DL
+                default:
+                    throw new RuntimeException( "The used statement is not supported in the update aggreagate" );
+            }
+
+            node = transformUpdates( rowType, node, table, updates, updateOp );
+
+        }
+
+        return node;
     }
 
 
@@ -338,7 +624,7 @@ public class MqlToRelConverter {
         LogicalTableModify modify = LogicalTableModify.create(
                 table,
                 catalogReader,
-                convertMultipleValues( query.getArray() ),
+                convertMultipleValues( query.getValues() ),
                 Operation.INSERT,
                 null,
                 null,
@@ -421,12 +707,16 @@ public class MqlToRelConverter {
                     updateRowType = false;
                     break;
                 case "$unset":
+                    node = combineProjection( value.asDocument().getDocument( "$unset" ), node, rowType, false, true );
+                    break;
                 case "$project":
-                    node = combineProjection( value.asDocument().getDocument( "$project" ), node, rowType, false );
+                    node = combineProjection( value.asDocument().getDocument( "$project" ), node, rowType, false, false );
                     break;
                 case "$set":
+                    node = combineProjection( value.asDocument().getDocument( "$set" ), node, rowType, true, false );
+                    break;
                 case "$addFields":
-                    node = combineProjection( value.asDocument().getDocument( "$addFields" ), node, rowType, true );
+                    node = combineProjection( value.asDocument().getDocument( "$addFields" ), node, rowType, true, false );
                     break;
                 case "$count":
                     node = combineCount( value.asDocument().get( "$count" ), node, rowType );
@@ -604,7 +894,6 @@ public class MqlToRelConverter {
                 return convertMath( doc.getFirstKey(), null, doc.get( doc.getFirstKey() ), rowType, false );
             }
 
-            complexOps = true;
         } else if ( value.isString() ) {
             return getIdentifier( value.asString().getValue().substring( 1 ), rowType );
         }
@@ -614,7 +903,6 @@ public class MqlToRelConverter {
 
     private RelNode groupBy( BsonValue value, RelNode node, RelDataType rowType, List<String> names, List<SqlAggFunction> aggs ) {
         BsonValue groupBy = value.asDocument().get( "_id" );
-
 
         List<AggregateCall> convertedAggs = new ArrayList<>();
         int pos = 0;
@@ -681,7 +969,7 @@ public class MqlToRelConverter {
         node = convertQuery( query, rowType, node );
 
         if ( query.getProjection() != null && !query.getProjection().isEmpty() ) {
-            node = combineProjection( query.getProjection(), node, rowType, false );
+            node = combineProjection( query.getProjection(), node, rowType, false, false );
         }
 
         if ( query.isOnlyOne() ) {
@@ -776,7 +1064,6 @@ public class MqlToRelConverter {
         if ( !key.startsWith( "$" ) ) {
             return convertField( parentKey == null ? key : parentKey + "." + key, bsonValue, rowType );
         } else {
-
             if ( operators.contains( key ) ) {
                 if ( gates.containsKey( key ) ) {
                     return convertGate( key, parentKey, bsonValue, rowType );
@@ -819,6 +1106,7 @@ public class MqlToRelConverter {
                     return translateLogical( key, parentKey, bsonValue, rowType );
                 }
             } else {
+
                 // handle others
             }
         }
@@ -1353,8 +1641,13 @@ public class MqlToRelConverter {
 
     private RexNode convertLiteral( BsonValue bsonValue ) {
         RelDataType type = getRelDataType( bsonValue );
-        Pair<Comparable, PolyType> valuePair = RexLiteral.convertType( getComparable( bsonValue ), type );
-        return new RexLiteral( valuePair.left, type, valuePair.right );
+        if ( bsonValue.isArray() ) {
+            List<RexNode> arr = bsonValue.asArray().stream().map( this::convertLiteral ).collect( Collectors.toList() );
+            return getArray( arr, any );
+        } else {
+            Pair<Comparable, PolyType> valuePair = RexLiteral.convertType( getComparable( bsonValue ), type );
+            return new RexLiteral( valuePair.left, type, valuePair.right );
+        }
     }
 
 
@@ -1442,7 +1735,7 @@ public class MqlToRelConverter {
     }
 
 
-    private RelNode combineProjection( BsonDocument projection, RelNode node, RelDataType rowType, boolean isAddFields ) {
+    private RelNode combineProjection( BsonDocument projection, RelNode node, RelDataType rowType, boolean isAddFields, boolean isUnset ) {
         Map<String, RexNode> includes = new HashMap<>();
         List<String> excludes = new ArrayList<>();
 
@@ -1473,6 +1766,12 @@ public class MqlToRelConverter {
                     includes.put( entry.getKey(), convertArrayAt( entry.getKey(), value.asDocument().get( func ), rowType, field ) );
                 } else if ( func.equals( "$slice" ) ) {
                     includes.put( entry.getKey(), convertSlice( entry.getKey(), value.asDocument().get( func ), rowType, field ) );
+                } else if ( func.equals( "$literal" ) ) {
+                    if ( value.asDocument().get( func ).isInt32() && value.asDocument().get( func ).asInt32().getValue() == 0 ) {
+                        excludes.add( entry.getKey() );
+                    } else {
+                        includes.put( entry.getKey(), getIdentifier( entry.getKey(), rowType ) );
+                    }
                 }
             } else if ( isAddFields && !value.isDocument() ) {
                 if ( value.isArray() ) {
@@ -1485,6 +1784,14 @@ public class MqlToRelConverter {
                     includes.put( entry.getKey(), convertLiteral( value ) );
                 }
 
+            } else if ( isUnset && value.isArray() ) {
+                for ( BsonValue bsonValue : value.asArray() ) {
+                    if ( bsonValue.isString() ) {
+                        excludes.add( bsonValue.asString().getValue() );
+                    } else {
+                        throw new RuntimeException( "When using $unset with an array, it can only contain strings" );
+                    }
+                }
             } else {
                 String msg;
                 if ( !isAddFields ) {
@@ -1601,5 +1908,19 @@ public class MqlToRelConverter {
         return field;
     }
 
+
+    enum UpdateOperation {
+        RENAME( SqlStdOperatorTable.DOC_UPDATE_RENAME ),
+        REPLACE( SqlStdOperatorTable.DOC_UPDATE_REPLACE ),
+        REMOVE( SqlStdOperatorTable.DOC_UPDATE_REMOVE );
+
+        @Getter
+        private final SqlOperator operator;
+
+
+        UpdateOperation( SqlOperator operator ) {
+            this.operator = operator;
+        }
+    }
 
 }

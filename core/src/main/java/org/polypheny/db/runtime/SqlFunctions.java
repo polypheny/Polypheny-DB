@@ -3680,6 +3680,11 @@ public class SqlFunctions {
     }
 
 
+    public static Collection docUpdate( Collection sink ) {
+        return null;
+    }
+
+
     public static Object docQueryValue( BsonValue doc, List<String> filters ) {
         while ( filters.size() != 0 && doc != null ) {
             if ( doc.isDocument() ) {
@@ -3709,7 +3714,53 @@ public class SqlFunctions {
     }
 
 
-    public static Object docMergeUpdate( Object input, List names, List value ) {
+    public static Object docAddToSet( Object input, Object value ) {
+        input = deserializeBsonIfNecessary( input );
+        value = deserializeBsonIfNecessary( input );
+
+        if ( input instanceof List ) {
+            if ( ((List<Object>) input).contains( value ) ) {
+                return input;
+            }
+            ((List<Object>) input).add( value );
+            return input;
+        } else {
+            throw new RuntimeException( "AddToSet can only be applied to arrays" );
+        }
+    }
+
+
+    public static Object docUpdateMin( Object input, Object comparator ) {
+        return docUpdateMinMax( input, comparator ) <= 0 ? input : comparator;
+    }
+
+
+    public static Object docUpdateMax( Object input, Object comparator ) {
+        return docUpdateMinMax( input, comparator ) <= 0 ? comparator : input;
+    }
+
+
+    private static int docUpdateMinMax( Object input, Object comparator ) {
+        if ( input instanceof Comparable && comparator instanceof Comparable ) {
+            return ((Comparable) input).compareTo( comparator );
+        } else {
+            throw new RuntimeException( "The provided values where not comparable." );
+        }
+
+    }
+
+
+    public static Object docUpdateRemove( Object input, List names ) {
+        return null;
+    }
+
+
+    public static Object docUpdateReplace( Object input, List name, List values ) {
+        return null;
+    }
+
+
+    public static Object docUpdateRename( Object input, List oldNames, List newNames ) {
         return null;
     }
 
@@ -3898,6 +3949,17 @@ public class SqlFunctions {
                 }
             } );
             toRemove.forEach( r -> doc.asDocument().remove( r ) );
+        }
+    }
+
+
+    private static Object deserializeBsonIfNecessary( Object obj ) {
+        if ( obj instanceof String ) {
+            return transformBsonToPrimitive( BsonDocument.parse( (String) obj ) );
+        } else if ( obj instanceof BsonValue ) {
+            return transformBsonToPrimitive( (BsonValue) obj );
+        } else {
+            return obj;
         }
     }
 
