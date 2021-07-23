@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql.contextset.utils;
+package org.polypheny.cql.utils;
 
 public interface Action<M, N> {
 
