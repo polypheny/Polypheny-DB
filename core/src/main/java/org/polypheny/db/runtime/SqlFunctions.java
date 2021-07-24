@@ -689,6 +689,9 @@ public class SqlFunctions {
      * SQL <code>=</code> operator applied to Object values (including String; neither side may be null).
      */
     public static boolean eq( Object b0, Object b1 ) {
+        if ( b0 == null || b1 == null ) {
+            return false;
+        }
         return b0.equals( b1 );
     }
 
@@ -3675,8 +3678,25 @@ public class SqlFunctions {
 
 
     public static Object docQueryValue( Object input, List<String> filters ) {
-        assert input instanceof String;
-        return docQueryValue( BsonDocument.parse( (String) input ), filters );
+        input = deserializeBsonIfNecessary( input );
+        ArrayList<String> filtersCopy = new ArrayList<>( filters );
+        while ( filtersCopy.size() != 0 && input != null ) {
+            if ( input instanceof Map ) {
+                if ( ((Map<?, ?>) input).containsKey( filtersCopy.get( 0 ) ) ) {
+                    input = ((Map<?, ?>) input).get( filtersCopy.get( 0 ) );
+                    filtersCopy.remove( 0 );
+                } else {
+                    input = null;
+                }
+            } else {
+                input = null;
+            }
+        }
+        if ( filtersCopy.size() > 0 ) {
+            return null;
+        }
+
+        return input;
     }
 
 
@@ -3685,7 +3705,7 @@ public class SqlFunctions {
     }
 
 
-    public static Object docQueryValue( BsonValue doc, List<String> filters ) {
+    /*public static Object docQueryValueBson( BsonValue doc, List<String> filters ) {
         while ( filters.size() != 0 && doc != null ) {
             if ( doc.isDocument() ) {
                 if ( doc.asDocument().containsKey( filters.get( 0 ) ) ) {
@@ -3699,7 +3719,7 @@ public class SqlFunctions {
             }
         }
         return transformBsonToPrimitive( doc );
-    }
+    }*/
 
 
     public static Object docAddFields( Object input, String name, Object object ) {
@@ -3846,6 +3866,15 @@ public class SqlFunctions {
     }
 
 
+    public static List docElemMatch( Object input ) {
+        input = deserializeBsonIfNecessary( input );
+        if ( input instanceof List ) {
+            return (List) input;
+        }
+        return Collections.emptyList();
+    }
+
+
     private static Object docItemAny( List input, int index ) {
         // mongo starts at 0 and allows to retrieve from behind with negative
         if ( input.size() > Math.abs( index ) ) {
@@ -3897,7 +3926,16 @@ public class SqlFunctions {
         if ( b0 instanceof List && !(b1 instanceof List) ) {
             return ((List<?>) b0).contains( b1 );
         }
-        return eq( b0, b1 );
+        if ( b0 == null || b1 == null ) {
+            if ( b0 == null && b1 == null ) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        boolean tes = eqAny( b0, b1 );
+        return tes;
     }
 
 
@@ -3955,7 +3993,11 @@ public class SqlFunctions {
 
     private static Object deserializeBsonIfNecessary( Object obj ) {
         if ( obj instanceof String ) {
-            return transformBsonToPrimitive( BsonDocument.parse( (String) obj ) );
+            try {
+                return transformBsonToPrimitive( BsonDocument.parse( (String) obj ) );
+            } catch ( Exception e ) {
+                return obj;
+            }
         } else if ( obj instanceof BsonValue ) {
             return transformBsonToPrimitive( (BsonValue) obj );
         } else {
@@ -3978,7 +4020,7 @@ public class SqlFunctions {
             case DECIMAL128:
                 return doc.asDecimal128().decimal128Value().bigDecimalValue();
             case DOCUMENT:
-                return doc.asDocument().toJson();
+                return doc.asDocument().entrySet().stream().collect( Collectors.toMap( Entry::getKey, e -> transformBsonToPrimitive( e.getValue() ) ) );
             case ARRAY:
                 return doc.asArray().stream().map( SqlFunctions::transformBsonToPrimitive ).collect( Collectors.toList() );
             default:

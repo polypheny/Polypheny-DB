@@ -183,6 +183,7 @@ public class MqlToRelConverter {
     private boolean excludedId = false;
     private boolean _dataExists = true;
     private boolean attachedJson = false;
+    private boolean elemMatchActive;
 
 
     public MqlToRelConverter( MqlProcessor mqlProcessor, PolyphenyDbCatalogReader catalogReader, RelOptCluster cluster ) {
@@ -1279,7 +1280,17 @@ public class MqlToRelConverter {
             }
         } else if ( rowNames.contains( parentKey.split( "\\." )[0] ) ) {
             this.attachedJson = true;
-            return translateJsonValue( rowNames.indexOf( parentKey.split( "\\." )[0] ), rowType, parentKey, useAccess );
+            String[] keys = parentKey.split( "\\." );
+            // we fix sub-documents in elemMatch queries by only passing the sub-key
+            // that the replacing then only uses the array element and searches the sub-key there
+            if ( !elemMatchActive || keys.length == 1 ) {
+                return translateJsonValue( rowNames.indexOf( keys[0] ), rowType, parentKey, useAccess );
+            } else {
+                List<String> names = Arrays.asList( keys );
+                names.remove( 0 );
+                return translateJsonValue( rowNames.indexOf( keys[0] ), rowType, String.join( ".", names ), useAccess );
+            }
+
         } else if ( _dataExists ) {
             // the default _data field does still exist
             this.attachedJson = true;
@@ -1474,10 +1485,17 @@ public class MqlToRelConverter {
         if ( !bsonValue.isDocument() ) {
             throw new RuntimeException( "After $elemMatch there needs to follow a document" );
         }
+        this.elemMatchActive = true;
+        List<RexNode> nodes = new ArrayList<>();
+        for ( Entry<String, BsonValue> entry : bsonValue.asDocument().entrySet() ) {
+            nodes.add( convertEntry( entry.getKey(), parentKey, entry.getValue(), rowType ) );
+        }
+        this.elemMatchActive = false;
+        //RexCall op = new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), SqlStdOperatorTable.EQUALS, Arrays.asList( convertLiteral( new BsonInt32( 99 ) ), builder.makeAbstractCast( any, convertLiteral( new BsonInt32( 3 ) ) ) ) );
 
-        RexCall op = new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), SqlStdOperatorTable.EQUALS, Arrays.asList( convertLiteral( new BsonInt32( 32 ) ), convertLiteral( new BsonInt32( 32 ) ) ) );
+        RexNode op = getFixedCall( nodes, SqlStdOperatorTable.AND, PolyType.BOOLEAN );
 
-        return null;
+        return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), SqlStdOperatorTable.DOC_ELEM_MATCH, Arrays.asList( getIdentifier( parentKey, rowType ), op ) );
     }
 
 
@@ -1547,10 +1565,15 @@ public class MqlToRelConverter {
 
 
     private RexNode translateJsonValue( int index, RelDataType rowType, String key, boolean useAccess ) {
+        RexCall filter;
+        List<String> names = Arrays.asList( key.split( "\\." ) );
+        if ( elemMatchActive ) {
+            names = names.subList( 1, names.size() );
+        }
+        filter = getStringArray( names );
 
-        RexCall filter = getStringArray( Arrays.asList( key.split( "\\." ) ) );
         return new RexCall(
-                any,
+                nullableAny,
                 SqlStdOperatorTable.DOC_QUERY_VALUE,
                 Arrays.asList(
                         useAccess

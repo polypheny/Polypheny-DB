@@ -423,7 +423,8 @@ public enum BuiltInMethod {
     DOC_UPDATE_ADD_TO_SET( SqlFunctions.class, "docAddToSet", Object.class, Object.class ),
     DOC_UPDATE_REMOVE( SqlFunctions.class, "docUpdateRemove", Object.class, List.class ),
     DOC_UPDATE_REPLACE( SqlFunctions.class, "docUpdateReplace", Object.class, List.class, List.class ),
-    DOC_UPDATE_RENAME( SqlFunctions.class, "docUpdateRename", Object.class, List.class, List.class );
+    DOC_UPDATE_RENAME( SqlFunctions.class, "docUpdateRename", Object.class, List.class, List.class ),
+    DOC_ELEM_MATCH( SqlFunctions.class, "docElemMatch", Object.class );
 
     public final Method method;
     public final Constructor constructor;

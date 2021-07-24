@@ -110,7 +110,7 @@ public class PolyphenyDb {
 
     public void runPolyphenyDb() throws GenericCatalogException {
         if ( resetDocker ) {
-            log.warn( "-resetDocker option is set, this option is only for development." );
+            log.warn( "[-resetDocker] option is set, this option is only for development." );
         }
 
         // Move data folder

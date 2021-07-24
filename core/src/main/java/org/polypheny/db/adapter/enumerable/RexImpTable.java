@@ -70,6 +70,7 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.Ord;
+import org.apache.calcite.linq4j.tree.BinaryExpression;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.BlockStatement;
 import org.apache.calcite.linq4j.tree.ConstantExpression;
@@ -80,6 +81,7 @@ import org.apache.calcite.linq4j.tree.MemberExpression;
 import org.apache.calcite.linq4j.tree.OptimizeShuttle;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
+import org.apache.calcite.linq4j.tree.Shuttle;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.polypheny.db.rel.type.RelDataType;
@@ -94,6 +96,7 @@ import org.polypheny.db.schema.ImplementableFunction;
 import org.polypheny.db.schema.impl.AggregateFunctionImpl;
 import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.SqlBinaryOperator;
+import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.OracleSqlOperatorTable;
 import org.polypheny.db.sql.fun.SqlJsonArrayAggAggFunction;
@@ -327,6 +330,7 @@ public class RexImpTable {
         defineMethod( SqlStdOperatorTable.DOC_UPDATE_RENAME, BuiltInMethod.DOC_UPDATE_RENAME.method, NullPolicy.STRICT );
         defineMethod( SqlStdOperatorTable.DOC_UPDATE_REPLACE, BuiltInMethod.DOC_UPDATE_REPLACE.method, NullPolicy.STRICT );
         defineMethod( SqlStdOperatorTable.DOC_UPDATE_REMOVE, BuiltInMethod.DOC_UPDATE_REMOVE.method, NullPolicy.STRICT );
+        map.put( SqlStdOperatorTable.DOC_ELEM_MATCH, new ElemMatchImplementor() );
 
         // System functions
         final SystemFunctionImplementor systemFunctionImplementor = new SystemFunctionImplementor();
@@ -2404,6 +2408,99 @@ public class RexImpTable {
                 default:
                     return new MethodImplementor( BuiltInMethod.ANY_ITEM.method );
             }
+        }
+
+    }
+
+
+    private static class ForSubstituteVisitor extends Shuttle {
+
+        @Override
+        public Shuttle preVisit( BinaryExpression binaryExpression ) {
+            return super.preVisit( binaryExpression );
+        }
+
+
+        @Override
+        public Expression visit( ParameterExpression parameterExpression ) {
+            return parameterExpression;
+        }
+
+
+        @Override
+        public Expression visit( BinaryExpression binaryExpression, Expression expression0, Expression expression1 ) {
+            return super.visit( binaryExpression, expression0, expression1 );
+        }
+
+    }
+
+
+    private static class ElemMatchImplementor implements CallImplementor {
+
+        @Override
+        public Expression implement( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
+            BlockBuilder builder = new BlockBuilder();
+
+            final ParameterExpression i_ = Expressions.parameter( int.class, "i" );
+            final ParameterExpression predicate = Expressions.parameter( boolean.class, "predicate" );
+            final ParameterExpression _list = Expressions.parameter( Types.of( List.class, Object.class ), "_list" );
+            final ParameterExpression par = Expressions.parameter( Object.class, "_arr" );
+            final ParameterExpression get_ = Expressions.parameter( Object.class, "_get" );
+            builder.add( Expressions.declare( 0, par, translator.translate( call.getOperands().get( 0 ), NullAs.NOT_POSSIBLE, null ) ) );
+            builder.add(
+                    Expressions.declare( 0, predicate, Expressions.constant( false ) ) );
+            builder.add(
+                    Expressions.declare( 0, _list, Expressions.call( BuiltInMethod.DOC_ELEM_MATCH.method, par ) )
+            );
+            builder.add(
+                    Expressions.for_(
+                            Expressions.declare(
+                                    0, i_, Expressions.constant( 0 ) ),
+                            Expressions.lessThan( i_, Expressions.call( _list, "size" ) ),
+                            Expressions.postIncrementAssign( i_ ),
+                            Expressions.block(
+                                    Expressions.declare( 0, get_, Expressions.call( _list, "get", i_ ) ),
+                                    Expressions.ifThen(
+                                            startSubstitute( translator, call.getOperands().get( 1 ), 0, get_ ),
+                                            Expressions.block( Expressions.return_( null, Expressions.constant( true ) ) ) )
+                            )
+                    ) );
+            builder.add( Expressions.return_( null, predicate ) );
+            translator.getList().append( "forLoop", builder.toBlock() );
+            return predicate;
+        }
+
+
+        private Expression startSubstitute( RexToLixTranslator translator, RexNode node, int pos, Expression el ) {
+            RexNode n = substitute( translator, node, pos );
+            translator.setDoSubstitute( true );
+            translator.getReplace().put( n, el );
+            Expression expr = translator.translate( node, NullAs.NOT_POSSIBLE, null );
+            translator.setDoSubstitute( false );
+            translator.getReplace().clear();
+            return expr;
+        }
+
+
+        private RexNode substitute( RexToLixTranslator translator, RexNode node, int pos ) {
+            RexNode transformed = node;
+            if ( node.isA( SqlKind.LOCAL_REF ) ) {
+                transformed = translator.deref( node );
+            }
+            if ( transformed instanceof RexCall ) {
+                int i = 0;
+
+                for ( RexNode operand : ((RexCall) transformed).getOperands() ) {
+                    RexNode n = substitute( translator, operand, i );
+                    if ( n != null ) {
+                        return n;
+                    }
+                    i++;
+                }
+            } else if ( pos == 0 ) {
+                return node;
+            }
+            return null;
         }
 
     }
