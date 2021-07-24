@@ -1573,7 +1573,7 @@ public class MqlToRelConverter {
         filter = getStringArray( names );
 
         return new RexCall(
-                nullableAny,
+                any,
                 SqlStdOperatorTable.DOC_QUERY_VALUE,
                 Arrays.asList(
                         useAccess

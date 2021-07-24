@@ -3705,23 +3705,6 @@ public class SqlFunctions {
     }
 
 
-    /*public static Object docQueryValueBson( BsonValue doc, List<String> filters ) {
-        while ( filters.size() != 0 && doc != null ) {
-            if ( doc.isDocument() ) {
-                if ( doc.asDocument().containsKey( filters.get( 0 ) ) ) {
-                    doc = doc.asDocument().get( filters.get( 0 ) );
-                    filters.remove( 0 );
-                } else {
-                    doc = null;
-                }
-            } else {
-                doc = null;
-            }
-        }
-        return transformBsonToPrimitive( doc );
-    }*/
-
-
     public static Object docAddFields( Object input, String name, Object object ) {
         if ( input instanceof String ) {
             BsonDocument document = BsonDocument.parse( (String) input );

@@ -195,14 +195,15 @@ public class JdbcMetaTest {
 
             // Check data
             final Object[] schemaPublic = new Object[]{ "public", "APP", "system", "RELATIONAL" };
+            final Object[] schemaPrivate = new Object[]{ "private", "APP", "system", "DOCUMENT" };
             final Object[] schemaTest = new Object[]{ "test", "APP", "pa", "RELATIONAL" };
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getSchemas( "APP", null ),
-                    ImmutableList.of( schemaPublic, schemaTest ) );
+                    ImmutableList.of( schemaPublic, schemaPrivate, schemaTest ) );
             TestHelper.checkResultSet(
                     connection.getMetaData().getSchemas( "%", "%" ),
-                    ImmutableList.of( schemaPublic, schemaTest ) );
+                    ImmutableList.of( schemaPublic, schemaPrivate, schemaTest ) );
             TestHelper.checkResultSet(
                     connection.getMetaData().getSchemas( "APP", "test" ),
                     ImmutableList.of( schemaTest ) );

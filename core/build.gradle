@@ -167,7 +167,8 @@ javadoc {
         options.addBooleanOption("html5", true)
     }
     // Exclude build dir
-    exclude "fmpp/javacc/**"
+    exclude "fmpp/sql/javacc/**"
+    exclude "fmpp/mql/javacc/**"
 }
 
 

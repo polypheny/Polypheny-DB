@@ -1,7 +1,7 @@
 
 <@pp.dropOutputFile />
 
-<@pp.changeOutputFile name="javacc/DocumentParser.jj" />
+<@pp.changeOutputFile name="javacc/Documentparser.jj" />
 
 options {
     STATIC = false;

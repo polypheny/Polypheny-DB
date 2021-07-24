@@ -127,7 +127,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
 
 
     /**
-     * Returns a sub-schema with a given name that is defined implicitly (that is, by the underlying {@link Schema} object, not explicitly by a call to {@link #add(String, Schema)}), or null.
+     * Returns a sub-schema with a given name that is defined implicitly (that is, by the underlying {@link Schema} object, not explicitly by a call to {@link #add(String, Schema, SchemaType)}), or null.
      */
     protected abstract PolyphenyDbSchema getImplicitSubSchema( String schemaName, boolean caseSensitive );
 
@@ -330,7 +330,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
 
 
     /**
-     * Returns a collection of sub-schemas, both explicit (defined using {@link #add(String, Schema)})
+     * Returns a collection of sub-schemas, both explicit (defined using {@link #add(String, Schema, SchemaType)})
      * and implicit (defined using {@link Schema#getSubSchemaNames()} and {@link Schema#getSubSchema(String)}).
      */
     @Override

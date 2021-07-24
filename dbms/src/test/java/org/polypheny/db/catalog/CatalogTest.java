@@ -135,10 +135,11 @@ public class CatalogTest {
 
             final Object[] schemaTest = new Object[]{ "schema1", "APP", "pa", "RELATIONAL" };
             final Object[] schemaPublic = new Object[]{ "public", "APP", "system", "RELATIONAL" };
+            final Object[] schemaPrivate = new Object[]{ "private", "APP", "system", "DOCUMENT" };
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getSchemas( "APP", null ),
-                    ImmutableList.of( schemaPublic, schemaTest ) );
+                    ImmutableList.of( schemaPublic, schemaPrivate, schemaTest ) );
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getSchemas( "APP", "schema1" ),
