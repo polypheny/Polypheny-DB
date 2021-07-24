@@ -69,7 +69,7 @@ public class SchemaToJsonMapperTest {
 
         new CatalogSchema( 1, "public", 1, 1, "hans", SchemaType.RELATIONAL );
         new CatalogDatabase( 1, "APP", 1, "hans", 1L, "public" );
-        new CatalogUser( 1, "hans", "secrete", "secrets" );
+        new CatalogUser( 1, "hans", "secrete", 1L );
         new HashMap<>();
         new HashMap<>();
         Arrays.asList(
