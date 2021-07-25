@@ -18,25 +18,28 @@ package org.polypheny.cql.parser;
 
 public class SearchClause {
 
-    public final String index;
+    public final String indexStr;
     public final Relation relation;
     public final String searchTerm;
 
+    private final FilterType filterType;
     private final boolean termOnlyClause;
 
 
-    public SearchClause( String index, Relation relation, String searchTerm ) {
-        this.index = index;
+    private SearchClause( String indexStr, Relation relation, String searchTerm, final FilterType filterType ) {
+        this.indexStr = indexStr;
         this.relation = relation;
         this.searchTerm = searchTerm;
+        this.filterType = filterType;
         this.termOnlyClause = false;
     }
 
 
-    public SearchClause( String searchTerm ) {
-        this.index = null;
+    private SearchClause( String searchTerm ) {
+        this.indexStr = null;
         this.relation = null;
         this.searchTerm = searchTerm;
+        this.filterType = FilterType.NONE;
         this.termOnlyClause = true;
     }
 
@@ -46,13 +49,45 @@ public class SearchClause {
     }
 
 
+    public boolean isColumnFilter() {
+        return this.filterType == FilterType.COLUMN_FILTER;
+    }
+
+
+    public boolean isLiteralFilter() {
+        return this.filterType == FilterType.LITERAL_FILTER;
+    }
+
+
     @Override
     public String toString() {
         if ( isTermOnlyClause() ) {
             return searchTerm + " ";
         } else {
-            return index + " " + relation.toString() + " " + searchTerm;
+            return indexStr + " " + relation.toString() + " " + searchTerm;
         }
+    }
+
+
+    public static SearchClause createColumnFilterSearchClause( String index, Relation relation, String searchTerm ) {
+        return new SearchClause( index, relation, searchTerm, FilterType.COLUMN_FILTER );
+    }
+
+
+    public static SearchClause createLiteralFilterSearchClause( String index, Relation relation, String searchTerm ) {
+        return new SearchClause( index, relation, searchTerm, FilterType.LITERAL_FILTER );
+    }
+
+
+    public static SearchClause createSearchTermOnlySearchClause( String searchTerm ) {
+        return new SearchClause( searchTerm );
+    }
+
+
+    private enum FilterType {
+        LITERAL_FILTER,
+        COLUMN_FILTER,
+        NONE;
     }
 
 }
