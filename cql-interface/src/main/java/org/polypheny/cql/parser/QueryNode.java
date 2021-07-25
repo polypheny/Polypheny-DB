@@ -17,8 +17,8 @@
 package org.polypheny.cql.parser;
 
 import lombok.SneakyThrows;
+import org.polypheny.cql.exception.UnexpectedTypeException;
 import org.polypheny.cql.utils.Tree;
-import org.polypheny.cql.contextset.exceptions.UnexpectedTypeException;
 
 public class QueryNode extends Tree<BooleanGroup, SearchClause> {
 

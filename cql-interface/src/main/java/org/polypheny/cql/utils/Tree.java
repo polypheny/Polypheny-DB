@@ -29,8 +29,8 @@ public class Tree<M, N> {
     private final M internalNode;
     private final N externalNode;
 
-    private Tree<M, N> left;
-    private Tree<M, N> right;
+    public final Tree<M, N> left;
+    public final Tree<M, N> right;
 
     private final boolean leaf;
 
@@ -71,26 +71,6 @@ public class Tree<M, N> {
             throw new UnexpectedTypeException( "Invalid call to fetch external node value from a internal node." );
         }
         return externalNode;
-    }
-
-
-    public Tree<M, N> getLeft() {
-        return this.left;
-    }
-
-
-    public void setLeft( Tree<M, N> left ) {
-        this.left = left;
-    }
-
-
-    public Tree<M, N> getRight() {
-        return this.right;
-    }
-
-
-    public void setRight( Tree<M, N> right ) {
-        this.right = right;
     }
 
 
