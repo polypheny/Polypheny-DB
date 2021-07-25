@@ -16,7 +16,8 @@
 
 package org.polypheny.cql.utils;
 
-import org.polypheny.cql.contextset.exceptions.UnexpectedTypeException;
+import java.util.HashMap;
+import org.polypheny.cql.exception.UnexpectedTypeException;
 
 /*
  * Tree is a tree node with M type nodes being internal nodes and N type
@@ -28,8 +29,8 @@ public class Tree<M, N> {
     private final M internalNode;
     private final N externalNode;
 
-    public final Tree<M, N> left;
-    public final Tree<M, N> right;
+    private Tree<M, N> left;
+    private Tree<M, N> right;
 
     private final boolean leaf;
 
@@ -73,19 +74,135 @@ public class Tree<M, N> {
     }
 
 
-    public void TraverseInPlace( Action<M, N> action ) {
-        TraverseInPlaceHelper( this, action );
+    public Tree<M, N> getLeft() {
+        return this.left;
     }
 
 
-    private void TraverseInPlaceHelper( Tree<M, N> root, Action<M, N> action ) {
+    public void setLeft( Tree<M, N> left ) {
+        this.left = left;
+    }
+
+
+    public Tree<M, N> getRight() {
+        return this.right;
+    }
+
+
+    public void setRight( Tree<M, N> right ) {
+        this.right = right;
+    }
+
+
+    public void traverse( TraversalType traversalType, Action<M, N> action ) {
+        traverseHelper( this, traversalType, action );
+    }
+
+
+    private void traverseHelper( Tree<M, N> root, TraversalType traversalType, Action<M, N> action ) {
+        HashMap<String, Object> frame = new HashMap<>();
+        boolean proceed;
         if ( root.isLeaf() ) {
-            action.PerformAction( root );
+            action.performAction( root, NodeType.DESTINATION_NODE, Direction.UP_UP, frame );
         } else {
-            TraverseInPlaceHelper( root.left, action );
-            action.PerformAction( root );
-            TraverseInPlaceHelper( root.right, action );
+            if ( traversalType == TraversalType.PREORDER ) {
+                proceed = action.performAction( root, NodeType.DESTINATION_NODE, Direction.UP_DOWN, frame );
+                if ( !proceed ) {
+                    return;
+                }
+                traverseHelper( root.left, traversalType, action );
+                proceed = action.performAction( root, NodeType.ROUTE_NODE, Direction.DOWN_DOWN, frame );
+                if ( !proceed ) {
+                    return;
+                }
+                traverseHelper( root.right, traversalType, action );
+                action.performAction( root, NodeType.ROUTE_NODE, Direction.DOWN_UP, frame );
+            } else if ( traversalType == TraversalType.INORDER ) {
+                proceed = action.performAction( root, NodeType.ROUTE_NODE, Direction.UP_DOWN, frame );
+                if ( !proceed ) {
+                    return;
+                }
+                traverseHelper( root.left, traversalType, action );
+                proceed = action.performAction( root, NodeType.DESTINATION_NODE, Direction.DOWN_DOWN, frame );
+                if ( !proceed ) {
+                    return;
+                }
+                traverseHelper( root.right, traversalType, action );
+                action.performAction( root, NodeType.ROUTE_NODE, Direction.DOWN_UP, frame );
+            } else if ( traversalType == TraversalType.POSTORDER ) {
+                proceed = action.performAction( root, NodeType.ROUTE_NODE, Direction.UP_DOWN, frame );
+                if ( !proceed ) {
+                    return;
+                }
+                traverseHelper( root.left, traversalType, action );
+                proceed = action.performAction( root, NodeType.ROUTE_NODE, Direction.DOWN_DOWN, frame );
+                if ( !proceed ) {
+                    return;
+                }
+                traverseHelper( root.right, traversalType, action );
+                action.performAction( root, NodeType.DESTINATION_NODE, Direction.DOWN_UP, frame );
+            } else if ( traversalType == TraversalType.REV_PREORDER ) {
+                proceed = action.performAction( root, NodeType.DESTINATION_NODE, Direction.UP_DOWN, frame );
+                if ( !proceed ) {
+                    return;
+                }
+                traverseHelper( root.right, traversalType, action );
+                proceed = action.performAction( root, NodeType.ROUTE_NODE, Direction.DOWN_DOWN, frame );
+                if ( !proceed ) {
+                    return;
+                }
+                traverseHelper( root.left, traversalType, action );
+                action.performAction( root, NodeType.ROUTE_NODE, Direction.DOWN_UP, frame );
+            } else if ( traversalType == TraversalType.REV_INORDER ) {
+                proceed = action.performAction( root, NodeType.ROUTE_NODE, Direction.UP_DOWN, frame );
+                if ( !proceed ) {
+                    return;
+                }
+                traverseHelper( root.right, traversalType, action );
+                proceed = action.performAction( root, NodeType.DESTINATION_NODE, Direction.DOWN_DOWN, frame );
+                if ( !proceed ) {
+                    return;
+                }
+                traverseHelper( root.left, traversalType, action );
+                action.performAction( root, NodeType.ROUTE_NODE, Direction.DOWN_UP, frame );
+            } else {
+                proceed = action.performAction( root, NodeType.ROUTE_NODE, Direction.UP_DOWN, frame );
+                if ( !proceed ) {
+                    return;
+                }
+                traverseHelper( root.right, traversalType, action );
+                proceed = action.performAction( root, NodeType.ROUTE_NODE, Direction.DOWN_DOWN, frame );
+                if ( !proceed ) {
+                    return;
+                }
+                traverseHelper( root.left, traversalType, action );
+                action.performAction( root, NodeType.DESTINATION_NODE, Direction.DOWN_UP, frame );
+            }
         }
+    }
+
+
+    public enum TraversalType {
+        PREORDER,
+        INORDER,
+        POSTORDER,
+        REV_PREORDER,
+        REV_INORDER,
+        REV_POSTORDER
+    }
+
+
+    public enum NodeType {
+        ROUTE_NODE,
+        DESTINATION_NODE
+    }
+
+
+    public enum Direction {
+        UP_DOWN,
+        UP_UP,
+        DOWN_DOWN,
+        DOWN_UP
     }
 
 }
