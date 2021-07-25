@@ -77,7 +77,9 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
         val fieldAsString = Arrays.stream( metricClass.getDeclaredFields() ).map( f -> f.getName() ).filter( str -> !str.equals( "serialVersionUID" ) ).collect( Collectors.toList() );
         val informationTable = new InformationTable( informationGroup, fieldAsString );
 
-        informationGroup.setRefreshFunction( () -> this.updateMetricInformationTable( informationTable, metricClass ) );
+        //@Cedric produces ConcurrentModificationException: null
+        //Due to too many update
+        //informationGroup.setRefreshFunction( () -> this.updateMetricInformationTable( informationTable, metricClass ) );
 
         addInformationGroupTUi( informationGroup, Arrays.asList( informationTable ) );
     }

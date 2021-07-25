@@ -624,7 +624,6 @@ public abstract class AbstractRouter implements Router {
                         } else if ( ((LogicalTableModify) node).getOperation() == Operation.INSERT ) {
                             int i;
 
-
                             if ( ((LogicalTableModify) node).getInput() instanceof LogicalValues ) {
 
                                     for ( ImmutableList<RexLiteral> currentTuple: ((LogicalValues) ((LogicalTableModify) node).getInput()).tuples) {
@@ -665,16 +664,18 @@ public abstract class AbstractRouter implements Router {
                                 }
 
 
-
                                 for ( i = 0; i < fieldNames.size(); i++ ) {
                                     String columnName = fieldNames.get( i );
+
                                     if ( partitionColumnName.equals( columnName ) ) {
+
                                         if ( ((LogicalTableModify) node).getInput().getChildExps().get( i ).getKind().equals( SqlKind.DYNAMIC_PARAM ) ) {
 
                                             //Needed to identify the column which contains the partition value
                                             long partitionValueIndex = ((RexDynamicParam)fieldValues.get( i )).getIndex();
 
                                             if (tempParamValues == null) {
+                                                statement.getDataContext().backupParameterValues();
                                                 tempParamValues = statement.getDataContext().getParameterValues().stream().collect( Collectors.toList() );
                                             }
                                             statement.getDataContext().resetParameterValues();
@@ -739,7 +740,7 @@ public abstract class AbstractRouter implements Router {
                                                     modifies.add( modify );
                                             }
 
-
+                                            partitionColumnIdentified = true;
                                             operationWasRewritten = true;
                                             worstCaseRouting = false;
                                         } else {
@@ -747,8 +748,17 @@ public abstract class AbstractRouter implements Router {
                                             partitionValue = ((LogicalTableModify) node).getInput().getChildExps().get( i ).toString().replace( "'", "" );
                                             identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
                                             accessedPartitionList.add( identPart );
+                                            worstCaseRouting = false;
                                         }
                                         break;
+                                    }
+                                    else{
+                                        //when loop is finished
+                                        if( i == fieldNames.size()-1 && !partitionColumnIdentified){
+
+                                            worstCaseRouting = true;
+                                            //Because partitionColumn has not been specified in insert
+                                        }
                                     }
                                 }
                             } else {
@@ -853,6 +863,10 @@ public abstract class AbstractRouter implements Router {
                 }
 
 
+
+                if ( statement.getDataContext().wasBackuped()) {
+                    statement.getDataContext().restoreParameterValues();
+                }
 
                 if ( modifies.size() == 1 ) {
                     return modifies.get( 0 );

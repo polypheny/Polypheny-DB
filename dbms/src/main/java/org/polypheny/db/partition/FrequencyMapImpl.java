@@ -394,6 +394,9 @@ public class FrequencyMapImpl extends FrequencyMap {
                 }
         }
 
+        //TODO @HENNLO  create a new monitoring page to give information what partitions are currently placed in hot and with which frequencies.
+        //To gain observability
+        //Update infoPage here
         determinePartitionDistribution(table);
     }
 
