@@ -108,7 +108,7 @@ public class WebSocket {
                 List<Result> results;
                 if ( queryRequest.language.equals( "mql" ) ) {
                     try {
-                        results = crud.documentCrud.anyQuery( crud.getTransaction( queryRequest.analyze ).createStatement(), queryRequest.query, queryRequest );
+                        results = crud.documentCrud.anyQuery( session, queryRequest, crud );
                     } catch ( Throwable t ) {
                         sendMessage( session, new Result[]{ new Result( t ) } );
                         return;

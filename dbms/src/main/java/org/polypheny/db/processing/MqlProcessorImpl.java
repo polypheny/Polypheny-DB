@@ -24,6 +24,10 @@ import org.apache.calcite.avatica.Meta;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.mql.MqlExecutableStatement;
 import org.polypheny.db.mql.MqlNode;
@@ -33,10 +37,15 @@ import org.polypheny.db.mql.parser.MqlParser.MqlParserConfig;
 import org.polypheny.db.mql2rel.MqlToRelConverter;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable.ViewExpander;
+import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
+import org.polypheny.db.sql.SqlExplainFormat;
+import org.polypheny.db.sql.SqlExplainLevel;
+import org.polypheny.db.sql2rel.RelDecorrelator;
+import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.DeadlockException;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
@@ -111,7 +120,7 @@ public class MqlProcessorImpl implements MqlProcessor, ViewExpander {
         final MqlToRelConverter mqlToRelConverter = new MqlToRelConverter( this, statement.getTransaction().getCatalogReader(), cluster );
         RelRoot logicalRoot = mqlToRelConverter.convert( mql, false, true );
 
-        /*
+
         if ( statement.getTransaction().isAnalyze() ) {
             InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
             InformationPage page = new InformationPage( "Logical Query Plan" ).setLabel( "plans" );
@@ -126,17 +135,13 @@ public class MqlProcessorImpl implements MqlProcessor, ViewExpander {
         }
 
         // Decorrelate
-        final RelBuilder relBuilder = config.getRelBuilderFactory().create( cluster, null );
+        final RelBuilder relBuilder = RelBuilder.create( statement );
         logicalRoot = logicalRoot.withRel( RelDecorrelator.decorrelateQuery( logicalRoot.rel, relBuilder ) );
 
-        // Trim unused fields.
-        if ( RuntimeConfig.TRIM_UNUSED_FIELDS.getBoolean() ) {
-            logicalRoot = trimUnusedFields( logicalRoot, sqlToRelConverter );
-        }
 
         if ( log.isTraceEnabled() ) {
             log.trace( "Logical query plan: [{}]", RelOptUtil.dumpPlan( "-- Logical Plan", logicalRoot.rel, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
-        }*/
+        }
         stopWatch.stop();
         if ( log.isDebugEnabled() ) {
             log.debug( "Planning Statement ... done. [{}]", stopWatch );

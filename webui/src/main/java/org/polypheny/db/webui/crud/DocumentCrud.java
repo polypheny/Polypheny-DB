@@ -26,6 +26,7 @@ import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.commons.lang3.time.StopWatch;
+import org.eclipse.jetty.websocket.api.Session;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -34,12 +35,14 @@ import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.mql.Mql.Family;
 import org.polypheny.db.mql.MqlNode;
 import org.polypheny.db.processing.MqlProcessor;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.models.DbColumn;
@@ -51,13 +54,31 @@ import org.polypheny.db.webui.models.requests.QueryRequest;
 public class DocumentCrud {
 
 
-    public List<Result> anyQuery( Statement statement, String mql, QueryRequest request ) {
+    public List<Result> anyQuery( Session session, QueryRequest request, Crud crud ) {
+        Transaction transaction = crud.getTransaction( request.analyze );
+        if ( request.analyze ) {
+            transaction.getQueryAnalyzer().setSession( session );
+        }
+
+        boolean autoCommit = true;
+
+        // This is not a nice solution. In case of a sql script with auto commit only the first statement is analyzed
+        // and in case of auto commit of, the information is overwritten
+        InformationManager queryAnalyzer = null;
+        if ( request.analyze ) {
+            queryAnalyzer = transaction.getQueryAnalyzer().observe( crud );
+        }
+
         PolyphenyDbSignature<?> signature;
-        MqlProcessor mqlProcessor = statement.getTransaction().getMqlProcessor();
+        MqlProcessor mqlProcessor = transaction.getMqlProcessor();
+        String mql = request.query;
+        Statement statement = transaction.createStatement();
 
         List<Result> results = new ArrayList<>();
 
         MqlNode parsed = mqlProcessor.parse( mql );
+
+        long executionTime = System.nanoTime();
 
         if ( parsed.getFamily() == Family.DDL ) {
             mqlProcessor.prepareDdl( statement, parsed, mql );
@@ -72,10 +93,15 @@ public class DocumentCrud {
 
             results = getResults( statement, request, signature );
         }
+        executionTime = System.nanoTime() - executionTime;
         try {
             statement.getTransaction().commit();
         } catch ( TransactionException e ) {
             throw new RuntimeException( "error while committing" );
+        }
+
+        if ( queryAnalyzer != null ) {
+            Crud.attachQueryAnalyzer( queryAnalyzer, executionTime );
         }
 
         return results;

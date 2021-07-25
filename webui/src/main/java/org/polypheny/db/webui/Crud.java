@@ -918,25 +918,30 @@ public class Crud implements InformationObserver {
         }
 
         if ( queryAnalyzer != null ) {
-            InformationPage p1 = new InformationPage( "Query analysis", "Analysis of the query." );
-            InformationGroup g1 = new InformationGroup( p1, "Execution time" );
-            InformationText text;
-            if ( executionTime < 1e4 ) {
-                text = new InformationText( g1, String.format( "Execution time: %d nanoseconds", executionTime ) );
-            } else {
-                long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
-                // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444
-                //noinspection SuspiciousDateFormat
-                DateFormat df = new SimpleDateFormat( "m 'min' s 'sec' S 'ms'" );
-                String durationText = df.format( new Date( millis ) );
-                text = new InformationText( g1, String.format( "Execution time: %s", durationText ) );
-            }
-            queryAnalyzer.addPage( p1 );
-            queryAnalyzer.addGroup( g1 );
-            queryAnalyzer.registerInformation( text );
+            attachQueryAnalyzer( queryAnalyzer, executionTime );
         }
 
         return results;
+    }
+
+
+    public static void attachQueryAnalyzer( InformationManager queryAnalyzer, long executionTime ) {
+        InformationPage p1 = new InformationPage( "Query analysis", "Analysis of the query." );
+        InformationGroup g1 = new InformationGroup( p1, "Execution time" );
+        InformationText text;
+        if ( executionTime < 1e4 ) {
+            text = new InformationText( g1, String.format( "Execution time: %d nanoseconds", executionTime ) );
+        } else {
+            long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
+            // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444
+            //noinspection SuspiciousDateFormat
+            DateFormat df = new SimpleDateFormat( "m 'min' s 'sec' S 'ms'" );
+            String durationText = df.format( new Date( millis ) );
+            text = new InformationText( g1, String.format( "Execution time: %s", durationText ) );
+        }
+        queryAnalyzer.addPage( p1 );
+        queryAnalyzer.addGroup( g1 );
+        queryAnalyzer.registerInformation( text );
     }
 
 
@@ -3941,7 +3946,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    protected Transaction getTransaction( boolean analyze ) {
+    public Transaction getTransaction( boolean analyze ) {
         try {
             return transactionManager.startTransaction( userName, databaseName, analyze, "Polypheny-UI", MultimediaFlavor.FILE );
         } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
