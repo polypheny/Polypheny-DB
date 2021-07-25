@@ -734,7 +734,9 @@ public class MqlToRelConverter {
                 case "$skip":
                     node = combineSkip( value.asDocument().get( "$skip" ), node );
                     break;
-                // $unwind
+                case "$unwind":
+                    node = combineUnwind( value.asDocument().get( "$unwind" ), node );
+                    break;
                 // todo dl add more pipeline statements
                 default:
                     throw new IllegalStateException( "Unexpected value: " + ((BsonDocument) value).getFirstKey() );
@@ -747,6 +749,52 @@ public class MqlToRelConverter {
         }
 
         return node;
+    }
+
+
+    private RelNode combineUnwind( BsonValue value, RelNode node ) {
+        if ( !value.isString() && !value.isDocument() ) {
+            throw new RuntimeException( "$unwind pipeline stage needs either a document or a string describing the path." );
+        }
+
+        String path;
+        if ( value.isString() ) {
+            path = value.asString().getValue();
+        } else {
+            if ( !value.asDocument().containsKey( "path" ) && value.asDocument().get( "path" ).isString() ) {
+                throw new RuntimeException( "The used document in the $unwind stage needs the key \"path\" with a string value." );
+            }
+            path = value.asDocument().get( "path" ).asString().getValue();
+        }
+        RexNode id = getIdentifier( path, node.getRowType() );
+
+        RexCall call = new RexCall( any, SqlStdOperatorTable.DOC_UNWIND, Collections.singletonList( id ) );
+
+        List<String> names = new ArrayList<>();
+        List<RexNode> values = new ArrayList<>();
+
+        String firstKey = path.split( "\\." )[0];
+
+        if ( node.getRowType().getFieldNames().contains( firstKey ) ) {
+            for ( RelDataTypeField field : node.getRowType().getFieldList() ) {
+                if ( !field.getName().equals( firstKey ) ) {
+                    names.add( field.getName() );
+                    values.add( getIdentifier( field.getName(), node.getRowType() ) );
+                }
+            }
+        } else {
+            for ( RelDataTypeField field : node.getRowType().getFieldList() ) {
+                if ( !field.getName().equals( "_data" ) ) {
+                    names.add( field.getName() );
+                    values.add( getIdentifier( field.getName(), node.getRowType() ) );
+                }
+            }
+        }
+
+        names.add( path );
+        values.add( call );
+
+        return LogicalProject.create( node, values, names );
     }
 
 

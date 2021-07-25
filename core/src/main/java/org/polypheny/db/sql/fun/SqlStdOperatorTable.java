@@ -1281,6 +1281,8 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
 
     public static final SqlJsonValueExpressionOperator DOC_ELEM_MATCH = new SqlJsonValueExpressionOperator( "DOC_ELEM_MATCH", false );
 
+    public static final SqlJsonValueExpressionOperator DOC_UNWIND = new SqlJsonValueExpressionOperator( "DOC_UNWIND", false );
+
 
     /**
      * Internal operator used to represent the ESCAPE clause of a LIKE or SIMILAR TO expression.

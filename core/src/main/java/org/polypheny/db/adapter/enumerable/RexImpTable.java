@@ -70,7 +70,6 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.Ord;
-import org.apache.calcite.linq4j.tree.BinaryExpression;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.BlockStatement;
 import org.apache.calcite.linq4j.tree.ConstantExpression;
@@ -81,7 +80,6 @@ import org.apache.calcite.linq4j.tree.MemberExpression;
 import org.apache.calcite.linq4j.tree.OptimizeShuttle;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
-import org.apache.calcite.linq4j.tree.Shuttle;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.polypheny.db.rel.type.RelDataType;
@@ -331,6 +329,7 @@ public class RexImpTable {
         defineMethod( SqlStdOperatorTable.DOC_UPDATE_REPLACE, BuiltInMethod.DOC_UPDATE_REPLACE.method, NullPolicy.STRICT );
         defineMethod( SqlStdOperatorTable.DOC_UPDATE_REMOVE, BuiltInMethod.DOC_UPDATE_REMOVE.method, NullPolicy.STRICT );
         map.put( SqlStdOperatorTable.DOC_ELEM_MATCH, new ElemMatchImplementor() );
+        map.put( SqlStdOperatorTable.DOC_UNWIND, new UnwindImplementor() );
 
         // System functions
         final SystemFunctionImplementor systemFunctionImplementor = new SystemFunctionImplementor();
@@ -2413,23 +2412,39 @@ public class RexImpTable {
     }
 
 
-    private static class ForSubstituteVisitor extends Shuttle {
+    private static class UnwindImplementor implements CallImplementor {
 
         @Override
-        public Shuttle preVisit( BinaryExpression binaryExpression ) {
-            return super.preVisit( binaryExpression );
-        }
+        public Expression implement( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
+            final ParameterExpression i_ = Expressions.parameter( int.class, "_i" );
+            final ParameterExpression list_ = Expressions.parameter( Types.of( List.class, Object.class ), "_list" );
+            final ParameterExpression unset_ = Expressions.parameter( boolean.class, "_unset" );
+            final ParameterExpression el_ = Expressions.parameter( Object.class, "_el" );
+            translator.getUnwindContext().activateUnwind( i_, list_, unset_ );
 
+            BlockBuilder else_ = new BlockBuilder();
+            else_.add( Expressions.ifThen(
+                    unset_,
+                    Expressions.block(
+                            Expressions.statement( Expressions.assign( list_, Expressions.call( BuiltInMethod.DOC_ELEM_MATCH.method, translator.translate( call.getOperands().get( 0 ) ) ) ) ),
+                            Expressions.statement( Expressions.assign( i_, Expressions.call( list_, "size" ) ) ),
+                            Expressions.statement( Expressions.assign( unset_, Expressions.constant( false ) ) )
+                    )
+            ) );
+            else_.add( Expressions.ifThen(
+                    Expressions.greaterThan( i_, Expressions.constant( 0 ) ),
+                    Expressions.statement( Expressions.assign( el_, Expressions.call( list_, "get", Expressions.subtract( Expressions.call( list_, "size" ), i_ ) ) ) ) ) );
 
-        @Override
-        public Expression visit( ParameterExpression parameterExpression ) {
-            return parameterExpression;
-        }
+            BlockBuilder outer = new BlockBuilder();
+            outer.add( Expressions.declare( 0, el_, Expressions.constant( null ) ) );
+            outer.add( Expressions.ifThenElse(
+                    Expressions.greaterThan( i_, Expressions.constant( 0 ) ),
+                    Expressions.statement( Expressions.assign( el_, Expressions.call( list_, "get", Expressions.subtract( Expressions.call( list_, "size" ), i_ ) ) ) ),
+                    else_.toBlock()
+            ) );
+            translator.getList().append( "unwind", outer.toBlock() );
 
-
-        @Override
-        public Expression visit( BinaryExpression binaryExpression, Expression expression0, Expression expression1 ) {
-            return super.visit( binaryExpression, expression0, expression1 );
+            return el_;
         }
 
     }

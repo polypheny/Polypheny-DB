@@ -35,7 +35,6 @@ package org.polypheny.db.rel.type;
 
 
 import java.io.Serializable;
-import lombok.Setter;
 import org.polypheny.db.type.PolyType;
 
 
@@ -47,9 +46,7 @@ public class RelDataTypeFieldImpl implements RelDataTypeField, Serializable {
     private final RelDataType type;
     private final String name;
     private String physicalName;
-    @Setter
-    private int index;
-    private boolean isDocument;
+    private final int index;
 
 
     /**
@@ -149,19 +146,6 @@ public class RelDataTypeFieldImpl implements RelDataTypeField, Serializable {
     @Override
     public boolean isDynamicStar() {
         return type.getPolyType() == PolyType.DYNAMIC_STAR;
-    }
-
-
-    @Override
-    public boolean isDynamic() {
-        return isDocument;
-    }
-
-
-    @Override
-    public RelDataTypeFieldImpl buildDynamic() {
-        this.isDocument = true;
-        return this;
     }
 
 }

@@ -3004,14 +3004,9 @@ public class SqlToRelConverter {
         // Walk the name list and place the associated value in the expression list according to the ordinal value returned from the table construct, leaving nulls in the list for columns
         // that are not referenced.
         final SqlNameMatcher nameMatcher = catalogReader.nameMatcher();
-        int dynamicCount = 0;
+
         for ( Pair<String, RexNode> p : Pair.zip( targetColumnNames, columnExprs ) ) {
             RelDataTypeField field = nameMatcher.field( targetRowType, p.left );
-
-            if ( field.isDynamic() ) {
-                field.setIndex( targetRowType.getFieldCount() + dynamicCount );
-                dynamicCount++;
-            }
 
             assert field != null : "column " + p.left + " not found";
             sourceExps.set( field.getIndex(), p.right );

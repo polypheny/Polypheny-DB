@@ -569,12 +569,19 @@ MqlNode Update_Statement(String collection):
 
 MqlNode Aggregate_Statement(String collection):
 {
-    BsonArray pipeline;
-    BsonDocument option = null;
+    List<BsonValue> docs;
 }
 {
-    <AGGREGATE> pipeline=Array() [< COMMA > option=Document()]
-    {return new MqlAggregate(collection, pipeline, option);}
+    <AGGREGATE> docs=Bson_Splits()
+    {
+        if ( docs.size() == 1 && docs.get(0).isArray() ) {
+            return new MqlAggregate(collection, docs.get(0).asArray(), null );
+        }else if ( docs.size() == 2 && docs.get(0).isArray() && docs.get(1).isDocument() ){
+            return new MqlAggregate(collection, docs.get(0).asArray(), docs.get(1).asDocument() );
+        }else {
+            throw new RuntimeException("The aggregation pipepline needs either either an array or an array and a options document");
+        }
+    }
 }
 
 MqlNode Count_Statement(String collection):

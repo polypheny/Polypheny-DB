@@ -160,6 +160,7 @@ public class EnumerableCalc extends Calc implements EnumerableRel {
 
         final BlockBuilder builder3 = new BlockBuilder();
         final SqlConformance conformance = (SqlConformance) implementor.map.getOrDefault( "_conformance", SqlConformanceEnum.DEFAULT );
+        UnwindContext unwindContext = new UnwindContext();
         List<Expression> expressions =
                 RexToLixTranslator.translateProjects(
                         program,
@@ -169,39 +170,94 @@ public class EnumerableCalc extends Calc implements EnumerableRel {
                         physType,
                         DataContext.ROOT,
                         new RexToLixTranslator.InputGetterImpl( Collections.singletonList( Pair.of( input, result.physType ) ) ),
-                        implementor.allCorrelateVariables );
+                        implementor.allCorrelateVariables,
+                        unwindContext );
         builder3.add( Expressions.return_( null, physType.record( expressions ) ) );
         BlockStatement currentBody = builder3.toBlock();
 
         final Expression inputEnumerable = builder.append( builder.newName( "inputEnumerable" + System.nanoTime() ), result.block, false );
-        final Expression body =
-                Expressions.new_(
-                        enumeratorType,
-                        EnumUtils.NO_EXPRS,
-                        Expressions.list(
-                                Expressions.fieldDecl( Modifier.PUBLIC | Modifier.FINAL,
-                                        inputEnumerator,
-                                        Expressions.call( inputEnumerable, BuiltInMethod.ENUMERABLE_ENUMERATOR.method ) ),
-                                EnumUtils.overridingMethodDecl(
-                                        BuiltInMethod.ENUMERATOR_RESET.method,
-                                        EnumUtils.NO_PARAMS,
-                                        Blocks.toFunctionBlock( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_RESET.method ) ) ),
-                                EnumUtils.overridingMethodDecl(
-                                        BuiltInMethod.ENUMERATOR_MOVE_NEXT.method,
-                                        EnumUtils.NO_PARAMS,
-                                        moveNextBody ),
-                                EnumUtils.overridingMethodDecl(
-                                        BuiltInMethod.ENUMERATOR_CLOSE.method,
-                                        EnumUtils.NO_PARAMS,
-                                        Blocks.toFunctionBlock( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CLOSE.method ) ) ),
-                                Expressions.methodDecl(
-                                        Modifier.PUBLIC,
-                                        EnumUtils.BRIDGE_METHODS
-                                                ? Object.class
-                                                : outputJavaType,
-                                        "current",
-                                        EnumUtils.NO_PARAMS,
-                                        currentBody ) ) );
+        final Expression body;
+        if ( !unwindContext.useUnwind ) {
+            body = Expressions.new_(
+                    enumeratorType,
+                    EnumUtils.NO_EXPRS,
+                    Expressions.list(
+                            Expressions.fieldDecl( Modifier.PUBLIC | Modifier.FINAL,
+                                    inputEnumerator,
+                                    Expressions.call( inputEnumerable, BuiltInMethod.ENUMERABLE_ENUMERATOR.method ) ),
+                            EnumUtils.overridingMethodDecl(
+                                    BuiltInMethod.ENUMERATOR_RESET.method,
+                                    EnumUtils.NO_PARAMS,
+                                    Blocks.toFunctionBlock( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_RESET.method ) ) ),
+                            EnumUtils.overridingMethodDecl(
+                                    BuiltInMethod.ENUMERATOR_MOVE_NEXT.method,
+                                    EnumUtils.NO_PARAMS,
+                                    moveNextBody ),
+                            EnumUtils.overridingMethodDecl(
+                                    BuiltInMethod.ENUMERATOR_CLOSE.method,
+                                    EnumUtils.NO_PARAMS,
+                                    Blocks.toFunctionBlock( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CLOSE.method ) ) ),
+                            Expressions.methodDecl(
+                                    Modifier.PUBLIC,
+                                    EnumUtils.BRIDGE_METHODS
+                                            ? Object.class
+                                            : outputJavaType,
+                                    "current",
+                                    EnumUtils.NO_PARAMS,
+                                    currentBody ) ) );
+
+        } else {
+            BlockBuilder unwindBlock = new BlockBuilder();
+            unwindBlock.add(
+                    Expressions.ifThenElse(
+                            Expressions.greaterThan( unwindContext._i, Expressions.constant( 1 ) ),
+                            Expressions.block(
+                                    Expressions.statement(
+                                            Expressions.assign(
+                                                    unwindContext._i,
+                                                    Expressions.subtract(
+                                                            unwindContext._i,
+                                                            Expressions.constant( 1 ) ) ) ),
+                                    Expressions.return_( null, Expressions.constant( true ) ) ),
+                            Expressions.block(
+                                    Expressions.statement( Expressions.assign( unwindContext._unset, Expressions.constant( true ) ) ),
+                                    Expressions.statement( Expressions.assign( unwindContext._i, Expressions.constant( 0 ) ) ),
+                                    Expressions.return_( null, Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_MOVE_NEXT.method ) ) ) )
+            );
+            moveNextBody = unwindBlock.toBlock();
+
+            body = Expressions.new_(
+                    enumeratorType,
+                    EnumUtils.NO_EXPRS,
+                    Expressions.list(
+                            Expressions.fieldDecl( Modifier.PUBLIC, unwindContext._list, Expressions.constant( Collections.emptyList() ) ),
+                            Expressions.fieldDecl( Modifier.PUBLIC, unwindContext._i, Expressions.constant( 0 ) ),
+                            Expressions.fieldDecl( Modifier.PUBLIC, unwindContext._unset, Expressions.constant( true ) ),
+                            Expressions.fieldDecl( Modifier.PUBLIC | Modifier.FINAL,
+                                    inputEnumerator,
+                                    Expressions.call( inputEnumerable, BuiltInMethod.ENUMERABLE_ENUMERATOR.method ) ),
+                            EnumUtils.overridingMethodDecl(
+                                    BuiltInMethod.ENUMERATOR_RESET.method,
+                                    EnumUtils.NO_PARAMS,
+                                    Blocks.toFunctionBlock( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_RESET.method ) ) ),
+                            EnumUtils.overridingMethodDecl(
+                                    BuiltInMethod.ENUMERATOR_MOVE_NEXT.method,
+                                    EnumUtils.NO_PARAMS,
+                                    moveNextBody ),
+                            EnumUtils.overridingMethodDecl(
+                                    BuiltInMethod.ENUMERATOR_CLOSE.method,
+                                    EnumUtils.NO_PARAMS,
+                                    Blocks.toFunctionBlock( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CLOSE.method ) ) ),
+                            Expressions.methodDecl(
+                                    Modifier.PUBLIC,
+                                    EnumUtils.BRIDGE_METHODS
+                                            ? Object.class
+                                            : outputJavaType,
+                                    "current",
+                                    EnumUtils.NO_PARAMS,
+                                    currentBody ) ) );
+        }
+
         builder.add(
                 Expressions.return_(
                         null,
@@ -219,5 +275,6 @@ public class EnumerableCalc extends Calc implements EnumerableRel {
     public RexProgram getProgram() {
         return program;
     }
+
 }
 

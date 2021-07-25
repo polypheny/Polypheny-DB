@@ -79,19 +79,5 @@ public interface RelDataTypeField extends Map.Entry<String, RelDataType> {
      */
     boolean isDynamicStar();
 
-
-    void setIndex( int index );
-
-    /**
-     * checks if the column is a dynamic column
-     */
-    boolean isDynamic();
-
-
-    /**
-     * builder method to easily set dynamic
-     */
-    RelDataTypeFieldImpl buildDynamic();
-
 }
 
