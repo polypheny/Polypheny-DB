@@ -585,7 +585,6 @@ public class BasicMaterializedTest {
         }
     }
 
-    /*
 
     @Test
     public void testComplexFreshnessUpdate() throws SQLException {
@@ -611,6 +610,19 @@ public class BasicMaterializedTest {
                             )
                     );
 
+                    statement.executeUpdate( "DELETE FROM viewTestEmpTable" );
+                    connection.commit();
+                    statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
+                    connection.commit();
+
+                    waiter.await( 1, TimeUnit.SECONDS );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1 }
+                            )
+                    );
+
                 } catch ( InterruptedException e ) {
                     e.printStackTrace();
                 } finally {
@@ -629,10 +641,8 @@ public class BasicMaterializedTest {
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
                 statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
-
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestDep AS SELECT * FROM viewTestDepTable FRESHNESS INTERVAL 500 \"milliseconds\"" );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 100 \"milliseconds\" " );
-                connection.commit();
                 waiter.await( 1, TimeUnit.SECONDS );
                 try {
 
@@ -686,10 +696,193 @@ public class BasicMaterializedTest {
             }
         }
     }
-*/
+
 
     @Test
-    public void testDropFreshnessInterval() throws SQLException {
+    public void testUpdateFreshnessUpdates() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
+                statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
+                statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestDep AS SELECT * FROM viewTestDepTable FRESHNESS UPDATE 2 " );
+                statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS UPDATE 2 " );
+                try {
+
+                    statement.executeUpdate( "INSERT INTO viewTestDepTable VALUES ( 1, 'IT', 1)" );
+                    connection.commit();
+                    statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
+                    connection.commit();
+
+                    waiter.await( 1, TimeUnit.SECONDS );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            ImmutableList.of()
+                    );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestDep" ),
+                            ImmutableList.of()
+                    );
+
+                    statement.executeUpdate( "INSERT INTO viewTestDepTable VALUES ( 2, 'Sales', 2), ( 3, 'HR', 3)" );
+                    connection.commit();
+                    statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
+                    connection.commit();
+
+                    waiter.await( 1, TimeUnit.SECONDS );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3 }
+                            )
+                    );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestDep" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "IT", 1 },
+                                    new Object[]{ 2, "Sales", 2 },
+                                    new Object[]{ 3, "HR", 3 }
+                            ) );
+
+                    statement.executeUpdate( "DELETE FROM viewTestEmpTable" );
+                    connection.commit();
+                    statement.executeUpdate( "TRUNCATE TABLE viewTestDepTable" );
+                    connection.commit();
+
+                    waiter.await( 1, TimeUnit.SECONDS );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3 }
+                            )
+                    );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestDep" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "IT", 1 },
+                                    new Object[]{ 2, "Sales", 2 },
+                                    new Object[]{ 3, "HR", 3 }
+                            ) );
+
+                } finally {
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestDep" );
+                    statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
+                    statement.executeUpdate( "DROP TABLE viewTestDepTable" );
+                }
+            } catch ( InterruptedException e ) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+    @Test
+    public void testUpdateFreshnessIntervals() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
+                statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
+                statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestDep AS SELECT * FROM viewTestDepTable FRESHNESS INTERVAL 500 \"milliseconds\"" );
+                statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 100 \"milliseconds\" " );
+                waiter.await( 1, TimeUnit.SECONDS );
+                try {
+
+                    statement.executeUpdate( "INSERT INTO viewTestDepTable VALUES ( 1, 'IT', 1)" );
+                    statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
+                    connection.commit();
+
+                    waiter.await( 1, TimeUnit.SECONDS );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1 }
+                            ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestDep" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "IT", 1 }
+                            ) );
+
+                    statement.executeUpdate( "INSERT INTO viewTestDepTable VALUES ( 2, 'Sales', 2), ( 3, 'HR', 3)" );
+                    statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
+                    connection.commit();
+
+                    waiter.await( 1, TimeUnit.SECONDS );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3 }
+                            )
+                    );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestDep" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "IT", 1 },
+                                    new Object[]{ 2, "Sales", 2 },
+                                    new Object[]{ 3, "HR", 3 }
+                            ) );
+
+                    statement.executeUpdate( "DELETE FROM viewTestEmpTable" );
+                    statement.executeUpdate( "TRUNCATE TABLE viewTestDepTable" );
+                    connection.commit();
+
+                    waiter.await( 1, TimeUnit.SECONDS );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            ImmutableList.of()
+                    );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestDep" ),
+                            ImmutableList.of()
+                    );
+
+                    statement.executeUpdate( "INSERT INTO viewTestDepTable VALUES ( 1, 'IT', 1)" );
+                    statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
+                    connection.commit();
+
+                    waiter.await( 1, TimeUnit.SECONDS );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1 }
+                            ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestDep" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "IT", 1 }
+                            ) );
+
+                } finally {
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestDep" );
+                    statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
+                    statement.executeUpdate( "DROP TABLE viewTestDepTable" );
+                }
+            } catch ( InterruptedException e ) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+    @Test
+    public void testDeleteFreshnessInterval() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {

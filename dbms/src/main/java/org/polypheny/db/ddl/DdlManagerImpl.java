@@ -1449,7 +1449,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         MaterializedManager materializedManager = MaterializedManager.getInstance();
-        materializedManager.addData( statement.getTransaction(), stores, addedColumns, relRoot, tableId, catalogMaterialized.getMaterializedCriteria() );
+        materializedManager.addData( statement.getTransaction(), stores, addedColumns, relRoot, catalogMaterialized );
 
 
     }

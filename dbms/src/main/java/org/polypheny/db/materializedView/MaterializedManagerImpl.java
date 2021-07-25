@@ -105,7 +105,9 @@ public class MaterializedManagerImpl extends MaterializedManager {
 
 
     public synchronized void updateMaterializedTime( Long materializedId ) {
-        materializedInfo.get( materializedId ).setLastUpdate( new Timestamp( System.currentTimeMillis() ) );
+        if ( materializedInfo.containsKey( materializedId ) ) {
+            materializedInfo.get( materializedId ).setLastUpdate( new Timestamp( System.currentTimeMillis() ) );
+        }
     }
 
 
@@ -200,7 +202,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
             } catch ( DeadlockException e ) {
                 throw new RuntimeException( e );
             }
-            updateData( transaction, dataStores, columns, RelRoot.of( catalogMaterialized.getDefinition(), SqlKind.SELECT ), relCollation, catalogMaterialized.name );
+            updateData( transaction, dataStores, columns, RelRoot.of( catalogMaterialized.getDefinition(), SqlKind.SELECT ), relCollation, catalogMaterialized );
             commitTransaction( transaction );
 
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
@@ -229,8 +231,8 @@ public class MaterializedManagerImpl extends MaterializedManager {
 
 
     @Override
-    public void addData( Transaction transaction, List<DataStore> stores, Map<Integer, List<CatalogColumn>> columns, RelRoot sourceRel, long tableId, MaterializedCriteria materializedCriteria ) {
-        addMaterializedInfo( tableId, materializedCriteria );
+    public void addData( Transaction transaction, List<DataStore> stores, Map<Integer, List<CatalogColumn>> columns, RelRoot sourceRel, CatalogMaterialized materializedView ) {
+        addMaterializedInfo( materializedView.id, materializedView.getMaterializedCriteria() );
 
         Statement sourceStatement = transaction.createStatement();
         List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
@@ -241,11 +243,13 @@ public class MaterializedManagerImpl extends MaterializedManager {
             ids.add( store.getAdapterId() );
         }
 
+        RelCollation relCollation = materializedView.getRelCollation();
+
         RelOptCluster cluster = RelOptCluster.create(
                 sourceStatement.getQueryProcessor().getPlanner(),
                 new RexBuilder( sourceStatement.getTransaction().getTypeFactory() ) );
 
-        prepareNode( sourceRel.rel, cluster, null );
+        prepareNode( sourceRel.rel, cluster, relCollation );
 
         for ( int id : ids ) {
             Statement targetStatement = transaction.createStatement();
@@ -261,7 +265,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
     }
 
 
-    public void updateData( Transaction transaction, List<DataStore> stores, Map<Integer, List<CatalogColumn>> columns, RelRoot sourceRel, RelCollation relCollation, String viewName ) {
+    public void updateData( Transaction transaction, List<DataStore> stores, Map<Integer, List<CatalogColumn>> columns, RelRoot sourceRel, RelCollation relCollation, CatalogMaterialized view ) {
         Statement sourceStatement = transaction.createStatement();
         Statement deleteStatement = transaction.createStatement();
         List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
@@ -286,7 +290,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
 
             columns.get( id ).forEach( column -> columnPlacements.add( Catalog.getInstance().getColumnPlacement( id, column.id ) ) );
             RelBuilder relBuilder = RelBuilder.create( deleteStatement );
-            RelNode relNode = relBuilder.scan( viewName ).build();
+            RelNode relNode = relBuilder.scan( view.name ).build();
 
             //delete all data
             targetRel = dataMigrator.buildDeleteStatement( targetStatement, columnPlacements );

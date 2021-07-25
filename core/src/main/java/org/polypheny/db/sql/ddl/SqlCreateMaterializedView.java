@@ -165,7 +165,6 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
             }
         } else {
             materializedCriteria = new MaterializedCriteria();
-            System.out.println( freshnessType );
         }
 
         try {
