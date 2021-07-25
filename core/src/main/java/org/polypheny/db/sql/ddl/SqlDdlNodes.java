@@ -90,7 +90,7 @@ public class SqlDdlNodes {
     /**
      * Creates a CREATE MATERIALIZED VIEW.
      */
-    public static SqlCreateMaterializedView createMaterializedView( SqlParserPos pos, boolean replace, SqlIdentifier name, SqlNodeList columnList, SqlNode query, SqlIdentifier store, String freshnessType, Integer freshnessNumber, SqlIdentifier freshnessUnit ) {
+    public static SqlCreateMaterializedView createMaterializedView( SqlParserPos pos, boolean replace, SqlIdentifier name, SqlNodeList columnList, SqlNode query, List<SqlIdentifier> store, String freshnessType, Integer freshnessNumber, SqlIdentifier freshnessUnit ) {
         return new SqlCreateMaterializedView( pos, replace, name, columnList, query, store, freshnessType, freshnessNumber, freshnessUnit );
     }
 

@@ -165,22 +165,24 @@ public class MaterializedManagerImpl extends MaterializedManager {
     }
 
 
-    public void prepareToUpdate( Long k ) {
+    public void prepareToUpdate( Long viewId ) {
         AdapterManager adapterManager = AdapterManager.getInstance();
         Catalog catalog = Catalog.getInstance();
-        CatalogMaterialized catalogMaterialized = (CatalogMaterialized) catalog.getTable( k );
+        CatalogMaterialized catalogMaterialized = (CatalogMaterialized) catalog.getTable( viewId );
+        Map<Integer, List<CatalogColumn>> columns = new HashMap<>();
 
         System.out.println( "Inside WhileLoop" );
-
-        List<CatalogColumn> columns = new LinkedList<>();
-
-        for ( Long id : catalogMaterialized.columnIds ) {
-            columns.add( catalog.getColumn( id ) );
-        }
-
         List<DataStore> dataStores = new ArrayList<>();
         for ( int id : catalogMaterialized.placementsByAdapter.keySet() ) {
             dataStores.add( adapterManager.getStore( id ) );
+            List<CatalogColumn> catalogColumns = new ArrayList<>();
+            if ( catalogMaterialized.placementsByAdapter.containsKey( id ) ) {
+
+                catalogMaterialized.placementsByAdapter.get( id ).forEach( col ->
+                        catalogColumns.add( catalog.getColumn( col ) )
+                );
+                columns.put( id, catalogColumns );
+            }
         }
 
         String databaseName = catalog.getDatabase( catalogMaterialized.databaseId ).name;
@@ -226,24 +228,16 @@ public class MaterializedManagerImpl extends MaterializedManager {
 
 
     @Override
-    public void addData( Transaction transaction, List<DataStore> stores, List<CatalogColumn> columns, RelRoot sourceRel, long tableId, MaterializedCriteria materializedCriteria ) {
+    public void addData( Transaction transaction, List<DataStore> stores, Map<Integer, List<CatalogColumn>> columns, RelRoot sourceRel, long tableId, MaterializedCriteria materializedCriteria ) {
         addMaterializedInfo( tableId, materializedCriteria );
 
         Statement sourceStatement = transaction.createStatement();
-        Statement targetStatement = transaction.createStatement();
         List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
         DataMigrator dataMigrator = transaction.getDataMigrator();
 
         List<Integer> ids = new ArrayList<>();
         for ( DataStore store : stores ) {
             ids.add( store.getAdapterId() );
-        }
-
-        //TODO IG: handle if you have more than one id
-        for ( int id : ids ) {
-            for ( CatalogColumn catalogColumn : columns ) {
-                columnPlacements.add( Catalog.getInstance().getColumnPlacement( id, catalogColumn.id ) );
-            }
         }
 
         RelOptCluster cluster = RelOptCluster.create(
@@ -252,29 +246,28 @@ public class MaterializedManagerImpl extends MaterializedManager {
 
         prepareNode( sourceRel.rel, cluster, null );
 
-        RelRoot targetRel = dataMigrator.buildInsertStatement( targetStatement, columnPlacements );
+        for ( int id : ids ) {
+            Statement targetStatement = transaction.createStatement();
+            columnPlacements.clear();
 
-        dataMigrator.executeQuery( columns, sourceRel, sourceStatement, targetStatement, targetRel, true );
+            columns.get( id ).forEach( column -> columnPlacements.add( Catalog.getInstance().getColumnPlacement( id, column.id ) ) );
+
+            RelRoot targetRel = dataMigrator.buildInsertStatement( targetStatement, columnPlacements );
+
+            dataMigrator.executeQuery( columns.get( id ), sourceRel, sourceStatement, targetStatement, targetRel, true );
+        }
 
     }
 
 
-    public void updateData( Transaction transaction, List<DataStore> stores, List<CatalogColumn> columns, RelRoot sourceRel, RelCollation relCollation ) {
+    public void updateData( Transaction transaction, List<DataStore> stores, Map<Integer, List<CatalogColumn>> columns, RelRoot sourceRel, RelCollation relCollation ) {
         Statement sourceStatement = transaction.createStatement();
-        Statement targetStatement = transaction.createStatement();
         List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
         DataMigrator dataMigrator = transaction.getDataMigrator();
 
         List<Integer> ids = new ArrayList<>();
         for ( DataStore store : stores ) {
             ids.add( store.getAdapterId() );
-        }
-
-        //TODO IG: handle if you have more than one id
-        for ( int id : ids ) {
-            for ( CatalogColumn catalogColumn : columns ) {
-                columnPlacements.add( Catalog.getInstance().getColumnPlacement( id, catalogColumn.id ) );
-            }
         }
 
         RelOptCluster cluster = RelOptCluster.create(
@@ -285,13 +278,20 @@ public class MaterializedManagerImpl extends MaterializedManager {
 
         RelRoot targetRel;
 
-        //delete all data
-        targetRel = dataMigrator.buildDeleteStatement( targetStatement, columnPlacements );
-        dataMigrator.executeQuery( columns, sourceRel, sourceStatement, targetStatement, targetRel, true );
+        for ( int id : ids ) {
+            columnPlacements.clear();
+            Statement targetStatement = transaction.createStatement();
+            columns.get( id ).forEach( column -> columnPlacements.add( Catalog.getInstance().getColumnPlacement( id, column.id ) ) );
 
-        //insert new data
-        targetRel = dataMigrator.buildInsertStatement( targetStatement, columnPlacements );
-        dataMigrator.executeQuery( columns, sourceRel, sourceStatement, targetStatement, targetRel, true );
+            //delete all data
+            targetRel = dataMigrator.buildDeleteStatement( targetStatement, columnPlacements );
+            dataMigrator.executeQuery( columns.get( id ), sourceRel, sourceStatement, targetStatement, targetRel, true );
+
+            //insert new data
+            targetRel = dataMigrator.buildInsertStatement( targetStatement, columnPlacements );
+            dataMigrator.executeQuery( columns.get( id ), sourceRel, sourceStatement, targetStatement, targetRel, true );
+
+        }
 
     }
 

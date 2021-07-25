@@ -18,6 +18,7 @@ package org.polypheny.db.materializedView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -58,7 +59,7 @@ public abstract class MaterializedManager {
     //public abstract void updateData( Transaction transaction, List<DataStore> stores, List<CatalogColumn> columns, RelRoot sourceRelRoot, RelCollation relCollation );
 
 
-    public abstract void addData( Transaction transaction, List<DataStore> stores, List<CatalogColumn> addedColumns, RelRoot relRoot, long tableId, MaterializedCriteria materializedCriteria );
+    public abstract void addData( Transaction transaction, List<DataStore> stores, Map<Integer, List<CatalogColumn>> addedColumns, RelRoot relRoot, long tableId, MaterializedCriteria materializedCriteria );
 
     public abstract void addTables( Transaction transaction, List<String> names );
 

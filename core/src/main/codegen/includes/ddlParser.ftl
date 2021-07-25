@@ -341,7 +341,8 @@ SqlCreate SqlCreateMaterializedView(Span s, boolean replace) :
     final SqlIdentifier id;
     SqlNodeList columnList = null;
     final SqlNode query;
-    SqlIdentifier store = null;
+    SqlIdentifier storeName = null;
+    List<SqlIdentifier>  store = new ArrayList<SqlIdentifier>();
     String freshnessType = null;
     Integer time = null;
     SqlIdentifier freshnessId = null;
@@ -350,7 +351,10 @@ SqlCreate SqlCreateMaterializedView(Span s, boolean replace) :
     <MATERIALIZED><VIEW> id = CompoundIdentifier()
     [ columnList = ParenthesizedSimpleIdentifierList() ]
     <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
-    [ <ON> <STORE> store = SimpleIdentifier() ]
+    [ <ON> <STORE> storeName = SimpleIdentifier() { store.add(storeName); }
+                (
+                <COMMA> storeName = SimpleIdentifier() { store.add(storeName); }
+                    )*]
     [ <FRESHNESS>
                     (
                         (<INTERVAL> time=UnsignedIntLiteral() freshnessId=CompoundIdentifier())

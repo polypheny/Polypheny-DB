@@ -18,7 +18,6 @@ package org.polypheny.db.sql.ddl;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
-import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -62,7 +61,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
     private final SqlNodeList columnList;
     @Getter
     private final SqlNode query;
-    private final SqlIdentifier store;
+    private final List<SqlIdentifier> store;
     private String freshnessType;
     private final Integer freshnessTime;
     private final SqlIdentifier freshnessId;
@@ -79,7 +78,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
             SqlIdentifier name,
             SqlNodeList columnList,
             SqlNode query,
-            SqlIdentifier store,
+            List<SqlIdentifier> store,
             String freshnessType,
             Integer freshnessTime,
             SqlIdentifier freshnessId ) {
@@ -123,8 +122,17 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaNotFound( name.toString() ) );
         }
 
-        List<DataStore> stores = store != null ? ImmutableList.of( getDataStoreInstance( store ) ) : null;
-        PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
+        List<DataStore> stores;
+        if ( store.size() > 0 ) {
+            List<DataStore> storeList = new ArrayList<>();
+            store.forEach( s -> storeList.add( getDataStoreInstance( s ) ) );
+            stores = storeList;
+        } else {
+            stores = null;
+        }
+
+        //List<DataStore> stores = store != null ? ImmutableList.of( getDataStoreInstance( store ) ) : null;
+        PlacementType placementType = store.size() > 0 ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
 
         SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
         RelRoot relRoot = sqlProcessor.translate(
@@ -249,9 +257,12 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
         writer.newlineAndIndent();
         query.unparse( writer, 0, 0 );
 
-        if ( store != null ) {
+        if ( store.size() > 0 ) {
             writer.keyword( "ON STORE" );
-            store.unparse( writer, 0, 0 );
+            for ( SqlIdentifier s : store ) {
+                s.unparse( writer, 0, 0 );
+            }
+
         }
         if ( freshnessType != null ) {
             writer.keyword( "FRESHNESS" );

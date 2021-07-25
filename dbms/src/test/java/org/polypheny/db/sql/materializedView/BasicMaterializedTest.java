@@ -482,7 +482,111 @@ public class BasicMaterializedTest {
     }
 
 
+    @Test
+    public void testOneStores() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                // Deploy additional store
+                statement.executeUpdate( "ALTER ADAPTERS ADD \"store3\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                        + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+
+                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
+
+                statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable ON STORE \"store3\" FRESHNESS INTERVAL 100 \"milliseconds\" " );
+                waiter.await( 1, TimeUnit.SECONDS );
+                try {
+
+                    statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
+                    connection.commit();
+
+                    waiter.await( 1, TimeUnit.SECONDS );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1 }
+                            ) );
+
+                    statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
+                    connection.commit();
+
+                    waiter.await( 1, TimeUnit.SECONDS );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3 }
+                            )
+                    );
+
+                } finally {
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
+                    statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP \"store3\"" );
+                }
+            } catch ( InterruptedException e ) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+    @Test
+    public void testTwoStores() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                // Deploy additional store
+                statement.executeUpdate( "ALTER ADAPTERS ADD \"store2\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                        + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+                // Deploy additional store
+                statement.executeUpdate( "ALTER ADAPTERS ADD \"store3\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                        + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+
+                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
+
+                statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable ON STORE \"store2\", \"store3\" FRESHNESS INTERVAL 100 \"milliseconds\" " );
+                waiter.await( 1, TimeUnit.SECONDS );
+                try {
+
+                    statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
+                    connection.commit();
+
+                    waiter.await( 1, TimeUnit.SECONDS );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1 }
+                            ) );
+
+                    statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
+                    connection.commit();
+
+                    waiter.await( 1, TimeUnit.SECONDS );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3 }
+                            )
+                    );
+
+                } finally {
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
+                    statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP \"store3\"" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP \"store2\"" );
+                }
+            } catch ( InterruptedException e ) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     /*
+
     @Test
     public void testComplexFreshnessUpdate() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -516,6 +620,7 @@ public class BasicMaterializedTest {
             }
         }
     }
+
 
     @Test
     public void testTwoFreshnessIntervals() throws SQLException {
@@ -622,7 +727,7 @@ public class BasicMaterializedTest {
         }
     }
 
-     */
+*/
 
 
 }

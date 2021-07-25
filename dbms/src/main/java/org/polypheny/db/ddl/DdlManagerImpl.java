@@ -1404,7 +1404,7 @@ public class DdlManagerImpl extends DdlManager {
                 materializedCriteria
         );
 
-        List<CatalogColumn> addedColumns = new LinkedList<>();
+        Map<Integer, List<CatalogColumn>> addedColumns = new HashMap<>();
 
         for ( ColumnInformation column : columns ) {
             long columnId = catalog.addColumn(
@@ -1421,16 +1421,26 @@ public class DdlManagerImpl extends DdlManager {
                     column.collation );
 
             for ( DataStore s : stores ) {
+                int adapterId = s.getAdapterId();
                 catalog.addColumnPlacement(
-                        s.getAdapterId(),
+                        adapterId,
                         columnId,
                         placementType,
                         null,
                         null,
                         null,
                         null );
-                addedColumns.add( catalog.getColumn( columnId ) );
+
+                List<CatalogColumn> catalogColumns;
+                if ( addedColumns.containsKey( adapterId ) ) {
+                    catalogColumns = addedColumns.get( adapterId );
+                } else {
+                    catalogColumns = new ArrayList<>();
+                }
+                catalogColumns.add( catalog.getColumn( columnId ) );
+                addedColumns.put( adapterId, catalogColumns );
             }
+
         }
 
         CatalogMaterialized catalogMaterialized = (CatalogMaterialized) catalog.getTable( tableId );
@@ -1443,8 +1453,6 @@ public class DdlManagerImpl extends DdlManager {
 
 
     }
-
-
 
 
     private List<ColumnInformation> getColumnInformation( List<String> projectedColumns, RelDataType fieldList ) {

@@ -88,6 +88,7 @@ public class RestTest {
                         + "tvarchar VARCHAR(20) NOT NULL, "
                         + "PRIMARY KEY (tinteger) )" );
                 statement.executeUpdate( "CREATE VIEW test.viewtest AS SELECT * FROM test.resttest" );
+                statement.executeUpdate( "CREATE MATERIALIZED VIEW test.materializedtest AS SELECT test.resttest.tinteger FROM test.resttest FRESHNESS INTERVAL 10 \"seconds\" " );
                 connection.commit();
             }
         }
@@ -99,6 +100,7 @@ public class RestTest {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 try {
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW test.materializedtest" );
                     statement.executeUpdate( "DROP VIEW test.viewtest" );
                     statement.executeUpdate( "DROP TABLE test.resttest" );
                 } catch ( SQLException e ) {
@@ -228,6 +230,9 @@ public class RestTest {
         Assert.assertEquals( "{\"result\":[],\"size\":0}",
                 executeRest( request ).getBody() );
 
+        request = Unirest.get( "{protocol}://{host}:{port}/restapi/v1/res/test.materializedtest" ).queryString( "test.materializedtest.tinteger", "=" + 9876 );
+        Assert.assertEquals( "{\"result\":[],\"size\":0}",
+                executeRest( request ).getBody() );
     }
 
 
