@@ -630,14 +630,13 @@ public class BasicMaterializedTest {
                 statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
                 statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
 
-                statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestDep AS SELECT * FROM viewTestDepTable FRESHNESS INTERVAL 100 \"milliseconds\"" );
+                statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestDep AS SELECT * FROM viewTestDepTable FRESHNESS INTERVAL 500 \"milliseconds\"" );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 100 \"milliseconds\" " );
                 connection.commit();
                 waiter.await( 1, TimeUnit.SECONDS );
                 try {
 
                     statement.executeUpdate( "INSERT INTO viewTestDepTable VALUES ( 1, 'IT', 1)");
-                    connection.commit();
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                     connection.commit();
 
@@ -655,7 +654,6 @@ public class BasicMaterializedTest {
                             ) );
 
                     statement.executeUpdate( "INSERT INTO viewTestDepTable VALUES ( 2, 'Sales', 2), ( 3, 'HR', 3)");
-                    connection.commit();
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
                     connection.commit();
 
@@ -688,8 +686,7 @@ public class BasicMaterializedTest {
             }
         }
     }
-
-
+*/
 
     @Test
     public void testDropFreshnessInterval() throws SQLException {
@@ -726,8 +723,6 @@ public class BasicMaterializedTest {
             }
         }
     }
-
-*/
 
 
 }

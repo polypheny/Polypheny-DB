@@ -53,6 +53,7 @@ import org.polypheny.db.rel.SingleRel;
 import org.polypheny.db.rel.logical.LogicalViewTableScan;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.DeadlockException;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
@@ -199,7 +200,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
             } catch ( DeadlockException e ) {
                 throw new RuntimeException( e );
             }
-            updateData( transaction, dataStores, columns, RelRoot.of( catalogMaterialized.getDefinition(), SqlKind.SELECT ), relCollation );
+            updateData( transaction, dataStores, columns, RelRoot.of( catalogMaterialized.getDefinition(), SqlKind.SELECT ), relCollation, catalogMaterialized.name );
             commitTransaction( transaction );
 
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
@@ -260,8 +261,9 @@ public class MaterializedManagerImpl extends MaterializedManager {
     }
 
 
-    public void updateData( Transaction transaction, List<DataStore> stores, Map<Integer, List<CatalogColumn>> columns, RelRoot sourceRel, RelCollation relCollation ) {
+    public void updateData( Transaction transaction, List<DataStore> stores, Map<Integer, List<CatalogColumn>> columns, RelRoot sourceRel, RelCollation relCollation, String viewName ) {
         Statement sourceStatement = transaction.createStatement();
+        Statement deleteStatement = transaction.createStatement();
         List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
         DataMigrator dataMigrator = transaction.getDataMigrator();
 
@@ -281,11 +283,14 @@ public class MaterializedManagerImpl extends MaterializedManager {
         for ( int id : ids ) {
             columnPlacements.clear();
             Statement targetStatement = transaction.createStatement();
+
             columns.get( id ).forEach( column -> columnPlacements.add( Catalog.getInstance().getColumnPlacement( id, column.id ) ) );
+            RelBuilder relBuilder = RelBuilder.create( deleteStatement );
+            RelNode relNode = relBuilder.scan( viewName ).build();
 
             //delete all data
             targetRel = dataMigrator.buildDeleteStatement( targetStatement, columnPlacements );
-            dataMigrator.executeQuery( columns.get( id ), sourceRel, sourceStatement, targetStatement, targetRel, true );
+            dataMigrator.executeQuery( columns.get( id ), RelRoot.of( relNode, SqlKind.SELECT ), deleteStatement, targetStatement, targetRel, true );
 
             //insert new data
             targetRel = dataMigrator.buildInsertStatement( targetStatement, columnPlacements );

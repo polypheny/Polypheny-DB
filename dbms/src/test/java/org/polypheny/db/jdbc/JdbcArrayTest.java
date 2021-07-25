@@ -34,6 +34,7 @@ import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.excluded.HsqldbExcluded;
 import org.polypheny.db.excluded.MonetdbExcluded;
+import org.polypheny.db.excluded.PostgresqlExcluded;
 
 
 @SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
@@ -246,7 +247,7 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Category({ FileExcluded.class, CassandraExcluded.class })
+    @Category({ FileExcluded.class, CassandraExcluded.class, PostgresqlExcluded.class })
     public void arrayTypesMaterializedTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
