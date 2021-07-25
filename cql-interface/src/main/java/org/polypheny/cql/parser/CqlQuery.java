@@ -18,32 +18,31 @@ package org.polypheny.cql.parser;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.stream.Collectors;
+import org.polypheny.cql.cql2rel.Index;
+import org.polypheny.cql.utils.Tree.NodeType;
+import org.polypheny.cql.utils.Tree.TraversalType;
 
 public class CqlQuery {
 
-    public final QueryNode root;
+    public final QueryNode tableOperations;
+    public final QueryNode filters;
     public final ArrayList<SortSpecification> sortSpecs;
-    public final HashSet<String> indices;
-    public final HashMap<String, String> prefixQNPairs;
+    public final HashMap<String, Index> indexMapping;
 
 
-    public CqlQuery( QueryNode root, ArrayList<SortSpecification> sortSpecs,
-            HashSet<String> indices, HashMap<String, String> prefixQNPairs ) {
-        this.root = root;
+    public CqlQuery( QueryNode tableOperations, QueryNode filters, ArrayList<SortSpecification> sortSpecs, HashMap<String, Index> indexMapping ) {
+        this.tableOperations = tableOperations;
+        this.filters = filters;
         this.sortSpecs = sortSpecs;
-        this.indices = indices;
-        this.prefixQNPairs = prefixQNPairs;
+        this.indexMapping = indexMapping;
     }
 
 
     @Override
     public String toString() {
-        return "> " + prefixQNPairs.keySet().stream().map( k -> k + "=" + prefixQNPairs.get( k ) ).collect( Collectors.joining( " " ) ) + "\n" +
-                queryString( root ) + "\nsortby " +
-                sortSpecs.stream().map( Object::toString ).collect( Collectors.joining( " " ) ) + "\n"
-                + "[ " + indices.stream().map( Object::toString ).collect( Collectors.joining( ", " ) ) + " ]";
+        return queryString( tableOperations ) + queryString( filters ) + "\nsortby " +
+                sortSpecs.stream().map( Object::toString ).collect( Collectors.joining( " " ) ) + "\n";
     }
 
 
@@ -54,8 +53,11 @@ public class CqlQuery {
 
         StringBuilder stringBuilder = new StringBuilder();
 
-        root.TraverseInPlace( treeNode -> {
-            stringBuilder.append( "( " ).append( treeNode ).append( " )" );
+        root.traverse( TraversalType.INORDER, ( treeNode, nodeType, direction, data ) -> {
+            if ( nodeType == NodeType.DESTINATION_NODE ) {
+                stringBuilder.append( treeNode );
+            }
+            return true;
         } );
 
         return stringBuilder.toString();
