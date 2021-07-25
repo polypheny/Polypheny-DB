@@ -10,23 +10,20 @@ package org.polypheny.cql.parser;
 import java.io.BufferedReader;
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.HashMap;
 
-import org.polypheny.cql.parser.BooleanGroup;
-import org.polypheny.cql.parser.ComparatorSymbol;
-import org.polypheny.cql.parser.Comparator;
-import org.polypheny.cql.parser.Modifier;
-import org.polypheny.cql.parser.Relation;
-import org.polypheny.cql.parser.SortSpecification;
-import org.polypheny.cql.parser.SearchClause;
-import org.polypheny.cql.parser.QueryNode;
-import org.polypheny.cql.parser.CqlQuery;
+import org.polypheny.cql.cql2rel.Index;
+import org.polypheny.cql.exception.UnexpectedIndexFormatException;
+import org.polypheny.cql.exception.UnknownIndexException;
 
 public class Parser {
 
-    public Parser( String cql ) {
+    private CqlQuery cqlQuery = null;
+    private String databaseName;
+
+    public Parser( String cql, String databaseName ) {
         this( new BufferedReader( new StringReader( cql ) ) );
+        this.databaseName = databaseName;
     }
 
 }
@@ -51,7 +48,7 @@ TOKEN : { < COMPARATOR_GREATER_THAN_OR_EQUALS : ">=" > }
 TOKEN : { < COMPARATOR_LESS_THAN_OR_EQUALS : "<=" > }
 
 TOKEN : { < STRING_WITHOUT_DOUBLE_QUOTES : ( ~[ " ", "\t", "\n", "\r", "\f", "(", ")", "\"", "=", "<", ">", "/" ] )+ > }
-TOKEN: {
+TOKEN : {
     < STRING_WITH_DOUBLE_QUOTES :
         "\""
         (
@@ -65,90 +62,178 @@ TOKEN: {
 
 CqlQuery parse() :
 {
-    CqlQuery cqlQuery = null;
-    QueryNode root = null;
-    HashMap<String, String> prefixQNPairs = new HashMap<String, String>();
-    HashSet<String> indices = new HashSet<String>();
+    QueryNode tableOperations = null;
+    QueryNode filters = null;
     ArrayList<SortSpecification> sortSpecs = null;
+    HashMap<String, Index> indexMapping = new HashMap<String, Index>();
 }
 {
-    root = CQL_QUERY( prefixQNPairs, indices )
+    {
+        if ( cqlQuery != null ) {
+            return cqlQuery;
+        }
+    }
+
+    (
+        LOOKAHEAD( 3 )
+        tableOperations = SEARCH_TERM_QUERY( indexMapping )
+    |
+        LOOKAHEAD( 2 )
+        filters = CQL_QUERY( indexMapping )
+    |
+        tableOperations = SEARCH_TERM_QUERY( indexMapping )
+        < BOOLEAN_AND >
+        filters = CQL_QUERY( indexMapping )
+    )
     [
         < SORT_BY >
-        sortSpecs = SORT_SPECIFICATION_LIST( indices )
+        sortSpecs = SORT_SPECIFICATION_LIST( indexMapping )
     ]
     < EOF >
     {
-        cqlQuery = new CqlQuery( root, sortSpecs, indices, prefixQNPairs );
+        cqlQuery = new CqlQuery( tableOperations, filters, sortSpecs, indexMapping );
         return cqlQuery;
     }
 }
 
-QueryNode CQL_QUERY( HashMap<String, String> prefixQNPairs, HashSet<String> indices ) :
+QueryNode CQL_QUERY( HashMap<String, Index> indexMapping ) :
 {
     QueryNode root = null;
 }
 {
-    (
-        PREFIX_ASSIGNMENT( prefixQNPairs )
-    )*
-
-    root = SCOPED_CLAUSE( prefixQNPairs, indices )
+    root = SCOPED_CLAUSE( indexMapping )
     { return root; }
 }
 
-QueryNode SCOPED_CLAUSE( HashMap<String, String> prefixQNPairs, HashSet<String> indices ) :
+QueryNode SEARCH_TERM_QUERY( HashMap<String, Index> indexMapping ) :
+{
+    Token identifier;
+    BooleanGroup booleanGroup = null;
+    QueryNode root = null;
+}
+{
+    identifier = < STRING_WITHOUT_DOUBLE_QUOTES >
+    {
+        try {
+            Index index = Index.createIndex( identifier.image, databaseName );
+            indexMapping.put( identifier.image, index );
+        } catch ( UnexpectedIndexFormatException e ) {
+            throw new ParseException( e.getMessage() );
+        } catch ( UnknownIndexException e ) {
+            throw new ParseException( e.getMessage() );
+        }
+        root = new QueryNode(
+                SearchClause.createSearchTermOnlySearchClause( identifier.image )
+        );
+    }
+    (
+        LOOKAHEAD( 2 )
+        booleanGroup = BOOLEAN_GROUP()
+        identifier = < STRING_WITHOUT_DOUBLE_QUOTES >
+        {
+            if ( booleanGroup.booleanOperator != BooleanOperator.AND &&
+                 booleanGroup.booleanOperator != BooleanOperator.OR ) {
+                throw new ParseException( "Illegal use of boolean operator " + booleanGroup.booleanOperator.name()
+                 + ". Table operation's search terms should be separated by only AND or OR." );
+            }
+            try {
+                Index index = Index.createIndex( identifier.image, databaseName );
+                indexMapping.put( identifier.image, index );
+            } catch ( UnexpectedIndexFormatException e ) {
+                throw new ParseException( e.getMessage() );
+            } catch ( UnknownIndexException e ) {
+                throw new ParseException( e.getMessage() );
+            }
+            root = new QueryNode(
+                    root,
+                    booleanGroup,
+                    new QueryNode(
+                            SearchClause.createSearchTermOnlySearchClause( identifier.image )
+            ) );
+        }
+    )*
+    {
+        return root;
+    }
+}
+
+QueryNode SCOPED_CLAUSE( HashMap<String, Index> indexMapping ) :
 {
     QueryNode leftSearchClause = null;
     BooleanGroup booleanGroup = null;
     QueryNode rightSearchClause = null;
 }
 {
-    leftSearchClause = SEARCH_CLAUSE( prefixQNPairs, indices )
+    leftSearchClause = SEARCH_CLAUSE( indexMapping )
     (
         booleanGroup = BOOLEAN_GROUP()
-        rightSearchClause = SEARCH_CLAUSE( prefixQNPairs, indices )
-        { leftSearchClause = new QueryNode( leftSearchClause, booleanGroup, rightSearchClause ); }
+        rightSearchClause = SEARCH_CLAUSE( indexMapping )
+        {
+            leftSearchClause = new QueryNode( leftSearchClause, booleanGroup, rightSearchClause );
+        }
     )*
     { return leftSearchClause; }
 }
 
-QueryNode SEARCH_CLAUSE( HashMap<String, String> prefixQNPairs, HashSet<String> indices ) :
+QueryNode SEARCH_CLAUSE( HashMap<String, Index> indexMapping ) :
 {
     QueryNode queryNode = null;
     SearchClause searchClause = null;
-    String index = null;
+    Token indexToken = null;
     Relation relation = null;
     String searchTerm = null;
 }
 {
     (
         "("
-        queryNode = CQL_QUERY( prefixQNPairs, indices )
+        queryNode = CQL_QUERY( indexMapping )
         ")"
     |
-        index = IDENTIFIER()
-        [
-            relation = RELATION()
-            searchTerm = IDENTIFIER()
-            {
-                searchClause = new SearchClause( index, relation, searchTerm );
-                queryNode = new QueryNode( searchClause );
-                indices.add( index );
-            }
-        ]
+        indexToken = < STRING_WITHOUT_DOUBLE_QUOTES >
+        relation = RELATION()
+        searchTerm = IDENTIFIER()
         {
-            if ( queryNode == null ) {
-                searchTerm = index;
-                searchClause = new SearchClause( searchTerm );
-                queryNode = new QueryNode( searchClause );
+            String indexStr = indexToken.image;
+            try {
+                Index index;
+                if ( !indexMapping.containsKey( indexStr ) ) {
+                    index = Index.createIndex( indexStr, databaseName );
+                    indexMapping.put( indexStr, index );
+                }
+            } catch( UnexpectedIndexFormatException e ) {
+                throw new ParseException( e.getMessage() );
+            } catch ( UnknownIndexException e ) {
+                throw new ParseException( e.getMessage() );
             }
+
+            try {
+                String possibleIndexStr = searchTerm.trim();
+                Index index = indexMapping.get( possibleIndexStr );
+                if ( index == null ) {
+                    index = Index.createIndex( possibleIndexStr, databaseName );
+                    if ( index.isColumnIndex() ) {
+                        searchClause = SearchClause.createColumnFilterSearchClause( indexStr, relation, possibleIndexStr );
+                        indexMapping.put( possibleIndexStr, index );
+                    }
+                }
+            } catch( UnexpectedIndexFormatException e) {
+                // Do Nothing
+            } catch ( UnknownIndexException e ) {
+                // Do Nothing
+            }
+
+            if ( searchClause == null ) {
+                searchClause = SearchClause.createLiteralFilterSearchClause( indexStr, relation, searchTerm );
+            }
+            queryNode = new QueryNode( searchClause );
         }
     )
-    { return queryNode; }
+    {
+        return queryNode;
+    }
 }
 
-ArrayList<SortSpecification> SORT_SPECIFICATION_LIST( HashSet<String> indices ) :
+ArrayList<SortSpecification> SORT_SPECIFICATION_LIST( HashMap<String, Index> indexMapping ) :
 {
     ArrayList<SortSpecification> sortSpecs = new ArrayList<SortSpecification>();
     SortSpecification sortSpec = null;
@@ -157,13 +242,31 @@ ArrayList<SortSpecification> SORT_SPECIFICATION_LIST( HashSet<String> indices ) 
     sortSpec = SORT_SPECIFICATION()
     {
         sortSpecs.add( sortSpec );
-        indices.add( sortSpec.index );
+        try {
+            if ( indexMapping.containsKey( sortSpec.index ) ) {
+                Index index = Index.createIndex( sortSpec.index, databaseName );
+                indexMapping.put( sortSpec.index, index );
+            }
+        } catch( UnexpectedIndexFormatException e ) {
+            throw new ParseException( e.getMessage() );
+        } catch( UnknownIndexException e ) {
+            throw new ParseException( e.getMessage() );
+        }
     }
     (
         sortSpec = SORT_SPECIFICATION()
         {
             sortSpecs.add( sortSpec );
-            indices.add( sortSpec.index );
+            try {
+                if ( indexMapping.containsKey( sortSpec.index ) ) {
+                    Index index = Index.createIndex( sortSpec.index, databaseName );
+                    indexMapping.put( sortSpec.index, index );
+                }
+            } catch( UnexpectedIndexFormatException e ) {
+                throw new ParseException( e.getMessage() );
+            } catch ( UnknownIndexException e ) {
+                throw new ParseException( e.getMessage() );
+            }
         }
     )*
     { return sortSpecs; }
@@ -172,43 +275,21 @@ ArrayList<SortSpecification> SORT_SPECIFICATION_LIST( HashSet<String> indices ) 
 SortSpecification SORT_SPECIFICATION() :
 {
     SortSpecification sortSpec = null;
-    String index = null;
+    String indexStr = null;
     ArrayList<Modifier> modifiers = null;
 }
 {
-    index = IDENTIFIER()
+    indexStr = IDENTIFIER()
     [
         modifiers = MODIFIER_LIST()
-        { sortSpec = new SortSpecification( index, modifiers ); }
+        { sortSpec = new SortSpecification( indexStr, modifiers ); }
     ]
     {
         if ( sortSpec == null ) {
-            sortSpec = new SortSpecification( index );
+            sortSpec = new SortSpecification( indexStr );
         }
 
         return sortSpec;
-    }
-}
-
-void PREFIX_ASSIGNMENT( HashMap<String, String> prefixQNPairs ) :
-{
-    String prefix = null;
-    String qualifiedName = null;
-}
-{
-    < COMPARATOR_GREATER_THAN >
-    prefix = IDENTIFIER()
-    [
-        < COMPARATOR_SERVER_CHOICE >
-        qualifiedName = IDENTIFIER()
-    ]
-    {
-        if ( qualifiedName == null ) {
-            qualifiedName = prefix;
-            prefix = "";
-        }
-
-        prefixQNPairs.put( prefix, qualifiedName );
     }
 }
 
@@ -266,12 +347,14 @@ ArrayList<Modifier> MODIFIER_LIST() :
         modifier = MODIFIER()
         { modifiers.add( modifier ); }
     )*
-    { return modifiers; }
+    {
+        return modifiers;
+    }
 }
 
 Modifier MODIFIER() :
 {
-    Modifier modifier = null    ;
+    Modifier modifier = null;
     String modifierName = null;
     String modifierValue = "";
     Comparator comparator = new Comparator( ComparatorSymbol.SERVER_CHOICE );
@@ -298,7 +381,9 @@ String IDENTIFIER() :
 {
     (
         t = < STRING_WITHOUT_DOUBLE_QUOTES >
-        { identifier = t.image; }
+        {
+            identifier = t.image;
+        }
     |
         t = < STRING_WITH_DOUBLE_QUOTES >
         {
@@ -329,7 +414,9 @@ BooleanOperator BOOLEAN_OPERATOR() :
         < BOOLEAN_PROX >
         { booleanOperator = BooleanOperator.PROX; }
     )
-    { return booleanOperator; }
+    {
+        return booleanOperator;
+    }
 }
 
 Comparator COMPARATOR() :
@@ -363,5 +450,7 @@ Comparator COMPARATOR() :
         named_comparator = IDENTIFIER()
         { comparator = new Comparator( named_comparator ); }
     )
-    { return comparator; }
+    {
+        return comparator;
+    }
 }
