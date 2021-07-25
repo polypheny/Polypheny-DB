@@ -13,6 +13,7 @@ buildscript {
 }
 
 dependencies {
+    implementation project(":core")
     javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
 }
 
