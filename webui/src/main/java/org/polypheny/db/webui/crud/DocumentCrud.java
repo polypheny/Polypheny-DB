@@ -85,7 +85,6 @@ public class DocumentCrud {
             Result result = new Result( 1 ).setGeneratedQuery( mql ).setXid( statement.getTransaction().getXid().toString() );
             results.add( result );
         } else {
-            //RelRoot validated = mqlProcessor.validate( statement.getTransaction(), parsed );
             RelRoot logicalRoot = mqlProcessor.translate( statement, parsed );
 
             // Prepare

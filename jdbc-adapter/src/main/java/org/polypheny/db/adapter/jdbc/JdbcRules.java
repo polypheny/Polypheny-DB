@@ -428,7 +428,8 @@ public class JdbcRules {
                                     && !userDefinedFunctionInProject( project )
                                     && !knnFunctionInProject( project )
                                     && !multimediaFunctionInProject( project )
-                                    && !DocumentRules.jsonInProject( project )
+                                    && !DocumentRules.containsJson( project )
+                                    && !DocumentRules.containsDocument( project )
                                     && (out.dialect.supportsNestedArrays() || !itemOperatorInProject( project )),
                     Convention.NONE, out, relBuilderFactory, "JdbcProjectRule." + out );
         }
@@ -544,7 +545,8 @@ public class JdbcRules {
                             !userDefinedFunctionInFilter( filter )
                                     && !knnFunctionInFilter( filter )
                                     && !multimediaFunctionInFilter( filter )
-                                    && !DocumentRules.jsonInFilter( filter )
+                                    && !DocumentRules.containsJson( filter )
+                                    && !DocumentRules.containsDocument( filter )
                                     && (out.dialect.supportsNestedArrays() || (!itemOperatorInFilter( filter ) && isStringComparableArrayType( filter )))),
                     Convention.NONE, out, relBuilderFactory, "JdbcFilterRule." + out );
         }

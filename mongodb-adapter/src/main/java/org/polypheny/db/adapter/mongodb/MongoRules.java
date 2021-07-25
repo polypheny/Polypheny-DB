@@ -56,7 +56,6 @@ import org.polypheny.db.adapter.mongodb.MongoRel.Implementor;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.util.MongoTypeUtil;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.document.DocumentRules;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -401,7 +400,7 @@ public class MongoRules {
 
 
         private MongoFilterRule() {
-            super( LogicalFilter.class, filter -> !DocumentRules.jsonInFilter( filter ), Convention.NONE, MongoRel.CONVENTION, "MongoFilterRule" );
+            super( LogicalFilter.class, filter -> true, Convention.NONE, MongoRel.CONVENTION, "MongoFilterRule" );
         }
 
 
@@ -428,7 +427,7 @@ public class MongoRules {
 
 
         private MongoProjectRule() {
-            super( LogicalProject.class, project -> !DocumentRules.jsonInProject( project ), Convention.NONE, MongoRel.CONVENTION, "MongoProjectRule" );
+            super( LogicalProject.class, project -> true, Convention.NONE, MongoRel.CONVENTION, "MongoProjectRule" );
         }
 
 
@@ -523,7 +522,7 @@ public class MongoRules {
 
 
         MongoTableModificationRule() {
-            super( TableModify.class, r -> !DocumentRules.jsonInModify( r ), Convention.NONE, MongoRel.CONVENTION, "MongoTableModificationRule." + MongoRel.CONVENTION );
+            super( TableModify.class, r -> true, Convention.NONE, MongoRel.CONVENTION, "MongoTableModificationRule." + MongoRel.CONVENTION );
         }
 
 

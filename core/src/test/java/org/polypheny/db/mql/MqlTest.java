@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.mql.fun.MqlStdOperatorTable;
 import org.polypheny.db.mql.parser.MqlParseException;
 import org.polypheny.db.mql.parser.MqlParser;
 import org.polypheny.db.mql.parser.MqlParser.MqlParserConfig;
@@ -37,7 +38,7 @@ public abstract class MqlTest {
     @Getter
     private static final Map<String, SqlKind> logicalOperators;
 
-    public static final SqlOperator eq = SqlStdOperatorTable.DOC_EQ;
+    public static final SqlOperator eq = MqlStdOperatorTable.DOC_EQ;
     public static final SqlOperator ne = SqlStdOperatorTable.NOT_EQUALS;
     public static final SqlOperator gt = SqlStdOperatorTable.GREATER_THAN;
     public static final SqlOperator gte = SqlStdOperatorTable.GREATER_THAN_OR_EQUAL;

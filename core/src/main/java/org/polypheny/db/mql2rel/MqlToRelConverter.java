@@ -52,6 +52,7 @@ import org.polypheny.db.mql.MqlInsert;
 import org.polypheny.db.mql.MqlNode;
 import org.polypheny.db.mql.MqlQueryStatement;
 import org.polypheny.db.mql.MqlUpdate;
+import org.polypheny.db.mql.fun.MqlStdOperatorTable;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
@@ -99,7 +100,6 @@ public class MqlToRelConverter {
     private final static List<String> operators;
     private final static Map<String, List<SqlOperator>> gates;
     private final static Map<String, SqlOperator> mathOperators;
-    private final static Map<String, SqlOperator> elemMathOperators;
     private static final Map<String, SqlAggFunction> accumulators;
     private final RelDataType any;
     private final RelDataType nullableAny;
@@ -121,7 +121,7 @@ public class MqlToRelConverter {
 
         mappings.put( "$lt", SqlStdOperatorTable.LESS_THAN );
         mappings.put( "$gt", SqlStdOperatorTable.GREATER_THAN );
-        mappings.put( "$eq", SqlStdOperatorTable.DOC_EQ );
+        mappings.put( "$eq", MqlStdOperatorTable.DOC_EQ );
         mappings.put( "$ne", SqlStdOperatorTable.NOT_EQUALS );
         mappings.put( "$lte", SqlStdOperatorTable.LESS_THAN_OR_EQUAL );
         mappings.put( "$gte", SqlStdOperatorTable.GREATER_THAN_OR_EQUAL );
@@ -143,17 +143,6 @@ public class MqlToRelConverter {
         operators.addAll( mappings.keySet() );
         operators.addAll( gates.keySet() );
         operators.addAll( mathOperators.keySet() );
-
-        // list/array predicates $elemMatch$
-
-        elemMathOperators = new HashMap<>();
-
-        elemMathOperators.put( "$lt", SqlStdOperatorTable.DOC_ELEM_LT );
-        elemMathOperators.put( "$gt", SqlStdOperatorTable.DOC_ELEM_GT );
-        elemMathOperators.put( "$eq", SqlStdOperatorTable.DOC_ELEM_EQ );
-        elemMathOperators.put( "$ne", SqlStdOperatorTable.DOC_ELEM_NE );
-        elemMathOperators.put( "$lte", SqlStdOperatorTable.DOC_ELEM_LTE );
-        elemMathOperators.put( "$gte", SqlStdOperatorTable.DOC_ELEM_GTE );
 
         accumulators = new HashMap<>();
         //$addToSet
@@ -288,11 +277,11 @@ public class MqlToRelConverter {
                     updateOp = UpdateOperation.REPLACE;
                     break;
                 case "$min":
-                    updates.putAll( translateMinMaxMul( entry.getValue().asDocument(), rowType, SqlStdOperatorTable.DOC_UPDATE_MIN ) );
+                    updates.putAll( translateMinMaxMul( entry.getValue().asDocument(), rowType, MqlStdOperatorTable.DOC_UPDATE_MIN ) );
                     updateOp = UpdateOperation.REPLACE;
                     break;
                 case "$max":
-                    updates.putAll( translateMinMaxMul( entry.getValue().asDocument(), rowType, SqlStdOperatorTable.DOC_UPDATE_MAX ) );
+                    updates.putAll( translateMinMaxMul( entry.getValue().asDocument(), rowType, MqlStdOperatorTable.DOC_UPDATE_MAX ) );
                     updateOp = UpdateOperation.REPLACE;
                     break;
                 case "$mul":
@@ -399,7 +388,7 @@ public class MqlToRelConverter {
                     }
                     nodes.add( new RexCall(
                             jsonType,
-                            SqlStdOperatorTable.DOC_UPDATE_RENAME,
+                            MqlStdOperatorTable.DOC_UPDATE_RENAME,
                             Arrays.asList(
                                     getIdentifier( parentEntry.getKey(), node.getRowType() ),
                                     getStringArray( oldNames ),
@@ -425,7 +414,7 @@ public class MqlToRelConverter {
                     }
                     nodes.add( new RexCall(
                             jsonType,
-                            SqlStdOperatorTable.DOC_UPDATE_REPLACE,
+                            MqlStdOperatorTable.DOC_UPDATE_REPLACE,
                             Arrays.asList(
                                     getIdentifier( parentEntry.getKey(), node.getRowType() ),
                                     getStringArray( names1 ),
@@ -450,7 +439,7 @@ public class MqlToRelConverter {
                     }
                     nodes.add( new RexCall(
                             jsonType,
-                            SqlStdOperatorTable.DOC_UPDATE_REMOVE,
+                            MqlStdOperatorTable.DOC_UPDATE_REMOVE,
                             Arrays.asList(
                                     getIdentifier( parentEntry.getKey(), node.getRowType() ),
                                     getStringArray( names1 ) ) ) );
@@ -478,7 +467,7 @@ public class MqlToRelConverter {
         for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
             RexNode id = getIdentifier( entry.getKey(), rowType );
             RexNode value = convertLiteral( entry.getValue() );
-            RexCall addToSet = new RexCall( jsonType, SqlStdOperatorTable.DOC_UPDATE_ADD_TO_SET, Arrays.asList( id, value ) );
+            RexCall addToSet = new RexCall( jsonType, MqlStdOperatorTable.DOC_UPDATE_ADD_TO_SET, Arrays.asList( id, value ) );
 
             updates.put( entry.getKey(), addToSet );
         }
@@ -768,7 +757,7 @@ public class MqlToRelConverter {
         }
         RexNode id = getIdentifier( path, node.getRowType() );
 
-        RexCall call = new RexCall( any, SqlStdOperatorTable.DOC_UNWIND, Collections.singletonList( id ) );
+        RexCall call = new RexCall( any, MqlStdOperatorTable.DOC_UNWIND, Collections.singletonList( id ) );
 
         List<String> names = new ArrayList<>();
         List<RexNode> values = new ArrayList<>();
@@ -1129,7 +1118,7 @@ public class MqlToRelConverter {
 
                     if ( losesContext && id != null ) {
                         RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
-                        return new RexCall( type, SqlStdOperatorTable.DOC_EQ, Arrays.asList( id, node ) );
+                        return new RexCall( type, MqlStdOperatorTable.DOC_EQ, Arrays.asList( id, node ) );
                     } else {
                         return node;
                     }
@@ -1187,7 +1176,7 @@ public class MqlToRelConverter {
             throw new RuntimeException( "After a $slice projection a number or an array of 2 is needed" );
         }
 
-        return new RexCall( any, SqlStdOperatorTable.DOC_SLICE, Arrays.asList( id, convertLiteral( skip ), convertLiteral( elements ) ) );
+        return new RexCall( any, MqlStdOperatorTable.DOC_SLICE, Arrays.asList( id, convertLiteral( skip ), convertLiteral( elements ) ) );
     }
 
 
@@ -1198,7 +1187,7 @@ public class MqlToRelConverter {
             if ( nodes.size() > 2 ) {
                 throw new RuntimeException( msg );
             }
-            return new RexCall( any, SqlStdOperatorTable.DOC_ITEM, Arrays.asList( nodes.get( 0 ), nodes.get( 1 ) ) );
+            return new RexCall( any, MqlStdOperatorTable.DOC_ITEM, Arrays.asList( nodes.get( 0 ), nodes.get( 1 ) ) );
 
         } else {
             throw new RuntimeException( msg );
@@ -1307,7 +1296,7 @@ public class MqlToRelConverter {
                 nodes.add( convertLiteral( bsonValue ) );
             }
 
-            return getFixedCall( nodes, SqlStdOperatorTable.DOC_EQ, PolyType.BOOLEAN );
+            return getFixedCall( nodes, MqlStdOperatorTable.DOC_EQ, PolyType.BOOLEAN );
         }
 
     }
@@ -1453,7 +1442,7 @@ public class MqlToRelConverter {
     private RexCall getRegex( String stringRegex, String options, String parentKey, RelDataType rowType ) {
         return new RexCall(
                 cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
-                SqlStdOperatorTable.DOC_REGEX_MATCH,
+                MqlStdOperatorTable.DOC_REGEX_MATCH,
                 Arrays.asList(
                         getIdentifier( parentKey, rowType ),
                         convertLiteral( new BsonString( stringRegex ) ),
@@ -1511,7 +1500,7 @@ public class MqlToRelConverter {
 
     private RexNode convertJsonSchema( BsonValue bsonValue, RelDataType rowType ) {
         if ( bsonValue.isDocument() ) {
-            return new RexCall( nullableAny, SqlStdOperatorTable.DOC_JSON_MATCH, Collections.singletonList( RexInputRef.of( getIndexOfParentField( "_data", rowType ), rowType ) ) );
+            return new RexCall( nullableAny, MqlStdOperatorTable.DOC_JSON_MATCH, Collections.singletonList( RexInputRef.of( getIndexOfParentField( "_data", rowType ), rowType ) ) );
         } else {
             throw new RuntimeException( "After $jsonSchema there needs to follow a document" );
         }
@@ -1521,7 +1510,7 @@ public class MqlToRelConverter {
     private RexNode convertSize( BsonValue bsonValue, String parentKey, RelDataType rowType ) {
         if ( bsonValue.isNumber() ) {
             RexNode id = getIdentifier( parentKey, rowType );
-            return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), SqlStdOperatorTable.DOC_SIZE_MATCH, Arrays.asList( id, convertLiteral( bsonValue ) ) );
+            return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), MqlStdOperatorTable.DOC_SIZE_MATCH, Arrays.asList( id, convertLiteral( bsonValue ) ) );
         } else {
             throw new RuntimeException( "After $size there needs to follow a number" );
         }
@@ -1539,11 +1528,10 @@ public class MqlToRelConverter {
             nodes.add( convertEntry( entry.getKey(), parentKey, entry.getValue(), rowType ) );
         }
         this.elemMatchActive = false;
-        //RexCall op = new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), SqlStdOperatorTable.EQUALS, Arrays.asList( convertLiteral( new BsonInt32( 99 ) ), builder.makeAbstractCast( any, convertLiteral( new BsonInt32( 3 ) ) ) ) );
 
         RexNode op = getFixedCall( nodes, SqlStdOperatorTable.AND, PolyType.BOOLEAN );
 
-        return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), SqlStdOperatorTable.DOC_ELEM_MATCH, Arrays.asList( getIdentifier( parentKey, rowType ), op ) );
+        return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), MqlStdOperatorTable.DOC_ELEM_MATCH, Arrays.asList( getIdentifier( parentKey, rowType ), op ) );
     }
 
 
@@ -1555,7 +1543,7 @@ public class MqlToRelConverter {
 
             List<RexNode> operands = new ArrayList<>();
             for ( RexNode rexNode : arr ) {
-                operands.add( new RexCall( type, SqlStdOperatorTable.DOC_EQ, Arrays.asList( id, rexNode ) ) );
+                operands.add( new RexCall( type, MqlStdOperatorTable.DOC_EQ, Arrays.asList( id, rexNode ) ) );
             }
 
             return getFixedCall( operands, SqlStdOperatorTable.AND, PolyType.BOOLEAN );
@@ -1587,14 +1575,14 @@ public class MqlToRelConverter {
         }
         return new RexCall(
                 cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
-                SqlStdOperatorTable.DOC_TYPE_MATCH,
+                MqlStdOperatorTable.DOC_TYPE_MATCH,
                 Arrays.asList( getIdentifier( parentKey, rowType ), types ) );
 
     }
 
 
-    private RexNode negate( RexNode exists ) {
-        return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), SqlStdOperatorTable.NOT, Collections.singletonList( exists ) );
+    private RexNode negate( RexNode node ) {
+        return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), SqlStdOperatorTable.NOT, Collections.singletonList( node ) );
     }
 
 
@@ -1622,7 +1610,7 @@ public class MqlToRelConverter {
 
         return new RexCall(
                 any,
-                SqlStdOperatorTable.DOC_QUERY_VALUE,
+                MqlStdOperatorTable.DOC_QUERY_VALUE,
                 Arrays.asList(
                         useAccess
                                 ? builder.makeCorrel( rowType, new CorrelationId( index ) )
@@ -1634,7 +1622,7 @@ public class MqlToRelConverter {
 
     private RexNode translateJsonQuery( int index, RelDataType rowType, String key, List<String> excludes ) {
         RexCall filter = getNestedArray( excludes.stream().map( e -> Arrays.asList( e.split( "\\." ) ) ).collect( Collectors.toList() ) );
-        return new RexCall( any, SqlStdOperatorTable.DOC_QUERY_EXCLUDE, Arrays.asList( RexInputRef.of( index, rowType ), filter ) );
+        return new RexCall( any, MqlStdOperatorTable.DOC_QUERY_EXCLUDE, Arrays.asList( RexInputRef.of( index, rowType ), filter ) );
     }
 
 
@@ -1741,7 +1729,7 @@ public class MqlToRelConverter {
                 }
                 operands.add( filter );
             } else {
-                operands.add( new RexCall( type, isIn ? SqlStdOperatorTable.DOC_EQ : SqlStdOperatorTable.NOT_EQUALS, Arrays.asList( id, convertLiteral( literal ) ) ) );
+                operands.add( new RexCall( type, isIn ? MqlStdOperatorTable.DOC_EQ : SqlStdOperatorTable.NOT_EQUALS, Arrays.asList( id, convertLiteral( literal ) ) ) );
             }
         }
 
@@ -1930,7 +1918,7 @@ public class MqlToRelConverter {
                         // we attach the new values to the input bson
                         values.add( new RexCall(
                                 any,
-                                SqlStdOperatorTable.DOC_ADD_FIELDS,
+                                MqlStdOperatorTable.DOC_ADD_FIELDS,
                                 Arrays.asList(
                                         RexInputRef.of( dataIndex, rowType ),
                                         convertLiteral( new BsonString( entry.getKey() ) ),
@@ -1981,9 +1969,9 @@ public class MqlToRelConverter {
 
 
     enum UpdateOperation {
-        RENAME( SqlStdOperatorTable.DOC_UPDATE_RENAME ),
-        REPLACE( SqlStdOperatorTable.DOC_UPDATE_REPLACE ),
-        REMOVE( SqlStdOperatorTable.DOC_UPDATE_REMOVE );
+        RENAME( MqlStdOperatorTable.DOC_UPDATE_RENAME ),
+        REPLACE( MqlStdOperatorTable.DOC_UPDATE_REPLACE ),
+        REMOVE( MqlStdOperatorTable.DOC_UPDATE_REMOVE );
 
         @Getter
         private final SqlOperator operator;

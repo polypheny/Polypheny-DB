@@ -28,6 +28,7 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import org.junit.Test;
 import org.polypheny.db.mql.MqlTest;
+import org.polypheny.db.mql.fun.MqlStdOperatorTable;
 import org.polypheny.db.mql2rel.Mql2RelTest;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.Filter;
@@ -40,7 +41,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlJsonExistsFunction;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 
 public class Mql2RelFindTest extends Mql2RelTest {
 
@@ -66,7 +66,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
     public void testSingleMatch() {
         RelRoot root = translate( find( "\"_id\":\"value\"" ) );
         RexCall condition = getConditionTestFilter( root );
-        assertEquals( SqlStdOperatorTable.DOC_EQ, condition.op );
+        assertEquals( MqlStdOperatorTable.DOC_EQ, condition.op );
 
         assertTrue( condition.operands.get( 0 ).isA( SqlKind.INPUT_REF ) );
         assertEquals( 0, ((RexInputRef) condition.operands.get( 0 )).getIndex() );

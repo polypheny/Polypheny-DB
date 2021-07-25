@@ -1231,58 +1231,6 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
 
     public static final SqlSpecialOperator SIMILAR_TO = new SqlLikeOperator( "SIMILAR TO", SqlKind.SIMILAR, false );
 
-    // document model operators TODO DL move
-
-    public static final SqlDocEqualExpressionOperator DOC_EQ = new SqlDocEqualExpressionOperator( "DOC_EQ", SqlKind.EQUALS );
-
-    public static final SqlDocEqualExpressionOperator DOC_ELEM_EQ = new SqlDocEqualExpressionOperator( "DOC_ELEM_EQ", SqlKind.CONTAINS );
-
-    public static final SqlDocEqualExpressionOperator DOC_ELEM_NE = new SqlDocEqualExpressionOperator( "DOC_ELEM_NE", SqlKind.CONTAINS );
-
-    public static final SqlDocEqualExpressionOperator DOC_ELEM_LT = new SqlDocEqualExpressionOperator( "DOC_ELEM_LT", SqlKind.CONTAINS );
-
-    public static final SqlDocEqualExpressionOperator DOC_ELEM_LTE = new SqlDocEqualExpressionOperator( "DOC_ELEM_LTE", SqlKind.CONTAINS );
-
-    public static final SqlDocEqualExpressionOperator DOC_ELEM_GT = new SqlDocEqualExpressionOperator( "DOC_ELEM_GT", SqlKind.CONTAINS );
-
-    public static final SqlDocEqualExpressionOperator DOC_ELEM_GTE = new SqlDocEqualExpressionOperator( "DOC_ELEM_GTE", SqlKind.CONTAINS );
-
-    public static final SqlJsonValueExpressionOperator DOC_SIZE_MATCH = new SqlJsonValueExpressionOperator( "DOC_SIZE_MATCH", false );
-
-    public static final SqlJsonValueExpressionOperator DOC_JSON_MATCH = new SqlJsonValueExpressionOperator( "DOC_JSON_MATCH", false );
-
-    public static final SqlJsonValueExpressionOperator DOC_REGEX_MATCH = new SqlJsonValueExpressionOperator( "DOC_REGEX_MATCH", false );
-
-    public static final SqlJsonValueExpressionOperator DOC_TYPE_MATCH = new SqlJsonValueExpressionOperator( "DOC_TYPE_MATCH", false );
-
-    public static final SqlJsonValueExpressionOperator DOC_QUERY_VALUE = new SqlJsonValueExpressionOperator( "DOC_QUERY_VALUE", false );
-
-    public static final SqlJsonValueExpressionOperator DOC_SLICE = new SqlJsonValueExpressionOperator( "DOC_SLICE", false );
-
-    public static final SqlJsonValueExpressionOperator DOC_ITEM = new SqlJsonValueExpressionOperator( "DOC_ITEM", false );
-
-    public static final SqlJsonValueExpressionOperator DOC_QUERY_EXCLUDE = new SqlJsonValueExpressionOperator( "DOC_QUERY_EXCLUDE", false );
-
-    public static final SqlJsonValueExpressionOperator DOC_ADD_FIELDS = new SqlJsonValueExpressionOperator( "DOC_ADD_FIELDS", false );
-
-    public static final SqlJsonValueExpressionOperator DOC_MERGE_UPDATE = new SqlJsonValueExpressionOperator( "DOC_MERGE_UPDATE", false );
-
-    public static final SqlJsonValueExpressionOperator DOC_UPDATE_MIN = new SqlJsonValueExpressionOperator( "DOC_UPDATE_MIN", false );
-
-    public static final SqlJsonValueExpressionOperator DOC_UPDATE_MAX = new SqlJsonValueExpressionOperator( "DOC_UPDATE_MAX", false );
-
-    public static final SqlJsonValueExpressionOperator DOC_UPDATE_ADD_TO_SET = new SqlJsonValueExpressionOperator( "DOC_UPDATE_ADD_TO_SET", false );
-
-    public static final SqlJsonValueExpressionOperator DOC_UPDATE_RENAME = new SqlJsonValueExpressionOperator( "DOC_UPDATE_RENAME", false );
-
-    public static final SqlJsonValueExpressionOperator DOC_UPDATE_REPLACE = new SqlJsonValueExpressionOperator( "DOC_UPDATE_REPLACE", false );
-
-    public static final SqlJsonValueExpressionOperator DOC_UPDATE_REMOVE = new SqlJsonValueExpressionOperator( "DOC_UPDATE_REMOVE", false );
-
-    public static final SqlJsonValueExpressionOperator DOC_ELEM_MATCH = new SqlJsonValueExpressionOperator( "DOC_ELEM_MATCH", false );
-
-    public static final SqlJsonValueExpressionOperator DOC_UNWIND = new SqlJsonValueExpressionOperator( "DOC_UNWIND", false );
-
 
     /**
      * Internal operator used to represent the ESCAPE clause of a LIKE or SIMILAR TO expression.

@@ -110,6 +110,7 @@ import org.polypheny.db.runtime.BinarySearch;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Enumerables;
 import org.polypheny.db.runtime.FlatLists;
+import org.polypheny.db.runtime.MqlFunctions;
 import org.polypheny.db.runtime.RandomFunction;
 import org.polypheny.db.runtime.SortedMultiMap;
 import org.polypheny.db.runtime.SqlFunctions;
@@ -408,23 +409,23 @@ public enum BuiltInMethod {
     AGG_LAMBDA_FACTORY_ACC_SINGLE_GROUP_RESULT_SELECTOR( AggregateLambdaFactory.class, "singleGroupResultSelector", Function1.class ),
     RESULTSET_GETBYTES( ResultSet.class, "getBytes", int.class ),
     RESULTSET_GETBINARYSTREAM( ResultSet.class, "getBinaryStream", int.class ),
-    DOC_EQ( SqlFunctions.class, "docEq", Object.class, Object.class ),
-    DOC_SIZE_MATCH( SqlFunctions.class, "docSizeMatch", Object.class, int.class ),
-    //DOC_ITEM( SqlFunctions.class, "docItem", Object.class, Object.class ),
-    DOC_JSON_MATCH( SqlFunctions.class, "docJsonMatch", Object.class, String.class ),
-    DOC_REGEX_MATCH( SqlFunctions.class, "docRegexMatch", Object.class, String.class, boolean.class, boolean.class, boolean.class, boolean.class ),
-    DOC_TYPE_MATCH( SqlFunctions.class, "docTypeMatch", Object.class, List.class ),
-    DOC_SLICE( SqlFunctions.class, "docSlice", Object.class, int.class, int.class ),
-    DOC_QUERY_VALUE( SqlFunctions.class, "docQueryValue", Object.class, List.class ),
-    DOC_QUERY_EXCLUDE( SqlFunctions.class, "docQueryExclude", Object.class, List.class ),
-    DOC_ADD_FIELDS( SqlFunctions.class, "docAddFields", Object.class, String.class, Object.class ),
-    DOC_UPDATE_MIN( SqlFunctions.class, "docUpdateMin", Object.class, Long.class ),
-    DOC_UPDATE_MAX( SqlFunctions.class, "docUpdateMax", Object.class, Long.class ),
-    DOC_UPDATE_ADD_TO_SET( SqlFunctions.class, "docAddToSet", Object.class, Object.class ),
-    DOC_UPDATE_REMOVE( SqlFunctions.class, "docUpdateRemove", Object.class, List.class ),
-    DOC_UPDATE_REPLACE( SqlFunctions.class, "docUpdateReplace", Object.class, List.class, List.class ),
-    DOC_UPDATE_RENAME( SqlFunctions.class, "docUpdateRename", Object.class, List.class, List.class ),
-    DOC_ELEM_MATCH( SqlFunctions.class, "docElemMatch", Object.class );
+    /// MQL BUILT-IN METHODS
+    DOC_EQ( MqlFunctions.class, "docEq", Object.class, Object.class ),
+    DOC_SIZE_MATCH( MqlFunctions.class, "docSizeMatch", Object.class, int.class ),
+    DOC_JSON_MATCH( MqlFunctions.class, "docJsonMatch", Object.class, String.class ),
+    DOC_REGEX_MATCH( MqlFunctions.class, "docRegexMatch", Object.class, String.class, boolean.class, boolean.class, boolean.class, boolean.class ),
+    DOC_TYPE_MATCH( MqlFunctions.class, "docTypeMatch", Object.class, List.class ),
+    DOC_SLICE( MqlFunctions.class, "docSlice", Object.class, int.class, int.class ),
+    DOC_QUERY_VALUE( MqlFunctions.class, "docQueryValue", Object.class, List.class ),
+    DOC_QUERY_EXCLUDE( MqlFunctions.class, "docQueryExclude", Object.class, List.class ),
+    DOC_ADD_FIELDS( MqlFunctions.class, "docAddFields", Object.class, String.class, Object.class ),
+    DOC_UPDATE_MIN( MqlFunctions.class, "docUpdateMin", Object.class, Long.class ),
+    DOC_UPDATE_MAX( MqlFunctions.class, "docUpdateMax", Object.class, Long.class ),
+    DOC_UPDATE_ADD_TO_SET( MqlFunctions.class, "docAddToSet", Object.class, Object.class ),
+    DOC_UPDATE_REMOVE( MqlFunctions.class, "docUpdateRemove", Object.class, List.class ),
+    DOC_UPDATE_REPLACE( MqlFunctions.class, "docUpdateReplace", Object.class, List.class, List.class ),
+    DOC_UPDATE_RENAME( MqlFunctions.class, "docUpdateRename", Object.class, List.class, List.class ),
+    DOC_GET_ARRAY( MqlFunctions.class, "docGetArray", Object.class );
 
     public final Method method;
     public final Constructor constructor;

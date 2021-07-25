@@ -18,8 +18,8 @@ package org.polypheny.db.document;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import org.polypheny.db.rel.core.Filter;
-import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.mql.fun.MqlFunctionOperator;
+import org.polypheny.db.rel.SingleRel;
 import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
@@ -31,21 +31,9 @@ import org.polypheny.db.sql.fun.SqlJsonValueFunction;
 
 public class DocumentRules {
 
-    public static boolean jsonInFilter( Filter filter ) {
+    public static boolean containsJson( SingleRel rel ) {
         JsonVisitor visitor = new JsonVisitor();
-        for ( RexNode node : filter.getChildExps() ) {
-            node.accept( visitor );
-            if ( visitor.containsJson() ) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-
-    public static boolean jsonInProject( Project project ) {
-        JsonVisitor visitor = new JsonVisitor();
-        for ( RexNode node : project.getChildExps() ) {
+        for ( RexNode node : rel.getChildExps() ) {
             node.accept( visitor );
             if ( visitor.containsJson() ) {
                 return true;
@@ -75,6 +63,18 @@ public class DocumentRules {
     }
 
 
+    public static boolean containsDocument( SingleRel project ) {
+        DocumentVisitor visitor = new DocumentVisitor();
+        for ( RexNode node : project.getChildExps() ) {
+            node.accept( visitor );
+            if ( visitor.containsDocument() ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
     private static class JsonVisitor extends RexVisitorImpl<Void> {
 
         @Accessors(fluent = true)
@@ -92,6 +92,30 @@ public class DocumentRules {
             SqlOperator operator = call.getOperator();
             if ( operator.kind == SqlKind.JSON_VALUE_EXPRESSION || operator instanceof SqlJsonValueFunction || operator.kind == SqlKind.JSON_API_COMMON_SYNTAX || operator instanceof SqlDocEqualExpressionOperator ) {
                 containsJson = true;
+            }
+            return super.visitCall( call );
+        }
+
+    }
+
+
+    private static class DocumentVisitor extends RexVisitorImpl<Void> {
+
+        @Accessors(fluent = true)
+        @Getter
+        private boolean containsDocument = false;
+
+
+        protected DocumentVisitor() {
+            super( true );
+        }
+
+
+        @Override
+        public Void visitCall( RexCall call ) {
+            SqlOperator operator = call.getOperator();
+            if ( operator instanceof MqlFunctionOperator ) {
+                containsDocument = true;
             }
             return super.visitCall( call );
         }
