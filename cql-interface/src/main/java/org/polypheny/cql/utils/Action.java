@@ -16,8 +16,12 @@
 
 package org.polypheny.cql.utils;
 
+import java.util.HashMap;
+import org.polypheny.cql.utils.Tree.Direction;
+import org.polypheny.cql.utils.Tree.NodeType;
+
 public interface Action<M, N> {
 
-    void PerformAction( Tree<M, N> treeNode );
+    boolean performAction( Tree<M, N> treeNode, NodeType nodeType, Direction direction, HashMap<String, Object> frame );
 
 }
