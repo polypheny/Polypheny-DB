@@ -98,6 +98,12 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
 
     @Override
+    public IntervalParameterStrategy getIntervalParameterStrategy() {
+        return IntervalParameterStrategy.CAST;
+    }
+
+
+    @Override
     public boolean supportsNestedArrays() {
         return true;
     }
@@ -114,6 +120,46 @@ public class PostgresqlSqlDialect extends SqlDialect {
             case DOUBLE:
                 // Postgres has a double type but it is named differently
                 castSpec = "_double precision";
+                break;
+            case FILE:
+            case IMAGE:
+            case VIDEO:
+            case SOUND:
+                castSpec = "_BYTEA";
+                break;
+            case ARRAY:
+                RelDataType tt = type;
+                StringBuilder brackets = new StringBuilder( "[]" );
+                while ( tt.getComponentType().getPolyType() == PolyType.ARRAY ) {
+                    tt = tt.getComponentType();
+                    brackets.append( "[]" );
+                }
+                PolyType t = tt.getComponentType().getPolyType();
+                switch ( t ) {
+                    case TINYINT:
+                        castSpec = "_smallint" + brackets;
+                        break;
+                    case DOUBLE:
+                        castSpec = "_double precision" + brackets;
+                        break;
+                    default:
+                        castSpec = "_" + t.getName() + brackets;
+                }
+                break;
+            case INTERVAL_YEAR_MONTH:
+            case INTERVAL_DAY:
+            case INTERVAL_DAY_HOUR:
+            case INTERVAL_DAY_MINUTE:
+            case INTERVAL_DAY_SECOND:
+            case INTERVAL_HOUR_MINUTE:
+            case INTERVAL_HOUR:
+            case INTERVAL_HOUR_SECOND:
+            case INTERVAL_MINUTE:
+            case INTERVAL_MONTH:
+            case INTERVAL_SECOND:
+            case INTERVAL_MINUTE_SECOND:
+            case INTERVAL_YEAR:
+                castSpec = "interval";
                 break;
             default:
                 return super.getCastSpec( type );

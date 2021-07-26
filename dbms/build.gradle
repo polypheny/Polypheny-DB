@@ -22,6 +22,7 @@ dependencies {
     implementation project(":csv-adapter")
     implementation project(":file-adapter")
     implementation project(":jdbc-adapter")
+    implementation project(":mongodb-adapter")
     implementation project(":catalog")
     implementation project(":webui")
     implementation project(":jdbc-interface")

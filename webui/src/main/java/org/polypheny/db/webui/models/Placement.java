@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 
 
@@ -34,11 +35,13 @@ public class Placement {
     public List<Store> stores = new ArrayList<>();
     boolean isPartitioned;
     List<String> partitionNames;
+    String tableType;
 
 
-    public Placement( final boolean isPartitioned, final List<String> partitionNames ) {
+    public Placement( final boolean isPartitioned, final List<String> partitionNames, final TableType tableType ) {
         this.isPartitioned = isPartitioned;
         this.partitionNames = partitionNames;
+        this.tableType = tableType.name();
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.UncheckedExecutionException;
+import java.io.Serializable;
 import java.util.concurrent.ExecutionException;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.util.Pair;
@@ -51,7 +52,7 @@ import org.polypheny.db.util.Util;
  */
 public class MetadataFactoryImpl implements MetadataFactory {
 
-    public static final UnboundMetadata<Metadata> DUMMY = ( rel, mq ) -> null;
+    public static final UnboundMetadata<Metadata> DUMMY = (UnboundMetadata<Metadata> & Serializable) ( rel, mq ) -> null;
 
     private final LoadingCache<Pair<Class<RelNode>, Class<Metadata>>, UnboundMetadata<Metadata>> cache;
 
@@ -82,5 +83,6 @@ public class MetadataFactoryImpl implements MetadataFactory {
             throw new RuntimeException( e.getCause() );
         }
     }
+
 }
 

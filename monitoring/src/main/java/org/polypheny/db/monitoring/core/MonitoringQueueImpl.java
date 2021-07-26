@@ -27,6 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 import org.polypheny.db.util.background.BackgroundTask;
@@ -48,7 +49,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     private final Lock processingQueueLock = new ReentrantLock();
     private final MonitoringRepository repository;
     // number of elements beeing processed from the queue to the backend per "batch"
-    private final int QUEUE_PROCESSING_ELEMENTS = 50;
     private String backgroundTaskId;
     //For ever
     private long processedEventsTotal;
@@ -184,9 +184,10 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         Optional<MonitoringEvent> event;
 
         try {
+
             // while there are jobs to consume:
             int countEvents = 0;
-            while ( (event = this.getNextJob()).isPresent() && countEvents < QUEUE_PROCESSING_ELEMENTS ) {
+            while ( (event = this.getNextJob()).isPresent() && countEvents < RuntimeConfig.QUEUE_PROCESSING_ELEMENTS.getInteger() ) {
                 log.debug( "get new monitoring job" + event.get().getId().toString() );
 
                 //returns list of metrics which was produced by this particular event

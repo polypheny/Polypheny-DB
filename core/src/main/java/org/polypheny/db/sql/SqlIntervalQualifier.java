@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.Getter;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.rel.type.RelDataType;
@@ -49,6 +50,7 @@ import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.util.SqlVisitor;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.type.PolyIntervalQualifier;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Util;
@@ -111,6 +113,7 @@ public class SqlIntervalQualifier extends SqlNode {
 
     private final int startPrecision;
     public final TimeUnitRange timeUnitRange;
+    @Getter
     private final int fractionalSecondPrecision;
 
     //~ Constructors -----------------------------------------------------------
@@ -143,6 +146,23 @@ public class SqlIntervalQualifier extends SqlNode {
                 endUnit,
                 RelDataType.PRECISION_NOT_SPECIFIED,
                 pos );
+    }
+
+
+    public SqlIntervalQualifier(
+            int startPrecision,
+            int fractionalSecondPrecision,
+            TimeUnitRange timeUnitRange,
+            SqlParserPos pos ) {
+        super( pos );
+        this.timeUnitRange = timeUnitRange;
+        this.startPrecision = startPrecision;
+        this.fractionalSecondPrecision = fractionalSecondPrecision;
+    }
+
+
+    public SqlIntervalQualifier( PolyIntervalQualifier polyIntervalQualifier ) {
+        this( polyIntervalQualifier.startPrecision, polyIntervalQualifier.fractionalSecondPrecision, polyIntervalQualifier.timeUnitRange, SqlParserPos.ZERO );
     }
 
     //~ Methods ----------------------------------------------------------------
@@ -1252,5 +1272,6 @@ public class SqlIntervalQualifier extends SqlNode {
                 RESOURCE.intervalFieldExceedsPrecision(
                         value, type.name() + "(" + precision + ")" ) );
     }
+
 }
 

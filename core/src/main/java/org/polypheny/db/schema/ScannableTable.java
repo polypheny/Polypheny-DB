@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 package org.polypheny.db.schema;
 
 
+import java.io.Serializable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.polypheny.db.adapter.DataContext;
 
@@ -41,11 +42,12 @@ import org.polypheny.db.adapter.DataContext;
 /**
  * Table that can be scanned without creating an intermediate relational expression.
  */
-public interface ScannableTable extends Table {
+public interface ScannableTable extends Table, Serializable {
 
     /**
      * Returns an enumerator over the rows in this Table. Each row is represented as an array of its column values.
      */
     Enumerable<Object[]> scan( DataContext root );
+
 }
 
