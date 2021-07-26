@@ -25,6 +25,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.Types;
 import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,6 +40,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import lombok.var;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.ColumnMetaData.Rep;
@@ -119,6 +121,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.routing.ExecutionTimeMonitor.ExecutionTimeObserver;
+import org.polypheny.db.routing.Router;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.sql.SqlExplainFormat;
@@ -890,7 +893,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private List<RelRoot> route( RelRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
-        List<RelRoot> routedRootList = statement.getRouter().route( logicalRoot, statement, executionTimeMonitor );
+        // TODO
+        // determine short or long running
+        var routedRootList = statement.getShortRunningRouters()
+                .stream()
+                .map(router -> router.route( logicalRoot, statement, executionTimeMonitor ) )
+                .flatMap( Collection::stream )
+                .collect( Collectors.toList());
+
         if ( log.isTraceEnabled() ) {
             routedRootList.forEach( routedRoot ->
                 log.trace( "Routed query plan: [{}]", RelOptUtil.dumpPlan( "-- Routed Plan", routedRoot.rel, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) ));
@@ -1246,7 +1256,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     public void resetCaches() {
         ImplementationCache.INSTANCE.reset();
         QueryPlanCache.INSTANCE.reset();
-        statement.getRouter().resetCaches();
+        statement.getShortRunningRouters().forEach( Router::resetCaches );
+        statement.getLongRunningRouters().forEach( Router::resetCaches );
     }
 
 

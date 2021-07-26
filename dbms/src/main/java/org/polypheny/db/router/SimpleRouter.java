@@ -106,7 +106,11 @@ public class SimpleRouter extends AbstractRouter {
     // Add column on the first store holding a placement of this table
     @Override
     public List<DataStore> addColumn( CatalogTable catalogTable, Statement statement ) {
-        return ImmutableList.of( AdapterManager.getInstance().getStore( catalogTable.placementsByAdapter.keySet().asList().get( 0 ) ) );
+        return ImmutableList.of(
+                AdapterManager.getInstance().getStore(
+                        catalogTable.placementsByAdapter.keySet().asList().get( 0 )
+                )
+        );
     }
 
 

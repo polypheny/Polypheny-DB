@@ -270,7 +270,7 @@ public class IcarusRouter extends AbstractRouter {
         if ( table.placementsByAdapter.containsKey( selectedAdapterId ) ) {
             List<CatalogColumnPlacement> placements = Catalog.getInstance().getColumnPlacementsOnAdapter( selectedAdapterId, table.id );
             if ( placements.size() != table.columnIds.size() ) {
-                throw new RuntimeException( "The data store '" + selectedAdapterId + "' does not contain a full table placement!" );
+                return Collections.emptyList();
             }
             return placements;
         }

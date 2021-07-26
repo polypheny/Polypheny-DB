@@ -139,6 +139,12 @@ public class StatementImpl implements Statement {
 
 
     @Override
+    public Router getSimpleRouter() {
+        return RouterManager.getInstance().getSimpleRouter();
+    }
+
+
+    @Override
     public void close() {
         prepareContext = null;
         if ( dataContext != null ) {

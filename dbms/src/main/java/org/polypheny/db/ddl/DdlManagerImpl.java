@@ -303,7 +303,8 @@ public class DdlManagerImpl extends DdlManager {
                 }
 
                 // Inform routing
-                statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnAdapter( catalogAdapter.id, table.id ) );
+                //statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnAdapter( catalogAdapter.id, table.id ) );
+
                 // Delete column placement in catalog
                 for ( Long columnId : table.columnIds ) {
                     if ( catalog.checkIfExistsColumnPlacement( catalogAdapter.id, columnId ) ) {
@@ -485,7 +486,10 @@ public class DdlManagerImpl extends DdlManager {
         CatalogColumn addedColumn = catalog.getColumn( columnId );
 
         // Ask router on which stores this column shall be placed
-        List<DataStore> stores = statement.getRouter().addColumn( catalogTable, statement );
+        List<DataStore> stores = catalogTable.placementsByAdapter.keySet()
+                .stream()
+                .map( elem -> AdapterManager.getInstance().getStore(elem))
+                .collect( Collectors.toList());
 
         // Add column on underlying data stores and insert default value
         for ( DataStore store : stores ) {
@@ -926,7 +930,8 @@ public class DdlManagerImpl extends DdlManager {
         // Physically delete the data from the store
         storeInstance.dropTable( statement.getPrepareContext(), catalogTable );
         // Inform routing
-        statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnAdapter( storeInstance.getAdapterId(), catalogTable.id ) );
+        //statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnAdapter( storeInstance.getAdapterId(), catalogTable.id ) );
+
         // Delete placement in the catalog
         List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnAdapter( storeInstance.getAdapterId(), catalogTable.id );
         for ( CatalogColumnPlacement placement : placements ) {
@@ -1330,7 +1335,7 @@ public class DdlManagerImpl extends DdlManager {
 
         if ( stores == null ) {
             // Ask router on which store(s) the table should be placed
-            stores = statement.getRouter().createTable( schemaId, statement );
+            stores = AdapterManager.getInstance().getStores().values().asList();
         }
 
         prepareView( relNode );
@@ -1459,7 +1464,7 @@ public class DdlManagerImpl extends DdlManager {
 
             if ( stores == null ) {
                 // Ask router on which store(s) the table should be placed
-                stores = statement.getRouter().createTable( schemaId, statement );
+                stores = AdapterManager.getInstance().getStores().values().asList();
             }
 
             long tableId = catalog.addTable(
@@ -1745,8 +1750,9 @@ public class DdlManagerImpl extends DdlManager {
         for ( int storeId : catalogTable.placementsByAdapter.keySet() ) {
             // Delete table on store
             AdapterManager.getInstance().getStore( storeId ).dropTable( statement.getPrepareContext(), catalogTable );
+
             // Inform routing
-            statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnAdapter( storeId, catalogTable.id ) );
+            //statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnAdapter( storeId, catalogTable.id ) );
             // Delete column placement in catalog
             for ( Long columnId : catalogTable.columnIds ) {
                 if ( catalog.checkIfExistsColumnPlacement( storeId, columnId ) ) {

@@ -265,7 +265,7 @@ public class DataMigratorImpl implements DataMigrator {
                 statement.getQueryProcessor().getPlanner(),
                 new RexBuilder( statement.getTransaction().getTypeFactory() ) );
 
-        RelNode node = statement.getRouter().buildJoinedTableScan( statement, cluster, placements );
+        RelNode node = statement.getSimpleRouter().buildJoinedTableScan( statement, cluster, placements );
         return RelRoot.of( node, SqlKind.SELECT );
     }
 

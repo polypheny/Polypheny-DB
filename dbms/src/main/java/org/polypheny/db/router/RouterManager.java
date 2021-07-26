@@ -30,6 +30,7 @@ import org.polypheny.db.config.ConfigInteger;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.WebUiGroup;
 import org.polypheny.db.config.WebUiPage;
+import org.polypheny.db.router.SimpleRouter.SimpleRouterFactory;
 import org.polypheny.db.routing.Router;
 
 @Slf4j
@@ -70,7 +71,13 @@ public class RouterManager {
         configManager.registerWebUiPage( routingPage );
         configManager.registerWebUiGroup( routingGroup );
 
-        // Settings
+        // Routing overall settings
+        configManager.registerConfig( SHORT_RUNNING_LONG_RUNNING_THRESHOLD );
+        SHORT_RUNNING_LONG_RUNNING_THRESHOLD.withUi( routingGroup.getId() );
+        configManager.registerConfig( PRE_COST_POST_COST_RATIO );
+        PRE_COST_POST_COST_RATIO.withUi( routingGroup.getId() );
+
+        // Router settings
         final ConfigClazzList shortRunningRouter = new ConfigClazzList( "routing/shortRunningRouter", RouterFactory.class , true);
         configManager.registerConfig( shortRunningRouter );
         shortRunningRouter.withUi( routingGroup.getId() );
@@ -84,21 +91,8 @@ public class RouterManager {
         longRunningRouters = getFactoryList( longRunningRouter );
     }
 
-
-    private List<RouterFactory> getFactoryList( ConfigClazzList configList ) {
-        val result = new ArrayList<RouterFactory>();
-        for(Class c : configList.getClazzList()){
-            try {
-                Constructor<?> ctor = c.getConstructor();
-                RouterFactory instance = (RouterFactory) ctor.newInstance();
-                result.add( instance );
-            } catch ( InstantiationException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e ) {
-                log.error( "Exception while changing router implementation", e );
-            }
-        }
-
-        return result;
-
+    public Router getSimpleRouter() {
+        return new SimpleRouterFactory().createInstance();
     }
 
     public List<Router> getShortRunningRouters(){
@@ -108,7 +102,6 @@ public class RouterManager {
     public List<Router> getLongRunningRouters(){
         return shortRunningRouters.stream().map( elem -> elem.createInstance() ).collect( Collectors.toList());
     }
-
 
     private ConfigListener getConfigListener(boolean shortRunning){
         return new ConfigListener() {
@@ -127,6 +120,22 @@ public class RouterManager {
             public void restart( Config c ) {
             }
         };
+    }
+
+    private List<RouterFactory> getFactoryList( ConfigClazzList configList ) {
+        val result = new ArrayList<RouterFactory>();
+        for(Class c : configList.getClazzList()){
+            try {
+                Constructor<?> ctor = c.getConstructor();
+                RouterFactory instance = (RouterFactory) ctor.newInstance();
+                result.add( instance );
+            } catch ( InstantiationException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e ) {
+                log.error( "Exception while changing router implementation", e );
+            }
+        }
+
+        return result;
+
     }
 
 }

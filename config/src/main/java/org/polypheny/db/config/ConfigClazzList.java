@@ -59,7 +59,7 @@ public class ConfigClazzList extends Config {
     public ConfigClazzList(final String key, final Class superClass, boolean activateAll){
         this(key, superClass);
         if(activateAll){
-            setClazzList( this.value );
+            setClazzList( new ArrayList<>(this.classes) );
         }
     }
 
