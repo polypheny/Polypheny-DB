@@ -372,6 +372,8 @@ public class MongoFilter extends Filter implements MongoRel {
                     return "$multiply";
                 case DIVIDE:
                     return "$divide";
+                case ARRAY_VALUE_CONSTRUCTOR:
+                    return "$eq";
                 default:
                     throw new RuntimeException( "Sql operation is not supported" );
             }
