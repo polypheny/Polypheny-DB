@@ -48,6 +48,7 @@ import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.DataContext.ParameterValue;
 import org.polypheny.db.adapter.enumerable.EnumerableCalc;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableInterpretable;
@@ -301,6 +302,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             executionTimeMonitor.subscribe( this, monitoringData.getId()  );
         }
 
+        if ( logicalRoot.rel.hasView() ) {
+            logicalRoot = logicalRoot.tryExpandView();
+        }
+
 
         final Convention resultConvention =
                 ENABLE_BINDABLE
@@ -371,31 +376,45 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // Validate parameterValues
         routedRootList.forEach( routedRoot -> new ParameterValueValidator( routedRoot.validatedRowType, statement.getDataContext() ).visit( routedRoot.rel ));
+
+
+        //
+        // Parameterize
+
+        // Add optional parameterizedRoots and signatures for all routed RelRoots.
+        // Index of routedRoot, parameterizedRootList and signatures correspond!
+        List<RelRoot> parameterizedRootList = new ArrayList<>();
+        for(RelRoot routedRoot : routedRootList){
+            RelRoot parameterizedRoot = null;
+            if ( statement.getDataContext().getParameterValues().size() == 0
+                    && (RuntimeConfig.PARAMETERIZE_DML.getBoolean() || !routedRoot.kind.belongsTo( SqlKind.DML )) ) {
+                Pair<RelRoot, RelDataType> parameterized = parameterize( routedRoot, parameterRowType );
+                parameterizedRoot = parameterized.left;
+            } else {
+                // This query is an execution of a prepared statement
+                parameterizedRoot = routedRoot;
+            }
+
+            parameterizedRootList.add( parameterizedRoot );
+        }
+
+
         //
         // Implementation Caching
         if ( isAnalyze ) {
             statement.getDuration().start( "Implementation Caching" );
         }
 
-        // Add optional parameterizedRoots and signatures for all routed RelRoots.
-        // Index of routedRoot, parameterizedRootList and signatures correspond!
-        List<Optional<RelRoot>> parameterizedRootList = new ArrayList<>();
         List<Optional<PolyphenyDbSignature>> signatures = new ArrayList<>();
+        for(int i = 0; i < routedRootList.size(); i++){
+            val routedRoot = routedRootList.get( i );
+            if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() &&
+                    (!routedRoot.kind.belongsTo( SqlKind.DML ) ||
+                            RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() ||
+                            statement.getDataContext().getParameterValues().size() > 0) ) {
 
-        for(RelRoot routedRoot : routedRootList){
-            if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
-                RelRoot currentElement;
-                if ( statement.getDataContext().getParameterValues().size() == 0 ) {
-                    Pair<RelRoot, RelDataType> parameterized = parameterize( routedRoot, parameterRowType );
-                    currentElement = parameterized.left;
-                    parameterRowType = parameterized.right;
-                } else {
-                    // This query is an execution of a prepared statement
-                    currentElement = routedRoot;
-                }
-                PreparedResult preparedResult = ImplementationCache.INSTANCE.getIfPresent( currentElement.rel );
-                parameterizedRootList.add( Optional.of( currentElement) );
-
+                val parameterizedRoot = parameterizedRootList.get(i);
+                PreparedResult preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.rel );
                 if ( preparedResult != null ) {
                     PolyphenyDbSignature signature = createSignature( preparedResult, routedRoot, resultConvention, executionTimeMonitor );
                     signatures.add( Optional.of( signature ) );
@@ -403,7 +422,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     signatures.add( Optional.empty() );
                 }
             } else {
-                parameterizedRootList.add( Optional.empty() );
                 signatures.add( Optional.empty() );
             }
         }
@@ -418,30 +436,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             val routedRoot = routedRootList.get( i );
             val parameterizedRoot = parameterizedRootList.get( i );
             if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
-                if ( !parameterizedRoot.isPresent() ) {
-                    if ( statement.getDataContext().getParameterValues().size() == 0 ) {
-                        Pair<RelRoot, RelDataType> parameterized = parameterize( routedRoot, parameterRowType );
-                        parameterizedRootList.set( i, Optional.of(  parameterized.left ));
-                        parameterRowType = parameterized.right;
-                    } else {
-                        // This query is an execution of a prepared statement
-                        parameterizedRootList.set( i, Optional.of(  routedRoot ));
-                    }
-                }
                 // should always be the case
-                if( parameterizedRootList.get( i ).isPresent() ){
-                    val cachedElem = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRootList.get( i ).get().rel);
-                    if ( cachedElem == null ) {
-                        optimalNodeList.add( Optional.empty() );
-                    } else {
-                        optimalNodeList.add( Optional.of( cachedElem ) );
-                    }
-
-
+                val cachedElem = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRootList.get( i ).rel);
+                if ( cachedElem == null ) {
+                    optimalNodeList.add( Optional.empty() );
+                } else {
+                    optimalNodeList.add( Optional.of( cachedElem ) );
                 }
 
             } else {
-                parameterizedRootList.set( i, Optional.of(  routedRoot ));
                 optimalNodeList.add( Optional.empty() );
             }
 
@@ -457,7 +460,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         // optimalNode same size as routed, parametrized and signature
         for(int i = 0; i < optimalNodeList.size(); i++) {
             val optimalNode = optimalNodeList.get( i );
-            val parameterizedRoot = parameterizedRootList.get( i ).get();
+            val parameterizedRoot = parameterizedRootList.get( i );
             val routedRoot = routedRootList.get( i );
             if ( !optimalNode.isPresent() ) {
                 optimalNodeList.set( i, Optional.of( optimize( parameterizedRoot, resultConvention ) ) ) ;
@@ -478,7 +481,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         for(int i = 0; i < optimalNodeList.size(); i++) {
             val optimalNode = optimalNodeList.get( i ).get();
-            val parameterizedRoot = parameterizedRootList.get( i ).get();
+            val parameterizedRoot = parameterizedRootList.get( i );
             val routedRoot = routedRootList.get( i );
 
             final RelDataType rowType = parameterizedRoot.rel.getRowType();
@@ -922,8 +925,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         List<RelDataType> types = queryParameterizer.getTypes();
 
         // Add values to data context
-        for ( DataContext.ParameterValue value : queryParameterizer.getValues() ) {
-            statement.getDataContext().addParameterValues( value.getIndex(), value.getType(), Collections.singletonList( value.getValue() ) );
+        for ( List<DataContext.ParameterValue> values : queryParameterizer.getValues().values() ) {
+            List<Object> o = new ArrayList<>();
+            for ( ParameterValue v : values ) {
+                o.add( v.getValue() );
+            }
+            statement.getDataContext().addParameterValues( values.get( 0 ).getIndex(), values.get( 0 ).getType(), o );
         }
 
         // parameterRowType
@@ -958,7 +965,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     new AvaticaParameter(
                             false,
                             getPrecision( type ),
-                            getScale( type ),
+                            0, // This is a workaround for a bug in Avatica with Decimals. There is no need to change the scale //getScale( type ),
                             getTypeOrdinal( type ),
                             type.getPolyType().getTypeName(),
                             getClassName( type ),
@@ -1217,7 +1224,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 origin( origins, 0 ),
                 origin( origins, 2 ),
                 getPrecision( type ),
-                getScale( type ),
+                0, // This is a workaround for a bug in Avatica with Decimals. There is no need to change the scale //getScale( type ),
                 origin( origins, 1 ),
                 null,
                 avaticaType,
