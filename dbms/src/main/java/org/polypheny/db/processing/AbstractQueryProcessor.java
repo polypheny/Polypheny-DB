@@ -66,8 +66,6 @@ import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.monitoring.InfluxPojo;
-import org.polypheny.db.monitoring.MonitoringService;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.RelTraitSet;
@@ -154,46 +152,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
     protected AbstractQueryProcessor( Statement statement ) {
         this.statement = statement;
-    }
-
-
-    private static RelDataType makeStruct( RelDataTypeFactory typeFactory, RelDataType type ) {
-        if ( type.isStruct() ) {
-            return type;
-        }
-        // TODO MV: This "null" might be wrong
-        return typeFactory.builder().add( "$0", null, type ).build();
-    }
-
-
-    private static String origin( List<String> origins, int offsetFromEnd ) {
-        return origins == null || offsetFromEnd >= origins.size()
-                ? null
-                : origins.get( origins.size() - 1 - offsetFromEnd );
-    }
-
-
-    private static int getScale( RelDataType type ) {
-        return type.getScale() == RelDataType.SCALE_NOT_SPECIFIED
-                ? 0
-                : type.getScale();
-    }
-
-
-    private static int getPrecision( RelDataType type ) {
-        return type.getPrecision() == RelDataType.PRECISION_NOT_SPECIFIED
-                ? 0
-                : type.getPrecision();
-    }
-
-
-    private static String getClassName( RelDataType type ) {
-        return Object.class.getName();
-    }
-
-
-    private static int getTypeOrdinal( RelDataType type ) {
-        return type.getPolyType().getJdbcOrdinal();
     }
 
 
@@ -331,8 +289,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 if ( isAnalyze ) {
                     statement.getDuration().stop( "Implementation Caching" );
                 }
-
-                MonitoringService.MonitorEvent( InfluxPojo.Create(  routedRoot.rel.relCompareString(), signature.statementType.toString(), Long.valueOf( signature.columns.size() ) ) );
                 return signature;
             }
         }
@@ -415,12 +371,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         }
 
 
-        MonitoringService.INSTANCE.addWorkloadEventToQueue( MonitorEvent.builder().monitoringType( signature.statementType.toString() )
-                .description( "Test description" )
-                .fieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames()))
-                .recordedTimestamp( new Timestamp( System.currentTimeMillis() ) )
-                .build() );
-        //MonitoringService.MonitorEvent( InfluxPojo.Create( routedRoot.rel.relCompareString(), signature.statementType.toString(), Long.valueOf( signature.columns.size() ) ));
         return signature;
     }
 
@@ -1310,12 +1260,5 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
     }
 
-
-    @Override
-    public void resetCaches() {
-        ImplementationCache.INSTANCE.reset();
-        QueryPlanCache.INSTANCE.reset();
-        statement.getRouter().resetCaches();
-    }
 
 }
