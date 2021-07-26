@@ -53,11 +53,17 @@ public abstract class MaterializedManager {
         return INSTANCE;
     }
 
+
     public abstract void deleteMaterializedViewFromInfo( Long tableId );
 
     public abstract void addData( Transaction transaction, List<DataStore> stores, Map<Integer, List<CatalogColumn>> addedColumns, RelRoot relRoot, CatalogMaterialized materializedView );
 
     public abstract void addTables( Transaction transaction, List<String> names );
+
+    public abstract void manualUpdate( Transaction transaction, Long viewId );
+
+    public abstract void updateCommitedXid( PolyXid xid );
+
 
     public static class TableUpdateVisitor extends RelShuttleImpl {
 
@@ -84,8 +90,5 @@ public abstract class MaterializedManager {
         }
 
     }
-
-
-    public abstract void updateCommitedXid( PolyXid xid );
 
 }

@@ -75,6 +75,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
     SqlCreateMaterializedView(
             SqlParserPos pos,
             boolean replace,
+            boolean ifNotExists,
             SqlIdentifier name,
             SqlNodeList columnList,
             SqlNode query,
@@ -82,7 +83,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
             String freshnessType,
             Integer freshnessTime,
             SqlIdentifier freshnessId ) {
-        super( OPERATOR, pos, replace, false );
+        super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
         this.columnList = columnList; // may be null
         this.query = Objects.requireNonNull( query );
@@ -156,6 +157,10 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
                     break;
                 case "INTERVAL":
                     materializedCriteria = new MaterializedCriteria( CriteriaType.INTERVAL, freshnessTime, getFreshnessType( freshnessId.toString().toLowerCase( Locale.ROOT ) ) );
+                    System.out.println( freshnessType );
+                    break;
+                case "MANUAL":
+                    materializedCriteria = new MaterializedCriteria( CriteriaType.MANUAL );
                     System.out.println( freshnessType );
                     break;
                 default:
@@ -237,12 +242,11 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
-        if ( getReplace() ) {
-            writer.keyword( "CREATE OR REPLACE" );
-        } else {
-            writer.keyword( "CREATE" );
-        }
+        writer.keyword( "CREATE" );
         writer.keyword( "MATERIALIZED VIEW" );
+        if ( ifNotExists ) {
+            writer.keyword( "IF NOT EXISTS" );
+        }
         name.unparse( writer, leftPrec, rightPrec );
         if ( columnList != null ) {
             SqlWriter.Frame frame = writer.startList( "(", ")" );

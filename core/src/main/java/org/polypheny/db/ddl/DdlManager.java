@@ -532,6 +532,11 @@ public abstract class DdlManager {
      */
     public abstract void setOption();
 
+    /**
+     * Refresh data in a Materialized View
+     */
+    public abstract void refreshView( Statement statement, Long materializedId );
+
 
     /**
      * Helper class which holds all information required for creating a column,

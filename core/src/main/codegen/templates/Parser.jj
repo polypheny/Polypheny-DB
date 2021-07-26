@@ -6377,6 +6377,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < LOCATOR: "LOCATOR" >
 |   < LOWER: "LOWER" >
 |   < M: "M" >
+|   < MANUAL: "MANUAL">
 |   < MAP: "MAP" >
 |   < MATCH: "MATCH" >
 |   < MATCHED: "MATCHED" >

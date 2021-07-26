@@ -775,9 +775,29 @@ public class ComplexViewTest {
                             ImmutableList.of( q1_TEST_DATA )
                     );
 
+                    statement.executeUpdate( "CREATE MATERIALIZED VIEW q1_Materialized AS "
+                            + "select l_returnflag, l_linestatus, "
+                            + "sum(l_quantity) as sum_qty, "
+                            + "sum(l_extendedprice) as sum_base_price, "
+                            + "sum(l_extendedprice * (1 - l_discount)) as sum_disc_price, "
+                            + "sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge, "
+                            + "avg(l_quantity) as avg_qty, "
+                            + "avg(l_extendedprice) as avg_price, "
+                            + "avg(l_discount) as avg_disc, "
+                            + "count(*) as count_order "
+                            + "from lineitem "
+                            + "where l_shipdate <= date '2020-07-03' "
+                            + "group by l_returnflag, l_linestatus order by l_returnflag, l_linestatus "
+                            + "FRESHNESS INTERVAL 10 \"min\"" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM q1_Materialized " ),
+                            ImmutableList.of( q1_TEST_DATA )
+                    );
+
                     connection.commit();
                 } finally {
                     connection.rollback();
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW q1_Materialized" );
                     statement.executeUpdate( "DROP VIEW IF EXISTS q1_VIEW" );
                     dropTables( statement );
                 }

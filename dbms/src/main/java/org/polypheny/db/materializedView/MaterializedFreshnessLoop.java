@@ -38,7 +38,9 @@ public class MaterializedFreshnessLoop implements Runnable {
     public void run() {
 
         try {
-            startEventLoop();
+            while ( true ) {
+                startEventLoop();
+            }
         } catch ( InterruptedException e ) {
             e.printStackTrace();
         }

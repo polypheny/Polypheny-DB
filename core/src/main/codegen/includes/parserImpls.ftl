@@ -105,10 +105,10 @@ SqlAlterMaterializedView SqlAlterMaterializedView(Span s) :
     materializedview = CompoundIdentifier()
     (
         <RENAME><TO>
-        name = SimpleIdentifier()
-        {
-        return new SqlAlterMaterializedViewRename(s.end(this), materializedview, name);
-        }
+            name = SimpleIdentifier()
+            {
+            return new SqlAlterMaterializedViewRename(s.end(this), materializedview, name);
+            }
     |
         <RENAME> <COLUMN>
             column = SimpleIdentifier()
@@ -117,6 +117,12 @@ SqlAlterMaterializedView SqlAlterMaterializedView(Span s) :
             {
                 return new SqlAlterMaterializedViewRenameColumn(s.end(this), materializedview, column, name);
             }
+    |
+        <FRESHNESS><MANUAL>
+            {
+                return new SqlAlterMaterializedViewFreshnessManual(s.end(this), materializedview);
+            }
+
     )
 }
 

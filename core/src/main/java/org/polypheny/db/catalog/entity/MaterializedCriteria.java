@@ -57,6 +57,16 @@ public class MaterializedCriteria implements Serializable {
     }
 
 
+    public MaterializedCriteria( CriteriaType type ) {
+        this.criteriaType = type;
+        this.interval = 0;
+        this.timeUnit = null;
+        this.lastUpdate = new Timestamp( System.currentTimeMillis() );
+        this.timeInMillis = null;
+        this.timesUpdated = 0;
+    }
+
+
     public MaterializedCriteria( CriteriaType type, Integer interval, TimeUnit timeUnit ) {
         this.criteriaType = type;
         this.interval = interval;
@@ -78,7 +88,7 @@ public class MaterializedCriteria implements Serializable {
 
 
     public enum CriteriaType {
-        UPDATE, INTERVAL
+        UPDATE, INTERVAL, MANUAL
     }
 
 

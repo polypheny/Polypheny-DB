@@ -34,6 +34,7 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogMaterialized;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
+import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -155,16 +156,46 @@ public class MaterializedManagerImpl extends MaterializedManager {
             CatalogTable view = catalog.getTable( id );
             if ( view.tableType == TableType.MATERIALIZEDVIEW ) {
                 MaterializedCriteria materializedCriteria = materializedInfo.get( view.id );
-
-                int numberUpdated = materializedCriteria.getTimesUpdated();
-                if ( numberUpdated == (materializedCriteria.getInterval() - 1) ) {
-                    prepareToUpdate( view.id );
-                    updateMaterializedUpdate( view.id, 0 );
-                } else {
-                    updateMaterializedUpdate( view.id, numberUpdated + 1 );
+                if ( materializedCriteria.getCriteriaType() == CriteriaType.UPDATE ) {
+                    int numberUpdated = materializedCriteria.getTimesUpdated();
+                    if ( numberUpdated == (materializedCriteria.getInterval() - 1) ) {
+                        prepareToUpdate( view.id );
+                        updateMaterializedUpdate( view.id, 0 );
+                    } else {
+                        updateMaterializedUpdate( view.id, numberUpdated + 1 );
+                    }
                 }
             }
         }
+    }
+
+
+    @Override
+    public void manualUpdate( Transaction transaction, Long viewId ) {
+        AdapterManager adapterManager = AdapterManager.getInstance();
+        Catalog catalog = Catalog.getInstance();
+        CatalogMaterialized catalogMaterialized = (CatalogMaterialized) catalog.getTable( viewId );
+        Map<Integer, List<CatalogColumn>> columns = new HashMap<>();
+
+        System.out.println( "Inside MANUAL UPDATE" );
+        List<DataStore> dataStores = new ArrayList<>();
+        for ( int id : catalogMaterialized.placementsByAdapter.keySet() ) {
+            dataStores.add( adapterManager.getStore( id ) );
+            List<CatalogColumn> catalogColumns = new ArrayList<>();
+            if ( catalogMaterialized.placementsByAdapter.containsKey( id ) ) {
+
+                catalogMaterialized.placementsByAdapter.get( id ).forEach( col ->
+                        catalogColumns.add( catalog.getColumn( col ) )
+                );
+                columns.put( id, catalogColumns );
+            }
+        }
+
+        RelCollation relCollation = catalogMaterialized.getRelCollation();
+
+        updateData( transaction, dataStores, columns, RelRoot.of( catalogMaterialized.getDefinition(), SqlKind.SELECT ), relCollation, catalogMaterialized );
+
+
     }
 
 

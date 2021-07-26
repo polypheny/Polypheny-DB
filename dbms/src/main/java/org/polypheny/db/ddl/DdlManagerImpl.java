@@ -1455,6 +1455,13 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    @Override
+    public void refreshView( Statement statement, Long materializedId ) {
+        MaterializedManager materializedManager = MaterializedManager.getInstance();
+        materializedManager.manualUpdate( statement.getTransaction(), materializedId );
+    }
+
+
     private List<ColumnInformation> getColumnInformation( List<String> projectedColumns, RelDataType fieldList ) {
         List<ColumnInformation> columns = new ArrayList<>();
 

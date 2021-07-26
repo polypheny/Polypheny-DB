@@ -339,6 +339,7 @@ SqlCreate SqlCreateView(Span s, boolean replace) :
 SqlCreate SqlCreateMaterializedView(Span s, boolean replace) :
 {
     final SqlIdentifier id;
+    final boolean ifNotExists;
     SqlNodeList columnList = null;
     final SqlNode query;
     SqlIdentifier storeName = null;
@@ -348,7 +349,7 @@ SqlCreate SqlCreateMaterializedView(Span s, boolean replace) :
     SqlIdentifier freshnessId = null;
 }
 {
-    <MATERIALIZED><VIEW> id = CompoundIdentifier()
+    <MATERIALIZED><VIEW> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
     [ columnList = ParenthesizedSimpleIdentifierList() ]
     <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
     [ <ON> <STORE> storeName = SimpleIdentifier() { store.add(storeName); }
@@ -366,8 +367,12 @@ SqlCreate SqlCreateMaterializedView(Span s, boolean replace) :
                             {
                                 freshnessType="UPDATE";
                             }
+                        |(<MANUAL>)
+                            {
+                                freshnessType="MANUEL";
+                            }
                     ) ]{
-        return SqlDdlNodes.createMaterializedView(s.end(this), replace, id, columnList, query, store, freshnessType, time, freshnessId);
+        return SqlDdlNodes.createMaterializedView(s.end(this), replace, ifNotExists, id, columnList, query, store, freshnessType, time, freshnessId);
     }
 }
 
