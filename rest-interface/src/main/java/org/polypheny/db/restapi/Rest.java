@@ -34,6 +34,7 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
+import org.polypheny.db.monitoring.events.DMLEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -106,6 +107,8 @@ public class Rest {
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
+        statement.getTransaction().setMonitoringData( new QueryEvent() );
+
         // Table Scans
         relBuilder = this.tableScans( relBuilder, rexBuilder, resourceGetRequest.tables );
 
@@ -150,6 +153,8 @@ public class Rest {
         RelBuilder relBuilder = RelBuilder.create( statement );
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
+
+        statement.getTransaction().setMonitoringData( new DMLEvent() );
 
         PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
         PreparingTable table = catalogReader.getTable( Arrays.asList( resourcePatchRequest.tables.get( 0 ).getSchemaName(), resourcePatchRequest.tables.get( 0 ).name ) );
@@ -210,6 +215,8 @@ public class Rest {
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
+        statement.getTransaction().setMonitoringData( new DMLEvent() );
+
         PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
         PreparingTable table = catalogReader.getTable( Arrays.asList( resourceDeleteRequest.tables.get( 0 ).getSchemaName(), resourceDeleteRequest.tables.get( 0 ).name ) );
 
@@ -262,6 +269,8 @@ public class Rest {
         RelBuilder relBuilder = RelBuilder.create( statement );
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
+
+        statement.getTransaction().setMonitoringData( new DMLEvent() );
 
         PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
         PreparingTable table = catalogReader.getTable( Arrays.asList( insertValueRequest.tables.get( 0 ).getSchemaName(), insertValueRequest.tables.get( 0 ).name ) );
@@ -554,6 +563,7 @@ public class Rest {
                 signature.getExecutionTimeMonitor().setExecutionTime( executionTime );
             }
 
+            statement.getTransaction().getMonitoringData().setExecutionTime( executionTime );
             statement.getTransaction().commit();
         } catch ( Throwable e ) {
             log.error( "Error during execution of REST query", e );
@@ -565,7 +575,7 @@ public class Rest {
             return null;
         }
         Pair<String, Integer> result = restResult.getResult( res );
-        ((QueryEvent) statement.getTransaction().getMonitoringData()).setRowCount( result.right );
+        statement.getTransaction().getMonitoringData().setRowCount( result.right );
         MonitoringServiceProvider.getInstance().monitorEvent( statement.getTransaction().getMonitoringData() );
 
         return result.left;

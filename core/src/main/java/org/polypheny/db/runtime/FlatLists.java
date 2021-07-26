@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ package org.polypheny.db.runtime;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import java.io.Serializable;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,7 +52,7 @@ import org.polypheny.db.util.ImmutableNullableList;
 /**
  * Space-efficient, comparable, immutable lists.
  */
-public class FlatLists {
+public class FlatLists implements Serializable {
 
     private FlatLists() {
     }
@@ -314,6 +315,7 @@ public class FlatLists {
          * Returns a list that consists of a this list's elements plus a given element.
          */
         public abstract List<T> append( T e );
+
     }
 
 
@@ -445,6 +447,7 @@ public class FlatLists {
         public List<T> append( T e ) {
             return new Flat2List<>( t0, e );
         }
+
     }
 
 
@@ -459,7 +462,7 @@ public class FlatLists {
      *
      * @param <T> Element type
      */
-    protected static class Flat2List<T> extends AbstractFlatList<T> implements ComparableList<T> {
+    protected static class Flat2List<T> extends AbstractFlatList<T> implements ComparableList<T>, Serializable {
 
         private final T t0;
         private final T t1;
@@ -596,6 +599,7 @@ public class FlatLists {
         public List<T> append( T e ) {
             return new Flat3List<>( t0, t1, e );
         }
+
     }
 
 
@@ -765,6 +769,7 @@ public class FlatLists {
         public List<T> append( T e ) {
             return new Flat4List<>( t0, t1, t2, e );
         }
+
     }
 
 
@@ -953,6 +958,7 @@ public class FlatLists {
         public List<T> append( T e ) {
             return new Flat5List<>( t0, t1, t2, t3, e );
         }
+
     }
 
 
@@ -1160,6 +1166,7 @@ public class FlatLists {
         public List<T> append( T e ) {
             return new Flat6List<>( t0, t1, t2, t3, t4, e );
         }
+
     }
 
 
@@ -1386,6 +1393,7 @@ public class FlatLists {
         public List<T> append( T e ) {
             return ImmutableList.of( t0, t1, t2, t3, t5, e );
         }
+
     }
 
 
@@ -1426,6 +1434,7 @@ public class FlatLists {
         public int compareTo( List o ) {
             return ComparableListImpl.compare( (List) this, o );
         }
+
     }
 
 
@@ -1514,6 +1523,7 @@ public class FlatLists {
             }
             return a.compareTo( b );
         }
+
     }
 
 }

@@ -25,6 +25,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.index.IndexManager;
+import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.CatalogImpl;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -36,15 +37,12 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManagerImpl;
-import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.exploreByExample.ExploreManager;
 import org.polypheny.db.exploreByExample.ExploreQueryProcessor;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.information.HostInformation;
 import org.polypheny.db.information.JavaInformation;
-import org.polypheny.db.monitoring.core.MonitoringService;
-import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.statistic.StatisticQueryProcessor;
 import org.polypheny.db.statistic.StatisticsManager;
@@ -75,6 +73,12 @@ public class PolyphenyDb {
 
     @Option(name = { "-testMode" }, description = "Special catalog configuration for running tests")
     public boolean testMode = false;
+
+    @Option(name = { "-defaultStore" }, description = "Type of default store")
+    public String defaultStoreName = "hsqldb";
+
+    @Option(name = { "-defaultSource" }, description = "Type of default source")
+    public String defaultSourceName = "csv";
 
     // required for unit tests to determine when the system is ready to process queries
     @Getter
@@ -215,6 +219,8 @@ public class PolyphenyDb {
             Catalog.resetCatalog = resetCatalog;
             Catalog.memoryCatalog = memoryCatalog;
             Catalog.testMode = testMode;
+            Catalog.defaultStore = Adapter.fromString( defaultStoreName );
+            Catalog.defaultSource = Adapter.fromString( defaultSourceName );
             catalog = Catalog.setAndGetInstance( new CatalogImpl() );
             trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );
             AdapterManager.getInstance().restoreAdapters();
@@ -260,27 +266,9 @@ public class PolyphenyDb {
             throw new RuntimeException( "Something went wrong while initializing index manager.", e );
         }
 
-        // Call DockerManager once to remove old containers
-        DockerManager.getInstance();
-
         final ExploreQueryProcessor exploreQueryProcessor = new ExploreQueryProcessor( transactionManager, authenticator ); // Explore-by-Example
         ExploreManager explore = ExploreManager.getInstance();
         explore.setExploreQueryProcessor( exploreQueryProcessor );
-
-
-        // Todo remove this testing
-       /* InternalSubscriber internalSubscriber = new InternalSubscriber();
-        DummySubscriber dummySubscriber = new DummySubscriber();
-        MonitoringService.INSTANCE.subscribeToEvents( internalSubscriber, SubscriptionTopic.TABLE, 6, "Internal Usage" );
-        MonitoringService.INSTANCE.subscribeToEvents( internalSubscriber, SubscriptionTopic.STORE, 2, "Internal Usage" );
-        MonitoringService.INSTANCE.subscribeToEvents( dummySubscriber, SubscriptionTopic.TABLE, 6, "Lorem ipsum" );
-        *///
-
-        MonitoringService monitoringService = MonitoringServiceProvider.getInstance();
-
-
-        //
-
 
         log.info( "****************************************************************************************************" );
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );

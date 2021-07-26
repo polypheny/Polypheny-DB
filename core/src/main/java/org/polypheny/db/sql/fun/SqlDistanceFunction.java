@@ -25,9 +25,9 @@ import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlFunction;
 import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlUtil;
+import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -159,7 +159,7 @@ public class SqlDistanceFunction extends SqlFunction {
 
 
         @Override
-        public SqlOperandCountRange getOperandCountRange() {
+        public OperandCountRange getOperandCountRange() {
             return PolyOperandCountRanges.between( 3, 4 );
         }
 

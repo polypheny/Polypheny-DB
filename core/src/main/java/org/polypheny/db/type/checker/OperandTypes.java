@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ package org.polypheny.db.type.checker;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.ImmutableList;
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.function.Predicate;
@@ -28,9 +29,9 @@ import org.polypheny.db.rel.type.RelDataTypeComparability;
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlUtil;
+import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -53,18 +54,54 @@ import org.polypheny.db.type.inference.ReturnTypes;
  * @see ReturnTypes
  * @see InferTypes
  */
-public abstract class OperandTypes {
+public abstract class OperandTypes implements Serializable {
 
     private OperandTypes() {
     }
 
 
     /**
-     * Creates a checker that passes if each operand is a member of a corresponding family.
+     * Operand type-checking strategy type must be a positive integer non-NULL literal.
      */
-    public static FamilyOperandTypeChecker family( PolyTypeFamily... families ) {
-        return new FamilyOperandTypeChecker( ImmutableList.copyOf( families ), i -> false );
-    }
+    public static final PolySingleOperandTypeChecker POSITIVE_INTEGER_LITERAL =
+            new FamilyOperandTypeChecker( ImmutableList.of( PolyTypeFamily.INTEGER ), (Predicate<Integer> & Serializable) i -> false ) {
+                @Override
+                public boolean checkSingleOperandType( SqlCallBinding callBinding, SqlNode node, int iFormalOperand, boolean throwOnFailure ) {
+                    if ( !LITERAL.checkSingleOperandType( callBinding, node, iFormalOperand, throwOnFailure ) ) {
+                        return false;
+                    }
+
+                    if ( !super.checkSingleOperandType( callBinding, node, iFormalOperand, throwOnFailure ) ) {
+                        return false;
+                    }
+
+                    final SqlLiteral arg = (SqlLiteral) node;
+                    final BigDecimal value = (BigDecimal) arg.getValue();
+                    if ( value.compareTo( BigDecimal.ZERO ) < 0 || hasFractionalPart( value ) ) {
+                        if ( throwOnFailure ) {
+                            throw callBinding.newError( RESOURCE.argumentMustBePositiveInteger( callBinding.getOperator().getName() ) );
+                        }
+                        return false;
+                    }
+                    if ( value.compareTo( BigDecimal.valueOf( Integer.MAX_VALUE ) ) > 0 ) {
+                        if ( throwOnFailure ) {
+                            throw callBinding.newError( RESOURCE.numberLiteralOutOfRange( value.toString() ) );
+                        }
+                        return false;
+                    }
+                    return true;
+                }
+
+
+                /**
+                 * Returns whether a number has any fractional part.
+                 *
+                 * @see BigDecimal#longValueExact()
+                 */
+                private boolean hasFractionalPart( BigDecimal bd ) {
+                    return bd.precision() - bd.scale() <= 0;
+                }
+            };
 
 
     /**
@@ -79,8 +116,8 @@ public abstract class OperandTypes {
     /**
      * Creates a checker that passes if each operand is a member of a corresponding family.
      */
-    public static FamilyOperandTypeChecker family( List<PolyTypeFamily> families ) {
-        return family( families, i -> false );
+    public static FamilyOperandTypeChecker family( PolyTypeFamily... families ) {
+        return new FamilyOperandTypeChecker( ImmutableList.copyOf( families ), (Predicate<Integer> & Serializable) i -> false );
     }
 
 
@@ -145,7 +182,7 @@ public abstract class OperandTypes {
     /**
      * Creates a checker that passes if all of the rules pass for each operand, using a given operand count strategy.
      */
-    public static PolyOperandTypeChecker repeat( SqlOperandCountRange range, PolySingleOperandTypeChecker... rules ) {
+    public static PolyOperandTypeChecker repeat( OperandCountRange range, PolySingleOperandTypeChecker... rules ) {
         return new CompositeOperandTypeChecker(
                 CompositeOperandTypeChecker.Composition.REPEAT,
                 ImmutableList.copyOf( rules ),
@@ -173,7 +210,7 @@ public abstract class OperandTypes {
     public static final PolyOperandTypeChecker ONE_OR_MORE = variadic( PolyOperandCountRanges.from( 1 ) );
 
 
-    public static PolyOperandTypeChecker variadic( final SqlOperandCountRange range ) {
+    public static PolyOperandTypeChecker variadic( final OperandCountRange range ) {
         return new PolyOperandTypeChecker() {
             @Override
             public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
@@ -182,7 +219,7 @@ public abstract class OperandTypes {
 
 
             @Override
-            public SqlOperandCountRange getOperandCountRange() {
+            public OperandCountRange getOperandCountRange() {
                 return range;
             }
 
@@ -266,46 +303,14 @@ public abstract class OperandTypes {
      */
     public static final PolySingleOperandTypeChecker LITERAL = new LiteralOperandTypeChecker( false );
 
+
     /**
-     * Operand type-checking strategy type must be a positive integer non-NULL literal.
+     * Creates a checker that passes if each operand is a member of a corresponding family.
      */
-    public static final PolySingleOperandTypeChecker POSITIVE_INTEGER_LITERAL =
-            new FamilyOperandTypeChecker( ImmutableList.of( PolyTypeFamily.INTEGER ), i -> false ) {
-                @Override
-                public boolean checkSingleOperandType( SqlCallBinding callBinding, SqlNode node, int iFormalOperand, boolean throwOnFailure ) {
-                    if ( !LITERAL.checkSingleOperandType( callBinding, node, iFormalOperand, throwOnFailure ) ) {
-                        return false;
-                    }
+    public static FamilyOperandTypeChecker family( List<PolyTypeFamily> families ) {
+        return family( families, (Predicate<Integer> & Serializable) i -> false );
+    }
 
-                    if ( !super.checkSingleOperandType( callBinding, node, iFormalOperand, throwOnFailure ) ) {
-                        return false;
-                    }
-
-                    final SqlLiteral arg = (SqlLiteral) node;
-                    final BigDecimal value = (BigDecimal) arg.getValue();
-                    if ( value.compareTo( BigDecimal.ZERO ) < 0 || hasFractionalPart( value ) ) {
-                        if ( throwOnFailure ) {
-                            throw callBinding.newError( RESOURCE.argumentMustBePositiveInteger( callBinding.getOperator().getName() ) );
-                        }
-                        return false;
-                    }
-                    if ( value.compareTo( BigDecimal.valueOf( Integer.MAX_VALUE ) ) > 0 ) {
-                        if ( throwOnFailure ) {
-                            throw callBinding.newError( RESOURCE.numberLiteralOutOfRange( value.toString() ) );
-                        }
-                        return false;
-                    }
-                    return true;
-                }
-
-
-                /** Returns whether a number has any fractional part.
-                 *
-                 * @see BigDecimal#longValueExact() */
-                private boolean hasFractionalPart( BigDecimal bd ) {
-                    return bd.precision() - bd.scale() <= 0;
-                }
-            };
 
     /**
      * Operand type-checking strategy where two operands must both be in the same type family.
@@ -413,7 +418,7 @@ public abstract class OperandTypes {
     public static final PolySingleOperandTypeChecker MINUS_OPERATOR = OperandTypes.or( NUMERIC_NUMERIC, INTERVAL_SAME_SAME, DATETIME_INTERVAL );  // TODO: compatibility check
 
     public static final FamilyOperandTypeChecker MINUS_DATE_OPERATOR =
-            new FamilyOperandTypeChecker( ImmutableList.of( PolyTypeFamily.DATETIME, PolyTypeFamily.DATETIME, PolyTypeFamily.DATETIME_INTERVAL ), i -> false ) {
+            new FamilyOperandTypeChecker( ImmutableList.of( PolyTypeFamily.DATETIME, PolyTypeFamily.DATETIME, PolyTypeFamily.DATETIME_INTERVAL ), (Predicate<Integer> & Serializable) i -> false ) {
                 @Override
                 public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
                     if ( !super.checkOperandTypes( callBinding, throwOnFailure ) ) {
@@ -468,7 +473,7 @@ public abstract class OperandTypes {
 
 
                 @Override
-                public SqlOperandCountRange getOperandCountRange() {
+                public OperandCountRange getOperandCountRange() {
                     return PolyOperandCountRanges.of( 1 );
                 }
 
@@ -536,7 +541,7 @@ public abstract class OperandTypes {
 
 
                 @Override
-                public SqlOperandCountRange getOperandCountRange() {
+                public OperandCountRange getOperandCountRange() {
                     return PolyOperandCountRanges.of( 1 );
                 }
 
@@ -567,7 +572,7 @@ public abstract class OperandTypes {
      * [ROW] (DATETIME, DATETIME)
      * [ROW] (DATETIME, INTERVAL)
      */
-    private static class PeriodOperandTypeChecker implements PolySingleOperandTypeChecker {
+    private static class PeriodOperandTypeChecker implements PolySingleOperandTypeChecker, Serializable {
 
         @Override
         public boolean checkSingleOperandType( SqlCallBinding callBinding, SqlNode node, int iFormalOperand, boolean throwOnFailure ) {
@@ -603,7 +608,7 @@ public abstract class OperandTypes {
 
 
         @Override
-        public SqlOperandCountRange getOperandCountRange() {
+        public OperandCountRange getOperandCountRange() {
             return PolyOperandCountRanges.of( 1 );
         }
 
@@ -624,6 +629,7 @@ public abstract class OperandTypes {
         public Consistency getConsistency() {
             return Consistency.NONE;
         }
-    }
-}
 
+    }
+
+}
