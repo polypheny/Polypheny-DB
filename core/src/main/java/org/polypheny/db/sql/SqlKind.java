@@ -1225,7 +1225,19 @@ public enum SqlKind {
 
     DOC_ITEM,
 
-    DOC_SIZE_MATCH;
+    DOC_SIZE_MATCH,
+
+    DOC_REGEX_MATCH,
+
+    DOC_TYPE_MATCH,
+
+    DOC_SLICE,
+
+    DOC_EXCLUDE,
+
+    DOC_ELEM_MATCH,
+
+    DOC_UNWIND;
 
     // Most of the static fields are categories, aggregating several kinds into a set.
 
@@ -1348,6 +1360,8 @@ public enum SqlKind {
      * {@link #GREATER_THAN_OR_EQUAL}.
      */
     public static final Set<SqlKind> COMPARISON = EnumSet.of( IN, EQUALS, NOT_EQUALS, LESS_THAN, GREATER_THAN, GREATER_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL );
+
+    public static final Set<SqlKind> DOC_KIND = EnumSet.of( DOC_VALUE, DOC_ITEM, DOC_SIZE_MATCH, DOC_REGEX_MATCH, DOC_TYPE_MATCH, DOC_SLICE, DOC_EXCLUDE, DOC_ELEM_MATCH, DOC_UNWIND );
 
     /**
      * Lower-case name.

@@ -31,17 +31,17 @@ public interface MqlStdOperatorTable {
 
     MqlFunctionOperator DOC_JSON_MATCH = new MqlFunctionOperator( "DOC_JSON_MATCH", SqlKind.EQUALS );
 
-    MqlFunctionOperator DOC_REGEX_MATCH = new MqlFunctionOperator( "DOC_REGEX_MATCH", SqlKind.EQUALS );
+    MqlFunctionOperator DOC_REGEX_MATCH = new MqlFunctionOperator( "DOC_REGEX_MATCH", SqlKind.DOC_REGEX_MATCH );
 
-    MqlFunctionOperator DOC_TYPE_MATCH = new MqlFunctionOperator( "DOC_TYPE_MATCH", SqlKind.EQUALS );
+    MqlFunctionOperator DOC_TYPE_MATCH = new MqlFunctionOperator( "DOC_TYPE_MATCH", SqlKind.DOC_TYPE_MATCH );
 
     MqlFunctionOperator DOC_QUERY_VALUE = new MqlFunctionOperator( "DOC_QUERY_VALUE", SqlKind.DOC_VALUE );
 
-    MqlFunctionOperator DOC_SLICE = new MqlFunctionOperator( "DOC_SLICE", SqlKind.JSON_VALUE_EXPRESSION );
+    MqlFunctionOperator DOC_SLICE = new MqlFunctionOperator( "DOC_SLICE", SqlKind.DOC_SLICE );
 
     MqlFunctionOperator DOC_ITEM = new MqlFunctionOperator( "DOC_ITEM", SqlKind.DOC_ITEM );
 
-    MqlFunctionOperator DOC_QUERY_EXCLUDE = new MqlFunctionOperator( "DOC_QUERY_EXCLUDE", SqlKind.JSON_VALUE_EXPRESSION );
+    MqlFunctionOperator DOC_QUERY_EXCLUDE = new MqlFunctionOperator( "DOC_QUERY_EXCLUDE", SqlKind.DOC_EXCLUDE );
 
     MqlFunctionOperator DOC_ADD_FIELDS = new MqlFunctionOperator( "DOC_ADD_FIELDS", SqlKind.UPDATE );
 
@@ -57,8 +57,8 @@ public interface MqlStdOperatorTable {
 
     MqlFunctionOperator DOC_UPDATE_REMOVE = new MqlFunctionOperator( "DOC_UPDATE_REMOVE", SqlKind.UPDATE );
 
-    MqlFunctionOperator DOC_ELEM_MATCH = new MqlFunctionOperator( "DOC_ELEM_MATCH", SqlKind.EQUALS );
+    MqlFunctionOperator DOC_ELEM_MATCH = new MqlFunctionOperator( "DOC_ELEM_MATCH", SqlKind.DOC_ELEM_MATCH );
 
-    MqlFunctionOperator DOC_UNWIND = new MqlFunctionOperator( "DOC_UNWIND", SqlKind.JSON_VALUE_EXPRESSION );
+    MqlFunctionOperator DOC_UNWIND = new MqlFunctionOperator( "DOC_UNWIND", SqlKind.DOC_UNWIND );
 
 }

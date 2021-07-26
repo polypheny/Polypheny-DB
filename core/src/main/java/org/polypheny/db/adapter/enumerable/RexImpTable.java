@@ -2417,7 +2417,7 @@ public class RexImpTable {
         @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
             final ParameterExpression i_ = Expressions.parameter( int.class, "_i" );
-            final ParameterExpression list_ = Expressions.parameter( Types.of( List.class, Object.class ), "_list" );
+            final ParameterExpression list_ = Expressions.parameter( Types.of( List.class, Object.class ), "_callList" );
             final ParameterExpression unset_ = Expressions.parameter( boolean.class, "_unset" );
             final ParameterExpression el_ = Expressions.parameter( Object.class, "_el" );
             translator.getUnwindContext().activateUnwind( i_, list_, unset_ );

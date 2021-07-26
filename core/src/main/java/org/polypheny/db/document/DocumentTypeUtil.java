@@ -19,6 +19,7 @@ package org.polypheny.db.document;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -298,5 +299,18 @@ public class DocumentTypeUtil {
         }
     }
 
+
+    public static List<Integer> removePlaceholderTypes( List<Integer> types ) {
+        List<Integer> typeNumbers = new ArrayList<>( types );
+        if ( typeNumbers.contains( 99 ) ) {
+            // number type matches to double, 32int, 64int, decimal
+            typeNumbers.remove( (Integer) 99 );
+            typeNumbers.add( 1 );
+            typeNumbers.add( 16 );
+            typeNumbers.add( 18 );
+            typeNumbers.add( 19 );
+        }
+        return typeNumbers;
+    }
 
 }

@@ -184,7 +184,7 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
 
     @Override
     public RexNode visitCall( RexCall call ) {
-        if ( call.getKind() == SqlKind.DOC_VALUE || call.getKind() == SqlKind.DOC_ITEM ) {
+        if ( call.getKind().belongsTo( SqlKind.DOC_KIND ) ) {
             return call;
         } else if ( call.op instanceof SqlArrayValueConstructor ) {
             int i = index.getAndIncrement();

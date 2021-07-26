@@ -161,15 +161,6 @@ public class MqlFunctions {
             return typeNumbers.contains( 10 );
         }
 
-        if ( typeNumbers.contains( 99 ) ) {
-            // number type matches to double, 32int, 64int, decimal
-            typeNumbers.remove( (Integer) 99 );
-            typeNumbers.add( 1 );
-            typeNumbers.add( 16 );
-            typeNumbers.add( 18 );
-            typeNumbers.add( 19 );
-        }
-
         List<Pair<Class<? extends BsonValue>, Class<?>>> clazzPairs = typeNumbers.stream().map( DocumentTypeUtil::getBsonClass ).collect( Collectors.toList() );
 
         return Pair.right( clazzPairs ).stream().anyMatch( clazz -> clazz.isInstance( input ) );

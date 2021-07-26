@@ -323,7 +323,7 @@ public class MongoRules {
                 sb.append( finish );
                 return sb.toString();
             }
-            String special = handleSpecialCases( this, call );
+            String special = handleSpecialCases( call );
             if ( special != null ) {
                 return special;
             }
@@ -332,21 +332,52 @@ public class MongoRules {
         }
 
 
-        public static String handleSpecialCases( RexToMongoTranslator rexToMongoTranslator, RexCall call ) {
+        public String handleSpecialCases( RexCall call ) {
             if ( call.getType().getPolyType() == PolyType.ARRAY ) {
                 BsonArray array = new BsonArray();
-                array.addAll( rexToMongoTranslator.translateList( call.operands ).stream().map( BsonString::new ).collect( Collectors.toList() ) );
+                array.addAll( translateList( call.operands ).stream().map( BsonString::new ).collect( Collectors.toList() ) );
                 return array.toString();
             } else if ( call.isA( SqlKind.DOC_VALUE ) ) {
-                return RexToMongoTranslator.translateDocValue( rexToMongoTranslator.implementor.getStaticRowType(), call );
+                return RexToMongoTranslator.translateDocValue( implementor.getStaticRowType(), call );
 
             } else if ( call.isA( SqlKind.DOC_ITEM ) ) {
                 RexNode leftPre = call.operands.get( 0 );
-                String left = leftPre.accept( rexToMongoTranslator );
+                String left = leftPre.accept( this );
 
-                String right = call.operands.get( 1 ).accept( rexToMongoTranslator );
+                String right = call.operands.get( 1 ).accept( this );
 
                 return "{\"$arrayElemAt\":[" + left + "," + right + "]}";
+            } else if ( call.isA( SqlKind.DOC_SLICE ) ) {
+                String left = call.operands.get( 0 ).accept( this );
+                String skip = call.operands.get( 1 ).accept( this );
+                String return_ = call.operands.get( 2 ).accept( this );
+
+                return "{\"$slice\":[ " + left + "," + skip + "," + return_ + "]}";
+            } else if ( call.isA( SqlKind.DOC_EXCLUDE ) ) {
+                String parent = implementor
+                        .getStaticRowType()
+                        .getFieldNames()
+                        .get( ((RexInputRef) call.operands.get( 0 )).getIndex() );
+
+                if ( !(call.operands.get( 1 ) instanceof RexCall) || call.operands.size() != 2 ) {
+                    return null;
+                }
+                RexCall excludes = (RexCall) call.operands.get( 1 );
+                List<String> fields = new ArrayList<>();
+                for ( RexNode operand : excludes.operands ) {
+                    if ( !(operand instanceof RexCall) ) {
+                        return null;
+                    }
+                    fields.add( "\"" + parent + "." + ((RexCall) operand)
+                            .operands
+                            .stream()
+                            .map( op -> ((RexLiteral) op).getValueAs( String.class ) )
+                            .collect( Collectors.joining( "." ) ) + "\": 0" );
+                }
+
+                return String.join( ",", fields );
+            } else if ( call.isA( SqlKind.DOC_UNWIND ) ) {
+                return call.operands.get( 0 ).accept( this );
             }
             return null;
         }

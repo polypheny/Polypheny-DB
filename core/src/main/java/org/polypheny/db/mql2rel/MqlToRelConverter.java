@@ -755,6 +755,11 @@ public class MqlToRelConverter {
             }
             path = value.asDocument().get( "path" ).asString().getValue();
         }
+        if ( !path.startsWith( "$" ) ) {
+            throw new RuntimeException( "$unwind pipeline stage needs either a document or a string describing the path, which is prefixed with \"$\"." );
+        }
+        path = path.substring( 1 );
+
         RexNode id = getIdentifier( path, node.getRowType() );
 
         RexCall call = new RexCall( any, MqlStdOperatorTable.DOC_UNWIND, Collections.singletonList( id ) );
@@ -1382,9 +1387,9 @@ public class MqlToRelConverter {
     private RexNode translateDocument( BsonDocument bsonDocument, RelDataType rowType, String parentKey ) {
         ArrayList<RexNode> operands = new ArrayList<>();
 
-        if ( bsonDocument.getFirstKey().equals( "$regex" ) ) {
+        /*if ( bsonDocument.getFirstKey().equals( "$regex" ) ) {
             operands.add( convertRegex( bsonDocument, parentKey, rowType ) );
-        }
+        }*/
 
         for ( Entry<String, BsonValue> entry : bsonDocument.entrySet() ) {
             if ( entry.getKey().equals( "$regex" ) ) {
@@ -1566,10 +1571,10 @@ public class MqlToRelConverter {
                     throw new RuntimeException( errorMsg );
                 }
             }
-            types = getIntArray( numbers );
+            types = getIntArray( DocumentTypeUtil.removePlaceholderTypes( numbers ) );
         } else if ( value.isNumber() || value.isString() ) {
             int typeNumber = value.isNumber() ? value.asNumber().intValue() : DocumentTypeUtil.getTypeNumber( value.asString().getValue() );
-            types = getIntArray( Collections.singletonList( typeNumber ) );
+            types = getIntArray( DocumentTypeUtil.removePlaceholderTypes( Collections.singletonList( typeNumber ) ) );
         } else {
             throw new RuntimeException( errorMsg );
         }

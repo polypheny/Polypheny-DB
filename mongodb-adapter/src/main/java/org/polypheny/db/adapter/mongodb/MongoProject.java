@@ -35,7 +35,6 @@ package org.polypheny.db.adapter.mongodb;
 
 
 import com.google.common.collect.Streams;
-import com.mongodb.client.gridfs.GridFSBucket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -90,7 +89,7 @@ public class MongoProject extends Project implements MongoRel {
 
         final MongoRules.RexToMongoTranslator translator = new MongoRules.RexToMongoTranslator( (JavaTypeFactory) getCluster().getTypeFactory(), MongoRules.mongoFieldNames( getInput().getRowType() ), implementor );
         final List<String> items = new ArrayList<>();
-        GridFSBucket bucket = implementor.getBucket();
+        final List<String> unwinds = new ArrayList<>();
         // we us our specialized rowType to derive the mapped underlying column identifiers
         MongoRowType mongoRowType = null;
         if ( implementor.getStaticRowType() instanceof MongoRowType ) {
@@ -118,6 +117,15 @@ public class MongoProject extends Project implements MongoRel {
             if ( expr == null ) {
                 continue;
             }
+            // exclude projection cannot be handled this way so it needs fixing
+            if ( pair.left.isA( SqlKind.DOC_EXCLUDE ) ) {
+                items.add( expr );
+                continue;
+            }
+
+            if ( pair.left.isA( SqlKind.DOC_UNWIND ) ) {
+                unwinds.add( MongoRules.maybeQuote( "$" + pair.right ) );
+            }
 
             items.add( expr.equals( "'$" + name + "'" )
                     ? MongoRules.maybeQuote( name ) + ": " + 1
@@ -140,9 +148,13 @@ public class MongoProject extends Project implements MongoRel {
                 "{", ", ", "}" );
         final String aggregateString = "{$project: " + findString + "}";
         final Pair<String, String> op = Pair.of( findString, aggregateString );
+
         implementor.hasProject = true;
         if ( !implementor.isDML() && items.size() + documents.size() != 0 ) {
             implementor.add( op.left, op.right );
+            if ( unwinds.size() != 0 ) {
+                implementor.add( Util.toString( unwinds, "{", ",", "}" ), Util.toString( unwinds, "{$unwind:", ",", "}" ) );
+            }
         }
     }
 
