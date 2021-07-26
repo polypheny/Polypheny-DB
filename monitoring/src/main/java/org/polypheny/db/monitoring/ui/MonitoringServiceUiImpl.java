@@ -34,7 +34,6 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.monitoring.core.MonitoringQueue;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
-import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
@@ -179,8 +178,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
         table.reset();
 
-        table.addRow( "Number of processed events in total", queue.getNumberOfProcessedEvents( true ) );
-        table.addRow( "Number of processed events since restart", queue.getNumberOfProcessedEvents( false ) );
+        table.addRow( "Number of processed events since restart", queue.getNumberOfProcessedEvents() );
         table.addRow( "Number of events in queue", queue.getNumberOfElementsInQueue());
         //table.addRow( "# Data Points", queue.getElementsInQueue().size() );
         table.addRow( "# SELECT", MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPoint.class ).size() );

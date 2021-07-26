@@ -51,7 +51,6 @@ public class MapDbRepository implements MonitoringRepository {
 
     @Override
     public void initialize() {
-
         if ( simpleBackendDb != null ) {
             simpleBackendDb.close();
         }
@@ -71,10 +70,6 @@ public class MapDbRepository implements MonitoringRepository {
 
     @Override
     public void persistDataPoint( @NonNull MonitoringDataPoint dataPoint ) {
-        if ( dataPoint == null ) {
-            throw new IllegalArgumentException( "invalid argument null" );
-        }
-
         BTreeMap table = this.data.get( dataPoint.getClass() );
         if ( table == null ) {
             this.createPersistentTable( dataPoint.getClass() );

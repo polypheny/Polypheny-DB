@@ -23,10 +23,12 @@ import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.monitoring.events.DMLEvent;
 import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelRoot;
 
 @Slf4j
 public class DMLEventAnalyzer {
     // TODO: Bis jetzt sind die Klassen mehr oder weniger identisch. Ist das einfach vorbereitet für später oder wie?
+
 
     public static DMLDataPoint analyze( DMLEvent dmlEvent ) {
         DMLDataPoint metric = DMLDataPoint
@@ -38,14 +40,15 @@ public class DMLEventAnalyzer {
                 .executionTime( dmlEvent.getExecutionTime() )
                 .rowCount( dmlEvent.getRowCount() )
                 .isSubQuery( dmlEvent.isSubQuery() )
-                .recordedTimestamp( dmlEvent.getRecordedTimestamp()  )
+                .recordedTimestamp( dmlEvent.getRecordedTimestamp() )
                 .build();
 
-        RelNode node = dmlEvent.getRouted().rel;
-        processRelNode( node, dmlEvent, metric );
+        RelRoot relRoot = dmlEvent.getRouted();
+        if ( relRoot != null ) {
+            RelNode node = relRoot.rel;
+            processRelNode( node, dmlEvent, metric );
+        }
 
-        // TODO: read even more data
-        // job.getMonitoringPersistentData().getDataElements()
         if ( dmlEvent.isAnalyze() ) {
             processDurationInfo( dmlEvent, metric );
         }
@@ -55,7 +58,6 @@ public class DMLEventAnalyzer {
 
 
     private static void processDurationInfo( DMLEvent dmlEvent, DMLDataPoint metric ) {
-        // TODO: Könnte wir in einem StatementEventAnalyzer auslagern, dann haben wir die Funktion nur 1 mal :)
         try {
             InformationDuration duration = new Gson().fromJson( dmlEvent.getDurations(), InformationDuration.class );
             getDurationInfo( metric, "Plan Caching", duration );
@@ -93,4 +95,5 @@ public class DMLEventAnalyzer {
             metric.getTables().addAll( node.getTable().getQualifiedName() );
         }
     }
+
 }

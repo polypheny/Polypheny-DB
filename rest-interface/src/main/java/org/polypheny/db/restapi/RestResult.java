@@ -48,7 +48,6 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
-import org.polypheny.db.util.Pair;
 import spark.Response;
 import spark.utils.IOUtils;
 
@@ -231,13 +230,13 @@ public class RestResult {
     }
 
 
-    public Pair<String, Integer> getResult( final Response res ) {
+    public String getResult( final Response res ) {
         Gson gson = new Gson();
         Map<String, Object> finalResult = new HashMap<>();
         finalResult.put( "result", result );
         finalResult.put( "size", result.size() );
         if ( !containsFiles ) {
-            return new Pair( gson.toJson( finalResult ), finalResult.size() );
+            return gson.toJson( finalResult );
         } else {
             OutputStream os;
             ZipEntry zipEntry = new ZipEntry( "data.json" );
@@ -263,7 +262,7 @@ public class RestResult {
                 zipFile.delete();
                 res.status( 500 );
             }
-            return new Pair( "", finalResult.size() );
+            return "";
         }
     }
 

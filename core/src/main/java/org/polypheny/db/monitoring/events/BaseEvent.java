@@ -19,7 +19,6 @@ package org.polypheny.db.monitoring.events;
 import java.sql.Timestamp;
 import java.util.UUID;
 import lombok.Getter;
-import org.apache.calcite.avatica.remote.Service.Base;
 
 
 public abstract class BaseEvent implements MonitoringEvent {
@@ -27,15 +26,15 @@ public abstract class BaseEvent implements MonitoringEvent {
 
     @Getter
     private final UUID id = UUID.randomUUID();
-    protected  String eventType;
+    protected String eventType;
 
 
+    private long recordedTimestamp;
 
-    private long recordedTimestamp; // = getCurrentTimestamp();
 
-    public BaseEvent (){
-       setEventType( eventType );
-       recordedTimestamp = getCurrentTimestamp();
+    public BaseEvent() {
+        setEventType( eventType );
+        recordedTimestamp = getCurrentTimestamp();
     }
 
 
@@ -45,21 +44,13 @@ public abstract class BaseEvent implements MonitoringEvent {
 
 
     @Override
-    public String getEventType() {
-        return eventType;
-    }
-
-
-
-    @Override
     public Timestamp getRecordedTimestamp() {
         return new Timestamp( recordedTimestamp );
     }
 
 
-
-    private long getCurrentTimestamp(){
-       return System.currentTimeMillis();
+    private long getCurrentTimestamp() {
+        return System.currentTimeMillis();
     }
 
 }

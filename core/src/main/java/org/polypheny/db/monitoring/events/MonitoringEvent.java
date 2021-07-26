@@ -31,10 +31,6 @@ public interface MonitoringEvent {
 
     Timestamp getRecordedTimestamp();
 
-    // TODO: Für was brauchst du hier noch einen String?
-    //  Die nötigen infos hast du eigentlich schon im typ, oder nicht? Oder einfach für debugging?
-    String getEventType();
-
     /**
      * @param <T> Defined Class Types which will be generated from the event.
      * The analyze method will create the list of metrics.

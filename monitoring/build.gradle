@@ -23,8 +23,6 @@ dependencies {
     implementation group: "org.mapdb", name: "mapdb", version: mapdb_version
     implementation 'org.junit.jupiter:junit-jupiter:5.7.0'// Apache 2.0
 
-    compile "com.influxdb:influxdb-client-java:1.8.0"
-
     ////// Logging
     api group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version  // MIT
     implementation group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version  // Apache 2.0

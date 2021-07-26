@@ -48,12 +48,13 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     private final Queue<MonitoringEvent> monitoringJobQueue = new ConcurrentLinkedQueue<>();
     private final Lock processingQueueLock = new ReentrantLock();
     private final MonitoringRepository repository;
-    // number of elements beeing processed from the queue to the backend per "batch"
-    private String backgroundTaskId;
-    //For ever
-    private long processedEventsTotal;
 
-    //Since restart
+
+    private String backgroundTaskId;
+
+    /**
+     * Processed events since restart.
+     */
     private long processedEvents;
 
     // endregion
@@ -68,10 +69,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
      */
     public MonitoringQueueImpl( boolean startBackGroundTask, @NonNull MonitoringRepository repository ) {
         log.info( "write queue service" );
-
-        if ( repository == null ) {
-            throw new IllegalArgumentException( "repo parameter is null" );
-        }
 
         this.repository = repository;
 
@@ -123,12 +120,11 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     public List<HashMap<String, String>> getInformationOnElementsInQueue() {
         List<HashMap<String, String>> infoList = new ArrayList<>();
 
-
         for ( MonitoringEvent event : getElementsInQueue() ) {
-            HashMap<String, String> infoRow = new HashMap<String,String>();
-            infoRow.put("type", event.getEventType() );
-            infoRow.put("id", event.getId().toString() );
-            infoRow.put("timestamp", event.getRecordedTimestamp().toString() );
+            HashMap<String, String> infoRow = new HashMap<String, String>();
+            infoRow.put( "type", event.getClass().toString() );
+            infoRow.put( "id", event.getId().toString() );
+            infoRow.put( "timestamp", event.getRecordedTimestamp().toString() );
 
             infoList.add( infoRow );
         }
@@ -137,12 +133,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
 
     @Override
-    public long getNumberOfProcessedEvents( boolean all ) {
-        // TODO: Wird hier noch das persistiert? Könnten wir selbst als Metric aufbauen und persistieren ;-)
-        if ( all ) {
-            return processedEventsTotal;
-        }
-        //returns only processed events since last restart
+    public long getNumberOfProcessedEvents() {
         return processedEvents;
     }
 
@@ -164,10 +155,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
 
     private List<MonitoringEvent> getElementsInQueue() {
-        // TODO: Würde ich definitiv nicht so machen. Wenn du im UI die Anzahl Events
-        //   wissen willst dann unbedingt nur die Anzahl rausgeben. Sonst gibt du die ganzen Instanzen raus und
-        //   könntest die Queue zum übelsten missbrauchen ;-)
-
         List<MonitoringEvent> eventsInQueue = new ArrayList<>();
 
         for ( MonitoringEvent event : monitoringJobQueue ) {
@@ -177,6 +164,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         return eventsInQueue;
     }
 
+
     private void processQueue() {
         log.debug( "Start processing queue" );
         this.processingQueueLock.lock();
@@ -184,16 +172,18 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         Optional<MonitoringEvent> event;
 
         try {
-
             // while there are jobs to consume:
             int countEvents = 0;
             while ( (event = this.getNextJob()).isPresent() && countEvents < RuntimeConfig.QUEUE_PROCESSING_ELEMENTS.getInteger() ) {
                 log.debug( "get new monitoring job" + event.get().getId().toString() );
 
-                //returns list of metrics which was produced by this particular event
+                // returns list of metrics which was produced by this particular event
                 val dataPoints = event.get().analyze();
+                if ( dataPoints.isEmpty() ) {
+                    continue;
+                }
 
-                //Sends all extracted metrics to subscribers
+                // Sends all extracted metrics to subscribers
                 for ( val dataPoint : dataPoints ) {
                     this.repository.persistDataPoint( dataPoint );
                 }
@@ -201,7 +191,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
                 countEvents++;
             }
             processedEvents += countEvents;
-            processedEventsTotal += countEvents;
         } finally {
             this.processingQueueLock.unlock();
         }
