@@ -153,7 +153,6 @@ public class FileStore extends DataStore {
                     getAdapterId(),
                     placement.columnId,
                     currentSchema.getSchemaName(),
-                    getPhysicalTableName( catalogTable.id ),
                     getPhysicalColumnName( placement.columnId ),
                     true );
         }
@@ -207,7 +206,6 @@ public class FileStore extends DataStore {
                 getAdapterId(),
                 catalogColumn.id,
                 currentSchema.getSchemaName(),
-                getPhysicalTableName( catalogTable.id ),
                 getPhysicalColumnName( catalogColumn.id ),
                 false );
     }

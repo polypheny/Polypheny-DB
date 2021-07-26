@@ -361,7 +361,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName, boolean updatePhysicalColumnPosition ) {
+    public void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalColumnName, boolean updatePhysicalColumnPosition ) {
         throw new NotImplementedException();
     }
 

@@ -252,7 +252,6 @@ public class CottontailStore extends DataStore {
                         this.getAdapterId(),
                         placement.columnId,
                         this.dbName,
-                        physicalTableName,
                         CottontailNameUtil.createPhysicalColumnName( placement.columnId ),
                         true );
             }
@@ -380,7 +379,6 @@ public class CottontailStore extends DataStore {
                     this.getAdapterId(),
                     placement.columnId,
                     this.dbName,
-                    newPhysicalTableName,
                     CottontailNameUtil.createPhysicalColumnName( placement.columnId ),
                     true );
         }
@@ -454,7 +452,6 @@ public class CottontailStore extends DataStore {
                     this.getAdapterId(),
                     placement.columnId,
                     this.dbName,
-                    newPhysicalTableName,
                     CottontailNameUtil.createPhysicalColumnName( placement.columnId ),
                     true );
         }
@@ -600,7 +597,6 @@ public class CottontailStore extends DataStore {
                     getAdapterId(),
                     ccp.columnId,
                     ccp.physicalSchemaName,
-                    newPhysicalTableName,
                     ccp.physicalColumnName,
                     false );
         }

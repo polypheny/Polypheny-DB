@@ -236,7 +236,6 @@ public class MongoStore extends DataStore {
                         getAdapterId(),
                         placement.columnId,
                         catalogTable.getSchemaName(),
-                        null,
                         physicalTableName,
                         true );
             }
@@ -315,7 +314,6 @@ public class MongoStore extends DataStore {
                     getAdapterId(),
                     catalogColumn.id,
                     currentSchema.getDatabase().getName(),
-                    null,
                     getPhysicalColumnName( catalogColumn.id ),
                     false );
         }

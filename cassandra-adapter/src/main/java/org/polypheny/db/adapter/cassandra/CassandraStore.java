@@ -281,7 +281,6 @@ public class CassandraStore extends DataStore {
                     getAdapterId(),
                     placement.columnId,
                     this.dbKeyspace, // TODO MV: physical schema name
-                    physicalTableName,
                     physicalNameProvider.generatePhysicalColumnName( placement.columnId ),
                     true );
         }
@@ -316,7 +315,6 @@ public class CassandraStore extends DataStore {
                 getAdapterId(),
                 catalogColumn.id,
                 this.dbKeyspace,
-                physicalTableName,
                 physicalColumnName,
                 false );
     }

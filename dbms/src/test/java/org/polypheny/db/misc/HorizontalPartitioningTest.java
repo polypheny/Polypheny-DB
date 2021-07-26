@@ -39,6 +39,10 @@ import org.polypheny.db.config.Config;
 import org.polypheny.db.config.ConfigEnum;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.excluded.CassandraExcluded;
+import org.polypheny.db.excluded.CottontailExcluded;
+import org.polypheny.db.excluded.FileExcluded;
+import org.polypheny.db.excluded.MonetdbExcluded;
+import org.polypheny.db.excluded.MongodbExcluded;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
@@ -59,6 +63,7 @@ public class HorizontalPartitioningTest {
 
 
     @Test
+    @Category({CassandraExcluded.class, MongodbExcluded.class, CottontailExcluded.class, FileExcluded.class })
     public void basicHorizontalPartitioningTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -111,6 +116,7 @@ public class HorizontalPartitioningTest {
 
 
     @Test
+    @Category({CassandraExcluded.class, MongodbExcluded.class, CottontailExcluded.class, FileExcluded.class })
     public void modifyPartitionTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -209,6 +215,7 @@ public class HorizontalPartitioningTest {
 
     // Check if partitions have enough partitions
     @Test
+    @Category({CassandraExcluded.class, MongodbExcluded.class, CottontailExcluded.class, FileExcluded.class })
     public void partitionNumberTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -252,6 +259,7 @@ public class HorizontalPartitioningTest {
 
 
     @Test
+    @Category({CassandraExcluded.class, MongodbExcluded.class, CottontailExcluded.class, FileExcluded.class })
     public void hashPartitioningTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -320,6 +328,7 @@ public class HorizontalPartitioningTest {
 
 
     @Test
+    @Category({CassandraExcluded.class, MongodbExcluded.class, CottontailExcluded.class, FileExcluded.class })
     public void listPartitioningTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -379,7 +388,7 @@ public class HorizontalPartitioningTest {
 
 
     @Test
-    @Category(CassandraExcluded.class)
+    @Category({CassandraExcluded.class, MongodbExcluded.class, CottontailExcluded.class, FileExcluded.class })
     public void rangePartitioningTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -437,7 +446,7 @@ public class HorizontalPartitioningTest {
 
 
     @Test
-    @Category(CassandraExcluded.class)
+    @Category({CassandraExcluded.class, MongodbExcluded.class, CottontailExcluded.class, FileExcluded.class })
     public void partitionPlacementTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -493,7 +502,7 @@ public class HorizontalPartitioningTest {
     }
 
     @Test
-    @Category(CassandraExcluded.class)
+    @Category({CassandraExcluded.class, MongodbExcluded.class, CottontailExcluded.class, FileExcluded.class })
     public void temperaturePartitionTest() throws SQLException {
 
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {

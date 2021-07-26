@@ -154,7 +154,6 @@ public abstract class AbstractJdbcStore extends DataStore {
                         getAdapterId(),
                         placement.columnId,
                         getDefaultPhysicalSchemaName(),
-                        null,
                         getPhysicalColumnName( placement.columnId ),
                         true );
             }
@@ -214,7 +213,6 @@ public abstract class AbstractJdbcStore extends DataStore {
                    getAdapterId(),
                    catalogColumn.id,
                    physicalSchemaName,
-                   null,
                    physicalColumnName,
                    false );
        }
