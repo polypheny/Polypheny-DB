@@ -16,11 +16,14 @@
 
 package org.polypheny.db.monitoring.core;
 
+import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -46,6 +49,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
      * monitoring queue which will queue all the incoming jobs.
      */
     private final Queue<MonitoringEvent> monitoringJobQueue = new ConcurrentLinkedQueue<>();
+    private final Set<UUID> queueIds = Sets.newConcurrentHashSet();
     private final Lock processingQueueLock = new ReentrantLock();
     private final MonitoringRepository repository;
 
@@ -101,7 +105,10 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
     @Override
     public void queueEvent( @NonNull MonitoringEvent event ) {
-        this.monitoringJobQueue.add( event );
+        if ( !queueIds.contains( event.getId() ) ) {
+            queueIds.add( event.getId() );
+            this.monitoringJobQueue.add( event );
+        }
     }
 
 
@@ -112,7 +119,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
      */
     @Override
     public long getNumberOfElementsInQueue() {
-        return getElementsInQueue().size();
+        return queueIds.size();
     }
 
 
@@ -120,7 +127,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     public List<HashMap<String, String>> getInformationOnElementsInQueue() {
         List<HashMap<String, String>> infoList = new ArrayList<>();
 
-        for ( MonitoringEvent event : getElementsInQueue() ) {
+        for ( MonitoringEvent event : monitoringJobQueue ) {
             HashMap<String, String> infoRow = new HashMap<String, String>();
             infoRow.put( "type", event.getClass().toString() );
             infoRow.put( "id", event.getId().toString() );
@@ -154,17 +161,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     }
 
 
-    private List<MonitoringEvent> getElementsInQueue() {
-        List<MonitoringEvent> eventsInQueue = new ArrayList<>();
-
-        for ( MonitoringEvent event : monitoringJobQueue ) {
-            eventsInQueue.add( event );
-        }
-
-        return eventsInQueue;
-    }
-
-
     private void processQueue() {
         log.debug( "Start processing queue" );
         this.processingQueueLock.lock();
@@ -189,6 +185,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
                 }
 
                 countEvents++;
+                queueIds.remove( event.get().getId() );
             }
             processedEvents += countEvents;
         } finally {

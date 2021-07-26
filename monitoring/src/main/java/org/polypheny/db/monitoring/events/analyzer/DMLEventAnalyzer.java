@@ -34,7 +34,6 @@ public class DMLEventAnalyzer {
         DMLDataPoint metric = DMLDataPoint
                 .builder()
                 .description( dmlEvent.getDescription() )
-                .monitoringType( dmlEvent.getMonitoringType() )
                 .Id( dmlEvent.getId() )
                 .fieldNames( dmlEvent.getFieldNames() )
                 .executionTime( dmlEvent.getExecutionTime() )

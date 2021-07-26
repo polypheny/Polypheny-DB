@@ -31,7 +31,6 @@ public class QueryEventAnalyzer {
         QueryDataPoint metric = QueryDataPoint
                 .builder()
                 .description( queryEvent.getDescription() )
-                .monitoringType( queryEvent.getMonitoringType() )
                 .Id( queryEvent.getId() )
                 .fieldNames( queryEvent.getFieldNames() )
                 .executionTime( queryEvent.getExecutionTime() )
