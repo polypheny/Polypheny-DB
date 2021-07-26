@@ -55,7 +55,9 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.mongodb.MongoRel.Implementor;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.util.MongoTypeUtil;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.document.DocumentRules;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -71,6 +73,7 @@ import org.polypheny.db.rel.InvalidRelException;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.convert.ConverterRule;
+import org.polypheny.db.rel.core.Documents;
 import org.polypheny.db.rel.core.RelFactories;
 import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.rel.core.TableModify;
@@ -112,6 +115,7 @@ public class MongoRules {
 
 
     protected static final Logger LOGGER = PolyphenyDbTrace.getPlannerTracer();
+    public static final MongoConvention convention = MongoConvention.INSTANCE;
 
     @Getter
     public static final RelOptRule[] RULES = {
@@ -274,7 +278,7 @@ public class MongoRules {
             if ( name != null ) {
                 return "'$" + name + "'";
             }
-            final List<String> strings = visitList( call.operands );
+            final List<String> strings = translateList( call.operands );
             if ( call.getKind() == SqlKind.CAST ) {
                 return strings.get( 0 );
             }
@@ -319,12 +323,44 @@ public class MongoRules {
                 sb.append( finish );
                 return sb.toString();
             }
+            String special = handleSpecialCases( this, call );
+            if ( special != null ) {
+                return special;
+            }
+
+            throw new IllegalArgumentException( "Translation of " + call + " is not supported by MongoProject" );
+        }
+
+
+        public static String handleSpecialCases( RexToMongoTranslator rexToMongoTranslator, RexCall call ) {
             if ( call.getType().getPolyType() == PolyType.ARRAY ) {
                 BsonArray array = new BsonArray();
-                array.addAll( visitList( call.operands ).stream().map( BsonString::new ).collect( Collectors.toList() ) );
+                array.addAll( rexToMongoTranslator.translateList( call.operands ).stream().map( BsonString::new ).collect( Collectors.toList() ) );
                 return array.toString();
+            } else if ( call.isA( SqlKind.DOC_VALUE ) ) {
+                return RexToMongoTranslator.translateDocValue( rexToMongoTranslator.implementor.getStaticRowType(), call );
+
+            } else if ( call.isA( SqlKind.DOC_ITEM ) ) {
+                RexNode leftPre = call.operands.get( 0 );
+                String left = leftPre.accept( rexToMongoTranslator );
+
+                String right = call.operands.get( 1 ).accept( rexToMongoTranslator );
+
+                return "{\"$arrayElemAt\":[" + left + "," + right + "]}";
             }
-            throw new IllegalArgumentException( "Translation of " + call + " is not supported by MongoProject" );
+            return null;
+        }
+
+
+        public static String translateDocValue( RelDataType rowType, RexCall call ) {
+            RexInputRef parent = (RexInputRef) call.getOperands().get( 0 );
+            RexCall names = (RexCall) call.operands.get( 1 );
+            return "\"$" + rowType.getFieldNames().get( parent.getIndex() )
+                    + "."
+                    + names.operands
+                    .stream()
+                    .map( n -> ((RexLiteral) n).getValueAs( String.class ) )
+                    .collect( Collectors.joining( "." ) ) + "\"";
         }
 
 
@@ -335,7 +371,7 @@ public class MongoRules {
         }
 
 
-        public List<String> visitList( List<RexNode> list ) {
+        public List<String> translateList( List<RexNode> list ) {
             final List<String> strings = new ArrayList<>();
             for ( RexNode node : list ) {
                 strings.add( node.accept( this ) );
@@ -400,7 +436,11 @@ public class MongoRules {
 
 
         private MongoFilterRule() {
-            super( LogicalFilter.class, filter -> true, Convention.NONE, MongoRel.CONVENTION, "MongoFilterRule" );
+            super( LogicalFilter.class,
+                    project -> MongoConvention.mapsDocuments || !DocumentRules.containsDocument( project ),
+                    Convention.NONE,
+                    MongoRel.CONVENTION,
+                    "MongoFilterRule" );
         }
 
 
@@ -427,7 +467,11 @@ public class MongoRules {
 
 
         private MongoProjectRule() {
-            super( LogicalProject.class, project -> true, Convention.NONE, MongoRel.CONVENTION, "MongoProjectRule" );
+            super( LogicalProject.class,
+                    project -> MongoConvention.mapsDocuments || !DocumentRules.containsDocument( project ),
+                    Convention.NONE,
+                    MongoRel.CONVENTION,
+                    "MongoProjectRule" );
         }
 
 
@@ -459,17 +503,16 @@ public class MongoRules {
         @Override
         public RelNode convert( RelNode rel ) {
             Values values = (Values) rel;
-            /*if ( values.getModel() == SchemaType.DOCUMENT ) {
+            if ( values.getModel() == SchemaType.DOCUMENT ) {
                 Documents documents = (Documents) rel;
                 return new MongoDocuments(
                         rel.getCluster(),
-                        documents.getRowTypes(),
                         rel.getRowType(),
-                        documents.getFlatTuples(),
+                        documents.getDocumentTuples(),
                         rel.getTraitSet().replace( out ),
                         values.getTuples()
                 );
-            }*/
+            }
             return new MongoValues(
                     values.getCluster(),
                     values.getRowType(),
@@ -497,14 +540,14 @@ public class MongoRules {
 
     public static class MongoDocuments extends Values implements MongoRel {
 
-        @Getter
-        private final List<RelDataType> rowTypes;
+
+        private final ImmutableList<BsonValue> documentTuples;
 
 
-        public MongoDocuments( RelOptCluster cluster, List<RelDataType> rowTypes, RelDataType defaultRowType, ImmutableList<ImmutableList<RexLiteral>> tuples, RelTraitSet traitSet, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
+        public MongoDocuments( RelOptCluster cluster, RelDataType defaultRowType, ImmutableList<BsonValue> documentTuples, RelTraitSet traitSet, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
             super( cluster, defaultRowType, normalizedTuples, traitSet );
-            this.rowTypes = rowTypes;
-            this.tuples = tuples;
+            this.tuples = normalizedTuples;
+            this.documentTuples = documentTuples;
         }
 
 
@@ -665,24 +708,12 @@ public class MongoRules {
 
 
         private void handleDocumentInsert( Implementor implementor, MongoDocuments documents ) {
-            List<BsonDocument> docs = new ArrayList<>();
-            GridFSBucket bucket = implementor.mongoTable.getMongoSchema().getBucket();
-            List<RelDataType> rowTypes = documents.getRowTypes();
-
-            int docPos = 0;
-            for ( ImmutableList<RexLiteral> literals : documents.tuples ) {
-                BsonDocument doc = new BsonDocument();
-                int pos = 0;
-                for ( RexLiteral literal : literals ) {
-                    doc.put(
-                            rowTypes.get( docPos ).getFieldNames().get( pos ),
-                            MongoTypeUtil.getAsBson( literal, bucket ) );
-                    pos++;
-                }
-                docs.add( doc );
-                docPos++;
-            }
-            implementor.operations = docs;
+            implementor.operations = documents.documentTuples
+                    .stream()
+                    .filter( BsonValue::isDocument )
+                    .map( BsonValue::asDocument )
+                    .map( d -> new BsonDocument( "_data", d ) )
+                    .collect( Collectors.toList() );
         }
 
 

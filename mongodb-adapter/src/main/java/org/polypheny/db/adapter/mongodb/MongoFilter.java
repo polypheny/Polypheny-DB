@@ -34,7 +34,9 @@
 package org.polypheny.db.adapter.mongodb;
 
 
+import static org.polypheny.db.sql.SqlKind.ARRAY_VALUE_CONSTRUCTOR;
 import static org.polypheny.db.sql.SqlKind.DISTANCE;
+import static org.polypheny.db.sql.SqlKind.DOC_VALUE;
 import static org.polypheny.db.sql.SqlKind.DYNAMIC_PARAM;
 import static org.polypheny.db.sql.SqlKind.INPUT_REF;
 import static org.polypheny.db.sql.SqlKind.LITERAL;
@@ -46,6 +48,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
@@ -232,9 +235,61 @@ public class MongoFilter extends Filter implements MongoRel {
                     return translateBinary( "$gte", "$lte", (RexCall) node );
                 case LIKE:
                     return translateLike( (RexCall) node );
+                case DOC_SIZE_MATCH:
+                    return translateSize( (RexCall) node );
                 default:
                     throw new AssertionError( "cannot translate " + node );
             }
+        }
+
+
+        private Void translateSize( RexCall node ) {
+            if ( node.operands.size() != 2 ) {
+                return null;
+            }
+            String left = getParamAsKey( node.operands.get( 0 ) );
+            BsonValue right = getParamAsValue( node.operands.get( 1 ) );
+
+            this.ors.add( new BsonDocument().append(
+                    left, new BsonDocument( "$size", right )
+            ) );
+
+            return null;
+
+        }
+
+
+        private String translateDocValue( RexCall call ) {
+            RexInputRef parent = (RexInputRef) call.getOperands().get( 0 );
+            RexCall names = (RexCall) call.operands.get( 1 );
+            return rowType.getFieldNames().get( parent.getIndex() )
+                    + "."
+                    + names.operands
+                    .stream()
+                    .map( n -> ((RexLiteral) n).getValueAs( String.class ) )
+                    .collect( Collectors.joining( "." ) );
+        }
+
+
+        private String getParamAsKey( RexNode node ) {
+
+            if ( node.isA( INPUT_REF ) ) {
+                return rowType.getFieldNames().get( ((RexInputRef) node).getIndex() );
+            } else {
+                return translateDocValue( (RexCall) node );
+            }
+        }
+
+
+        @Nullable
+        private BsonValue getParamAsValue( RexNode node ) {
+
+            if ( node.isA( INPUT_REF ) ) {
+                return new BsonString( "$" + rowType.getFieldNames().get( ((RexInputRef) node).getIndex() ) );
+            } else if ( node.isA( DYNAMIC_PARAM ) ) {
+                return new BsonDynamic( (RexDynamicParam) node );
+            }
+            return null;
         }
 
 
@@ -471,8 +526,40 @@ public class MongoFilter extends Filter implements MongoRel {
             if ( left.getKind() == OTHER_FUNCTION ) {
                 return translateItem( op, (RexCall) left, right );
             }
+            if ( left.getKind() == DOC_VALUE ) {
+                return translateDocValue( op, (RexCall) left, right );
+            }
 
             return false;
+        }
+
+
+        private boolean translateDocValue( String op, RexCall left, RexDynamicParam right ) {
+            BsonValue item = getItem( right );
+            if ( item == null ) {
+                return false;
+            }
+            if ( !left.getOperands().get( 0 ).isA( INPUT_REF )
+                    || left.operands.size() != 2
+                    || !(left.operands.get( 1 ) instanceof RexCall)
+                    || !left.getOperands().get( 1 ).isA( ARRAY_VALUE_CONSTRUCTOR ) ) {
+                return false;
+            }
+            RexInputRef parent = (RexInputRef) left.getOperands().get( 0 );
+            RexCall names = (RexCall) left.operands.get( 1 );
+            String mergedName = rowType.getFieldNames().get( parent.getIndex() ) + "." +
+                    names.operands
+                            .stream()
+                            .map( name -> ((RexLiteral) name).getValueAs( String.class ) )
+                            .collect( Collectors.joining( "." ) );
+
+            if ( op == null ) {
+                this.ors.add( new BsonDocument().append( mergedName, item ) );
+            } else {
+                this.ors.add( new BsonDocument().append( mergedName, new BsonDocument().append( op, item ) ) );
+            }
+
+            return true;
         }
 
 
@@ -482,12 +569,8 @@ public class MongoFilter extends Filter implements MongoRel {
                 RexNode r = left.operands.get( 1 );
 
                 if ( l.isA( INPUT_REF ) ) {
-                    BsonValue item;
-                    if ( r.isA( LITERAL ) ) {
-                        item = MongoTypeUtil.getAsBson( (RexLiteral) r, bucket );
-                    } else if ( r.isA( DYNAMIC_PARAM ) ) {
-                        item = new BsonDynamic( (RexDynamicParam) r );
-                    } else {
+                    BsonValue item = getItem( r );
+                    if ( item == null ) {
                         return false;
                     }
                     String name = getRandomName();
@@ -503,6 +586,20 @@ public class MongoFilter extends Filter implements MongoRel {
                 }
             }
             return false;
+        }
+
+
+        @Nullable
+        private BsonValue getItem( RexNode r ) {
+            BsonValue item;
+            if ( r.isA( LITERAL ) ) {
+                item = MongoTypeUtil.getAsBson( (RexLiteral) r, bucket );
+            } else if ( r.isA( DYNAMIC_PARAM ) ) {
+                item = new BsonDynamic( (RexDynamicParam) r );
+            } else {
+                return null;
+            }
+            return item;
         }
 
 

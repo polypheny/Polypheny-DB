@@ -106,11 +106,6 @@ public class LogicalDocuments extends LogicalValues implements Documents {
     }
 
 
-    @Override
-    public ImmutableList<ImmutableList<RexLiteral>> getFlatTuples() {
-        return this.tuples;
-    }
-
 
     @Override
     public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {

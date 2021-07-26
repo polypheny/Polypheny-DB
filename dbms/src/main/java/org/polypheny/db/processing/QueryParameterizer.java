@@ -50,6 +50,7 @@ import org.polypheny.db.rex.RexRangeRef;
 import org.polypheny.db.rex.RexSubQuery;
 import org.polypheny.db.rex.RexTableInputRef;
 import org.polypheny.db.rex.RexVisitor;
+import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
@@ -183,7 +184,9 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
 
     @Override
     public RexNode visitCall( RexCall call ) {
-        if ( call.op instanceof SqlArrayValueConstructor ) {
+        if ( call.getKind() == SqlKind.DOC_VALUE || call.getKind() == SqlKind.DOC_ITEM ) {
+            return call;
+        } else if ( call.op instanceof SqlArrayValueConstructor ) {
             int i = index.getAndIncrement();
             List<Object> list = createListForArrays( call.operands );
             values.put( i, Collections.singletonList( new ParameterValue( i, call.type, list ) ) );

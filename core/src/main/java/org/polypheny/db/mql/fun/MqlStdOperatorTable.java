@@ -27,7 +27,7 @@ public interface MqlStdOperatorTable {
 
     MqlFunctionOperator DOC_EQ = new MqlFunctionOperator( "DOC_EQ", SqlKind.EQUALS );
 
-    MqlFunctionOperator DOC_SIZE_MATCH = new MqlFunctionOperator( "DOC_SIZE_MATCH", SqlKind.EQUALS );
+    MqlFunctionOperator DOC_SIZE_MATCH = new MqlFunctionOperator( "DOC_SIZE_MATCH", SqlKind.DOC_SIZE_MATCH );
 
     MqlFunctionOperator DOC_JSON_MATCH = new MqlFunctionOperator( "DOC_JSON_MATCH", SqlKind.EQUALS );
 
@@ -35,11 +35,11 @@ public interface MqlStdOperatorTable {
 
     MqlFunctionOperator DOC_TYPE_MATCH = new MqlFunctionOperator( "DOC_TYPE_MATCH", SqlKind.EQUALS );
 
-    MqlFunctionOperator DOC_QUERY_VALUE = new MqlFunctionOperator( "DOC_QUERY_VALUE", SqlKind.JSON_VALUE_EXPRESSION );
+    MqlFunctionOperator DOC_QUERY_VALUE = new MqlFunctionOperator( "DOC_QUERY_VALUE", SqlKind.DOC_VALUE );
 
     MqlFunctionOperator DOC_SLICE = new MqlFunctionOperator( "DOC_SLICE", SqlKind.JSON_VALUE_EXPRESSION );
 
-    MqlFunctionOperator DOC_ITEM = new MqlFunctionOperator( "DOC_ITEM", SqlKind.WITH_ITEM );
+    MqlFunctionOperator DOC_ITEM = new MqlFunctionOperator( "DOC_ITEM", SqlKind.DOC_ITEM );
 
     MqlFunctionOperator DOC_QUERY_EXCLUDE = new MqlFunctionOperator( "DOC_QUERY_EXCLUDE", SqlKind.JSON_VALUE_EXPRESSION );
 

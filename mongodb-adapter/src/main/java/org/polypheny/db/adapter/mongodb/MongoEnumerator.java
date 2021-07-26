@@ -53,6 +53,7 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.bson.Document;
 import org.bson.types.Decimal128;
 import org.bson.types.ObjectId;
+import org.polypheny.db.runtime.SqlFunctions;
 
 
 /**
@@ -222,7 +223,12 @@ class MongoEnumerator implements Enumerator<Object> {
             for ( int i = 0; i < fields.size(); i++ ) {
                 final Map.Entry<String, Class> field = fields.get( i );
                 final String name = field.getKey();
-                objects[i] = convert( a0.get( name ), field.getValue() );
+                if ( name.equals( "_data" ) ) {
+                    objects[i] = SqlFunctions.jsonize( a0.get( name ) );
+                } else {
+                    objects[i] = convert( a0.get( name ), field.getValue() );
+                }
+
                 if ( field.getValue() == List.class ) {
                     objects[i] = arrayGetter( (List) objects[i], arrayFields.get( i ).getValue() );
                 }
