@@ -24,6 +24,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.bson.types.ObjectId;
 import org.polypheny.db.util.Pair;
 
 public class BsonUtil {
@@ -89,5 +90,16 @@ public class BsonUtil {
     public static List<BsonDocument> asDocumentCollection( List<BsonValue> values ) {
         return values.stream().map( BsonValue::asDocument ).collect( Collectors.toList() );
     }
+
+
+    public static String getObject() {
+        return new ObjectId().toHexString();
+    }
+
+
+    public static String getObject( String template ) {
+        return new ObjectId( template ).toHexString();
+    }
+
 
 }

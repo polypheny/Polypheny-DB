@@ -151,6 +151,7 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.mql.parser.BsonUtil;
 import org.polypheny.db.partition.PartitionFunctionInfo;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionManager;
@@ -738,6 +739,11 @@ public class Crud implements InformationObserver {
                     columns.add( "\"" + catalogColumn.name + "\"" );
                     if ( part.getSubmittedFileName() == null ) {
                         String value = new BufferedReader( new InputStreamReader( part.getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
+                        if ( catalogColumn.name.equals( "_id" ) ) {
+                            if ( value.length() == 0 ) {
+                                value = BsonUtil.getObject();
+                            }
+                        }
                         values.add( uiValueToSql( value, catalogColumn.type, catalogColumn.collectionsType ) );
                     } else {
                         values.add( "?" );
