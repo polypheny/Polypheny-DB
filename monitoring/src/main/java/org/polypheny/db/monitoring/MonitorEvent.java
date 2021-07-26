@@ -19,6 +19,7 @@ public class MonitorEvent implements Serializable {
     private String description;
     private List<String> fieldNames;
     private Timestamp recordedTimestamp;
+    //private RelRoot rel;
 
 
 }

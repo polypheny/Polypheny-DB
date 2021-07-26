@@ -86,6 +86,7 @@ public class MonitoringService {
         informationPage = new InformationPage( "Monitoring Queue" );
         informationPage.fullWidth();
         informationGroupOverview = new InformationGroup( informationPage, "Queue Overview" );
+        informationGroupOverview.setRefreshFunction( this::updateInformationTable );
 
         InformationManager im = InformationManager.getInstance();
         im.addPage( informationPage );
@@ -95,9 +96,6 @@ public class MonitoringService {
                 informationGroupOverview,
                 Arrays.asList( "Queue ID", "STMT", "Description", " Recorded Timestamp", "Field Names") );
         im.registerInformation( queueOverviewTable );
-
-        informationGroupOverview.setRefreshFunction( this::updateInformation );
-
 
 
         // Background Task
@@ -112,8 +110,6 @@ public class MonitoringService {
     }
 
     private void initPersistentDBQueue() {
-
-
         if ( queueDb != null ) {
             queueDb.close();
         }
@@ -153,9 +149,10 @@ public class MonitoringService {
         }
     }
 
+
     /**
-     * This method faces should be used to add new items to backend
-     * it should be invoked in directly
+     * This method should be used to add new items to backend
+     * it should be invoked directly as it represents the face to other processes.
      *
      * It is backend agnostic and makes sure to parse and extract all necessary information
      * which should be added to the backend
@@ -166,15 +163,6 @@ public class MonitoringService {
 
         long id = queueIdBuilder.getAndIncrement();
 
-
-        System.out.println("\nHENNLO: Added new Worklaod event:"
-                + "\n\t STMT_TYPE:" + event.monitoringType + " "
-                + "\n\t Description: " + event.getDescription() + " "
-                + "\n\t Timestamp " + event.getRecordedTimestamp() + " "
-                + "\n\t QUEUE_ID " + id + " "
-                + "\n\t Field Names " + event.getFieldNames());
-
-
         //Add event to persitent queue
         synchronized ( this ) {
             eventQueue.put( id, event );
@@ -182,8 +170,7 @@ public class MonitoringService {
     }
 
     //Queue processing FIFO
-    //ToDO mabye add more intelligent scheduling later on or introduce config to change procssing
-
+    //ToDO mabye add more intelligent scheduling later on or introduce config to change processing
     //Will be executed every 5seconds due to Background Task Manager and checks the queue and then asyncronously writes them to backend
     public void executeEventInQueue(){
 
@@ -196,6 +183,20 @@ public class MonitoringService {
                 System.out.println("QUEUE is empty...skipping now");
                 break;
             }
+
+            //Temporary testing //ToDO outsource to separate method
+            MonitorEvent procEvent = eventQueue.get( currentKey );
+            /* if ( procEvent.getRel().rel.getTable() != null ) {
+              //extract information from table
+                RelOptTableImpl table = (RelOptTableImpl) procEvent.getRel().rel.getTable();
+                LogicalTable t = ((LogicalTable) table.getTable());
+                // Get placements of this table
+                CatalogTable catalogTable = Catalog.getInstance().getTable( t.getTableId() );
+                System.out.println("Added Event for table: " + catalogTable.name);
+            }
+            else{
+                throw new RuntimeException( "Unexpected operator!" );
+            }*/
 
             synchronized ( this ) {
                 if ( backendConnector.writeStatisticEvent( currentKey, eventQueue.get( currentKey ) ) ){
@@ -212,7 +213,6 @@ public class MonitoringService {
         }
 
         System.out.println("Executed Background Task at: " + new Timestamp(System.currentTimeMillis()) );
-        //backendConnector.writeStatisticEvent( eventQueue.p);
     }
 
 
@@ -242,7 +242,7 @@ public class MonitoringService {
     /*
     * Updates InformationTable with current elements in event queue
      */
-    private void updateInformation(){
+    private void updateInformationTable(){
 
         queueOverviewTable.reset();
         for ( Entry currentEvent: eventQueue.getEntries() ) {
@@ -252,6 +252,7 @@ public class MonitoringService {
         }
         log.info( "REFRESHED" );
     }
+
 
     private class BackendConnectorFactory {
 
