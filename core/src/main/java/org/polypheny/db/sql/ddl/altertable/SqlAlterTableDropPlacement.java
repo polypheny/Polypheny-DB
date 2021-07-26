@@ -77,8 +77,8 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
         CatalogTable catalogTable = getCatalogTable( context, table );
         DataStore storeInstance = getDataStoreInstance( storeName );
 
-        if ( catalogTable.isView() ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE with Views" );
+        if ( catalogTable.isView() || catalogTable.isMaterialized() ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE with Views or Materialized Views." );
         }
 
         try {
