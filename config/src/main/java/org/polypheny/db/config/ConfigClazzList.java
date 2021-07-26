@@ -56,6 +56,14 @@ public class ConfigClazzList extends Config {
     }
 
 
+    public ConfigClazzList(final String key, final Class superClass, boolean activateAll){
+        this(key, superClass);
+        if(activateAll){
+            setClazzList( this.value );
+        }
+    }
+
+
     public ConfigClazzList( final String key, final Class superClass, final List<Class> defaultValue ) {
         this( key, superClass );
         setClazzList( defaultValue );

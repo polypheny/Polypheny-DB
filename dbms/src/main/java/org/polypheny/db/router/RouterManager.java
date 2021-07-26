@@ -18,23 +18,38 @@ package org.polypheny.db.router;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
-import org.polypheny.db.config.ConfigClazz;
+import org.polypheny.db.config.ConfigClazzList;
+import org.polypheny.db.config.ConfigInteger;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.WebUiGroup;
 import org.polypheny.db.config.WebUiPage;
-import org.polypheny.db.router.SimpleRouter.SimpleRouterFactory;
 import org.polypheny.db.routing.Router;
 
 @Slf4j
 public class RouterManager {
 
+    public static final ConfigInteger SHORT_RUNNING_LONG_RUNNING_THRESHOLD = new ConfigInteger(
+            "routing/shortRunningLongRunningThreshold",
+            "The minimal execution time (in milliseconds) for a query to be considered as long-running. Queries with lower execution times are considered as short-running.",
+            1000 );
+
+    public static final ConfigInteger PRE_COST_POST_COST_RATIO = new ConfigInteger(
+            "routing/preCostPostCostRatio",
+            "The ratio between how much post cost are considered. 0 means post cost are ignored, 1 means pre cost are ignored. Value most be between 0 and 1.",
+            0 );
+
     private static final RouterManager INSTANCE = new RouterManager();
 
-    private RouterFactory currentRouter = null;
+    private List<RouterFactory> shortRunningRouters;
 
+    private List<RouterFactory> longRunningRouters;
 
     protected final WebUiPage routingPage;
 
@@ -56,47 +71,62 @@ public class RouterManager {
         configManager.registerWebUiGroup( routingGroup );
 
         // Settings
-        final ConfigClazz routerImplementation = new ConfigClazz( "routing/router", RouterFactory.class, SimpleRouterFactory.class );
-        configManager.registerConfig( routerImplementation );
-        routerImplementation.withUi( routingGroup.getId() );
-        routerImplementation.addObserver( new ConfigListener() {
+        final ConfigClazzList shortRunningRouter = new ConfigClazzList( "routing/shortRunningRouter", RouterFactory.class , true);
+        configManager.registerConfig( shortRunningRouter );
+        shortRunningRouter.withUi( routingGroup.getId() );
+        shortRunningRouter.addObserver(getConfigListener(true));
+        shortRunningRouters = getFactoryList( shortRunningRouter );
+
+        final ConfigClazzList longRunningRouter = new ConfigClazzList( "routing/longRunningRouter", RouterFactory.class , true);
+        configManager.registerConfig( longRunningRouter );
+        longRunningRouter.withUi( routingGroup.getId() );
+        longRunningRouter.addObserver(getConfigListener(false));
+        longRunningRouters = getFactoryList( longRunningRouter );
+    }
+
+
+    private List<RouterFactory> getFactoryList( ConfigClazzList configList ) {
+        val result = new ArrayList<RouterFactory>();
+        for(Class c : configList.getClazzList()){
+            try {
+                Constructor<?> ctor = c.getConstructor();
+                RouterFactory instance = (RouterFactory) ctor.newInstance();
+                result.add( instance );
+            } catch ( InstantiationException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e ) {
+                log.error( "Exception while changing router implementation", e );
+            }
+        }
+
+        return result;
+
+    }
+
+    public List<Router> getShortRunningRouters(){
+        return shortRunningRouters.stream().map( elem -> elem.createInstance() ).collect( Collectors.toList());
+    }
+
+    public List<Router> getLongRunningRouters(){
+        return shortRunningRouters.stream().map( elem -> elem.createInstance() ).collect( Collectors.toList());
+    }
+
+
+    private ConfigListener getConfigListener(boolean shortRunning){
+        return new ConfigListener() {
             @Override
             public void onConfigChange( Config c ) {
-                ConfigClazz configClazz = (ConfigClazz) c;
-                if ( currentRouter.getClass() != configClazz.getClazz() ) {
-                    log.warn( "Change router implementation: " + configClazz.getClazz() );
-                    setCurrentRouter( configClazz );
+                ConfigClazzList configClazzList = (ConfigClazzList) c;
+                if(shortRunning){
+                    shortRunningRouters = getFactoryList( configClazzList );
+                }else{
+                    longRunningRouters = getFactoryList( configClazzList );
                 }
-            }
 
+            }
 
             @Override
             public void restart( Config c ) {
             }
-        } );
-
-        setCurrentRouter( routerImplementation );
-    }
-
-
-    private void setCurrentRouter( ConfigClazz routerImplementation ) {
-        try {
-            Constructor<?> ctor = routerImplementation.getClazz().getConstructor();
-            RouterFactory instance = (RouterFactory) ctor.newInstance();
-            setCurrentRouter( instance );
-        } catch ( InstantiationException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e ) {
-            log.error( "Exception while changing router implementation", e );
-        }
-    }
-
-
-    public void setCurrentRouter( RouterFactory routerFactory ) {
-        this.currentRouter = routerFactory;
-    }
-
-
-    public Router getRouter() {
-        return currentRouter.createInstance();
+        };
     }
 
 }

@@ -16,6 +16,7 @@
 
 package org.polypheny.db.transaction;
 
+import java.util.List;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.jdbc.Context;
@@ -35,7 +36,9 @@ public interface Statement {
 
     InformationDuration getDuration();
 
-    Router getRouter();
+    List<Router> getShortRunningRouters();
+
+    List<Router> getLongRunningRouters();
 
     void close();
 
