@@ -34,6 +34,7 @@
 package org.polypheny.db.schema;
 
 
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.sql.SqlCall;
@@ -92,5 +93,11 @@ public interface Table {
      * @return true iff the given aggregate call is valid
      */
     boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent );
+
+
+    default SchemaType getSchemaType() {
+        return SchemaType.RELATIONAL;
+    }
+
 }
 

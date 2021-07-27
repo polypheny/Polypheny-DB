@@ -19,16 +19,18 @@ package org.polypheny.db.rel.logical;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import lombok.Getter;
+import org.bson.BsonDocument;
+import org.bson.BsonNull;
+import org.bson.BsonObjectId;
+import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import org.bson.types.ObjectId;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.document.DocumentTypeUtil;
+import org.polypheny.db.mql.parser.BsonUtil;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -43,11 +45,10 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rel.type.RelDataTypeFieldImpl;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.rel.type.RelRecordType;
+import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.sql.SqlCollation;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
-import org.polypheny.db.util.NlsString;
 
 public class LogicalDocuments extends LogicalValues implements Documents {
 
@@ -68,7 +69,7 @@ public class LogicalDocuments extends LogicalValues implements Documents {
      */
     public LogicalDocuments( RelOptCluster cluster, RelDataType defaultRowType, RelTraitSet traitSet, ImmutableList<BsonValue> tuples, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
         super( cluster, traitSet, defaultRowType, normalizedTuples );
-        this.documentTuples = tuples;
+        this.documentTuples = validate( tuples, defaultRowType );
         this.rowType = defaultRowType;
         this.tuples = normalizedTuples;
     }
@@ -82,7 +83,7 @@ public class LogicalDocuments extends LogicalValues implements Documents {
 
         //ImmutableList<ImmutableList<RexLiteral>> normalizedTuples = normalize( tuples, rowTypes, defaultRowType );
 
-        return create( cluster, values, defaultRowType, normalize( values ) );
+        return create( cluster, getOrAddId( values ), defaultRowType, normalize( values, cluster.getRexBuilder() ) );
     }
 
 
@@ -91,6 +92,43 @@ public class LogicalDocuments extends LogicalValues implements Documents {
         final RelTraitSet traitSet = cluster.traitSetOf( Convention.NONE )
                 .replaceIfs( RelCollationTraitDef.INSTANCE, () -> RelMdCollation.values( mq, defaultRowType, normalizedTuples ) );
         return new LogicalDocuments( cluster, defaultRowType, traitSet, tuples, normalizedTuples );
+    }
+
+
+    public static RelNode create( LogicalValues input ) {
+        return create( input.getCluster(), bsonify( input.getTuples(), input.getRowType() ), input.getRowType(), input.getTuples() );
+    }
+
+
+    private static ImmutableList<BsonValue> bsonify( ImmutableList<ImmutableList<RexLiteral>> tuples, RelDataType rowType ) {
+        List<BsonValue> docs = new ArrayList<>();
+
+        for ( ImmutableList<RexLiteral> values : tuples ) {
+            BsonDocument doc = new BsonDocument();
+            int pos = 0;
+            for ( RexLiteral value : values ) {
+                RelDataTypeField field = rowType.getFieldList().get( pos );
+
+                if ( field.getName().equals( "_id" ) ) {
+                    String _id = value.getValueAs( String.class );
+                    ObjectId objectId;
+                    if ( _id.matches( "ObjectId\\([0-9abcdef]{24}\\)" ) ) {
+                        objectId = new ObjectId( _id.substring( 9, 33 ) );
+                    } else {
+                        objectId = ObjectId.get();
+                    }
+                    doc.put( "_id", new BsonObjectId( objectId ) );
+                } else if ( field.getName().equals( "_data" ) ) {
+                    doc.put( "_data", BsonDocument.parse( BsonUtil.fixBson( value.getValueAs( String.class ) ) ) );
+                } else {
+                    doc.put( field.getName(), new BsonString( BsonUtil.fixBson( value.getValueAs( String.class ) ) ) );
+                }
+
+                pos++;
+            }
+            docs.add( doc );
+        }
+        return ImmutableList.copyOf( docs );
     }
 
 
@@ -106,7 +144,6 @@ public class LogicalDocuments extends LogicalValues implements Documents {
     }
 
 
-
     @Override
     public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
@@ -115,64 +152,72 @@ public class LogicalDocuments extends LogicalValues implements Documents {
     }
 
 
-    /**
-     * Brings the document structured tuple into a fixed structure, which also non-document stores can handle
-     *
-     * @return
-     */
-    private static ImmutableList<ImmutableList<RexLiteral>> normalize( ImmutableList<ImmutableList<Object>> tuples, List<RelDataType> rowTypes, RelDataType defaultRowType ) {
-        List<ImmutableList<RexLiteral>> normalized = new ArrayList<>();
-        List<String> rowNames = defaultRowType.getFieldNames();
+    private static ImmutableList<BsonValue> getOrAddId( ImmutableList<BsonValue> values ) {
+        List<BsonValue> docs = new ArrayList<>();
 
-        int pos = 0;
-        for ( ImmutableList<Object> tuple : tuples ) {
-            List<RexLiteral> normalizedTuple = new ArrayList<>();
-            List<String> fieldNames = rowTypes.get( pos ).getFieldNames();
-            Map<String, Object> data = new HashMap<>();
-            List<String> usedNames = new ArrayList<>();
-
-            int fieldPos = 0;
-            for ( Object node : tuple ) {
-                String name = fieldNames.get( fieldPos );
-                if ( rowNames.contains( name ) ) {
-                    if ( node instanceof RexLiteral ) {
-                        normalizedTuple.add( (RexLiteral) node );
-                        usedNames.add( name );
-                    } else {
-                        throw new RuntimeException( "Fixed columns for document where not supplied correctly" );
-                    }
+        for ( BsonValue value : values ) {
+            BsonDocument doc = new BsonDocument();
+            if ( value.isDocument() ) {
+                BsonValue id;
+                if ( value.asDocument().containsKey( "_id" ) ) {
+                    id = value.asDocument().get( "_id" );
                 } else {
-                    data.put( name, DocumentTypeUtil.getMqlComparable( node ) );
+                    id = new BsonObjectId();
                 }
-                fieldPos++;
-            }
+                doc.put( "_id", id );
 
-            // we have to adjust and fit to the provided defaultRowType, if we have different "dynamic" columns in the future
-            if ( !usedNames.contains( "_id" ) ) {
-                normalizedTuple.add( 0, new RexLiteral( new NlsString( ObjectId.get().toString(), "ISO-8859-1", SqlCollation.IMPLICIT ), typeFactory.createPolyType( PolyType.CHAR, 24 ), PolyType.CHAR ) );
+                value.asDocument().remove( "_id" );
+                doc.put( "_data", value );
             }
-            String parsed = removeNestedEscapes( gson.toJson( data ) );
-            RexLiteral literal = new RexLiteral( new NlsString( parsed, "ISO-8859-1", SqlCollation.IMPLICIT ), typeFactory.createPolyType( PolyType.CHAR, parsed.length() ), PolyType.CHAR );
-            normalizedTuple.add( literal );
-
-            pos++;
-            normalized.add( ImmutableList.copyOf( normalizedTuple ) );
+            docs.add( doc );
         }
-
-        return ImmutableList.copyOf( normalized );
+        return ImmutableList.copyOf( docs );
     }
 
 
-    private static ImmutableList<ImmutableList<RexLiteral>> normalize( List<BsonValue> tuples ) {
+    private ImmutableList<BsonValue> validate( ImmutableList<BsonValue> tuples, RelDataType defaultRowType ) {
+        List<BsonValue> docs = new ArrayList<>();
+        List<String> names = defaultRowType.getFieldNames();
+
+        for ( BsonValue tuple : tuples ) {
+            BsonDocument document = new BsonDocument();
+            if ( tuple.isDocument() ) {
+                for ( String name : names ) {
+                    if ( tuple.asDocument().containsKey( name ) ) {
+                        document.put( name, tuple.asDocument().get( name ) );
+                    } else {
+                        document.put( name, new BsonNull() );
+                    }
+                }
+                BsonDocument data = new BsonDocument();
+                if ( tuple.asDocument().containsKey( "_data" ) ) {
+                    data.putAll( tuple.asDocument().get( "_data" ).asDocument() );
+                }
+                tuple.asDocument()
+                        .entrySet()
+                        .stream()
+                        .filter( e -> !names.contains( e.getKey() ) )
+                        .forEach( k -> data.put( k.getKey(), k.getValue() ) );
+
+            }
+            docs.add( document );
+        }
+        return ImmutableList.copyOf( docs );
+    }
+
+
+    private static ImmutableList<ImmutableList<RexLiteral>> normalize( List<BsonValue> tuples, RexBuilder rexBuilder ) {
         List<ImmutableList<RexLiteral>> normalized = new ArrayList<>();
 
         JsonWriterSettings writerSettings = JsonWriterSettings.builder().outputMode( JsonMode.STRICT ).build();
 
         for ( BsonValue tuple : tuples ) {
             List<RexLiteral> normalizedTuple = new ArrayList<>();
-            normalizedTuple.add( 0, new RexLiteral( new NlsString( ObjectId.get().toString(), "ISO-8859-1", SqlCollation.IMPLICIT ), typeFactory.createPolyType( PolyType.CHAR, 24 ), PolyType.CHAR ) );
+            normalizedTuple.add( 0, rexBuilder.makeLiteral( ObjectId.get().toString() ) );
+            //normalizedTuple.add( 0, new RexLiteral( new NlsString( ObjectId.get().toString(), "ISO-8859-1", SqlCollation.IMPLICIT ), typeFactory.createPolyType( PolyType.CHAR, 24 ), PolyType.CHAR ) );
             String parsed = tuple.asDocument().toJson( writerSettings );
-            normalizedTuple.add( new RexLiteral( new NlsString( parsed, "ISO-8859-1", SqlCollation.IMPLICIT ), typeFactory.createPolyType( PolyType.CHAR, parsed.length() ), PolyType.CHAR ) );
+            normalizedTuple.add( 1, rexBuilder.makeLiteral( parsed ) );
+            //normalizedTuple.add( new RexLiteral( new NlsString( parsed, "ISO-8859-1", SqlCollation.IMPLICIT ), typeFactory.createPolyType( PolyType.CHAR, parsed.length() ), PolyType.CHAR ) );
             normalized.add( ImmutableList.copyOf( normalizedTuple ) );
         }
 

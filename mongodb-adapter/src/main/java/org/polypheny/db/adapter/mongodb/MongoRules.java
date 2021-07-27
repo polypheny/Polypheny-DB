@@ -743,7 +743,7 @@ public class MongoRules {
                     .stream()
                     .filter( BsonValue::isDocument )
                     .map( BsonValue::asDocument )
-                    .map( d -> new BsonDocument( "_data", d ) )
+                    //.map( d -> new BsonDocument( "_data", d ) )
                     .collect( Collectors.toList() );
         }
 
@@ -799,7 +799,7 @@ public class MongoRules {
                 } else if ( rexNode instanceof RexLiteral ) {
                     doc.append( getPhysicalName( input, catalogTable, pos ), MongoTypeUtil.getAsBson( (RexLiteral) rexNode, bucket ) );
                 } else if ( rexNode instanceof RexCall ) {
-                    PolyType type = ((RelOptTableImpl) table)
+                    PolyType type = table
                             .getTable()
                             .getRowType( getCluster().getTypeFactory() )
                             .getFieldList()
