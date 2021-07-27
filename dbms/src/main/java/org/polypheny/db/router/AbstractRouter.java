@@ -48,6 +48,7 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.plan.RelOptCluster;
@@ -291,8 +292,8 @@ public abstract class AbstractRouter implements Router {
                     placementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ),placements );
                 }
 
-                if ( statement.getTransaction().getMonitoringData() != null  ) {
-                    statement.getTransaction().getMonitoringData().setAccessedPartitions( accessedPartitionList );
+                if ( statement.getTransaction().getMonitoringEvent() != null  ) {
+                    ((StatementEvent)statement.getTransaction().getMonitoringEvent()).setAccessedPartitions( accessedPartitionList );
                 }
                 return builder.push( buildJoinedTableScan( statement, cluster, placementDistribution ) );
 
@@ -812,9 +813,8 @@ public abstract class AbstractRouter implements Router {
 
 
                     List<CatalogPartitionPlacement> debugPlacements = catalog.getAllPartitionPlacementsByTable( t.getTableId() );
-                    if (statement.getTransaction().getMonitoringData() != null) {
-                        statement.getTransaction()
-                                .getMonitoringData()
+                    if (statement.getTransaction().getMonitoringEvent() != null) {
+                        ((StatementEvent)statement.getTransaction().getMonitoringEvent())
                                 .setAccessedPartitions( accessedPartitionList.stream().collect( Collectors.toList() ) );
                     }
 

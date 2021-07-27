@@ -91,7 +91,7 @@ public class ReverseSimpleRouter extends AbstractRouter {
             if ( catalogTable.placementsByAdapter.get( adapterWithFewestPlacements  ).contains( cid ) ) {
                 placementList.add( Catalog.getInstance().getColumnPlacement( adapterWithFewestPlacements, cid ) );
             } else {
-                placementList.add( Catalog.getInstance().getColumnPlacements( cid ).get( 0 ) );
+                placementList.add( Catalog.getInstance().getColumnPlacement( cid ).get( 0 ) );
             }
         }
 

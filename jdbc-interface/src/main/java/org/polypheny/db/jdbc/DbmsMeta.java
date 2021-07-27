@@ -93,7 +93,6 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
-import org.polypheny.db.monitoring.events.DMLEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.rel.RelRoot;
@@ -1302,8 +1301,8 @@ public class DbmsMeta implements ProtobufMeta {
                 throw new AvaticaRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
             }
         }
-        if ( statementHandle.getStatement().getTransaction().getMonitoringData() != null ) {
-            StatementEvent ev = statementHandle.getStatement().getTransaction().getMonitoringData();
+        if ( statementHandle.getStatement().getTransaction().getMonitoringEvent() != null ) {
+            StatementEvent ev = (StatementEvent) statementHandle.getStatement().getTransaction().getMonitoringEvent();
             MonitoringServiceProvider.getInstance().monitorEvent( ev );
         }
         return resultSets;

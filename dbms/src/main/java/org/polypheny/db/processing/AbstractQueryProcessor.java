@@ -73,7 +73,6 @@ import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.DMLEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
@@ -208,10 +207,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     @Override
     public void executionTime( String reference, long nanoTime ) {
-        val id =statement.getTransaction().getMonitoringData().getId();
+        val id =statement.getTransaction().getMonitoringEvent().getId();
         val referenceId = UUID.fromString(reference);
         if(id.equals( referenceId )){
-            statement.getTransaction().getMonitoringData().setExecutionTime( nanoTime );
+            ((StatementEvent)statement.getTransaction().getMonitoringEvent()).setExecutionTime( nanoTime );
         }
     }
 
@@ -252,21 +251,21 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
         }
 
-        if(statement.getTransaction().getMonitoringData() == null){
+        if(statement.getTransaction().getMonitoringEvent() == null){
             if ( logicalRoot.kind.belongsTo( SqlKind.DML )) {
-                statement.getTransaction().setMonitoringData( new DMLEvent() );
+                statement.getTransaction().setMonitoringEvent( new DMLEvent() );
             }
             else if ( logicalRoot.kind.belongsTo( SqlKind.QUERY )) {
-                    statement.getTransaction().setMonitoringData( new QueryEvent() );
+                    statement.getTransaction().setMonitoringEvent( new QueryEvent() );
             }
         }
 
 
         val result =  minSignature != null ? minSignature : signatures.get( 0 );
 
-        if ( statement.getTransaction().getMonitoringData() != null ) {
+        if ( statement.getTransaction().getMonitoringEvent() != null ) {
             val relRoot = (RelRoot)minSignature.getRelRoot().get();
-            StatementEvent eventData = statement.getTransaction().getMonitoringData();
+            StatementEvent eventData = (StatementEvent) statement.getTransaction().getMonitoringEvent();
             eventData.setDescription( "Test description: " + result.statementType.toString() );
             eventData.setRouted( relRoot);
             eventData.setFieldNames( ImmutableList.copyOf( result.rowType.getFieldNames() ) );
@@ -314,7 +313,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         stopWatch.start();
 
         ExecutionTimeMonitor executionTimeMonitor = new ExecutionTimeMonitor();
-        val monitoringData = statement.getTransaction().getMonitoringData();
+        val monitoringData = statement.getTransaction().getMonitoringEvent();
         if(monitoringData != null){
             executionTimeMonitor.subscribe( this, monitoringData.getId()  );
         }

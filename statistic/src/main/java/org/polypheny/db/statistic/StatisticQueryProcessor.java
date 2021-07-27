@@ -237,7 +237,7 @@ public class StatisticQueryProcessor {
         List<List<Object>> rows;
         Iterator<Object> iterator = null;
 
-        statement.getTransaction().setMonitoringData( new QueryEvent() );
+        statement.getTransaction().setMonitoringEvent( new QueryEvent() );
 
         try {
             signature = processQuery( statement, sqlSelect );
@@ -287,8 +287,7 @@ public class StatisticQueryProcessor {
 
             String[][] d = data.toArray( new String[0][] );
 
-            statement.getTransaction().getMonitoringData().setRowCount( data.size() );
-            MonitoringServiceProvider.getInstance().monitorEvent( statement.getTransaction().getMonitoringData() );
+            MonitoringServiceProvider.getInstance().monitorEvent( statement.getTransaction().getMonitoringEvent() );
 
             return new StatisticResult( names, types, d );
         } finally {

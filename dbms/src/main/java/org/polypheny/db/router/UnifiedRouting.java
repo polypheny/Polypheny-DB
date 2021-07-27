@@ -354,18 +354,18 @@ public class UnifiedRouting extends AbstractRouter {
         }
     }
 
-    private List<CatalogColumnPlacement> handlePartitioning( RelNode node, CatalogTable catalogTable ){
+    private Map<Long, List<CatalogColumnPlacement>> handlePartitioning( RelNode node, CatalogTable catalogTable ){
         // TODO Routing of partitioned tables is very limited. This should be improved to also apply sophisticated
         //  routing strategies, especially when we also get rid of the worst-case routing.
-        List<CatalogColumnPlacement> placements;
+        Map<Long, List<CatalogColumnPlacement>> placements;
 
         if ( log.isDebugEnabled() ) {
             log.debug( "VALUE from Map: {} id: {}", filterMap.get( node.getId() ), node.getId() );
         }
         List<String> partitionValues = filterMap.get( node.getId() );
 
-        PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
-        PartitionManager partitionManager = partitionManagerFactory.getInstance( catalogTable.partitionType );
+        PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
+        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionType );
         if ( partitionValues != null ) {
             if ( log.isDebugEnabled() ) {
                 log.debug( "TableID: {} is partitioned on column: {} - {}",
@@ -406,7 +406,7 @@ public class UnifiedRouting extends AbstractRouter {
             if ( table.getTable() instanceof LogicalTable ) {
                 LogicalTable t = ((LogicalTable) table.getTable());
                 CatalogTable catalogTable;
-                List<CatalogColumnPlacement> placements;
+                Map<Long, List<CatalogColumnPlacement>> placements;
                 catalogTable = Catalog.getInstance().getTable( t.getTableId() );
 
                 // Check if table is even partitioned
@@ -419,7 +419,8 @@ public class UnifiedRouting extends AbstractRouter {
                 } else {
                     log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
                     if(this.useSimpleRouter){
-                        placements = selectPlacement(node, catalogTable);
+                        // make it compilable again, class not used!
+                        placements = null; //selectPlacement(node, catalogTable);
                         log.info( "BuildSelect: Update builder SR" );
                         log.info( "Placements: " + placements.size() );
                         return builder.push( buildJoinedTableScan( statement, cluster, placements ) );
@@ -431,7 +432,7 @@ public class UnifiedRouting extends AbstractRouter {
                         for(val entry : placementsPerTable.values()){
                             log.info( "BuildSelect: Update builder" );
                             log.info( "Placements: " + entry.size() );
-                            builder.push( buildJoinedTableScan( statement, cluster, entry ) );
+                            builder.push( buildJoinedTableScan( statement, cluster, null ) );
                         }
                         this.basePlacementInitialized = true;
                     }

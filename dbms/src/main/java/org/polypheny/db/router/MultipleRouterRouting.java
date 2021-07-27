@@ -74,9 +74,7 @@ public class MultipleRouterRouting extends AbstractRouter{
     @Override
     public List<RelRoot> route( RelRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
         boolean isAnalyze = statement.getTransaction().isAnalyze();
-        if(isAnalyze){
-            statement.getTransaction().deactivateAnalyze();
-        }
+
         val simpleRoutingRels = this.simpleRouter.route( logicalRoot, statement, executionTimeMonitor );
         val reverseSimpleRoutingRels = this.reverseSimpleRouter.route( logicalRoot, statement, executionTimeMonitor );
         List<RelRoot> icarusRoutingRels = new ArrayList<>();
@@ -84,11 +82,6 @@ public class MultipleRouterRouting extends AbstractRouter{
             icarusRoutingRels = this.icarusRouter.route( logicalRoot, statement, executionTimeMonitor );
         }catch ( Exception e){
            // ignore icarus routing when no full table placement is available
-        }
-
-
-        if(isAnalyze){
-            statement.getTransaction().activateAnalyze();
         }
 
         return ListUtils.union( ListUtils.union( simpleRoutingRels, reverseSimpleRoutingRels), icarusRoutingRels);
