@@ -23,6 +23,7 @@ import lombok.Setter;
 import org.polypheny.db.monitoring.events.analyzer.QueryEventAnalyzer;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
 
+
 @Getter
 @Setter
 public class QueryEvent extends StatementEvent {

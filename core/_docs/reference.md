@@ -1,3 +1,295 @@
+---
+layout: docs
+title: SQL language
+permalink: /docs/reference.html
+---
+
+<style>
+.container {
+  width: 400px;
+  height: 26px;
+}
+.gray {
+  width: 60px;
+  height: 26px;
+  background: gray;
+  float: left;
+}
+.r15 {
+  width: 40px;
+  height: 6px;
+  background: yellow;
+  margin-top: 4px;
+  margin-left: 10px;
+}
+.r12 {
+  width: 10px;
+  height: 6px;
+  background: yellow;
+  margin-top: 4px;
+  margin-left: 10px;
+}
+.r13 {
+  width: 20px;
+  height: 6px;
+  background: yellow;
+  margin-top: 4px;
+  margin-left: 10px;
+}
+.r2 {
+  width: 2px;
+  height: 6px;
+  background: yellow;
+  margin-top: 4px;
+  margin-left: 20px;
+}
+.r24 {
+  width: 20px;
+  height: 6px;
+  background: yellow;
+  margin-top: 4px;
+  margin-left: 20px;
+}
+.r35 {
+  width: 20px;
+  height: 6px;
+  background: yellow;
+  margin-top: 4px;
+  margin-left: 30px;
+}
+</style>
+
+The page describes the SQL dialect recognized by Polypheny-DB's default SQL parser.
+
+## Grammar
+
+SQL grammar in [BNF](https://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form)-like
+form.
+
+{% highlight sql %}
+statement:
+      alterStatement
+  |   explain
+  |   describe
+  |   insert
+  |   update
+  |   merge
+  |   delete
+  |   query
+
+alterStatement:
+ALTER ( SYSTEM | SESSION ) SET identifier '=' expression | ALTER ( SYSTEM | SESSION ) RESET identifier | ALTER ( SYSTEM | SESSION ) RESET ALL | ALTER SCHEMA [ databaseName . ] schemaName RENAME TO newSchemaName  
+| ALTER SCHEMA [ databaseName . ] schemaName OWNER TO userName  
+| ALTER TABLE [ databaseName . ] [ schemaName . ] tableName RENAME TO newTableName  
+| ALTER TABLE [ databaseName . ] [ schemaName . ] tableName OWNER TO userName | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName RENAME COLUMN columnName TO newColumnName | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP COLUMN columnName | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD COLUMN columnName type [ NULL | NOT NULL ] [DEFAULT defaultValue] [(BEFORE | AFTER) columnName]
+| ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD COLUMN columnName physicalName AS name [DEFAULT defaultValue] [(BEFORE | AFTER) columnName]
+| ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName SET NOT NULL | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName DROP NOT NULL | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName SET COLLATION collation | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName SET DEFAULT value | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName DROP DEFAULT | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName SET TYPE type | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName SET POSITION ( BEFORE | AFTER ) columnName | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD PRIMARY KEY ( columnName | '(' columnName [ , columnName ]* ')' )
+| ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP PRIMARY KEY | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD CONSTRAINT constraintName UNIQUE ( columnName| '(' columnName [ , columnName ]* ')' )
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP CONSTRAINT constraintName
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD CONSTRAINT foreignKeyName FOREIGN KEY ( columnName | '(' columnName [ , columnName ]* ')' ) REFERENCES [ databaseName . ] [ schemaName . ] tableName '(' columnName [ , columnName ]* ')' [ ON UPDATE ( CASCADE | RESTRICT | SET NULL | SET DEFAULT ) ] [ ON DELETE ( CASCADE | RESTRICT | SET NULL | SET DEFAULT ) ]
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP FOREIGN KEY foreignKeyName
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD [UNIQUE] INDEX indexName ON ( columnName | '(' columnName [ , columnName ]* ')' ) [ USING indexMethod ] [ ON STORE storeName ]
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP INDEX indexName
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD PLACEMENT [( columnName | '(' columnName [ , columnName ]* ')' )] ON STORE storeUniqueName [ WITH PARTITIONS '(' partitionId [ , partitionId ]* ')']
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY PLACEMENT ( ADD | DROP ) COLUMN columnName ON STORE storeUniqueName
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY PLACEMENT '(' columnName [ , columnName ]* ')' ON STORE storeUniqueName 
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP PLACEMENT ON STORE storeUniqueName
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName PARTITION BY ( HASH | RANGE | LIST) '(' columnName ')' [PARTITIONS numPartitions | with (partitionName1, partitionName2 [, partitionNameN]* ) ]
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MERGE PARTITIONS
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY PARTITIONS '(' partitionId [ , partitionId ]* ')' ON STORE storeName
+     | ALTER CONFIG key SET value
+     | ALTER ADAPTERS ADD uniqueName USING adapterClass WITH config 
+     | ALTER ADAPTERS DROP uniqueName
+     | ALTER INTERFACES ADD uniqueName USING clazzName WITH config 
+     | ALTER INTERFACES DROP uniqueName
+
+explain:
+      EXPLAIN PLAN
+      [ WITH TYPE | WITH IMPLEMENTATION | WITHOUT IMPLEMENTATION ]
+      [ EXCLUDING ATTRIBUTES | INCLUDING [ ALL ] ATTRIBUTES ]
+      [ AS JSON | AS XML ]
+      FOR ( query | insert | update | merge | delete )
+
+describe:
+      DESCRIBE DATABASE databaseName
+   |  DESCRIBE CATALOG [ databaseName . ] catalogName
+   |  DESCRIBE SCHEMA [ [ databaseName . ] catalogName ] . schemaName
+   |  DESCRIBE [ TABLE ] [ [ [ databaseName . ] catalogName . ] schemaName . ] tableName [ columnName ]
+   |  DESCRIBE [ STATEMENT ] ( query | insert | update | merge | delete )
+
+insert:
+      ( INSERT | UPSERT ) INTO tablePrimary
+      [ '(' column [, column ]* ')' ]
+      query
+
+update:
+      UPDATE tablePrimary
+      SET assign [, assign ]*
+      [ WHERE booleanExpression ]
+
+assign:
+      identifier '=' expression
+
+merge:
+      MERGE INTO tablePrimary [ [ AS ] alias ]
+      USING tablePrimary
+      ON booleanExpression
+      [ WHEN MATCHED THEN UPDATE SET assign [, assign ]* ]
+      [ WHEN NOT MATCHED THEN INSERT VALUES '(' value [ , value ]* ')' ]
+
+delete:
+      DELETE FROM tablePrimary [ [ AS ] alias ]
+      [ WHERE booleanExpression ]
+
+query:
+      values
+  |   WITH withItem [ , withItem ]* query
+  |   {
+          select
+      |   selectWithoutFrom
+      |   query UNION [ ALL | DISTINCT ] query
+      |   query EXCEPT [ ALL | DISTINCT ] query
+      |   query MINUS [ ALL | DISTINCT ] query
+      |   query INTERSECT [ ALL | DISTINCT ] query
+      }
+      [ ORDER BY orderItem [, orderItem ]* ]
+      [ LIMIT [ start, ] { count | ALL } ]
+      [ OFFSET start { ROW | ROWS } ]
+      [ FETCH { FIRST | NEXT } [ count ] { ROW | ROWS } ONLY ]
+
+withItem:
+      name
+      [ '(' column [, column ]* ')' ]
+      AS '(' query ')'
+
+orderItem:
+      expression [ ASC | DESC ] [ NULLS FIRST | NULLS LAST ]
+
+select:
+      SELECT [ STREAM ] [ ALL | DISTINCT ]
+          { * | projectItem [, projectItem ]* }
+      FROM tableExpression
+      [ WHERE booleanExpression ]
+      [ GROUP BY { groupItem [, groupItem ]* } ]
+      [ HAVING booleanExpression ]
+      [ WINDOW windowName AS windowSpec [, windowName AS windowSpec ]* ]
+
+selectWithoutFrom:
+      SELECT [ ALL | DISTINCT ]
+          { * | projectItem [, projectItem ]* }
+
+projectItem:
+      expression [ [ AS ] columnAlias ]
+  |   tableAlias . *
+
+tableExpression:
+      tableReference [, tableReference ]*
+  |   tableExpression [ NATURAL ] [ ( LEFT | RIGHT | FULL ) [ OUTER ] ] JOIN tableExpression [ joinCondition ]
+  |   tableExpression CROSS JOIN tableExpression
+  |   tableExpression [ CROSS | OUTER ] APPLY tableExpression
+
+joinCondition:
+      ON booleanExpression
+  |   USING '(' column [, column ]* ')'
+
+tableReference:
+      tablePrimary
+      [ matchRecognize ]
+      [ [ AS ] alias [ '(' columnAlias [, columnAlias ]* ')' ] ]
+
+tablePrimary:
+      [ [ catalogName . ] schemaName . ] tableName
+      '(' TABLE [ [ catalogName . ] schemaName . ] tableName ')'
+  |   tablePrimary [ EXTEND ] '(' columnDecl [, columnDecl ]* ')'
+  |   [ LATERAL ] '(' query ')'
+  |   UNNEST '(' expression ')' [ WITH ORDINALITY ]
+  |   [ LATERAL ] TABLE '(' [ SPECIFIC ] functionName '(' expression [, expression ]* ')' ')'
+
+columnDecl:
+      column type [ NOT NULL ]
+
+values:
+      VALUES expression [, expression ]*
+
+groupItem:
+      expression
+  |   '(' ')'
+  |   '(' expression [, expression ]* ')'
+  |   CUBE '(' expression [, expression ]* ')'
+  |   ROLLUP '(' expression [, expression ]* ')'
+  |   GROUPING SETS '(' groupItem [, groupItem ]* ')'
+
+windowRef:
+      windowName
+  |   windowSpec
+
+windowSpec:
+      [ windowName ]
+      '('
+      [ ORDER BY orderItem [, orderItem ]* ]
+      [ PARTITION BY expression [, expression ]* ]
+      [
+          RANGE numericOrIntervalExpression { PRECEDING | FOLLOWING }
+      |   ROWS numericExpression { PRECEDING | FOLLOWING }
+      ]
+      ')'
+{% endhighlight %}
+
+In *insert*, if the INSERT or UPSERT statement does not specify a
+list of target columns, the query must have the same number of
+columns as the target table, except in certain
+[conformance levels]({{ site.apiRoot }}/org/polypheny/db/sql/validate/SqlConformance.html#isInsertSubsetColumnsAllowed--).
+
+In *merge*, at least one of the WHEN MATCHED and WHEN NOT MATCHED clauses must
+be present.
+
+*tablePrimary* may only contain an EXTEND clause in certain
+[conformance levels]({{ site.apiRoot }}/org/polypheny/db/sql/validate/SqlConformance.html#allowExtend--);
+in those same conformance levels, any *column* in *insert* may be replaced by
+*columnDecl*, which has a similar effect to including it in an EXTEND clause.
+
+In *orderItem*, if *expression* is a positive integer *n*, it denotes
+the <em>n</em>th item in the SELECT clause.
+
+In *query*, *count* and *start* may each be either an unsigned integer literal
+or a dynamic parameter whose value is an integer.
+
+An aggregate query is a query that contains a GROUP BY or a HAVING
+clause, or aggregate functions in the SELECT clause. In the SELECT,
+HAVING and ORDER BY clauses of an aggregate query, all expressions
+must be constant within the current group (that is, grouping constants
+as defined by the GROUP BY clause, or constants), or aggregate
+functions, or a combination of constants and aggregate
+functions. Aggregate and grouping functions may only appear in an
+aggregate query, and only in a SELECT, HAVING or ORDER BY clause.
+
+A scalar sub-query is a sub-query used as an expression.
+If the sub-query returns no rows, the value is NULL; if it
+returns more than one row, it is an error.
+
+IN, EXISTS and scalar sub-queries can occur
+in any place where an expression can occur (such as the SELECT clause,
+WHERE clause, ON clause of a JOIN, or as an argument to an aggregate
+function).
+
+An IN, EXISTS or scalar sub-query may be correlated; that is, it
+may refer to tables in the FROM clause of an enclosing query.
+
+*selectWithoutFrom* is equivalent to VALUES,
+but is not standard SQL and is only allowed in certain
+[conformance levels]({{ site.apiRoot }}/org/polypheny/db/sql/validate/SqlConformance.html#isFromRequired--).
+
+MINUS is equivalent to EXCEPT,
+but is not standard SQL and is only allowed in certain
+[conformance levels]({{ site.apiRoot }}/org/polypheny/db/sql/validate/SqlConformance.html#isMinusAllowed--).
+
+CROSS APPLY and OUTER APPLY are only allowed in certain
+[conformance levels]({{ site.apiRoot }}/org/polypheny/db/sql/validate/SqlConformance.html#isApplyAllowed--).
+
+"LIMIT start, count" is equivalent to "LIMIT count OFFSET start"
+but is only allowed in certain
+[conformance levels]({{ site.apiRoot }}/org/polypheny/db/sql/validate/SqlConformance.html#isLimitStartCountAllowed--).
+
 ## Keywords
 
 The following is a list of SQL keywords. Reserved keywords are **bold**.
@@ -132,6 +424,7 @@ The following is a list of SQL keywords. Reserved keywords are **bold**.
 **FOREIGN**, FORMAT, FORTRAN, FOUND, FRAC_SECOND,
 **FRAME_ROW**,
 **FREE**,
+**FREQUENCY**,
 **FROM**,
 **FULL**,
 **FUNCTION**,
@@ -328,6 +621,12 @@ The following is a list of SQL keywords. Reserved keywords are **bold**.
 **SYSTEM_TIME**,
 **SYSTEM_USER**,
 **TABLE**,
+**TABLESAMPLE**,
+TABLE_NAME,
+**TEMPERATURE**,
+TEMPORARY,
+**THEN**,
+TIES,
 **TABLESAMPLE**, TABLE_NAME, TEMPORARY,
 **THEN**, TIES,
 **TIME**,

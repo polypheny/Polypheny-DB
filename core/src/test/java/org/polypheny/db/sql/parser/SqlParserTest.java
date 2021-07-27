@@ -55,6 +55,7 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlSetOption;
 import org.polypheny.db.sql.dialect.AnsiSqlDialect;
 import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
+
 import org.polypheny.db.sql.parser.impl.SqlParserImpl;
 import org.polypheny.db.sql.pretty.SqlPrettyWriter;
 import org.polypheny.db.sql.utils.SqlValidatorTestCase;
@@ -248,6 +249,7 @@ public class SqlParserTest {
             "FOUND", "92", "99",
             "FRAME_ROW", "2014", "c",
             "FREE", "99", "2003", "2011", "2014", "c",
+            "FREQUENCY", "99", "2003", "2011", "2014", "c",
             "FROM", "92", "99", "2003", "2011", "2014", "c",
             "FULL", "92", "99", "2003", "2011", "2014", "c",
             "FUNCTION", "92", "99", "2003", "2011", "2014", "c",
@@ -496,6 +498,7 @@ public class SqlParserTest {
             "SYSTEM_USER", "92", "99", "2003", "2011", "2014", "c",
             "TABLE", "92", "99", "2003", "2011", "2014", "c",
             "TABLESAMPLE", "2003", "2011", "2014", "c",
+            "TEMPERATURE", "99", "2003", "2011", "2014", "c",
             "TEMPORARY", "92", "99",
             "THEN", "92", "99", "2003", "2011", "2014", "c",
             "TIME", "92", "99", "2003", "2011", "2014", "c",

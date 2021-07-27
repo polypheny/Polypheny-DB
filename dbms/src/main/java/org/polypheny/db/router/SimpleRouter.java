@@ -84,7 +84,7 @@ public class SimpleRouter extends AbstractRouter {
             if ( table.placementsByAdapter.get( adapterIdWithMostPlacements ).contains( cid ) ) {
                 placementList.add( Catalog.getInstance().getColumnPlacement( adapterIdWithMostPlacements, cid ) );
             } else {
-                placementList.add( Catalog.getInstance().getColumnPlacements( cid ).get( 0 ) );
+                placementList.add( Catalog.getInstance().getColumnPlacement( cid ).get( 0 ) );
             }
         }
 

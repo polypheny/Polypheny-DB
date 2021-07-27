@@ -47,9 +47,9 @@ public abstract class DataStore extends Adapter {
     }
 
 
-    public abstract void createTable( Context context, CatalogTable combinedTable );
+    public abstract void createTable( Context context, CatalogTable combinedTable, List<Long> partitionIds );
 
-    public abstract void dropTable( Context context, CatalogTable combinedTable );
+    public abstract void dropTable( Context context, CatalogTable combinedTable, List<Long> partitionIds );
 
     public abstract void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn );
 

@@ -19,23 +19,27 @@ package org.polypheny.db.schema;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.file.FileStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
@@ -76,12 +80,13 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
 
     private synchronized AbstractPolyphenyDbSchema buildSchema() {
+
         final Schema schema = new RootSchema();
         final AbstractPolyphenyDbSchema polyphenyDbSchema = new SimplePolyphenyDbSchema( null, schema, "" );
 
         SchemaPlus rootSchema = polyphenyDbSchema.plus();
         Catalog catalog = Catalog.getInstance();
-        //
+
         // Build logical schema
         CatalogDatabase catalogDatabase = catalog.getDatabase( 1 );
         for ( CatalogSchema catalogSchema : catalog.getSchemas( catalogDatabase.id, null ) ) {
@@ -133,7 +138,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
             s.polyphenyDbSchema().setSchema( new LogicalSchema( catalogSchema.name, tableMap ) );
         }
 
-        //
+
         // Build adapter schema (physical schema)
         List<CatalogAdapter> adapters = Catalog.getInstance().getAdapters();
         for ( CatalogSchema catalogSchema : catalog.getSchemas( catalogDatabase.id, null ) ) {
@@ -145,31 +150,66 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                     tableIdsPerSchema.get( placement.physicalSchemaName ).add( placement.tableId );
                 }
 
+
                 for ( String physicalSchemaName : tableIdsPerSchema.keySet() ) {
                     Set<Long> tableIds = tableIdsPerSchema.get( physicalSchemaName );
-                    Map<String, Table> physicalTables = new HashMap<>();
+
+                    HashMap<String, Table> physicalTables = new HashMap<>();
                     Adapter adapter = AdapterManager.getInstance().getAdapter( catalogAdapter.id );
-                    final String schemaName = buildAdapterSchemaName( catalogAdapter.uniqueName, catalogSchema.name, physicalSchemaName );
-                    adapter.createNewSchema( rootSchema, schemaName );
-                    SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentSchema(), schemaName ).plus();
+
+                    HashMap<String, SchemaPlus> schemaNames = new HashMap<>();
+
                     for ( long tableId : tableIds ) {
                         CatalogTable catalogTable = catalog.getTable( tableId );
-                        Table table = adapter.createTableSchema(
-                                catalogTable,
-                                Catalog.getInstance().getColumnPlacementsOnAdapterSortedByPhysicalPosition( adapter.getAdapterId(), catalogTable.id ) );
-                        physicalTables.put( catalog.getTable( tableId ).name, table );
-                        s.add( catalog.getTable( tableId ).name, table );
+
+                        List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementByTable( adapter.getAdapterId(), tableId );
+
+                        if ( adapter instanceof FileStore ) {
+                            final String schemaName = buildAdapterSchemaName( catalogAdapter.uniqueName, catalogSchema.name, physicalSchemaName, catalogTable.partitionProperty.partitionIds.get( 0 ) );
+
+                            adapter.createNewSchema( rootSchema, schemaName );
+                            SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentSchema(), schemaName ).plus();
+
+                            Table table = adapter.createTableSchema(
+                                    catalogTable,
+                                    Catalog.getInstance().getColumnPlacementsOnAdapterSortedByPhysicalPosition( adapter.getAdapterId(), catalogTable.id ), null );
+
+                            physicalTables.put( catalog.getTable( tableId ).name, table );
+
+                            rootSchema.add( schemaName, s );
+                            physicalTables.forEach( rootSchema.getSubSchema( schemaName )::add );
+                            rootSchema.getSubSchema( schemaName ).polyphenyDbSchema().setSchema( adapter.getCurrentSchema() );
+                        } else {
+
+                            for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
+
+                                final String schemaName = buildAdapterSchemaName( catalogAdapter.uniqueName, catalogSchema.name, physicalSchemaName, partitionPlacement.partitionId );
+
+                                adapter.createNewSchema( rootSchema, schemaName );
+                                SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentSchema(), schemaName ).plus();
+
+                                Table table = adapter.createTableSchema(
+                                        catalogTable,
+                                        Catalog.getInstance().getColumnPlacementsOnAdapterSortedByPhysicalPosition( adapter.getAdapterId(), catalogTable.id ), partitionPlacement );
+
+                                physicalTables.put( catalog.getTable( tableId ).name, table );
+
+                                rootSchema.add( schemaName, s );
+                                physicalTables.forEach( rootSchema.getSubSchema( schemaName )::add );
+                                rootSchema.getSubSchema( schemaName ).polyphenyDbSchema().setSchema( adapter.getCurrentSchema() );
+                            }
+                        }
                     }
-                    rootSchema.add( schemaName, s );
-                    physicalTables.forEach( rootSchema.getSubSchema( schemaName )::add );
-                    rootSchema.getSubSchema( schemaName ).polyphenyDbSchema().setSchema( adapter.getCurrentSchema() );
                 }
             }
         }
-
         return polyphenyDbSchema;
     }
 
+
+    public static String buildAdapterSchemaName( String storeName, String logicalSchema, String physicalSchema, long partitionId ) {
+        return storeName + "_" + logicalSchema + "_" + physicalSchema + "_" + partitionId;
+    }
 
     public static String buildAdapterSchemaName( String storeName, String logicalSchema, String physicalSchema ) {
         return storeName + "_" + logicalSchema + "_" + physicalSchema;

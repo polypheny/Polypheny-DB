@@ -26,6 +26,7 @@ import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -67,8 +68,9 @@ public class CatalogView extends CatalogTable {
             boolean modifiable,
             RelCollation relCollation,
             Map<Long, List<Long>> underlyingTables,
-            RelDataType fieldList ) {
-        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, primaryKey, placementsByAdapter, modifiable );
+            RelDataType fieldList,
+            PartitionProperty partitionProperty ) {
+        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, primaryKey, placementsByAdapter, modifiable, partitionProperty );
         this.definition = definition;
         this.relCollation = relCollation;
         this.underlyingTables = underlyingTables;
@@ -89,16 +91,15 @@ public class CatalogView extends CatalogTable {
             Long primaryKey,
             ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             boolean modifiable,
-            long numPartitions,
             PartitionType partitionType,
-            ImmutableList<Long> partitionIds,
             long partitionColumnId,
             boolean isPartitioned,
+            PartitionProperty partitionProperty,
             RelCollation relCollation,
             ImmutableList<Long> connectedViews,
             Map<Long, List<Long>> underlyingTables,
             RelDataType fieldList ) {
-        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, primaryKey, placementsByAdapter, modifiable, numPartitions, partitionType, partitionIds, partitionColumnId, isPartitioned, connectedViews );
+        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, primaryKey, placementsByAdapter, modifiable, partitionType, partitionColumnId, isPartitioned, partitionProperty, connectedViews );
         this.definition = definition;
         this.relCollation = relCollation;
         this.underlyingTables = underlyingTables;
@@ -121,11 +122,10 @@ public class CatalogView extends CatalogTable {
                 primaryKey,
                 placementsByAdapter,
                 modifiable,
-                numPartitions,
                 partitionType,
-                partitionIds,
                 partitionColumnId,
                 isPartitioned,
+                partitionProperty,
                 relCollation,
                 newConnectedViews,
                 underlyingTables,
@@ -148,11 +148,10 @@ public class CatalogView extends CatalogTable {
                 primaryKey,
                 placementsByAdapter,
                 modifiable,
-                numPartitions,
                 partitionType,
-                partitionIds,
                 partitionColumnId,
                 isPartitioned,
+                partitionProperty,
                 relCollation,
                 connectedViews,
                 underlyingTables,
@@ -177,7 +176,8 @@ public class CatalogView extends CatalogTable {
                 modifiable,
                 relCollation,
                 underlyingTables,
-                fieldList );
+                fieldList,
+                partitionProperty);
     }
 
 

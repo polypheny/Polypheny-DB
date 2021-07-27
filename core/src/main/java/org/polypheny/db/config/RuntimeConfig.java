@@ -330,7 +330,7 @@ public enum RuntimeConfig {
 
 
     QUEUE_PROCESSING_INTERVAL( "runtime/queueProcessingInterval",
-            "Rate of passive tracking of statistics.",
+            "Time interval in seconds, how often the monitoring queues is processed and analyzed and data points are created . Restart is required",
             BackgroundTask.TaskSchedulingType.EVERY_TEN_SECONDS,
             ConfigType.ENUM,
             "monitoringSettingsQueueGroup"),
@@ -339,7 +339,13 @@ public enum RuntimeConfig {
             "Number of elements in workload queue to process per time.",
             50,
             ConfigType.INTEGER,
-            "monitoringSettingsQueueGroup" );
+            "monitoringSettingsQueueGroup" ),
+
+    TEMPERATURE_FREQUENCY_PROCESSING_INTERVAL( "runtime/partitionFrequencyProcessingInterval",
+            "Time interval in seconds, how often the access frequency of all TEMPERATURE-partitioned tables is analyzed and redistributed",
+            BackgroundTask.TaskSchedulingType.EVERY_TEN_SECONDS,
+            ConfigType.ENUM,
+            "temperaturePartitionProcessingSettingsGroup");
 
 
 
@@ -446,6 +452,16 @@ public enum RuntimeConfig {
         monitoringSettingsQueueGroup.withTitle( "Queue Processing" );
         configManager.registerWebUiPage( monitoringSettingsPage );
         configManager.registerWebUiGroup( monitoringSettingsQueueGroup );
+
+        // Partitioning specific setting
+        final WebUiPage partitionSettingsPage = new WebUiPage(
+                "partitionSettings",
+                "Partitioning",
+                "Settings for partitioning" );
+        final WebUiGroup temperaturePartitionProcessingSettingsGroup = new WebUiGroup( "temperaturePartitionProcessingSettingsGroup", partitionSettingsPage.getId() );
+        temperaturePartitionProcessingSettingsGroup.withTitle( "TEMPERATURE Partition Processing" );
+        configManager.registerWebUiPage( partitionSettingsPage );
+        configManager.registerWebUiGroup( temperaturePartitionProcessingSettingsGroup );
     }
 
 

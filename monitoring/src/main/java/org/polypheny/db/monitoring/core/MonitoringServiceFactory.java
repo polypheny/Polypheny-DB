@@ -18,7 +18,6 @@ package org.polypheny.db.monitoring.core;
 
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
-import org.polypheny.db.monitoring.events.metrics.RoutingDataPoint;
 import org.polypheny.db.monitoring.persistence.MapDbRepository;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUiImpl;
@@ -37,7 +36,7 @@ public class MonitoringServiceFactory {
         MonitoringQueue queueWriteService = new MonitoringQueueImpl( repo );
         MonitoringServiceUi uiService = new MonitoringServiceUiImpl( repo, queueWriteService );
         uiService.registerDataPointForUi( QueryDataPoint.class );
-        uiService.registerDataPointForUi( RoutingDataPoint.class );
+
 
         // initialize ui with first Metric
         //Todo @Cedric to we need to display this at the monitoring view?

@@ -268,7 +268,7 @@ public class IcarusRouter extends AbstractRouter {
             selectedAdapterId = table.placementsByAdapter.keySet().asList().get( 0 );
         }
         if ( table.placementsByAdapter.containsKey( selectedAdapterId ) ) {
-            List<CatalogColumnPlacement> placements = Catalog.getInstance().getColumnPlacementsOnAdapter( selectedAdapterId, table.id );
+            List<CatalogColumnPlacement> placements = Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( selectedAdapterId, table.id );
             if ( placements.size() != table.columnIds.size() ) {
                 return Collections.emptyList();
             }

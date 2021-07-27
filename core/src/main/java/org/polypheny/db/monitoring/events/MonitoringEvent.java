@@ -19,6 +19,8 @@ package org.polypheny.db.monitoring.events;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.UUID;
+import org.polypheny.db.monitoring.events.MonitoringDataPoint;
+
 
 /**
  * Marker interface for the data type, which can be monitored.
@@ -31,8 +33,6 @@ public interface MonitoringEvent {
 
     Timestamp getRecordedTimestamp();
 
-    // TODO: Für was brauchst du hier noch einen String?
-    //  Die nötigen infos hast du eigentlich schon im typ, oder nicht? Oder einfach für debugging?
     String getEventType();
 
     /**

@@ -45,6 +45,7 @@ public abstract class StatementEvent extends BaseEvent{
     protected boolean isAnalyze;
     protected boolean isSubQuery;
     protected String durations;
+    protected List<Long> accessedPartitions;
 
 
 

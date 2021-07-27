@@ -23,6 +23,6 @@ import org.polypheny.db.transaction.Transaction;
 
 public interface DataMigrator {
 
-    void copyData( Transaction transaction, CatalogAdapter store, List<CatalogColumn> columns );
+    void copyData( Transaction transaction, CatalogAdapter store, List<CatalogColumn> columns, List<Long> partitionIds );
 
 }

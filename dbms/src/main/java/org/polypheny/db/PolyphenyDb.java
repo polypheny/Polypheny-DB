@@ -37,12 +37,19 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManagerImpl;
+import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.exploreByExample.ExploreManager;
 import org.polypheny.db.exploreByExample.ExploreQueryProcessor;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.information.HostInformation;
 import org.polypheny.db.information.JavaInformation;
+import org.polypheny.db.monitoring.core.MonitoringService;
+import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
+import org.polypheny.db.partition.FrequencyMap;
+import org.polypheny.db.partition.FrequencyMapImpl;
+import org.polypheny.db.partition.PartitionManagerFactory;
+import org.polypheny.db.partition.PartitionManagerFactoryImpl;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.statistic.StatisticQueryProcessor;
 import org.polypheny.db.statistic.StatisticsManager;
@@ -192,12 +199,6 @@ public class PolyphenyDb {
         } catch ( Exception e ) {
             log.error( "Unable to retrieve host information." );
         }
-        try{
-            //TODO add storage backend connector form Runtime Config instead of specifying it in Monitoring Service
-            //final MonitoringService monitoringService = new MonitoringService();
-        } catch( Exception e) {
-            log.error( "Unable to connect to monitoring service client" );
-        }
 
         /*ThreadManager.getComponent().addShutdownHook( "[ShutdownHook] HttpServerDispatcher.stop()", () -> {
             try {
@@ -242,6 +243,10 @@ public class PolyphenyDb {
 
         // Initialize DdlManager
         DdlManager.setAndGetInstance( new DdlManagerImpl( catalog ) );
+
+        //Intialize PartitionMangerFactory
+        PartitionManagerFactory.setAndGetInstance( new PartitionManagerFactoryImpl() );
+        FrequencyMap.setAndGetInstance( new FrequencyMapImpl(catalog) );
 
         // Start Polypheny UI
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator );

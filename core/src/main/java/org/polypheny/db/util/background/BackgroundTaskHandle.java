@@ -44,11 +44,9 @@ class BackgroundTaskHandle implements Runnable {
 
         // Schedule
         ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
-        if ( schedulingType == TaskSchedulingType.WORKLOAD ) {
-            this.runner = exec.scheduleWithFixedDelay( this, 0, 100, TimeUnit.MILLISECONDS ); // TODO MV: implement workload based scheduling
-        } else {
-            this.runner = exec.scheduleAtFixedRate( this, 0, schedulingType.getMillis(), TimeUnit.MILLISECONDS );
-        }
+        // TODO MV: implement workload based scheduling
+        this.runner = exec.scheduleAtFixedRate( this, 0, schedulingType.getMillis(), TimeUnit.MILLISECONDS );
+
     }
 
 

@@ -27,9 +27,11 @@ import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.information.InformationGraph;
@@ -125,7 +127,7 @@ public class FileStore extends DataStore {
 
 
     @Override
-    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore ) {
+    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
         return currentSchema.createFileTable( catalogTable, columnPlacementsOnStore );
     }
 
@@ -137,14 +139,20 @@ public class FileStore extends DataStore {
 
 
     @Override
-    public void createTable( Context context, CatalogTable catalogTable ) {
+    public void createTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
-        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ) ) {
+
+        if (partitionIds.size() != 1){
+            throw new RuntimeException("Files can't be partitioned but number of specified partitions where: " + partitionIds.size());
+        }
+
+        catalog.addPartitionPlacement( getAdapterId(),catalogTable.id,partitionIds.get( 0 ), PlacementType.AUTOMATIC, currentSchema.getSchemaName(), getPhysicalTableName( catalogTable.id ) );
+
+        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ) ) {
             catalog.updateColumnPlacementPhysicalNames(
                     getAdapterId(),
                     placement.columnId,
                     currentSchema.getSchemaName(),
-                    getPhysicalTableName( catalogTable.id ),
                     getPhysicalColumnName( placement.columnId ),
                     true );
         }
@@ -158,9 +166,10 @@ public class FileStore extends DataStore {
 
 
     @Override
-    public void dropTable( Context context, CatalogTable catalogTable ) {
+    public void dropTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         //todo check if it is on this store?
+        catalog.deletePartitionPlacement( getAdapterId(),partitionIds.get( 0 ));
         for ( Long colId : catalogTable.columnIds ) {
             File f = getColumnFolder( colId );
             try {
@@ -197,7 +206,6 @@ public class FileStore extends DataStore {
                 getAdapterId(),
                 catalogColumn.id,
                 currentSchema.getSchemaName(),
-                getPhysicalTableName( catalogTable.id ),
                 getPhysicalColumnName( catalogColumn.id ),
                 false );
     }

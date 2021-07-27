@@ -69,6 +69,8 @@ dependencies {
     testImplementation group: "org.incava", name: "java-diff", version: java_diff_version  // Apache 2.0
     testImplementation group: "org.apache.commons", name: "commons-pool2", version: commons_pool2_version // Apache 2.0
 
+
+    testImplementation group: "org.mockito", name: "mockito-core", version: mockito_core_version
     //testImplementation group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version  // Apache 2.0
     //testImplementation group: "com.h2database", name: "h2", version: h2_version
     //testImplementation group: "mysql", name: "mysql-connector-java", version: mysql_connector_java_version

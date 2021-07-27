@@ -45,6 +45,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
     private final InformationTable columnInformation;
     private final InformationTable indexInformation;
     private final InformationTable adapterInformation;
+    private final InformationTable partitionGroupInformation;
     private final InformationTable partitionInformation;
 
     private final InformationTable debugInformation;
@@ -60,10 +61,11 @@ public class CatalogInfoPage implements PropertyChangeListener {
         this.adapterInformation = addCatalogInformationTable( page, "Adapters", Arrays.asList( "ID", "Name", "Type" ) );
         this.databaseInformation = addCatalogInformationTable( page, "Databases", Arrays.asList( "ID", "Name", "Default SchemaID" ) );
         this.schemaInformation = addCatalogInformationTable( page, "Schemas", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaType" ) );
-        this.tableInformation = addCatalogInformationTable( page, "Tables", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "TableType", "PartitionType", "Partitions" ) );
+        this.tableInformation = addCatalogInformationTable( page, "Tables", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "TableType", "PartitionType", "PartitionGroups" ) );
         this.columnInformation = addCatalogInformationTable( page, "Columns", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "TableID", "Placements" ) );
         this.indexInformation = addCatalogInformationTable( page, "Indexes", Arrays.asList( "ID", "Name", "KeyID", "Location", "Method", "Unique" ) );
-        this.partitionInformation = addCatalogInformationTable( page, "Partitions", Arrays.asList( "ID", "Name", "TableID", "Qualifiers" ) );
+        this.partitionGroupInformation = addCatalogInformationTable( page, "Partition Groups", Arrays.asList( "ID", "Name", "TableID", "Partitions" ) );
+        this.partitionInformation = addCatalogInformationTable( page, "Partitions", Arrays.asList( "ID", "PartitionGroupID", "TableID", "Qualifiers" ) );
 
         this.debugInformation = addCatalogInformationTable( page, "Debug", Arrays.asList( "Time", "Message" ) );
 
@@ -117,6 +119,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
         columnInformation.reset();
         adapterInformation.reset();
         indexInformation.reset();
+        partitionGroupInformation.reset();
         partitionInformation.reset();
 
         if ( catalog == null ) {
@@ -134,17 +137,20 @@ public class CatalogInfoPage implements PropertyChangeListener {
                 schemaInformation.addRow( s.id, s.name, s.databaseId, s.schemaType );
             } );
             catalog.getTables( null, null, null ).forEach( t -> {
-                tableInformation.addRow( t.id, t.name, t.databaseId, t.schemaId, t.tableType, t.partitionType.toString(), t.numPartitions );
+                tableInformation.addRow( t.id, t.name, t.databaseId, t.schemaId, t.tableType, t.partitionProperty.partitionType.toString(), t.partitionProperty.partitionGroupIds.size() );
             } );
             catalog.getColumns( null, null, null, null ).forEach( c -> {
-                String placements = catalog.getColumnPlacements( c.id ).stream().map( plac -> String.valueOf( plac.adapterId ) ).collect( Collectors.joining( "," ) );
+                String placements = catalog.getColumnPlacement( c.id ).stream().map( plac -> String.valueOf( plac.adapterId ) ).collect( Collectors.joining( "," ) );
                 columnInformation.addRow( c.id, c.name, c.databaseId, c.schemaId, c.tableId, placements );
             } );
             catalog.getIndexes().forEach( i -> {
                 indexInformation.addRow( i.id, i.name, i.keyId, i.location, i.method, i.unique );
             } );
+            catalog.getPartitionGroups( null, null, null ).forEach( pg -> {
+                partitionGroupInformation.addRow( pg.id, pg.partitionGroupName, pg.tableId, pg.partitionIds.size() );
+            } );
             catalog.getPartitions( null, null, null ).forEach( p -> {
-                partitionInformation.addRow( p.id, p.partitionName, p.tableId, p.partitionQualifiers );
+                partitionInformation.addRow( p.id, p.partitionGroupId, p.tableId, p.partitionQualifiers );
             } );
         } catch ( Exception e ) {
             log.error( "Exception while reset catalog information page", e );

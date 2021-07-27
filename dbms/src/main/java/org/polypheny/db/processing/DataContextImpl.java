@@ -17,11 +17,13 @@
 package org.polypheny.db.processing;
 
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import org.apache.calcite.avatica.AvaticaSite;
 import org.apache.calcite.linq4j.QueryProvider;
@@ -48,8 +50,13 @@ public class DataContextImpl implements DataContext {
     @Getter
     private final Statement statement;
 
+    private boolean wasBackuped = false;
+
     private final Map<Long, RelDataType> parameterTypes; // ParameterIndex -> Data Type
-    private final List<Map<Long, Object>> parameterValues; // List of ( ParameterIndex -> Value )
+    private List<Map<Long, Object>> parameterValues; // List of ( ParameterIndex -> Value )
+
+    private Map<Long, RelDataType> backupParameterTypes = new HashMap<>();; // ParameterIndex -> Data Type
+    private List<Map<Long, Object>> backupParameterValues = new ArrayList<>(); // List of ( ParameterIndex -> Value )
 
 
     public DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory, Statement statement ) {
@@ -146,8 +153,30 @@ public class DataContextImpl implements DataContext {
 
     @Override
     public void resetParameterValues() {
+
         parameterTypes.clear();
         parameterValues.clear();
+    }
+
+
+    @Override
+    public boolean wasBackuped(){ return wasBackuped; }
+
+    @Override
+    public void backupParameterValues() {
+
+        wasBackuped = true;
+
+        backupParameterTypes.putAll( parameterTypes );
+        backupParameterValues = parameterValues.stream().collect( Collectors.toList());
+    }
+
+    @Override
+    public void restoreParameterValues() {
+
+        parameterTypes.putAll( backupParameterTypes );
+        parameterValues = backupParameterValues.stream().collect( Collectors.toList());
+
     }
 
     /*

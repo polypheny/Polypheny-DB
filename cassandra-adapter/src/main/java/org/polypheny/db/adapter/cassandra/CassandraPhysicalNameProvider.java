@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -146,7 +147,8 @@ public class CassandraPhysicalNameProvider {
 
     public void updatePhysicalColumnName( long columnId, String updatedName, boolean updatePosition ) {
         CatalogColumnPlacement placement = this.catalog.getColumnPlacement( this.storeId, columnId );
-        this.catalog.updateColumnPlacementPhysicalNames( this.storeId, columnId, placement.physicalTableName, placement.physicalTableName, updatedName, updatePosition );
+        CatalogPartitionPlacement partitionPlacement = catalog.getPartitionPlacement( this.storeId, catalog.getTable( placement.tableId ).partitionProperty.partitionIds.get( 0 ) );
+        this.catalog.updateColumnPlacementPhysicalNames( this.storeId, columnId,partitionPlacement.physicalTableName, updatedName, updatePosition );
     }
 
 

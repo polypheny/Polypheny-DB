@@ -18,8 +18,10 @@ package org.polypheny.db.misc;
 
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 import org.apache.calcite.avatica.AvaticaSqlException;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -28,7 +30,24 @@ import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.PartitionType;
+import org.polypheny.db.catalog.Catalog.Pattern;
+import org.polypheny.db.catalog.entity.CatalogPartition;
+import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.config.Config;
+import org.polypheny.db.config.ConfigEnum;
+import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.excluded.CassandraExcluded;
+import org.polypheny.db.excluded.CottontailExcluded;
+import org.polypheny.db.excluded.FileExcluded;
+import org.polypheny.db.excluded.MonetdbExcluded;
+import org.polypheny.db.excluded.MongodbExcluded;
+import org.polypheny.db.partition.PartitionManager;
+import org.polypheny.db.partition.PartitionManagerFactory;
+import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
+import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
+
 
 
 @SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
@@ -44,6 +63,7 @@ public class HorizontalPartitioningTest {
 
 
     @Test
+    @Category({CassandraExcluded.class, MongodbExcluded.class, CottontailExcluded.class, FileExcluded.class })
     public void basicHorizontalPartitioningTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -88,7 +108,7 @@ public class HorizontalPartitioningTest {
                 } finally {
                     // Drop tables and stores
                     statement.executeUpdate( "DROP TABLE horizontalparttest" );
-                    statement.executeUpdate( "DROP TABLE horizontalparttestfalsepartition" );
+                    //statement.executeUpdate( "DROP TABLE horizontalparttestfalsepartition" );
                 }
             }
         }
@@ -96,6 +116,7 @@ public class HorizontalPartitioningTest {
 
 
     @Test
+    @Category({CassandraExcluded.class, MongodbExcluded.class, CottontailExcluded.class, FileExcluded.class })
     public void modifyPartitionTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -142,16 +163,29 @@ public class HorizontalPartitioningTest {
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"store2\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
                             + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
-                    // Merge partition
-                    statement.executeUpdate( "ALTER TABLE horizontalparttestextension MERGE PARTITIONs" );
+
 
                     // Add placement for second table
                     statement.executeUpdate( "ALTER TABLE \"horizontalparttestextension\" ADD PLACEMENT (tvarchar) ON STORE \"store2\"" );
 
+                    //TODO @HENNLO
+                    //add mergetable test
+                    statement.executeUpdate( "ALTER TABLE \"horizontalparttestextension\" MERGE PARTITIONS" );
+
+                    //DROP Table to repartition
+                    statement.executeUpdate( "DROP TABLE \"horizontalparttestextension\" " );
+
                     // Partition by name
-                    statement.executeUpdate( "ALTER TABLE horizontalparttestextension "
+                    statement.executeUpdate( "CREATE TABLE horizontalparttestextension( "
+                            + "tprimary INTEGER NOT NULL, "
+                            + "tinteger INTEGER NULL, "
+                            + "tvarchar VARCHAR(20) NULL, "
+                            + "PRIMARY KEY (tprimary) )"
                             + "PARTITION BY HASH (tinteger) "
                             + " WITH (name1, name2, name3)" );
+
+                    // Add placement for second table
+                    statement.executeUpdate( "ALTER TABLE \"horizontalparttestextension\" ADD PLACEMENT (tvarchar) ON STORE \"store2\"" );
 
                     // name partitioning can be modified with index
                     statement.executeUpdate( "ALTER TABLE \"horizontalparttestextension\" MODIFY PARTITIONS (1) ON STORE \"store2\" " );
@@ -181,6 +215,7 @@ public class HorizontalPartitioningTest {
 
     // Check if partitions have enough partitions
     @Test
+    @Category({CassandraExcluded.class, MongodbExcluded.class, CottontailExcluded.class, FileExcluded.class })
     public void partitionNumberTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -224,6 +259,7 @@ public class HorizontalPartitioningTest {
 
 
     @Test
+    @Category({CassandraExcluded.class, MongodbExcluded.class, CottontailExcluded.class, FileExcluded.class })
     public void hashPartitioningTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -265,15 +301,6 @@ public class HorizontalPartitioningTest {
                     // Change placement on second store
                     statement.executeUpdate( "ALTER TABLE \"hashpartition\" MODIFY PARTITIONS (0,1) ON STORE \"storehash\"" );
 
-                    // Change placement on second store
-                    // Check partition distribution violation
-                    failed = false;
-                    try {
-                        statement.executeUpdate( "ALTER TABLE \"hashpartition\" MODIFY PARTITIONS (2) ON STORE \"hsqldb\"" );
-                    } catch ( AvaticaSqlException e ) {
-                        failed = true;
-                    }
-                    Assert.assertTrue( failed );
 
                     // You can't change the distribution unless there exists at least one full partition placement of each column as a fallback
                     failed = false;
@@ -293,7 +320,6 @@ public class HorizontalPartitioningTest {
                 } finally {
                     statement.executeUpdate( "DROP TABLE hashpartitioning" );
                     statement.executeUpdate( "DROP TABLE hashpartition" );
-                    statement.executeUpdate( "DROP TABLE hashpartitioningValidate" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"storehash\"" );
                 }
             }
@@ -302,6 +328,7 @@ public class HorizontalPartitioningTest {
 
 
     @Test
+    @Category({CassandraExcluded.class, MongodbExcluded.class, CottontailExcluded.class, FileExcluded.class })
     public void listPartitioningTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -344,6 +371,7 @@ public class HorizontalPartitioningTest {
                     }
                     Assert.assertTrue( failed );
 
+
                     // TODO: check partition distribution violation
 
                     // TODO: Chek unbound partitions
@@ -357,8 +385,10 @@ public class HorizontalPartitioningTest {
     }
 
 
+
+
     @Test
-    @Category(CassandraExcluded.class)
+    @Category({CassandraExcluded.class, MongodbExcluded.class, CottontailExcluded.class, FileExcluded.class })
     public void rangePartitioningTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -381,16 +411,16 @@ public class HorizontalPartitioningTest {
                                     new Object[]{ 1, 3, "hans" },
                                     new Object[]{ 2, 7, "bob" } ) );
 
-                    statement.executeUpdate( "UPDATE rangepartitioning1 SET tinteger = 4 WHERE tinteger = 7" );
+                    statement.executeUpdate( "UPDATE rangepartitioning1 SET tinteger = 6 WHERE tinteger = 7" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM rangepartitioning1 ORDER BY tprimary" ),
                             ImmutableList.of(
                                     new Object[]{ 1, 3, "hans" },
-                                    new Object[]{ 2, 4, "bob" } ) );
+                                    new Object[]{ 2, 6, "bob" } ) );
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM rangepartitioning1 WHERE tinteger = 4" ),
+                            statement.executeQuery( "SELECT * FROM rangepartitioning1 WHERE tinteger = 6" ),
                             ImmutableList.of(
-                                    new Object[]{ 2, 4, "bob" } ) );
+                                    new Object[]{ 2, 6, "bob" } ) );
 
                     // RANGE partitioning can't be created without specifying ranges
                     boolean failed = false;
@@ -412,6 +442,193 @@ public class HorizontalPartitioningTest {
                 }
             }
         }
+    }
+
+
+    @Test
+    @Category({CassandraExcluded.class, MongodbExcluded.class, CottontailExcluded.class, FileExcluded.class })
+    public void partitionPlacementTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+
+            long partitionsToCreate = 4;
+
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE physicalPartitionTest( "
+                        + "tprimary INTEGER NOT NULL, "
+                        + "tinteger INTEGER NULL, "
+                        + "tvarchar VARCHAR(20) NULL, "
+                        + "PRIMARY KEY (tprimary) )"
+                        + "PARTITION BY HASH (tvarchar) "
+                        + "PARTITIONS " + partitionsToCreate );
+
+                try {
+
+                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern("physicalpartitiontest") ).get( 0 );
+                    //Check if sufficient PartitionPlacements have been created
+
+                    //Check if initially as many partitonPlacements are created as requested
+                    Assert.assertEquals(  partitionsToCreate, Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size()  );
+
+
+                    // ADD adapter
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"anotherstore\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+
+                    // ADD FullPlacement
+                    statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" ADD PLACEMENT ON STORE \"anotherstore\"" );
+                    Assert.assertEquals(  partitionsToCreate*2, Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size()  );
+
+                    //Modify partitions on second store
+                    statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" MODIFY PARTITIONS (0) ON STORE anotherstore" );
+                    Assert.assertEquals(  partitionsToCreate+1, Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size()  );
+
+                    //After MERGE should only hold on partition
+                    statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" MERGE PARTITIONS" );
+                    Assert.assertEquals(  2, Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size()  );
+
+
+                    // DROP STORE and verfiy number of partition Placements
+                    statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" DROP PLACEMENT ON STORE \"anotherstore\"" );
+                    Assert.assertEquals(  1, Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size()  );
+
+                } finally {
+                    // Drop tables and stores
+                    statement.executeUpdate( "DROP TABLE IF EXISTS physicalPartitionTest" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP anotherstore" );
+                }
+            }
+        }
+    }
+
+    @Test
+    @Category({CassandraExcluded.class, MongodbExcluded.class, CottontailExcluded.class, FileExcluded.class })
+    public void temperaturePartitionTest() throws SQLException {
+
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+
+
+                //Sets the background processing of Workload Monitoring an Temperature monitoring to one second to get immediate results
+                ConfigManager cm = ConfigManager.getInstance();
+                Config c1 = cm.getConfig("runtime/partitionFrequencyProcessingInterval" );
+                Config c2 = cm.getConfig("runtime/queueProcessingInterval" );
+                ((ConfigEnum)c1).setEnum( TaskSchedulingType.EVERY_FIVE_SECONDS );
+                ((ConfigEnum)c2).setEnum( TaskSchedulingType.EVERY_FIVE_SECONDS );
+
+
+
+                statement.executeUpdate( "CREATE TABLE temperaturetest( "
+                        + "tprimary INTEGER NOT NULL, "
+                        + "tinteger INTEGER NULL, "
+                        + "tvarchar VARCHAR(20) NULL, "
+                        + "PRIMARY KEY (tprimary) )"
+                        + "PARTITION BY TEMPERATURE(tvarchar)"
+                        + "(PARTITION hot VALUES(12%),"
+                        + "PARTITION cold VALUES(14%))"
+                        + " USING FREQUENCY write  INTERVAL 10 minutes WITH  20 HASH PARTITIONS" );
+
+
+                try {
+
+                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern("temperaturetest") ).get( 0 );
+
+
+                    //Check if partition properties are correctly set and parsed
+                    Assert.assertEquals( 600, ((TemperaturePartitionProperty) table.partitionProperty).getFrequencyInterval() );
+                    Assert.assertEquals( 12, ((TemperaturePartitionProperty) table.partitionProperty).getHotAccessPercentageIn() );
+                    Assert.assertEquals( 14, ((TemperaturePartitionProperty) table.partitionProperty).getHotAccessPercentageOut() );
+                    Assert.assertEquals( PartitionType.HASH, ((TemperaturePartitionProperty) table.partitionProperty).getInternalPartitionFunction() );
+
+                    Assert.assertEquals( 2,  table.partitionProperty.getPartitionGroupIds().size() );
+                    Assert.assertEquals( 20, table.partitionProperty.getPartitionIds().size() );
+
+
+                    //Check if initially as many partitonPlacements are created as requested and stored in the partitionproperty
+                    Assert.assertEquals(  table.partitionProperty.getPartitionIds().size(), Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size()  );
+
+
+
+                    //Retrieve partiton distribution
+                    //Get percentage of tables which can remain in HOT
+                    long numberOfPartitionsInHot = ( table.partitionProperty.partitionIds.size() *  ((TemperaturePartitionProperty)table.partitionProperty).getHotAccessPercentageIn() ) / 100;
+                    //These are the tables than can remain in HOT
+                    long allowedTablesInHot = ( table.partitionProperty.partitionIds.size() *  ((TemperaturePartitionProperty)table.partitionProperty).getHotAccessPercentageOut() ) / 100;
+                    if( numberOfPartitionsInHot == 0 ){ numberOfPartitionsInHot = 1; }
+                    if( allowedTablesInHot == 0 ){ allowedTablesInHot = 1; }
+                    long numberOfPartitionsInCold = table.partitionProperty.partitionIds.size() - numberOfPartitionsInHot;
+
+                    List<CatalogPartition> hotPartitions = Catalog.getInstance().getPartitions(((TemperaturePartitionProperty) table.partitionProperty).getHotPartitionGroupId()  );
+                    List<CatalogPartition> coldPartitions = Catalog.getInstance().getPartitions(((TemperaturePartitionProperty) table.partitionProperty).getColdPartitionGroupId()  );
+
+                    Assert.assertTrue(  ( numberOfPartitionsInHot == hotPartitions.size() ) ||  ( numberOfPartitionsInHot == allowedTablesInHot ) );
+
+
+
+                    // ADD adapter
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"hot\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"cold\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+
+                    // ADD FullPlacement
+                   /* statement.executeUpdate( "ALTER TABLE \"temperaturetest\" ADD PLACEMENT ON STORE \"hot\"" );
+                    statement.executeUpdate( "ALTER TABLE \"temperaturetest\" ADD PLACEMENT ON STORE \"cold\"" );
+
+                    statement.executeUpdate( "ALTER TABLE \"temperaturetest\" DROP PLACEMENT ON STORE \"hsqldb\"" );
+
+                    statement.executeUpdate( "ALTER TABLE \"temperaturetest\" MODIFY PARTITIONS (\"hot\") ON STORE hot" );
+                    statement.executeUpdate( "ALTER TABLE \"temperaturetest\" MODIFY PARTITIONS (\"cold\") ON STORE cold" );
+                    */
+                     //Todo ADD placement fails on integration test during dataCopy
+
+                    String partitionValue = "Foo";
+
+
+                    statement.executeUpdate( "INSERT INTO temperaturetest VALUES (1, 3, '"+ partitionValue +"')" );
+                    statement.executeUpdate( "INSERT INTO temperaturetest VALUES (2, 4, '"+ partitionValue +"')" );
+                    statement.executeUpdate( "INSERT INTO temperaturetest VALUES (3, 5, '"+ partitionValue +"')" );
+                    statement.executeUpdate( "INSERT INTO temperaturetest VALUES (4, 6, '"+ partitionValue +"')" );
+
+
+                    //Do batch INSERT to check if BATCH INSERT works for partitioned tables
+                    PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO temperaturetest(tprimary,tvarchar) VALUES (?, ?)" );
+
+                    preparedInsert.setInt( 1, 1 );
+                    preparedInsert.setString( 2, partitionValue );
+                    preparedInsert.addBatch();
+
+                    preparedInsert.setInt( 1, 2 );
+                    preparedInsert.setString( 2, partitionValue );
+                    preparedInsert.addBatch();
+
+                    preparedInsert.executeBatch();
+                    // This should execute two DML INSERTS on the target PartitionId and therefore redistribute the data
+
+
+                    //verify that the partition is now in HOT and was not before
+                    CatalogTable updatedTable = Catalog.getInstance().getTables( null, null, new Pattern("temperaturetest") ).get( 0 );
+
+                    //manually get the target partitionID of query
+                    PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
+                    PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( table.partitionType );
+                    long targetId = partitionManager.getTargetPartitionId( table, partitionValue );
+
+                    List<CatalogPartition> hotPartitionsAfterChange = Catalog.getInstance().getPartitions(((TemperaturePartitionProperty) updatedTable.partitionProperty).getHotPartitionGroupId()  );
+                    Assert.assertTrue( hotPartitionsAfterChange.contains( Catalog.getInstance().getPartition( targetId ) ) );
+
+
+                } finally {
+                    // Drop tables and stores
+                    statement.executeUpdate( "DROP TABLE IF EXISTS temperaturetest" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP hot" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP cold" );
+                }
+            }
+        }
+
     }
 
 }

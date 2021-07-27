@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.jdbc.stores;
 
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -30,8 +31,10 @@ import org.polypheny.db.adapter.jdbc.JdbcUtils;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.jdbc.Context;
@@ -112,25 +115,48 @@ public abstract class AbstractJdbcStore extends DataStore {
 
 
     @Override
-    public void createTable( Context context, CatalogTable catalogTable ) {
+    public void createTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
         List<String> qualifiedNames = new LinkedList<>();
         qualifiedNames.add( catalogTable.getSchemaName() );
         qualifiedNames.add( catalogTable.name );
-        String physicalTableName = getPhysicalTableName( catalogTable.id );
-        if ( log.isDebugEnabled() ) {
-            log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), qualifiedNames, physicalTableName );
-        }
-        StringBuilder query = buildCreateTableQuery( getDefaultPhysicalSchemaName(), physicalTableName, catalogTable );
-        executeUpdate( query, context );
-        // Add physical names to placements
-        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ) ) {
-            catalog.updateColumnPlacementPhysicalNames(
+
+
+        //Retrieve all table names to be created
+        List<String> physicalTableNames = new ArrayList<>();
+        //-1 for unpartitioned
+        String originalPhysicalTableName = getPhysicalTableName( catalogTable.id, -1 );
+        physicalTableNames.add( originalPhysicalTableName );
+
+        List<CatalogColumnPlacement> existingPlacements = catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id );
+
+        //Remove the unpartitioned table name again, otherwise it would cause, table already exist due to create statement
+        for ( long partitionId : partitionIds ){
+            String physicalTableName = getPhysicalTableName( catalogTable.id, partitionId );
+
+            if ( log.isDebugEnabled() ) {
+                log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), qualifiedNames, physicalTableName );
+            }
+            StringBuilder query = buildCreateTableQuery( getDefaultPhysicalSchemaName(), physicalTableName, catalogTable );
+            log.info( query.toString() + " on store " + this.getUniqueName() );
+            executeUpdate( query, context );
+
+
+            catalog.addPartitionPlacement(
                     getAdapterId(),
-                    placement.columnId,
+                    catalogTable.id,
+                    partitionId,
+                    PlacementType.AUTOMATIC,
                     getDefaultPhysicalSchemaName(),
-                    physicalTableName,
-                    getPhysicalColumnName( placement.columnId ),
-                    true );
+                    physicalTableName);
+
+            for ( CatalogColumnPlacement placement : existingPlacements ) {
+                catalog.updateColumnPlacementPhysicalNames(
+                        getAdapterId(),
+                        placement.columnId,
+                        getDefaultPhysicalSchemaName(),
+                        getPhysicalColumnName( placement.columnId ),
+                        true );
+            }
         }
     }
 
@@ -143,7 +169,7 @@ public abstract class AbstractJdbcStore extends DataStore {
                 .append( dialect.quoteIdentifier( physicalTableName ) )
                 .append( " ( " );
         boolean first = true;
-        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ) ) {
+        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ) ) {
             CatalogColumn catalogColumn = catalog.getColumn( placement.columnId );
             if ( !first ) {
                 builder.append( ", " );
@@ -165,30 +191,31 @@ public abstract class AbstractJdbcStore extends DataStore {
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows adding columns to linked tables.
         CatalogColumnPlacement ccp = null;
-        for ( CatalogColumnPlacement p : Catalog.getInstance().getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ) ) {
+        for ( CatalogColumnPlacement p : Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ) ) {
             // The for loop is required to avoid using the names of the column which we are currently adding (which are null)
             if ( p.columnId != catalogColumn.id ) {
                 ccp = p;
                 break;
             }
         }
-        String physicalTableName = ccp.physicalTableName;
-        String physicalSchemaName = ccp.physicalSchemaName;
-        StringBuilder query = buildAddColumnQuery( physicalSchemaName, physicalTableName, physicalColumnName, catalogTable, catalogColumn );
-        executeUpdate( query, context );
-        // Insert default value
-        if ( catalogColumn.defaultValue != null ) {
-            query = buildInsertDefaultValueQuery( physicalSchemaName, physicalTableName, physicalColumnName, catalogColumn );
-            executeUpdate( query, context );
-        }
-        // Add physical name to placement
-        catalog.updateColumnPlacementPhysicalNames(
-                getAdapterId(),
-                catalogColumn.id,
-                physicalSchemaName,
-                physicalTableName,
-                physicalColumnName,
-                false );
+       for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable( ccp.adapterId, catalogTable.id ) ) {
+           String physicalTableName = partitionPlacement.physicalTableName;
+           String physicalSchemaName = partitionPlacement.physicalSchemaName;
+           StringBuilder query = buildAddColumnQuery( physicalSchemaName, physicalTableName, physicalColumnName, catalogTable, catalogColumn );
+           executeUpdate( query, context );
+           // Insert default value
+           if ( catalogColumn.defaultValue != null ) {
+               query = buildInsertDefaultValueQuery( physicalSchemaName, physicalTableName, physicalColumnName, catalogColumn );
+               executeUpdate( query, context );
+           }
+           // Add physical name to placement
+           catalog.updateColumnPlacementPhysicalNames(
+                   getAdapterId(),
+                   catalogColumn.id,
+                   physicalSchemaName,
+                   physicalColumnName,
+                   false );
+       }
     }
 
 
@@ -268,50 +295,68 @@ public abstract class AbstractJdbcStore extends DataStore {
         if ( !this.dialect.supportsNestedArrays() && catalogColumn.collectionsType != null ) {
             return;
         }
-        StringBuilder builder = new StringBuilder();
-        builder.append( "ALTER TABLE " )
-                .append( dialect.quoteIdentifier( columnPlacement.physicalSchemaName ) )
-                .append( "." )
-                .append( dialect.quoteIdentifier( columnPlacement.physicalTableName ) );
-        builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
-        builder.append( " " ).append( getTypeString( catalogColumn.type ) );
-        if ( catalogColumn.length != null ) {
-            builder.append( "(" );
-            builder.append( catalogColumn.length );
-            if ( catalogColumn.scale != null ) {
-                builder.append( "," ).append( catalogColumn.scale );
+        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable( columnPlacement.adapterId, columnPlacement.tableId ) ) {
+            StringBuilder builder = new StringBuilder();
+            builder.append( "ALTER TABLE " )
+                    .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
+                    .append( "." )
+                    .append( dialect.quoteIdentifier( partitionPlacement.physicalTableName ) );
+            builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
+            builder.append( " " ).append( getTypeString( catalogColumn.type ) );
+            if ( catalogColumn.length != null ) {
+                builder.append( "(" );
+                builder.append( catalogColumn.length );
+                if ( catalogColumn.scale != null ) {
+                    builder.append( "," ).append( catalogColumn.scale );
+                }
+                builder.append( ")" );
             }
-            builder.append( ")" );
+            executeUpdate( builder, context );
         }
-        executeUpdate( builder, context );
     }
 
 
     @Override
-    public void dropTable( Context context, CatalogTable catalogTable ) {
+    public void dropTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows dropping linked tables.
-        String physicalTableName = Catalog.getInstance().getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalTableName;
-        String physicalSchemaName = Catalog.getInstance().getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalSchemaName;
-        StringBuilder builder = new StringBuilder();
-        builder.append( "DROP TABLE " )
-                .append( dialect.quoteIdentifier( physicalSchemaName ) )
-                .append( "." )
-                .append( dialect.quoteIdentifier( physicalTableName ) );
-        executeUpdate( builder, context );
+        String physicalTableName;
+        String physicalSchemaName;
+
+        List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
+        partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id )) );
+
+        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
+            catalog.deletePartitionPlacement( getAdapterId(), partitionPlacement.partitionId );
+            physicalSchemaName = partitionPlacement.physicalSchemaName;
+            physicalTableName = partitionPlacement.physicalTableName;
+
+
+            StringBuilder builder = new StringBuilder();
+
+            builder.append( "DROP TABLE " )
+                    .append( dialect.quoteIdentifier( physicalSchemaName ) )
+                    .append( "." )
+                    .append( dialect.quoteIdentifier( physicalTableName ) );
+
+            log.info( builder.toString() + " from store " + this.getUniqueName() );
+            executeUpdate( builder, context );
+        }
     }
 
 
     @Override
     public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
-        StringBuilder builder = new StringBuilder();
-        builder.append( "ALTER TABLE " )
-                .append( dialect.quoteIdentifier( columnPlacement.physicalSchemaName ) )
-                .append( "." )
-                .append( dialect.quoteIdentifier( columnPlacement.physicalTableName ) );
-        builder.append( " DROP " ).append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
-        executeUpdate( builder, context );
+        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable( columnPlacement.adapterId, columnPlacement.tableId ) ) {
+            StringBuilder builder = new StringBuilder();
+            builder.append( "ALTER TABLE " )
+                    .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
+                    .append( "." )
+                    .append( dialect.quoteIdentifier( partitionPlacement.physicalTableName ) );
+            builder.append( " DROP " ).append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
+            executeUpdate( builder, context );
+        }
     }
 
 
@@ -320,14 +365,16 @@ public abstract class AbstractJdbcStore extends DataStore {
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows truncating linked tables.
-        String physicalTableName = Catalog.getInstance().getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalTableName;
-        String physicalSchemaName = Catalog.getInstance().getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalSchemaName;
-        StringBuilder builder = new StringBuilder();
-        builder.append( "TRUNCATE TABLE " )
-                .append( dialect.quoteIdentifier( physicalSchemaName ) )
-                .append( "." )
-                .append( dialect.quoteIdentifier( physicalTableName ) );
-        executeUpdate( builder, context );
+        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable(getAdapterId(), catalogTable.id) ) {
+            String physicalTableName = partitionPlacement.physicalTableName;
+            String physicalSchemaName = partitionPlacement.physicalSchemaName;
+            StringBuilder builder = new StringBuilder();
+            builder.append( "TRUNCATE TABLE " )
+                    .append( dialect.quoteIdentifier( physicalSchemaName ) )
+                    .append( "." )
+                    .append( dialect.quoteIdentifier( physicalTableName ) );
+            executeUpdate( builder, context );
+        }
     }
 
 
@@ -387,8 +434,12 @@ public abstract class AbstractJdbcStore extends DataStore {
     }
 
 
-    protected String getPhysicalTableName( long tableId ) {
-        return "tab" + tableId;
+    protected String getPhysicalTableName( long tableId, long partitionId) {
+        String physicalTableName ="tab" + tableId;
+        if ( partitionId >= 0  ) {
+            physicalTableName += "_part" + partitionId;
+        }
+        return physicalTableName;
     }
 
 

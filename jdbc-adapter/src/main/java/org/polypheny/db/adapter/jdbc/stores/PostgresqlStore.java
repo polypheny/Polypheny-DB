@@ -38,6 +38,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.docker.DockerManager.ContainerBuilder;
@@ -125,10 +126,12 @@ public class PostgresqlStore extends AbstractJdbcStore {
     @Override
     public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn, PolyType oldType ) {
         StringBuilder builder = new StringBuilder();
+        CatalogPartitionPlacement partitionPlacement = catalog.getPartitionPlacement( getAdapterId(), catalog.getTable( columnPlacement.tableId ).partitionProperty.partitionIds.get( 0 ) );
+
         builder.append( "ALTER TABLE " )
-                .append( dialect.quoteIdentifier( columnPlacement.physicalSchemaName ) )
+                .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
                 .append( "." )
-                .append( dialect.quoteIdentifier( columnPlacement.physicalTableName ) );
+                .append( dialect.quoteIdentifier( partitionPlacement.physicalTableName ) );
         builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
         builder.append( " TYPE " ).append( getTypeString( catalogColumn.type ) );
         if ( catalogColumn.collectionsType != null ) {
@@ -154,8 +157,8 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
 
     @Override
-    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore ) {
-        return currentJdbcSchema.createJdbcTable( catalogTable, columnPlacementsOnStore );
+    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+        return currentJdbcSchema.createJdbcTable( catalogTable, columnPlacementsOnStore, partitionPlacement );
     }
 
 
@@ -167,7 +170,8 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
     @Override
     public void addIndex( Context context, CatalogIndex catalogIndex ) {
-        List<CatalogColumnPlacement> ccps = Catalog.getInstance().getColumnPlacementsOnAdapter( getAdapterId(), catalogIndex.key.tableId );
+        List<CatalogColumnPlacement> ccps = Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogIndex.key.tableId );
+        CatalogPartitionPlacement partitionPlacement = catalog.getPartitionPlacement( getAdapterId(), catalog.getTable( catalogIndex.key.tableId ).partitionProperty.partitionIds.get( 0 ) );
         StringBuilder builder = new StringBuilder();
         builder.append( "CREATE " );
         if ( catalogIndex.unique ) {
@@ -178,9 +182,9 @@ public class PostgresqlStore extends AbstractJdbcStore {
         String physicalIndexName = getPhysicalIndexName( catalogIndex.key.tableId, catalogIndex.id );
         builder.append( dialect.quoteIdentifier( physicalIndexName ) );
         builder.append( " ON " )
-                .append( dialect.quoteIdentifier( ccps.get( 0 ).physicalSchemaName ) )
+                .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
                 .append( "." )
-                .append( dialect.quoteIdentifier( ccps.get( 0 ).physicalTableName ) );
+                .append( dialect.quoteIdentifier( partitionPlacement.physicalTableName ) );
 
         builder.append( " USING " );
         switch ( catalogIndex.method ) {

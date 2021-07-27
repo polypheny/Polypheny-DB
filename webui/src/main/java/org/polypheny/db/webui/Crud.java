@@ -1393,15 +1393,15 @@ public class Crud implements InformationObserver {
                 }
                 return new Result( columns.toArray( new DbColumn[0] ), null ).setType( ResultType.VIEW );
             } else {
-                if ( catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).size() != 1 ) {
+                if ( catalog.getColumnPlacement( catalogTable.columnIds.get( 0 ) ).size() != 1 ) {
                     throw new RuntimeException( "The table has an unexpected number of placements!" );
                 }
 
-                int adapterId = catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).get( 0 ).adapterId;
+                int adapterId = catalog.getColumnPlacement( catalogTable.columnIds.get( 0 ) ).get( 0 ).adapterId;
                 CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
                 List<String> pkColumnNames = primaryKey.getColumnNames();
                 List<DbColumn> columns = new ArrayList<>();
-                for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapter( adapterId, catalogTable.id ) ) {
+                for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapterPerTable( adapterId, catalogTable.id ) ) {
                     CatalogColumn col = catalog.getColumn( ccp.columnId );
                     columns.add( new DbColumn(
                             col.name,
@@ -2048,7 +2048,7 @@ public class Crud implements InformationObserver {
         String tableName = index.getTable();
         try {
             CatalogTable table = catalog.getTable( databaseName, schemaName, tableName );
-            Placement p = new Placement( table.isPartitioned, catalog.getPartitionNames( table.id ), table.tableType );
+            Placement p = new Placement( table.isPartitioned, catalog.getPartitionGroupNames( table.id ), table.tableType );
             if ( table.tableType == TableType.VIEW ) {
 
                 return p;
@@ -2056,20 +2056,19 @@ public class Crud implements InformationObserver {
                 long pkid = table.primaryKey;
                 List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
                 CatalogColumn pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );
-                List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacements( pkColumn.id );
+                List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacement( pkColumn.id );
                 for ( CatalogColumnPlacement placement : pkPlacements ) {
                     Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
                     p.addAdapter( new Placement.Store(
                             adapter.getUniqueName(),
                             adapter.getAdapterName(),
-                            catalog.getColumnPlacementsOnAdapter( adapter.getAdapterId(), table.id ),
-                            catalog.getPartitionsIndexOnDataPlacement( placement.adapterId, placement.tableId ),
-                            table.numPartitions,
-                            table.partitionType ) );
+                            catalog.getColumnPlacementsOnAdapterPerTable( adapter.getAdapterId(), table.id ),
+                            catalog.getPartitionGroupsIndexOnDataPlacement( placement.adapterId, placement.tableId ),
+                            table.partitionProperty.numPartitionGroups,
+                            table.partitionProperty.partitionType ) );
                 }
                 return p;
             }
-
         } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             log.error( "Caught exception while getting placements", e );
             return new Placement( e );
@@ -2125,7 +2124,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    private List<PartitionFunctionColumn> buildPartitionFunctionRow( List<PartitionFunctionInfoColumn> columnList ) {
+    private List<PartitionFunctionColumn> buildPartitionFunctionRow( PartitioningRequest request, List<PartitionFunctionInfoColumn> columnList ) {
         List<PartitionFunctionColumn> constructedRow = new ArrayList<>();
 
         for ( PartitionFunctionInfoColumn currentColumn : columnList ) {
@@ -2154,7 +2153,19 @@ public class Crud implements InformationObserver {
                         .setSqlPrefix( currentColumn.getSqlPrefix() )
                         .setSqlSuffix( currentColumn.getSqlSuffix() ) );
             } else {
-                constructedRow.add( new PartitionFunctionColumn( type, currentColumn.getDefaultValue() )
+
+                String defaultValue = currentColumn.getDefaultValue();
+
+                //Used specifically for Temp-Partitoning since number of selected partitions remains 2 but chunks change
+                //enables user to used selected "number of partitions" beeing used as default value for "number of interal data chunks"
+                if ( request.method.equals( PartitionType.TEMPERATURE ) ){
+
+                    if ( type.equals( FieldType.STRING ) && currentColumn.getDefaultValue().equals( "-04071993" ))
+                    defaultValue = String.valueOf( request.numPartitions );
+                }
+
+
+                constructedRow.add( new PartitionFunctionColumn( type, defaultValue )
                         .setModifiable( currentColumn.isModifiable() )
                         .setMandatory( currentColumn.isMandatory() )
                         .setSqlPrefix( currentColumn.getSqlPrefix() )
@@ -2170,8 +2181,8 @@ public class Crud implements InformationObserver {
         PartitioningRequest request = gson.fromJson( req.body(), PartitioningRequest.class );
 
         // Get correct partition function
-        PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
-        PartitionManager partitionManager = partitionManagerFactory.getInstance( request.method );
+        PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
+        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( request.method );
 
         // Check whether the selected partition function supports the selected partition column
         CatalogColumn partitionColumn;
@@ -2189,20 +2200,23 @@ public class Crud implements InformationObserver {
 
         JsonObject infoJson = gson.toJsonTree( partitionManager.getPartitionFunctionInfo() ).getAsJsonObject();
 
+
+
         List<List<PartitionFunctionColumn>> rows = new ArrayList<>();
 
         if ( infoJson.has( "rowsBefore" ) ) {
             // Insert Rows Before
             List<List<PartitionFunctionInfoColumn>> rowsBefore = functionInfo.getRowsBefore();
             for ( int i = 0; i < rowsBefore.size(); i++ ) {
-                rows.add( buildPartitionFunctionRow( rowsBefore.get( i ) ) );
+                rows.add( buildPartitionFunctionRow( request, rowsBefore.get( i ) ) );
             }
+
         }
 
         if ( infoJson.has( "dynamicRows" ) ) {
             // Build as many dynamic rows as requested per num Partitions
             for ( int i = 0; i < request.numPartitions; i++ ) {
-                rows.add( buildPartitionFunctionRow( functionInfo.getDynamicRows() ) );
+                rows.add( buildPartitionFunctionRow( request, functionInfo.getDynamicRows() ) );
             }
         }
 
@@ -2210,7 +2224,7 @@ public class Crud implements InformationObserver {
             // Insert Rows After
             List<List<PartitionFunctionInfoColumn>> rowsAfter = functionInfo.getRowsAfter();
             for ( int i = 0; i < rowsAfter.size(); i++ ) {
-                rows.add( buildPartitionFunctionRow( rowsAfter.get( i ) ) );
+                rows.add( buildPartitionFunctionRow( request, rowsAfter.get( i ) ) );
             }
         }
 
@@ -2228,10 +2242,10 @@ public class Crud implements InformationObserver {
         PartitionFunctionModel request = gson.fromJson( req.body(), PartitionFunctionModel.class );
 
         // Get correct partition function
-        PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
+        PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = null;
         try {
-            partitionManager = partitionManagerFactory.getInstance( PartitionType.getByName( request.functionName ) );
+            partitionManager = partitionManagerFactory.getPartitionManager( PartitionType.getByName( request.functionName ) );
         } catch ( UnknownPartitionTypeException e ) {
             throw new RuntimeException( e );
         }

@@ -16,6 +16,6 @@
 
 package org.polypheny.db.excluded;
 
-interface MongodbExcluded {
+public interface MongodbExcluded {
 
 }

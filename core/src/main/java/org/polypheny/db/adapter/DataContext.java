@@ -91,6 +91,17 @@ public interface DataContext {
         return getParameterValues().get( 0 ).get( index );
     }
 
+    default void backupParameterValues() {
+        throw new UnsupportedOperationException();
+    }
+
+    default void restoreParameterValues() {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean wasBackuped()  {
+        throw new UnsupportedOperationException();
+    }
 
     @Data
     class ParameterValue {
@@ -226,6 +237,10 @@ public interface DataContext {
 
         }
 
+        @Override
+        public boolean wasBackuped(){
+            return false;
+        }
 
         @Override
         public RelDataType getParameterType( long index ) {

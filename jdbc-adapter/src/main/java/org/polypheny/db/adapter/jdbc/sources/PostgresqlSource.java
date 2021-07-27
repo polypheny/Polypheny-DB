@@ -27,6 +27,7 @@ import org.polypheny.db.adapter.Adapter.AdapterSettingList;
 import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
@@ -68,8 +69,8 @@ public class PostgresqlSource extends AbstractJdbcSource {
 
 
     @Override
-    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore ) {
-        return currentJdbcSchema.createJdbcTable( catalogTable, columnPlacementsOnStore );
+    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+        return currentJdbcSchema.createJdbcTable( catalogTable, columnPlacementsOnStore, partitionPlacement );
     }
 
 

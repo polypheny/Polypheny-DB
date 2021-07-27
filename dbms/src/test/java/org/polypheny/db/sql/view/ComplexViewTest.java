@@ -42,6 +42,7 @@ import org.polypheny.db.excluded.MonetdbExcluded;
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 @Category({ AdapterTestSuite.class, CassandraExcluded.class })
+@Ignore
 public class ComplexViewTest {
 
     private final static String DROP_TABLES_NATION = "DROP TABLE IF EXISTS nation";

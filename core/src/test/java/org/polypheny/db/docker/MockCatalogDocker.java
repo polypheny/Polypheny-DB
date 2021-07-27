@@ -17,6 +17,7 @@
 package org.polypheny.db.docker;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
@@ -38,6 +39,9 @@ public class MockCatalogDocker extends MockCatalog {
         adapters.put( i, new CatalogAdapter( i, uniqueName, clazz, type, settings ) );
         return i;
     }
+
+
+
 
 
     @Override

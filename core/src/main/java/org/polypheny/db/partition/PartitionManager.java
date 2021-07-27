@@ -17,6 +17,7 @@
 package org.polypheny.db.partition;
 
 import java.util.List;
+import java.util.Map;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -29,15 +30,15 @@ public interface PartitionManager {
      */
     long getTargetPartitionId( CatalogTable catalogTable, String columnValue );
 
-    boolean validatePartitionDistribution( CatalogTable table );
+    boolean probePartitionGroupDistributionChange( CatalogTable catalogTable, int storeId, long columnId, int threshold );
 
-    boolean probePartitionDistributionChange( CatalogTable catalogTable, int storeId, long columnId );
+    Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds );
 
-    List<CatalogColumnPlacement> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds );
+    boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, CatalogColumn partitionColumn );
 
-    boolean validatePartitionSetup( List<List<String>> partitionQualifiers, long numPartitions, List<String> partitionNames, CatalogColumn partitionColumn );
+    int getNumberOfPartitionsPerGroup( int numberOfPartitions);
 
-    boolean requiresUnboundPartition();
+    boolean requiresUnboundPartitionGroup();
 
     boolean supportsColumnOfType( PolyType type );
 

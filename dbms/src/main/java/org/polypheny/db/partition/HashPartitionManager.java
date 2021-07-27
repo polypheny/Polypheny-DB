@@ -19,11 +19,14 @@ package org.polypheny.db.partition;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumnType;
@@ -33,65 +36,72 @@ import org.polypheny.db.type.PolyType;
 @Slf4j
 public class HashPartitionManager extends AbstractPartitionManager {
 
-    public static final boolean REQUIRES_UNBOUND_PARTITION = false;
+    public static final boolean REQUIRES_UNBOUND_PARTITION_GROUP = false;
     public static final String FUNCTION_TITLE = "HASH";
 
 
     @Override
     public long getTargetPartitionId( CatalogTable catalogTable, String columnValue ) {
-        long partitionID = columnValue.hashCode() * -1;
+        long hashValue = columnValue.hashCode() * -1;
 
         // Don't want any neg. value for now
-        if ( partitionID <= 0 ) {
-            partitionID *= -1;
+        if ( hashValue <= 0 ) {
+            hashValue *= -1;
         }
 
+        Catalog catalog = Catalog.getInstance();
+
+
+
+        //Get designated HASH partition based on number of internal partitions
+        int partitionIndex = (int) (hashValue % catalogTable.partitionProperty.partitionIds.size());
+
         // Finally decide on which partition to put it
-        return catalogTable.partitionIds.get( (int) (partitionID % catalogTable.numPartitions) );
+        return catalogTable.partitionProperty.partitionIds.get( partitionIndex ) ;
     }
 
 
-    // Needed when columnPlacements are being dropped
-    // HASH Partitioning needs at least one column placement which contains all partitions as a fallback
+
     @Override
-    public boolean probePartitionDistributionChange( CatalogTable catalogTable, int storeId, long columnId ) {
-        // Change is only critical if there is only one column left with the characteristics
-        int numberOfFullPlacements = getPlacementsWithAllPartitions( columnId, catalogTable.numPartitions ).size();
-        if ( numberOfFullPlacements <= 1 ) {
-            Catalog catalog = Catalog.getInstance();
-            //Check if this one column is the column we are about to delete
-            if ( catalog.getPartitionsOnDataPlacement( storeId, catalogTable.id ).size() == catalogTable.numPartitions ) {
-                return false;
+    public Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
+        Catalog catalog = Catalog.getInstance();
+
+        Map <Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
+
+        if ( partitionIds != null ) {
+            for ( long  partitionId : partitionIds ) {
+
+                CatalogPartition catalogPartition = catalog.getPartition( partitionId );
+                List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();
+
+
+                for ( long columnId : catalogTable.columnIds ) {
+                    List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartitionGroup( catalogTable.id, catalogPartition.partitionGroupId, columnId );
+                    if ( !ccps.isEmpty() ) {
+                        //get first column placement which contains partition
+                        relevantCcps.add( ccps.get( 0 ) );
+                        if ( log.isDebugEnabled() ) {
+                            log.debug( "{} {} with part. {}", ccps.get( 0 ).adapterUniqueName, ccps.get( 0 ).getLogicalColumnName(), partitionId  );
+                        }
+                    }
+                }
+                placementDistribution.put( partitionId, relevantCcps );
             }
         }
 
-        return true;
+        return placementDistribution;
     }
 
 
     @Override
-    public List<CatalogColumnPlacement> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
-        List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();
-        // Find stores with full placements (partitions)
-        // Pick for each column the column placement which has full partitioning //SELECT WORST-CASE ergo Fallback
-        for ( long columnId : catalogTable.columnIds ) {
-            // Take the first column placement
-            relevantCcps.add( getPlacementsWithAllPartitions( columnId, catalogTable.numPartitions ).get( 0 ) );
-        }
+    public boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, CatalogColumn partitionColumn ) {
+        super.validatePartitionGroupSetup( partitionGroupQualifiers, numPartitionGroups, partitionGroupNames, partitionColumn );
 
-        return relevantCcps;
-    }
-
-
-    @Override
-    public boolean validatePartitionSetup( List<List<String>> partitionQualifiers, long numPartitions, List<String> partitionNames, CatalogColumn partitionColumn ) {
-        super.validatePartitionSetup( partitionQualifiers, numPartitions, partitionNames, partitionColumn );
-
-        if ( !partitionQualifiers.isEmpty() ) {
+        if ( !partitionGroupQualifiers.isEmpty() ) {
             throw new RuntimeException( "PartitionType HASH does not support the assignment of values to partitions" );
         }
-        if ( numPartitions < 2 ) {
-            throw new RuntimeException( "You can't partition a table with less than 2 partitions. You only specified: '" + numPartitions + "'" );
+        if ( numPartitionGroups < 2 ) {
+            throw new RuntimeException( "You can't partition a table with less than 2 partitions. You only specified: '" + numPartitionGroups + "'" );
         }
 
         return true;
@@ -127,8 +137,8 @@ public class HashPartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public boolean requiresUnboundPartition() {
-        return REQUIRES_UNBOUND_PARTITION;
+    public boolean requiresUnboundPartitionGroup() {
+        return REQUIRES_UNBOUND_PARTITION_GROUP;
     }
 
 
