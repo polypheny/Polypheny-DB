@@ -49,8 +49,6 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.ConfigBoolean;
 import org.polypheny.db.config.ConfigEnum;
 import org.polypheny.db.config.ConfigInteger;
-import org.polypheny.db.config.ConfigManager;
-import org.polypheny.db.config.WebUiGroup;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationHtml;
 import org.polypheny.db.information.InformationManager;
@@ -73,7 +71,6 @@ import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalValues;
 import org.polypheny.db.router.SimpleRouter.SimpleRouterFactory;
 import org.polypheny.db.routing.ExecutionTimeMonitor.ExecutionTimeObserver;
-import org.polypheny.db.routing.Router;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -1070,7 +1067,7 @@ public class UnifiedRouting extends AbstractRouter {
         }
     }
 
-    public static class UnifiedRouterFactory extends RouterFactory {
+    /*public static class UnifiedRouterFactory extends RouterFactory {
 
         public UnifiedRouterFactory() {
             super();
@@ -1107,6 +1104,6 @@ public class UnifiedRouting extends AbstractRouter {
             return new UnifiedRouting();
         }
 
-    }
+    }*/
 
 }

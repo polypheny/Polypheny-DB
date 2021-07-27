@@ -49,8 +49,6 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.ConfigBoolean;
 import org.polypheny.db.config.ConfigEnum;
 import org.polypheny.db.config.ConfigInteger;
-import org.polypheny.db.config.ConfigManager;
-import org.polypheny.db.config.WebUiGroup;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationHtml;
 import org.polypheny.db.information.InformationManager;
@@ -77,7 +75,6 @@ import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalUnion;
 import org.polypheny.db.rel.logical.LogicalValues;
 import org.polypheny.db.routing.ExecutionTimeMonitor.ExecutionTimeObserver;
-import org.polypheny.db.routing.Router;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
@@ -603,7 +600,7 @@ public class IcarusRouter extends AbstractRouter {
     }
 
 
-    public static class IcarusRouterFactory extends RouterFactory {
+    /*public static class IcarusRouterFactory extends RouterFactory {
 
         public IcarusRouterFactory() {
             super();
@@ -641,7 +638,7 @@ public class IcarusRouter extends AbstractRouter {
         }
 
         public static IcarusRouter creatIcarusRouterInstance(){return new IcarusRouter();}
-    }
+    }*/
 
 
     // TODO MV: This should be improved to include more information on the used tables and columns
