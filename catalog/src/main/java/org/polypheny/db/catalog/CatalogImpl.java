@@ -3373,7 +3373,7 @@ public class CatalogImpl extends Catalog {
             synchronized ( this ) {
                 partitionGroups.put( id, partitionGroup );
             }
-            listeners.firePropertyChange( "partitionGroups", null, partitionGroup );
+            //listeners.firePropertyChange( "partitionGroups", null, partitionGroup );
             return id;
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );

@@ -18,7 +18,7 @@ package org.polypheny.db.monitoring.persistence;
 
 import java.sql.Timestamp;
 import java.util.List;
-import org.polypheny.db.monitoring.events.metrics.MonitoringDataPoint;
+import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 
 /**
  * Interface for writing monitoring jobs to repository.

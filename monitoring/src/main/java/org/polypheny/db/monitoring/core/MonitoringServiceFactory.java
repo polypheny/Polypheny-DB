@@ -35,7 +35,7 @@ public class MonitoringServiceFactory {
         // create monitoring service with dependencies
         MonitoringQueue queueWriteService = new MonitoringQueueImpl( repo );
         MonitoringServiceUi uiService = new MonitoringServiceUiImpl( repo, queueWriteService );
-        uiService.registerDataPointForUi( QueryDataPoint.class );
+
 
         // initialize ui with first Metric
         //Todo @Cedric to we need to display this at the monitoring view?

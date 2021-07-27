@@ -22,7 +22,6 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.monitoring.events.metrics.MonitoringDataPoint;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.transaction.Statement;
 

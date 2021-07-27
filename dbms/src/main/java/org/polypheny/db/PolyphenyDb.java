@@ -199,12 +199,6 @@ public class PolyphenyDb {
         } catch ( Exception e ) {
             log.error( "Unable to retrieve host information." );
         }
-        try{
-            //TODO add storage backend connector form Runtime Config instead of specifying it in Monitoring Service
-            //final MonitoringService monitoringService = new MonitoringService();
-        } catch( Exception e) {
-            log.error( "Unable to connect to monitoring service client" );
-        }
 
         /*ThreadManager.getComponent().addShutdownHook( "[ShutdownHook] HttpServerDispatcher.stop()", () -> {
             try {
@@ -276,9 +270,6 @@ public class PolyphenyDb {
         } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException | UnknownTableException | TransactionException | UnknownKeyException e ) {
             throw new RuntimeException( "Something went wrong while initializing index manager.", e );
         }
-
-        // Call DockerManager once to remove old containers
-        DockerManager.getInstance();
 
         final ExploreQueryProcessor exploreQueryProcessor = new ExploreQueryProcessor( transactionManager, authenticator ); // Explore-by-Example
         ExploreManager explore = ExploreManager.getInstance();

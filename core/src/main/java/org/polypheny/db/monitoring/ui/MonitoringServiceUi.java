@@ -16,7 +16,7 @@
 
 package org.polypheny.db.monitoring.ui;
 
-import org.polypheny.db.monitoring.events.metrics.MonitoringDataPoint;
+import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 
 /**
  * Ui abstraction service for monitoring.

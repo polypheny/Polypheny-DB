@@ -19,9 +19,11 @@ package org.polypheny.db.monitoring.events.analyzer;
 import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.InformationDuration;
+import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelRoot;
 
 @Slf4j
 public class QueryEventAnalyzer {
@@ -40,11 +42,12 @@ public class QueryEventAnalyzer {
                 .accessedPartitions( queryEvent.getAccessedPartitions() )
                 .build();
 
-        RelNode node = queryEvent.getRouted().rel;
-        processRelNode( node, queryEvent, metric );
+        RelRoot relRoot = queryEvent.getRouted();
+        if ( relRoot != null ) {
+            RelNode node = relRoot.rel;
+            processRelNode( node, queryEvent, metric );
+        }
 
-        // TODO: read even more data
-        // job.getMonitoringPersistentData().getDataElements()
         if ( queryEvent.isAnalyze() ) {
             processDurationInfo( queryEvent, metric );
 

@@ -16,11 +16,14 @@
 
 package org.polypheny.db.monitoring.core;
 
+import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -46,14 +49,18 @@ public class MonitoringQueueImpl implements MonitoringQueue {
      * monitoring queue which will queue all the incoming jobs.
      */
     private final Queue<MonitoringEvent> monitoringJobQueue = new ConcurrentLinkedQueue<>();
+    private final Set<UUID> queueIds = Sets.newConcurrentHashSet();
     private final Lock processingQueueLock = new ReentrantLock();
     private final MonitoringRepository repository;
-    // number of elements beeing processed from the queue to the backend per "batch"
+
+
     private String backgroundTaskId;
     //For ever
     private long processedEventsTotal;
 
-    //Since restart
+    /**
+     * Processed events since restart.
+     */
     private long processedEvents;
 
     // endregion
@@ -68,10 +75,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
      */
     public MonitoringQueueImpl( boolean startBackGroundTask, @NonNull MonitoringRepository repository ) {
         log.info( "write queue service" );
-
-        if ( repository == null ) {
-            throw new IllegalArgumentException( "repo parameter is null" );
-        }
 
         this.repository = repository;
 
@@ -104,7 +107,10 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
     @Override
     public void queueEvent( @NonNull MonitoringEvent event ) {
-        this.monitoringJobQueue.add( event );
+        if ( !queueIds.contains( event.getId() ) ) {
+            queueIds.add( event.getId() );
+            this.monitoringJobQueue.add( event );
+        }
     }
 
 
@@ -115,7 +121,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
      */
     @Override
     public long getNumberOfElementsInQueue() {
-        return getElementsInQueue().size();
+        return queueIds.size();
     }
 
 
@@ -123,12 +129,11 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     public List<HashMap<String, String>> getInformationOnElementsInQueue() {
         List<HashMap<String, String>> infoList = new ArrayList<>();
 
-
-        for ( MonitoringEvent event : getElementsInQueue() ) {
-            HashMap<String, String> infoRow = new HashMap<String,String>();
-            infoRow.put("type", event.getEventType() );
-            infoRow.put("id", event.getId().toString() );
-            infoRow.put("timestamp", event.getRecordedTimestamp().toString() );
+        for ( MonitoringEvent event : monitoringJobQueue ) {
+            HashMap<String, String> infoRow = new HashMap<String, String>();
+            infoRow.put( "type", event.getClass().toString() );
+            infoRow.put( "id", event.getId().toString() );
+            infoRow.put( "timestamp", event.getRecordedTimestamp().toString() );
 
             infoList.add( infoRow );
         }
@@ -138,7 +143,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
     @Override
     public long getNumberOfProcessedEvents( boolean all ) {
-        // TODO: Wird hier noch das persistiert? Könnten wir selbst als Metric aufbauen und persistieren ;-)
         if ( all ) {
             return processedEventsTotal;
         }
@@ -163,20 +167,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     }
 
 
-    private List<MonitoringEvent> getElementsInQueue() {
-        // TODO: Würde ich definitiv nicht so machen. Wenn du im UI die Anzahl Events
-        //   wissen willst dann unbedingt nur die Anzahl rausgeben. Sonst gibt du die ganzen Instanzen raus und
-        //   könntest die Queue zum übelsten missbrauchen ;-)
-
-        List<MonitoringEvent> eventsInQueue = new ArrayList<>();
-
-        for ( MonitoringEvent event : monitoringJobQueue ) {
-            eventsInQueue.add( event );
-        }
-
-        return eventsInQueue;
-    }
-
     private void processQueue() {
         log.debug( "Start processing queue" );
         this.processingQueueLock.lock();
@@ -184,21 +174,24 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         Optional<MonitoringEvent> event;
 
         try {
-
             // while there are jobs to consume:
             int countEvents = 0;
             while ( (event = this.getNextJob()).isPresent() && countEvents < RuntimeConfig.QUEUE_PROCESSING_ELEMENTS.getInteger() ) {
                 log.debug( "get new monitoring job" + event.get().getId().toString() );
 
-                //returns list of metrics which was produced by this particular event
+                // returns list of metrics which was produced by this particular event
                 val dataPoints = event.get().analyze();
+                if ( dataPoints.isEmpty() ) {
+                    continue;
+                }
 
-                //Sends all extracted metrics to subscribers
+                // Sends all extracted metrics to subscribers
                 for ( val dataPoint : dataPoints ) {
                     this.repository.persistDataPoint( dataPoint );
                 }
 
                 countEvents++;
+                queueIds.remove( event.get().getId() );
             }
             processedEvents += countEvents;
             processedEventsTotal += countEvents;

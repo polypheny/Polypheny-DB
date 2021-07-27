@@ -21,7 +21,6 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.monitoring.events.analyzer.QueryEventAnalyzer;
-import org.polypheny.db.monitoring.events.metrics.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
 
 

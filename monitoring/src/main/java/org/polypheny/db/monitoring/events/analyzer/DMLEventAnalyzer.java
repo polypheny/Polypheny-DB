@@ -20,9 +20,11 @@ package org.polypheny.db.monitoring.events.analyzer;
 import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.InformationDuration;
+import org.polypheny.db.monitoring.events.DMLEvent;
 import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
 import org.polypheny.db.monitoring.events.DMLEvent;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelRoot;
 
 @Slf4j
 public class DMLEventAnalyzer {
@@ -42,11 +44,12 @@ public class DMLEventAnalyzer {
                 .accessedPartitions( dmlEvent.getAccessedPartitions() )
                 .build();
 
-        RelNode node = dmlEvent.getRouted().rel;
-        processRelNode( node, dmlEvent, metric );
+        RelRoot relRoot = dmlEvent.getRouted();
+        if ( relRoot != null ) {
+            RelNode node = relRoot.rel;
+            processRelNode( node, dmlEvent, metric );
+        }
 
-        // TODO: read even more data
-        // job.getMonitoringPersistentData().getDataElements()
         if ( dmlEvent.isAnalyze() ) {
             processDurationInfo( dmlEvent, metric );
         }
@@ -56,7 +59,6 @@ public class DMLEventAnalyzer {
 
 
     private static void processDurationInfo( DMLEvent dmlEvent, DMLDataPoint metric ) {
-        // TODO: Könnte wir in einem StatementEventAnalyzer auslagern, dann haben wir die Funktion nur 1 mal :)
         try {
             InformationDuration duration = new Gson().fromJson( dmlEvent.getDurations(), InformationDuration.class );
             getDurationInfo( metric, "Plan Caching", duration );
@@ -94,4 +96,5 @@ public class DMLEventAnalyzer {
             metric.getTables().addAll( node.getTable().getQualifiedName() );
         }
     }
+
 }

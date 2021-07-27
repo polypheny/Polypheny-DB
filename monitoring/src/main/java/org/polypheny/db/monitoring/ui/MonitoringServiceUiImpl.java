@@ -33,8 +33,8 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.monitoring.core.MonitoringQueue;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
+import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
-import org.polypheny.db.monitoring.events.metrics.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 
@@ -77,8 +77,6 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
         val fieldAsString = Arrays.stream( metricClass.getDeclaredFields() ).map( f -> f.getName() ).filter( str -> !str.equals( "serialVersionUID" ) ).collect( Collectors.toList() );
         val informationTable = new InformationTable( informationGroup, fieldAsString );
 
-        //@Cedric produces ConcurrentModificationException: null
-        //Due to too many update
         //informationGroup.setRefreshFunction( () -> this.updateMetricInformationTable( informationTable, metricClass ) );
 
         addInformationGroupTUi( informationGroup, Arrays.asList( informationTable ) );
