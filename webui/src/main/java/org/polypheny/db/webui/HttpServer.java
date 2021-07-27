@@ -214,6 +214,8 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/usedDockerPorts", crud::getUsedDockerPorts, gsonExpose::toJson );
 
+        webuiServer.get( "/getDocumentDatabases", crud::getDocumentDatabases, gson::toJson );
+
     }
 
 

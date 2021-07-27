@@ -28,7 +28,7 @@ public interface MqlProcessor {
 
     void validate( RelRoot root, boolean addDefaultValues );
 
-    RelRoot translate( Statement statement, MqlNode mql );
+    RelRoot translate( Statement statement, MqlNode mql, String defaultDatabase );
 
     PolyphenyDbSignature<?> prepareDdl( Statement statement, MqlNode parsed, String mql );
 

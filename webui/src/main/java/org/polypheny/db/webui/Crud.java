@@ -3984,6 +3984,23 @@ public class Crud implements InformationObserver {
 
 
     /**
+     * This query returns a list of all available databases to the frontend,
+     * disguised as a query result
+     */
+    public Result getDocumentDatabases( Request request, Response response ) {
+        List<String> names = Catalog.getInstance()
+                .getSchemas( Catalog.defaultDatabaseId, null )
+                .stream()
+                .filter( s -> s.schemaType == SchemaType.DOCUMENT )
+                .map( CatalogSchema::getName )
+                .collect( Collectors.toList() );
+
+        String[][] data = new String[][]{ names.toArray( new String[0] ) };
+        return new Result( names.stream().map( n -> new DbColumn( "Databases" ) ).toArray( DbColumn[]::new ), data );
+    }
+
+
+    /**
      * Helper function to delete a directory.
      * Taken from https://www.baeldung.com/java-delete-directory
      */

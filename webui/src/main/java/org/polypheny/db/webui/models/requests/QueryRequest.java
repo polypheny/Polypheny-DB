@@ -34,4 +34,9 @@ public class QueryRequest extends UIRequest {
      */
     public String language;
 
+    /**
+     * This flag defines the default database to use
+     */
+    public String defaultDatabase;
+
 }

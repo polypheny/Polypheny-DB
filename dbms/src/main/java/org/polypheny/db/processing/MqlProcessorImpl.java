@@ -107,7 +107,7 @@ public class MqlProcessorImpl implements MqlProcessor, ViewExpander {
 
 
     @Override
-    public RelRoot translate( Statement statement, MqlNode mql ) {
+    public RelRoot translate( Statement statement, MqlNode mql, String defaultDatabase ) {
         final StopWatch stopWatch = new StopWatch();
         if ( log.isDebugEnabled() ) {
             log.debug( "Planning Statement ..." );
@@ -118,7 +118,7 @@ public class MqlProcessorImpl implements MqlProcessor, ViewExpander {
         final RelOptCluster cluster = RelOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
 
         final MqlToRelConverter mqlToRelConverter = new MqlToRelConverter( this, statement.getTransaction().getCatalogReader(), cluster );
-        RelRoot logicalRoot = mqlToRelConverter.convert( mql, false, true );
+        RelRoot logicalRoot = mqlToRelConverter.convert( mql, false, true, defaultDatabase );
 
 
         if ( statement.getTransaction().isAnalyze() ) {

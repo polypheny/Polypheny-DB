@@ -39,7 +39,6 @@ import org.bson.BsonNumber;
 import org.bson.BsonRegularExpression;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.document.DocumentTypeUtil;
 import org.polypheny.db.mql.Mql;
@@ -200,6 +199,7 @@ public class MqlToRelConverter {
     private boolean excludedId = false;
     private boolean _dataExists = true;
     private boolean elemMatchActive;
+    private String defaultDatabase;
 
 
     public MqlToRelConverter( MqlProcessor mqlProcessor, PolyphenyDbCatalogReader catalogReader, RelOptCluster cluster ) {
@@ -222,8 +222,9 @@ public class MqlToRelConverter {
     }
 
 
-    public RelRoot convert( MqlNode query, boolean b, boolean b1 ) {
+    public RelRoot convert( MqlNode query, boolean b, boolean b1, String defaultDatabase ) {
         resetDefaults();
+        this.defaultDatabase = defaultDatabase;
         if ( query instanceof MqlCollectionStatement ) {
             return convert( (MqlCollectionStatement) query, b, b1 );
         }
@@ -233,8 +234,7 @@ public class MqlToRelConverter {
 
     public RelRoot convert( MqlCollectionStatement query, boolean b, boolean b1 ) {
         Mql.Type kind = query.getKind();
-        String dbSchemaName = Catalog.getInstance().getUser( Catalog.defaultUser ).getDefaultSchema().name;
-        RelOptTable table = getTable( query, dbSchemaName );
+        RelOptTable table = getTable( query, defaultDatabase );
         RelNode node = LogicalTableScan.create( cluster, table );
         this.builder = new RexBuilder( cluster.getTypeFactory() );
 
