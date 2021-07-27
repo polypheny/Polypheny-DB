@@ -287,8 +287,17 @@ public class DdlManagerImpl extends DdlManager {
         if ( catalogAdapter.type == AdapterType.SOURCE ) {
             Set<Long> tablesToDrop = new HashSet<>();
             for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapter( catalogAdapter.id ) ) {
+
                 tablesToDrop.add( ccp.tableId );
             }
+
+            Set<Long> temp = tablesToDrop;
+            for ( Long id : temp ) {
+                if ( catalog.getTable( id ).tableType != TableType.MATERIALIZEDVIEW ) {
+                    tablesToDrop.add( id );
+                }
+            }
+
             // Remove foreign keys
             for ( Long tableId : tablesToDrop ) {
                 for ( CatalogForeignKey fk : catalog.getForeignKeys( tableId ) ) {
