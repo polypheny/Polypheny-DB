@@ -132,7 +132,7 @@ public class UnifiedRouting extends AbstractRouter {
 
     private void updateUsedColumns(Statement statement, RelRoot logicalRoot){
         // get used columns:
-        val shuttle = new UnifiedRelShuttle( statement );
+        val shuttle = new QueryAnalyzeRelShuttle( statement );
         logicalRoot.rel.accept( shuttle );
 
         // update column values

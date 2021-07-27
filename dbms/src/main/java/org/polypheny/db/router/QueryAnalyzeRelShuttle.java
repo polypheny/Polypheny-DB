@@ -35,9 +35,9 @@ import org.polypheny.db.transaction.Statement;
 /**
  * Unified routing rel shuttle class to extract used columns from RelNode.
  */
-public class UnifiedRelShuttle extends RelShuttleImpl {
+public class QueryAnalyzeRelShuttle extends RelShuttleImpl {
 
-    protected final UnifiedRexShuttle rexShuttle;
+    protected final QueryAnalyzeRexShuttle rexShuttle;
     private final Statement statement;
 
     @Getter
@@ -61,9 +61,9 @@ public class UnifiedRelShuttle extends RelShuttleImpl {
         return usedColumns;*/
     }
 
-    public UnifiedRelShuttle( Statement s ) {
+    public QueryAnalyzeRelShuttle( Statement s ) {
         this.statement = s;
-        rexShuttle = new UnifiedRexShuttle( this.statement );
+        rexShuttle = new QueryAnalyzeRexShuttle( this.statement );
     }
 
 

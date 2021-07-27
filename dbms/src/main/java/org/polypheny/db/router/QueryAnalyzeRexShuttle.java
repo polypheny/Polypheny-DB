@@ -29,7 +29,7 @@ import org.polypheny.db.transaction.Statement;
 /**
  * Unified routing rex shuttle class to extract used columns in RelNode
  */
-public class UnifiedRexShuttle extends RexShuttle {
+public class QueryAnalyzeRexShuttle extends RexShuttle {
 
 
     @Getter
@@ -37,7 +37,7 @@ public class UnifiedRexShuttle extends RexShuttle {
     private final Statement statement;
 
 
-    public UnifiedRexShuttle( Statement statement ) {
+    public QueryAnalyzeRexShuttle( Statement statement ) {
         super();
         this.statement = statement;
     }
