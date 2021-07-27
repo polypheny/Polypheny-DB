@@ -110,6 +110,9 @@ public class MqlToRelConverter {
     private Map<String, SqlOperator> tempMappings;
 
 
+    private static final HashMap<String, SqlOperator> singleMathOperators;
+
+
     static {
         gates = new HashMap<>();
         gates.put( "$and", Collections.singletonList( SqlStdOperatorTable.AND ) );
@@ -137,12 +140,38 @@ public class MqlToRelConverter {
         mathOperators.put( "$multiply", SqlStdOperatorTable.MULTIPLY );
         mathOperators.put( "$divide", SqlStdOperatorTable.DIVIDE );
         mathOperators.put( "$mod", SqlStdOperatorTable.MOD );
+        mathOperators.put( "$pow", SqlStdOperatorTable.POWER );
+        mathOperators.put( "$sum", SqlStdOperatorTable.SUM );
         mathOperators.put( "$literal", null );
+
+        singleMathOperators = new HashMap<>();
+        singleMathOperators.put( "$abs", SqlStdOperatorTable.ABS );
+        singleMathOperators.put( "$acos", SqlStdOperatorTable.ACOS );
+        //singleMathOperators.put( "$acosh", SqlStdOperatorTable.ACOSH );
+        singleMathOperators.put( "$asin", SqlStdOperatorTable.ASIN );
+        //singleMathOperators.put( "$asin", SqlStdOperatorTable.ASIN );
+        singleMathOperators.put( "$atan", SqlStdOperatorTable.ATAN );
+        singleMathOperators.put( "$atan2", SqlStdOperatorTable.ATAN2 );
+        //singleMathOperators.put( "$atanh", SqlStdOperatorTable.ATANH );
+        singleMathOperators.put( "$ceil", SqlStdOperatorTable.CEIL );
+        singleMathOperators.put( "$cos", SqlStdOperatorTable.COS );
+        //singleMathOperators.put( "$cosh", SqlStdOperatorTable.COSH );
+        singleMathOperators.put( "$degreesToRadians", SqlStdOperatorTable.DEGREES );
+        singleMathOperators.put( "$floor", SqlStdOperatorTable.FLOOR );
+        singleMathOperators.put( "$ln", SqlStdOperatorTable.LN );
+        //singleMathOperators.put( "$log", SqlStdOperatorTable.LOG );
+        singleMathOperators.put( "$log10", SqlStdOperatorTable.LOG10 );
+        singleMathOperators.put( "$sin", SqlStdOperatorTable.SIN );
+        //singleMathOperators.put( "$sinh", SqlStdOperatorTable.SINH );
+        singleMathOperators.put( "$sqrt", SqlStdOperatorTable.SQRT );
+        singleMathOperators.put( "$tan", SqlStdOperatorTable.TAN );
+        //singleMathOperators.put( "$tanh", SqlStdOperatorTable.TANH );
 
         operators = new ArrayList<>();
         operators.addAll( mappings.keySet() );
         operators.addAll( gates.keySet() );
         operators.addAll( mathOperators.keySet() );
+        operators.addAll( singleMathOperators.keySet() );
 
         accumulators = new HashMap<>();
         //$addToSet
@@ -168,10 +197,8 @@ public class MqlToRelConverter {
     }
 
 
-    private boolean inQuery = false;
     private boolean excludedId = false;
     private boolean _dataExists = true;
-    private boolean attachedJson = false;
     private boolean elemMatchActive;
 
 
@@ -190,10 +217,8 @@ public class MqlToRelConverter {
 
 
     private void resetDefaults() {
-        inQuery = false;
         excludedId = false;
         _dataExists = true;
-        attachedJson = false;
     }
 
 
@@ -703,10 +728,8 @@ public class MqlToRelConverter {
                     node = combineProjection( value.asDocument().getDocument( "$project" ), node, rowType, false, false );
                     break;
                 case "$set":
-                    node = combineProjection( value.asDocument().getDocument( "$set" ), node, rowType, true, false );
-                    break;
                 case "$addFields":
-                    node = combineProjection( value.asDocument().getDocument( "$addFields" ), node, rowType, true, false );
+                    node = combineProjection( value.asDocument().getDocument( ((BsonDocument) value).getFirstKey() ), node, rowType, true, false );
                     break;
                 case "$count":
                     node = combineCount( value.asDocument().get( "$count" ), node, rowType );
@@ -935,6 +958,8 @@ public class MqlToRelConverter {
             BsonDocument doc = value.asDocument();
             if ( mathOperators.containsKey( doc.getFirstKey() ) ) {
                 return convertMath( doc.getFirstKey(), null, doc.get( doc.getFirstKey() ), rowType, false );
+            } else {
+                return convertSingleMath( doc.getFirstKey(), null, doc.get( doc.getFirstKey() ), rowType, false );
             }
 
         } else if ( value.isString() ) {
@@ -1025,7 +1050,6 @@ public class MqlToRelConverter {
 
     private RelNode convertQuery( MqlQueryStatement query, RelDataType rowType, RelNode node ) {
         if ( query.getQuery() != null && !query.getQuery().isEmpty() ) {
-            this.inQuery = true;
             node = combineFilter( query.getQuery(), node, rowType );
         }
         return node;
@@ -1110,6 +1134,10 @@ public class MqlToRelConverter {
             if ( operators.contains( key ) ) {
                 if ( gates.containsKey( key ) ) {
                     return convertGate( key, parentKey, bsonValue, rowType );
+
+                } else if ( singleMathOperators.containsKey( key ) ) {
+                    return convertSingleMath( key, parentKey, bsonValue, rowType, false );
+
                 } else if ( mathOperators.containsKey( key ) ) {
 
                     // special cases have to id in the array, like $arrayElem
@@ -1212,7 +1240,7 @@ public class MqlToRelConverter {
             op = mappings.get( key );
         }
 
-        String errorMsg = "After a " + String.join( ",", mathOperators.keySet() ) + " a list of literal or documents is needed.";
+        String errorMsg = "After a " + String.join( ",", mathOperators.keySet() ) + " a list of literals or documents is needed.";
         if ( bsonValue.isArray() ) {
             List<RexNode> nodes = convertArray( parentKey, bsonValue.asArray(), true, rowType, errorMsg );
 
@@ -1220,6 +1248,25 @@ public class MqlToRelConverter {
         } else {
             throw new RuntimeException( errorMsg );
         }
+    }
+
+
+    private RexNode convertSingleMath( String key, String parentKey, BsonValue value, RelDataType rowType, boolean isExpr ) {
+        SqlOperator op = singleMathOperators.get( key );
+        if ( value.isArray() ) {
+            throw new RuntimeException( "The " + key + " operator needs either a single expression or a document." );
+        }
+        RexNode node;
+        if ( value.isDocument() ) {
+            node = translateDocument( value.asDocument(), rowType, null );
+        } else if ( value.isString() && value.asString().getValue().startsWith( "$" ) ) {
+            node = getIdentifier( value.asString().getValue().substring( 1 ), rowType );
+        } else {
+            node = convertLiteral( value );
+        }
+
+        return new RexCall( any, op, Collections.singletonList( node ) );
+
     }
 
 
@@ -1321,7 +1368,6 @@ public class MqlToRelConverter {
                 return attachRef( parentKey, rowType );
             }
         } else if ( rowNames.contains( parentKey.split( "\\." )[0] ) ) {
-            this.attachedJson = true;
             String[] keys = parentKey.split( "\\." );
             // we fix sub-documents in elemMatch queries by only passing the sub-key
             // that the replacing then only uses the array element and searches the sub-key there
@@ -1335,7 +1381,6 @@ public class MqlToRelConverter {
 
         } else if ( _dataExists ) {
             // the default _data field does still exist
-            this.attachedJson = true;
             return translateJsonValue( getDefaultDataField( rowType ).getIndex(), rowType, parentKey, useAccess );
         } else {
             return null;
@@ -1386,10 +1431,6 @@ public class MqlToRelConverter {
 
     private RexNode translateDocument( BsonDocument bsonDocument, RelDataType rowType, String parentKey ) {
         ArrayList<RexNode> operands = new ArrayList<>();
-
-        /*if ( bsonDocument.getFirstKey().equals( "$regex" ) ) {
-            operands.add( convertRegex( bsonDocument, parentKey, rowType ) );
-        }*/
 
         for ( Entry<String, BsonValue> entry : bsonDocument.entrySet() ) {
             if ( entry.getKey().equals( "$regex" ) ) {
