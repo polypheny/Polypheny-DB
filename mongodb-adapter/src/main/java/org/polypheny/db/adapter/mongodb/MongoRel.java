@@ -84,6 +84,7 @@ public interface MongoRel extends RelNode {
         // holds the logical names which where used in a DQL
         // and need to be projected beforehand from their physical names
         public Set<String> physicalMapper = new TreeSet<>();
+        public boolean onlyOne = false;
 
         RelOptTable table;
         @Setter

@@ -630,6 +630,9 @@ public class MongoRules {
     private static class MongoTableModify extends TableModify implements MongoRel {
 
 
+        private final GridFSBucket bucket;
+
+
         protected MongoTableModify(
                 RelOptCluster cluster,
                 RelTraitSet traitSet,
@@ -641,6 +644,7 @@ public class MongoRules {
                 List<RexNode> sourceExpressionList,
                 boolean flattened ) {
             super( cluster, traitSet, table, catalogReader, input, operation, updateColumnList, sourceExpressionList, flattened );
+            this.bucket = table.unwrap( MongoTable.class ).getMongoSchema().getBucket();
         }
 
 
@@ -698,6 +702,7 @@ public class MongoRules {
                     MongoRowType rowType = (MongoRowType) condImplementor.getStaticRowType();
                     int pos = 0;
                     BsonDocument doc = new BsonDocument();
+                    List<BsonDocument> docDocs = new ArrayList<>();
                     GridFSBucket bucket = implementor.mongoTable.getMongoSchema().getBucket();
                     for ( RexNode el : getSourceExpressionList() ) {
                         if ( el instanceof RexLiteral ) {
@@ -709,6 +714,8 @@ public class MongoRules {
                                 doc.append(
                                         rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
                                         visitCall( implementor, (RexCall) el, SqlKind.PLUS, el.getType().getPolyType() ) );
+                            } else if ( ((RexCall) el).op.kind.belongsTo( SqlKind.DOC_KIND ) ) {
+                                docDocs.add( handleDocumentUpdate( (RexCall) el, bucket, rowType ) );
                             } else {
                                 doc.append(
                                         rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
@@ -721,9 +728,17 @@ public class MongoRules {
                         }
                         pos++;
                     }
-                    BsonDocument update = new BsonDocument().append( "$set", doc );
+                    if ( doc.size() > 0 ) {
+                        BsonDocument update = new BsonDocument().append( "$set", doc );
 
-                    implementor.operations = Collections.singletonList( update );
+                        implementor.operations = Collections.singletonList( update );
+                    } else {
+                        implementor.operations = docDocs;
+                    }
+
+                    if ( Pair.right( condImplementor.list ).contains( "{$limit: 1}" ) ) {
+                        implementor.onlyOne = true;
+                    }
 
                     break;
                 case MERGE:
@@ -733,8 +748,146 @@ public class MongoRules {
                     filterCollector.setStaticRowType( implementor.getStaticRowType() );
                     ((MongoRel) input).implement( filterCollector );
                     implementor.filter = filterCollector.filter;
+                    if ( Pair.right( filterCollector.list ).contains( "{$limit: 1}" ) ) {
+                        implementor.onlyOne = true;
+                    }
+
                     break;
             }
+        }
+
+
+        private BsonDocument handleDocumentUpdate( RexCall el, GridFSBucket bucket, MongoRowType rowType ) {
+            BsonDocument doc = new BsonDocument();
+            assert el.getOperands().size() >= 2;
+            assert el.getOperands().get( 0 ) instanceof RexInputRef;
+            assert el.getOperands().get( 1 ) instanceof RexCall;
+
+            List<String> keys = getDocUpdateKey( (RexInputRef) el.operands.get( 0 ), (RexCall) el.operands.get( 1 ), rowType );
+            String parentKey = getDocParentKey( (RexInputRef) el.operands.get( 0 ), rowType );
+
+            switch ( el.op.kind ) {
+                case DOC_UPDATE_REPLACE:
+                    assert el.getOperands().size() == 3;
+                    assert el.getOperands().get( 2 ) instanceof RexCall;
+
+                    doc.putAll( getReplaceUpdate( keys, (RexCall) el.operands.get( 2 ) ) );
+                    break;
+                case DOC_UPDATE_ADD:
+                    assert el.getOperands().size() == 3;
+                    assert el.getOperands().get( 2 ) instanceof RexCall;
+
+                    doc.putAll( getAddUpdate( keys, (RexCall) el.operands.get( 2 ) ) );
+                    break;
+                case DOC_UPDATE_REMOVE:
+                    assert el.getOperands().size() == 2;
+
+                    doc.putAll( getRemoveUpdate( keys, (RexCall) el.operands.get( 1 ) ) );
+                    break;
+                case DOC_UPDATE_RENAME:
+                    assert el.getOperands().size() == 3;
+                    assert el.getOperands().get( 2 ) instanceof RexCall;
+
+                    doc.putAll( getRenameUpdate( keys, parentKey, (RexCall) el.operands.get( 2 ) ) );
+                    break;
+                default:
+                    throw new RuntimeException( "The used update operation is not supported by the MongoDB adapter." );
+            }
+            return doc;
+        }
+
+
+        private String getDocParentKey( RexInputRef rexInputRef, MongoRowType rowType ) {
+            return rowType.getFieldNames().get( rexInputRef.getIndex() );
+        }
+
+
+        private BsonDocument getRenameUpdate( List<String> keys, String parentKey, RexCall call ) {
+            BsonDocument doc = new BsonDocument();
+            assert keys.size() == call.operands.size();
+            int pos = 0;
+            for ( String key : keys ) {
+                doc.put( key, new BsonString( parentKey + "." + ((RexLiteral) call.operands.get( pos )).getValueAs( String.class ) ) );
+                pos++;
+            }
+
+            return new BsonDocument( "$rename", doc );
+        }
+
+
+        private BsonDocument getRemoveUpdate( List<String> keys, RexCall call ) {
+            BsonDocument doc = new BsonDocument();
+            for ( String key : keys ) {
+                doc.put( key, new BsonString( "" ) );
+            }
+
+            return new BsonDocument( "$unset", doc );
+        }
+
+
+        private BsonDocument getAddUpdate( List<String> keys, RexCall call ) {
+            BsonDocument doc = new BsonDocument();
+            assert call.operands.size() == 1;
+            for ( String key : keys ) {
+                doc.put( key, MongoTypeUtil.getAsBson( (RexLiteral) call.operands.get( 0 ), this.bucket ) );
+            }
+
+            return new BsonDocument( "$set", doc );
+        }
+
+
+        private BsonDocument getReplaceUpdate( List<String> keys, RexCall call ) {
+            BsonDocument doc = new BsonDocument();
+
+            assert call.operands.size() == 1;
+            assert call.operands.get( 0 ) instanceof RexCall;
+
+            RexCall subcall = ((RexCall) call.operands.get( 0 ));
+
+            if ( subcall.op.kind != SqlKind.PLUS
+                    && subcall.op.kind != SqlKind.TIMES
+                    && subcall.op.kind != SqlKind.MIN
+                    && subcall.op.kind != SqlKind.MAX ) {
+
+                for ( String key : keys ) {
+                    doc.put( key, MongoTypeUtil.getAsBson( (RexLiteral) call.operands.get( 0 ), this.bucket ) );
+                }
+                return new BsonDocument( "$set", doc );
+            }
+
+            for ( RexNode operand : call.operands ) {
+                assert operand instanceof RexCall;
+                RexCall op = (RexCall) operand;
+
+                switch ( op.getKind() ) {
+                    case PLUS:
+                        doc.append( "$inc", new BsonDocument( keys.get( 0 ), MongoTypeUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), this.bucket ) ) );
+                        break;
+                    case TIMES:
+                        doc.append( "$mul", new BsonDocument( keys.get( 0 ), MongoTypeUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), this.bucket ) ) );
+                        break;
+                    case MIN:
+                        doc.append( "$min", new BsonDocument( keys.get( 0 ), MongoTypeUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), this.bucket ) ) );
+                        break;
+                    case MAX:
+                        doc.append( "$max", new BsonDocument( keys.get( 0 ), MongoTypeUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), this.bucket ) ) );
+                        break;
+                }
+
+            }
+
+            return doc;
+        }
+
+
+        private List<String> getDocUpdateKey( RexInputRef row, RexCall subfield, MongoRowType rowType ) {
+            String name = rowType.getFieldNames().get( row.getIndex() );
+            return subfield
+                    .operands
+                    .stream()
+                    .map( n -> ((RexLiteral) n).getValueAs( String.class ) )
+                    .map( n -> name + "." + n )
+                    .collect( Collectors.toList() );
         }
 
 
@@ -743,7 +896,6 @@ public class MongoRules {
                     .stream()
                     .filter( BsonValue::isDocument )
                     .map( BsonValue::asDocument )
-                    //.map( d -> new BsonDocument( "_data", d ) )
                     .collect( Collectors.toList() );
         }
 

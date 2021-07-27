@@ -43,19 +43,19 @@ public interface MqlStdOperatorTable {
 
     MqlFunctionOperator DOC_QUERY_EXCLUDE = new MqlFunctionOperator( "DOC_QUERY_EXCLUDE", SqlKind.DOC_EXCLUDE );
 
-    MqlFunctionOperator DOC_ADD_FIELDS = new MqlFunctionOperator( "DOC_ADD_FIELDS", SqlKind.UPDATE );
+    MqlFunctionOperator DOC_ADD_FIELDS = new MqlFunctionOperator( "DOC_ADD_FIELDS", SqlKind.DOC_UPDATE_ADD );
 
-    MqlFunctionOperator DOC_UPDATE_MIN = new MqlFunctionOperator( "DOC_UPDATE_MIN", SqlKind.UPDATE );
+    MqlFunctionOperator DOC_UPDATE_MIN = new MqlFunctionOperator( "DOC_UPDATE_MIN", SqlKind.MIN );
 
-    MqlFunctionOperator DOC_UPDATE_MAX = new MqlFunctionOperator( "DOC_UPDATE_MAX", SqlKind.UPDATE );
+    MqlFunctionOperator DOC_UPDATE_MAX = new MqlFunctionOperator( "DOC_UPDATE_MAX", SqlKind.MAX );
 
-    MqlFunctionOperator DOC_UPDATE_ADD_TO_SET = new MqlFunctionOperator( "DOC_UPDATE_ADD_TO_SET", SqlKind.UPDATE );
+    MqlFunctionOperator DOC_UPDATE_ADD_TO_SET = new MqlFunctionOperator( "DOC_UPDATE_ADD_TO_SET", SqlKind.DOC_UPDATE_ADD );
 
-    MqlFunctionOperator DOC_UPDATE_RENAME = new MqlFunctionOperator( "DOC_UPDATE_RENAME", SqlKind.UPDATE );
+    MqlFunctionOperator DOC_UPDATE_RENAME = new MqlFunctionOperator( "DOC_UPDATE_RENAME", SqlKind.DOC_UPDATE_RENAME );
 
-    MqlFunctionOperator DOC_UPDATE_REPLACE = new MqlFunctionOperator( "DOC_UPDATE_REPLACE", SqlKind.UPDATE );
+    MqlFunctionOperator DOC_UPDATE_REPLACE = new MqlFunctionOperator( "DOC_UPDATE_REPLACE", SqlKind.DOC_UPDATE_REPLACE );
 
-    MqlFunctionOperator DOC_UPDATE_REMOVE = new MqlFunctionOperator( "DOC_UPDATE_REMOVE", SqlKind.UPDATE );
+    MqlFunctionOperator DOC_UPDATE_REMOVE = new MqlFunctionOperator( "DOC_UPDATE_REMOVE", SqlKind.DOC_UPDATE_REMOVE );
 
     MqlFunctionOperator DOC_ELEM_MATCH = new MqlFunctionOperator( "DOC_ELEM_MATCH", SqlKind.DOC_ELEM_MATCH );
 

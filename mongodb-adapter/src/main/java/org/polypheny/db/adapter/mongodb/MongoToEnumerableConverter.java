@@ -166,9 +166,10 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
         } else {
             final Expression operations = list.append( "operations", constantArrayList( mongoImplementor.getOperations(), String.class ) );
             final Expression operation = list.append( "operation", Expressions.constant( mongoImplementor.getOperation(), Operation.class ) );
+            final Expression onlyOne = list.append( "onlyOne", Expressions.constant( mongoImplementor.onlyOne, Boolean.class ) );
             enumerable = list.append(
                     "enumerable",
-                    Expressions.call( table, MongoMethod.HANDLE_DIRECT_DML.method, operation, filter, operations ) );
+                    Expressions.call( table, MongoMethod.HANDLE_DIRECT_DML.method, operation, filter, operations, onlyOne ) );
         }
 
         if ( RuntimeConfig.DEBUG.getBoolean() ) {

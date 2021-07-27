@@ -40,6 +40,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.model.DeleteManyModel;
+import com.mongodb.client.model.DeleteOneModel;
 import com.mongodb.client.model.WriteModel;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -383,7 +384,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
          * @return the enumerable which holds the result of the operation
          */
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<Object> handleDirectDML( Operation operation, String filter, List<String> operations ) {
+        public Enumerable<Object> handleDirectDML( Operation operation, String filter, List<String> operations, Boolean onlyOne ) {
             MongoTable mongoTable = getTable();
             PolyXid xid = dataContext.getStatement().getTransaction().getXid();
             dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( mongoTable.getStoreId() ) );
@@ -411,16 +412,38 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 
                 case UPDATE:
                     assert operations.size() == 1;
+                    // we use only update docs
                     if ( dataContext.getParameterValues().size() != 0 ) {
                         // prepared
                         MongoDynamic filterUtil = new MongoDynamic( BsonDocument.parse( filter ), bucket );
                         MongoDynamic docUtil = new MongoDynamic( BsonDocument.parse( operations.get( 0 ) ), bucket );
                         for ( Map<Long, Object> parameterValue : dataContext.getParameterValues() ) {
-                            changes += mongoTable.getCollection().updateMany( session, filterUtil.insert( parameterValue ), Collections.singletonList( docUtil.insert( parameterValue ) ) ).getModifiedCount();
+                            if ( onlyOne ) {
+                                changes += mongoTable
+                                        .getCollection()
+                                        .updateOne( session, filterUtil.insert( parameterValue ), docUtil.insert( parameterValue ) )
+                                        .getModifiedCount();
+                            } else {
+                                changes += mongoTable
+                                        .getCollection()
+                                        .updateMany( session, filterUtil.insert( parameterValue ), docUtil.insert( parameterValue ) )
+                                        .getModifiedCount();
+                            }
                         }
                     } else {
                         // direct
-                        changes = mongoTable.getCollection().updateMany( session, BsonDocument.parse( filter ), Collections.singletonList( BsonDocument.parse( operations.get( 0 ) ) ) ).getModifiedCount();
+                        if ( onlyOne ) {
+                            changes = mongoTable
+                                    .getCollection()
+                                    .updateOne( session, BsonDocument.parse( filter ), BsonDocument.parse( operations.get( 0 ) ) )
+                                    .getModifiedCount();
+                        } else {
+                            changes = mongoTable
+                                    .getCollection()
+                                    .updateMany( session, BsonDocument.parse( filter ), BsonDocument.parse( operations.get( 0 ) ) )
+                                    .getModifiedCount();
+                        }
+
                     }
                     break;
 
@@ -428,11 +451,27 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                     if ( dataContext.getParameterValues().size() != 0 ) {
                         // prepared
                         MongoDynamic filterUtil = new MongoDynamic( BsonDocument.parse( filter ), bucket );
-                        List<? extends WriteModel<Document>> filters = filterUtil.getAll( dataContext.getParameterValues(), DeleteManyModel::new );
+                        List<? extends WriteModel<Document>> filters;
+                        if ( onlyOne ) {
+                            filters = filterUtil.getAll( dataContext.getParameterValues(), DeleteOneModel::new );
+                        } else {
+                            filters = filterUtil.getAll( dataContext.getParameterValues(), DeleteManyModel::new );
+                        }
+
                         changes = mongoTable.getCollection().bulkWrite( session, filters ).getDeletedCount();
                     } else {
                         // direct
-                        changes = mongoTable.getCollection().deleteMany( session, BsonDocument.parse( filter ) ).getDeletedCount();
+                        if ( onlyOne ) {
+                            changes = mongoTable
+                                    .getCollection()
+                                    .deleteOne( session, BsonDocument.parse( filter ) )
+                                    .getDeletedCount();
+                        } else {
+                            changes = mongoTable
+                                    .getCollection()
+                                    .deleteMany( session, BsonDocument.parse( filter ) )
+                                    .getDeletedCount();
+                        }
                     }
                     break;
 

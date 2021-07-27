@@ -292,6 +292,10 @@ public class MqlToRelConverter {
         UpdateOperation updateOp;
         for ( Entry<String, BsonValue> entry : query.getUpdate().asDocument().entrySet() ) {
             String op = entry.getKey();
+            if ( !entry.getValue().isDocument() ) {
+                throw new RuntimeException( "After a update statement a document is needed" );
+            }
+
             switch ( op ) {
                 case ("$currentDate"):
                     updates.putAll( translateCurrentDate( entry.getValue().asDocument(), rowType ) );
@@ -342,7 +346,12 @@ public class MqlToRelConverter {
                 default:
                     throw new RuntimeException( "The update operation is not supported." );
             }
+            if ( query.isOnlyOne() ) {
+                node = wrapLimit( node, 1 );
+            }
+
             node = transformUpdates( rowType, node, table, updates, updateOp );
+            updates.clear();
         }
 
         return node;
@@ -394,11 +403,11 @@ public class MqlToRelConverter {
             throw new RuntimeException( "DML of a field and its subfields at the same time is not possible" );
         }
 
-        return mergeUpdates( node, table, updateOp, childUpdates, directUpdates );
+        return mergeUpdates( node, table, rowType, updateOp, childUpdates, directUpdates );
     }
 
 
-    private RelNode mergeUpdates( RelNode node, RelOptTable table, UpdateOperation updateOp, Map<String, Map<String, RexNode>> childUpdates, Map<String, RexNode> directUpdates ) {
+    private RelNode mergeUpdates( RelNode node, RelOptTable table, RelDataType rowType, UpdateOperation updateOp, Map<String, Map<String, RexNode>> childUpdates, Map<String, RexNode> directUpdates ) {
         // all updates for a specific field
         //fields are in direct update which can be replaced directly or in childUpdates where additional logic is required
         List<RexNode> nodes = new ArrayList<>();
@@ -415,7 +424,7 @@ public class MqlToRelConverter {
                             jsonType,
                             MqlStdOperatorTable.DOC_UPDATE_RENAME,
                             Arrays.asList(
-                                    getIdentifier( parentEntry.getKey(), node.getRowType() ),
+                                    getIdentifier( parentEntry.getKey(), rowType ),
                                     getStringArray( oldNames ),
                                     getArray( newNames, jsonType ) ) ) );
                 }
@@ -441,7 +450,7 @@ public class MqlToRelConverter {
                             jsonType,
                             MqlStdOperatorTable.DOC_UPDATE_REPLACE,
                             Arrays.asList(
-                                    getIdentifier( parentEntry.getKey(), node.getRowType() ),
+                                    getIdentifier( parentEntry.getKey(), rowType ),
                                     getStringArray( names1 ),
                                     getArray( values, any ) ) ) );
                 }
@@ -466,7 +475,7 @@ public class MqlToRelConverter {
                             jsonType,
                             MqlStdOperatorTable.DOC_UPDATE_REMOVE,
                             Arrays.asList(
-                                    getIdentifier( parentEntry.getKey(), node.getRowType() ),
+                                    getIdentifier( parentEntry.getKey(), rowType ),
                                     getStringArray( names1 ) ) ) );
                 }
 
@@ -540,7 +549,7 @@ public class MqlToRelConverter {
         for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
             RexNode id = getIdentifier( entry.getKey(), rowType, true );
             RexLiteral literal = builder.makeBigintLiteral( entry.getValue().asNumber().decimal128Value().bigDecimalValue() );
-            updates.put( entry.getKey(), builder.makeCall( operator, id, literal ) );
+            updates.put( entry.getKey(), new RexCall( any, operator, Arrays.asList( id, literal ) ) );
         }
         return updates;
     }
@@ -605,7 +614,7 @@ public class MqlToRelConverter {
                 /*case "replaceRoot":
                 case "replaceWith":*/ // TODO DL
                 default:
-                    throw new RuntimeException( "The used statement is not supported in the update aggreagate" );
+                    throw new RuntimeException( "The used statement is not supported in the update aggregation pipeline" );
             }
 
             node = transformUpdates( rowType, node, table, updates, updateOp );
@@ -617,17 +626,17 @@ public class MqlToRelConverter {
 
 
     private RelNode convertDelete( MqlDelete query, RelOptTable table, RelNode node ) {
-        RelNode deleteQuery = node;
         if ( !query.getQuery().isEmpty() ) {
-            deleteQuery = convertQuery( query, table.getRowType(), node );
-            if ( query.isOnlyOne() ) {
-                deleteQuery = wrapLimit( node, 1 );
-            }
+            node = convertQuery( query, table.getRowType(), node );
         }
+        if ( query.isOnlyOne() ) {
+            node = wrapLimit( node, 1 );
+        }
+
         return LogicalTableModify.create(
                 table,
                 catalogReader,
-                deleteQuery,
+                node,
                 Operation.DELETE,
                 null,
                 null,
