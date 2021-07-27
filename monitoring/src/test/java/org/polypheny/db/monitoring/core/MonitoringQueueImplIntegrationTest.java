@@ -24,48 +24,76 @@ import lombok.val;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
-import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
 class MonitoringQueueImplIntegrationTest {
+
     @Test
-    public void monitoringImplWithBackgroundTask(){
-        val monitoringService = MonitoringServiceProvider.getInstance();
-        Assertions.assertNotNull( monitoringService );
+    public void queuedEventsAreProcessed() {
+        // arrange
+        // set background task timer
+        RuntimeConfig.QUEUE_PROCESSING_INTERVAL.setEnum( TaskSchedulingType.EVERY_SECOND );
 
-        //RuntimeConfig.QUEUE_PROCESSING_INTERVAL = TaskSchedulingType.EVERY_SECOND.getMillis() ;
+        // initialize mock repository
+        TestMapDbRepository repo = new TestMapDbRepository();
+        repo.initialize(); // will delete the file
 
+        // mock ui service, not really needed for testing
+        MonitoringServiceUi uiService = Mockito.mock( MonitoringServiceUi.class );
+
+        // create monitoring service with dependencies
+        MonitoringQueueImpl queueWriteService = new MonitoringQueueImpl( repo );
+
+        // initialize the monitoringService
+        val sut = new MonitoringServiceImpl( queueWriteService, repo, uiService );
+
+        Assertions.assertNotNull( sut );
+
+        // act
         val events = createQueryEvent( 15 );
-        events.forEach( event -> monitoringService.monitorEvent( event ));
+        events.forEach( event -> sut.monitorEvent( event ) );
 
         try {
-            Thread.sleep( 5000L );
+            Thread.sleep( 2000L );
         } catch ( InterruptedException e ) {
             e.printStackTrace();
         }
 
-        val result = monitoringService.getAllDataPoints( QueryDataPoint.class);
+        // assert
+
+        val result = sut.getAllDataPoints( QueryDataPoint.class );
+        Assertions.assertEquals( 15, result.size() );
+
+        // cleanup
+        try {
+            queueWriteService.finalize();
+        } catch ( Throwable throwable ) {
+            throwable.printStackTrace();
+        }
+
 
     }
 
 
-    private List<QueryEvent> createQueryEvent(int number){
+    private List<QueryEvent> createQueryEvent( int number ) {
         val result = new ArrayList<QueryEvent>();
 
-        for(int i = 0; i <number; i++ ){
+        for ( int i = 0; i < number; i++ ) {
             val event = new QueryEvent();
-            event.setRouted( Mockito.mock( RelRoot.class ) );
-            event.setSignature( Mockito.mock( PolyphenyDbSignature.class ) );
+            event.setRouted( null );
+            event.setSignature( null );
             event.setStatement( Mockito.mock( Statement.class ) );
             event.setDescription( UUID.randomUUID().toString() );
-            event.setExecutionTime( (long)Math.random() * 1000L );
-            event.setFieldNames( Lists.newArrayList("T1", "T2", "T3") );
+            event.setExecutionTime( (long) Math.random() * 1000L );
+            event.setFieldNames( Lists.newArrayList( "T1", "T2", "T3" ) );
             event.setRowCount( 15 );
             event.setAnalyze( true );
-            event.setSubQuery(false);
+            event.setSubQuery( false );
 
             result.add( event );
         }

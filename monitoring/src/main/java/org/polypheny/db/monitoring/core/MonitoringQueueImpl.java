@@ -34,6 +34,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 import org.polypheny.db.util.background.BackgroundTask;
+import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
 
 /**
@@ -155,7 +156,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
                     this::processQueue,
                     "Send monitoring jobs to job consumers",
                     BackgroundTask.TaskPriority.LOW,
-                    BackgroundTask.TaskSchedulingType.EVERY_TEN_SECONDS
+                    (TaskSchedulingType) RuntimeConfig.QUEUE_PROCESSING_INTERVAL.getEnum()
             );
         }
     }

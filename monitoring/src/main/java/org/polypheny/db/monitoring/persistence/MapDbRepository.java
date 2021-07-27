@@ -41,8 +41,8 @@ public class MapDbRepository implements MonitoringRepository {
 
     private static final String FILE_PATH = "simpleBackendDb";
     private static final String FOLDER_NAME = "monitoring";
-    private final HashMap<Class, BTreeMap<UUID, MonitoringDataPoint>> data = new HashMap<>();
-    private DB simpleBackendDb;
+    protected final HashMap<Class, BTreeMap<UUID, MonitoringDataPoint>> data = new HashMap<>();
+    protected DB simpleBackendDb;
 
     // endregion
 
@@ -51,20 +51,7 @@ public class MapDbRepository implements MonitoringRepository {
 
     @Override
     public void initialize() {
-        if ( simpleBackendDb != null ) {
-            simpleBackendDb.close();
-        }
-
-        File folder = FileSystemManager.getInstance().registerNewFolder( FOLDER_NAME );
-
-        simpleBackendDb = DBMaker.fileDB( new File( folder, FILE_PATH ) )
-                .closeOnJvmShutdown()
-                .transactionEnable()
-                .fileMmapEnableIfSupported()
-                .fileMmapPreclearDisable()
-                .make();
-
-        simpleBackendDb.getStore().fileLoad();
+        this.initialize( FILE_PATH, FOLDER_NAME );
     }
 
 
@@ -133,7 +120,24 @@ public class MapDbRepository implements MonitoringRepository {
 
     // endregion
 
+
     // region private helper methods
+    protected void initialize( String filePath, String folderName ) {
+        if ( simpleBackendDb != null ) {
+            simpleBackendDb.close();
+        }
+
+        File folder = FileSystemManager.getInstance().registerNewFolder( folderName );
+
+        simpleBackendDb = DBMaker.fileDB( new File( folder, filePath ) )
+                .closeOnJvmShutdown()
+                .transactionEnable()
+                .fileMmapEnableIfSupported()
+                .fileMmapPreclearDisable()
+                .make();
+
+        simpleBackendDb.getStore().fileLoad();
+    }
 
 
     private void createPersistentTable( Class<? extends MonitoringDataPoint> classPersistentData ) {
