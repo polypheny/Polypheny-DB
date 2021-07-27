@@ -18,19 +18,19 @@ package org.polypheny.db.monitoring.events;
 
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.events.analyzer.DMLEventAnalyzer;
 import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
 
 
 @Getter
 @Setter
+@Slf4j
 public class DMLEvent extends StatementEvent {
-
-
-    private String eventType = "DML EVENT";
 
 
     @Override
@@ -39,10 +39,14 @@ public class DMLEvent extends StatementEvent {
     }
 
 
-
     @Override
     public List<MonitoringDataPoint> analyze() {
-        return Arrays.asList( DMLEventAnalyzer.analyze( this ) );
+        try {
+            return Arrays.asList( DMLEventAnalyzer.analyze( this ) );
+        } catch ( Exception e ) {
+            log.error( "Could not analyze dml event:" );
+            return Collections.emptyList();
+        }
     }
 
 }

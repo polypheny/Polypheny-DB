@@ -19,8 +19,6 @@ package org.polypheny.db.monitoring.events;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.UUID;
-import org.polypheny.db.monitoring.events.MonitoringDataPoint;
-
 
 /**
  * Marker interface for the data type, which can be monitored.
@@ -33,9 +31,7 @@ public interface MonitoringEvent {
 
     Timestamp getRecordedTimestamp();
 
-    String getEventType();
-
-    /**
+     /**
      * @param <T> Defined Class Types which will be generated from the event.
      * The analyze method will create the list of metrics.
      * @return

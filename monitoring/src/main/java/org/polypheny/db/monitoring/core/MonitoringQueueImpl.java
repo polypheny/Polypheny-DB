@@ -34,6 +34,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 import org.polypheny.db.util.background.BackgroundTask;
+import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
 
 /**
@@ -55,8 +56,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
 
     private String backgroundTaskId;
-    //For ever
-    private long processedEventsTotal;
 
     /**
      * Processed events since restart.
@@ -142,11 +141,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
 
     @Override
-    public long getNumberOfProcessedEvents( boolean all ) {
-        if ( all ) {
-            return processedEventsTotal;
-        }
-        //returns only processed events since last restart
+    public long getNumberOfProcessedEvents() {
         return processedEvents;
     }
 
@@ -161,7 +156,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
                     this::processQueue,
                     "Send monitoring jobs to job consumers",
                     BackgroundTask.TaskPriority.LOW,
-                    BackgroundTask.TaskSchedulingType.EVERY_TEN_SECONDS
+                    (TaskSchedulingType) RuntimeConfig.QUEUE_PROCESSING_INTERVAL.getEnum()
             );
         }
     }
@@ -194,7 +189,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
                 queueIds.remove( event.get().getId() );
             }
             processedEvents += countEvents;
-            processedEventsTotal += countEvents;
         } finally {
             this.processingQueueLock.unlock();
         }

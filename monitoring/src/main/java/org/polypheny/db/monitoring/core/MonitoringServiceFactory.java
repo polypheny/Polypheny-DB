@@ -37,12 +37,6 @@ public class MonitoringServiceFactory {
         MonitoringServiceUi uiService = new MonitoringServiceUiImpl( repo, queueWriteService );
         uiService.registerDataPointForUi( QueryDataPoint.class );
 
-
-        // initialize ui with first Metric
-        //Todo @Cedric to we need to display this at the monitoring view?
-        //  For me seems to be necessary only for debugging purposes
-        //  uiService.registerMetricForUi( QueryMetric.class );
-
         // initialize the monitoringService
         MonitoringServiceImpl monitoringService = new MonitoringServiceImpl( queueWriteService, repo, uiService );
         return monitoringService;

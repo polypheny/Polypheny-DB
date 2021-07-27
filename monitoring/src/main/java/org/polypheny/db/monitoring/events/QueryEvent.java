@@ -17,20 +17,19 @@
 package org.polypheny.db.monitoring.events;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.events.analyzer.QueryEventAnalyzer;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
 
 
 @Getter
 @Setter
+@Slf4j
 public class QueryEvent extends StatementEvent {
-
-
-    private String eventType = "QUERY EVENT";
-
 
 
     @Override
@@ -39,11 +38,14 @@ public class QueryEvent extends StatementEvent {
     }
 
 
-
     @Override
     public List<MonitoringDataPoint> analyze() {
-        // TODO: failure handling
-        return Arrays.asList( QueryEventAnalyzer.analyze( this ) );
+        try {
+            return Arrays.asList( QueryEventAnalyzer.analyze( this ) );
+        } catch ( Exception e ) {
+            log.error( "Could not analyze query event:" );
+            return Collections.emptyList();
+        }
     }
 
 }

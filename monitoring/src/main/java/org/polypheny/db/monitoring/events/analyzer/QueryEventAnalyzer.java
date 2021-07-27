@@ -21,7 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
-import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 
@@ -32,14 +31,12 @@ public class QueryEventAnalyzer {
         QueryDataPoint metric = QueryDataPoint
                 .builder()
                 .description( queryEvent.getDescription() )
-                .monitoringType( queryEvent.getMonitoringType() )
                 .Id( queryEvent.getId() )
                 .fieldNames( queryEvent.getFieldNames() )
                 .executionTime( queryEvent.getExecutionTime() )
                 .rowCount( queryEvent.getRowCount() )
                 .isSubQuery( queryEvent.isSubQuery() )
-                .recordedTimestamp( queryEvent.getRecordedTimestamp()  )
-                .accessedPartitions( queryEvent.getAccessedPartitions() )
+                .recordedTimestamp( queryEvent.getRecordedTimestamp() )
                 .build();
 
         RelRoot relRoot = queryEvent.getRouted();

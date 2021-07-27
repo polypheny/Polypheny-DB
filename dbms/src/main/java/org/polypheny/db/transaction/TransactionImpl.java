@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.index.IndexManager;
@@ -39,7 +38,7 @@ import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
-import org.polypheny.db.monitoring.events.StatementEvent;
+import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
@@ -80,24 +79,15 @@ public class TransactionImpl implements Transaction, Comparable {
     private final MultimediaFlavor flavor;
 
     @Getter
-    @Setter
-    private boolean analyze;
-
-
-
-    private StatementEvent statementEventData;
-
+    private final boolean analyze;
     private final AtomicLong statementCounter = new AtomicLong();
-
     private final List<Statement> statements = new ArrayList<>();
-
-
     private final List<String> changedTables = new ArrayList<>();
-
     @Getter
     private final List<Adapter> involvedAdapters = new CopyOnWriteArrayList<>();
-
     private final Set<Lock> lockList = new HashSet<>();
+    private MonitoringEvent monitoringEvent;
+
 
     TransactionImpl(
             PolyXid xid,
@@ -276,27 +266,14 @@ public class TransactionImpl implements Transaction, Comparable {
 
 
     @Override
-    public StatementEvent getMonitoringData() {
-        return this.statementEventData;
+    public MonitoringEvent getMonitoringEvent() {
+        return this.monitoringEvent;
     }
 
 
     @Override
-    public void setMonitoringData( StatementEvent event ) {
-        this.statementEventData = event;
-    }
-
-
-    @Override
-    public void deactivateAnalyze() {
-        this.analyze = false;
-    }
-
-
-    @Override
-    public void activateAnalyze() {
-        this.analyze = true;
-
+    public void setMonitoringEvent( MonitoringEvent event ) {
+        this.monitoringEvent = event;
     }
 
     // For locking

@@ -333,7 +333,7 @@ public enum RuntimeConfig {
             "Time interval in seconds, how often the monitoring queues is processed and analyzed and data points are created . Restart is required",
             BackgroundTask.TaskSchedulingType.EVERY_TEN_SECONDS,
             ConfigType.ENUM,
-            "monitoringSettingsQueueGroup"),
+            "monitoringSettingsQueueGroup" ),
 
     QUEUE_PROCESSING_ELEMENTS( "runtime/queueProcessingElements",
             "Number of elements in workload queue to process per time.",
@@ -346,16 +346,6 @@ public enum RuntimeConfig {
             BackgroundTask.TaskSchedulingType.EVERY_TEN_SECONDS,
             ConfigType.ENUM,
             "temperaturePartitionProcessingSettingsGroup");
-
-
-
-
-
-
-    private final String key;
-    private final String description;
-
-    private final ConfigManager configManager = ConfigManager.getInstance();
 
 
     static {
@@ -442,7 +432,6 @@ public enum RuntimeConfig {
         configManager.registerWebUiPage( uiSettingsPage );
         configManager.registerWebUiGroup( uiSettingsDataViewGroup );
 
-
         // Workload Monitoring specific setting
         final WebUiPage monitoringSettingsPage = new WebUiPage(
                 "monitoringSettings",
@@ -463,6 +452,11 @@ public enum RuntimeConfig {
         configManager.registerWebUiPage( partitionSettingsPage );
         configManager.registerWebUiGroup( temperaturePartitionProcessingSettingsGroup );
     }
+
+
+    private final String key;
+    private final String description;
+    private final ConfigManager configManager = ConfigManager.getInstance();
 
 
     RuntimeConfig( final String key, final String description, final Object defaultValue, final ConfigType configType ) {
@@ -575,8 +569,18 @@ public enum RuntimeConfig {
     }
 
 
+    public void setBoolean( final boolean value ) {
+        configManager.getConfig( key ).setBoolean( value );
+    }
+
+
     public BigDecimal getDecimal() {
         return configManager.getConfig( key ).getDecimal();
+    }
+
+
+    public void setDecimal( final BigDecimal value ) {
+        configManager.getConfig( key ).setDecimal( value );
     }
 
 
@@ -585,14 +589,29 @@ public enum RuntimeConfig {
     }
 
 
+    public void setDouble( final double value ) {
+        configManager.getConfig( key ).setDouble( value );
+    }
+
+
     public Enum getEnum() {
         return configManager.getConfig( key ).getEnum();
     }
 
+    public void setEnum(Enum value) {
+        configManager.getConfig( key ).setEnum(value);
+    }
 
     public int getInteger() {
         return configManager.getConfig( key ).getInt();
     }
+
+
+    public void setInteger( final int value ) {
+        configManager.getConfig( key ).setInt( value );
+    }
+
+    // TODO: Add methods for array and table
 
 
     public long getLong() {
@@ -600,8 +619,18 @@ public enum RuntimeConfig {
     }
 
 
+    public void setLong( final long value ) {
+        configManager.getConfig( key ).setLong( value );
+    }
+
+
     public String getString() {
         return configManager.getConfig( key ).getString();
+    }
+
+
+    public void setString( final String value ) {
+        configManager.getConfig( key ).setString( value );
     }
 
 
@@ -612,38 +641,6 @@ public enum RuntimeConfig {
 
     public <T> List<T> getList( Class<T> type ) {
         return configManager.getConfig( key ).getList( type );
-    }
-
-    // TODO: Add methods for array and table
-
-
-    public void setBoolean( final boolean value ) {
-        configManager.getConfig( key ).setBoolean( value );
-    }
-
-
-    public void setDecimal( final BigDecimal value ) {
-        configManager.getConfig( key ).setDecimal( value );
-    }
-
-
-    public void setDouble( final double value ) {
-        configManager.getConfig( key ).setDouble( value );
-    }
-
-
-    public void setInteger( final int value ) {
-        configManager.getConfig( key ).setInt( value );
-    }
-
-
-    public void setLong( final long value ) {
-        configManager.getConfig( key ).setLong( value );
-    }
-
-
-    public void setString( final String value ) {
-        configManager.getConfig( key ).setString( value );
     }
 
 
