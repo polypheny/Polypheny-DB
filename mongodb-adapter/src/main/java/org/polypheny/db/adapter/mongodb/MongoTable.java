@@ -34,6 +34,7 @@
 package org.polypheny.db.adapter.mongodb;
 
 
+import com.mongodb.MongoException;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
@@ -393,6 +394,25 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 
             long changes = 0;
 
+            try {
+                // while this should not happen, we still can handle it and return a corrected message back and rollback
+                changes = doDML( operation, filter, operations, onlyOne, mongoTable, session, bucket, changes );
+            } catch ( MongoException e ) {
+                mongoTable.getTransactionProvider().rollback( xid );
+                throw new RuntimeException( e.getMessage().replace( "_data.", "" ), e );
+            }
+
+            long finalChanges = changes;
+            return new AbstractEnumerable<Object>() {
+                @Override
+                public Enumerator<Object> enumerator() {
+                    return new IterWrapper( Collections.singletonList( (Object) finalChanges ).iterator() );
+                }
+            };
+        }
+
+
+        private long doDML( Operation operation, String filter, List<String> operations, Boolean onlyOne, MongoTable mongoTable, ClientSession session, GridFSBucket bucket, long changes ) {
             switch ( operation ) {
                 case INSERT:
                     if ( dataContext.getParameterValues().size() != 0 ) {
@@ -478,14 +498,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                 case MERGE:
                     throw new RuntimeException( "MERGE IS NOT SUPPORTED" );
             }
-
-            long finalChanges = changes;
-            return new AbstractEnumerable<Object>() {
-                @Override
-                public Enumerator<Object> enumerator() {
-                    return new IterWrapper( Collections.singletonList( (Object) finalChanges ).iterator() );
-                }
-            };
+            return changes;
         }
 
     }

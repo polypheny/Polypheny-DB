@@ -29,7 +29,6 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.Getter;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
@@ -288,6 +287,10 @@ public class MqlToRelConverter {
     // but in fact could be combined and therefore optimized a lot more
     private RelNode translateUpdate( MqlUpdate query, RelDataType rowType, RelNode node, RelOptTable table ) {
         Map<String, RexNode> updates = new HashMap<>();
+        Map<UpdateOperation, List<Pair<String, RexNode>>> mergedUpdates = new HashMap<>();
+        mergedUpdates.put( UpdateOperation.REMOVE, new ArrayList<>() );
+        mergedUpdates.put( UpdateOperation.RENAME, new ArrayList<>() );
+        mergedUpdates.put( UpdateOperation.REPLACE, new ArrayList<>() );
 
         UpdateOperation updateOp;
         for ( Entry<String, BsonValue> entry : query.getUpdate().asDocument().entrySet() ) {
@@ -350,15 +353,17 @@ public class MqlToRelConverter {
                 node = wrapLimit( node, 1 );
             }
 
-            node = transformUpdates( rowType, node, table, updates, updateOp );
+            mergeUpdates( mergedUpdates, rowType, updates, updateOp );
             updates.clear();
         }
 
-        return node;
+        return finalizeUpdates( "_data", mergedUpdates, rowType, node, table );
+
+
     }
 
 
-    private RelNode transformUpdates( RelDataType rowType, RelNode node, RelOptTable table, Map<String, RexNode> updates, UpdateOperation updateOp ) {
+    private void mergeUpdates( Map<UpdateOperation, List<Pair<String, RexNode>>> mergedUpdates, RelDataType rowType, Map<String, RexNode> updates, UpdateOperation updateOp ) {
         List<String> names = rowType.getFieldNames();
 
         Map<String, Map<String, RexNode>> childUpdates = new HashMap<>();
@@ -399,100 +404,76 @@ public class MqlToRelConverter {
             }
         }
 
-        if ( !Collections.disjoint( directUpdates.entrySet(), childUpdates.keySet() ) ) {
+        if ( !Collections.disjoint( directUpdates.entrySet(), childUpdates.keySet() ) && directUpdates.size() == 0 ) {
             throw new RuntimeException( "DML of a field and its subfields at the same time is not possible" );
         }
 
-        return mergeUpdates( node, table, rowType, updateOp, childUpdates, directUpdates );
+        combineUpdate( mergedUpdates, updateOp, childUpdates );
     }
 
 
-    private RelNode mergeUpdates( RelNode node, RelOptTable table, RelDataType rowType, UpdateOperation updateOp, Map<String, Map<String, RexNode>> childUpdates, Map<String, RexNode> directUpdates ) {
-        // all updates for a specific field
-        //fields are in direct update which can be replaced directly or in childUpdates where additional logic is required
-        List<RexNode> nodes = new ArrayList<>();
-        switch ( updateOp ) {
-            case RENAME:
-                for ( Entry<String, Map<String, RexNode>> parentEntry : childUpdates.entrySet() ) {
-                    List<String> oldNames = new ArrayList<>();
-                    List<RexNode> newNames = new ArrayList<>();
-                    for ( Entry<String, RexNode> entry1 : parentEntry.getValue().entrySet() ) {
-                        oldNames.add( entry1.getKey() );
-                        newNames.add( entry1.getValue() );
-                    }
-                    nodes.add( new RexCall(
-                            jsonType,
-                            MqlStdOperatorTable.DOC_UPDATE_RENAME,
-                            Arrays.asList(
-                                    getIdentifier( parentEntry.getKey(), rowType ),
-                                    getStringArray( oldNames ),
-                                    getArray( newNames, jsonType ) ) ) );
-                }
-                node = LogicalTableModify.create(
-                        table,
-                        catalogReader,
-                        node,
-                        Operation.UPDATE,
-                        new ArrayList<>( childUpdates.keySet() ),
-                        nodes,
-                        false );
-                break;
-
-            case REPLACE:
-                for ( Entry<String, Map<String, RexNode>> parentEntry : childUpdates.entrySet() ) {
-                    List<String> names1 = new ArrayList<>();
-                    List<RexNode> values = new ArrayList<>();
-                    for ( Entry<String, RexNode> entry1 : parentEntry.getValue().entrySet() ) {
-                        names1.add( entry1.getKey() );
-                        values.add( entry1.getValue() );
-                    }
-                    nodes.add( new RexCall(
-                            jsonType,
-                            MqlStdOperatorTable.DOC_UPDATE_REPLACE,
-                            Arrays.asList(
-                                    getIdentifier( parentEntry.getKey(), rowType ),
-                                    getStringArray( names1 ),
-                                    getArray( values, any ) ) ) );
-                }
-
-                node = LogicalTableModify.create(
-                        table,
-                        catalogReader,
-                        node,
-                        Operation.UPDATE,
-                        new ArrayList<>( Stream.concat( childUpdates.keySet().stream(), directUpdates.keySet().stream() ).collect( Collectors.toList() ) ),
-                        new ArrayList<>( Stream.concat( nodes.stream(), directUpdates.values().stream() ).collect( Collectors.toList() ) ),
-                        false );
-                break;
-            case REMOVE:
-                for ( Entry<String, Map<String, RexNode>> parentEntry : childUpdates.entrySet() ) {
-                    List<String> names1 = new ArrayList<>();
-                    for ( Entry<String, RexNode> entry1 : parentEntry.getValue().entrySet() ) {
-                        names1.add( entry1.getKey() );
-                        ;
-                    }
-                    nodes.add( new RexCall(
-                            jsonType,
-                            MqlStdOperatorTable.DOC_UPDATE_REMOVE,
-                            Arrays.asList(
-                                    getIdentifier( parentEntry.getKey(), rowType ),
-                                    getStringArray( names1 ) ) ) );
-                }
-
-                node = LogicalTableModify.create(
-                        table,
-                        catalogReader,
-                        node,
-                        Operation.UPDATE,
-                        new ArrayList<>( Stream.concat( childUpdates.keySet().stream(), directUpdates.keySet().stream() ).collect( Collectors.toList() ) ),
-                        new ArrayList<>( Stream.concat( nodes.stream(), directUpdates.values().stream() ).collect( Collectors.toList() ) ),
-                        false );
-                break;
+    private void combineUpdate( Map<UpdateOperation, List<Pair<String, RexNode>>> mergedUpdates, UpdateOperation updateOp, Map<String, Map<String, RexNode>> childUpdates ) {
+        for ( Entry<String, Map<String, RexNode>> entry : childUpdates.entrySet() ) {
+            mergedUpdates.get( updateOp )
+                    .addAll(
+                            entry.getValue()
+                                    .entrySet()
+                                    .stream()
+                                    .map( k -> new Pair<>( k.getKey(), k.getValue() ) )
+                                    .collect( Collectors.toList() ) );
         }
 
-        directUpdates.clear();
-        childUpdates.clear();
-        return node;
+    }
+
+
+    private RelNode finalizeUpdates( String key, Map<UpdateOperation, List<Pair<String, RexNode>>> mergedUpdates, RelDataType rowType, RelNode node, RelOptTable table ) {
+        RexNode id = getIdentifier( key, rowType );
+        // replace
+        List<Pair<String, RexNode>> replaceNodes = mergedUpdates.get( UpdateOperation.REPLACE );
+
+        RexNode replace = new RexCall(
+                jsonType,
+                MqlStdOperatorTable.DOC_UPDATE_REPLACE,
+                Arrays.asList(
+                        id,
+                        getStringArray( Pair.left( replaceNodes ) ),
+                        getArray( Pair.right( replaceNodes ), jsonType ) ) );
+
+        // rename
+        mergedUpdates.get( UpdateOperation.RENAME );
+
+        List<Pair<String, RexNode>> renameNodes = mergedUpdates.get( UpdateOperation.RENAME );
+
+        RexNode rename = new RexCall(
+                jsonType,
+                MqlStdOperatorTable.DOC_UPDATE_RENAME,
+                Arrays.asList(
+                        id,
+                        getStringArray( Pair.left( renameNodes ) ),
+                        getArray( Pair.right( renameNodes ), jsonType ) ) );
+
+        // remove
+        mergedUpdates.get( UpdateOperation.REMOVE );
+
+        List<String> removeNodes = Pair.left( mergedUpdates.get( UpdateOperation.REMOVE ) );
+
+        RexNode remove = new RexCall(
+                jsonType,
+                MqlStdOperatorTable.DOC_UPDATE_REMOVE,
+                Arrays.asList(
+                        id,
+                        getStringArray( removeNodes ) ) );
+
+        RexCall combination = new RexCall( any, MqlStdOperatorTable.DOC_UPDATE, Arrays.asList( id, replace, rename, remove ) );
+
+        return LogicalTableModify.create(
+                table,
+                catalogReader,
+                node,
+                Operation.UPDATE,
+                Collections.singletonList( key ),
+                Collections.singletonList( combination ),
+                false );
     }
 
 
@@ -588,9 +569,12 @@ public class MqlToRelConverter {
 
     private RelNode convertReducedPipeline( MqlUpdate query, RelDataType rowType, RelNode node, RelOptTable table ) {
         Map<String, RexNode> updates = new HashMap<>();
+        Map<UpdateOperation, List<Pair<String, RexNode>>> mergedUpdates = new HashMap<>();
+        mergedUpdates.put( UpdateOperation.REMOVE, new ArrayList<>() );
+        mergedUpdates.put( UpdateOperation.RENAME, new ArrayList<>() );
+        mergedUpdates.put( UpdateOperation.REPLACE, new ArrayList<>() );
 
         UpdateOperation updateOp;
-
         for ( BsonValue value : query.getPipeline() ) {
             if ( !value.isDocument() || value.asDocument().size() != 1 ) {
                 throw new RuntimeException( "Each initial update steps document in the aggregate pipeline can only have one key." );
@@ -617,11 +601,12 @@ public class MqlToRelConverter {
                     throw new RuntimeException( "The used statement is not supported in the update aggregation pipeline" );
             }
 
-            node = transformUpdates( rowType, node, table, updates, updateOp );
+            mergeUpdates( mergedUpdates, rowType, updates, updateOp );
+            updates.clear();
 
         }
+        return finalizeUpdates( "_data", mergedUpdates, rowType, node, table );
 
-        return node;
     }
 
 

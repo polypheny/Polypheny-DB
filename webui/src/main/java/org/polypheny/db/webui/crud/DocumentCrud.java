@@ -85,7 +85,7 @@ public class DocumentCrud {
             Result result = new Result( 1 ).setGeneratedQuery( mql ).setXid( statement.getTransaction().getXid().toString() );
             results.add( result );
         } else {
-            RelRoot logicalRoot = mqlProcessor.translate( statement, parsed, request.defaultDatabase );
+            RelRoot logicalRoot = mqlProcessor.translate( statement, parsed, request.database );
 
             // Prepare
             signature = statement.getQueryProcessor().prepareQuery( logicalRoot );

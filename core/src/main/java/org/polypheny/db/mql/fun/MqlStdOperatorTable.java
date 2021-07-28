@@ -57,6 +57,8 @@ public interface MqlStdOperatorTable {
 
     MqlFunctionOperator DOC_UPDATE_REMOVE = new MqlFunctionOperator( "DOC_UPDATE_REMOVE", SqlKind.DOC_UPDATE_REMOVE );
 
+    MqlFunctionOperator DOC_UPDATE = new MqlFunctionOperator( "DOC_UPDATE", SqlKind.DOC_UPDATE );
+
     MqlFunctionOperator DOC_ELEM_MATCH = new MqlFunctionOperator( "DOC_ELEM_MATCH", SqlKind.DOC_ELEM_MATCH );
 
     MqlFunctionOperator DOC_UNWIND = new MqlFunctionOperator( "DOC_UNWIND", SqlKind.DOC_UNWIND );

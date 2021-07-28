@@ -37,6 +37,6 @@ public class QueryRequest extends UIRequest {
     /**
      * This flag defines the default database to use
      */
-    public String defaultDatabase;
+    public String database;
 
 }

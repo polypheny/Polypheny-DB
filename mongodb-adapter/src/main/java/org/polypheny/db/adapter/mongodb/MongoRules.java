@@ -761,11 +761,20 @@ public class MongoRules {
             BsonDocument doc = new BsonDocument();
             assert el.getOperands().size() >= 2;
             assert el.getOperands().get( 0 ) instanceof RexInputRef;
-            assert el.getOperands().get( 1 ) instanceof RexCall;
 
+            String key = getDocParentKey( (RexInputRef) el.operands.get( 0 ), rowType );
+
+            for ( RexNode rexNode : el.getOperands().subList( 1, el.getOperands().size() ) ) {
+                assert rexNode instanceof RexCall;
+                attachUpdateStep( doc, (RexCall) rexNode, rowType, key );
+            }
+
+            return doc;
+        }
+
+
+        private void attachUpdateStep( BsonDocument doc, RexCall el, MongoRowType rowType, String key ) {
             List<String> keys = getDocUpdateKey( (RexInputRef) el.operands.get( 0 ), (RexCall) el.operands.get( 1 ), rowType );
-            String parentKey = getDocParentKey( (RexInputRef) el.operands.get( 0 ), rowType );
-
             switch ( el.op.kind ) {
                 case DOC_UPDATE_REPLACE:
                     assert el.getOperands().size() == 3;
@@ -788,12 +797,11 @@ public class MongoRules {
                     assert el.getOperands().size() == 3;
                     assert el.getOperands().get( 2 ) instanceof RexCall;
 
-                    doc.putAll( getRenameUpdate( keys, parentKey, (RexCall) el.operands.get( 2 ) ) );
+                    doc.putAll( getRenameUpdate( keys, key, (RexCall) el.operands.get( 2 ) ) );
                     break;
                 default:
                     throw new RuntimeException( "The used update operation is not supported by the MongoDB adapter." );
             }
-            return doc;
         }
 
 
@@ -827,9 +835,11 @@ public class MongoRules {
 
         private BsonDocument getAddUpdate( List<String> keys, RexCall call ) {
             BsonDocument doc = new BsonDocument();
-            assert call.operands.size() == 1;
+            assert keys.size() == call.operands.size();
+            int pos = 0;
             for ( String key : keys ) {
-                doc.put( key, MongoTypeUtil.getAsBson( (RexLiteral) call.operands.get( 0 ), this.bucket ) );
+                doc.put( key, MongoTypeUtil.getAsBson( (RexLiteral) call.operands.get( pos ), this.bucket ) );
+                pos++;
             }
 
             return new BsonDocument( "$set", doc );
@@ -838,42 +848,30 @@ public class MongoRules {
 
         private BsonDocument getReplaceUpdate( List<String> keys, RexCall call ) {
             BsonDocument doc = new BsonDocument();
+            assert keys.size() == call.operands.size();
 
-            assert call.operands.size() == 1;
-            assert call.operands.get( 0 ) instanceof RexCall;
-
-            RexCall subcall = ((RexCall) call.operands.get( 0 ));
-
-            if ( subcall.op.kind != SqlKind.PLUS
-                    && subcall.op.kind != SqlKind.TIMES
-                    && subcall.op.kind != SqlKind.MIN
-                    && subcall.op.kind != SqlKind.MAX ) {
-
-                for ( String key : keys ) {
-                    doc.put( key, MongoTypeUtil.getAsBson( (RexLiteral) call.operands.get( 0 ), this.bucket ) );
-                }
-                return new BsonDocument( "$set", doc );
-            }
-
+            int pos = 0;
             for ( RexNode operand : call.operands ) {
-                assert operand instanceof RexCall;
-                RexCall op = (RexCall) operand;
-
-                switch ( op.getKind() ) {
-                    case PLUS:
-                        doc.append( "$inc", new BsonDocument( keys.get( 0 ), MongoTypeUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), this.bucket ) ) );
-                        break;
-                    case TIMES:
-                        doc.append( "$mul", new BsonDocument( keys.get( 0 ), MongoTypeUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), this.bucket ) ) );
-                        break;
-                    case MIN:
-                        doc.append( "$min", new BsonDocument( keys.get( 0 ), MongoTypeUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), this.bucket ) ) );
-                        break;
-                    case MAX:
-                        doc.append( "$max", new BsonDocument( keys.get( 0 ), MongoTypeUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), this.bucket ) ) );
-                        break;
+                if ( !(operand instanceof RexCall) ) {
+                    doc.append( "$set", new BsonDocument( keys.get( pos ), MongoTypeUtil.getAsBson( (RexLiteral) operand, this.bucket ) ) );
+                } else {
+                    RexCall op = (RexCall) operand;
+                    switch ( op.getKind() ) {
+                        case PLUS:
+                            doc.append( "$inc", new BsonDocument( keys.get( pos ), MongoTypeUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), this.bucket ) ) );
+                            break;
+                        case TIMES:
+                            doc.append( "$mul", new BsonDocument( keys.get( pos ), MongoTypeUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), this.bucket ) ) );
+                            break;
+                        case MIN:
+                            doc.append( "$min", new BsonDocument( keys.get( pos ), MongoTypeUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), this.bucket ) ) );
+                            break;
+                        case MAX:
+                            doc.append( "$max", new BsonDocument( keys.get( pos ), MongoTypeUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), this.bucket ) ) );
+                            break;
+                    }
                 }
-
+                pos++;
             }
 
             return doc;
