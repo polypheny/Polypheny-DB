@@ -140,7 +140,7 @@ public class TestHelper {
             while ( j < expectedRow.length ) {
                 if ( expectedRow.length >= j + 1 ) {
                     int columnType = resultSet.getMetaData().getColumnType( j + 1 );
-                    if ( resultSet.getMetaData().getColumnType( j + 1 ) == Types.BINARY ) {
+                    if ( columnType == Types.BINARY ) {
                         if ( expectedRow[j] == null ) {
                             Assert.assertNull( "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "': ", resultSet.getBytes( j + 1 ) );
                         } else {
