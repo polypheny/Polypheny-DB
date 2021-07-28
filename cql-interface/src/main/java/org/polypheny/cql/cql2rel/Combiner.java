@@ -1,0 +1,231 @@
+/*
+ * Copyright 2019-2021 The Polypheny Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.polypheny.cql.cql2rel;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.polypheny.cql.exception.InvalidMethodInvocation;
+import org.polypheny.cql.exception.InvalidModifierException;
+import org.polypheny.cql.parser.BooleanGroup;
+import org.polypheny.cql.parser.BooleanOperator;
+import org.polypheny.cql.parser.Comparator;
+import org.polypheny.cql.parser.ComparatorSymbol;
+import org.polypheny.cql.parser.Modifier;
+import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.rel.core.JoinRelType;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.tools.RelBuilder;
+
+public class Combiner {
+
+    public final CombinerType combinerType;
+    public final String[] joinOnColumns;
+
+
+    public Combiner( CombinerType combinerType, String[] joinOnColumns ) {
+        this.combinerType = combinerType;
+        this.joinOnColumns = joinOnColumns;
+    }
+
+
+    public RelBuilder combine( RelBuilder relBuilder, RexBuilder rexBuilder ) {
+        try {
+            if ( combinerType.isJoinType() ) {
+                if ( joinOnColumns.length == 0 ) {
+                    return relBuilder.join( combinerType.convertToJoinRelType(), rexBuilder.makeLiteral( true ) );
+                } else {
+                    return relBuilder.join( combinerType.convertToJoinRelType(), joinOnColumns );
+                }
+            } else {
+                return relBuilder;
+            }
+        } catch ( InvalidMethodInvocation e ) {
+            throw new RuntimeException( "This exception would never be thrown since we have checked if the combiner"
+                    + " isJoinType." );
+        }
+    }
+
+    private static final Map<String, Object> modifiersLookupTable = new HashMap<>();
+
+
+    static {
+        modifiersLookupTable.put( "null", "both" );
+    }
+
+
+    public static Combiner createCombiner( BooleanGroup booleanGroup, Index left, Index right )
+            throws InvalidMethodInvocation, InvalidModifierException {
+        Map<String, Object> modifiers = new HashMap<>( modifiersLookupTable );
+        if ( booleanGroup.booleanOperator == BooleanOperator.AND ) {
+            modifiers.put( "on", new String[] { "all" } );
+        } else {
+            modifiers.put( "on", new String[] { "none" } );
+        }
+
+        for ( Modifier modifier : booleanGroup.modifiers ) {
+            if ( modifier.modifierName.equalsIgnoreCase( "on" ) ) {
+                modifiers.put( "on", parseOnModifier( modifier.comparator, modifier.modifierValue.trim() ) );
+            } else if ( modifier.modifierName.equalsIgnoreCase( "null" ) ) {
+                modifiers.put( "null", parseNullModifier( modifier.comparator, modifier.modifierValue.trim() ) );
+            }
+        }
+
+        CombinerType combinerType =
+                determineCombinerType( booleanGroup.booleanOperator, (String) modifiers.get( "null" ) );
+        String[] joinOnColumns = getColumnsToJoinOn( left, right, (String[]) modifiers.get( "on" ) );
+
+        return new Combiner( combinerType, joinOnColumns );
+    }
+
+
+    private static String[] parseOnModifier( Comparator comparator, String modifierValue )
+            throws InvalidModifierException {
+
+        assertValidity( comparator, modifierValue );
+
+        if ( modifierValue.equalsIgnoreCase( "all" ) ) {
+            return new String[] { "all" };
+        } else if ( modifierValue.equalsIgnoreCase( "none" ) ) {
+            return new String[] { "none" };
+        } else {
+            return modifierValue.trim().split( "\\s*,\\s*" );
+        }
+    }
+
+
+    private static String parseNullModifier( Comparator comparator, String modifierValue )
+            throws InvalidModifierException {
+
+        assertValidity( comparator, modifierValue );
+
+        if ( modifierValue.equalsIgnoreCase( "left" ) ) {
+            return "left";
+        } else if ( modifierValue.equalsIgnoreCase( "right" ) ) {
+            return "right";
+        } else if ( modifierValue.equalsIgnoreCase( "both" ) ) {
+            return "both";
+        } else {
+            throw new InvalidModifierException( "Invalid value '" + modifierValue + "' for modifier 'null'." );
+        }
+    }
+
+
+    private static CombinerType determineCombinerType( BooleanOperator booleanOperator, String nullValue ) {
+        if ( booleanOperator == BooleanOperator.OR ) {
+            if ( nullValue.equals( "both" ) ) {
+                return CombinerType.JOIN_FULL;
+            } else if ( nullValue.equals( "left" ) ) {
+                return CombinerType.JOIN_RIGHT;
+            } else {
+                return CombinerType.JOIN_LEFT;
+            }
+        } else {
+            return CombinerType.JOIN_INNER;
+        }
+    }
+
+
+    private static String[] getColumnsToJoinOn( Index left, Index right, String[] columnStrs )
+            throws InvalidMethodInvocation {
+
+        assert columnStrs.length > 0;
+
+        if ( columnStrs.length == 1 ) {
+            if ( columnStrs[0].equals( "all" ) ) {
+                return getCommonColumns( left.getCatalogTable(), right.getCatalogTable() );
+            } else if ( columnStrs[0].equals( "none" ) ) {
+                return new String[0];
+            }
+        }
+
+        CatalogTable leftCatalogTable = left.getCatalogTable();
+        CatalogTable rightCatalogTable = right.getCatalogTable();
+        List<String> columnList = Arrays.asList( columnStrs );
+
+        if ( !leftCatalogTable.getColumnNames().containsAll( columnList ) ||
+                !rightCatalogTable.getColumnNames().containsAll( columnList ) ) {
+
+            throw new RuntimeException( "Cannot join tables '" + leftCatalogTable.name + "' and '" +
+                    rightCatalogTable.name + "' on columns " + columnList );
+        }
+
+        return columnStrs;
+    }
+
+
+    private static String[] getCommonColumns( CatalogTable table1, CatalogTable table2 ) {
+        // TODO: Create a cache and check if in cache.
+
+        List<String> table1Columns = table1.getColumnNames();
+        List<String> table2Columns = table2.getColumnNames();
+
+        return table1Columns.stream().filter( table2Columns::contains ).toArray( String[]::new );
+    }
+
+
+    private static void assertValidity( Comparator comparator, String modifierValue ) throws InvalidModifierException {
+        if ( comparator == null || modifierValue == null ) {
+            throw new InvalidModifierException( "Invalid usage of modifier 'null'." );
+        }
+
+        String c = comparator.isNamedComparator() ? comparator.NamedComparator : comparator.SymbolComparator.name();
+        if ( comparator.isNamedComparator() ||
+                ( comparator.SymbolComparator != ComparatorSymbol.SERVER_CHOICE ) ) {
+            throw new InvalidModifierException( "Invalid usage of comparator '" + c + "' with modifier 'null'." );
+        }
+    }
+
+
+    public enum CombinerType {
+        JOIN_FULL( true ),
+        JOIN_INNER( true ),
+        JOIN_LEFT( true ),
+        JOIN_RIGHT( true );
+
+
+        private final boolean isJoinType;
+
+
+        CombinerType( boolean isJoinType ) {
+            this.isJoinType = isJoinType;
+        }
+
+
+        public boolean isJoinType() {
+            return isJoinType;
+        }
+
+
+        public JoinRelType convertToJoinRelType() throws InvalidMethodInvocation {
+            if ( !isJoinType ) {
+                throw new InvalidMethodInvocation( "Invalid method call to convert to JoinRelType." );
+            }
+            if ( this == JOIN_FULL ) {
+                return JoinRelType.FULL;
+            } else if ( this == JOIN_INNER ) {
+                return JoinRelType.INNER;
+            } else if ( this == JOIN_LEFT ) {
+                return JoinRelType.LEFT;
+            } else {
+                return JoinRelType.RIGHT;
+            }
+        }
+    }
+
+}
