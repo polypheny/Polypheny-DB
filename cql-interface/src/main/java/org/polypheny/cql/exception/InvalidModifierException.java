@@ -16,7 +16,7 @@
 
 package org.polypheny.cql.exception;
 
-public class InvalidModifierException extends Throwable {
+public class InvalidModifierException extends Exception {
 
 
     public InvalidModifierException() {
