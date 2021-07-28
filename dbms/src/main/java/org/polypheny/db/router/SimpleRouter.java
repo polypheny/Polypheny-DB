@@ -18,10 +18,12 @@ package org.polypheny.db.router;
 
 
 import com.google.common.collect.ImmutableList;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.polypheny.db.adapter.AdapterManager;
@@ -29,11 +31,9 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.routing.Router;
-import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Statement;
 
 @Slf4j
@@ -60,14 +60,10 @@ public class SimpleRouter extends AbstractRouter {
         // Nothing to do. Simple router does nothing sophisticated...
     }
 
-    @ Override
-    protected RelBuilder buildSelect( RelNode node, RelBuilder builder, Statement statement, RelOptCluster cluster ) {
-        return super.buildSelect( node, builder, statement, cluster );
-    }
 
     // Execute the table scan on the first placement of a table
     @Override
-    protected List<CatalogColumnPlacement> selectPlacement( RelNode node, CatalogTable table ) {
+    protected Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable table ) {
         // Find the adapter with the most column placements
         int adapterIdWithMostPlacements = -1;
         int numOfPlacements = 0;
@@ -88,7 +84,9 @@ public class SimpleRouter extends AbstractRouter {
             }
         }
 
-        return placementList;
+        return new HashSet<List<CatalogColumnPlacement>>() {{
+            add( placementList );
+        }};
     }
 
 
@@ -122,12 +120,15 @@ public class SimpleRouter extends AbstractRouter {
 
     public static class SimpleRouterFactory extends RouterFactory {
 
+        public static SimpleRouter createSimpleRouterInstance() {
+            return new SimpleRouter();
+        }
+
+
         @Override
         public Router createInstance() {
             return new SimpleRouter();
         }
-
-        public static SimpleRouter createSimpleRouterInstance(){return new SimpleRouter();}
 
     }
 

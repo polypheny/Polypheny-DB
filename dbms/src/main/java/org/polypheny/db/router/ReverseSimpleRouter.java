@@ -17,10 +17,12 @@
 package org.polypheny.db.router;
 
 import com.google.common.collect.ImmutableList;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
@@ -74,13 +76,13 @@ public class ReverseSimpleRouter extends AbstractRouter {
 
 
     @Override
-    protected List<CatalogColumnPlacement> selectPlacement( RelNode node, CatalogTable catalogTable ) {
+    protected Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable catalogTable ) {
         // Find the adapter with the fewest column placements
         int adapterWithFewestPlacements = -1;
         int numOfPlacements = Integer.MAX_VALUE;
         for ( Entry<Integer, ImmutableList<Long>> entry : catalogTable.placementsByAdapter.entrySet() ) {
-            if ( entry.getValue().size() < numOfPlacements && entry.getValue().size() > 1) {
-                adapterWithFewestPlacements= entry.getKey();
+            if ( entry.getValue().size() < numOfPlacements && entry.getValue().size() > 1 ) {
+                adapterWithFewestPlacements = entry.getKey();
                 numOfPlacements = entry.getValue().size();
             }
         }
@@ -88,25 +90,29 @@ public class ReverseSimpleRouter extends AbstractRouter {
         // Take the adapter with fewest placements as base and add missing column placements
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
         for ( long cid : catalogTable.columnIds ) {
-            if ( catalogTable.placementsByAdapter.get( adapterWithFewestPlacements  ).contains( cid ) ) {
+            if ( catalogTable.placementsByAdapter.get( adapterWithFewestPlacements ).contains( cid ) ) {
                 placementList.add( Catalog.getInstance().getColumnPlacement( adapterWithFewestPlacements, cid ) );
             } else {
                 placementList.add( Catalog.getInstance().getColumnPlacement( cid ).get( 0 ) );
             }
         }
-
-        return placementList;
+        return new HashSet<List<CatalogColumnPlacement>>() {{
+            add( placementList );
+        }};
     }
 
 
     public static class ReverseSimpleRouterFactory extends RouterFactory {
 
+        public static ReverseSimpleRouter createReverseSimpleRouterInstance() {
+            return new ReverseSimpleRouter();
+        }
+
+
         @Override
         public Router createInstance() {
             return new ReverseSimpleRouter();
         }
-
-        public static ReverseSimpleRouter createReverseSimpleRouterInstance(){return new ReverseSimpleRouter();}
 
     }
 

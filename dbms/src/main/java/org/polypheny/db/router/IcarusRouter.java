@@ -18,6 +18,7 @@ package org.polypheny.db.router;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -109,17 +111,9 @@ public class IcarusRouter extends AbstractRouter {
             "Which implementation to use for deriving the query class from a query plan.",
             QUERY_CLASS_PROVIDER_METHOD.class,
             QUERY_CLASS_PROVIDER_METHOD.QUERY_PARAMETERIZER );
-
-
-    private enum QUERY_CLASS_PROVIDER_METHOD {ICARUS_SHUTTLE, QUERY_PARAMETERIZER}
-
-
     private static final IcarusRoutingTable routingTable = new IcarusRoutingTable();
-
     private int selectedAdapterId = -2; // Is set in analyze
     private String queryClassString;
-
-
     private IcarusRouter() {
         // Intentionally left empty
     }
@@ -255,7 +249,7 @@ public class IcarusRouter extends AbstractRouter {
     // therefore assumes that there is either no placement of a table on a adapter or a full placement.
     //
     @Override
-    protected List<CatalogColumnPlacement> selectPlacement( RelNode node, CatalogTable table ) {
+    protected Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable table ) {
         // Update known adapters
         updateKnownAdapters( table.placementsByAdapter.keySet() );
 
@@ -267,9 +261,11 @@ public class IcarusRouter extends AbstractRouter {
         if ( table.placementsByAdapter.containsKey( selectedAdapterId ) ) {
             List<CatalogColumnPlacement> placements = Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( selectedAdapterId, table.id );
             if ( placements.size() != table.columnIds.size() ) {
-                return Collections.emptyList();
+                return Collections.emptySet();
             }
-            return placements;
+            Set<List<CatalogColumnPlacement>> result = Sets.newHashSet();
+            result.add( placements );
+            return result;
         }
         throw new RuntimeException( "The previously selected store does not contain a placement of this table. Store ID: " + selectedAdapterId );
     }
@@ -317,6 +313,9 @@ public class IcarusRouter extends AbstractRouter {
     public void dropPlacements( List<CatalogColumnPlacement> placements ) {
         routingTable.dropPlacements( placements );
     }
+
+
+    private enum QUERY_CLASS_PROVIDER_METHOD {ICARUS_SHUTTLE, QUERY_PARAMETERIZER}
 
 
     private static class IcarusRoutingTable implements ExecutionTimeObserver {
@@ -389,6 +388,17 @@ public class IcarusRouter extends AbstractRouter {
                     TaskPriority.LOW,
                     TaskSchedulingType.EVERY_FIVE_SECONDS
             );
+        }
+
+
+        //http://stackoverflow.com/a/2864923
+        private static <K, V extends Comparable<? super V>> SortedSet<Entry<K, V>> entriesSortedByValues( Map<K, V> map ) {
+            SortedSet<Map.Entry<K, V>> sortedEntries = new TreeSet<>( ( e1, e2 ) -> {
+                int res = e1.getValue().compareTo( e2.getValue() );
+                return res != 0 ? res : 1;
+            } );
+            sortedEntries.addAll( map.entrySet() );
+            return sortedEntries;
         }
 
 
@@ -578,16 +588,6 @@ public class IcarusRouter extends AbstractRouter {
             return row;
         }
 
-
-        //http://stackoverflow.com/a/2864923
-        private static <K, V extends Comparable<? super V>> SortedSet<Entry<K, V>> entriesSortedByValues( Map<K, V> map ) {
-            SortedSet<Map.Entry<K, V>> sortedEntries = new TreeSet<>( ( e1, e2 ) -> {
-                int res = e1.getValue().compareTo( e2.getValue() );
-                return res != 0 ? res : 1;
-            } );
-            sortedEntries.addAll( map.entrySet() );
-            return sortedEntries;
-        }
     }
 
 
@@ -597,6 +597,7 @@ public class IcarusRouter extends AbstractRouter {
         private final String queryClassString;
         private final int adapterId;
         private final long nanoTime;
+
     }
 
 
@@ -749,5 +750,7 @@ public class IcarusRouter extends AbstractRouter {
             hashBasis.add( "other#" + other.getClass().getSimpleName() );
             return visitChildren( other );
         }
+
     }
+
 }
