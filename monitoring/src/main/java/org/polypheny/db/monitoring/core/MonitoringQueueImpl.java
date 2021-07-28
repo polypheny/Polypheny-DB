@@ -116,7 +116,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     /**
      * Display current number of elements in queue
      *
-     * @return Current numbe of elements in Queue
+     * @return Current number of elements in Queue
      */
     @Override
     public long getNumberOfElementsInQueue() {
@@ -129,7 +129,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         List<HashMap<String, String>> infoList = new ArrayList<>();
 
         for ( MonitoringEvent event : monitoringJobQueue ) {
-            HashMap<String, String> infoRow = new HashMap<String, String>();
+            HashMap<String, String> infoRow = new HashMap<>();
             infoRow.put( "type", event.getClass().toString() );
             infoRow.put( "id", event.getId().toString() );
             infoRow.put( "timestamp", event.getRecordedTimestamp().toString() );
@@ -172,7 +172,9 @@ public class MonitoringQueueImpl implements MonitoringQueue {
             // while there are jobs to consume:
             int countEvents = 0;
             while ( (event = this.getNextJob()).isPresent() && countEvents < RuntimeConfig.QUEUE_PROCESSING_ELEMENTS.getInteger() ) {
-                log.debug( "get new monitoring job" + event.get().getId().toString() );
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "get new monitoring job {}", event.get().getId().toString() );
+                }
 
                 // returns list of metrics which was produced by this particular event
                 val dataPoints = event.get().analyze();

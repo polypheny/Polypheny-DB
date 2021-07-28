@@ -20,18 +20,18 @@ package org.polypheny.db.monitoring.events.analyzer;
 import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.InformationDuration;
-import org.polypheny.db.monitoring.events.DMLEvent;
-import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
+import org.polypheny.db.monitoring.events.DmlEvent;
+import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 
 @Slf4j
-public class DMLEventAnalyzer {
+public class DmlEventAnalyzer {
     // TODO: Bis jetzt sind die Klassen mehr oder weniger identisch. Ist das einfach vorbereitet für später oder wie?
 
 
-    public static DMLDataPoint analyze( DMLEvent dmlEvent ) {
-        DMLDataPoint metric = DMLDataPoint
+    public static DmlDataPoint analyze( DmlEvent dmlEvent ) {
+        DmlDataPoint metric = DmlDataPoint
                 .builder()
                 .description( dmlEvent.getDescription() )
                 .Id( dmlEvent.getId() )
@@ -56,7 +56,7 @@ public class DMLEventAnalyzer {
     }
 
 
-    private static void processDurationInfo( DMLEvent dmlEvent, DMLDataPoint metric ) {
+    private static void processDurationInfo( DmlEvent dmlEvent, DmlDataPoint metric ) {
         try {
             InformationDuration duration = new Gson().fromJson( dmlEvent.getDurations(), InformationDuration.class );
             getDurationInfo( metric, "Plan Caching", duration );
@@ -74,17 +74,17 @@ public class DMLEventAnalyzer {
     }
 
 
-    private static void getDurationInfo( DMLDataPoint dmlMetric, String durationName, InformationDuration duration ) {
+    private static void getDurationInfo( DmlDataPoint dmlMetric, String durationName, InformationDuration duration ) {
         try {
             long time = duration.getDuration( durationName );
             dmlMetric.getDataElements().put( durationName, time );
         } catch ( Exception e ) {
-            log.debug( "could no find duration:" + durationName );
+            log.debug( "could no find duration:{}", durationName );
         }
     }
 
 
-    private static void processRelNode( RelNode node, DMLEvent event, DMLDataPoint metric ) {
+    private static void processRelNode( RelNode node, DmlEvent event, DmlDataPoint metric ) {
 
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
             processRelNode( node.getInput( i ), event, metric );

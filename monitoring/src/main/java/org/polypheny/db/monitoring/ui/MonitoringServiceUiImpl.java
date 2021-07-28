@@ -34,7 +34,7 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.monitoring.core.MonitoringQueue;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
-import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
+import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 
@@ -74,7 +74,10 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
         val informationGroup = new InformationGroup( informationPage, className );
 
         // TODO: see todo below
-        val fieldAsString = Arrays.stream( metricClass.getDeclaredFields() ).map( f -> f.getName() ).filter( str -> !str.equals( "serialVersionUID" ) ).collect( Collectors.toList() );
+        val fieldAsString = Arrays.stream( metricClass.getDeclaredFields() )
+                .map( Field::getName )
+                .filter( str -> !str.equals( "serialVersionUID" ) )
+                .collect( Collectors.toList() );
         val informationTable = new InformationTable( informationGroup, fieldAsString );
 
         informationGroup.setRefreshFunction( () -> this.updateMetricInformationTable( informationTable, metricClass ) );
@@ -84,10 +87,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
 
     /**
-     * Universal method to add arbitrary new information Groups to UI
-     *
-     * @param informationGroup
-     * @param informationTables
+     * Universal method to add arbitrary new information Groups to UI.
      */
     private void addInformationGroupTUi( @NonNull InformationGroup informationGroup, @NonNull List<InformationTable> informationTables ) {
         InformationManager im = InformationManager.getInstance();
@@ -143,7 +143,6 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
 
     private void initializeQueueInformationTable() {
-
         //On first subscriber also add
         //Also build active subscription table Metric to subscribers
         //or which subscribers, exist and to which metrics they are subscribed
@@ -155,7 +154,6 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
         informationGroup.setRefreshFunction( () -> this.updateQueueInformationTable( informationTable ) );
 
         addInformationGroupTUi( informationGroup, Arrays.asList( informationTable ) );
-
     }
 
 
@@ -175,15 +173,13 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
 
     private void updateWorkloadInformationTable( InformationTable table ) {
-
         table.reset();
 
         table.addRow( "Number of processed events since restart", queue.getNumberOfProcessedEvents() );
         table.addRow( "Number of events in queue", queue.getNumberOfElementsInQueue() );
         //table.addRow( "# Data Points", queue.getElementsInQueue().size() );
         table.addRow( "# SELECT", MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPoint.class ).size() );
-        table.addRow( "# DML", MonitoringServiceProvider.getInstance().getAllDataPoints( DMLDataPoint.class ).size() );
+        table.addRow( "# DML", MonitoringServiceProvider.getInstance().getAllDataPoints( DmlDataPoint.class ).size() );
     }
-
 
 }

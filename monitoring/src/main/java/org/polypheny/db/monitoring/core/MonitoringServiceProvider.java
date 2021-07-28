@@ -29,7 +29,7 @@ public class MonitoringServiceProvider {
 
     public static MonitoringService getInstance() {
         if ( INSTANCE == null ) {
-            INSTANCE = MonitoringServiceFactory.CreateMonitoringService();
+            INSTANCE = MonitoringServiceFactory.createMonitoringService();
         }
         return INSTANCE;
     }

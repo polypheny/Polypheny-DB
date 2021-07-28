@@ -77,13 +77,12 @@ public class QueryEventAnalyzer {
             long time = duration.getDuration( durationName );
             queryMetric.getDataElements().put( durationName, time );
         } catch ( Exception e ) {
-            log.debug( "could no find duration:" + durationName );
+            log.debug( "could no find duration: {}", durationName );
         }
     }
 
 
     private static void processRelNode( RelNode node, QueryEvent event, QueryDataPoint metric ) {
-
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
             processRelNode( node.getInput( i ), event, metric );
         }
@@ -91,7 +90,6 @@ public class QueryEventAnalyzer {
         if ( node.getTable() != null ) {
             metric.getTables().addAll( node.getTable().getQualifiedName() );
         }
-
     }
 
 }

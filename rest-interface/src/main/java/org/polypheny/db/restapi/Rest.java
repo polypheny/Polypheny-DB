@@ -97,7 +97,9 @@ public class Rest {
 
 
     String processGetResource( final ResourceGetRequest resourceGetRequest, final Request req, final Response res ) throws RestException {
-        log.debug( "Starting to process get resource request. Session ID: {}.", req.session().id() );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Starting to process get resource request. Session ID: {}.", req.session().id() );
+        }
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
         RelBuilder relBuilder = RelBuilder.create( statement );
@@ -124,7 +126,9 @@ public class Rest {
         // Sorts, limit, offset
         relBuilder = this.sort( relBuilder, rexBuilder, resourceGetRequest.sorting, resourceGetRequest.limit, resourceGetRequest.offset );
 
-        log.debug( "RelNodeBuilder: {}", relBuilder.toString() );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "RelNodeBuilder: {}", relBuilder.toString() );
+        }
         RelNode relNode = relBuilder.build();
         log.debug( "RelNode was built." );
 
@@ -326,7 +330,7 @@ public class Rest {
     @VisibleForTesting
     List<RexNode> filters( Statement statement, RelBuilder relBuilder, RexBuilder rexBuilder, Filters filters, Request req ) {
         if ( filters.literalFilters != null ) {
-            if ( req != null ) {
+            if ( req != null && log.isDebugEnabled() ) {
                 log.debug( "Starting to process filters. Session ID: {}.", req.session().id() );
             }
             List<RexNode> filterNodes = new ArrayList<>();
@@ -356,16 +360,16 @@ public class Rest {
                 }
             }
 
-            if ( req != null ) {
+            if ( req != null && log.isDebugEnabled() ) {
                 log.debug( "Finished processing filters. Session ID: {}.", req.session().id() );
             }
 //            relBuilder = relBuilder.filter( filterNodes );
-            if ( req != null ) {
+            if ( req != null && log.isDebugEnabled() ) {
                 log.debug( "Added filters to relation. Session ID: {}.", req.session().id() );
             }
             return filterNodes;
         } else {
-            if ( req != null ) {
+            if ( req != null && log.isDebugEnabled() ) {
                 log.debug( "No filters to add. Session ID: {}.", req.session().id() );
             }
             return null;
