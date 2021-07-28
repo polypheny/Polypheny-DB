@@ -41,8 +41,19 @@ public class CqlQuery {
 
     @Override
     public String toString() {
-        return queryString( tableOperations ) + queryString( filters ) + "\nsortby " +
-                sortSpecs.stream().map( Object::toString ).collect( Collectors.joining( " " ) ) + "\n";
+        StringBuilder stringBuilder = new StringBuilder();
+        if ( tableOperations != null ) {
+            stringBuilder.append( queryString( tableOperations ) );
+        }
+        if ( filters != null ) {
+            stringBuilder.append( queryString( filters ) );
+        }
+        if ( sortSpecs != null ) {
+            stringBuilder.append( "\nsortby " )
+                    .append( sortSpecs.stream().map( Object::toString ).collect( Collectors.joining( " " ) ) )
+                    .append( "\n" );
+        }
+        return stringBuilder.toString();
     }
 
 
