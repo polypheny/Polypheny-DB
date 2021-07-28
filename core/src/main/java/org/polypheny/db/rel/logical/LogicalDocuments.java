@@ -68,10 +68,9 @@ public class LogicalDocuments extends LogicalValues implements Documents {
      * @param tuples
      */
     public LogicalDocuments( RelOptCluster cluster, RelDataType defaultRowType, RelTraitSet traitSet, ImmutableList<BsonValue> tuples, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
-        super( cluster, traitSet, defaultRowType, normalizedTuples );
+        super( cluster, traitSet, defaultRowType, validateLiterals( normalizedTuples, defaultRowType, cluster.getRexBuilder() ) );
         this.documentTuples = validate( tuples, defaultRowType );
         this.rowType = defaultRowType;
-        this.tuples = normalizedTuples;
     }
 
 
@@ -225,8 +224,31 @@ public class LogicalDocuments extends LogicalValues implements Documents {
     }
 
 
-    private static String removeNestedEscapes( String json ) {
-        return json.replace( "\\\"", "\"" );
+    private static ImmutableList<ImmutableList<RexLiteral>> validateLiterals( ImmutableList<ImmutableList<RexLiteral>> tuples, RelDataType rowType, RexBuilder rexBuilder ) {
+        List<ImmutableList<RexLiteral>> validated = new ArrayList<>();
+        List<String> names = rowType.getFieldNames();
+        for ( ImmutableList<RexLiteral> values : tuples ) {
+            List<RexLiteral> row = new ArrayList<>();
+            int pos = 0;
+            for ( String name : names ) {
+                if ( name.equals( "_id" ) ) {
+                    String id = values.get( pos ).getValueAs( String.class );
+                    if ( id.matches( "ObjectId\\([0-9abcdef]{24}\\)" ) ) {
+                        id = id.substring( 9, 33 );
+                    } else {
+                        id = ObjectId.get().toString();
+                    }
+                    row.add( rexBuilder.makeLiteral( id ) );
+
+                } else {
+                    row.add( values.get( pos ) );
+                }
+                pos++;
+            }
+            validated.add( ImmutableList.copyOf( row ) );
+        }
+
+        return ImmutableList.copyOf( validated );
     }
 
 

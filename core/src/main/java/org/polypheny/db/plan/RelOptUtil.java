@@ -1459,6 +1459,10 @@ public abstract class RelOptUtil {
             }
         }
 
+        if ( (type1.getPolyType() == PolyType.JSON || type1.getPolyType() == PolyType.VARCHAR) && (type2.getPolyType() == PolyType.VARCHAR || type2.getPolyType() == PolyType.JSON) ) {
+            return litmus.succeed();
+        }
+
         if ( !type1.equals( type2 ) ) {
             return litmus.fail( "type mismatch:\n{}:\n{}\n{}:\n{}", desc1, type1.getFullTypeString(), desc2, type2.getFullTypeString() );
         }

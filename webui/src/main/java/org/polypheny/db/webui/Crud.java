@@ -659,7 +659,7 @@ public class Crud implements InformationObserver {
         String tableId = String.format( "\"%s\".\"%s\"", request.database, request.collection );
         query.append( "CREATE TABLE " ).append( tableId ).append( "(" );
         Result result;
-        colBuilder.add( "\"_id\" VARCHAR(12) NOT NULL" );
+        colBuilder.add( "\"_id\" VARCHAR(24) NOT NULL" );
         //colBuilder.add( "\"_data\" JSON" );
         StringJoiner primaryKeys = new StringJoiner( ",", "PRIMARY KEY (", ")" );
         primaryKeys.add( "\"_id\"" );

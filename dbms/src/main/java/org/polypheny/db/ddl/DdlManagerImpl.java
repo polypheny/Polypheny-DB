@@ -1473,6 +1473,13 @@ public class DdlManagerImpl extends DdlManager {
             if ( catalog.getSchema( schemaId ).schemaType == SchemaType.DOCUMENT ) {
                 List<String> names = columns.stream().map( c -> c.name ).collect( Collectors.toList() );
 
+                if ( names.contains( "_id" ) ) {
+                    int index = names.indexOf( "_id" );
+                    columns.remove( index );
+                    constraints.remove( index );
+                    names.remove( "_id" );
+                }
+
                 // add _id column if necessary
                 if ( !names.contains( "_id" ) ) {
                     ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.VARCHAR, PolyType.VARCHAR, 24, null, null, null, false );
@@ -1483,6 +1490,11 @@ public class DdlManagerImpl extends DdlManager {
                 // add constraint for _id as primary if necessary
                 if ( constraints.stream().noneMatch( c -> c.type.getId() == 2 ) ) {
                     constraints.add( new ConstraintInformation( "primary", ConstraintType.PRIMARY, Collections.singletonList( "_id" ) ) );
+                }
+
+                if ( names.contains( "_data" ) ) {
+                    columns.remove( names.indexOf( "_data" ) );
+                    names.remove( "_data" );
                 }
 
                 // add _id column if necessary
