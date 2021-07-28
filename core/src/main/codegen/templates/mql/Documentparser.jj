@@ -155,7 +155,7 @@ TOKEN : /* IDENTIFIERS */ // for nested documents check out Document_Splits()
 |
 < STORE: "store" >
 |
-< SHOWDB: "show db" >
+< SHOWDB: ("show dbs" | "show databases" >
 |
 < REPLACE_ONE: "replaceOne" >
 |

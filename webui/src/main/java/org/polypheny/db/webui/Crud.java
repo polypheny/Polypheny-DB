@@ -3995,8 +3995,8 @@ public class Crud implements InformationObserver {
                 .map( CatalogSchema::getName )
                 .collect( Collectors.toList() );
 
-        String[][] data = new String[][]{ names.toArray( new String[0] ) };
-        return new Result( names.stream().map( n -> new DbColumn( "Databases" ) ).toArray( DbColumn[]::new ), data );
+        String[][] data = names.stream().map( n -> new String[]{ n } ).toArray( String[][]::new );
+        return new Result( new DbColumn[]{ new DbColumn( "Databases" ) }, data );
     }
 
 
