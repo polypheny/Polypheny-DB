@@ -165,9 +165,9 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
         for ( HashMap<String, String> infoRow : queueInfoElements ) {
             List<String> row = new ArrayList<>();
-            row.add( infoRow.get("type"));
-            row.add( infoRow.get("id"));
-            row.add( infoRow.get("timestamp"));
+            row.add( infoRow.get( "type" ) );
+            row.add( infoRow.get( "id" ) );
+            row.add( infoRow.get( "timestamp" ) );
 
             table.addRow( row );
         }
@@ -179,7 +179,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
         table.reset();
 
         table.addRow( "Number of processed events since restart", queue.getNumberOfProcessedEvents() );
-        table.addRow( "Number of events in queue", queue.getNumberOfElementsInQueue());
+        table.addRow( "Number of events in queue", queue.getNumberOfElementsInQueue() );
         //table.addRow( "# Data Points", queue.getElementsInQueue().size() );
         table.addRow( "# SELECT", MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPoint.class ).size() );
         table.addRow( "# DML", MonitoringServiceProvider.getInstance().getAllDataPoints( DMLDataPoint.class ).size() );

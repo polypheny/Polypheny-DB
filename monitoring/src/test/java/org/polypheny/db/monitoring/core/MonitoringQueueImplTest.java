@@ -25,8 +25,9 @@ import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 
 class MonitoringQueueImplTest {
+
     @Test
-    public void ctor_validParameters_instanceNotNull(){
+    public void ctor_validParameters_instanceNotNull() {
         // arrange
         val repo = Mockito.mock( MonitoringRepository.class );
 
@@ -37,8 +38,9 @@ class MonitoringQueueImplTest {
         Assertions.assertNotNull( sut );
     }
 
+
     @Test
-    public void queueEvent_validEvent_QueueConsistsElements(){
+    public void queueEvent_validEvent_QueueConsistsElements() {
         // arrange
         val repo = Mockito.mock( MonitoringRepository.class );
         val sut = new MonitoringQueueImpl( false, repo );
@@ -52,8 +54,9 @@ class MonitoringQueueImplTest {
         Assertions.assertEquals( 1L, elementsInQueue );
     }
 
+
     @Test
-    public void queueEvent_validEvent2Times_QueueConsistsElementOnce(){
+    public void queueEvent_validEvent2Times_QueueConsistsElementOnce() {
         // arrange
         val repo = Mockito.mock( MonitoringRepository.class );
         val sut = new MonitoringQueueImpl( false, repo );
@@ -68,15 +71,16 @@ class MonitoringQueueImplTest {
         Assertions.assertEquals( 1L, elementsInQueue );
     }
 
+
     @Test
-    public void queueEvent_validEvents_QueueConsistsElements(){
+    public void queueEvent_validEvents_QueueConsistsElements() {
         // arrange
         val repo = Mockito.mock( MonitoringRepository.class );
         val sut = new MonitoringQueueImpl( false, repo );
         val numberOfEvents = 100L;
 
         // act
-        for(int i = 0; i < numberOfEvents;i++){
+        for ( int i = 0; i < numberOfEvents; i++ ) {
             val event = new QueryEvent();
             sut.queueEvent( event );
         }
@@ -86,7 +90,7 @@ class MonitoringQueueImplTest {
         Assertions.assertEquals( numberOfEvents, elementsInQueue );
 
         val infoStrings = sut.getInformationOnElementsInQueue();
-        Assertions.assertEquals( (int)numberOfEvents, infoStrings.size() );
+        Assertions.assertEquals( (int) numberOfEvents, infoStrings.size() );
 
         val infoString = infoStrings.get( 0 );
         Assertions.assertSame( 3, infoString.size() );

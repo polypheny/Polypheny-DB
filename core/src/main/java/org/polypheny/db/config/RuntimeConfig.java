@@ -582,9 +582,11 @@ public enum RuntimeConfig {
         return configManager.getConfig( key ).getEnum();
     }
 
-    public void setEnum(Enum value) {
-        configManager.getConfig( key ).setEnum(value);
+
+    public void setEnum( Enum value ) {
+        configManager.getConfig( key ).setEnum( value );
     }
+
 
     public int getInteger() {
         return configManager.getConfig( key ).getInt();

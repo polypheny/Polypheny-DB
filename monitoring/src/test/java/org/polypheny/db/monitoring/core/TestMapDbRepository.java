@@ -29,12 +29,13 @@ public class TestMapDbRepository extends MapDbRepository {
     @Override
     public void initialize() {
         this.reset();
-        super.initialize(FILE_PATH, FOLDER_NAME);
+        super.initialize( FILE_PATH, FOLDER_NAME );
     }
 
 
-    private void reset(){
+    private void reset() {
         File folder = FileSystemManager.getInstance().registerNewFolder( FOLDER_NAME );
         new File( folder, FILE_PATH ).delete();
     }
+
 }
