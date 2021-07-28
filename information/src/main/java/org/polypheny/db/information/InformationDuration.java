@@ -16,7 +16,6 @@
 
 package org.polypheny.db.information;
 
-
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializer;
 import java.util.Arrays;

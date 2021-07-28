@@ -31,6 +31,7 @@ import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
+
 class MonitoringQueueImplIntegrationTest {
 
     @Test

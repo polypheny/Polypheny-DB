@@ -34,19 +34,14 @@ import org.mapdb.Serializer;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.util.FileSystemManager;
 
+
 @Slf4j
 public class MapDbRepository implements MonitoringRepository {
-
-    // region private fields
 
     private static final String FILE_PATH = "simpleBackendDb";
     private static final String FOLDER_NAME = "monitoring";
     protected final HashMap<Class, BTreeMap<UUID, MonitoringDataPoint>> data = new HashMap<>();
     protected DB simpleBackendDb;
-
-    // endregion
-
-    // region public methods
 
 
     @Override
@@ -118,10 +113,7 @@ public class MapDbRepository implements MonitoringRepository {
         return Collections.emptyList();
     }
 
-    // endregion
 
-
-    // region private helper methods
     protected void initialize( String filePath, String folderName ) {
         if ( simpleBackendDb != null ) {
             simpleBackendDb.close();
@@ -146,7 +138,5 @@ public class MapDbRepository implements MonitoringRepository {
             data.put( classPersistentData, treeMap );
         }
     }
-
-    // endregion
 
 }

@@ -37,6 +37,7 @@ import org.polypheny.db.util.background.BackgroundTask;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
 
+
 /**
  * MonitoringQueue implementation which stores the monitoring jobs in a
  * concurrentQueue and will process them with a background worker task.
@@ -44,27 +45,17 @@ import org.polypheny.db.util.background.BackgroundTaskManager;
 @Slf4j
 public class MonitoringQueueImpl implements MonitoringQueue {
 
-    // region private fields
-
-    /**
-     * monitoring queue which will queue all the incoming jobs.
-     */
+     // Monitoring queue which will queue all the incoming jobs.
     private final Queue<MonitoringEvent> monitoringJobQueue = new ConcurrentLinkedQueue<>();
+
     private final Set<UUID> queueIds = Sets.newConcurrentHashSet();
     private final Lock processingQueueLock = new ReentrantLock();
     private final MonitoringRepository repository;
 
-
     private String backgroundTaskId;
 
-    /**
-     * Processed events since restart.
-     */
+    // Processed events since restart
     private long processedEvents;
-
-    // endregion
-
-    // region ctors
 
 
     /**
@@ -89,10 +80,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     public MonitoringQueueImpl( @NonNull MonitoringRepository repository ) {
         this( true, repository );
     }
-
-    // endregion
-
-    // region public methods
 
 
     @Override
@@ -144,10 +131,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     public long getNumberOfProcessedEvents() {
         return processedEvents;
     }
-
-    // endregion
-
-    // region private helper methods
 
 
     private void startBackgroundTask() {
@@ -204,5 +187,4 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         return Optional.empty();
     }
 
-    // endregion
 }

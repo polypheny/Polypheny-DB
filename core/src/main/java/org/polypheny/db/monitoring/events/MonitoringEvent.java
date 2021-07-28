@@ -20,6 +20,7 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.UUID;
 
+
 /**
  * Marker interface for the data type, which can be monitored.
  * A MonitoringData implementation should always have a corresponding

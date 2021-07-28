@@ -24,6 +24,7 @@ import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 
+
 @Slf4j
 public class QueryEventAnalyzer {
 

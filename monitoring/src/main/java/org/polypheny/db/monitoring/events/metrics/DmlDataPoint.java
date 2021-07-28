@@ -64,6 +64,3 @@ public class DmlDataPoint implements MonitoringDataPoint, Serializable {
     }
 
 }
-
-
-

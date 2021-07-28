@@ -38,6 +38,7 @@ import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 
+
 @Slf4j
 public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 

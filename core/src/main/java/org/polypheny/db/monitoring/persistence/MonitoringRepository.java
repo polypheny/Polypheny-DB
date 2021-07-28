@@ -20,6 +20,7 @@ import java.sql.Timestamp;
 import java.util.List;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 
+
 /**
  * Interface for writing monitoring jobs to repository.
  */

@@ -21,6 +21,7 @@ import java.util.List;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 
+
 /**
  * Main interface for working with the MonitoringService environment. Jobs can be registered, monitored
  * and subscriber can the registered based on MonitoringEventData
@@ -63,4 +64,3 @@ public interface MonitoringService {
     <T extends MonitoringDataPoint> List<T> getDataPointsAfter( Class<T> dataPointClass, Timestamp timestamp );
 
 }
-
