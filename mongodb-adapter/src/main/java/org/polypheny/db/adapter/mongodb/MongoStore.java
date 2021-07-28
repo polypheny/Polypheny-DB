@@ -53,6 +53,7 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.mongodb.util.MongoTypeUtil;
+import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -117,7 +118,13 @@ public class MongoStore extends DataStore {
         this.transactionProvider = new TransactionProvider( this.client );
         MongoDatabase db = this.client.getDatabase( "admin" );
         Document configs = new Document( "setParameter", 1 );
-        configs.put( "transactionLifetimeLimitSeconds", Integer.parseInt( settings.get( "trxLifetimeLimit" ) ) );
+        String trxLifetimeLimit;
+        if ( settings.containsKey( "trxLifetimeLimit" ) ) {
+            trxLifetimeLimit = settings.get( "trxLifetimeLimit" );
+        } else {
+            trxLifetimeLimit = Adapter.MONGODB.getDefaultSettings().get( "trxLifetimeLimit" );
+        }
+        configs.put( "transactionLifetimeLimitSeconds", Integer.parseInt( trxLifetimeLimit ) );
         db.runCommand( configs );
     }
 
@@ -293,6 +300,7 @@ public class MongoStore extends DataStore {
                 false );
 
     }
+
 
     private String getPhysicalColumnName( CatalogColumn catalogColumn ) {
         return getPhysicalColumnName( catalogColumn.name, catalogColumn.id );
