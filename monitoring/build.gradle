@@ -18,9 +18,9 @@ targetCompatibility = 1.8
 
 
 dependencies {
-
     implementation project(":core")
-    implementation group: "org.mapdb", name: "mapdb", version: mapdb_version
+
+    implementation group: "org.mapdb", name: "mapdb", version: mapdb_version  // Apache 2.0
 
     //  Logging
     api group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version  // MIT
@@ -33,7 +33,7 @@ dependencies {
     implementation 'org.junit.jupiter:junit-jupiter:5.7.0'// Apache 2.0
 
     testImplementation group: "junit", name: "junit", version: junit_version
-    testImplementation group: "org.mockito", name: "mockito-core", version: mockito_core_version
+    testImplementation group: "org.mockito", name: "mockito-core", version: mockito_core_version  // MIT
 }
 
 sourceSets {
