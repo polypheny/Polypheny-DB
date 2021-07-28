@@ -64,6 +64,3 @@ public class QueryDataPoint implements MonitoringDataPoint, Serializable {
     }
 
 }
-
-
-
