@@ -20,59 +20,18 @@ import com.google.common.collect.ImmutableList;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.AdapterManager;
-import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.transaction.Statement;
 
 @Slf4j
 public class ReverseSimpleRouter extends AbstractRouter {
-
-    // Create table on the first store in the list
-    @Override
-    public List<DataStore> createTable( long schemaId, Statement statement ) {
-        Map<String, DataStore> availableStores = AdapterManager.getInstance().getStores();
-        for ( DataStore store : availableStores.values() ) {
-            return ImmutableList.of( store );
-        }
-        throw new RuntimeException( "No suitable data store found" );
-    }
-
-
-    // Add column on the first store holding a placement of this table
-    @Override
-    public List<DataStore> addColumn( CatalogTable catalogTable, Statement statement ) {
-        return ImmutableList.of( AdapterManager.getInstance().getStore( catalogTable.placementsByAdapter.keySet().asList().get( 0 ) ) );
-    }
-
-
-    @Override
-    public void dropPlacements( List<CatalogColumnPlacement> placements ) {
-        // Nothing to do. Simple router does nothing sophisticated...
-    }
-
-
-    @Override
-    protected void analyze( Statement statement, RelRoot logicalRoot ) {
-
-    }
-
-
-    @Override
-    protected void wrapUp( Statement statement, RelNode routed ) {
-        log.info( "wrapUp" );
-        // Nothing to do. Simple router does nothing sophisticated...
-
-    }
 
 
     @Override

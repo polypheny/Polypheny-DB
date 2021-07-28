@@ -14,21 +14,25 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.routing;
+package org.polypheny.db.router;
 
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.schema.LogicalTable;
+import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Statement;
 
-public interface Router {
+@Slf4j
+public abstract class NoneVerticalPartitioningRouter extends AbstractDqlRouter {
 
-    List<RelRoot> route( RelRoot relRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor );
 
-    RelNode buildJoinedTableScan( Statement statement, RelOptCluster cluster, Map<Long, List<CatalogColumnPlacement>> placements );
+    @Override
+    protected List<RelBuilder> handleVerticalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RelBuilder> builders, RelOptCluster cluster ) {
+        return Collections.emptyList();
+    }
 
-    void resetCaches();
 }

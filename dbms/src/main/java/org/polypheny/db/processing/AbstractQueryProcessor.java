@@ -23,7 +23,6 @@ import com.google.common.collect.Lists;
 import java.lang.reflect.Type;
 import java.util.AbstractList;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -101,6 +100,7 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.router.QueryNameShuttle;
 import org.polypheny.db.router.QueryProcessorHelpers;
 import org.polypheny.db.router.RelDeepCopyShuttle;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
@@ -491,6 +491,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         // TODO: adjust shuttle, create queryId
         val shuttle = new QueryAnalyzeRelShuttle( statement );
         logicalRoot.rel.accept( shuttle );
+
+        val shuttle2 = new QueryNameShuttle();
+        logicalRoot.rel.accept( shuttle );
+        log.info( "SR: analyze" );
+        log.info( shuttle2.getHashBasis().toString() );
 
         this.prepareMonitoring( shuttle, statement, logicalRoot );
     }
@@ -884,13 +889,19 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private List<RelRoot> route( RelRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
-        // TODO
+        // TODO:
         // determine short or long running
-        var routedRootList = statement.getShortRunningRouters()
+        var routedRootList = new ArrayList<RelRoot>();
+        for(val router: statement.getShortRunningRouters()){
+            val routedRoots = router.route( logicalRoot, statement, executionTimeMonitor );
+            routedRootList.addAll( routedRoots );
+        }
+
+        /*var routedRootList = statement.getShortRunningRouters()
                 .stream()
                 .map( router -> router.route( logicalRoot, statement, executionTimeMonitor ) )
                 .flatMap( Collection::stream )
-                .collect( Collectors.toList() );
+                .collect( Collectors.toList() );*/
 
         if ( log.isTraceEnabled() ) {
             routedRootList.forEach( routedRoot ->

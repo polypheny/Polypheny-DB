@@ -119,7 +119,6 @@ public class IcarusRouter extends AbstractRouter {
     }
 
 
-    @Override
     protected void analyze( Statement statement, RelRoot logicalRoot ) {
         if ( !(logicalRoot.rel instanceof LogicalTableModify) ) {
             if ( QUERY_CLASS_PROVIDER.getEnum() == QUERY_CLASS_PROVIDER_METHOD.ICARUS_SHUTTLE ) {
@@ -224,7 +223,6 @@ public class IcarusRouter extends AbstractRouter {
     }
 
 
-    @Override
     protected void wrapUp( Statement statement, RelNode routed ) {
         if ( TRAINING.getBoolean() ) {
             executionTimeMonitor.subscribe( routingTable, selectedAdapterId + "-" + queryClassString );
@@ -285,7 +283,6 @@ public class IcarusRouter extends AbstractRouter {
 
 
     // Create table on all data stores (not on data sources)
-    @Override
     public List<DataStore> createTable( long schemaId, Statement statement ) {
         Map<String, DataStore> availableStores = AdapterManager.getInstance().getStores();
         List<DataStore> result = new LinkedList<>( availableStores.values() );
@@ -296,7 +293,6 @@ public class IcarusRouter extends AbstractRouter {
     }
 
 
-    @Override
     public List<DataStore> addColumn( CatalogTable catalogTable, Statement statement ) {
         List<DataStore> result = new LinkedList<>();
         for ( int storeId : catalogTable.placementsByAdapter.keySet() ) {
@@ -309,7 +305,6 @@ public class IcarusRouter extends AbstractRouter {
     }
 
 
-    @Override
     public void dropPlacements( List<CatalogColumnPlacement> placements ) {
         routingTable.dropPlacements( placements );
     }

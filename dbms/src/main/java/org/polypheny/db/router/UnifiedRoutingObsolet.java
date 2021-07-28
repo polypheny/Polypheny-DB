@@ -68,6 +68,8 @@ import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalTableModify;
+import org.polypheny.db.rel.logical.LogicalTableScan;
+import org.polypheny.db.rel.logical.LogicalValues;
 import org.polypheny.db.router.SimpleRouter.SimpleRouterFactory;
 import org.polypheny.db.routing.ExecutionTimeMonitor.ExecutionTimeObserver;
 import org.polypheny.db.schema.LogicalTable;
@@ -255,7 +257,6 @@ public class UnifiedRoutingObsolet extends AbstractRouter {
         log.info( "Analyze: Check for simple routing: " , this.useSimpleRouter);
     }
 
-    @Override
     protected void analyze( Statement statement, RelRoot logicalRoot ) {
         if ( !(logicalRoot.rel instanceof LogicalTableModify) ) {
             log.info( "Analyze: Reset parameters" );
@@ -390,8 +391,8 @@ public class UnifiedRoutingObsolet extends AbstractRouter {
         return placements;
     }
 
-   /* @Override
-    protected List<RelBuilder> buildSelect( RelNode node, RelBuilder builder, Statement statement, RelOptCluster cluster ) {
+
+    protected RelBuilder buildSelect( RelNode node, RelBuilder builder, Statement statement, RelOptCluster cluster ) {
         log.info( "Build Select:" + this.queryClassString );
 
         this.coverBuildDql(node, builder, statement, cluster);
@@ -447,7 +448,7 @@ public class UnifiedRoutingObsolet extends AbstractRouter {
             log.info( "BuildSelect: handle Generic" );
             return handleGeneric( node, builder );
         }
-    }*/
+    }
 
     private RoutingTableEntry routeQuery( Map<RoutingTableEntry, Integer> routingTableRow ) {
         // Check if there is an routing entry for which we do not have an execution time
@@ -480,7 +481,6 @@ public class UnifiedRoutingObsolet extends AbstractRouter {
     }
 
 
-    @Override
     protected void wrapUp( Statement statement, RelNode routed ) {
         if(!this.selectedRoutingEntry.isPresent()){
             // throw exception, should never happen
@@ -718,7 +718,6 @@ public class UnifiedRoutingObsolet extends AbstractRouter {
 
 
     // Create table on all data stores (not on data sources)
-    @Override
     public List<DataStore> createTable( long schemaId, Statement statement ) {
         Map<String, DataStore> availableStores = AdapterManager.getInstance().getStores();
         List<DataStore> result = new LinkedList<>( availableStores.values() );
@@ -729,7 +728,6 @@ public class UnifiedRoutingObsolet extends AbstractRouter {
     }
 
 
-    @Override
     public List<DataStore> addColumn( CatalogTable catalogTable, Statement statement ) {
         List<DataStore> result = new LinkedList<>();
         for ( int storeId : catalogTable.placementsByAdapter.keySet() ) {
@@ -742,7 +740,6 @@ public class UnifiedRoutingObsolet extends AbstractRouter {
     }
 
 
-    @Override
     public void dropPlacements( List<CatalogColumnPlacement> placements ) {
         routingTable.dropPlacements( placements );
     }

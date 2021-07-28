@@ -17,6 +17,7 @@
 package org.polypheny.db.router;
 
 import java.util.HashSet;
+import lombok.Getter;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.core.TableFunctionScan;
@@ -36,6 +37,7 @@ import org.polypheny.db.rel.logical.LogicalValues;
 
 // TODO MV: This should be improved to include more information on the used tables and columns
 public class QueryNameShuttle extends RelShuttleImpl {
+    @Getter
     protected final HashSet<String> hashBasis = new HashSet<>();
 
 

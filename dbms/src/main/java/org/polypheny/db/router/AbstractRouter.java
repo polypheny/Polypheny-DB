@@ -120,9 +120,6 @@ public abstract class AbstractRouter implements Router {
         }
 
         List<RelNode> routed;
-        log.info( "Start Analyze: " );
-        analyze( statement, logicalRoot );
-        log.info( "End Analyze" );
 
         if ( logicalRoot.rel instanceof LogicalTableModify ) {
             routed = Lists.newArrayList( routeDml( logicalRoot.rel, statement ) );
@@ -135,10 +132,6 @@ public abstract class AbstractRouter implements Router {
             routed = builders.stream().map( RelBuilder::build ).collect( Collectors.toList() );
             log.info( "End DQL" );
         }
-
-        log.info( "Start WrapUp" );
-        //wrapUp( statement, routed );
-        log.info( "End Wrap Up" );
 
         // Add information to query analyzer
         if ( statement.getTransaction().isAnalyze() ) {
@@ -160,10 +153,6 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    protected abstract void analyze( Statement statement, RelRoot logicalRoot );
-
-    protected abstract void wrapUp( Statement statement, RelNode routed );
-
     // Select the placement on which a table scan should be executed
     protected abstract Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable catalogTable, Statement statement);
 
@@ -184,7 +173,126 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    private void prepareBuildSelect( RelNode node, List<RelBuilder> builders, Statement statement, RelOptCluster cluster ) {
+    protected RelBuilder buildSelect( RelNode node, RelBuilder builder, Statement statement, RelOptCluster cluster ) {
+        val result = this.buildSelect( node, Lists.newArrayList( builder ), statement, cluster );
+        if ( result.size() > 1 ) {
+            log.error( "Sigle build select with multiple results " );
+        }
+        return result.get( 0 );
+    }
+
+
+    protected List<RelBuilder> buildSelect( RelNode node, List<RelBuilder> builders, Statement statement, RelOptCluster cluster ) {
+        this.handleSelectWithFilter( node, builders, statement, cluster );
+
+        if ( node instanceof LogicalTableScan && node.getTable() != null ) {
+            RelOptTableImpl table = (RelOptTableImpl) node.getTable();
+            if ( !(table.getTable() instanceof LogicalTable) ) {
+                throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
+            }
+
+            LogicalTable logicalTable = ((LogicalTable) table.getTable());
+            CatalogTable catalogTable;
+            //Map<Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
+            catalogTable = Catalog.getInstance().getTable( logicalTable.getTableId() );
+
+            // Check if table is even partitioned
+            if ( catalogTable.isPartitioned ) {
+
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "VALUE from Map: {} id: {}", filterMap.get( node.getId() ), node.getId() );
+                }
+
+                return handleVerticalPartitioning( node, catalogTable, statement, logicalTable , builders, cluster);
+
+            } else {
+                return handleNoneVerticalPartitioning( node, catalogTable, statement,  builders, cluster);
+            }
+
+        } else if ( node instanceof LogicalValues ) {
+            log.info( "handleValues" );
+            return Lists.newArrayList( handleValues( (LogicalValues) node, builders ) );
+        } else {
+            log.info( "handleGeneric" );
+            return Lists.newArrayList( handleGeneric( node, builders ) );
+        }
+    }
+
+
+    protected List<RelBuilder> handleNoneVerticalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, List<RelBuilder> builders, RelOptCluster cluster ) {
+        log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
+        val placements = selectPlacement( node, catalogTable, statement );
+        // val accessedPartitionList = catalogTable.partitionProperty.partitionIds;
+        // TODO: add to monitoring?
+
+        /*val firstBuilder = !builders.isEmpty() ? builders.get( 0 ) : null;
+        if(firstBuilder != null && firstBuilder.stackSize() == 0 && builders.size() > 1){
+            builders.clear();
+        }*/
+
+        val newBuilders = new ArrayList<RelBuilder>();
+        val currentBuilder = ImmutableList.copyOf( builders );
+        for ( val placementCombination : placements ) {
+
+            val currentPlacementDistribution = new HashMap<Long, List<CatalogColumnPlacement>>();
+            currentPlacementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ), placementCombination );
+
+
+            for(val builder :  currentBuilder ){
+                val newBuilder = RelBuilder.create( statement, cluster );
+
+                for(int i = 0; i < builder.stackSize(); i++){
+                    newBuilder.push( builder.peek(i) );
+                }
+
+                newBuilder.push( buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) );
+
+                newBuilders.add( newBuilder );
+            }
+
+        }
+
+        builders.clear();
+        builders.addAll( newBuilders );
+
+        //builders = newBuilders;
+        return builders;
+
+        // we can add more builders / plans anymore
+        // if stackSize > 0 we cannot add new builders.
+        /*if(builders.get( 0 ).stackSize() == 0 && placements.size() > 1){
+            builders.clear();
+            for ( val placementCombination : placements ) {
+
+                val currentPlacementDistribution = new HashMap<Long, List<CatalogColumnPlacement>>();
+                currentPlacementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ), placementCombination );
+
+                val builder = RelBuilder.create( statement, cluster );
+                builder.push( buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) );
+                builders.add( builder );
+
+            }
+
+
+            return builders;
+
+        }
+
+        for ( val placementCombination : placements ) {
+            val currentPlacementDistribution = new HashMap<Long, List<CatalogColumnPlacement>>();
+            currentPlacementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ), placementCombination );
+
+            builders.forEach( builder ->
+                    builder.push( buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) )
+            );
+
+        }
+
+        return builders;*/
+    }
+
+
+    protected void handleSelectWithFilter( RelNode node, List<RelBuilder> builders, Statement statement, RelOptCluster cluster ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
             // Check if partition used in general to reduce overhead if not for un-partitioned
             if ( node instanceof LogicalFilter && ((LogicalFilter) node).getInput().getTable() != null ) {
@@ -234,80 +342,12 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    protected RelBuilder buildSelect( RelNode node, RelBuilder builder, Statement statement, RelOptCluster cluster ) {
-        val result = this.buildSelect( node, Lists.newArrayList( builder ), statement, cluster );
-        if ( result.size() > 1 ) {
-            log.error( "Sigle build select with multiple results " );
-        }
-        return result.get( 0 );
-    }
-
-
-    protected List<RelBuilder> buildSelect( RelNode node, List<RelBuilder> builders, Statement statement, RelOptCluster cluster ) {
-        this.prepareBuildSelect( node, builders, statement, cluster );
-
-        if ( node instanceof LogicalTableScan && node.getTable() != null ) {
-            RelOptTableImpl table = (RelOptTableImpl) node.getTable();
-            if ( !(table.getTable() instanceof LogicalTable) ) {
-                throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
-            }
-
-            LogicalTable t = ((LogicalTable) table.getTable());
-            CatalogTable catalogTable;
-            //Map<Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
-            catalogTable = Catalog.getInstance().getTable( t.getTableId() );
-
-            // Check if table is even partitioned
-            if ( catalogTable.isPartitioned ) {
-
-                if ( log.isDebugEnabled() ) {
-                    log.debug( "VALUE from Map: {} id: {}", filterMap.get( node.getId() ), node.getId() );
-                }
-                val placementDistribution = handlePartitioning( node, catalogTable, statement, t );
-                builders.stream().map( builder -> builder.push( buildJoinedTableScan( statement, cluster, placementDistribution ) ) ).collect( Collectors.toList() );
-
-                return builders;
-
-            } else {
-                log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
-                val placements = selectPlacement( node, catalogTable, statement );
-                val accessedPartitionList = catalogTable.partitionProperty.partitionIds;
-                // TODO: add to monitoring?
-
-                //placementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ), placements.iterator().next() );
-                //return Lists.newArrayList( builder.push( buildJoinedTableScan( statement, cluster, placementDistribution ) ) );
-
-                builders.clear();
-                for ( val placementCombination : placements ) {
-
-                    val currentPlacementDistribution = new HashMap<Long, List<CatalogColumnPlacement>>();
-                    currentPlacementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ), placementCombination );
-
-                    val builder = RelBuilder.create( statement, cluster );
-                    builder.push( buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) );
-
-                    builders.add( builder );
-                }
-                log.info( "return builders" );
-                return builders;
-            }
-
-        } else if ( node instanceof LogicalValues ) {
-            log.info( "handleValues" );
-            return Lists.newArrayList( handleValues( (LogicalValues) node, builders ) );
-        } else {
-            log.info( "handleGeneric" );
-            return Lists.newArrayList( handleGeneric( node, builders ) );
-        }
-    }
-
-
-    private Map<Long, List<CatalogColumnPlacement>> handlePartitioning( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable ) {
+    protected List<RelBuilder> handleVerticalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RelBuilder> builders, RelOptCluster cluster ) {
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionType );
         List<String> partitionValues = filterMap.get( node.getId() );
         List<Long> accessedPartitionList;
-        Map<Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
+        Map<Long, List<CatalogColumnPlacement>> placementDistribution;
 
         if ( partitionValues != null ) {
             if ( log.isDebugEnabled() ) {
@@ -339,11 +379,12 @@ public abstract class AbstractRouter implements Router {
         }
 
         // return partitioned selection:
+        // TODO: do it in a later step
         if ( statement.getTransaction().getMonitoringEvent() != null ) {
             ((StatementEvent) statement.getTransaction().getMonitoringEvent()).setAccessedPartitions( accessedPartitionList );
         }
 
-        return placementDistribution;
+        return builders.stream().map( builder -> builder.push( buildJoinedTableScan( statement, cluster, placementDistribution ) ) ).collect( Collectors.toList() );
     }
 
 
@@ -1248,13 +1289,13 @@ public abstract class AbstractRouter implements Router {
         if ( node.getInputs().size() == 1 ) {
             log.info( "node input size = 1" );
 
-            builders.stream().forEach(
+            builders.forEach(
                     builder -> builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 0 ) ) ) )
             );
         } else if ( node.getInputs().size() == 2 ) { // Joins, SetOperations
             log.info( "node input size = 2" );
-            builders.stream().forEach(
-                    builder -> builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 1 ), builder.peek( 0 ) ) ) )
+            builders.forEach(
+                        builder -> builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 1 ), builder.peek( 0 ) ) ) )
             );
         } else {
             throw new RuntimeException( "Unexpected number of input elements: " + node.getInputs().size() );

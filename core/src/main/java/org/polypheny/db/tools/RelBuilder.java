@@ -233,6 +233,10 @@ public class RelBuilder {
     }
 
 
+    public int stackSize(){
+        return this.stack.size();
+    }
+
     /**
      * Creates a RelBuilder.
      */
