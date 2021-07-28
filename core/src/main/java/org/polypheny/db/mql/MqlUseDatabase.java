@@ -38,14 +38,14 @@ public class MqlUseDatabase extends MqlNode implements MqlExecutableStatement {
 
 
     @Override
-    public void execute( Context context, Statement statement ) {
+    public void execute( Context context, Statement statement, String database ) {
         Catalog catalog = Catalog.getInstance();
 
         int userId = catalog.getUser( Catalog.defaultUser ).id;
 
         try {
-            DdlManager.getInstance().createSchema( database, Catalog.defaultDatabaseId, SchemaType.DOCUMENT, Catalog.defaultUser, true, false );
-            long schemaId = catalog.getSchema( Catalog.defaultDatabaseId, database ).id;
+            DdlManager.getInstance().createSchema( this.database, Catalog.defaultDatabaseId, SchemaType.DOCUMENT, Catalog.defaultUser, true, false );
+            long schemaId = catalog.getSchema( Catalog.defaultDatabaseId, this.database ).id;
             catalog.setUserSchema( userId, schemaId );
         } catch ( UnknownSchemaException | SchemaAlreadyExistsException e ) {
             throw new RuntimeException( "The schema creation failed" );

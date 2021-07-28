@@ -1487,7 +1487,7 @@ public class DdlManagerImpl extends DdlManager {
 
                 // add _id column if necessary
                 if ( !names.contains( "_data" ) ) {
-                    ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.VARCHAR, PolyType.VARCHAR, 1024, null, null, null, false );
+                    ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.JSON, PolyType.JSON, 1024, null, null, null, false );
                     columns.add( new ColumnInformation( "_data", typeInformation, Collation.CASE_INSENSITIVE, null, 1 ) );
                 }
             }

@@ -28,7 +28,7 @@ import org.polypheny.db.transaction.Statement;
 public class MqlDropDatabase extends MqlNode implements MqlExecutableStatement {
 
     @Override
-    public void execute( Context context, Statement statement ) {
+    public void execute( Context context, Statement statement, String database ) {
         Catalog catalog = Catalog.getInstance();
         CatalogSchema schema = catalog.getUser( context.getCurrentUserId() ).getDefaultSchema();
 

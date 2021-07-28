@@ -234,6 +234,10 @@ public class MqlToRelConverter {
     public RelRoot convert( MqlCollectionStatement query, boolean b, boolean b1 ) {
         Mql.Type kind = query.getKind();
         RelOptTable table = getTable( query, defaultDatabase );
+        if ( table == null ) {
+            throw new RuntimeException( "The used document database ( Polypheny Schema ) does not exist." );
+        }
+
         RelNode node = LogicalTableScan.create( cluster, table );
         this.builder = new RexBuilder( cluster.getTypeFactory() );
 

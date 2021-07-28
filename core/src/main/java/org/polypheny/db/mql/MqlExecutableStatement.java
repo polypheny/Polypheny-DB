@@ -21,6 +21,6 @@ import org.polypheny.db.transaction.Statement;
 
 public interface MqlExecutableStatement {
 
-    void execute( Context context, Statement statement );
+    void execute( Context context, Statement statement, String database );
 
 }
