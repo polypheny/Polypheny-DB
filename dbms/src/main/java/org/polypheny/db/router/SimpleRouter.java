@@ -63,7 +63,7 @@ public class SimpleRouter extends AbstractRouter {
 
     // Execute the table scan on the first placement of a table
     @Override
-    protected Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable table ) {
+    protected Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable table, Statement statement ) {
         // Find the adapter with the most column placements
         int adapterIdWithMostPlacements = -1;
         int numOfPlacements = 0;

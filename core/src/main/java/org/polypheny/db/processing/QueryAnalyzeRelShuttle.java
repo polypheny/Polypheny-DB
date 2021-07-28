@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.router;
+package org.polypheny.db.processing;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.val;
 import org.polypheny.db.prepare.RelOptTableImpl;
@@ -42,6 +45,14 @@ public class QueryAnalyzeRelShuttle extends RelShuttleImpl {
 
     @Getter
     protected final LinkedHashMap<Long, String> availableColumns = new LinkedHashMap<>(); // column id -> schemaName.tableName.ColumnName
+    protected final HashMap<Long, Long> availableColumnsWithTable = new HashMap<>(); // columnId -> tableId
+
+    public List<Long> getUsedColumnsPerTable(Long tableId) {
+        return availableColumnsWithTable.entrySet().stream()
+                .filter( x -> x.getValue().equals( tableId ) )
+                .map( x -> x.getKey() )
+                .collect( Collectors.toList() );
+    }
 
     public Map<Long, String> getUsedColumns() {
 
@@ -70,14 +81,16 @@ public class QueryAnalyzeRelShuttle extends RelShuttleImpl {
     @Override
     public RelNode visit( TableScan scan ) {
         // get available columns for every table scan
-        LogicalTable table = (LogicalTable) ((RelOptTableImpl) scan.getTable()).getTable();
-        if ( table != null ) {
-            val ids = table.getColumnIds();
-            val names = table.getLogicalColumnNames();
-            val baseName = table.getLogicalSchemaName() + "." + table.getLogicalTableName() + ".";
+        val table = ((RelOptTableImpl) scan.getTable()).getTable();
+        LogicalTable logicalTable = ( table instanceof LogicalTable ) ? (LogicalTable) table : null;
+        if ( logicalTable != null ) {
+            val ids = logicalTable.getColumnIds();
+            val names = logicalTable.getLogicalColumnNames();
+            val baseName = logicalTable.getLogicalSchemaName() + "." + logicalTable.getLogicalTableName() + ".";
 
             for ( int i = 0; i < ids.size(); i++ ) {
                 this.availableColumns.putIfAbsent( ids.get( i ), baseName + names.get( i ) );
+                this.availableColumnsWithTable.putIfAbsent( ids.get( i ), logicalTable.getTableId() );
             }
         }
 

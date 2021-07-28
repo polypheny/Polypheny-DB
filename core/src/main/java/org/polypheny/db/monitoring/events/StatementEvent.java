@@ -22,6 +22,7 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.processing.QueryAnalyzeRelShuttle;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.transaction.Statement;
 
@@ -45,6 +46,7 @@ public abstract class StatementEvent extends BaseEvent {
     protected boolean isSubQuery;
     protected String durations;
     protected List<Long> accessedPartitions;
+    protected QueryAnalyzeRelShuttle analyzeRelShuttle;
 
 
     @Override

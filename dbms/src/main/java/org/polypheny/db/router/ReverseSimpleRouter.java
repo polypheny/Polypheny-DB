@@ -76,7 +76,7 @@ public class ReverseSimpleRouter extends AbstractRouter {
 
 
     @Override
-    protected Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable catalogTable ) {
+    protected Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable catalogTable , Statement statement) {
         // Find the adapter with the fewest column placements
         int adapterWithFewestPlacements = -1;
         int numOfPlacements = Integer.MAX_VALUE;

@@ -249,7 +249,7 @@ public class IcarusRouter extends AbstractRouter {
     // therefore assumes that there is either no placement of a table on a adapter or a full placement.
     //
     @Override
-    protected Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable table ) {
+    protected Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable table, Statement statement ) {
         // Update known adapters
         updateKnownAdapters( table.placementsByAdapter.keySet() );
 

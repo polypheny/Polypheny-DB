@@ -165,7 +165,7 @@ public abstract class AbstractRouter implements Router {
     protected abstract void wrapUp( Statement statement, RelNode routed );
 
     // Select the placement on which a table scan should be executed
-    protected abstract Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable catalogTable );
+    protected abstract Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable catalogTable, Statement statement);
 
 
     protected List<RelBuilder> buildDql( RelNode node, Statement statement, RelOptCluster cluster ) {
@@ -270,7 +270,7 @@ public abstract class AbstractRouter implements Router {
 
             } else {
                 log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
-                val placements = selectPlacement( node, catalogTable );
+                val placements = selectPlacement( node, catalogTable, statement );
                 val accessedPartitionList = catalogTable.partitionProperty.partitionIds;
                 // TODO: add to monitoring?
 

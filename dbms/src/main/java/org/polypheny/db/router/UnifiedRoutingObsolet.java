@@ -61,6 +61,7 @@ import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.prepare.RelOptTableImpl;
+import org.polypheny.db.processing.QueryAnalyzeRelShuttle;
 import org.polypheny.db.processing.QueryParameterizer;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
@@ -544,11 +545,11 @@ public class UnifiedRoutingObsolet extends AbstractRouter {
     }
 
     @Override
-    protected Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable table ){
+    protected Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable table, Statement statement ){
         log.info( "Enter base select Placements" );
         if(this.useSimpleRouter){
             log.info( "Use simple router" );
-            return simpleRouter.selectPlacement( node, table );
+            return simpleRouter.selectPlacement( node, table, statement );
         }
 
         if( !this.basePlacementInitialized ){
@@ -987,7 +988,6 @@ public class UnifiedRoutingObsolet extends AbstractRouter {
             // init all routing entries with 0
             for ( val mapEntry : map.keySet() ) {
                 result.put(mapEntry, 0);
-
             }
 
             // calc 100%

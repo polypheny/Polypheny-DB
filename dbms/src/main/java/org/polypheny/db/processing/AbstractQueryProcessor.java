@@ -101,7 +101,6 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
-import org.polypheny.db.router.QueryAnalyzeRelShuttle;
 import org.polypheny.db.router.QueryProcessorHelpers;
 import org.polypheny.db.router.RelDeepCopyShuttle;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
@@ -492,6 +491,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         // TODO: adjust shuttle, create queryId
         val shuttle = new QueryAnalyzeRelShuttle( statement );
         logicalRoot.rel.accept( shuttle );
+
         this.prepareMonitoring( shuttle, statement, logicalRoot );
     }
 
@@ -504,6 +504,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
         }
 
+        StatementEvent event = (StatementEvent)statement.getTransaction().getMonitoringEvent();
+        event.setAnalyzeRelShuttle( shuttle );
     }
 
 
