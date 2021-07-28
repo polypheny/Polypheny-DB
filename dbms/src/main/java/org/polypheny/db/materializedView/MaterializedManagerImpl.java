@@ -191,9 +191,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
             }
         }
 
-        RelCollation relCollation = catalogMaterialized.getRelCollation();
-
-        updateData( transaction, dataStores, columns, RelRoot.of( catalogMaterialized.getDefinition(), SqlKind.SELECT ), relCollation, catalogMaterialized );
+        updateData( transaction, dataStores, columns, catalogMaterialized );
 
 
     }
@@ -220,8 +218,6 @@ public class MaterializedManagerImpl extends MaterializedManager {
         }
 
         String databaseName = catalog.getDatabase( catalogMaterialized.databaseId ).name;
-        RelCollation relCollation = catalogMaterialized.getRelCollation();
-
         Transaction transaction;
 
         try {
@@ -233,7 +229,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
             } catch ( DeadlockException e ) {
                 throw new RuntimeException( e );
             }
-            updateData( transaction, dataStores, columns, RelRoot.of( catalogMaterialized.getDefinition(), SqlKind.SELECT ), relCollation, catalogMaterialized );
+            updateData( transaction, dataStores, columns, catalogMaterialized );
             commitTransaction( transaction );
 
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
@@ -296,7 +292,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
     }
 
 
-    public void updateData( Transaction transaction, List<DataStore> stores, Map<Integer, List<CatalogColumn>> columns, RelRoot sourceRel, RelCollation relCollation, CatalogMaterialized view ) {
+    public void updateData( Transaction transaction, List<DataStore> stores, Map<Integer, List<CatalogColumn>> columns, CatalogMaterialized view ) {
         Statement sourceStatement = transaction.createStatement();
         Statement deleteStatement = transaction.createStatement();
         List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
@@ -306,12 +302,6 @@ public class MaterializedManagerImpl extends MaterializedManager {
         for ( DataStore store : stores ) {
             ids.add( store.getAdapterId() );
         }
-
-        RelOptCluster cluster = RelOptCluster.create(
-                sourceStatement.getQueryProcessor().getPlanner(),
-                new RexBuilder( sourceStatement.getTransaction().getTypeFactory() ) );
-
-        prepareNode( sourceRel.rel, cluster, relCollation );
 
         RelRoot targetRel;
 
@@ -327,12 +317,32 @@ public class MaterializedManagerImpl extends MaterializedManager {
             targetRel = dataMigrator.buildDeleteStatement( targetStatement, columnPlacements );
             dataMigrator.executeQuery( columns.get( id ), RelRoot.of( relNode, SqlKind.SELECT ), deleteStatement, targetStatement, targetRel, true );
 
+            RelRoot sourceRel = getSourceRel( view, sourceStatement, dataMigrator );
+
             //insert new data
             targetRel = dataMigrator.buildInsertStatement( targetStatement, columnPlacements );
-            dataMigrator.executeQuery( columns.get( id ), sourceRel, sourceStatement, targetStatement, targetRel, true );
+            dataMigrator.executeQuery( columns.get( id ), sourceRel, sourceStatement, targetStatement, targetRel, false );
 
         }
 
+    }
+
+
+    private RelRoot getSourceRel( CatalogMaterialized view, Statement sourceStatement, DataMigrator dataMigrator ) {
+        List<CatalogColumnPlacement> catalogColumns = new ArrayList<>();
+        for ( Long tableId : view.getUnderlyingTables().keySet() ) {
+            Catalog catalog = Catalog.getInstance();
+            CatalogTable catalogTable = catalog.getTable( tableId );
+            for ( int colId : catalogTable.placementsByAdapter.keySet() ) {
+
+                if ( catalogTable.placementsByAdapter.containsKey( colId ) ) {
+                    catalogTable.placementsByAdapter.get( colId ).forEach( col ->
+                            catalogColumns.add( catalog.getColumnPlacement( AdapterManager.getInstance().getStore( colId ).getAdapterId(), col ) )
+                    );
+                }
+            }
+        }
+        return dataMigrator.getSourceIterator( sourceStatement, catalogColumns );
     }
 
 

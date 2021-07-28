@@ -137,6 +137,7 @@ public class DataMigratorImpl implements DataMigrator {
                         values.get( entry.getKey() ).add( list.get( entry.getValue() ) );
                     }
                 }
+
                 for ( Map.Entry<Long, List<Object>> v : values.entrySet() ) {
                     targetStatement.getDataContext().addParameterValues( v.getKey(), null, v.getValue() );
                 }
@@ -306,7 +307,8 @@ public class DataMigratorImpl implements DataMigrator {
     }
 
 
-    private RelRoot getSourceIterator( Statement statement, List<CatalogColumnPlacement> placements ) {
+    @Override
+    public RelRoot getSourceIterator( Statement statement, List<CatalogColumnPlacement> placements ) {
         // Get map of placements by adapter
         Map<String, List<CatalogColumnPlacement>> placementsByAdapter = new HashMap<>();
         for ( CatalogColumnPlacement p : placements ) {

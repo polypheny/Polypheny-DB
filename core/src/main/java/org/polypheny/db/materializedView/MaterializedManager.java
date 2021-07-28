@@ -27,6 +27,8 @@ import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.RelShuttleImpl;
+import org.polypheny.db.rel.core.TableModify;
+import org.polypheny.db.rel.core.TableModify.Operation;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.transaction.PolyXid;
@@ -73,20 +75,24 @@ public abstract class MaterializedManager {
 
         @Override
         public RelNode visit( RelNode other ) {
-            if ( other instanceof LogicalTableModify ) {
-                if ( (((RelOptTableImpl) other.getTable()).getTable() instanceof LogicalTable) ) {
-                    List<String> qualifiedName = other.getTable().getQualifiedName();
-                    if ( qualifiedName.size() < 2 ) {
-                        names.add( ((LogicalTable) ((RelOptTableImpl) other.getTable()).getTable()).getLogicalSchemaName() );
-                        names.add( ((LogicalTable) ((RelOptTableImpl) other.getTable()).getTable()).getLogicalTableName() );
-                    } else {
-                        names.addAll( qualifiedName );
-                    }
 
+            if ( other instanceof LogicalTableModify ) {
+                if ( ((TableModify) other).getOperation() != Operation.MERGE ) {
+                    if ( (((RelOptTableImpl) other.getTable()).getTable() instanceof LogicalTable) ) {
+                        List<String> qualifiedName = other.getTable().getQualifiedName();
+                        if ( qualifiedName.size() < 2 ) {
+                            names.add( ((LogicalTable) ((RelOptTableImpl) other.getTable()).getTable()).getLogicalSchemaName() );
+                            names.add( ((LogicalTable) ((RelOptTableImpl) other.getTable()).getTable()).getLogicalTableName() );
+                        } else {
+                            names.addAll( qualifiedName );
+                        }
+
+                    }
                 }
 
             }
             return super.visit( other );
+
         }
 
     }

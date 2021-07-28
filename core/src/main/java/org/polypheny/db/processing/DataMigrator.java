@@ -34,4 +34,7 @@ public interface DataMigrator {
     void executeQuery( List<CatalogColumn> columns, RelRoot sourceRel, Statement sourceStatement, Statement targetStatement, RelRoot targetRel, boolean isMaterializedView );
 
     RelRoot buildDeleteStatement( Statement statement, List<CatalogColumnPlacement> to );
+
+    RelRoot getSourceIterator( Statement statement, List<CatalogColumnPlacement> placements );
+
 }

@@ -34,7 +34,6 @@ import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.excluded.HsqldbExcluded;
 import org.polypheny.db.excluded.MonetdbExcluded;
-import org.polypheny.db.excluded.PostgresqlExcluded;
 
 
 @SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
@@ -247,14 +246,14 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Category({ FileExcluded.class, CassandraExcluded.class, PostgresqlExcluded.class })
+    @Category({ FileExcluded.class, CassandraExcluded.class })
     public void arrayTypesMaterializedTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( ARRAYTEST_SQL );
                 statement.executeUpdate( ARRAYTEST_DATA_SQL );
-                statement.executeUpdate( "CREATE MATERIALIZED VIEW arrayTypesMaterializedTest AS SELECT * FROM arraytest FRESHNESS INTERVAL 100 \"milliseconds\"" );
+                statement.executeUpdate( "CREATE MATERIALIZED VIEW arrayTypesMaterializedTest AS SELECT * FROM arraytest FRESHNESS MANUAL" );
                 try {
 
                     TestHelper.checkResultSet(
