@@ -16,6 +16,9 @@
 
 package org.polypheny.cql.parser;
 
+import org.polypheny.db.sql.SqlBinaryOperator;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+
 public enum ComparatorSymbol {
     SERVER_CHOICE,
     EQUALS,
@@ -23,5 +26,24 @@ public enum ComparatorSymbol {
     GREATER_THAN,
     LESS_THAN,
     GREATER_THAN_OR_EQUALS,
-    LESS_THAN_OR_EQUALS
+    LESS_THAN_OR_EQUALS;
+
+
+    public SqlBinaryOperator toSqlStdOperatorTable( SqlBinaryOperator fallback ) {
+        if ( this == SERVER_CHOICE ) {
+            return fallback;
+        } else if ( this == EQUALS ) {
+            return SqlStdOperatorTable.EQUALS;
+        } else if ( this == NOT_EQUALS ) {
+            return SqlStdOperatorTable.NOT_EQUALS;
+        } else if ( this == GREATER_THAN ) {
+            return SqlStdOperatorTable.GREATER_THAN;
+        } else if ( this == LESS_THAN ) {
+            return SqlStdOperatorTable.LESS_THAN;
+        } else if ( this == GREATER_THAN_OR_EQUALS ) {
+            return SqlStdOperatorTable.GREATER_THAN_OR_EQUAL;
+        } else {
+            return SqlStdOperatorTable.LESS_THAN_OR_EQUAL;
+        }
+    }
 }
