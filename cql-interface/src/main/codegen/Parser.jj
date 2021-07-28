@@ -74,17 +74,19 @@ CqlQuery parse() :
         }
     }
 
-    (
-        LOOKAHEAD( 3 )
-        tableOperations = SEARCH_TERM_QUERY( indexMapping )
-    |
-        LOOKAHEAD( 2 )
         filters = CQL_QUERY( indexMapping )
-    |
-        tableOperations = SEARCH_TERM_QUERY( indexMapping )
-        < BOOLEAN_AND >
-        filters = CQL_QUERY( indexMapping )
-    )
+
+//    (
+//        LOOKAHEAD( 3 )
+//        tableOperations = SEARCH_TERM_QUERY( indexMapping )
+//    |
+//        LOOKAHEAD( 2 )
+//        filters = CQL_QUERY( indexMapping )
+//    |
+//        tableOperations = SEARCH_TERM_QUERY( indexMapping )
+//        < BOOLEAN_AND >
+//        filters = CQL_QUERY( indexMapping )
+//    )
     [
         < SORT_BY >
         sortSpecs = SORT_SPECIFICATION_LIST( indexMapping )
@@ -138,7 +140,11 @@ QueryNode SEARCH_TERM_QUERY( HashMap<String, Index> indexMapping ) :
             }
             try {
                 Index index = Index.createIndex( identifier.image, databaseName );
-                indexMapping.put( identifier.image, index );
+                if ( index.isTableIndex() ) {
+                    indexMapping.put( identifier.image, index );
+                } else {
+                    throw new ParseException( "Index of Table type used where index of Column type was expected: " + identifier.image );
+                }
             } catch ( UnexpectedIndexFormatException e ) {
                 throw new ParseException( e.getMessage() );
             } catch ( UnknownIndexException e ) {
@@ -198,7 +204,13 @@ QueryNode SEARCH_CLAUSE( HashMap<String, Index> indexMapping ) :
                 Index index;
                 if ( !indexMapping.containsKey( indexStr ) ) {
                     index = Index.createIndex( indexStr, databaseName );
-                    indexMapping.put( indexStr, index );
+                    if ( index.isColumnIndex() ) {
+                        indexMapping.put( indexStr, index );
+                    } else {
+                        throw new ParseException( "Index of Table type used where index of Column type was expected: " + indexStr );
+                    }
+                    index = Index.createIndex( index.schemaName + "." + index.tableName, databaseName );
+                    indexMapping.put( index.fullyQualifiedName, index );
                 }
             } catch( UnexpectedIndexFormatException e ) {
                 throw new ParseException( e.getMessage() );
@@ -214,6 +226,8 @@ QueryNode SEARCH_CLAUSE( HashMap<String, Index> indexMapping ) :
                     if ( index.isColumnIndex() ) {
                         searchClause = SearchClause.createColumnFilterSearchClause( indexStr, relation, possibleIndexStr );
                         indexMapping.put( possibleIndexStr, index );
+                        index = Index.createIndex( index.schemaName + "." + index.tableName, databaseName );
+                        indexMapping.put( index.fullyQualifiedName, index );
                     }
                 }
             } catch( UnexpectedIndexFormatException e) {
