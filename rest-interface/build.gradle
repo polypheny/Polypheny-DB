@@ -5,6 +5,7 @@ version = versionMajor + "." + versionMinor + versionQualifier
 
 dependencies {
     implementation project(":core")
+    implementation project(":cql-interface")
     implementation group: "com.sparkjava", name: "spark-core", version: spark_core_version
     implementation group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version
     implementation group: 'commons-codec', name: 'commons-codec', version: commons_codec_version

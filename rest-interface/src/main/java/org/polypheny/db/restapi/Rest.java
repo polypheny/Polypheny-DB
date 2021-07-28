@@ -27,6 +27,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.cql.cql2rel.Cql2RelConverter;
+import org.polypheny.cql.cql2rel.CqlResource;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -139,6 +141,20 @@ public class Rest {
         log.debug( "RelRoot was built." );
 
         return executeAndTransformRelAlg( root, statement, res );
+    }
+
+
+    String processCqlResource( final CqlResource cqlResource, final Request req, final Response res ) {
+        log.debug( "Starting to process CQL resource request. Session ID: {}.", req.session().id() );
+        Transaction transaction = getTransaction();
+        Statement statement = transaction.createStatement();
+        RelBuilder relBuilder = RelBuilder.create( statement );
+        JavaTypeFactory typeFactory = transaction.getTypeFactory();
+        RexBuilder rexBuilder = new RexBuilder( typeFactory );
+
+        RelRoot relRoot = Cql2RelConverter.convert2Rel( cqlResource, relBuilder, rexBuilder );
+
+        return executeAndTransformRelAlg( relRoot, statement, res );
     }
 
 

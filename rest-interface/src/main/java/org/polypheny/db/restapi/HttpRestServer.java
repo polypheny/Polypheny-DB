@@ -37,6 +37,10 @@ import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.http.Part;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.cql.cql2rel.CqlResource;
+import org.polypheny.cql.parser.CqlQuery;
+import org.polypheny.cql.parser.ParseException;
+import org.polypheny.cql.parser.Parser;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
@@ -79,6 +83,7 @@ public class HttpRestServer extends QueryInterface {
     private final RequestParser requestParser;
     private final int port;
     private final String uniqueName;
+    private final String databaseName = "APP";
 
     // Counter
     private final AtomicLong deleteCounter = new AtomicLong();
@@ -110,7 +115,7 @@ public class HttpRestServer extends QueryInterface {
         restServer = Service.ignite();
         restServer.port( port );
 
-        Rest rest = new Rest( transactionManager, "pa", "APP" );
+        Rest rest = new Rest( transactionManager, "pa", databaseName );
         restRoutes( restServer, rest );
 
         log.info( "{} started and is listening on port {}.", INTERFACE_NAME, port );
@@ -132,7 +137,26 @@ public class HttpRestServer extends QueryInterface {
             restServer.delete( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.DELETE, q, a, q.params( ":resName" ) ) );
             restServer.patch( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.PATCH, q, a, q.params( ":resName" ) ) );
             restServer.post( "/multipart", "multipart/form-data", ( q, a ) -> this.processMultipart( rest, RequestType.POST, q, a ), gson::toJson );
+            restServer.get( "/cql", ( q, a ) -> this.processCQLRequest( rest, RequestType.GET, q, a ) );
         } );
+    }
+
+
+    String processCQLRequest( Rest rest, RequestType type, Request request, Response response ) {
+        try {
+            String cqlQueryStr = request.body();
+            Parser cqlParser = new Parser( cqlQueryStr, databaseName );
+
+            CqlQuery cqlQuery = cqlParser.parse();
+            CqlResource cqlResource = CqlResource.createCqlResource( cqlQuery );
+
+            return rest.processCqlResource( cqlResource, request, response );
+        } catch ( ParseException e ) {
+            e.printStackTrace();
+        }
+
+        log.error( "processCQLRequest should never reach this point in the code!" );
+        throw new RuntimeException( "processCQLRequest should never reach this point in the code!" );
     }
 
 
