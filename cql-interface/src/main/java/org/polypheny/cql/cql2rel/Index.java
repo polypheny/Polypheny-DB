@@ -33,8 +33,8 @@ public class Index {
     public final String tableName;
     public final String columnName;
     public final String fullyQualifiedName;
-    private final CatalogTable catalogTable;
 
+    private final CatalogTable catalogTable;
     private final CatalogColumn catalogColumn;
     private final boolean columnIndex;
 
