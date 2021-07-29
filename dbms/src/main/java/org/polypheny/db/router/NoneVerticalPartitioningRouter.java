@@ -32,6 +32,7 @@ public abstract class NoneVerticalPartitioningRouter extends AbstractDqlRouter {
 
     @Override
     protected List<RelBuilder> handleVerticalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RelBuilder> builders, RelOptCluster cluster ) {
+        this.cancelQuery = true;
         return Collections.emptyList();
     }
 

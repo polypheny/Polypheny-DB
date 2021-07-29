@@ -16,11 +16,13 @@
 
 package org.polypheny.db.router;
 
+import com.google.common.collect.Lists;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.ConditionalExecute;
@@ -53,7 +55,8 @@ public abstract class AbstractDqlRouter extends AbstractRouter {
         }
         log.info( "Start build DQL" + this.getClass().toString());
         // TODO: get many version
-        List<RelBuilder> builders = buildDql( logicalRoot.rel, statement, logicalRoot.rel.getCluster() );
+        val builder = RelBuilder.create( statement, logicalRoot.rel.getCluster() );
+        List<RelBuilder> builders = buildDql( logicalRoot.rel, Lists.newArrayList(builder), statement, logicalRoot.rel.getCluster() );
         List<RelNode> routed = builders.stream().map( RelBuilder::build ).collect( Collectors.toList() );
         log.info( "End DQL" );
 

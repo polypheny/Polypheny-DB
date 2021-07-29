@@ -22,6 +22,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
@@ -103,12 +104,14 @@ public abstract class AbstractRouter implements Router {
     protected InformationPage page = null;
     // For reporting purposes
     protected Map<Long, SelectedAdapterInfo> selectedAdapter;
+    protected boolean cancelQuery = false;
 
 
     @Override
     public List<RelRoot> route( RelRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
         this.executionTimeMonitor = executionTimeMonitor;
         this.selectedAdapter = new HashMap<>();
+        this.cancelQuery = false;
 
         log.info( "Start Routing" );
 
@@ -128,7 +131,8 @@ public abstract class AbstractRouter implements Router {
         } else {
             log.info( "Start build DQL" );
             // TODO: get many version
-            List<RelBuilder> builders = buildDql( logicalRoot.rel, statement, logicalRoot.rel.getCluster() );
+            val builder = RelBuilder.create( statement, logicalRoot.rel.getCluster() );
+            List<RelBuilder> builders = buildDql( logicalRoot.rel, Lists.newArrayList(builder), statement, logicalRoot.rel.getCluster() );
             routed = builders.stream().map( RelBuilder::build ).collect( Collectors.toList() );
             log.info( "End DQL" );
         }
@@ -157,13 +161,6 @@ public abstract class AbstractRouter implements Router {
     protected abstract Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable catalogTable, Statement statement);
 
 
-    protected List<RelBuilder> buildDql( RelNode node, Statement statement, RelOptCluster cluster ) {
-        val builder = RelBuilder.create( statement, cluster );
-        log.info( "builder created" );
-        return buildDql( node, Lists.newArrayList( builder ), statement, cluster );
-    }
-
-
     protected List<RelBuilder> buildDql( RelNode node, List<RelBuilder> builders, Statement statement, RelOptCluster cluster ) {
         if ( node instanceof SetOp ) {
             return buildSetOp( node, builders, statement, cluster );
@@ -183,6 +180,10 @@ public abstract class AbstractRouter implements Router {
 
 
     protected List<RelBuilder> buildSelect( RelNode node, List<RelBuilder> builders, Statement statement, RelOptCluster cluster ) {
+        if(cancelQuery){
+            return Collections.emptyList();
+        }
+
         this.handleSelectWithFilter( node, builders, statement, cluster );
 
         if ( node instanceof LogicalTableScan && node.getTable() != null ) {
@@ -389,6 +390,9 @@ public abstract class AbstractRouter implements Router {
 
 
     protected List<RelBuilder> buildSetOp( RelNode node, List<RelBuilder> builders, Statement statement, RelOptCluster cluster ) {
+        if(cancelQuery){
+            return Collections.emptyList();
+        }
         builders = buildDql( node.getInput( 0 ), builders, statement, cluster );
 
         RelBuilder builder0 = RelBuilder.create( statement, cluster );
@@ -1271,6 +1275,9 @@ public abstract class AbstractRouter implements Router {
 
 
     protected List<RelBuilder> handleValues( LogicalValues node, List<RelBuilder> builders ) {
+        if(cancelQuery){
+            return Collections.emptyList();
+        }
         return builders.stream().map( builder -> builder.values( node.tuples, node.getRowType() ) ).collect( Collectors.toList() );
     }
 
@@ -1285,6 +1292,9 @@ public abstract class AbstractRouter implements Router {
 
 
     protected List<RelBuilder> handleGeneric( RelNode node, List<RelBuilder> builders ) {
+        if(cancelQuery){
+            return Collections.emptyList();
+        }
         log.info( "start handle generic" );
         if ( node.getInputs().size() == 1 ) {
             log.info( "node input size = 1" );
