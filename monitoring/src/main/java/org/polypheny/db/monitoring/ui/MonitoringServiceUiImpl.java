@@ -47,7 +47,6 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
     private InformationPage informationPage;
 
 
-    // TODO: die Abhänigkeit zur Queue ist nicht wirklich optimal, aber lassen wir vielleicht mal so stehen
     public MonitoringServiceUiImpl( @NonNull MonitoringRepository repo, @NonNull MonitoringQueue queue ) {
         this.repo = repo;
         this.queue = queue;

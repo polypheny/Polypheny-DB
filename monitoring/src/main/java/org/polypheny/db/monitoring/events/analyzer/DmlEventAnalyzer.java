@@ -27,8 +27,6 @@ import org.polypheny.db.rel.RelRoot;
 
 @Slf4j
 public class DmlEventAnalyzer {
-    // TODO: Bis jetzt sind die Klassen mehr oder weniger identisch. Ist das einfach vorbereitet für später oder wie?
-
 
     public static DmlDataPoint analyze( DmlEvent dmlEvent ) {
         DmlDataPoint metric = DmlDataPoint
