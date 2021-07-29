@@ -19,18 +19,24 @@ package org.polypheny.db.router;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
+import org.polypheny.db.config.ConfigBoolean;
+import org.polypheny.db.config.ConfigClazz;
 import org.polypheny.db.config.ConfigClazzList;
+import org.polypheny.db.config.ConfigDouble;
 import org.polypheny.db.config.ConfigInteger;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.WebUiGroup;
 import org.polypheny.db.config.WebUiPage;
-import org.polypheny.db.router.SimpleRouter.SimpleRouterFactory;
+import org.polypheny.db.router.tablePlacements.SingleTablePlacementStrategy;
+import org.polypheny.db.router.tablePlacements.TablePlacementStrategy;
 import org.polypheny.db.routing.Router;
 
 @Slf4j
@@ -41,23 +47,22 @@ public class RouterManager {
             "The minimal execution time (in milliseconds) for a query to be considered as long-running. Queries with lower execution times are considered as short-running.",
             1000 );
 
-    public static final ConfigInteger PRE_COST_POST_COST_RATIO = new ConfigInteger(
+    public static final ConfigDouble PRE_COST_POST_COST_RATIO = new ConfigDouble(
             "routing/preCostPostCostRatio",
             "The ratio between how much post cost are considered. 0 means post cost are ignored, 1 means pre cost are ignored. Value most be between 0 and 1.",
             0 );
 
+    public static final ConfigBoolean IS_LONG_ACTIVE = new ConfigBoolean(
+            "routing/distinctionBetweenShortAndLongRunning",
+            "Boolean whether to distinguish between long and short running queries. If set to false, the following configuration will not be considered.",
+            false );
+
+
     private static final RouterManager INSTANCE = new RouterManager();
-
-    private List<RouterFactory> shortRunningRouters;
-
-    private List<RouterFactory> longRunningRouters;
-
     protected final WebUiPage routingPage;
-
-
-    public static RouterManager getInstance() {
-        return INSTANCE;
-    }
+    private List<RouterFactory> shortRunningRouters;
+    private Optional<List<RouterFactory>> longRunningRouters = Optional.empty();
+    private TablePlacementStrategy tablePlacementStrategy = new SingleTablePlacementStrategy();
 
 
     public RouterManager() {
@@ -71,50 +76,125 @@ public class RouterManager {
         configManager.registerWebUiPage( routingPage );
         configManager.registerWebUiGroup( routingGroup );
 
-        // Routing overall settings
-        configManager.registerConfig( SHORT_RUNNING_LONG_RUNNING_THRESHOLD );
-        SHORT_RUNNING_LONG_RUNNING_THRESHOLD.withUi( routingGroup.getId() );
-        configManager.registerConfig( PRE_COST_POST_COST_RATIO );
-        PRE_COST_POST_COST_RATIO.withUi( routingGroup.getId() );
+        // Settings
+        final ConfigClazz tablePlacementStrategy = new ConfigClazz( "routing/tablePlacementStrategy", TablePlacementStrategy.class, SingleTablePlacementStrategy.class );
+        configManager.registerConfig( tablePlacementStrategy );
+        tablePlacementStrategy.withUi( routingGroup.getId() );
+        tablePlacementStrategy.addObserver( new ConfigListener() {
+            @Override
+            public void onConfigChange( Config c ) {
+                ConfigClazz configClazz = (ConfigClazz) c;
+                if ( tablePlacementStrategy.getClass() != configClazz.getClazz() ) {
+                    log.warn( "Change router implementation: " + configClazz.getClazz() );
+                    setTablePlacementStrategy( configClazz );
+                }
+            }
+
+
+            @Override
+            public void restart( Config c ) {
+            }
+        } );
 
         // Router settings
-        final ConfigClazzList shortRunningRouter = new ConfigClazzList( "routing/shortRunningRouter", RouterFactory.class , true);
+        final ConfigClazzList shortRunningRouter = new ConfigClazzList( "routing/routers", RouterFactory.class, true );
         configManager.registerConfig( shortRunningRouter );
-        shortRunningRouter.withUi( routingGroup.getId() );
-        shortRunningRouter.addObserver(getConfigListener(true));
+        shortRunningRouter.withUi( routingGroup.getId(), 0 );
+        shortRunningRouter.addObserver( getConfigListener( true ) );
         shortRunningRouters = getFactoryList( shortRunningRouter );
 
-        final ConfigClazzList longRunningRouter = new ConfigClazzList( "routing/longRunningRouter", RouterFactory.class , true);
-        configManager.registerConfig( longRunningRouter );
-        longRunningRouter.withUi( routingGroup.getId() );
-        longRunningRouter.addObserver(getConfigListener(false));
-        longRunningRouters = getFactoryList( longRunningRouter );
+        configManager.registerConfig( PRE_COST_POST_COST_RATIO );
+        PRE_COST_POST_COST_RATIO.withUi( routingGroup.getId(), 1 );
+
+        configManager.registerConfig( IS_LONG_ACTIVE );
+        IS_LONG_ACTIVE.withUi( routingGroup.getId(), 2 );
+        IS_LONG_ACTIVE.addObserver( getLongRunningLister( routingGroup ) );
     }
 
-    public Router getSimpleRouter() {
-        return new SimpleRouterFactory().createInstance();
+
+    public static RouterManager getInstance() {
+        return INSTANCE;
     }
 
-    public List<Router> getShortRunningRouters(){
-        return shortRunningRouters.stream().map( elem -> elem.createInstance() ).collect( Collectors.toList());
+
+    private ConfigListener getLongRunningLister( WebUiGroup routingGroup ) {
+        return new ConfigListener() {
+            @Override
+            public void onConfigChange( Config c ) {
+                ConfigBoolean bool = (ConfigBoolean) c;
+
+                final ConfigManager configManager = ConfigManager.getInstance();
+
+                if ( c.getBoolean() ) {
+                    // long running activate, make it configurable:
+                    // Routing overall settings
+                    configManager.registerConfig( SHORT_RUNNING_LONG_RUNNING_THRESHOLD );
+                    SHORT_RUNNING_LONG_RUNNING_THRESHOLD.withUi( routingGroup.getId(), 3 );
+
+                    final ConfigClazzList longRunningRouter = new ConfigClazzList( "routing/longRunningRouter", RouterFactory.class, true );
+                    configManager.registerConfig( longRunningRouter );
+                    longRunningRouter.withUi( routingGroup.getId(), 4 );
+                    longRunningRouter.addObserver( getConfigListener( false ) );
+                    longRunningRouters = Optional.of( getFactoryList( longRunningRouter ) );
+                } else {
+                    // todo: remove it again
+                    // not supported yet?
+                }
+
+
+            }
+
+
+            @Override
+            public void restart( Config c ) {
+
+            }
+        };
     }
 
-    public List<Router> getLongRunningRouters(){
-        return shortRunningRouters.stream().map( elem -> elem.createInstance() ).collect( Collectors.toList());
+
+    public TablePlacementStrategy getTablePlacementStrategy() {
+        return this.tablePlacementStrategy;
     }
 
-    private ConfigListener getConfigListener(boolean shortRunning){
+
+    private void setTablePlacementStrategy( ConfigClazz implementation ) {
+        try {
+            Constructor<?> ctor = implementation.getClazz().getConstructor();
+            TablePlacementStrategy instance = (TablePlacementStrategy) ctor.newInstance();
+            this.tablePlacementStrategy = instance;
+        } catch ( InstantiationException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e ) {
+            log.error( "Exception while changing table placement strategy", e );
+        }
+    }
+
+
+    public List<Router> getShortRunningRouters() {
+        return shortRunningRouters.stream().map( elem -> elem.createInstance() ).collect( Collectors.toList() );
+    }
+
+
+    public List<Router> getLongRunningRouters() {
+        if ( longRunningRouters.isPresent() ) {
+            return longRunningRouters.get().stream().map( elem -> elem.createInstance() ).collect( Collectors.toList() );
+        }
+        return Collections.emptyList();
+    }
+
+
+    private ConfigListener getConfigListener( boolean shortRunning ) {
         return new ConfigListener() {
             @Override
             public void onConfigChange( Config c ) {
                 ConfigClazzList configClazzList = (ConfigClazzList) c;
-                if(shortRunning){
+                if ( shortRunning ) {
                     shortRunningRouters = getFactoryList( configClazzList );
-                }else{
-                    longRunningRouters = getFactoryList( configClazzList );
+                } else {
+                    longRunningRouters = Optional.of( getFactoryList( configClazzList ) );
                 }
 
             }
+
 
             @Override
             public void restart( Config c ) {
@@ -122,9 +202,10 @@ public class RouterManager {
         };
     }
 
+
     private List<RouterFactory> getFactoryList( ConfigClazzList configList ) {
         val result = new ArrayList<RouterFactory>();
-        for(Class c : configList.getClazzList()){
+        for ( Class c : configList.getClazzList() ) {
             try {
                 Constructor<?> ctor = c.getConstructor();
                 RouterFactory instance = (RouterFactory) ctor.newInstance();

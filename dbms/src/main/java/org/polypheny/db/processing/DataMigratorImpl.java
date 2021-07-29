@@ -38,7 +38,6 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
-import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.ViewExpanders;
@@ -51,6 +50,8 @@ import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.router.AbstractRouter;
+import org.polypheny.db.router.SimpleRouter;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.sql.SqlKind;
@@ -68,20 +69,14 @@ public class DataMigratorImpl implements DataMigrator {
     @Override
     public void copyData( Transaction transaction, CatalogAdapter store, List<CatalogColumn> columns, List<Long> partitionIds ) {
 
-
-
-
         CatalogTable table = Catalog.getInstance().getTable( columns.get( 0 ).tableId );
         CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( table.primaryKey );
-
-
 
         // Check Lists
         List<CatalogColumnPlacement> targetColumnPlacements = new LinkedList<>();
         for ( CatalogColumn catalogColumn : columns ) {
-            targetColumnPlacements.add( Catalog.getInstance().getColumnPlacement( store.id, catalogColumn.id) );
+            targetColumnPlacements.add( Catalog.getInstance().getColumnPlacement( store.id, catalogColumn.id ) );
         }
-
 
         List<CatalogColumn> selectColumnList = new LinkedList<>( columns );
 
@@ -93,28 +88,26 @@ public class DataMigratorImpl implements DataMigrator {
             }
         }
 
-
         //We need a columnPlacement for every partition
-        Map <Long,List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
-        if ( table.isPartitioned) {
+        Map<Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
+        if ( table.isPartitioned ) {
             PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
             PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( table.partitionProperty.partitionType );
             placementDistribution = partitionManager.getRelevantPlacements( table, partitionIds );
-        }else {
+        } else {
             placementDistribution.put( table.partitionProperty.partitionIds.get( 0 ), selectSourcePlacements( table, selectColumnList, targetColumnPlacements.get( 0 ).adapterId ) );
         }
 
         for ( long partitionId : partitionIds ) {
 
-
             Statement sourceStatement = transaction.createStatement();
             Statement targetStatement = transaction.createStatement();
 
-            RelRoot sourceRel = getSourceIterator( sourceStatement, placementDistribution.get( partitionId ),partitionId );
+            RelRoot sourceRel = getSourceIterator( sourceStatement, placementDistribution.get( partitionId ), partitionId );
             RelRoot targetRel;
             if ( Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( store.id, table.id ).size() == columns.size() ) {
                 // There have been no placements for this table on this store before. Build insert statement
-                targetRel = buildInsertStatement( targetStatement, targetColumnPlacements, partitionId);
+                targetRel = buildInsertStatement( targetStatement, targetColumnPlacements, partitionId );
             } else {
                 // Build update statement
                 targetRel = buildUpdateStatement( targetStatement, targetColumnPlacements, partitionId );
@@ -177,7 +170,7 @@ public class DataMigratorImpl implements DataMigrator {
                         to.get( 0 ).adapterUniqueName,
                         to.get( 0 ).getLogicalSchemaName(),
                         to.get( 0 ).physicalSchemaName,
-                        partitionId),
+                        partitionId ),
                 to.get( 0 ).getLogicalTableName() );
         RelOptTable physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
         ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
@@ -218,7 +211,7 @@ public class DataMigratorImpl implements DataMigrator {
                         to.get( 0 ).adapterUniqueName,
                         to.get( 0 ).getLogicalSchemaName(),
                         to.get( 0 ).physicalSchemaName,
-                        partitionId),
+                        partitionId ),
                 to.get( 0 ).getLogicalTableName() );
         RelOptTable physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
         ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
@@ -288,7 +281,7 @@ public class DataMigratorImpl implements DataMigrator {
             placementsByAdapter.putIfAbsent( p.getAdapterUniqueName(), new LinkedList<>() );
             placementsByAdapter.get( p.getAdapterUniqueName() ).add( p );
 
-            if ( tableId == -1){
+            if ( tableId == -1 ) {
                 tableId = p.tableId;
             }
         }
@@ -298,10 +291,12 @@ public class DataMigratorImpl implements DataMigrator {
                 statement.getQueryProcessor().getPlanner(),
                 new RexBuilder( statement.getTransaction().getTypeFactory() ) );
 
-        Map<Long,List<CatalogColumnPlacement>> distributionPlacements = new HashMap<>();
-        distributionPlacements.put( partitionId,placements );
+        Map<Long, List<CatalogColumnPlacement>> distributionPlacements = new HashMap<>();
+        distributionPlacements.put( partitionId, placements );
 
-        RelNode node = statement.getSimpleRouter().buildJoinedTableScan( statement, cluster, distributionPlacements );
+        new SimpleRouter.SimpleRouterFactory().createInstance().buildJoinedTableScan( statement, cluster, distributionPlacements );
+
+        RelNode node = AbstractRouter.buildJoinedTableScanStatic( statement, cluster, distributionPlacements );
         return RelRoot.of( node, SqlKind.SELECT );
     }
 

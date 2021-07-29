@@ -40,8 +40,6 @@ public interface Statement {
 
     List<Router> getLongRunningRouters();
 
-    Router getSimpleRouter();
-
     void close();
 
     void registerFileInputHandle( FileInputHandle fileInputHandle );

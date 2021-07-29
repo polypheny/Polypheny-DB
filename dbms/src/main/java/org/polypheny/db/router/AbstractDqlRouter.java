@@ -18,7 +18,6 @@ package org.polypheny.db.router;
 
 import com.google.common.collect.Lists;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +43,6 @@ public abstract class AbstractDqlRouter extends AbstractRouter {
     @Override
     public List<RelRoot> route( RelRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
         this.executionTimeMonitor = executionTimeMonitor;
-        this.selectedAdapter = new HashMap<>();
 
         log.info( "Start Routing" );
 

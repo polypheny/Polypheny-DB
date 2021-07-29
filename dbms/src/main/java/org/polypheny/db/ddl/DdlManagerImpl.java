@@ -17,7 +17,6 @@
 package org.polypheny.db.ddl;
 
 import static java.util.stream.Collectors.toCollection;
-import static org.polypheny.db.util.Static.RESOURCE;
 import static org.reflections.Reflections.log;
 
 import com.google.common.collect.ImmutableList;
@@ -109,9 +108,9 @@ import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalViewTableScan;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.router.RouterManager;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
-import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.LogicalView;
 import org.polypheny.db.transaction.Statement;
@@ -311,9 +310,6 @@ public class DdlManagerImpl extends DdlManager {
                     throw new RuntimeException( "Trying to drop a table located on a data source which is not of table type SOURCE. This should not happen!" );
                 }
 
-                // Inform routing
-                //statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnAdapter( catalogAdapter.id, table.id ) );
-
                 // Delete column placement in catalog
                 for ( Long columnId : table.columnIds ) {
                     if ( catalog.checkIfExistsColumnPlacement( catalogAdapter.id, columnId) ) {
@@ -495,10 +491,7 @@ public class DdlManagerImpl extends DdlManager {
         CatalogColumn addedColumn = catalog.getColumn( columnId );
 
         // Ask router on which stores this column shall be placed
-        List<DataStore> stores = catalogTable.placementsByAdapter.keySet()
-                .stream()
-                .map( elem -> AdapterManager.getInstance().getStore(elem))
-                .collect( Collectors.toList());
+        List<DataStore> stores = RouterManager.getInstance().getTablePlacementStrategy().getDataStoresForNewColumn( addedColumn );
 
         // Add column on underlying data stores and insert default value
         for ( DataStore store : stores ) {
@@ -954,8 +947,6 @@ public class DdlManagerImpl extends DdlManager {
         }
         // Physically delete the data from the store
         storeInstance.dropTable( statement.getPrepareContext(), catalogTable, catalog.getPartitionsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id ));
-        // Inform routing
-        //statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnAdapter( storeInstance.getAdapterId(), catalogTable.id ) );
 
         // Delete placement in the catalog
         List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id );
@@ -1444,11 +1435,6 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        if ( stores == null ) {
-            // Ask router on which store(s) the table should be placed
-            stores = AdapterManager.getInstance().getStores().values().asList();
-        }
-
         prepareView( relNode );
         RelDataType fieldList = relNode.getRowType();
 
@@ -1575,7 +1561,7 @@ public class DdlManagerImpl extends DdlManager {
 
             if ( stores == null ) {
                 // Ask router on which store(s) the table should be placed
-                stores = AdapterManager.getInstance().getStores().values().asList();
+                stores = RouterManager.getInstance().getTablePlacementStrategy().getDataStoresForNewTable();
             }
 
             long tableId = catalog.addTable(

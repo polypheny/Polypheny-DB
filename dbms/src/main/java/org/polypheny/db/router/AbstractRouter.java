@@ -46,10 +46,8 @@ import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
@@ -99,18 +97,18 @@ public abstract class AbstractRouter implements Router {
             .maximumSize( RuntimeConfig.JOINED_TABLE_SCAN_CACHE_SIZE.getInteger() )
             .build();
     protected final Map<Integer, List<String>> filterMap = new HashMap<>();
-    final Catalog catalog = Catalog.getInstance();
+    final static Catalog catalog = Catalog.getInstance();
     protected ExecutionTimeMonitor executionTimeMonitor;
     protected InformationPage page = null;
     // For reporting purposes
-    protected Map<Long, SelectedAdapterInfo> selectedAdapter;
+    //protected Map<Long, SelectedAdapterInfo> selectedAdapter;
     protected boolean cancelQuery = false;
 
 
     @Override
     public List<RelRoot> route( RelRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
         this.executionTimeMonitor = executionTimeMonitor;
-        this.selectedAdapter = new HashMap<>();
+        //this.selectedAdapter = new HashMap<>();
         this.cancelQuery = false;
 
         log.info( "Start Routing" );
@@ -139,7 +137,7 @@ public abstract class AbstractRouter implements Router {
         }
 
         // Add information to query analyzer
-        if ( statement.getTransaction().isAnalyze() ) {
+        /*if ( statement.getTransaction().isAnalyze() ) {
             InformationGroup group = new InformationGroup( page, "Selected Adapters" );
             statement.getTransaction().getQueryAnalyzer().addGroup( group );
             InformationTable table = new InformationTable(
@@ -150,7 +148,7 @@ public abstract class AbstractRouter implements Router {
                 table.addRow( catalogTable.getSchemaName() + "." + catalogTable.name, v.uniqueName, v.physicalSchemaName + "." + v.physicalTableName );
             } );
             statement.getTransaction().getQueryAnalyzer().registerInformation( table );
-        }
+        }*/
 
         return routed.stream()
                 .map( elem -> new RelRoot( elem, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation ) )
@@ -1071,8 +1069,7 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    @Override
-    public RelNode buildJoinedTableScan( Statement statement, RelOptCluster cluster, Map<Long, List<CatalogColumnPlacement>> placements ) {
+    public static RelNode buildJoinedTableScanStatic( Statement statement, RelOptCluster cluster, Map<Long, List<CatalogColumnPlacement>> placements ){
         RelBuilder builder = RelBuilder.create( statement, cluster );
 
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
@@ -1206,8 +1203,13 @@ public abstract class AbstractRouter implements Router {
         return node;
     }
 
+    @Override
+    public RelNode buildJoinedTableScan( Statement statement, RelOptCluster cluster, Map<Long, List<CatalogColumnPlacement>> placements ) {
+        return AbstractRouter.buildJoinedTableScanStatic( statement, cluster, placements );
+    }
 
-    protected RelBuilder handleTableScan(
+
+    protected static RelBuilder handleTableScan(
             RelBuilder builder,
             long tableId,
             String storeUniqueName,
@@ -1216,9 +1218,9 @@ public abstract class AbstractRouter implements Router {
             String physicalSchemaName,
             String physicalTableName,
             long partitionId ) {
-        if ( selectedAdapter != null ) {
-            selectedAdapter.put( tableId, new SelectedAdapterInfo( storeUniqueName, physicalSchemaName, physicalTableName ) );
-        }
+        //if ( selectedAdapter != null ) {
+        //    selectedAdapter.put( tableId, new SelectedAdapterInfo( storeUniqueName, physicalSchemaName, physicalTableName ) );
+        //}
         return builder.scan( ImmutableList.of(
                 PolySchemaBuilder.buildAdapterSchemaName( storeUniqueName, logicalSchemaName, physicalSchemaName, partitionId ),
                 logicalTableName ) );
