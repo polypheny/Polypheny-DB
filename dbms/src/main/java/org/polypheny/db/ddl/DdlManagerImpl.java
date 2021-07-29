@@ -1488,7 +1488,8 @@ public class DdlManagerImpl extends DdlManager {
             }
 
             columns.add( new ColumnInformation(
-                    colName.toLowerCase().replaceAll( "[^A-Za-z0-9]", "_" ),
+                    colName,
+                    //colName.toLowerCase().replaceAll( "[^A-Za-z0-9]", "_" ),
                     new ColumnTypeInformation(
                             type.getPolyType(),
                             rel.getType().getPolyType(),

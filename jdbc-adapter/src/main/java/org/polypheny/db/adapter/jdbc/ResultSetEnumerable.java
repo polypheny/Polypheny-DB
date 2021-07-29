@@ -279,6 +279,10 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             } else {
                 throw new RuntimeException( "Unknown IntervalParameterStrategy: " + connectionHandler.getDialect().getIntervalParameterStrategy().name() );
             }
+        } else if ( type != null && type.getPolyType() == PolyType.DATE && value instanceof Integer ) {
+            preparedStatement.setDate( i, new java.sql.Date( DateString.fromDaysSinceEpoch( (Integer) value ).getMillisSinceEpoch() ) );
+        } else if ( type != null && type.getPolyType() == PolyType.TIMESTAMP && value instanceof Long ) {
+            preparedStatement.setDate( i, new java.sql.Date( (Long) value ) );
         } else if ( value instanceof Timestamp ) {
             preparedStatement.setTimestamp( i, (Timestamp) value );
         } else if ( value instanceof Time ) {

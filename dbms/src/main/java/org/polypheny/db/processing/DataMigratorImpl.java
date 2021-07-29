@@ -44,6 +44,7 @@ import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.TableModify.Operation;
 import org.polypheny.db.rel.logical.LogicalValues;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -125,9 +126,12 @@ public class DataMigratorImpl implements DataMigrator {
                 }
             }
 
+            //sourceRel.validatedRowType.getFieldList().get( 0 );
+
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
             while ( sourceIterator.hasNext() ) {
                 List<List<Object>> rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
+
                 Map<Long, List<Object>> values = new HashMap<>();
                 for ( List<Object> list : rows ) {
                     for ( Map.Entry<Long, Integer> entry : resultColMapping.entrySet() ) {
@@ -138,8 +142,12 @@ public class DataMigratorImpl implements DataMigrator {
                     }
                 }
 
+                //sourceRel.validatedRowType.getFieldList().get( 0 ).getType()
+                List<RelDataTypeField> fields = sourceRel.validatedRowType.getFieldList();
+                int pos = 0;
                 for ( Map.Entry<Long, List<Object>> v : values.entrySet() ) {
-                    targetStatement.getDataContext().addParameterValues( v.getKey(), null, v.getValue() );
+                    targetStatement.getDataContext().addParameterValues( v.getKey(), fields.get( resultColMapping.get( v.getKey() ) ).getType(), v.getValue() );
+                    pos++;
                 }
                 Iterator iterator = targetStatement.getQueryProcessor()
                         .prepareQuery( targetRel, sourceRel.validatedRowType, true )
