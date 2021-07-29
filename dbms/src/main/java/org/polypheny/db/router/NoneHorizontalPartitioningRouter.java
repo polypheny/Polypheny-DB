@@ -27,11 +27,11 @@ import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Statement;
 
 @Slf4j
-public abstract class NoneVerticalPartitioningRouter extends AbstractDqlRouter {
+public abstract class NoneHorizontalPartitioningRouter extends AbstractDqlRouter {
 
 
     @Override
-    protected List<RelBuilder> handleVerticalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RelBuilder> builders, RelOptCluster cluster ) {
+    protected List<RelBuilder> handleHorizontalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RelBuilder> builders, RelOptCluster cluster ) {
         this.cancelQuery = true;
         return Collections.emptyList();
     }

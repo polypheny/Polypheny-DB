@@ -20,6 +20,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import lombok.var;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -77,7 +79,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
         val fieldAsString = Arrays.stream( metricClass.getDeclaredFields() ).map( f -> f.getName() ).filter( str -> !str.equals( "serialVersionUID" ) ).collect( Collectors.toList() );
         val informationTable = new InformationTable( informationGroup, fieldAsString );
 
-        //informationGroup.setRefreshFunction( () -> this.updateMetricInformationTable( informationTable, metricClass ) );
+        informationGroup.setRefreshFunction( () -> this.updateMetricInformationTable( informationTable, metricClass ) );
 
         addInformationGroupTUi( informationGroup, Arrays.asList( informationTable ) );
     }
@@ -100,7 +102,9 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
 
     private <T extends MonitoringDataPoint> void updateMetricInformationTable( InformationTable table, Class<T> metricClass ) {
-        List<T> elements = this.repo.getAllDataPoints( metricClass );
+        var elements = this.repo.getAllDataPoints( metricClass );
+        elements.sort( Comparator.comparing( MonitoringDataPoint::timestamp ) );
+        elements = elements.stream().limit( 100 ).collect( Collectors.toList());
         table.reset();
 
         Field[] fields = metricClass.getDeclaredFields();
@@ -120,7 +124,11 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
                     field.setAccessible( true );
                     val value = field.get( element );
                     if(value != null){
-                        row.add( value.toString() );
+                        try{
+                            row.add( value.toString() );
+                        }catch ( Exception e ){
+                            row.add( "-" );
+                        }
                     }
                     else{
                         row.add( "-" );

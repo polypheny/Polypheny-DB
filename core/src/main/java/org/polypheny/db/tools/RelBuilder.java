@@ -59,6 +59,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
+import lombok.val;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.polypheny.db.plan.Context;
@@ -265,6 +266,15 @@ public class RelBuilder {
 
     public static RelBuilder create( Statement statement, RelOptCluster cluster ) {
         return new RelBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getCatalogReader() );
+    }
+
+    public static RelBuilder createCopy( Statement statement, RelOptCluster cluster, RelBuilder builder){
+        val newBuilder = RelBuilder.create( statement, cluster );
+
+        for ( int i = 0; i < builder.stackSize(); i++ ) {
+            newBuilder.push( builder.peek( i ) );
+        }
+        return newBuilder;
     }
 
 

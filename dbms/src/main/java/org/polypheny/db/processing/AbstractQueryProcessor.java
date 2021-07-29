@@ -66,6 +66,7 @@ import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.DMLEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
@@ -194,7 +195,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     // endregion
 
-    // region processing steps
+    // region processing
 
     private PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery ) {
         boolean isAnalyze = statement.getTransaction().isAnalyze() && !isSubquery;
@@ -234,33 +235,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             eventData.setAnalyze( isAnalyze );
             eventData.setSubQuery( isSubquery );
             eventData.setDurations( statement.getDuration().asJson() );
+            eventData.setRelCompareString( relRoot.rel.relCompareString() );
+
+            MonitoringServiceProvider.getInstance().monitorEvent( eventData );
         }
+
+
 
         return result;
-    }
-
-
-    private void acquireLock( boolean isAnalyze, RelRoot logicalRoot ) {
-        // Locking
-        if ( isAnalyze ) {
-            statement.getDuration().start( "Locking" );
-        }
-        try {
-            // Get a shared global schema lock (only DDLs acquire a exclusive global schema lock)
-            LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
-            // Get locks for individual tables
-            TableAccessMap accessMap = new TableAccessMap( logicalRoot.rel );
-            for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
-                Mode mode = accessMap.getTableAccessMode( tableIdentifier );
-                if ( mode == Mode.READ_ACCESS ) {
-                    LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
-                } else if ( mode == Mode.WRITE_ACCESS || mode == Mode.READWRITE_ACCESS ) {
-                    LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
-                }
-            }
-        } catch ( DeadlockException e ) {
-            throw new RuntimeException( e );
-        }
     }
 
 
@@ -286,6 +268,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         analyzeQueryAndPrepareMonitoring(statement, logicalRoot);
 
         // TODO: get queryId and check in Monitoring for last execution time
+        val queryId = logicalRoot.rel.relCompareString();
+
         // TODO: add cache of last execution time?
 
 
@@ -486,31 +470,31 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         return signatures.stream().filter( Optional::isPresent ).map( Optional::get ).collect( Collectors.toList() );
     }
 
+    // endregion
 
-    private void analyzeQueryAndPrepareMonitoring( Statement statement, RelRoot logicalRoot ) {
-        // TODO: adjust shuttle, create queryId
-        val shuttle = new QueryAnalyzeRelShuttle( statement );
-        logicalRoot.rel.accept( shuttle );
+    // region processing single steps
 
-        val shuttle2 = new QueryNameShuttle();
-        logicalRoot.rel.accept( shuttle );
-        log.info( "SR: analyze" );
-        log.info( shuttle2.getHashBasis().toString() );
-
-        this.prepareMonitoring( shuttle, statement, logicalRoot );
-    }
-
-    private void prepareMonitoring(QueryAnalyzeRelShuttle shuttle, Statement statement, RelRoot logicalRoot){
-        if ( statement.getTransaction().getMonitoringEvent() == null ) {
-            if ( logicalRoot.kind.belongsTo( SqlKind.DML ) ) {
-                statement.getTransaction().setMonitoringEvent( new DMLEvent() );
-            } else if ( logicalRoot.kind.belongsTo( SqlKind.QUERY ) ) {
-                statement.getTransaction().setMonitoringEvent( new QueryEvent() );
-            }
+    private void acquireLock( boolean isAnalyze, RelRoot logicalRoot ) {
+        // Locking
+        if ( isAnalyze ) {
+            statement.getDuration().start( "Locking" );
         }
-
-        StatementEvent event = (StatementEvent)statement.getTransaction().getMonitoringEvent();
-        event.setAnalyzeRelShuttle( shuttle );
+        try {
+            // Get a shared global schema lock (only DDLs acquire a exclusive global schema lock)
+            LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
+            // Get locks for individual tables
+            TableAccessMap accessMap = new TableAccessMap( logicalRoot.rel );
+            for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
+                Mode mode = accessMap.getTableAccessMode( tableIdentifier );
+                if ( mode == Mode.READ_ACCESS ) {
+                    LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
+                } else if ( mode == Mode.WRITE_ACCESS || mode == Mode.READWRITE_ACCESS ) {
+                    LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
+                }
+            }
+        } catch ( DeadlockException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 
@@ -968,66 +952,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private PolyphenyDbSignature createSignature( PreparedResult preparedResult, RelRoot optimalRoot, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor ) {
-        final RelDataType jdbcType = QueryProcessorHelpers.makeStruct( optimalRoot.rel.getCluster().getTypeFactory(), optimalRoot.validatedRowType );
-        final List<AvaticaParameter> parameters = new ArrayList<>();
-        for ( RelDataTypeField field : preparedResult.getParameterRowType().getFieldList() ) {
-            RelDataType type = field.getType();
-            parameters.add(
-                    new AvaticaParameter(
-                            false,
-                            QueryProcessorHelpers.getPrecision( type ),
-                            0, // This is a workaround for a bug in Avatica with Decimals. There is no need to change the scale //getScale( type ),
-                            QueryProcessorHelpers.getTypeOrdinal( type ),
-                            type.getPolyType().getTypeName(),
-                            type.getClass().getName(),
-                            field.getName() ) );
-        }
-
-        final RelDataType x;
-        switch ( optimalRoot.kind ) {
-            case INSERT:
-            case DELETE:
-            case UPDATE:
-            case EXPLAIN:
-                // FIXME: getValidatedNodeType is wrong for DML
-                x = RelOptUtil.createDmlRowType( optimalRoot.kind, statement.getTransaction().getTypeFactory() );
-                break;
-            default:
-                x = optimalRoot.validatedRowType;
-        }
-        final List<ColumnMetaData> columns = QueryProcessorHelpers.getColumnMetaDataList(
-                statement.getTransaction().getTypeFactory(),
-                x,
-                QueryProcessorHelpers.makeStruct( statement.getTransaction().getTypeFactory(), x ),
-                preparedResult.getFieldOrigins() );
-        Class resultClazz = null;
-        if ( preparedResult instanceof Typed ) {
-            resultClazz = (Class) ((Typed) preparedResult).getElementType();
-        }
-        final CursorFactory cursorFactory =
-                resultConvention == BindableConvention.INSTANCE
-                        ? CursorFactory.ARRAY
-                        : CursorFactory.deduce( columns, resultClazz );
-        final Bindable bindable = preparedResult.getBindable( cursorFactory );
-
-        return new PolyphenyDbSignature<Object[]>(
-                "",
-                optimalRoot,
-                parameters,
-                ImmutableMap.of(),
-                jdbcType,
-                columns,
-                cursorFactory,
-                statement.getTransaction().getSchema(),
-                ImmutableList.of(),
-                -1,
-                bindable,
-                QueryProcessorHelpers.getStatementType( preparedResult ),
-                executionTimeMonitor );
-    }
-
-
     private RelNode optimize( RelRoot logicalRoot, Convention resultConvention ) {
         RelNode logicalPlan = logicalRoot.rel;
 
@@ -1044,13 +968,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         //final RelNode rootRel4 = getPlanner().findBestExp();
 
         return rootRel4;
-    }
-
-
-    private RelCollation relCollation( RelNode node ) {
-        return node instanceof Sort
-                ? ((Sort) node).collation
-                : RelCollations.EMPTY;
     }
 
 
@@ -1145,7 +1062,99 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     // region private helpers
 
+    private RelCollation relCollation( RelNode node ) {
+        return node instanceof Sort
+                ? ((Sort) node).collation
+                : RelCollations.EMPTY;
+    }
 
+
+    private PolyphenyDbSignature createSignature( PreparedResult preparedResult, RelRoot optimalRoot, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor ) {
+        final RelDataType jdbcType = QueryProcessorHelpers.makeStruct( optimalRoot.rel.getCluster().getTypeFactory(), optimalRoot.validatedRowType );
+        final List<AvaticaParameter> parameters = new ArrayList<>();
+        for ( RelDataTypeField field : preparedResult.getParameterRowType().getFieldList() ) {
+            RelDataType type = field.getType();
+            parameters.add(
+                    new AvaticaParameter(
+                            false,
+                            QueryProcessorHelpers.getPrecision( type ),
+                            0, // This is a workaround for a bug in Avatica with Decimals. There is no need to change the scale //getScale( type ),
+                            QueryProcessorHelpers.getTypeOrdinal( type ),
+                            type.getPolyType().getTypeName(),
+                            type.getClass().getName(),
+                            field.getName() ) );
+        }
+
+        final RelDataType x;
+        switch ( optimalRoot.kind ) {
+            case INSERT:
+            case DELETE:
+            case UPDATE:
+            case EXPLAIN:
+                // FIXME: getValidatedNodeType is wrong for DML
+                x = RelOptUtil.createDmlRowType( optimalRoot.kind, statement.getTransaction().getTypeFactory() );
+                break;
+            default:
+                x = optimalRoot.validatedRowType;
+        }
+        final List<ColumnMetaData> columns = QueryProcessorHelpers.getColumnMetaDataList(
+                statement.getTransaction().getTypeFactory(),
+                x,
+                QueryProcessorHelpers.makeStruct( statement.getTransaction().getTypeFactory(), x ),
+                preparedResult.getFieldOrigins() );
+        Class resultClazz = null;
+        if ( preparedResult instanceof Typed ) {
+            resultClazz = (Class) ((Typed) preparedResult).getElementType();
+        }
+        final CursorFactory cursorFactory =
+                resultConvention == BindableConvention.INSTANCE
+                        ? CursorFactory.ARRAY
+                        : CursorFactory.deduce( columns, resultClazz );
+        final Bindable bindable = preparedResult.getBindable( cursorFactory );
+
+        return new PolyphenyDbSignature<Object[]>(
+                "",
+                optimalRoot,
+                parameters,
+                ImmutableMap.of(),
+                jdbcType,
+                columns,
+                cursorFactory,
+                statement.getTransaction().getSchema(),
+                ImmutableList.of(),
+                -1,
+                bindable,
+                QueryProcessorHelpers.getStatementType( preparedResult ),
+                executionTimeMonitor );
+    }
+
+
+    private void analyzeQueryAndPrepareMonitoring( Statement statement, RelRoot logicalRoot ) {
+        // TODO: adjust shuttle, create queryId
+        val shuttle = new QueryAnalyzeRelShuttle( statement );
+        logicalRoot.rel.accept( shuttle );
+
+        val shuttle2 = new QueryNameShuttle();
+        logicalRoot.rel.accept( shuttle );
+        log.info( "SR: analyze" );
+        log.info( shuttle2.getHashBasis().toString() );
+
+        this.prepareMonitoring( shuttle, statement, logicalRoot );
+    }
+
+
+    private void prepareMonitoring(QueryAnalyzeRelShuttle shuttle, Statement statement, RelRoot logicalRoot){
+        if ( statement.getTransaction().getMonitoringEvent() == null ) {
+            if ( logicalRoot.kind.belongsTo( SqlKind.DML ) ) {
+                statement.getTransaction().setMonitoringEvent( new DMLEvent() );
+            } else if ( logicalRoot.kind.belongsTo( SqlKind.QUERY ) ) {
+                statement.getTransaction().setMonitoringEvent( new QueryEvent() );
+            }
+        }
+
+        StatementEvent event = (StatementEvent)statement.getTransaction().getMonitoringEvent();
+        event.setAnalyzeRelShuttle( shuttle );
+    }
 
 
     // endregion

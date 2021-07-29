@@ -37,6 +37,7 @@ public class QueryEventAnalyzer {
                 .rowCount( queryEvent.getRowCount() )
                 .isSubQuery( queryEvent.isSubQuery() )
                 .recordedTimestamp( queryEvent.getRecordedTimestamp() )
+                .relCompareString( queryEvent.getRelCompareString() )
                 .build();
 
         RelRoot relRoot = queryEvent.getRouted();

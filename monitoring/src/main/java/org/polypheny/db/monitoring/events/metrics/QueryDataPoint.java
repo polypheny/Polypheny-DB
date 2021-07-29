@@ -51,6 +51,7 @@ public class QueryDataPoint implements MonitoringDataPoint, Serializable {
     private int rowCount;
     private List<String> fieldNames;
     private List<Long> accessedPartitions;
+    protected String relCompareString;
 
 
     @Override
