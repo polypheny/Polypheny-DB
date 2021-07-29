@@ -48,8 +48,9 @@ public class QueryAnalyzeRelShuttle extends RelShuttleImpl {
     protected final HashMap<Long, Long> availableColumnsWithTable = new HashMap<>(); // columnId -> tableId
 
     public List<Long> getUsedColumnsPerTable(Long tableId) {
+        val usedCols = getUsedColumns();
         return availableColumnsWithTable.entrySet().stream()
-                .filter( x -> x.getValue().equals( tableId ) )
+                .filter( x -> x.getValue().equals( tableId ) && usedCols.keySet().contains( x.getKey() ))
                 .map( x -> x.getKey() )
                 .collect( Collectors.toList() );
     }

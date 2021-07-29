@@ -29,7 +29,7 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.transaction.Statement;
 
-public class HorizontalFullPlacementQueryRouter extends NoneVerticalPartitioningRouter {
+public class HorizontalFullPlacementQueryRouter extends NoneHorizontalPartitioningRouter {
 
     @Override
     protected Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable catalogTable, Statement statement ) {

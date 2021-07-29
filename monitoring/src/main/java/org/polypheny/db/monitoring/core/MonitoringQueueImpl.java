@@ -173,6 +173,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
             int countEvents = 0;
             while ( (event = this.getNextJob()).isPresent() && countEvents < RuntimeConfig.QUEUE_PROCESSING_ELEMENTS.getInteger() ) {
                 log.debug( "get new monitoring job" + event.get().getId().toString() );
+                queueIds.remove( event.get().getId() );
 
                 // returns list of metrics which was produced by this particular event
                 val dataPoints = event.get().analyze();
@@ -186,7 +187,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
                 }
 
                 countEvents++;
-                queueIds.remove( event.get().getId() );
             }
             processedEvents += countEvents;
         } finally {

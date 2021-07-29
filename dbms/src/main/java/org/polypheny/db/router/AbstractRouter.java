@@ -132,7 +132,8 @@ public abstract class AbstractRouter implements Router {
             log.info( "Start build DQL" );
             // TODO: get many version
             val builder = RelBuilder.create( statement, logicalRoot.rel.getCluster() );
-            List<RelBuilder> builders = buildDql( logicalRoot.rel, Lists.newArrayList(builder), statement, logicalRoot.rel.getCluster() );
+            List<RelBuilder> builders = buildDql( logicalRoot.rel, Lists.newArrayList( builder ), statement, logicalRoot.rel.getCluster() );
+
             routed = builders.stream().map( RelBuilder::build ).collect( Collectors.toList() );
             log.info( "End DQL" );
         }
@@ -158,7 +159,7 @@ public abstract class AbstractRouter implements Router {
 
 
     // Select the placement on which a table scan should be executed
-    protected abstract Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable catalogTable, Statement statement);
+    protected abstract Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable catalogTable, Statement statement );
 
 
     protected List<RelBuilder> buildDql( RelNode node, List<RelBuilder> builders, Statement statement, RelOptCluster cluster ) {
@@ -173,14 +174,14 @@ public abstract class AbstractRouter implements Router {
     protected RelBuilder buildSelect( RelNode node, RelBuilder builder, Statement statement, RelOptCluster cluster ) {
         val result = this.buildSelect( node, Lists.newArrayList( builder ), statement, cluster );
         if ( result.size() > 1 ) {
-            log.error( "Sigle build select with multiple results " );
+            log.error( "Single build select with multiple results " );
         }
         return result.get( 0 );
     }
 
 
     protected List<RelBuilder> buildSelect( RelNode node, List<RelBuilder> builders, Statement statement, RelOptCluster cluster ) {
-        if(cancelQuery){
+        if ( cancelQuery ) {
             return Collections.emptyList();
         }
 
@@ -204,10 +205,10 @@ public abstract class AbstractRouter implements Router {
                     log.debug( "VALUE from Map: {} id: {}", filterMap.get( node.getId() ), node.getId() );
                 }
 
-                return handleVerticalPartitioning( node, catalogTable, statement, logicalTable , builders, cluster);
+                return handleHorizontalPartitioning( node, catalogTable, statement, logicalTable, builders, cluster );
 
             } else {
-                return handleNoneVerticalPartitioning( node, catalogTable, statement,  builders, cluster);
+                return handleNoneHorizontalPartitioning( node, catalogTable, statement, builders, cluster );
             }
 
         } else if ( node instanceof LogicalValues ) {
@@ -220,34 +221,23 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    protected List<RelBuilder> handleNoneVerticalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, List<RelBuilder> builders, RelOptCluster cluster ) {
+    protected List<RelBuilder> handleNoneHorizontalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, List<RelBuilder> builders, RelOptCluster cluster ) {
         log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
         val placements = selectPlacement( node, catalogTable, statement );
-        // val accessedPartitionList = catalogTable.partitionProperty.partitionIds;
+        val accessedPartitionList = catalogTable.partitionProperty.partitionIds;
         // TODO: add to monitoring?
 
-        /*val firstBuilder = !builders.isEmpty() ? builders.get( 0 ) : null;
-        if(firstBuilder != null && firstBuilder.stackSize() == 0 && builders.size() > 1){
-            builders.clear();
-        }*/
 
         val newBuilders = new ArrayList<RelBuilder>();
-        val currentBuilder = ImmutableList.copyOf( builders );
+        val currentBuilders = ImmutableList.copyOf( builders );
         for ( val placementCombination : placements ) {
 
             val currentPlacementDistribution = new HashMap<Long, List<CatalogColumnPlacement>>();
             currentPlacementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ), placementCombination );
 
-
-            for(val builder :  currentBuilder ){
-                val newBuilder = RelBuilder.create( statement, cluster );
-
-                for(int i = 0; i < builder.stackSize(); i++){
-                    newBuilder.push( builder.peek(i) );
-                }
-
+            for ( val builder : currentBuilders ) {
+                val newBuilder = RelBuilder.createCopy( statement, cluster, builder);
                 newBuilder.push( buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) );
-
                 newBuilders.add( newBuilder );
             }
 
@@ -258,38 +248,6 @@ public abstract class AbstractRouter implements Router {
 
         //builders = newBuilders;
         return builders;
-
-        // we can add more builders / plans anymore
-        // if stackSize > 0 we cannot add new builders.
-        /*if(builders.get( 0 ).stackSize() == 0 && placements.size() > 1){
-            builders.clear();
-            for ( val placementCombination : placements ) {
-
-                val currentPlacementDistribution = new HashMap<Long, List<CatalogColumnPlacement>>();
-                currentPlacementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ), placementCombination );
-
-                val builder = RelBuilder.create( statement, cluster );
-                builder.push( buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) );
-                builders.add( builder );
-
-            }
-
-
-            return builders;
-
-        }
-
-        for ( val placementCombination : placements ) {
-            val currentPlacementDistribution = new HashMap<Long, List<CatalogColumnPlacement>>();
-            currentPlacementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ), placementCombination );
-
-            builders.forEach( builder ->
-                    builder.push( buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) )
-            );
-
-        }
-
-        return builders;*/
     }
 
 
@@ -343,7 +301,7 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    protected List<RelBuilder> handleVerticalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RelBuilder> builders, RelOptCluster cluster ) {
+    protected List<RelBuilder> handleHorizontalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RelBuilder> builders, RelOptCluster cluster ) {
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionType );
         List<String> partitionValues = filterMap.get( node.getId() );
@@ -379,8 +337,6 @@ public abstract class AbstractRouter implements Router {
             accessedPartitionList = catalogTable.partitionProperty.partitionIds;
         }
 
-        // return partitioned selection:
-        // TODO: do it in a later step
         if ( statement.getTransaction().getMonitoringEvent() != null ) {
             ((StatementEvent) statement.getTransaction().getMonitoringEvent()).setAccessedPartitions( accessedPartitionList );
         }
@@ -390,7 +346,7 @@ public abstract class AbstractRouter implements Router {
 
 
     protected List<RelBuilder> buildSetOp( RelNode node, List<RelBuilder> builders, Statement statement, RelOptCluster cluster ) {
-        if(cancelQuery){
+        if ( cancelQuery ) {
             return Collections.emptyList();
         }
         builders = buildDql( node.getInput( 0 ), builders, statement, cluster );
@@ -1275,7 +1231,7 @@ public abstract class AbstractRouter implements Router {
 
 
     protected List<RelBuilder> handleValues( LogicalValues node, List<RelBuilder> builders ) {
-        if(cancelQuery){
+        if ( cancelQuery ) {
             return Collections.emptyList();
         }
         return builders.stream().map( builder -> builder.values( node.tuples, node.getRowType() ) ).collect( Collectors.toList() );
@@ -1292,7 +1248,7 @@ public abstract class AbstractRouter implements Router {
 
 
     protected List<RelBuilder> handleGeneric( RelNode node, List<RelBuilder> builders ) {
-        if(cancelQuery){
+        if ( cancelQuery ) {
             return Collections.emptyList();
         }
         log.info( "start handle generic" );
@@ -1305,7 +1261,7 @@ public abstract class AbstractRouter implements Router {
         } else if ( node.getInputs().size() == 2 ) { // Joins, SetOperations
             log.info( "node input size = 2" );
             builders.forEach(
-                        builder -> builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 1 ), builder.peek( 0 ) ) ) )
+                    builder -> builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 1 ), builder.peek( 0 ) ) ) )
             );
         } else {
             throw new RuntimeException( "Unexpected number of input elements: " + node.getInputs().size() );

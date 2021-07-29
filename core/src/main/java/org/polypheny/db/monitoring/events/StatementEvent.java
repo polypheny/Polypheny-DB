@@ -47,6 +47,8 @@ public abstract class StatementEvent extends BaseEvent {
     protected String durations;
     protected List<Long> accessedPartitions;
     protected QueryAnalyzeRelShuttle analyzeRelShuttle;
+    protected String relCompareString;
+
 
 
     @Override
