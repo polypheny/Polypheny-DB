@@ -17,13 +17,25 @@
 package org.polypheny.db.routing;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.tools.RoutedRelBuilder;
-import org.polypheny.db.transaction.Statement;
 
-public interface Router {
+public interface ProposedRoutingPlan {
 
-    List<RoutedRelBuilder> route( RelRoot relRoot, Statement statement );
 
-    void resetCaches();
+    RelRoot getRoutedRoot();
+    void setRoutedRoot(RelRoot relRoot);
+
+    String getQueryId();
+    void setQueryId(String queryId);
+
+    String getPhysicalQueryId();
+    void setPhysicalQueryId(String physicalQueryId);
+
+    Optional<Class<? extends Router>> getRouter();
+    void setRouter(Optional<Class<? extends Router>> routerClass);
+
+    Optional<Map<Long, List<Long>>>  getPhysicalPlacementsOfPartitions(); // partitionId, list<CatalogPlacementIds>
+    void setPhysicalPlacementsOfPartitions(Optional<Map<Long, List<Long>>> physicalPartitionPlacement);
 }

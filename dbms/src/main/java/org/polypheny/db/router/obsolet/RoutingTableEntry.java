@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.router;
+package org.polypheny.db.router.obsolet;
 
 import java.util.HashMap;
 import java.util.List;

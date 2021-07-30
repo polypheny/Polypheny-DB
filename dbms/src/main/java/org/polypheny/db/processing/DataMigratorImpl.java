@@ -50,8 +50,7 @@ import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.router.AbstractRouter;
-import org.polypheny.db.router.SimpleRouter;
+import org.polypheny.db.router.RoutingHelpers;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.sql.SqlKind;
@@ -294,9 +293,7 @@ public class DataMigratorImpl implements DataMigrator {
         Map<Long, List<CatalogColumnPlacement>> distributionPlacements = new HashMap<>();
         distributionPlacements.put( partitionId, placements );
 
-        new SimpleRouter.SimpleRouterFactory().createInstance().buildJoinedTableScan( statement, cluster, distributionPlacements );
-
-        RelNode node = AbstractRouter.buildJoinedTableScanStatic( statement, cluster, distributionPlacements );
+        RelNode node = RoutingHelpers.buildJoinedTableScan( statement, cluster, distributionPlacements );
         return RelRoot.of( node, SqlKind.SELECT );
     }
 

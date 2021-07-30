@@ -87,6 +87,7 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.RelShuttle;
 import org.polypheny.db.rel.RelShuttleImpl;
+import org.polypheny.db.rel.core.ConditionalExecute;
 import org.polypheny.db.rel.core.ConditionalExecute.Condition;
 import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.rel.core.Values;
@@ -104,10 +105,15 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.router.CachedProposedRoutingPlan;
+import org.polypheny.db.router.DmlRouter;
+import org.polypheny.db.router.ProposedRoutingPlanImpl;
 import org.polypheny.db.router.QueryProcessorHelpers;
 import org.polypheny.db.router.RelDeepCopyShuttle;
+import org.polypheny.db.router.RouterManager;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.routing.ExecutionTimeMonitor.ExecutionTimeObserver;
+import org.polypheny.db.routing.ProposedRoutingPlan;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
@@ -131,6 +137,7 @@ import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
+import oshi.util.tuples.Triplet;
 
 
 @Slf4j
@@ -160,7 +167,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     // region public overrides
     @Override
     public void executionTime( String reference, long nanoTime ) {
-        val event = (StatementEvent)statement.getTransaction().getMonitoringEvent();
+        val event = (StatementEvent) statement.getTransaction().getMonitoringEvent();
         if ( reference == event.getQueryId() ) {
             event.setExecutionTime( nanoTime );
         }
@@ -202,16 +209,16 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     // region processing
 
 
+    private void handleRouterCaching( List<ProposedRoutingPlan> proposedRoutingPlans, List<RelOptCost> approximatedCosts ) {
+
+    }
+
+    private void handleRouterCaching( List<ProposedRoutingPlan> proposedRoutingPlans ) {
+
+    }
+
     private PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery ) {
         boolean isAnalyze = statement.getTransaction().isAnalyze() && !isSubquery;
-
-        List<PolyphenyDbSignature> signatureList = prepareQueryList( logicalRoot, parameterRowType, isRouted, isSubquery );
-        if ( signatureList.size() == 1 ) {
-            return signatureList.get( 0 );
-        }
-
-        // remove all signatures without relroot
-        val signatures = signatureList.stream().filter( elem -> elem.getRelRoot().isPresent() ).collect( Collectors.toList() );
 
         // TODO: get real rowNumbers in selfCost
         // TODO: find index on store for costs
@@ -219,37 +226,55 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         // TODO: Add Icarus - Post Costs
         // TODO: Calc costs depending on parameters
 
-        RelOptCost minCost = ((RelRoot) signatures.get( 0 ).getRelRoot().get()).rel.computeSelfCost( getPlanner(), RelMetadataQuery.instance() );
-        PolyphenyDbSignature minSignature = signatures.get( 0 );
-        for ( int i = 1; i < signatures.size(); i++ ) {
-            val cost = ((RelRoot) signatures.get( i ).getRelRoot().get()).rel.computeSelfCost( getPlanner(), RelMetadataQuery.instance() );
-            if ( cost.isLt( minCost ) ) {
-                minCost = cost;
-                minSignature = signatures.get( i );
+        // lists should all be om same size
+        val prepareLists = prepareQueryList( logicalRoot, parameterRowType, isRouted, isSubquery );
+        val proposedRoutingPlans = prepareLists.getA();
+        val optimalRels = prepareLists.getB();
+        val signatures = prepareLists.getC();
+
+        if ( signatures.size() == 1 ) {
+            this.handleRouterCaching( proposedRoutingPlans);
+            return signatures.get( 0 );
+        }
+
+        val approximatedCosts = signatures.stream()
+                .map(signature ->
+                        ((RelRoot)signature.getRelRoot().get()).rel.computeSelfCost( getPlanner(), RelMetadataQuery.instance() )
+                ).collect( Collectors.toList() );
+
+        ProposedRoutingPlan currentPlan = proposedRoutingPlans.get( 0 );
+        //RelRoot currentOptimalRoot = optimalRels.get( 0 );
+        PolyphenyDbSignature currentSignature = signatures.get( 0 );
+        RelOptCost currentCost = approximatedCosts.get( 0 );
+
+        for ( int i = 1; i < proposedRoutingPlans.size(); i++ ) {
+            val cost = approximatedCosts.get( i );
+            if ( cost.isLt( currentCost ) ) {
+                currentPlan = proposedRoutingPlans.get( i );
+                //currentOptimalRoot = optimalRels.get( i );
+                currentSignature = signatures.get( i );
             }
         }
 
-        val result = minSignature != null ? minSignature : signatures.get( 0 );
-
         if ( statement.getTransaction().getMonitoringEvent() != null ) {
-            val relRoot = (RelRoot) minSignature.getRelRoot().get();
             StatementEvent eventData = (StatementEvent) statement.getTransaction().getMonitoringEvent();
-            eventData.setDescription( "Test description: " + result.statementType.toString() );
-            eventData.setRouted( relRoot );
-            eventData.setFieldNames( ImmutableList.copyOf( result.rowType.getFieldNames() ) );
+            eventData.setDescription( "Test description: " + currentSignature.statementType.toString() );
+            eventData.setRouted( currentPlan.getRoutedRoot() );
+            eventData.setFieldNames( ImmutableList.copyOf( currentSignature.rowType.getFieldNames() ) );
             eventData.setAnalyze( isAnalyze );
             eventData.setSubQuery( isSubquery );
             eventData.setDurations( statement.getDuration().asJson() );
-            eventData.setRelCompareString( relRoot.rel.relCompareString() );
+            eventData.setRelCompareString( currentPlan.getRoutedRoot().rel.relCompareString() );
 
             MonitoringServiceProvider.getInstance().monitorEvent( eventData );
         }
 
-        return result;
+        this.handleRouterCaching( proposedRoutingPlans, approximatedCosts );
+        return currentSignature;
     }
 
 
-    protected List<PolyphenyDbSignature> prepareQueryList( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery ) {
+    private Triplet<List<ProposedRoutingPlan>, List<RelRoot>, List<PolyphenyDbSignature>> prepareQueryList( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery ) {
         boolean isAnalyze = statement.getTransaction().isAnalyze() && !isSubquery;
         boolean lock = !isSubquery;
         final Convention resultConvention = ENABLE_BINDABLE ? BindableConvention.INSTANCE : EnumerableConvention.INSTANCE;
@@ -267,9 +292,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // TODO: add cache of last execution time?
 
-        List<RelRoot> routedRootList;
+        List<ProposedRoutingPlan> proposedRoutingPlans;
+        List<Optional<RelNode>> optimalNodeList = new ArrayList<>();
+        List<RelRoot> parameterizedRootList = new ArrayList<>();
+        List<Optional<PolyphenyDbSignature>> signatures = new ArrayList<>();
         if ( isRouted ) {
-            routedRootList = Lists.newArrayList( logicalRoot );
+            // TODO: check if needed
+            proposedRoutingPlans = Collections.emptyList();
+            //proposedRoutingPlans = Lists.newArrayList( logicalRoot );
 
         } else {
             if ( lock ) {
@@ -305,24 +335,30 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
             RelRoot indexLookupRoot = constraintsRoot;
             if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() && RuntimeConfig.POLYSTORE_INDEXES_SIMPLIFY.getBoolean() ) {
-                indexLookupRoot = indexLookup( indexLookupRoot, statement, executionTimeMonitor );
+                indexLookupRoot = indexLookup( indexLookupRoot, statement );
             }
 
             if ( isAnalyze ) {
                 statement.getDuration().stop( "Index Lookup Rewrite" );
                 statement.getDuration().start( "Routing" );
             }
-            routedRootList = route( indexLookupRoot, statement, executionTimeMonitor );
-            routedRootList = routedRootList.stream()
-                    .map( routedRoot -> {
-                        RelStructuredTypeFlattener typeFlattener = new RelStructuredTypeFlattener(
-                                RelBuilder.create( statement, routedRoot.rel.getCluster() ),
-                                routedRoot.rel.getCluster().getRexBuilder(),
-                                ViewExpanders.toRelContext( this, routedRoot.rel.getCluster() ),
-                                true );
-                        return routedRoot.withRel( typeFlattener.rewrite( routedRoot.rel ) );
-                    } )
-                    .collect( Collectors.toList() );
+
+            val routingPlansCached = RoutingPlanCache.INSTANCE.getIfPresent( queryId );
+            if ( RuntimeConfig.ROUTING_PLAN_CACHING.getBoolean() && !routingPlansCached.isEmpty() ) {
+                proposedRoutingPlans = routeCached( indexLookupRoot, routingPlansCached, statement );
+            } else {
+                proposedRoutingPlans = route( indexLookupRoot, statement, queryId );
+            }
+
+            proposedRoutingPlans.forEach( proposedRoutingPlan -> {
+                val routedRoot = proposedRoutingPlan.getRoutedRoot();
+                RelStructuredTypeFlattener typeFlattener = new RelStructuredTypeFlattener(
+                        RelBuilder.create( statement, routedRoot.rel.getCluster() ),
+                        routedRoot.rel.getCluster().getRexBuilder(),
+                        ViewExpanders.toRelContext( this, routedRoot.rel.getCluster() ),
+                        true );
+                proposedRoutingPlan.setRoutedRoot( routedRoot.withRel( typeFlattener.rewrite( routedRoot.rel ) ) );
+            } );
 
             if ( isAnalyze ) {
                 statement.getDuration().stop( "Routing" );
@@ -330,15 +366,18 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         // Validate parameterValues
-        routedRootList.forEach( routedRoot -> new ParameterValueValidator( routedRoot.validatedRowType, statement.getDataContext() ).visit( routedRoot.rel ) );
+        proposedRoutingPlans.forEach( proposedRoutingPlan ->
+                new ParameterValueValidator( proposedRoutingPlan.getRoutedRoot().validatedRowType, statement.getDataContext() )
+                        .visit( proposedRoutingPlan.getRoutedRoot().rel ) );
 
         //
         // Parameterize
 
         // Add optional parameterizedRoots and signatures for all routed RelRoots.
         // Index of routedRoot, parameterizedRootList and signatures correspond!
-        List<RelRoot> parameterizedRootList = new ArrayList<>();
-        for ( RelRoot routedRoot : routedRootList ) {
+
+        for ( ProposedRoutingPlan routingPlan : proposedRoutingPlans ) {
+            val routedRoot = routingPlan.getRoutedRoot();
             RelRoot parameterizedRoot = null;
             if ( statement.getDataContext().getParameterValues().size() == 0
                     && (RuntimeConfig.PARAMETERIZE_DML.getBoolean() || !routedRoot.kind.belongsTo( SqlKind.DML )) ) {
@@ -358,9 +397,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getDuration().start( "Implementation Caching" );
         }
 
-        List<Optional<PolyphenyDbSignature>> signatures = new ArrayList<>();
-        for ( int i = 0; i < routedRootList.size(); i++ ) {
-            val routedRoot = routedRootList.get( i );
+        for ( int i = 0; i < proposedRoutingPlans.size(); i++ ) {
+            val routedRoot = proposedRoutingPlans.get( i ).getRoutedRoot();
             if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() &&
                     (!routedRoot.kind.belongsTo( SqlKind.DML ) ||
                             RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() ||
@@ -384,9 +422,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getDuration().stop( "Implementation Caching" );
             statement.getDuration().start( "Plan Caching" );
         }
-        List<Optional<RelNode>> optimalNodeList = new ArrayList<>();
-        for ( int i = 0; i < routedRootList.size(); i++ ) {
-            val routedRoot = routedRootList.get( i );
+        for ( int i = 0; i < proposedRoutingPlans.size(); i++ ) {
+            val routedRoot = proposedRoutingPlans.get( i ).getRoutedRoot();
             if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
                 // should always be the case
                 val cachedElem = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRootList.get( i ).rel );
@@ -412,7 +449,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         for ( int i = 0; i < optimalNodeList.size(); i++ ) {
             val optimalNode = optimalNodeList.get( i );
             val parameterizedRoot = parameterizedRootList.get( i );
-            val routedRoot = routedRootList.get( i );
+            val routedRoot = proposedRoutingPlans.get( i ).getRoutedRoot();
             if ( !optimalNode.isPresent() ) {
                 optimalNodeList.set( i, Optional.of( optimize( parameterizedRoot, resultConvention ) ) );
 
@@ -432,7 +469,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         for ( int i = 0; i < optimalNodeList.size(); i++ ) {
             val optimalNode = optimalNodeList.get( i ).get();
             val parameterizedRoot = parameterizedRootList.get( i );
-            val routedRoot = routedRootList.get( i );
+            val routedRoot = proposedRoutingPlans.get( i ).getRoutedRoot();
 
             final RelDataType rowType = parameterizedRoot.rel.getRowType();
             final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
@@ -460,7 +497,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             log.debug( "Preparing statement ... done. [{}]", stopWatch );
         }
 
-        return signatures.stream().filter( Optional::isPresent ).map( Optional::get ).collect( Collectors.toList() );
+        return new Triplet(
+                proposedRoutingPlans,
+                optimalNodeList.stream().filter( Optional::isPresent ).map( Optional::get ).collect( Collectors.toList()),
+                signatures.stream().filter( Optional::isPresent ).map( Optional::get ).collect( Collectors.toList()) );
     }
 
     // endregion
@@ -753,7 +793,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private RelRoot indexLookup( RelRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
+    private RelRoot indexLookup( RelRoot logicalRoot, Statement statement ) {
         final RelBuilder builder = RelBuilder.create( statement, logicalRoot.rel.getCluster() );
         final RexBuilder rexBuilder = builder.getRexBuilder();
         RelNode newRoot = logicalRoot.rel;
@@ -866,28 +906,52 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private List<RelRoot> route( RelRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
-        // TODO:
-        // determine short or long running
-        var routedRootList = new ArrayList<RelRoot>();
-        for ( val router : statement.getShortRunningRouters() ) {
-            val routedRoots = router.route( logicalRoot, statement, executionTimeMonitor );
-            routedRootList.addAll( routedRoots );
-        }
+    private List<ProposedRoutingPlan> route( RelRoot logicalRoot, Statement statement, String queryId ) {
+        InformationPage page = null;
+        log.info( "Start Routing" );
 
-        /*var routedRootList = statement.getShortRunningRouters()
-                .stream()
-                .map( router -> router.route( logicalRoot, statement, executionTimeMonitor ) )
-                .flatMap( Collection::stream )
-                .collect( Collectors.toList() );*/
-
-        if ( log.isTraceEnabled() ) {
-            routedRootList.forEach( routedRoot ->
-                    log.trace( "Routed query plan: [{}]", RelOptUtil.dumpPlan( "-- Routed Plan", routedRoot.rel, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) ) );
-        }
         if ( statement.getTransaction().isAnalyze() ) {
             InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-            InformationPage page = new InformationPage( "Routed Query Plan" ).setLabel( "plans" );
+            page = new InformationPage( "Routing" );
+            page.fullWidth();
+            queryAnalyzer.addPage( page );
+        }
+
+        if ( logicalRoot.rel instanceof LogicalTableModify ) {
+            val routedDml = DmlRouter.routeDml( logicalRoot.rel, statement );
+            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryId ) );
+        } else if ( logicalRoot.rel instanceof ConditionalExecute ) {
+            val routedConditionalExecute = DmlRouter.handleConditionalExecute( logicalRoot.rel, statement );
+            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedConditionalExecute, logicalRoot, queryId ) );
+        } else {
+            log.info( "Start build DQL" );
+
+            // TODO
+            if ( !RouterManager.IS_LONG_ACTIVE.getBoolean() ) {
+                val proposedPlans = new ArrayList<ProposedRoutingPlan>();
+                for ( val router : RouterManager.getInstance().getShortRunningRouters() ) {
+                    val builders = router.route( logicalRoot, statement );
+                    proposedPlans.addAll(
+                            builders.stream().map( builder ->
+                                    new ProposedRoutingPlanImpl( builder, logicalRoot, queryId, router.getClass() )
+                            ).collect( Collectors.toList() )
+                    );
+
+                }
+
+                return proposedPlans;
+            }
+            // TODO: long running queries
+
+            //routed = builders.stream().map( RelBuilder::build ).collect( Collectors.toList() );
+            log.info( "End DQL" );
+        }
+
+
+
+        /*if ( statement.getTransaction().isAnalyze() ) {
+            InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
+            page = new InformationPage( "Routed Query Plan" ).setLabel( "plans" );
             page.fullWidth();
             InformationGroup group = new InformationGroup( page, "Routed Query Plan" );
             queryAnalyzer.addPage( page );
@@ -899,8 +963,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 queryAnalyzer.registerInformation( informationQueryPlan );
             } );
 
-        }
-        return routedRootList;
+        }*/
+
+        throw new IllegalStateException( "This point should never be reached!" );
+
+    }
+
+
+    private List<ProposedRoutingPlan> routeCached( RelRoot indexLookupRoot, List<CachedProposedRoutingPlan> routingPlansCached, Statement statement ) {
+        return Collections.emptyList();
     }
 
 
@@ -1109,7 +1180,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         return new PolyphenyDbSignature<Object[]>(
                 "",
-                optimalRoot,
                 parameters,
                 ImmutableMap.of(),
                 jdbcType,
@@ -1201,8 +1271,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             } else if ( logicalRoot.kind.belongsTo( SqlKind.QUERY ) ) {
                 event = new QueryEvent();
-            }
-            else{
+            } else {
                 log.error( "No corresponding monitoring event class found" );
                 event = new QueryEvent();
                 return;

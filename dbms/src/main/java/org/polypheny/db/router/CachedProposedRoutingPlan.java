@@ -14,16 +14,22 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.routing;
+package org.polypheny.db.router;
 
 import java.util.List;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.tools.RoutedRelBuilder;
-import org.polypheny.db.transaction.Statement;
+import java.util.Map;
+import lombok.Getter;
+import lombok.Setter;
+import org.polypheny.db.plan.RelOptCost;
+import org.polypheny.db.routing.Router;
 
-public interface Router {
+@Getter
+@Setter
+public class CachedProposedRoutingPlan {
+    protected String queryId;
+    protected RelOptCost preCosts;
+    protected Class<Router> routingClass;
+    protected Map<Long, List<Long>> physicalPlacementsOfPartitions; // partitionId, list<CatalogPlacementIds>
 
-    List<RoutedRelBuilder> route( RelRoot relRoot, Statement statement );
 
-    void resetCaches();
 }

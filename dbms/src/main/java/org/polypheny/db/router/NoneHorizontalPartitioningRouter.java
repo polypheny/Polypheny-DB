@@ -23,7 +23,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.schema.LogicalTable;
-import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.RoutedRelBuilder;
 import org.polypheny.db.transaction.Statement;
 
 @Slf4j
@@ -31,7 +31,7 @@ public abstract class NoneHorizontalPartitioningRouter extends AbstractDqlRouter
 
 
     @Override
-    protected List<RelBuilder> handleHorizontalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RelBuilder> builders, RelOptCluster cluster ) {
+    protected List<RoutedRelBuilder> handleHorizontalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RoutedRelBuilder> builders, RelOptCluster cluster ) {
         this.cancelQuery = true;
         return Collections.emptyList();
     }

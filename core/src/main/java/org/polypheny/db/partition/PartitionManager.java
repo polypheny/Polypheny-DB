@@ -32,6 +32,12 @@ public interface PartitionManager {
 
     boolean probePartitionGroupDistributionChange( CatalogTable catalogTable, int storeId, long columnId, int threshold );
 
+    /**
+     *
+     * @param catalogTable The table we are looking for placements.
+     * @param partitionIds List of all asked partitions ids
+     * @return Returns map of PartitionsId -> needed Columns Placements
+     */
     Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds );
 
     boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, CatalogColumn partitionColumn );
