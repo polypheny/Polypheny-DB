@@ -81,9 +81,9 @@ public class MaterializedManagerImpl extends MaterializedManager {
         this.transactionManager = transactionManager;
         this.materializedInfo = new HashMap<>();
         this.potentialInteresting = new HashMap<PolyXid, Long>();
-        MaterializedFreshnessLoop materializedFreshnessLoop = new MaterializedFreshnessLoop( this );
-        Thread t = new Thread( materializedFreshnessLoop );
-        t.start();
+        //MaterializedFreshnessLoop materializedFreshnessLoop = new MaterializedFreshnessLoop( this );
+        //Thread t = new Thread( materializedFreshnessLoop );
+        //t.start();
     }
 
 
