@@ -38,6 +38,8 @@ public class DMLEventAnalyzer {
                 .isSubQuery( dmlEvent.isSubQuery() )
                 .recordedTimestamp( dmlEvent.getRecordedTimestamp()  )
                 .accessedPartitions( dmlEvent.getAccessedPartitions() )
+                .queryId( dmlEvent.getQueryId() )
+                .monitoringType( "DML" )
                 .build();
         metric.getTables().addAll( dmlEvent.getAnalyzeRelShuttle().getTables() );
 

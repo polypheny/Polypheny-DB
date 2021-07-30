@@ -53,6 +53,7 @@ public class DMLDataPoint implements MonitoringDataPoint, Serializable {
     private int rowCount;
     private List<String> fieldNames;
     private Map<Long, List<Long>> accessedPartitions;
+    private String queryId;
 
 
     @Override

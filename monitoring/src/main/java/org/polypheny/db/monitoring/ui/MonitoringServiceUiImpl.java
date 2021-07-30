@@ -103,7 +103,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
     private <T extends MonitoringDataPoint> void updateMetricInformationTable( InformationTable table, Class<T> metricClass ) {
         var elements = this.repo.getAllDataPoints( metricClass );
-        elements.sort( Comparator.comparing( MonitoringDataPoint::timestamp ) );
+        elements.sort( Comparator.comparing( MonitoringDataPoint::timestamp ).reversed() );
         elements = elements.stream().limit( 100 ).collect( Collectors.toList());
         table.reset();
 

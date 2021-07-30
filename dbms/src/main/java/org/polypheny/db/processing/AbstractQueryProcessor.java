@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -161,10 +160,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     // region public overrides
     @Override
     public void executionTime( String reference, long nanoTime ) {
-        val id = statement.getTransaction().getMonitoringEvent().getId();
-        val referenceId = UUID.fromString( reference );
-        if ( id.equals( referenceId ) ) {
-            ((StatementEvent) statement.getTransaction().getMonitoringEvent()).setExecutionTime( nanoTime );
+        val event = (StatementEvent)statement.getTransaction().getMonitoringEvent();
+        if ( reference == event.getQueryId() ) {
+            event.setExecutionTime( nanoTime );
         }
     }
 
@@ -258,22 +256,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         final StopWatch stopWatch = new StopWatch();
         stopWatch.start();
 
-        ExecutionTimeMonitor executionTimeMonitor = new ExecutionTimeMonitor();
-        val monitoringData = statement.getTransaction().getMonitoringEvent();
-        if ( monitoringData != null ) {
-            executionTimeMonitor.subscribe( this, monitoringData.getId() );
-        }
-
         // check for view
         if ( logicalRoot.rel.hasView() ) {
             logicalRoot = logicalRoot.tryExpandView();
         }
 
-        // TODO: Feed Monitoring
         val queryId = this.analyzeQueryAndPrepareMonitoring( statement, logicalRoot );
-
-        // TODO: get queryId and check in Monitoring for last execution time
-        // val queryId = logicalRoot.rel.relCompareString();
+        ExecutionTimeMonitor executionTimeMonitor = new ExecutionTimeMonitor();
+        executionTimeMonitor.subscribe( this, queryId );
 
         // TODO: add cache of last execution time?
 
@@ -1144,7 +1134,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         String queryId = analyzeRelShuttle.getQueryName() + accessedPartitionMap;
 
-        this.prepareMonitoring( analyzeRelShuttle, statement, logicalRoot, accessedPartitionMap );
+        this.prepareMonitoring( analyzeRelShuttle, statement, logicalRoot, accessedPartitionMap, queryId );
 
         return queryId;
     }
@@ -1201,20 +1191,28 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private void prepareMonitoring( LogicalRelQueryAnalyzeShuttle shuttle, Statement statement, RelRoot logicalRoot, Map<Long, List<Long>> accessedPartitionList ) {
+    private void prepareMonitoring( LogicalRelQueryAnalyzeShuttle shuttle, Statement statement, RelRoot logicalRoot, Map<Long, List<Long>> accessedPartitionList, String queryId ) {
 
         // initialize Monitoring
         if ( statement.getTransaction().getMonitoringEvent() == null ) {
+            StatementEvent event;
             if ( logicalRoot.kind.belongsTo( SqlKind.DML ) ) {
-                statement.getTransaction().setMonitoringEvent( new DMLEvent() );
-            } else if ( logicalRoot.kind.belongsTo( SqlKind.QUERY ) ) {
-                statement.getTransaction().setMonitoringEvent( new QueryEvent() );
-            }
-        }
+                event = new DMLEvent();
 
-        StatementEvent event = (StatementEvent) statement.getTransaction().getMonitoringEvent();
-        event.setAccessedPartitions( accessedPartitionList );
-        event.setAnalyzeRelShuttle( shuttle );
+            } else if ( logicalRoot.kind.belongsTo( SqlKind.QUERY ) ) {
+                event = new QueryEvent();
+            }
+            else{
+                log.error( "No corresponding monitoring event class found" );
+                event = new QueryEvent();
+                return;
+            }
+
+            event.setAccessedPartitions( accessedPartitionList );
+            event.setAnalyzeRelShuttle( shuttle );
+            event.setQueryId( queryId );
+            statement.getTransaction().setMonitoringEvent( event );
+        }
     }
 
     // endregion

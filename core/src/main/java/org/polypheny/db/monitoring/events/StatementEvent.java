@@ -49,6 +49,7 @@ public abstract class StatementEvent extends BaseEvent {
     protected Map<Long, List<Long>> accessedPartitions;
     protected LogicalRelQueryAnalyzeShuttle analyzeRelShuttle;
     protected String relCompareString;
+    protected String queryId;
 
 
 

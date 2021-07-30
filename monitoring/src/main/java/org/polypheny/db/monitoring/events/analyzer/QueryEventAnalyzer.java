@@ -37,6 +37,8 @@ public class QueryEventAnalyzer {
                 .recordedTimestamp( queryEvent.getRecordedTimestamp() )
                 .relCompareString( queryEvent.getRelCompareString() )
                 .accessedPartitions( queryEvent.getAccessedPartitions() )
+                .queryId( queryEvent.getQueryId() )
+                .monitoringType( "SELECT" )
                 .build();
         metric.getTables().addAll( queryEvent.getAnalyzeRelShuttle().getTables() );
 
