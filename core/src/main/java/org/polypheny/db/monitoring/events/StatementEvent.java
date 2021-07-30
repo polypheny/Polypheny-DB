@@ -19,10 +19,11 @@ package org.polypheny.db.monitoring.events;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.processing.QueryAnalyzeRelShuttle;
+import org.polypheny.db.processing.LogicalRelQueryAnalyzeShuttle;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.transaction.Statement;
 
@@ -45,8 +46,8 @@ public abstract class StatementEvent extends BaseEvent {
     protected boolean isAnalyze;
     protected boolean isSubQuery;
     protected String durations;
-    protected List<Long> accessedPartitions;
-    protected QueryAnalyzeRelShuttle analyzeRelShuttle;
+    protected Map<Long, List<Long>> accessedPartitions;
+    protected LogicalRelQueryAnalyzeShuttle analyzeRelShuttle;
     protected String relCompareString;
 
 

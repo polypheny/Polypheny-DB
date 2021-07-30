@@ -61,12 +61,10 @@ import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.prepare.RelOptTableImpl;
-import org.polypheny.db.processing.QueryAnalyzeRelShuttle;
+import org.polypheny.db.processing.LogicalRelQueryAnalyzeShuttle;
 import org.polypheny.db.processing.QueryParameterizer;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.RelShuttleImpl;
-import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalValues;
@@ -133,7 +131,7 @@ public class UnifiedRoutingObsolet extends AbstractRouter {
 
     private void updateUsedColumns(Statement statement, RelRoot logicalRoot){
         // get used columns:
-        val shuttle = new QueryAnalyzeRelShuttle( statement );
+        val shuttle = new LogicalRelQueryAnalyzeShuttle( statement );
         logicalRoot.rel.accept( shuttle );
 
         // update column values
@@ -294,72 +292,15 @@ public class UnifiedRoutingObsolet extends AbstractRouter {
     }
 
 
-    private void coverBuildDql( RelNode node, RelBuilder builder, Statement statement, RelOptCluster cluster ){
-        //return super.buildSelect( node, builder, statement, cluster );
-        for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            // Check if partition used in general to reduce overhead if not for un-partitioned
-            if ( node instanceof LogicalFilter && ((LogicalFilter) node).getInput().getTable() != null ) {
 
-                RelOptTableImpl table = (RelOptTableImpl) ((LogicalFilter) node).getInput().getTable();
-
-                if ( table.getTable() instanceof LogicalTable ) {
-
-                    // TODO Routing of partitioned tables is very limited. This should be improved to also apply sophisticated
-                    //  routing strategies, especially when we also get rid of the worst-case routing.
-
-                    LogicalTable t = ((LogicalTable) table.getTable());
-                    CatalogTable catalogTable;
-                    catalogTable = Catalog.getInstance().getTable( t.getTableId() );
-                    if ( catalogTable.isPartitioned ) {
-                        WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor( statement, catalogTable.columnIds.indexOf( catalogTable.partitionColumnId ) );
-                        node.accept( new RelShuttleImpl() {
-                            @Override
-                            public RelNode visit( LogicalFilter filter ) {
-                                super.visit( filter );
-                                filter.accept( whereClauseVisitor );
-                                return filter;
-                            }
-                        } );
-
-                        if ( whereClauseVisitor.valueIdentified ) {
-                            List<Object> values = whereClauseVisitor.getValues().stream()
-                                    .map( Object::toString )
-                                    .collect( Collectors.toList() );
-                            int scanId = 0;
-                            if ( !values.isEmpty() ) {
-                                scanId = ((LogicalFilter) node).getInput().getId();
-                                filterMap.put( scanId, whereClauseVisitor.getValues().stream()
-                                        .map( Object::toString )
-                                        .collect( Collectors.toList() ) );
-                            }
-                            log.info( "BuildSelect: build DQL 1" );
-                            buildDql( node.getInput( i ), Lists.newArrayList(builder), statement, cluster );
-                            filterMap.remove( scanId );
-                        } else {
-                            log.info( "BuildSelect: build DQL 2" );
-                            buildDql( node.getInput( i ), Lists.newArrayList(builder), statement, cluster );
-                        }
-                    } else {
-                        log.info( "BuildSelect: build DQL 3" );
-                        buildDql( node.getInput( i ), Lists.newArrayList(builder), statement, cluster );
-                    }
-                }
-            } else {
-                log.info( "BuildSelect: build DQL 4" );
-                buildDql( node.getInput( i ), Lists.newArrayList(builder), statement, cluster );
-            }
-        }
-    }
 
     private Map<Long, List<CatalogColumnPlacement>> handlePartitioning( RelNode node, CatalogTable catalogTable ){
         // TODO Routing of partitioned tables is very limited. This should be improved to also apply sophisticated
         //  routing strategies, especially when we also get rid of the worst-case routing.
         Map<Long, List<CatalogColumnPlacement>> placements;
 
-        if ( log.isDebugEnabled() ) {
-            log.debug( "VALUE from Map: {} id: {}", filterMap.get( node.getId() ), node.getId() );
-        }
-        List<String> partitionValues = filterMap.get( node.getId() );
+
+        List<String> partitionValues = new ArrayList<>();// = filterMap.get( node.getId() );
 
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionType );
@@ -395,7 +336,7 @@ public class UnifiedRoutingObsolet extends AbstractRouter {
     protected RelBuilder buildSelect( RelNode node, RelBuilder builder, Statement statement, RelOptCluster cluster ) {
         log.info( "Build Select:" + this.queryClassString );
 
-        this.coverBuildDql(node, builder, statement, cluster);
+        //this.coverBuildDql(node, builder, statement, cluster);
 
         if ( node instanceof LogicalTableScan && node.getTable() != null ) {
             RelOptTableImpl table = (RelOptTableImpl) node.getTable();

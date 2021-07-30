@@ -29,15 +29,15 @@ import org.polypheny.db.transaction.Statement;
 /**
  * Unified routing rex shuttle class to extract used columns in RelNode
  */
-public class QueryAnalyzeRexShuttle extends RexShuttle {
+public class LogicalRelQueryAnalyzeRexShuttle extends RexShuttle {
 
 
     @Getter
-    protected final HashSet<Integer> ids = new HashSet<>();
+    protected final HashSet<Integer> usedIds = new HashSet<>();
     private final Statement statement;
 
 
-    public QueryAnalyzeRexShuttle( Statement statement ) {
+    public LogicalRelQueryAnalyzeRexShuttle( Statement statement ) {
         super();
         this.statement = statement;
     }
@@ -54,7 +54,7 @@ public class QueryAnalyzeRexShuttle extends RexShuttle {
     public RexNode visitInputRef( RexInputRef inputRef ) {
         // add accessed value
         if ( inputRef != null ) {
-            this.ids.add( inputRef.getIndex() );
+            this.usedIds.add( inputRef.getIndex() );
         }
 
         return super.visitInputRef( inputRef );
@@ -64,7 +64,7 @@ public class QueryAnalyzeRexShuttle extends RexShuttle {
     @Override
     public RexNode visitPatternFieldRef( RexPatternFieldRef fieldRef ) {
         if ( fieldRef != null ) {
-            this.ids.add( fieldRef.getIndex() );
+            this.usedIds.add( fieldRef.getIndex() );
         }
         return super.visitPatternFieldRef( fieldRef );
     }
@@ -73,7 +73,7 @@ public class QueryAnalyzeRexShuttle extends RexShuttle {
     @Override
     public RexNode visitDynamicParam( RexDynamicParam dynamicParam ) {
         if ( dynamicParam != null ) {
-            this.ids.add( (int) dynamicParam.getIndex() );
+            this.usedIds.add( (int) dynamicParam.getIndex() );
         }
         return super.visitDynamicParam( dynamicParam );
     }

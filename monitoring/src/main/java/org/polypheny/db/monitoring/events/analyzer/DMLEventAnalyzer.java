@@ -22,9 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.monitoring.events.DMLEvent;
 import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
-import org.polypheny.db.monitoring.events.DMLEvent;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
 
 @Slf4j
 public class DMLEventAnalyzer {
@@ -42,12 +39,7 @@ public class DMLEventAnalyzer {
                 .recordedTimestamp( dmlEvent.getRecordedTimestamp()  )
                 .accessedPartitions( dmlEvent.getAccessedPartitions() )
                 .build();
-
-        RelRoot relRoot = dmlEvent.getRouted();
-        if ( relRoot != null ) {
-            RelNode node = relRoot.rel;
-            processRelNode( node, dmlEvent, metric );
-        }
+        metric.getTables().addAll( dmlEvent.getAnalyzeRelShuttle().getTables() );
 
         if ( dmlEvent.isAnalyze() ) {
             processDurationInfo( dmlEvent, metric );
@@ -81,18 +73,6 @@ public class DMLEventAnalyzer {
             dmlMetric.getDataElements().put( durationName, time );
         } catch ( Exception e ) {
             log.debug( "could no find duration:" + durationName );
-        }
-    }
-
-
-    private static void processRelNode( RelNode node, DMLEvent event, DMLDataPoint metric ) {
-
-        for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            processRelNode( node.getInput( i ), event, metric );
-        }
-
-        if ( node.getTable() != null ) {
-            metric.getTables().addAll( node.getTable().getQualifiedName() );
         }
     }
 

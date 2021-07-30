@@ -35,7 +35,7 @@ public class HorizontalFullPlacementQueryRouter extends NoneHorizontalPartitioni
     protected Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable catalogTable, Statement statement ) {
         // get used columns from analyze
         StatementEvent event = (StatementEvent) statement.getTransaction().getMonitoringEvent();
-        val usedColumns = event.getAnalyzeRelShuttle().getUsedColumnsPerTable( catalogTable.id );
+        val usedColumns = event.getAnalyzeRelShuttle().getAllColumnsPerTable( catalogTable.id );
 
         // filter for placements by adapters
         val adapters = catalogTable.placementsByAdapter.entrySet()

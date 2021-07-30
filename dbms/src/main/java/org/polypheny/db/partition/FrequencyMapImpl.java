@@ -369,10 +369,10 @@ public class FrequencyMapImpl extends FrequencyMap {
         switch ( ((TemperaturePartitionProperty) table.partitionProperty).getPartitionCostIndication() ){
             case ALL:
                 for ( QueryDataPoint queryDataPoint: MonitoringServiceProvider.getInstance().getDataPointsAfter( QueryDataPoint.class, queryStart ) ) {
-                    queryDataPoint.getAccessedPartitions().forEach( p -> incrementPartitionAccess( p ) );
+                    queryDataPoint.getAccessedPartitions().keySet().forEach( p -> incrementPartitionAccess( p ) );
                 }
                 for ( DMLDataPoint dmlDataPoint: MonitoringServiceProvider.getInstance().getDataPointsAfter( DMLDataPoint.class, queryStart ) ) {
-                    dmlDataPoint.getAccessedPartitions().forEach( p -> incrementPartitionAccess( p ) );
+                    dmlDataPoint.getAccessedPartitions().keySet().forEach( p -> incrementPartitionAccess( p ) );
                 }
 
                 break;
@@ -380,14 +380,14 @@ public class FrequencyMapImpl extends FrequencyMap {
             case READ:
                 List<QueryDataPoint> readAccesses= MonitoringServiceProvider.getInstance().getDataPointsAfter( QueryDataPoint.class, queryStart );
                 for ( QueryDataPoint queryDataPoint: readAccesses ) {
-                    queryDataPoint.getAccessedPartitions().forEach( p -> incrementPartitionAccess( p ) );
+                    queryDataPoint.getAccessedPartitions().keySet().forEach( p -> incrementPartitionAccess( p ) );
                 }
                 break;
 
             case WRITE:
                 List<DMLDataPoint> writeAccesses= MonitoringServiceProvider.getInstance().getDataPointsAfter( DMLDataPoint.class, queryStart );
                 for ( DMLDataPoint dmlDataPoint: writeAccesses ) {
-                    dmlDataPoint.getAccessedPartitions().forEach( p -> incrementPartitionAccess( p ) );
+                    dmlDataPoint.getAccessedPartitions().keySet().forEach( p -> incrementPartitionAccess( p ) );
                 }
         }
 

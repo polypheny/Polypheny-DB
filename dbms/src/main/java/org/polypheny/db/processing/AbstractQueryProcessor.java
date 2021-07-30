@@ -23,6 +23,7 @@ import com.google.common.collect.Lists;
 import java.lang.reflect.Type;
 import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,6 +36,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import lombok.var;
@@ -70,6 +72,7 @@ import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.DMLEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
+import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptUtil;
@@ -78,6 +81,7 @@ import org.polypheny.db.plan.ViewExpanders;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.prepare.Prepare.PreparedResultImpl;
+import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
@@ -101,7 +105,6 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
-import org.polypheny.db.router.QueryNameShuttle;
 import org.polypheny.db.router.QueryProcessorHelpers;
 import org.polypheny.db.router.RelDeepCopyShuttle;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
@@ -109,6 +112,7 @@ import org.polypheny.db.routing.ExecutionTimeMonitor.ExecutionTimeObserver;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
+import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.sql.SqlExplainFormat;
 import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.sql.SqlKind;
@@ -146,11 +150,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     // region ctor
 
+
     protected AbstractQueryProcessor( Statement statement ) {
         this.statement = statement;
     }
 
     // endregion
+
 
     // region public overrides
     @Override
@@ -197,6 +203,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     // region processing
 
+
     private PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery ) {
         boolean isAnalyze = statement.getTransaction().isAnalyze() && !isSubquery;
 
@@ -240,8 +247,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             MonitoringServiceProvider.getInstance().monitorEvent( eventData );
         }
 
-
-
         return result;
     }
 
@@ -265,14 +270,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         // TODO: Feed Monitoring
-        analyzeQueryAndPrepareMonitoring(statement, logicalRoot);
+        val queryId = this.analyzeQueryAndPrepareMonitoring( statement, logicalRoot );
 
         // TODO: get queryId and check in Monitoring for last execution time
-        val queryId = logicalRoot.rel.relCompareString();
+        // val queryId = logicalRoot.rel.relCompareString();
 
         // TODO: add cache of last execution time?
-
-
 
         List<RelRoot> routedRootList;
         if ( isRouted ) {
@@ -473,6 +476,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     // endregion
 
     // region processing single steps
+
 
     private void acquireLock( boolean isAnalyze, RelRoot logicalRoot ) {
         // Locking
@@ -876,7 +880,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         // TODO:
         // determine short or long running
         var routedRootList = new ArrayList<RelRoot>();
-        for(val router: statement.getShortRunningRouters()){
+        for ( val router : statement.getShortRunningRouters() ) {
             val routedRoots = router.route( logicalRoot, statement, executionTimeMonitor );
             routedRootList.addAll( routedRoots );
         }
@@ -1062,6 +1066,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     // region private helpers
 
+
     private RelCollation relCollation( RelNode node ) {
         return node instanceof Sort
                 ? ((Sort) node).collation
@@ -1129,21 +1134,76 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private void analyzeQueryAndPrepareMonitoring( Statement statement, RelRoot logicalRoot ) {
-        // TODO: adjust shuttle, create queryId
-        val shuttle = new QueryAnalyzeRelShuttle( statement );
-        logicalRoot.rel.accept( shuttle );
+    private String analyzeQueryAndPrepareMonitoring( Statement statement, RelRoot logicalRoot ) {
+        val analyzeRelShuttle = new LogicalRelQueryAnalyzeShuttle( statement );
+        logicalRoot.rel.accept( analyzeRelShuttle );
 
-        val shuttle2 = new QueryNameShuttle();
-        logicalRoot.rel.accept( shuttle );
-        log.info( "SR: analyze" );
-        log.info( shuttle2.getHashBasis().toString() );
+        List<String> partitionValues = analyzeRelShuttle.filterMap.values().stream().flatMap( Collection::stream ).collect( Collectors.toList() );
 
-        this.prepareMonitoring( shuttle, statement, logicalRoot );
+        var accessedPartitionMap = this.getAccessedPartitionsPerTable( logicalRoot.rel, partitionValues );
+
+        String queryId = analyzeRelShuttle.getQueryName() + accessedPartitionMap;
+
+        this.prepareMonitoring( analyzeRelShuttle, statement, logicalRoot, accessedPartitionMap );
+
+        return queryId;
     }
 
 
-    private void prepareMonitoring(QueryAnalyzeRelShuttle shuttle, Statement statement, RelRoot logicalRoot){
+    private Map<Long, List<Long>> getAccessedPartitionsPerTable( RelNode rel, List<String> partitionValues ) {
+        Map<Long, List<Long>> accessedPartitionList = new HashMap<>();
+        if ( !(rel instanceof LogicalTableScan) ) {
+            for ( int i = 0; i < rel.getInputs().size(); i++ ) {
+                val result = getAccessedPartitionsPerTable( rel.getInput( i ), partitionValues );
+                if ( !result.isEmpty() ) {
+                    for ( val elem : result.entrySet() ) {
+                        accessedPartitionList.merge( elem.getKey(), elem.getValue(), ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
+                    }
+                }
+
+            }
+        } else {
+            if ( rel.getTable() != null ) {
+                RelOptTableImpl table = (RelOptTableImpl) rel.getTable();
+                if ( table.getTable() instanceof LogicalTable ) {
+                    LogicalTable logicalTable = ((LogicalTable) table.getTable());
+                    // Get placements of this table
+                    CatalogTable catalogTable = Catalog.getInstance().getTable( logicalTable.getTableId() );
+
+                    if ( !partitionValues.isEmpty() ) {
+                        if ( log.isDebugEnabled() ) {
+                            log.debug( "TableID: {} is partitioned on column: {} - {}",
+                                    logicalTable.getTableId(),
+                                    catalogTable.partitionColumnId,
+                                    Catalog.getInstance().getColumn( catalogTable.partitionColumnId ).name );
+                        }
+                        List<Long> identifiedPartitions = new ArrayList<>();
+                        for ( String partitionValue : partitionValues ) {
+                            log.debug( "Extracted PartitionValue: {}", partitionValue );
+                            long identifiedPartition = PartitionManagerFactory.getInstance()
+                                    .getPartitionManager( catalogTable.partitionType )
+                                    .getTargetPartitionId( catalogTable, partitionValue );
+
+                            identifiedPartitions.add( identifiedPartition );
+                            log.debug( "Identified PartitionId: {} for value: {}", identifiedPartition, partitionValue );
+                        }
+
+                        // Currently only one partition is identified, therefore LIST is not needed YET.
+                        accessedPartitionList.merge( catalogTable.id, identifiedPartitions, ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
+                        // fallback
+                    } else {
+                        accessedPartitionList.merge( catalogTable.id, catalogTable.partitionProperty.partitionIds, ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
+                    }
+                }
+            }
+        }
+        return accessedPartitionList;
+    }
+
+
+    private void prepareMonitoring( LogicalRelQueryAnalyzeShuttle shuttle, Statement statement, RelRoot logicalRoot, Map<Long, List<Long>> accessedPartitionList ) {
+
+        // initialize Monitoring
         if ( statement.getTransaction().getMonitoringEvent() == null ) {
             if ( logicalRoot.kind.belongsTo( SqlKind.DML ) ) {
                 statement.getTransaction().setMonitoringEvent( new DMLEvent() );
@@ -1152,10 +1212,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
         }
 
-        StatementEvent event = (StatementEvent)statement.getTransaction().getMonitoringEvent();
+        StatementEvent event = (StatementEvent) statement.getTransaction().getMonitoringEvent();
+        event.setAccessedPartitions( accessedPartitionList );
         event.setAnalyzeRelShuttle( shuttle );
     }
-
 
     // endregion
 }

@@ -21,8 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
 
 @Slf4j
 public class QueryEventAnalyzer {
@@ -38,13 +36,9 @@ public class QueryEventAnalyzer {
                 .isSubQuery( queryEvent.isSubQuery() )
                 .recordedTimestamp( queryEvent.getRecordedTimestamp() )
                 .relCompareString( queryEvent.getRelCompareString() )
+                .accessedPartitions( queryEvent.getAccessedPartitions() )
                 .build();
-
-        RelRoot relRoot = queryEvent.getRouted();
-        if ( relRoot != null ) {
-            RelNode node = relRoot.rel;
-            processRelNode( node, queryEvent, metric );
-        }
+        metric.getTables().addAll( queryEvent.getAnalyzeRelShuttle().getTables() );
 
         if ( queryEvent.isAnalyze() ) {
             processDurationInfo( queryEvent, metric );
@@ -82,17 +76,5 @@ public class QueryEventAnalyzer {
         }
     }
 
-
-    private static void processRelNode( RelNode node, QueryEvent event, QueryDataPoint metric ) {
-
-        for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            processRelNode( node.getInput( i ), event, metric );
-        }
-
-        if ( node.getTable() != null ) {
-            metric.getTables().addAll( node.getTable().getQualifiedName() );
-        }
-
-    }
 
 }

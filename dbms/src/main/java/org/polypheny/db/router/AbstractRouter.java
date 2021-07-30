@@ -96,7 +96,6 @@ public abstract class AbstractRouter implements Router {
     protected static final Cache<Integer, RelNode> joinedTableScanCache = CacheBuilder.newBuilder()
             .maximumSize( RuntimeConfig.JOINED_TABLE_SCAN_CACHE_SIZE.getInteger() )
             .build();
-    protected final Map<Integer, List<String>> filterMap = new HashMap<>();
     final static Catalog catalog = Catalog.getInstance();
     protected ExecutionTimeMonitor executionTimeMonitor;
     protected InformationPage page = null;
@@ -136,20 +135,6 @@ public abstract class AbstractRouter implements Router {
             log.info( "End DQL" );
         }
 
-        // Add information to query analyzer
-        /*if ( statement.getTransaction().isAnalyze() ) {
-            InformationGroup group = new InformationGroup( page, "Selected Adapters" );
-            statement.getTransaction().getQueryAnalyzer().addGroup( group );
-            InformationTable table = new InformationTable(
-                    group,
-                    ImmutableList.of( "Table", "Adapter", "Physical Name" ) );
-            selectedAdapter.forEach( ( k, v ) -> {
-                CatalogTable catalogTable = Catalog.getInstance().getTable( k );
-                table.addRow( catalogTable.getSchemaName() + "." + catalogTable.name, v.uniqueName, v.physicalSchemaName + "." + v.physicalTableName );
-            } );
-            statement.getTransaction().getQueryAnalyzer().registerInformation( table );
-        }*/
-
         return routed.stream()
                 .map( elem -> new RelRoot( elem, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation ) )
                 .collect( Collectors.toList() );
@@ -183,7 +168,9 @@ public abstract class AbstractRouter implements Router {
             return Collections.emptyList();
         }
 
-        this.handleSelectWithFilter( node, builders, statement, cluster );
+        for ( int i = 0; i < node.getInputs().size(); i++ ) {
+            builders = this.buildDql( node.getInput( i ), builders, statement, cluster );
+        }
 
         if ( node instanceof LogicalTableScan && node.getTable() != null ) {
             RelOptTableImpl table = (RelOptTableImpl) node.getTable();
@@ -196,16 +183,14 @@ public abstract class AbstractRouter implements Router {
             //Map<Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
             catalogTable = Catalog.getInstance().getTable( logicalTable.getTableId() );
 
-            // Check if table is even partitioned
+            // Check if table is even horizontal partitioned
             if ( catalogTable.isPartitioned ) {
 
-                if ( log.isDebugEnabled() ) {
-                    log.debug( "VALUE from Map: {} id: {}", filterMap.get( node.getId() ), node.getId() );
-                }
-
+                // default routing
                 return handleHorizontalPartitioning( node, catalogTable, statement, logicalTable, builders, cluster );
 
             } else {
+                // at the moment multiple strategies
                 return handleNoneHorizontalPartitioning( node, catalogTable, statement, builders, cluster );
             }
 
@@ -249,94 +234,31 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    protected void handleSelectWithFilter( RelNode node, List<RelBuilder> builders, Statement statement, RelOptCluster cluster ) {
-        for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            // Check if partition used in general to reduce overhead if not for un-partitioned
-            if ( node instanceof LogicalFilter && ((LogicalFilter) node).getInput().getTable() != null ) {
-
-                RelOptTableImpl table = (RelOptTableImpl) ((LogicalFilter) node).getInput().getTable();
-
-                if ( table.getTable() instanceof LogicalTable ) {
-
-                    LogicalTable t = ((LogicalTable) table.getTable());
-                    CatalogTable catalogTable;
-                    catalogTable = Catalog.getInstance().getTable( t.getTableId() );
-                    if ( catalogTable.isPartitioned ) {
-                        WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor( statement, catalogTable.columnIds.indexOf( catalogTable.partitionColumnId ) );
-                        node.accept( new RelShuttleImpl() {
-                            @Override
-                            public RelNode visit( LogicalFilter filter ) {
-                                super.visit( filter );
-                                filter.accept( whereClauseVisitor );
-                                return filter;
-                            }
-                        } );
-
-                        if ( whereClauseVisitor.valueIdentified ) {
-                            List<Object> values = whereClauseVisitor.getValues().stream()
-                                    .map( Object::toString )
-                                    .collect( Collectors.toList() );
-                            int scanId = 0;
-                            if ( !values.isEmpty() ) {
-                                scanId = ((LogicalFilter) node).getInput().getId();
-                                filterMap.put( scanId, whereClauseVisitor.getValues().stream()
-                                        .map( Object::toString )
-                                        .collect( Collectors.toList() ) );
-                            }
-                            builders = this.buildDql( node.getInput( i ), builders, statement, cluster );
-                            filterMap.remove( scanId );
-                        } else {
-                            builders = this.buildDql( node.getInput( i ), builders, statement, cluster );
-                        }
-                    } else {
-                        builders = this.buildDql( node.getInput( i ), builders, statement, cluster );
-                    }
-                }
-            } else {
-                builders = this.buildDql( node.getInput( i ), builders, statement, cluster );
-            }
-        }
-    }
-
-
     protected List<RelBuilder> handleHorizontalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RelBuilder> builders, RelOptCluster cluster ) {
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionType );
-        List<String> partitionValues = filterMap.get( node.getId() );
+
+        // get info from whereClauseVisitor
+        StatementEvent event = (StatementEvent)statement.getTransaction().getMonitoringEvent();
+        List<String> partitionValues = event.getAnalyzeRelShuttle().getFilterMap().get( node.getId() );
+
         List<Long> accessedPartitionList;
         Map<Long, List<CatalogColumnPlacement>> placementDistribution;
 
         if ( partitionValues != null ) {
-            if ( log.isDebugEnabled() ) {
-                log.debug( "TableID: {} is partitioned on column: {} - {}",
-                        logicalTable.getTableId(),
-                        catalogTable.partitionColumnId,
-                        catalog.getColumn( catalogTable.partitionColumnId ).name );
+            List<Long> identPartitions = new ArrayList<>();
+            for ( String partitionValue : partitionValues ) {
+                log.debug( "Extracted PartitionValue: {}", partitionValue );
+                long identPart = partitionManager.getTargetPartitionId( catalogTable, partitionValue );
+                identPartitions.add( identPart );
+                log.debug( "Identified PartitionId: {} for value: {}", identPart, partitionValue );
             }
-            if ( partitionValues.size() != 0 ) {
-                List<Long> identPartitions = new ArrayList<>();
-                for ( String partitionValue : partitionValues ) {
-                    log.debug( "Extracted PartitionValue: {}", partitionValue );
-                    long identPart = partitionManager.getTargetPartitionId( catalogTable, partitionValue );
-                    identPartitions.add( identPart );
-                    log.debug( "Identified PartitionId: {} for value: {}", identPart, partitionValue );
-                }
-                // Add identified partitions to monitoring object
-                // Currently only one partition is identified, therefore LIST is not needed YET.
+            // Add identified partitions to monitoring object
+            // Currently only one partition is identified, therefore LIST is not needed YET.
 
-                placementDistribution = partitionManager.getRelevantPlacements( catalogTable, identPartitions );
-                accessedPartitionList = identPartitions;
-            } else {
-                placementDistribution = partitionManager.getRelevantPlacements( catalogTable, catalogTable.partitionProperty.partitionIds );
-                accessedPartitionList = catalogTable.partitionProperty.partitionIds;
-            }
+            placementDistribution = partitionManager.getRelevantPlacements( catalogTable, identPartitions );
         } else {
             placementDistribution = partitionManager.getRelevantPlacements( catalogTable, catalogTable.partitionProperty.partitionIds );
-            accessedPartitionList = catalogTable.partitionProperty.partitionIds;
-        }
-
-        if ( statement.getTransaction().getMonitoringEvent() != null ) {
-            ((StatementEvent) statement.getTransaction().getMonitoringEvent()).setAccessedPartitions( accessedPartitionList );
         }
 
         return builders.stream().map( builder -> builder.push( buildJoinedTableScan( statement, cluster, placementDistribution ) ) ).collect( Collectors.toList() );
@@ -846,12 +768,6 @@ public abstract class AbstractRouter implements Router {
                         identPart = catalogTable.partitionProperty.partitionIds.get( 0 );
                         accessedPartitionList.add( identPart );
 
-                    }
-
-                    List<CatalogPartitionPlacement> debugPlacements = catalog.getAllPartitionPlacementsByTable( t.getTableId() );
-                    if ( statement.getTransaction().getMonitoringEvent() != null ) {
-                        ((StatementEvent) statement.getTransaction().getMonitoringEvent())
-                                .setAccessedPartitions( accessedPartitionList.stream().collect( Collectors.toList() ) );
                     }
 
                     if ( !operationWasRewritten ) {
