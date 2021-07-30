@@ -125,7 +125,7 @@ public class MongoStore extends DataStore {
             trxLifetimeLimit = Adapter.MONGODB.getDefaultSettings().get( "trxLifetimeLimit" );
         }
         configs.put( "transactionLifetimeLimitSeconds", Integer.parseInt( trxLifetimeLimit ) );
-        db.runCommand( configs );
+        //db.runCommand( configs );
     }
 
 
