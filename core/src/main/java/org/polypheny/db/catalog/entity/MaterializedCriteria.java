@@ -48,7 +48,7 @@ public class MaterializedCriteria implements Serializable {
 
 
     public MaterializedCriteria() {
-        this.criteriaType = CriteriaType.INTERVAL;
+        this.criteriaType = CriteriaType.MANUAL;
         this.interval = 1;
         this.timeUnit = TimeUnit.DAYS;
         this.lastUpdate = new Timestamp( System.currentTimeMillis() );
