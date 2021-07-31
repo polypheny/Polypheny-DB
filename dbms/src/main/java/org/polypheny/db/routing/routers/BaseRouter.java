@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.router;
+package org.polypheny.db.routing.routers;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -47,14 +47,15 @@ import org.polypheny.db.tools.RoutedRelBuilder;
 import org.polypheny.db.transaction.Statement;
 
 @Slf4j
-public class RoutingHelpers {
+public abstract class BaseRouter {
 
-    final static Catalog catalog = Catalog.getInstance();
-    protected static final Cache<Integer, RelNode> joinedTableScanCache = CacheBuilder.newBuilder()
+    public static final Cache<Integer, RelNode> joinedTableScanCache = CacheBuilder.newBuilder()
             .maximumSize( RuntimeConfig.JOINED_TABLE_SCAN_CACHE_SIZE.getInteger() )
             .build();
+    final static Catalog catalog = Catalog.getInstance();
 
-    protected static RelNode recursiveCopy( RelNode node ) {
+
+    public RelNode recursiveCopy( RelNode node ) {
         List<RelNode> inputs = new LinkedList<>();
         if ( node.getInputs() != null && node.getInputs().size() > 0 ) {
             for ( RelNode input : node.getInputs() ) {
@@ -65,7 +66,7 @@ public class RoutingHelpers {
     }
 
 
-    protected static RoutedRelBuilder handleTableScan(
+    public RoutedRelBuilder handleTableScan(
             RoutedRelBuilder builder,
             long tableId,
             String storeUniqueName,
@@ -83,13 +84,12 @@ public class RoutingHelpers {
     }
 
 
-
-    public static RoutedRelBuilder handleValues( LogicalValues node, RoutedRelBuilder builder ) {
+    public RoutedRelBuilder handleValues( LogicalValues node, RoutedRelBuilder builder ) {
         return builder.values( node.tuples, node.getRowType() );
     }
 
 
-    protected static List<RoutedRelBuilder> handleValues( LogicalValues node, List<RoutedRelBuilder> builders ) {
+    protected List<RoutedRelBuilder> handleValues( LogicalValues node, List<RoutedRelBuilder> builders ) {
         //if ( cancelQuery ) {
         //    return Collections.emptyList();
         //}
@@ -97,7 +97,7 @@ public class RoutingHelpers {
     }
 
 
-    public static  RoutedRelBuilder handleGeneric( RelNode node, RoutedRelBuilder builder ) {
+    public RoutedRelBuilder handleGeneric( RelNode node, RoutedRelBuilder builder ) {
         val result = handleGeneric( node, Lists.newArrayList( builder ) );
         if ( result.size() > 1 ) {
             log.error( "Single handle generic with multiple results " );
@@ -106,7 +106,7 @@ public class RoutingHelpers {
     }
 
 
-    protected static List<RoutedRelBuilder> handleGeneric( RelNode node, List<RoutedRelBuilder> builders ) {
+    protected List<RoutedRelBuilder> handleGeneric( RelNode node, List<RoutedRelBuilder> builders ) {
         /*if ( cancelQuery ) {
             return Collections.emptyList();
         }*/
@@ -129,7 +129,7 @@ public class RoutingHelpers {
     }
 
 
-    public static RelNode buildJoinedTableScan( Statement statement, RelOptCluster cluster, Map<Long, List<CatalogColumnPlacement>> placements ){
+    public RelNode buildJoinedTableScan( Statement statement, RelOptCluster cluster, Map<Long, List<CatalogColumnPlacement>> placements ) {
         RoutedRelBuilder builder = RoutedRelBuilder.create( statement, cluster );
 
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
@@ -262,6 +262,5 @@ public class RoutingHelpers {
         }
         return node;
     }
-
 
 }

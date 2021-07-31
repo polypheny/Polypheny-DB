@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.router;
+package org.polypheny.db.routing;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,16 +32,17 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalValues;
+import org.polypheny.db.routing.routers.BaseRouter;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.tools.RoutedRelBuilder;
 import org.polypheny.db.transaction.Statement;
 
 @Slf4j
-public class CachedPlanRouter {
+public class CachedPlanRouter extends BaseRouter {
 
     final static Catalog catalog = Catalog.getInstance();
 
-    public static List<RoutedRelBuilder> routeCached( RelRoot logicalRoot, List<CachedProposedRoutingPlan> routingPlansCached, Statement statement ) {
+    public List<RoutedRelBuilder> routeCached( RelRoot logicalRoot, List<CachedProposedRoutingPlan> routingPlansCached, Statement statement ) {
 
         val result = new ArrayList<RoutedRelBuilder>();
         for( val plan : routingPlansCached){
@@ -53,7 +54,7 @@ public class CachedPlanRouter {
         return result;
     }
 
-    private static RoutedRelBuilder buildCachedSelect( RelNode node, RoutedRelBuilder builder, Statement statement, RelOptCluster cluster, CachedProposedRoutingPlan cachedPlan){
+    private RoutedRelBuilder buildCachedSelect( RelNode node, RoutedRelBuilder builder, Statement statement, RelOptCluster cluster, CachedProposedRoutingPlan cachedPlan){
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
             builder = buildCachedSelect( node.getInput( i ), builder, statement, cluster, cachedPlan );
         }
@@ -74,14 +75,14 @@ public class CachedPlanRouter {
                 placement.put( partition, colPlacemets );
             }
 
-            return builder.push( RoutingHelpers.buildJoinedTableScan( statement, cluster, placement ) );
+            return builder.push( super.buildJoinedTableScan( statement, cluster, placement ) );
 
         } else if ( node instanceof LogicalValues ) {
             log.info( "handleValues" );
-            return RoutingHelpers.handleValues( (LogicalValues) node, builder);
+            return super.handleValues( (LogicalValues) node, builder);
         } else {
             log.info( "handleGeneric" );
-            return RoutingHelpers.handleGeneric( node, builder );
+            return super.handleGeneric( node, builder );
         }
 
     }

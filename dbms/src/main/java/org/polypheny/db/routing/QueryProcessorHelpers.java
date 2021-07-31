@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.router;
+package org.polypheny.db.routing;
 
 import java.lang.reflect.Type;
 import java.sql.DatabaseMetaData;

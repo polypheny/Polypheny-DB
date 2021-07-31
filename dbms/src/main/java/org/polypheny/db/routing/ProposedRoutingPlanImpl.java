@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.router;
+package org.polypheny.db.routing;
 
 import java.util.List;
 import java.util.Map;
@@ -25,8 +25,7 @@ import lombok.val;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.routing.ProposedRoutingPlan;
-import org.polypheny.db.routing.Router;
+import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.tools.RoutedRelBuilder;
 import org.polypheny.db.util.Pair;
 
@@ -84,7 +83,7 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
 
     @Override
     public boolean isCachable() {
-        return this.physicalPlacementsOfPartitions.isPresent() && this.getPhysicalQueryId().isPresent();
+        return this.physicalPlacementsOfPartitions.isPresent() && this.getPhysicalQueryId().isPresent() && !this.routedRoot.kind.belongsTo( SqlKind.DML );
     }
 
 }

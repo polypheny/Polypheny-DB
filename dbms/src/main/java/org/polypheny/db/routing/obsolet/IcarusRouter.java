@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.router.obsolet;
+package org.polypheny.db.routing.obsolet;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -76,7 +76,7 @@ import org.polypheny.db.rel.logical.LogicalSort;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalUnion;
 import org.polypheny.db.rel.logical.LogicalValues;
-import org.polypheny.db.router.AbstractRouter;
+import org.polypheny.db.routing.routers.AbstractRouter;
 import org.polypheny.db.routing.ExecutionTimeMonitor.ExecutionTimeObserver;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;

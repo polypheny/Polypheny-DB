@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.router;
+package org.polypheny.db.routing.routers;
+
 
 import com.google.common.collect.ImmutableList;
 import java.util.HashSet;
@@ -28,49 +29,56 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.routing.Router;
+import org.polypheny.db.routing.factories.RouterFactory;
 import org.polypheny.db.transaction.Statement;
 
 @Slf4j
-public class ReverseSimpleRouter extends AbstractRouter {
+public class SimpleRouter extends AbstractRouter {
+
+    private SimpleRouter() {
+        // Intentionally left empty
+    }
 
 
+    // Execute the table scan on the first placement of a table
     @Override
-    protected Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable catalogTable , Statement statement) {
-        // Find the adapter with the fewest column placements
-        int adapterWithFewestPlacements = -1;
-        int numOfPlacements = Integer.MAX_VALUE;
-        for ( Entry<Integer, ImmutableList<Long>> entry : catalogTable.placementsByAdapter.entrySet() ) {
-            if ( entry.getValue().size() < numOfPlacements && entry.getValue().size() > 1 ) {
-                adapterWithFewestPlacements = entry.getKey();
+    protected Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable table, Statement statement ) {
+        // Find the adapter with the most column placements
+        int adapterIdWithMostPlacements = -1;
+        int numOfPlacements = 0;
+        for ( Entry<Integer, ImmutableList<Long>> entry : table.placementsByAdapter.entrySet() ) {
+            if ( entry.getValue().size() > numOfPlacements ) {
+                adapterIdWithMostPlacements = entry.getKey();
                 numOfPlacements = entry.getValue().size();
             }
         }
 
-        // Take the adapter with fewest placements as base and add missing column placements
+        // Take the adapter with most placements as base and add missing column placements
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
-        for ( long cid : catalogTable.columnIds ) {
-            if ( catalogTable.placementsByAdapter.get( adapterWithFewestPlacements ).contains( cid ) ) {
-                placementList.add( Catalog.getInstance().getColumnPlacement( adapterWithFewestPlacements, cid ) );
+        for ( long cid : table.columnIds ) {
+            if ( table.placementsByAdapter.get( adapterIdWithMostPlacements ).contains( cid ) ) {
+                placementList.add( Catalog.getInstance().getColumnPlacement( adapterIdWithMostPlacements, cid ) );
             } else {
                 placementList.add( Catalog.getInstance().getColumnPlacement( cid ).get( 0 ) );
             }
         }
+
         return new HashSet<List<CatalogColumnPlacement>>() {{
             add( placementList );
         }};
     }
 
 
-    public static class ReverseSimpleRouterFactory extends RouterFactory {
+    public static class SimpleRouterFactory extends RouterFactory {
 
-        public static ReverseSimpleRouter createReverseSimpleRouterInstance() {
-            return new ReverseSimpleRouter();
+        public static SimpleRouter createSimpleRouterInstance() {
+            return new SimpleRouter();
         }
 
 
         @Override
         public Router createInstance() {
-            return new ReverseSimpleRouter();
+            return new SimpleRouter();
         }
 
     }

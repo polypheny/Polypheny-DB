@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.router;
+package org.polypheny.db.routing.tablePlacements;
 
-import org.polypheny.db.routing.Router;
+import java.util.List;
+import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.catalog.entity.CatalogColumn;
 
-public abstract class RouterFactory {
-
-    public abstract Router createInstance();
+public interface TablePlacementStrategy {
+    List<DataStore> getDataStoresForNewColumn( CatalogColumn addedColumn );
+    List<DataStore> getDataStoresForNewTable();
 }

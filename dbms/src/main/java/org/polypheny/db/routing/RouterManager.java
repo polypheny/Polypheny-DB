@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.router;
+package org.polypheny.db.routing;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.polypheny.db.config.Config;
@@ -35,9 +36,12 @@ import org.polypheny.db.config.ConfigInteger;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.WebUiGroup;
 import org.polypheny.db.config.WebUiPage;
-import org.polypheny.db.router.tablePlacements.SingleTablePlacementStrategy;
-import org.polypheny.db.router.tablePlacements.TablePlacementStrategy;
-import org.polypheny.db.routing.Router;
+import org.polypheny.db.routing.factories.RouterFactory;
+import org.polypheny.db.routing.routers.DmlRouterImpl;
+import org.polypheny.db.routing.routers.SimpleRouter;
+import org.polypheny.db.routing.routers.SimpleRouter.SimpleRouterFactory;
+import org.polypheny.db.routing.tablePlacements.SingleTablePlacementStrategy;
+import org.polypheny.db.routing.tablePlacements.TablePlacementStrategy;
 
 @Slf4j
 public class RouterManager {
@@ -63,6 +67,14 @@ public class RouterManager {
     private List<RouterFactory> shortRunningRouters;
     private Optional<List<RouterFactory>> longRunningRouters = Optional.empty();
     private TablePlacementStrategy tablePlacementStrategy = new SingleTablePlacementStrategy();
+
+    @Getter
+    private final DmlRouter dmlRouter = new DmlRouterImpl();
+    @Getter
+    private final CachedPlanRouter cachedPlanRouter = new CachedPlanRouter();
+    @Getter
+    private final SimpleRouter fallbackRouter = (SimpleRouter) new SimpleRouterFactory().createInstance();
+
 
 
     public RouterManager() {

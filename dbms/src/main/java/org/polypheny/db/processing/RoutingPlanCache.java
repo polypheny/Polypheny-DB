@@ -35,7 +35,7 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.information.InformationText;
-import org.polypheny.db.router.CachedProposedRoutingPlan;
+import org.polypheny.db.routing.CachedProposedRoutingPlan;
 
 public class RoutingPlanCache {
 
@@ -54,12 +54,13 @@ public class RoutingPlanCache {
         registerMonitoringPage();
     }
 
-    public boolean isKeyPresent( String queryId){
-        return planCache.getIfPresent( queryId ) != null ? true : false;
-    }
-
     public List<CachedProposedRoutingPlan> getIfPresent( String queryId ) {
         List<CachedProposedRoutingPlan> routingPlans = planCache.getIfPresent( queryId );
+        if ( routingPlans == null ) {
+            missesCounter.incrementAndGet();
+        } else {
+            hitsCounter.incrementAndGet();
+        }
 
         return routingPlans != null ? routingPlans : Collections.emptyList();
     }

@@ -14,12 +14,9 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.router;
-
-import static org.polypheny.db.router.RoutingHelpers.handleTableScan;
+package org.polypheny.db.routing.routers;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -63,6 +60,8 @@ import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.routing.DmlRouter;
+import org.polypheny.db.routing.Router;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.PolySchemaBuilder;
@@ -73,13 +72,14 @@ import org.polypheny.db.tools.RoutedRelBuilder;
 import org.polypheny.db.transaction.Statement;
 
 @Slf4j
-public class DmlRouter {
+public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
     final static Catalog catalog = Catalog.getInstance();
 
 
     // Default implementation: Execute DML on all placements
-    public static RoutedRelBuilder routeDml( RelNode node, Statement statement ) {
+    @Override
+    public RoutedRelBuilder routeDml( RelNode node, Statement statement ) {
         RelOptCluster cluster = node.getCluster();
 
         if ( node.getTable() != null ) {
@@ -445,7 +445,7 @@ public class DmlRouter {
                                                 }
 
                                                 RelNode input = buildDml(
-                                                        RoutingHelpers.recursiveCopy( node.getInput( 0 ) ),
+                                                        super.recursiveCopy( node.getInput( 0 ) ),
                                                         RoutedRelBuilder.create( statement, cluster ),
                                                         catalogTable,
                                                         placementsOnAdapter,
@@ -557,7 +557,7 @@ public class DmlRouter {
                             // Build DML
                             TableModify modify;
                             RelNode input = buildDml(
-                                    RoutingHelpers.recursiveCopy( node.getInput( 0 ) ),
+                                    super.recursiveCopy( node.getInput( 0 ) ),
                                     RoutedRelBuilder.create( statement, cluster ),
                                     catalogTable,
                                     placementsOnAdapter,
@@ -619,7 +619,25 @@ public class DmlRouter {
     }
 
 
-    protected static RelBuilder buildDml( RelNode node, RoutedRelBuilder builder, CatalogTable catalogTable, List<CatalogColumnPlacement> placements, CatalogPartitionPlacement partitionPlacement, Statement statement, RelOptCluster cluster ) {
+    @Override
+    public RelNode handleConditionalExecute( RelNode node, Statement statement, Router router ) {
+        LogicalConditionalExecute lce = (LogicalConditionalExecute) node;
+        RoutedRelBuilder builder = RoutedRelBuilder.create( statement, node.getCluster() );
+        builder = router.buildSelect( lce.getLeft(), builder, statement, node.getCluster() );
+        RelNode action;
+        if ( lce.getRight() instanceof LogicalConditionalExecute ) {
+            action = handleConditionalExecute( lce.getRight(), statement, router );
+        } else if ( lce.getRight() instanceof TableModify ) {
+            action = routeDml( lce.getRight(), statement ).build();
+        } else {
+            throw new IllegalArgumentException();
+        }
+
+        return LogicalConditionalExecute.create( builder.build(), action, lce );
+    }
+
+
+    private RelBuilder buildDml( RelNode node, RoutedRelBuilder builder, CatalogTable catalogTable, List<CatalogColumnPlacement> placements, CatalogPartitionPlacement partitionPlacement, Statement statement, RelOptCluster cluster ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
             buildDml( node.getInput( i ), builder, catalogTable, placements, partitionPlacement, statement, cluster );
         }
@@ -641,7 +659,7 @@ public class DmlRouter {
                     // return buildSelect( node, builder, statement, cluster );
                 }
 
-                builder = handleTableScan(
+                builder = super.handleTableScan(
                         builder,
                         placements.get( 0 ).tableId,
                         placements.get( 0 ).adapterUniqueName,
@@ -657,7 +675,7 @@ public class DmlRouter {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
             }
         } else if ( node instanceof LogicalValues ) {
-            builder = RoutingHelpers.handleValues( (LogicalValues) node, builder );
+            builder = super.handleValues( (LogicalValues) node, builder );
             if ( catalogTable.columnIds.size() == placements.size() ) { // full placement, no additional checks required
                 return builder;
             } else if ( node.getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
@@ -672,7 +690,7 @@ public class DmlRouter {
             }
         } else if ( node instanceof LogicalProject ) {
             if ( catalogTable.columnIds.size() == placements.size() ) { // full placement, generic handling is sufficient
-                return RoutingHelpers.handleGeneric( node, builder );
+                return super.handleGeneric( node, builder );
             } else { // partitioned, adjust project
                 if ( ((LogicalProject) node).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
                     builder.push( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 0 ) ) ) );
@@ -702,14 +720,14 @@ public class DmlRouter {
                     dmlConditionCheck( (LogicalFilter) node, catalogTable, placements, operand );
                 }
             }
-            return RoutingHelpers.handleGeneric( node, builder );
+            return super.handleGeneric( node, builder );
         } else {
-            return RoutingHelpers.handleGeneric( node, builder );
+            return super.handleGeneric( node, builder );
         }
     }
 
 
-    private static void dmlConditionCheck( LogicalFilter node, CatalogTable catalogTable, List<CatalogColumnPlacement> placements, RexNode operand ) {
+    private void dmlConditionCheck( LogicalFilter node, CatalogTable catalogTable, List<CatalogColumnPlacement> placements, RexNode operand ) {
         if ( operand instanceof RexInputRef ) {
             int index = ((RexInputRef) operand).getIndex();
             RelDataTypeField field = node.getInput().getRowType().getFieldList().get( index );
@@ -751,22 +769,5 @@ public class DmlRouter {
         }
     }
 
-    public static RelNode handleConditionalExecute( RelNode node, Statement statement ) {
-        LogicalConditionalExecute lce = (LogicalConditionalExecute) node;
-        List<RoutedRelBuilder> builders = Lists.newArrayList( RoutedRelBuilder.create( statement, node.getCluster() ) );
-        builders = SimpleRouter.SimpleRouterFactory.createSimpleRouterInstance().buildSelect(  lce.getLeft(), builders, statement, node.getCluster() );
-        RelNode action;
-        if ( lce.getRight() instanceof LogicalConditionalExecute ) {
-            action = handleConditionalExecute( lce.getRight(), statement );
-        } else if ( lce.getRight() instanceof TableModify ) {
-            action = DmlRouter.routeDml( lce.getRight(), statement ).build();
-        } else {
-            throw new IllegalArgumentException();
-        }
-        if ( builders.size() > 1 ) {
-            log.error( "Should never happen!" );
-        }
-        return LogicalConditionalExecute.create( builders.get( 0 ).build(), action, lce );
-    }
 
 }

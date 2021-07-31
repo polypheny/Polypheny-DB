@@ -14,22 +14,26 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.routing;
+package org.polypheny.db.routing.routers;
 
+import java.util.Collections;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.tools.RoutedRelBuilder;
 import org.polypheny.db.transaction.Statement;
 
-public interface Router {
+@Slf4j
+public abstract class NoneHorizontalPartitioningRouter extends AbstractDqlRouter {
 
-    List<RoutedRelBuilder> route( RelRoot relRoot, Statement statement );
 
-    RoutedRelBuilder buildSelect( RelNode node, RoutedRelBuilder builder, Statement statement, RelOptCluster cluster );
+    @Override
+    protected List<RoutedRelBuilder> handleHorizontalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RoutedRelBuilder> builders, RelOptCluster cluster ) {
+        this.cancelQuery = true;
+        return Collections.emptyList();
+    }
 
-    void resetCaches();
 }
-
-

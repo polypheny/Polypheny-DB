@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.router.tablePlacements;
+package org.polypheny.db.routing.tablePlacements;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;

@@ -105,17 +105,15 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
-import org.polypheny.db.router.CachedPlanRouter;
-import org.polypheny.db.router.CachedProposedRoutingPlan;
-import org.polypheny.db.router.DmlRouter;
-import org.polypheny.db.router.ProposedRoutingPlanImpl;
-import org.polypheny.db.router.QueryProcessorHelpers;
-import org.polypheny.db.router.RelDeepCopyShuttle;
-import org.polypheny.db.router.RouterManager;
+import org.polypheny.db.routing.CachedProposedRoutingPlan;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.routing.ExecutionTimeMonitor.ExecutionTimeObserver;
 import org.polypheny.db.routing.ProposedRoutingPlan;
+import org.polypheny.db.routing.ProposedRoutingPlanImpl;
+import org.polypheny.db.routing.QueryProcessorHelpers;
+import org.polypheny.db.routing.RelDeepCopyShuttle;
 import org.polypheny.db.routing.Router;
+import org.polypheny.db.routing.RouterManager;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.schema.LogicalTable;
@@ -212,11 +210,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private void handleRouterCaching( List<ProposedRoutingPlan> proposedRoutingPlans, List<RelOptCost> approximatedCosts, String queryId ) {
-        if ( RoutingPlanCache.INSTANCE.isKeyPresent( queryId ) ) {
-            log.info( "nothing to cache, already done" );
-            return;
-        }
-
         val cachedPlans = new ArrayList<CachedProposedRoutingPlan>();
         for ( int i = 0; i < proposedRoutingPlans.size(); i++ ) {
             if(proposedRoutingPlans.get( i ).isCachable()){
@@ -366,11 +359,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
 
             if ( RuntimeConfig.ROUTING_PLAN_CACHING.getBoolean() &&
-                    !indexLookupRoot.kind.belongsTo( SqlKind.DML ) &&
-                    RoutingPlanCache.INSTANCE.isKeyPresent( queryId )
+                    !indexLookupRoot.kind.belongsTo( SqlKind.DML )
             ) {
                 val routingPlansCached = RoutingPlanCache.INSTANCE.getIfPresent(queryId);
-                proposedRoutingPlans = routeCached( indexLookupRoot, routingPlansCached, statement, queryId );
+                proposedRoutingPlans = ! routingPlansCached.isEmpty()
+                        ? routeCached( indexLookupRoot, routingPlansCached, statement, queryId )
+                        : route( indexLookupRoot, statement, queryId );
             } else {
                 proposedRoutingPlans = route( indexLookupRoot, statement, queryId );
             }
@@ -982,10 +976,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         if ( logicalRoot.rel instanceof LogicalTableModify ) {
-            val routedDml = DmlRouter.routeDml( logicalRoot.rel, statement );
+            val routedDml = RouterManager.getInstance().getDmlRouter().routeDml( logicalRoot.rel, statement );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryId ) );
         } else if ( logicalRoot.rel instanceof ConditionalExecute ) {
-            val routedConditionalExecute = DmlRouter.handleConditionalExecute( logicalRoot.rel, statement );
+            val routedConditionalExecute = RouterManager.getInstance().getDmlRouter().handleConditionalExecute( logicalRoot.rel, statement, RouterManager.getInstance().getFallbackRouter());
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedConditionalExecute, logicalRoot, queryId ) );
         } else {
             log.info( "Start build DQL" );
@@ -1038,8 +1032,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         // todo: get only best plan.
 
         val proposedPlans = new ArrayList<ProposedRoutingPlan>();
-
-        val builders = CachedPlanRouter.routeCached( logicalRoot, routingPlansCached, statement );
+        val builders = RouterManager.getInstance().getCachedPlanRouter().routeCached( logicalRoot, routingPlansCached, statement );
 
         for ( int i = 0; i < builders.size(); i++ ) {
             proposedPlans.add(

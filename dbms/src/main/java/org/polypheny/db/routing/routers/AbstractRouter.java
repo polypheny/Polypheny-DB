@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.router;
+package org.polypheny.db.routing.routers;
 
 
 import com.google.common.collect.ImmutableList;
@@ -52,7 +52,7 @@ import org.polypheny.db.transaction.Statement;
 
 
 @Slf4j
-public abstract class AbstractRouter implements Router {
+public abstract class AbstractRouter extends BaseRouter implements Router {
 
 
     protected ExecutionTimeMonitor executionTimeMonitor;
@@ -98,7 +98,8 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    protected RoutedRelBuilder buildSelect( RelNode node, RoutedRelBuilder builder, Statement statement, RelOptCluster cluster ) {
+    @Override
+    public RoutedRelBuilder buildSelect( RelNode node, RoutedRelBuilder builder, Statement statement, RelOptCluster cluster ) {
         val result = this.buildSelect( node, Lists.newArrayList( builder ), statement, cluster );
         if ( result.size() > 1 ) {
             log.error( "Single build select with multiple results " );
@@ -138,10 +139,10 @@ public abstract class AbstractRouter implements Router {
 
         } else if ( node instanceof LogicalValues ) {
             log.info( "handleValues" );
-            return Lists.newArrayList( RoutingHelpers.handleValues( (LogicalValues) node, builders ) );
+            return Lists.newArrayList( super.handleValues( (LogicalValues) node, builders ) );
         } else {
             log.info( "handleGeneric" );
-            return Lists.newArrayList( RoutingHelpers.handleGeneric( node, builders ) );
+            return Lists.newArrayList( super.handleGeneric( node, builders ) );
         }
     }
 
@@ -149,20 +150,17 @@ public abstract class AbstractRouter implements Router {
     protected List<RoutedRelBuilder> handleNoneHorizontalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, List<RoutedRelBuilder> builders, RelOptCluster cluster ) {
         log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
         val placements = selectPlacement( node, catalogTable, statement );
-        val accessedPartitionList = catalogTable.partitionProperty.partitionIds;
-        // TODO: add to monitoring?
 
         val newBuilders = new ArrayList<RoutedRelBuilder>();
-        val currentBuilders = ImmutableList.copyOf( builders );
         for ( val placementCombination : placements ) {
 
             val currentPlacementDistribution = new HashMap<Long, List<CatalogColumnPlacement>>();
             currentPlacementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ), placementCombination );
 
-            for ( val builder : currentBuilders ) {
+            for ( val builder : builders ) {
                 val newBuilder = RoutedRelBuilder.createCopy( statement, cluster, builder);
                 newBuilder.addPhysicalInfo( currentPlacementDistribution );
-                newBuilder.push( RoutingHelpers.buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) );
+                newBuilder.push( super.buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) );
                 newBuilders.add( newBuilder );
             }
 
@@ -171,7 +169,6 @@ public abstract class AbstractRouter implements Router {
         builders.clear();
         builders.addAll( newBuilders );
 
-        //builders = newBuilders;
         return builders;
     }
 
@@ -187,23 +184,21 @@ public abstract class AbstractRouter implements Router {
         Map<Long, List<CatalogColumnPlacement>> placementDistribution;
 
         if ( partitionValues != null ) {
-            List<Long> identPartitions = new ArrayList<>();
+            List<Long> identifiedPartitions = new ArrayList<>();
             for ( String partitionValue : partitionValues ) {
                 log.debug( "Extracted PartitionValue: {}", partitionValue );
-                long identPart = partitionManager.getTargetPartitionId( catalogTable, partitionValue );
-                identPartitions.add( identPart );
-                log.debug( "Identified PartitionId: {} for value: {}", identPart, partitionValue );
+                long identifiedParts = partitionManager.getTargetPartitionId( catalogTable, partitionValue );
+                identifiedPartitions.add( identifiedParts );
+                log.debug( "Identified PartitionId: {} for value: {}", identifiedParts, partitionValue );
             }
-            // Add identified partitions to monitoring object
             // Currently only one partition is identified, therefore LIST is not needed YET.
-
-            placementDistribution = partitionManager.getRelevantPlacements( catalogTable, identPartitions );
+            placementDistribution = partitionManager.getRelevantPlacements( catalogTable, identifiedPartitions );
         } else {
             placementDistribution = partitionManager.getRelevantPlacements( catalogTable, catalogTable.partitionProperty.partitionIds );
         }
 
         builders.forEach( b -> b.addPhysicalInfo( placementDistribution ) );
-        return builders.stream().map( builder -> builder.push( RoutingHelpers.buildJoinedTableScan( statement, cluster, placementDistribution ) ) ).collect( Collectors.toList() );
+        return builders.stream().map( builder -> builder.push( super.buildJoinedTableScan( statement, cluster, placementDistribution ) ) ).collect( Collectors.toList() );
     }
 
 
@@ -225,7 +220,7 @@ public abstract class AbstractRouter implements Router {
 
     @Override
     public void resetCaches() {
-        RoutingHelpers.joinedTableScanCache.invalidateAll();
+        super.joinedTableScanCache.invalidateAll();
     }
 
 

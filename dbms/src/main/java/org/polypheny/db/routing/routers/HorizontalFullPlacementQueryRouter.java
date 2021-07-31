@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.router;
+package org.polypheny.db.routing.routers;
 
 import java.util.HashSet;
 import java.util.List;
@@ -27,6 +27,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.routing.Router;
+import org.polypheny.db.routing.factories.RouterFactory;
 import org.polypheny.db.transaction.Statement;
 
 public class HorizontalFullPlacementQueryRouter extends NoneHorizontalPartitioningRouter {

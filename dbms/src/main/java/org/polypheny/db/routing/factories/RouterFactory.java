@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.router.tablePlacements;
+package org.polypheny.db.routing.factories;
 
-import java.util.List;
-import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.routing.Router;
 
-public interface TablePlacementStrategy {
-    List<DataStore> getDataStoresForNewColumn( CatalogColumn addedColumn );
-    List<DataStore> getDataStoresForNewTable();
+public abstract class RouterFactory {
+
+    public abstract Router createInstance();
 }
