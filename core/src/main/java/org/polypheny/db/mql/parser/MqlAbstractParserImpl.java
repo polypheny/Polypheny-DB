@@ -148,9 +148,9 @@ public abstract class MqlAbstractParserImpl {
          * Creates a MetadataImpl.
          */
         public MetadataImpl( MqlAbstractParserImpl mqlParser ) {
-            initList( mqlParser, reservedFunctionNames, "ReservedFunctionName" );
-            initList( mqlParser, contextVariableNames, "ContextVariable" );
-            initList( mqlParser, nonReservedKeyWordSet, "NonReservedKeyWord" );
+            //initList( mqlParser, reservedFunctionNames, "ReservedFunctionName" );
+            //initList( mqlParser, contextVariableNames, "ContextVariable" );
+            //initList( mqlParser, nonReservedKeyWordSet, "NonReservedKeyWord" );
             tokenList = ImmutableList.copyOf( tokenSet );
             Set<String> reservedWordSet = new TreeSet<>();
             reservedWordSet.addAll( tokenSet );

@@ -137,8 +137,6 @@ TOKEN : /* IDENTIFIERS */ // for nested documents check out Document_Splits()
 |
 < SAVE: "save" >
 |
-< GET: "get" >
-|
 < REMOVE: "remove" >
 |
 < UPDATE: "update" >
@@ -177,11 +175,11 @@ TOKEN : /* IDENTIFIERS */ // for nested documents check out Document_Splits()
 |
 < DELETE_MANY: "deleteMany" >
 |
-< CREATE_VIEW: "createView" >
+< CREATE_VIEW: "createView(" >
 |
-< CREATE_COLLECTION : "createCollection" >
+< CREATE_COLLECTION : "createCollection(" >
 |
-< GET_COLLECTION : "getCollection" >
+< GET_COLLECTION : "getCollection(" >
 |
 < AGGREGATE : "aggregate" >
 |
@@ -413,17 +411,17 @@ MqlNode Db_Statement():
 }
 {
     (
-        <CREATE_COLLECTION> "(" name = Literal() ")"
+        <CREATE_COLLECTION> name = Literal() ")"
         {n = new MqlCreateCollection(name);}
         (Details(n))* (Primary(n))*
 
     |
-        <GET_COLLECTION> "(" name = Literal() ")"
+        <GET_COLLECTION> name = Literal() ")"
         < DOT > n = Collection_Statement(name)
         (Details(n))* (Primary(n))*
 
     |
-        <CREATE_VIEW> "(" name = Literal() < COMMA > source = Literal() (< COMMA > doc=Document() )? ")"
+        <CREATE_VIEW> name = Literal() < COMMA > source = Literal() (< COMMA > doc=Document() )? ")"
         {n = new MqlCreateView(name, source, doc);}
     |
         <DROP_DATABASE> "()"
