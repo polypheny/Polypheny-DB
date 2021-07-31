@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.util.Pair;
 
 public interface ProposedRoutingPlan {
 
@@ -30,12 +31,16 @@ public interface ProposedRoutingPlan {
     String getQueryId();
     void setQueryId(String queryId);
 
-    String getPhysicalQueryId();
-    void setPhysicalQueryId(String physicalQueryId);
+    Optional<String> getPhysicalQueryId();
+    void setPhysicalQueryId( Optional<String> physicalQueryId);
 
     Optional<Class<? extends Router>> getRouter();
     void setRouter(Optional<Class<? extends Router>> routerClass);
 
-    Optional<Map<Long, List<Long>>>  getPhysicalPlacementsOfPartitions(); // partitionId, list<CatalogPlacementIds>
-    void setPhysicalPlacementsOfPartitions(Optional<Map<Long, List<Long>>> physicalPartitionPlacement);
+    Optional<Map<Long, List<Pair<Integer, Long>>>>  getPhysicalPlacementsOfPartitions(); // partitionId, list<CatalogPlacementIds>
+    void setPhysicalPlacementsOfPartitions(Optional<Map<Long, List<Pair<Integer, Long>>>> physicalPartitionPlacement);
+
+    boolean isCachable();
+
+    //CachedProposedRoutingPlan convert( RelOptCost approximatedCosts );
 }

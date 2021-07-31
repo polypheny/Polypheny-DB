@@ -43,7 +43,6 @@ import org.polypheny.db.rel.logical.LogicalValues;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RoutedRelBuilder;
 import org.polypheny.db.transaction.Statement;
 
@@ -64,6 +63,7 @@ public class RoutingHelpers {
         }
         return node.copy( node.getTraitSet(), inputs );
     }
+
 
     protected static RoutedRelBuilder handleTableScan(
             RoutedRelBuilder builder,
@@ -97,7 +97,7 @@ public class RoutingHelpers {
     }
 
 
-    public static  RelBuilder handleGeneric( RelNode node, RoutedRelBuilder builder ) {
+    public static  RoutedRelBuilder handleGeneric( RelNode node, RoutedRelBuilder builder ) {
         val result = handleGeneric( node, Lists.newArrayList( builder ) );
         if ( result.size() > 1 ) {
             log.error( "Single handle generic with multiple results " );

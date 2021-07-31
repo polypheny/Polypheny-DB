@@ -37,15 +37,12 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManagerImpl;
-import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.exploreByExample.ExploreManager;
 import org.polypheny.db.exploreByExample.ExploreQueryProcessor;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.information.HostInformation;
 import org.polypheny.db.information.JavaInformation;
-import org.polypheny.db.monitoring.core.MonitoringService;
-import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.partition.FrequencyMap;
 import org.polypheny.db.partition.FrequencyMapImpl;
 import org.polypheny.db.partition.PartitionManagerFactory;
@@ -213,6 +210,9 @@ public class PolyphenyDb {
         // Initialize interface manager
         QueryInterfaceManager.initialize( transactionManager, authenticator );
 
+        //Initialize PartitionMangerFactory
+        PartitionManagerFactory.setAndGetInstance( new PartitionManagerFactoryImpl() );
+
         // Startup and restore catalog
         Catalog catalog;
         Transaction trx = null;
@@ -244,8 +244,7 @@ public class PolyphenyDb {
         // Initialize DdlManager
         DdlManager.setAndGetInstance( new DdlManagerImpl( catalog ) );
 
-        //Intialize PartitionMangerFactory
-        PartitionManagerFactory.setAndGetInstance( new PartitionManagerFactoryImpl() );
+        // Initialize Frequency Map
         FrequencyMap.setAndGetInstance( new FrequencyMapImpl(catalog) );
 
         // Start Polypheny UI

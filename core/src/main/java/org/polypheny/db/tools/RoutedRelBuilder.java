@@ -20,8 +20,10 @@ import com.google.common.collect.ImmutableMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.val;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.plan.RelOptCluster;
@@ -30,11 +32,12 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.util.Pair;
 
 public class RoutedRelBuilder extends RelBuilder{
 
     @Getter
-    protected Map<Long, List<Long>> physicalPlacementsOfPartitions = new HashMap<>(); // partitionId, list<CatalogPlacementIds>
+    protected Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions = new HashMap<>(); // partitionId, list<adapterId - colId>
 
     public RoutedRelBuilder( Context context, RelOptCluster cluster, RelOptSchema relOptSchema ) {
         super( context, cluster, relOptSchema );
@@ -68,6 +71,24 @@ public class RoutedRelBuilder extends RelBuilder{
     public RoutedRelBuilder push( RelNode node ) {
         super.push( node );
         return this;
+    }
+
+    public RoutedRelBuilder addPhysicalInfo(Long partitionId,  List<Pair<Integer, Long>> physicalInfos){ // list<adapterId - colId>
+        physicalPlacementsOfPartitions.put( partitionId, physicalInfos );
+        return this;
+    }
+
+    public RoutedRelBuilder addPhysicalInfo( Map<Long, List<CatalogColumnPlacement>> physicalPlacements){ // list<adapterId - colId>
+        val map = physicalPlacements.entrySet().stream().collect( Collectors.toMap(
+                Map.Entry::getKey,
+                entry -> map(entry.getValue())));
+
+        physicalPlacementsOfPartitions.putAll( map );
+        return this;
+    }
+
+    private List<Pair<Integer, Long>> map(List<CatalogColumnPlacement> catalogCols){
+        return catalogCols.stream().map( col -> new Pair<>( col.adapterId, col.columnId ) ).collect( Collectors.toList() ) ;
     }
 
 }

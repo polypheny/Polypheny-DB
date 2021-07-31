@@ -79,9 +79,6 @@ public abstract class AbstractRouter implements Router {
 
         }
 
-
-
-
         /*routed.stream()
                 .map( elem -> new RelRoot( elem, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation ) )
                 .collect( Collectors.toList() );*/
@@ -126,9 +123,7 @@ public abstract class AbstractRouter implements Router {
             }
 
             LogicalTable logicalTable = ((LogicalTable) table.getTable());
-            CatalogTable catalogTable;
-            //Map<Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
-            catalogTable = Catalog.getInstance().getTable( logicalTable.getTableId() );
+            CatalogTable catalogTable = Catalog.getInstance().getTable( logicalTable.getTableId() );
 
             // Check if table is even horizontal partitioned
             if ( catalogTable.isPartitioned ) {
@@ -157,7 +152,6 @@ public abstract class AbstractRouter implements Router {
         val accessedPartitionList = catalogTable.partitionProperty.partitionIds;
         // TODO: add to monitoring?
 
-
         val newBuilders = new ArrayList<RoutedRelBuilder>();
         val currentBuilders = ImmutableList.copyOf( builders );
         for ( val placementCombination : placements ) {
@@ -167,6 +161,7 @@ public abstract class AbstractRouter implements Router {
 
             for ( val builder : currentBuilders ) {
                 val newBuilder = RoutedRelBuilder.createCopy( statement, cluster, builder);
+                newBuilder.addPhysicalInfo( currentPlacementDistribution );
                 newBuilder.push( RoutingHelpers.buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) );
                 newBuilders.add( newBuilder );
             }
@@ -207,6 +202,7 @@ public abstract class AbstractRouter implements Router {
             placementDistribution = partitionManager.getRelevantPlacements( catalogTable, catalogTable.partitionProperty.partitionIds );
         }
 
+        builders.forEach( b -> b.addPhysicalInfo( placementDistribution ) );
         return builders.stream().map( builder -> builder.push( RoutingHelpers.buildJoinedTableScan( statement, cluster, placementDistribution ) ) ).collect( Collectors.toList() );
     }
 
@@ -226,9 +222,6 @@ public abstract class AbstractRouter implements Router {
 
         return builders;
     }
-
-
-
 
     @Override
     public void resetCaches() {

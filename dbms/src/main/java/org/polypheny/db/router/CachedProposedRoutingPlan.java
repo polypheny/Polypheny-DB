@@ -16,20 +16,39 @@
 
 package org.polypheny.db.router;
 
+import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.plan.RelOptCost;
+import org.polypheny.db.routing.ProposedRoutingPlan;
 import org.polypheny.db.routing.Router;
+import org.polypheny.db.util.Pair;
 
 @Getter
 @Setter
+@Slf4j
 public class CachedProposedRoutingPlan {
     protected String queryId;
+    protected String physicalQueryId;
     protected RelOptCost preCosts;
-    protected Class<Router> routingClass;
-    protected Map<Long, List<Long>> physicalPlacementsOfPartitions; // partitionId, list<CatalogPlacementIds>
+    protected Optional<Class<? extends Router>> routingClass;
+    protected Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions; // partitionId, list<CatalogPlacementIds>
 
+
+    public CachedProposedRoutingPlan( ProposedRoutingPlan routingPlan, RelOptCost approximatedCosts){
+        this.queryId = routingPlan.getQueryId();
+        this.preCosts = approximatedCosts;
+        this.routingClass = routingPlan.getRouter();
+        if(! routingPlan.getPhysicalPlacementsOfPartitions().isPresent() || !routingPlan.getPhysicalQueryId().isPresent()){
+            throw new IllegalArgumentException("Cannot create cached routing plan without physical information");
+            // todo: still empty
+        }
+        this.physicalPlacementsOfPartitions = ImmutableMap.copyOf( routingPlan.getPhysicalPlacementsOfPartitions().get() );
+        this.physicalQueryId = routingPlan.getPhysicalQueryId().get();
+    }
 
 }

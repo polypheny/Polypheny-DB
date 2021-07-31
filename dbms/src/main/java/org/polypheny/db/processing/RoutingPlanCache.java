@@ -54,6 +54,9 @@ public class RoutingPlanCache {
         registerMonitoringPage();
     }
 
+    public boolean isKeyPresent( String queryId){
+        return planCache.getIfPresent( queryId ) != null ? true : false;
+    }
 
     public List<CachedProposedRoutingPlan> getIfPresent( String queryId ) {
         List<CachedProposedRoutingPlan> routingPlans = planCache.getIfPresent( queryId );

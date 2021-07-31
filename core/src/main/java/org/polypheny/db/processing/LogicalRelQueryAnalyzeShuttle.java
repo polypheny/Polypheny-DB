@@ -234,10 +234,17 @@ public class LogicalRelQueryAnalyzeShuttle extends RelShuttleImpl {
     private void getPartitioningInfo( LogicalFilter filter ) {
         //
         RelOptTableImpl table = (RelOptTableImpl) filter.getInput().getTable();
+        if(table == null){
+            return;
+        }
 
-        LogicalTable t = ((LogicalTable) table.getTable());
+        LogicalTable logicalTable = ((LogicalTable) table.getTable());
+        if(logicalTable == null){
+            return;
+        }
+
         // if ( table.getTable() instanceof LogicalTable )
-        CatalogTable catalogTable = Catalog.getInstance().getTable( t.getTableId() );
+        CatalogTable catalogTable = Catalog.getInstance().getTable( logicalTable.getTableId() );
 
         // only if table is partitioned
         if ( catalogTable.isPartitioned ) {
