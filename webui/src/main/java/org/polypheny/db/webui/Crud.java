@@ -2816,7 +2816,7 @@ public class Crud implements InformationObserver {
         RelRoot root = new RelRoot( result, result.getRowType(), SqlKind.SELECT, fields, collation );
 
         // Prepare
-        PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( root );
+        PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( root , true);
 
         if ( request.createView ) {
 
@@ -3781,7 +3781,7 @@ public class Crud implements InformationObserver {
 
             Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
             logicalRoot = sqlProcessor.translate( statement, validated.left );
-            signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
+            signature = statement.getQueryProcessor().prepareQuery( logicalRoot , true);
 
         }
         return signature;

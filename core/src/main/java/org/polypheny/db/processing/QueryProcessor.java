@@ -26,9 +26,9 @@ import org.polypheny.db.rel.type.RelDataType;
 
 public interface QueryProcessor extends ViewExpander {
 
-    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot );
+    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot , boolean withMonitoring);
 
-    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameters, boolean isRouted );
+    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameters, boolean isRouted , boolean withMonitoring);
 
     RelOptPlanner getPlanner();
 

@@ -39,6 +39,7 @@ public class QueryEventAnalyzer {
                 .accessedPartitions( queryEvent.getAccessedPartitions() )
                 .queryId( queryEvent.getQueryId() )
                 .monitoringType( "SELECT" )
+                .physicalQueryId( queryEvent.getPhysicalQueryId() )
                 .build();
         metric.getTables().addAll( queryEvent.getAnalyzeRelShuttle().getTables() );
 

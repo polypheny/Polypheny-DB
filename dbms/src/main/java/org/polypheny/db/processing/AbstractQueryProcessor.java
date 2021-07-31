@@ -190,17 +190,17 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     @Override
-    public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot ) {
+    public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, boolean withMonitoring) {
         return prepareQuery(
                 logicalRoot,
                 logicalRoot.rel.getCluster().getTypeFactory().builder().build(),
-                false );
+                false, withMonitoring);
     }
 
 
     @Override
-    public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted ) {
-        return prepareQuery( logicalRoot, parameterRowType, isRouted, false );
+    public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean withMonitoring ) {
+        return prepareQuery( logicalRoot, parameterRowType, isRouted, false , withMonitoring);
 
     }
 
@@ -223,7 +223,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery ) {
+    private PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery, boolean withMonitoring) {
         boolean isAnalyze = statement.getTransaction().isAnalyze() && !isSubquery;
 
         // TODO: get real rowNumbers in selfCost
@@ -245,20 +245,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             return signatures.get( 0 );
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         ProposedRoutingPlan currentPlan = proposedRoutingPlans.get( 0 );
         //RelRoot currentOptimalRoot = optimalRels.get( 0 );
         PolyphenyDbSignature currentSignature = signatures.get( 0 );
@@ -273,17 +259,23 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
         }
 
-        if ( statement.getTransaction().getMonitoringEvent() != null ) {
-            StatementEvent eventData = (StatementEvent) statement.getTransaction().getMonitoringEvent();
-            eventData.setDescription( "Test description: " + currentSignature.statementType.toString() );
-            eventData.setRouted( currentPlan.getRoutedRoot() );
-            eventData.setFieldNames( ImmutableList.copyOf( currentSignature.rowType.getFieldNames() ) );
-            eventData.setAnalyze( isAnalyze );
-            eventData.setSubQuery( isSubquery );
-            eventData.setDurations( statement.getDuration().asJson() );
-            eventData.setRelCompareString( currentPlan.getRoutedRoot().rel.relCompareString() );
+        if(withMonitoring){
+            if ( statement.getTransaction().getMonitoringEvent() != null ) {
+                StatementEvent eventData = (StatementEvent) statement.getTransaction().getMonitoringEvent();
+                eventData.setDescription( "Test description: " + currentSignature.statementType.toString() );
+                eventData.setRouted( currentPlan.getRoutedRoot() );
+                eventData.setFieldNames( ImmutableList.copyOf( currentSignature.rowType.getFieldNames() ) );
+                eventData.setAnalyze( isAnalyze );
+                eventData.setSubQuery( isSubquery );
+                eventData.setDurations( statement.getDuration().asJson() );
+                eventData.setRelCompareString( currentPlan.getRoutedRoot().rel.relCompareString() );
+                if(currentPlan.getPhysicalQueryId().isPresent()){
+                    eventData.setPhysicalQueryId( currentPlan.getPhysicalQueryId().get() );
+                }
 
-            MonitoringServiceProvider.getInstance().monitorEvent( eventData );
+
+                MonitoringServiceProvider.getInstance().monitorEvent( eventData );
+            }
         }
 
         this.handleRouterCaching( proposedRoutingPlans, approximatedCosts, queryId );

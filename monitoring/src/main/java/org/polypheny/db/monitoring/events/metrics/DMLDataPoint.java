@@ -54,6 +54,7 @@ public class DMLDataPoint implements MonitoringDataPoint, Serializable {
     private List<String> fieldNames;
     private Map<Long, List<Long>> accessedPartitions;
     private String queryId;
+    private String physicalQueryId;
 
 
     @Override

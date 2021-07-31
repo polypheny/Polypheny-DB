@@ -540,7 +540,7 @@ public class Rest {
         RestResult restResult;
         try {
             // Prepare
-            PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( relRoot );
+            PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( relRoot , true);
             log.debug( "RelRoot was prepared." );
 
             @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( statement.getDataContext() );

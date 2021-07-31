@@ -40,6 +40,7 @@ public class DMLEventAnalyzer {
                 .accessedPartitions( dmlEvent.getAccessedPartitions() )
                 .queryId( dmlEvent.getQueryId() )
                 .monitoringType( "DML" )
+                .physicalQueryId( dmlEvent.getPhysicalQueryId() )
                 .build();
         metric.getTables().addAll( dmlEvent.getAnalyzeRelShuttle().getTables() );
 

@@ -54,6 +54,7 @@ public class QueryDataPoint implements MonitoringDataPoint, Serializable {
     private Map<Long, List<Long>> accessedPartitions;
     protected String relCompareString;
     protected String queryId;
+    protected String physicalQueryId;
 
 
     @Override

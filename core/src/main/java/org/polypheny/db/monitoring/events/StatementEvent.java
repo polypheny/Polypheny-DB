@@ -50,6 +50,7 @@ public abstract class StatementEvent extends BaseEvent {
     protected LogicalRelQueryAnalyzeShuttle analyzeRelShuttle;
     protected String relCompareString;
     protected String queryId;
+    protected String physicalQueryId;
 
 
 
