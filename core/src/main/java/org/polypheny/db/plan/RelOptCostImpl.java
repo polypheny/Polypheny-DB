@@ -79,6 +79,12 @@ public class RelOptCostImpl implements RelOptCost {
     }
 
 
+    @Override
+    public double getCosts() {
+        return getRows();
+    }
+
+
     // implement RelOptCost
     @Override
     public boolean isLe( RelOptCost other ) {

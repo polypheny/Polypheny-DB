@@ -29,7 +29,7 @@ import org.polypheny.db.util.Pair;
 @Getter
 @Setter
 @Slf4j
-public class CachedProposedRoutingPlan {
+public class CachedProposedRoutingPlan implements RoutingPlan{
     protected String queryId;
     protected String physicalQueryId;
     protected RelOptCost preCosts;
@@ -41,12 +41,8 @@ public class CachedProposedRoutingPlan {
         this.queryId = routingPlan.getQueryId();
         this.preCosts = approximatedCosts;
         this.routingClass = routingPlan.getRouter();
-        if(! routingPlan.getPhysicalPlacementsOfPartitions().isPresent() || !routingPlan.getPhysicalQueryId().isPresent()){
-            throw new IllegalArgumentException("Cannot create cached routing plan without physical information");
-            // todo: still empty
-        }
         this.physicalPlacementsOfPartitions = ImmutableMap.copyOf( routingPlan.getPhysicalPlacementsOfPartitions().get() );
-        this.physicalQueryId = routingPlan.getPhysicalQueryId().get();
+        this.physicalQueryId = routingPlan.getPhysicalQueryId();
     }
 
 }

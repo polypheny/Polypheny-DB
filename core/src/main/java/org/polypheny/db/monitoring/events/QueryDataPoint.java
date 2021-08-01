@@ -14,16 +14,11 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.routing;
+package org.polypheny.db.monitoring.events;
 
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.tools.RoutedRelBuilder;
-import org.polypheny.db.transaction.Statement;
-
-public interface DmlRouter {
-
-    RoutedRelBuilder routeDml( RelNode node, Statement statement );
-
-    RelNode handleConditionalExecute( RelNode node, Statement statement, Router router );
+public interface QueryDataPoint extends MonitoringDataPoint{
+    long getExecutionTime();
+    String getQueryId();
+    String getPhysicalQueryId();
 
 }

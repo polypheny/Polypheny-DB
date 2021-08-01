@@ -43,7 +43,7 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
-import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
+import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.transaction.Statement;
@@ -368,7 +368,7 @@ public class FrequencyMapImpl extends FrequencyMap {
 
         switch ( ((TemperaturePartitionProperty) table.partitionProperty).getPartitionCostIndication() ){
             case ALL:
-                for ( QueryDataPoint queryDataPoint: MonitoringServiceProvider.getInstance().getDataPointsAfter( QueryDataPoint.class, queryStart ) ) {
+                for ( QueryDataPointImpl queryDataPoint: MonitoringServiceProvider.getInstance().getDataPointsAfter( QueryDataPointImpl.class, queryStart ) ) {
                     queryDataPoint.getAccessedPartitions().keySet().forEach( p -> incrementPartitionAccess( p ) );
                 }
                 for ( DMLDataPoint dmlDataPoint: MonitoringServiceProvider.getInstance().getDataPointsAfter( DMLDataPoint.class, queryStart ) ) {
@@ -378,8 +378,8 @@ public class FrequencyMapImpl extends FrequencyMap {
                 break;
 
             case READ:
-                List<QueryDataPoint> readAccesses= MonitoringServiceProvider.getInstance().getDataPointsAfter( QueryDataPoint.class, queryStart );
-                for ( QueryDataPoint queryDataPoint: readAccesses ) {
+                List<QueryDataPointImpl> readAccesses= MonitoringServiceProvider.getInstance().getDataPointsAfter( QueryDataPointImpl.class, queryStart );
+                for ( QueryDataPointImpl queryDataPoint: readAccesses ) {
                     queryDataPoint.getAccessedPartitions().keySet().forEach( p -> incrementPartitionAccess( p ) );
                 }
                 break;

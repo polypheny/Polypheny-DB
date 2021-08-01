@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
-import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
+import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 
@@ -99,10 +99,10 @@ class MonitoringServiceImplTest {
         val sut = new MonitoringServiceImpl( monitoringQueue, repository, monitoringServiceUi );
 
         // act
-        sut.getAllDataPoints( QueryDataPoint.class );
+        sut.getAllDataPoints( QueryDataPointImpl.class );
 
         // assert
-        Mockito.verify( repository, times( 1 ) ).getAllDataPoints( QueryDataPoint.class );
+        Mockito.verify( repository, times( 1 ) ).getAllDataPoints( QueryDataPointImpl.class );
     }
 
 
@@ -116,10 +116,10 @@ class MonitoringServiceImplTest {
 
         // act
         val time = new Timestamp( System.currentTimeMillis() );
-        sut.getDataPointsBefore( QueryDataPoint.class, time );
+        sut.getDataPointsBefore( QueryDataPointImpl.class, time );
 
         // assert
-        Mockito.verify( repository, times( 1 ) ).getDataPointsBefore( QueryDataPoint.class, time );
+        Mockito.verify( repository, times( 1 ) ).getDataPointsBefore( QueryDataPointImpl.class, time );
     }
 
 
@@ -133,10 +133,10 @@ class MonitoringServiceImplTest {
 
         // act
         val time = new Timestamp( System.currentTimeMillis() );
-        sut.getDataPointsAfter( QueryDataPoint.class, time );
+        sut.getDataPointsAfter( QueryDataPointImpl.class, time );
 
         // assert
-        Mockito.verify( repository, times( 1 ) ).getDataPointsAfter( QueryDataPoint.class, time );
+        Mockito.verify( repository, times( 1 ) ).getDataPointsAfter( QueryDataPointImpl.class, time );
     }
 
 }

@@ -62,6 +62,11 @@ public interface RelOptCost {
      */
     boolean isInfinite();
 
+    /**
+     * @return the costs of the element.
+     */
+    double getCosts();
+
     // REVIEW jvs: We should standardize this to Comparator/equals/hashCode
 
     /**

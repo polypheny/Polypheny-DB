@@ -50,7 +50,15 @@ public class HorizontalFullPlacementQueryRouter extends NoneHorizontalPartitioni
             val placements = usedColumns.stream()
                     .map( colId -> Catalog.getInstance().getColumnPlacement( adapterId, colId ) )
                     .collect( Collectors.toList() );
-            result.add( placements );
+
+            if(!placements.isEmpty()){
+                result.add( placements );
+            }else {
+                // no available placements found
+                this.cancelQuery = true;
+            }
+
+
         }
 
         return result;

@@ -20,6 +20,7 @@ import java.sql.Timestamp;
 import java.util.List;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
+import org.polypheny.db.monitoring.events.QueryDataPoint;
 
 /**
  * Main interface for working with the MonitoringService environment. Jobs can be registered, monitored
@@ -63,7 +64,7 @@ public interface MonitoringService {
     <T extends MonitoringDataPoint> List<T> getDataPointsAfter( Class<T> dataPointClass, Timestamp timestamp );
 
 
-    <T extends MonitoringDataPoint> List<T> getRoutingDataPoints( String queryClassString );
+    List<QueryDataPoint> getQueryDataPoints( String queryClassString );
 
 }
 

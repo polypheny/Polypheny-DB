@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.events.QueryEvent;
-import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
+import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
@@ -66,7 +66,7 @@ class MonitoringQueueImplIntegrationTest {
 
         // assert
 
-        val result = sut.getAllDataPoints( QueryDataPoint.class );
+        val result = sut.getAllDataPoints( QueryDataPointImpl.class );
         Assertions.assertEquals( 15, result.size() );
 
         // cleanup

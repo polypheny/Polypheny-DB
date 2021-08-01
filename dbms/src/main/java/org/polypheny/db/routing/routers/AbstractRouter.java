@@ -68,20 +68,15 @@ public abstract class AbstractRouter extends BaseRouter implements Router {
         //this.selectedAdapter = new HashMap<>();
         this.cancelQuery = false;
 
-
         if ( logicalRoot.rel instanceof LogicalTableModify ) {
-            throw new IllegalStateException("Should never happen for dml");
+            throw new IllegalStateException( "Should never happen for dml" );
         } else if ( logicalRoot.rel instanceof ConditionalExecute ) {
-            throw new IllegalStateException("Should never happen for conditional executes");
+            throw new IllegalStateException( "Should never happen for conditional executes" );
         } else {
             val builder = RoutedRelBuilder.create( statement, logicalRoot.rel.getCluster() );
             return buildDql( logicalRoot.rel, Lists.newArrayList( builder ), statement, logicalRoot.rel.getCluster() );
 
         }
-
-        /*routed.stream()
-                .map( elem -> new RelRoot( elem, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation ) )
-                .collect( Collectors.toList() );*/
     }
 
 
@@ -138,10 +133,8 @@ public abstract class AbstractRouter extends BaseRouter implements Router {
             }
 
         } else if ( node instanceof LogicalValues ) {
-            log.info( "handleValues" );
             return Lists.newArrayList( super.handleValues( (LogicalValues) node, builders ) );
         } else {
-            log.info( "handleGeneric" );
             return Lists.newArrayList( super.handleGeneric( node, builders ) );
         }
     }
@@ -158,7 +151,7 @@ public abstract class AbstractRouter extends BaseRouter implements Router {
             currentPlacementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ), placementCombination );
 
             for ( val builder : builders ) {
-                val newBuilder = RoutedRelBuilder.createCopy( statement, cluster, builder);
+                val newBuilder = RoutedRelBuilder.createCopy( statement, cluster, builder );
                 newBuilder.addPhysicalInfo( currentPlacementDistribution );
                 newBuilder.push( super.buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) );
                 newBuilders.add( newBuilder );
@@ -178,7 +171,7 @@ public abstract class AbstractRouter extends BaseRouter implements Router {
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionType );
 
         // get info from whereClauseVisitor
-        StatementEvent event = (StatementEvent)statement.getTransaction().getMonitoringEvent();
+        StatementEvent event = (StatementEvent) statement.getTransaction().getMonitoringEvent();
         List<String> partitionValues = event.getAnalyzeRelShuttle().getFilterMap().get( node.getId() );
 
         Map<Long, List<CatalogColumnPlacement>> placementDistribution;
@@ -217,6 +210,7 @@ public abstract class AbstractRouter extends BaseRouter implements Router {
 
         return builders;
     }
+
 
     @Override
     public void resetCaches() {

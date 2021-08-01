@@ -16,7 +16,6 @@
 
 package org.polypheny.db.routing;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -42,19 +41,17 @@ public class CachedPlanRouter extends BaseRouter {
 
     final static Catalog catalog = Catalog.getInstance();
 
-    public List<RoutedRelBuilder> routeCached( RelRoot logicalRoot, List<CachedProposedRoutingPlan> routingPlansCached, Statement statement ) {
 
-        val result = new ArrayList<RoutedRelBuilder>();
-        for( val plan : routingPlansCached){
-            var builder = RoutedRelBuilder.create( statement, logicalRoot.rel.getCluster() );
-            builder =  buildCachedSelect( logicalRoot.rel, builder, statement, logicalRoot.rel.getCluster(), plan );
-            result.add( builder );
-        }
+    public RoutedRelBuilder routeCached( RelRoot logicalRoot, CachedProposedRoutingPlan routingPlanCached, Statement statement ) {
 
-        return result;
+        var builder = RoutedRelBuilder.create( statement, logicalRoot.rel.getCluster() );
+        builder = buildCachedSelect( logicalRoot.rel, builder, statement, logicalRoot.rel.getCluster(), routingPlanCached );
+
+        return builder;
     }
 
-    private RoutedRelBuilder buildCachedSelect( RelNode node, RoutedRelBuilder builder, Statement statement, RelOptCluster cluster, CachedProposedRoutingPlan cachedPlan){
+
+    private RoutedRelBuilder buildCachedSelect( RelNode node, RoutedRelBuilder builder, Statement statement, RelOptCluster cluster, CachedProposedRoutingPlan cachedPlan ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
             builder = buildCachedSelect( node.getInput( i ), builder, statement, cluster, cachedPlan );
         }
@@ -69,19 +66,17 @@ public class CachedPlanRouter extends BaseRouter {
 
             val partitionIds = catalogTable.partitionProperty.partitionIds;
             val placement = new HashMap<Long, List<CatalogColumnPlacement>>();
-            for ( val partition: partitionIds) {
+            for ( val partition : partitionIds ) {
                 val colPlacemets =
-                        cachedPlan.physicalPlacementsOfPartitions.get( partition ).stream().map( placementInfo -> catalog.getColumnPlacement( placementInfo.left, placementInfo.right )).collect( Collectors.toList());
+                        cachedPlan.physicalPlacementsOfPartitions.get( partition ).stream().map( placementInfo -> catalog.getColumnPlacement( placementInfo.left, placementInfo.right ) ).collect( Collectors.toList() );
                 placement.put( partition, colPlacemets );
             }
 
             return builder.push( super.buildJoinedTableScan( statement, cluster, placement ) );
 
         } else if ( node instanceof LogicalValues ) {
-            log.info( "handleValues" );
-            return super.handleValues( (LogicalValues) node, builder);
+            return super.handleValues( (LogicalValues) node, builder );
         } else {
-            log.info( "handleGeneric" );
             return super.handleGeneric( node, builder );
         }
 

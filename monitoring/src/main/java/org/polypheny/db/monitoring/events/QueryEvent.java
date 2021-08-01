@@ -23,7 +23,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.events.analyzer.QueryEventAnalyzer;
-import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
+import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 
 
 @Getter
@@ -34,7 +34,7 @@ public class QueryEvent extends StatementEvent {
 
     @Override
     public <T extends MonitoringDataPoint> List<Class<T>> getMetrics() {
-        return Arrays.asList( (Class<T>) QueryDataPoint.class );
+        return Arrays.asList( (Class<T>) QueryDataPointImpl.class );
     }
 
 

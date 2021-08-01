@@ -37,6 +37,7 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
     protected Optional<String> physicalQueryId = Optional.empty();
     protected Optional<Class<? extends Router>> router = Optional.empty();
     protected Optional<Map<Long, List<Pair<Integer, Long>>>>  physicalPlacementsOfPartitions = Optional.empty(); // partitionId, list<CatalogPlacementIds>
+    protected Optional<RelOptCost> preCosts = Optional.empty();
 
     public ProposedRoutingPlanImpl( RoutedRelBuilder routedRelBuilder, RelRoot logicalRoot, String queryId){
         this.physicalPlacementsOfPartitions = Optional.of( routedRelBuilder.getPhysicalPlacementsOfPartitions() );
@@ -82,8 +83,24 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
 
 
     @Override
+    public Optional<String> getOptionalPhysicalQueryId() {
+        return physicalQueryId;
+    }
+
+
+    @Override
+    public void setOptionalPhysicalQueryId( Optional<String> physicalQueryId ) {
+        this.physicalQueryId = physicalQueryId;
+    }
+
+    @Override
+    public String getPhysicalQueryId() {
+        return physicalQueryId.isPresent() ? physicalQueryId.get() : "";
+    }
+
+    @Override
     public boolean isCachable() {
-        return this.physicalPlacementsOfPartitions.isPresent() && this.getPhysicalQueryId().isPresent() && !this.routedRoot.kind.belongsTo( SqlKind.DML );
+        return this.physicalPlacementsOfPartitions.isPresent() && this.getOptionalPhysicalQueryId().isPresent() && !this.routedRoot.kind.belongsTo( SqlKind.DML );
     }
 
 }

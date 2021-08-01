@@ -338,7 +338,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                                          */
                                     }
-
                                 }//WHERE clause only
                                 else {
                                     throw new RuntimeException( "Updating partition key is not allowed" );

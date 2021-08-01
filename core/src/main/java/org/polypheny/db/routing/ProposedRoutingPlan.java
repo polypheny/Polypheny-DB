@@ -19,10 +19,11 @@ package org.polypheny.db.routing;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.util.Pair;
 
-public interface ProposedRoutingPlan {
+public interface ProposedRoutingPlan extends RoutingPlan{
 
 
     RelRoot getRoutedRoot();
@@ -31,14 +32,17 @@ public interface ProposedRoutingPlan {
     String getQueryId();
     void setQueryId(String queryId);
 
-    Optional<String> getPhysicalQueryId();
-    void setPhysicalQueryId( Optional<String> physicalQueryId);
+    Optional<String> getOptionalPhysicalQueryId();
+    void setOptionalPhysicalQueryId( Optional<String> physicalQueryId);
 
     Optional<Class<? extends Router>> getRouter();
     void setRouter(Optional<Class<? extends Router>> routerClass);
 
     Optional<Map<Long, List<Pair<Integer, Long>>>>  getPhysicalPlacementsOfPartitions(); // partitionId, list<CatalogPlacementIds>
     void setPhysicalPlacementsOfPartitions(Optional<Map<Long, List<Pair<Integer, Long>>>> physicalPartitionPlacement);
+
+    Optional<RelOptCost> getPreCosts();
+    void setPreCosts(Optional<RelOptCost> preCosts);
 
     boolean isCachable();
 

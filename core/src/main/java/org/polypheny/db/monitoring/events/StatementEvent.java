@@ -24,7 +24,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.processing.LogicalRelQueryAnalyzeShuttle;
-import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -35,7 +34,6 @@ import org.polypheny.db.transaction.Statement;
 @Getter
 public abstract class StatementEvent extends BaseEvent {
 
-    protected RelRoot routed;
     protected PolyphenyDbSignature signature;
     protected Statement statement;
     protected List<List<Object>> rows;

@@ -106,6 +106,12 @@ public class VolcanoCost implements RelOptCost {
 
 
     @Override
+    public double getCosts() {
+        return getRows();
+    }
+
+
+    @Override
     public double getIo() {
         return io;
     }

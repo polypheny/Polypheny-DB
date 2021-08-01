@@ -110,15 +110,11 @@ public abstract class BaseRouter {
         /*if ( cancelQuery ) {
             return Collections.emptyList();
         }*/
-        log.info( "start handle generic" );
         if ( node.getInputs().size() == 1 ) {
-            log.info( "node input size = 1" );
-
             builders.forEach(
                     builder -> builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 0 ) ) ) )
             );
         } else if ( node.getInputs().size() == 2 ) { // Joins, SetOperations
-            log.info( "node input size = 2" );
             builders.forEach(
                     builder -> builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 1 ), builder.peek( 0 ) ) ) )
             );
