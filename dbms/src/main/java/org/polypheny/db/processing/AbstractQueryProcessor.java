@@ -113,7 +113,6 @@ import org.polypheny.db.routing.ExecutionTimeMonitor.ExecutionTimeObserver;
 import org.polypheny.db.routing.ProposedRoutingPlan;
 import org.polypheny.db.routing.ProposedRoutingPlanImpl;
 import org.polypheny.db.routing.QueryProcessorHelpers;
-import org.polypheny.db.routing.RelDeepCopyShuttle;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.routing.RouterManager;
 import org.polypheny.db.routing.RoutingPlan;
@@ -924,8 +923,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     private List<ProposedRoutingPlan> route( RelRoot logicalRoot, Statement statement, String queryId ) {
         InformationPage page = null;
-        log.info( "Start Routing" );
-
         if ( logicalRoot.rel instanceof LogicalTableModify ) {
             val routedDml = RouterManager.getInstance().getDmlRouter().routeDml( logicalRoot.rel, statement );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryId ) );
@@ -933,9 +930,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             val routedConditionalExecute = RouterManager.getInstance().getDmlRouter().handleConditionalExecute( logicalRoot.rel, statement, RouterManager.getInstance().getFallbackRouter() );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedConditionalExecute, logicalRoot, queryId ) );
         } else {
-            log.info( "Start build DQL" );
-
-            // TODO
             if ( !RouterManager.IS_LONG_ACTIVE.getBoolean() ) {
                 val proposedPlans = new ArrayList<ProposedRoutingPlan>();
                 for ( val router : RouterManager.getInstance().getShortRunningRouters() ) {

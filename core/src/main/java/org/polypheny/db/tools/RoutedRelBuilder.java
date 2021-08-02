@@ -28,6 +28,7 @@ import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptSchema;
+import org.polypheny.db.processing.RelDeepCopyShuttle;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexLiteral;
@@ -52,7 +53,8 @@ public class RoutedRelBuilder extends RelBuilder{
         newBuilder.getPhysicalPlacementsOfPartitions().putAll( ImmutableMap.copyOf( builder.getPhysicalPlacementsOfPartitions() ) );
 
         for ( int i = 0; i < builder.stackSize(); i++ ) {
-            newBuilder.push( builder.peek( i ) );
+            val node = builder.peek(i).accept( new RelDeepCopyShuttle() );
+            newBuilder.push( node );
         }
         return newBuilder;
     }

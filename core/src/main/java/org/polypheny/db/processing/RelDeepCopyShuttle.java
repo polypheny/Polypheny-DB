@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.routing;
+package org.polypheny.db.processing;
 
 import com.google.common.collect.ImmutableList;
 import org.polypheny.db.plan.RelTraitSet;
