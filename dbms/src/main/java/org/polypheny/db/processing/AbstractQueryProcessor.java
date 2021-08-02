@@ -64,6 +64,7 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationQueryPlan;
+import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
@@ -228,37 +229,19 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     private PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery, boolean withMonitoring ) {
         val proposedResults = prepareQueryList( logicalRoot, parameterRowType, isRouted, isSubquery );
 
-        val executionResult = selectPlan( proposedResults );
-
-        // Add information to query analyzer
         if ( statement.getTransaction().isAnalyze() ) {
-            InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-            var page = new InformationPage( "Routing" );
-            page.fullWidth();
-            queryAnalyzer.addPage( page );
-
+            statement.getDuration().start( "Plan Selection" );
         }
 
+        val executionResult = selectPlan( proposedResults );
+
+        if ( statement.getTransaction().isAnalyze() ) {
+            statement.getDuration().stop( "Plan Selection" );
+        }
+
+        // TODO: Calc costs depending on parameters
         // TODO: get real rowNumbers in selfCost
         // TODO: find index on store for costs
-
-        // TODO: Add Icarus - Post Costs
-        // TODO: Calc costs depending on parameters
-
-        /*
-        *
-            InformationGroup group = new InformationGroup( page, "Selected Adapters" );
-            statement.getTransaction().getQueryAnalyzer().addGroup( group );
-            InformationTable table = new InformationTable(
-                    group,
-                    ImmutableList.of( "Table", "Adapter", "Physical Name" ) );
-            selectedAdapter.forEach( ( k, v ) -> {
-                CatalogTable catalogTable = Catalog.getInstance().getTable( k );
-                table.addRow( catalogTable.getSchemaName() + "." + catalogTable.name, v.uniqueName, v.physicalSchemaName + "." + v.physicalTableName );
-            } );
-            statement.getTransaction().getQueryAnalyzer().registerInformation( table );
-        * */
-
 
         if ( withMonitoring ) {
             this.monitorResult( executionResult.right );
@@ -275,7 +258,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         boolean lock = !isSubquery;
         final Convention resultConvention = ENABLE_BINDABLE ? BindableConvention.INSTANCE : EnumerableConvention.INSTANCE;
         final StopWatch stopWatch = new StopWatch();
-        List<ProposedRoutingPlan> proposedRoutingPlans;
+        List<ProposedRoutingPlan> proposedRoutingPlans = null;
         List<Optional<RelNode>> optimalNodeList = new ArrayList<>();
         List<RelRoot> parameterizedRootList = new ArrayList<>();
         List<Optional<PolyphenyDbSignature>> signatures = new ArrayList<>();
@@ -343,17 +326,21 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             if ( isAnalyze ) {
                 statement.getDuration().stop( "Index Lookup Rewrite" );
-                statement.getDuration().start( "Routing" );
             }
 
             if ( RuntimeConfig.ROUTING_PLAN_CACHING.getBoolean() &&
                     !indexLookupRoot.kind.belongsTo( SqlKind.DML )
             ) {
                 val routingPlansCached = RoutingPlanCache.INSTANCE.getIfPresent( queryId );
-                proposedRoutingPlans = !routingPlansCached.isEmpty()
-                        ? routeCached( indexLookupRoot, routingPlansCached, statement, queryId )
-                        : route( indexLookupRoot, statement, queryId );
-            } else {
+                if ( !routingPlansCached.isEmpty() ) {
+                    proposedRoutingPlans = routeCached( indexLookupRoot, routingPlansCached, statement, queryId, isAnalyze );
+                }
+            }
+
+            if(proposedRoutingPlans == null) {
+                if ( isAnalyze ) {
+                    statement.getDuration().start( "Routing" );
+                }
                 proposedRoutingPlans = route( indexLookupRoot, statement, queryId );
             }
 
@@ -426,6 +413,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
         }
 
+        if ( isAnalyze ) {
+            statement.getDuration().stop( "Implementation Caching" );
+        }
+
         // can we return earlier?
         if ( signatures.stream().allMatch( Optional::isPresent ) &&
                 optimalNodeList.stream().allMatch( Optional::isPresent )
@@ -443,7 +434,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // Plan Caching
         if ( isAnalyze ) {
-            statement.getDuration().stop( "Implementation Caching" );
             statement.getDuration().start( "Plan Caching" );
         }
         for ( int i = 0; i < proposedRoutingPlans.size(); i++ ) {
@@ -936,13 +926,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         InformationPage page = null;
         log.info( "Start Routing" );
 
-        if ( statement.getTransaction().isAnalyze() ) {
-            InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-            page = new InformationPage( "Routing" );
-            page.fullWidth();
-            queryAnalyzer.addPage( page );
-        }
-
         if ( logicalRoot.rel instanceof LogicalTableModify ) {
             val routedDml = RouterManager.getInstance().getDmlRouter().routeDml( logicalRoot.rel, statement );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryId ) );
@@ -973,33 +956,26 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             log.info( "End DQL" );
         }
 
-
-
-        /*if ( statement.getTransaction().isAnalyze() ) {
-            InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-            page = new InformationPage( "Routed Query Plan" ).setLabel( "plans" );
-            page.fullWidth();
-            InformationGroup group = new InformationGroup( page, "Routed Query Plan" );
-            queryAnalyzer.addPage( page );
-            queryAnalyzer.addGroup( group );
-            routedRootList.forEach( routedRoot -> {
-                InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
-                        group,
-                        RelOptUtil.dumpPlan( "Routed Query Plan", routedRoot.rel, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
-                queryAnalyzer.registerInformation( informationQueryPlan );
-            } );
-
-        }*/
-
         throw new IllegalStateException( "This point should never be reached!" );
-
     }
 
 
-    private List<ProposedRoutingPlan> routeCached( RelRoot logicalRoot, List<CachedProposedRoutingPlan> routingPlansCached, Statement statement, String queryId ) {
+    private List<ProposedRoutingPlan> routeCached( RelRoot logicalRoot, List<CachedProposedRoutingPlan> routingPlansCached, Statement statement, String queryId, boolean isAnalyze ) {
         // todo: get only best plan.
 
+        if ( isAnalyze ) {
+            statement.getDuration().start( "Plan Selection" );
+        }
+
         val selectedCachedPlan = selectCachedPlan( routingPlansCached, queryId );
+
+        if ( isAnalyze ) {
+            statement.getDuration().stop( "Plan Selection" );
+        }
+
+        if ( isAnalyze ) {
+            statement.getDuration().start( "Routing" );
+        }
 
         val builder = RouterManager.getInstance().getCachedPlanRouter().routeCached( logicalRoot, selectedCachedPlan, statement );
 
@@ -1346,7 +1322,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     private void cacheRouterPlans( List<ProposedRoutingPlan> proposedRoutingPlans, List<RelOptCost> approximatedCosts, String queryId ) {
         val cachedPlans = new ArrayList<CachedProposedRoutingPlan>();
         for ( int i = 0; i < proposedRoutingPlans.size(); i++ ) {
-            if ( proposedRoutingPlans.get( i ).isCachable() ) {
+            if ( proposedRoutingPlans.get( i ).isCachable() && !RoutingPlanCache.INSTANCE.isKeyPresent( queryId )) {
                 cachedPlans.add(
                         new CachedProposedRoutingPlan( proposedRoutingPlans.get( i ), approximatedCosts.get( i ) )
                 );
@@ -1371,13 +1347,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         val approximatedCosts = routingPlansCached.stream().map( CachedProposedRoutingPlan::getPreCosts ).collect( Collectors.toList() );
         var planPair = selectPlanBasedOnCosts( routingPlansCached, approximatedCosts, queryId, Optional.empty() );
 
-        return (CachedProposedRoutingPlan)planPair.right;
+        return (CachedProposedRoutingPlan) planPair.right;
 
     }
 
 
     private Pair<PolyphenyDbSignature, ProposedRoutingPlan> selectPlan( Quartet<List<ProposedRoutingPlan>, List<RelNode>, List<PolyphenyDbSignature>, String> proposedResults ) {
-        // lists should all be om same size
+        // lists should all be same size
         val proposedRoutingPlans = proposedResults.getA();
         val optimalRels = proposedResults.getB();
         val signatures = proposedResults.getC();
@@ -1385,6 +1361,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         val approximatedCosts = optimalRels.stream().map( rel -> rel.computeSelfCost( getPlanner(), RelMetadataQuery.instance() ) ).collect( Collectors.toList() );
         this.cacheRouterPlans( proposedRoutingPlans, approximatedCosts, queryId );
+
+        if ( signatures.size() == 1 ) {
+            return new Pair<>( signatures.get( 0 ), proposedRoutingPlans.get( 0 ) );
+        }
 
         var planPair = selectPlanBasedOnCosts( proposedRoutingPlans, approximatedCosts, queryId, Optional.of( signatures ) );
 
@@ -1404,7 +1384,16 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         List<Double> preCosts = calcPreCosts ? normalizeApproximatedCosts( approximatedCosts ) : Collections.nCopies( n, 0.0 );
 
         val calcPostCosts = Math.abs( ratioPre ) >= RelOptUtil.EPSILON; // > 0
-        List<Double> postCosts = calcPostCosts ? calcIcarusPostCosts( routingPlans, queryId ) : Collections.nCopies( n, 0.0 );
+        Optional<List<Double>> icarusCosts;
+        List<Double> postCosts;
+        if ( calcPostCosts ) {
+            val icarusResult = calcIcarusPostCosts( routingPlans, queryId );
+            icarusCosts = Optional.of( icarusResult.right );
+            postCosts = icarusResult.left;
+        } else {
+            postCosts = Collections.nCopies( n, 0.0 );
+            icarusCosts = Optional.empty();
+        }
 
         RoutingPlan currentPlan = routingPlans.get( 0 );
         Optional<PolyphenyDbSignature> currentSignature = signatures.isPresent() ? Optional.of( signatures.get().get( 0 ) ) : Optional.empty();
@@ -1414,10 +1403,72 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             if ( cost < currentCost ) {
                 currentPlan = routingPlans.get( i );
                 currentSignature = signatures.isPresent() ? Optional.of( signatures.get().get( i ) ) : Optional.empty();
+                currentCost = cost;
             }
         }
 
+        if ( statement.getTransaction().isAnalyze() ) {
+            this.printDebugOutput( approximatedCosts, preCosts, postCosts, icarusCosts, routingPlans, ratioPre, rationPost, currentPlan );
+        }
+
         return new Pair<>( currentSignature, currentPlan );
+    }
+
+
+    private void printDebugOutput(
+            List<RelOptCost> approximatedCosts,
+            List<Double> preCosts,
+            List<Double> postCosts,
+            Optional<List<Double>> icarusCosts,
+            List<? extends RoutingPlan> routingPlans,
+            Double ratioPre,
+            Double ratioPost,
+            RoutingPlan selectedPlan ) {
+
+        // initialize information for query analyzer
+        InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
+        var page = new InformationPage( "Routing" );
+        page.fullWidth();
+        queryAnalyzer.addPage( page );
+
+        InformationGroup overview = new InformationGroup( page, "Stats overview" );
+        statement.getTransaction().getQueryAnalyzer().addGroup( overview );
+        InformationTable overviewTable = new InformationTable( overview, ImmutableList.of( "# Proposed plans", "Pre Cost factor", "Post cost factor" ) );
+        overviewTable.addRow( routingPlans.size(), ratioPre, ratioPost );
+        statement.getTransaction().getQueryAnalyzer().registerInformation( overviewTable );
+
+        val isIcarus = icarusCosts.isPresent();
+
+        InformationGroup group = new InformationGroup( page, "Proposed Plans" );
+        statement.getTransaction().getQueryAnalyzer().addGroup( group );
+        InformationTable table = new InformationTable(
+                group,
+                ImmutableList.of( "Physical Query Id", "router", "Approx. Costs", "Norm. approx Costs", "Icarus Costs", "Norm. Icarus Costs", "Partitioning - Placements" ) );
+
+        for ( int i = 0; i < routingPlans.size(); i++ ) {
+            val routingPlan = routingPlans.get( i );
+            table.addRow(
+                    routingPlan.getPhysicalQueryId(),
+                    routingPlan.getRouter(),
+                    approximatedCosts.get( i ),
+                    preCosts.get( i ),
+                    isIcarus ? icarusCosts.get().get( i ) : "-",
+                    isIcarus ? postCosts.get( i ) : "-",
+                    routingPlan.getOptionalPhysicalPlacementsOfPartitions() ); //.isPresent() ? routingPlan.getOptionalPhysicalPlacementsOfPartitions().get(): "-"
+        }
+
+        statement.getTransaction().getQueryAnalyzer().registerInformation( table );
+
+        InformationGroup selected = new InformationGroup( page, "Selected Plan" );
+        statement.getTransaction().getQueryAnalyzer().addGroup( selected );
+        InformationTable selectedTable = new InformationTable( selected, ImmutableList.of( "QueryId", "Physical QueryId", "Router", "Partitioning - Placements" ) );
+        selectedTable.addRow(
+                selectedPlan.getQueryId(),
+                selectedPlan.getPhysicalQueryId(),
+                selectedPlan.getRouter(),
+                selectedPlan.getOptionalPhysicalPlacementsOfPartitions() );
+
+        statement.getTransaction().getQueryAnalyzer().registerInformation( selectedTable );
     }
 
 
@@ -1429,7 +1480,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         // when min == mix, set min = 0
-        val usedMin = Math.abs( min.get() - max.get() ) <= RelOptUtil.EPSILON ? Optional.of( 0.0) : min;
+        val usedMin = Math.abs( min.get() - max.get() ) <= RelOptUtil.EPSILON ? Optional.of( 0.0 ) : min;
         return costs.stream().map( c -> (c - usedMin.get()) / (max.get() - usedMin.get()) ).collect( Collectors.toList() );
     }
 
@@ -1440,7 +1491,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private List<Double> calcIcarusPostCosts( List<? extends RoutingPlan> proposedRoutingPlans, String queryId ) {
+    private Pair<List<Double>, List<Double>> calcIcarusPostCosts( List<? extends RoutingPlan> proposedRoutingPlans, String queryId ) {
         val measuredData = MonitoringServiceProvider.getInstance().getQueryDataPoints( queryId );
         val icarusCosts = new ArrayList<Double>();
 
@@ -1467,7 +1518,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // normalize values
         val normalized = normalizeCots( icarusCosts );
-        return normalized;
+        return new Pair<>( normalized, icarusCosts );
     }
 
     // endregion

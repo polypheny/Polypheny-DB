@@ -60,7 +60,7 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
         this.physicalPlacementsOfPartitions = Optional.of( cachedPlan.getPhysicalPlacementsOfPartitions() );
         this.queryId = queryId;
         this.physicalQueryId = Optional.of( queryId + this.physicalPlacementsOfPartitions.get() );
-        this.router = cachedPlan.getRoutingClass();
+        this.router = cachedPlan.getRouter();
         val rel = routedRelBuilder.build();
         this.routedRoot = new RelRoot( rel , logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
     }
@@ -97,6 +97,13 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
     public String getPhysicalQueryId() {
         return physicalQueryId.isPresent() ? physicalQueryId.get() : "";
     }
+
+
+    @Override
+    public Optional<Map<Long, List<Pair<Integer, Long>>>> getOptionalPhysicalPlacementsOfPartitions() {
+        return this.getPhysicalPlacementsOfPartitions();
+    }
+
 
     @Override
     public boolean isCachable() {

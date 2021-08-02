@@ -81,7 +81,7 @@ public class RelOptCostImpl implements RelOptCost {
 
     @Override
     public double getCosts() {
-        return getRows();
+        return getRows() + getCpu() + getIo();
     }
 
 

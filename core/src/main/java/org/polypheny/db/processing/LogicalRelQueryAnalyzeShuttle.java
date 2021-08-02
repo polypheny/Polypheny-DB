@@ -41,6 +41,7 @@ import org.polypheny.db.rel.logical.LogicalMatch;
 import org.polypheny.db.rel.logical.LogicalMinus;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalSort;
+import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalUnion;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.transaction.Statement;
@@ -158,7 +159,10 @@ public class LogicalRelQueryAnalyzeShuttle extends RelShuttleImpl {
 
     @Override
     public RelNode visit( LogicalJoin join ) {
-        hashBasis.add( "LogicalJoin#" + join.getLeft().getTable().getQualifiedName() + "#" + join.getRight().getTable().getQualifiedName() );
+        if(join.getLeft() instanceof LogicalTableScan && join.getRight() instanceof  LogicalTableScan ){
+            hashBasis.add( "LogicalJoin#" + join.getLeft().getTable().getQualifiedName() + "#" + join.getRight().getTable().getQualifiedName() );
+        }
+
         super.visit( join );
         join.accept( this.rexShuttle );
         return join;

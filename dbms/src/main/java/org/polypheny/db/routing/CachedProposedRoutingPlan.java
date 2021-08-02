@@ -33,16 +33,22 @@ public class CachedProposedRoutingPlan implements RoutingPlan{
     protected String queryId;
     protected String physicalQueryId;
     protected RelOptCost preCosts;
-    protected Optional<Class<? extends Router>> routingClass;
+    protected Optional<Class<? extends Router>> router;
     protected Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions; // partitionId, list<CatalogPlacementIds>
 
 
     public CachedProposedRoutingPlan( ProposedRoutingPlan routingPlan, RelOptCost approximatedCosts){
         this.queryId = routingPlan.getQueryId();
         this.preCosts = approximatedCosts;
-        this.routingClass = routingPlan.getRouter();
+        this.router = routingPlan.getRouter();
         this.physicalPlacementsOfPartitions = ImmutableMap.copyOf( routingPlan.getPhysicalPlacementsOfPartitions().get() );
         this.physicalQueryId = routingPlan.getPhysicalQueryId();
+    }
+
+
+    @Override
+    public Optional<Map<Long, List<Pair<Integer, Long>>>> getOptionalPhysicalPlacementsOfPartitions() {
+        return Optional.empty();
     }
 
 }
