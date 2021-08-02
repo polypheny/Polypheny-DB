@@ -36,6 +36,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -169,6 +171,24 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     // endregion
 
 
+    public static <T> Predicate<T> distinctPlan( ProposedRoutingPlanImpl keyExtractor ) {
+        Set<ProposedRoutingPlanImpl> seen = ConcurrentHashMap.newKeySet();
+        return t -> seen.add( keyExtractor );
+    }
+
+
+    private static <K, V extends Comparable<? super V>> SortedSet<Entry<K, V>> entriesSortedByValues( Map<K, V> map ) {
+        SortedSet<Map.Entry<K, V>> sortedEntries = new TreeSet<>( ( e1, e2 ) -> {
+            // reverse ordering, biggest numbers first
+            int res = e2.getValue().compareTo( e1.getValue() );
+            // if element has same costs decide to mark it as 1
+            return res != 0 ? res : 1;
+        } );
+        sortedEntries.addAll( map.entrySet() );
+        return sortedEntries;
+    }
+
+
     // region public overrides
     @Override
     public void executionTime( String reference, long nanoTime ) {
@@ -194,6 +214,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         statement.getLongRunningRouters().forEach( Router::resetCaches );
     }
 
+    // endregion
+
 
     @Override
     public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, boolean withMonitoring ) {
@@ -203,14 +225,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 false, withMonitoring );
     }
 
+    // region processing
+
 
     @Override
     public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean withMonitoring ) {
         return prepareQuery( logicalRoot, parameterRowType, isRouted, false, withMonitoring );
 
     }
-
-    // endregion
 
 
     private void monitorResult( ProposedRoutingPlan selectedPlan ) {
@@ -226,7 +248,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
     }
 
-    // region processing
+    // endregion
+
+    // region processing single steps
 
 
     private PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery, boolean withMonitoring ) {
@@ -521,10 +545,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 signatures.stream().filter( Optional::isPresent ).map( Optional::get ).collect( Collectors.toList() ),
                 queryId );
     }
-
-    // endregion
-
-    // region processing single steps
 
 
     private void acquireLock( boolean isAnalyze, RelRoot logicalRoot ) {
@@ -938,15 +958,19 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 val proposedPlans = new ArrayList<ProposedRoutingPlan>();
                 for ( val router : RouterManager.getInstance().getShortRunningRouters() ) {
                     val builders = router.route( logicalRoot, statement );
-                    proposedPlans.addAll(
+
+                    val plans =
                             builders.stream().map( builder ->
                                     new ProposedRoutingPlanImpl( builder, logicalRoot, queryId, router.getClass() )
-                            ).collect( Collectors.toList() )
-                    );
+                            ).collect( Collectors.toList() );
+
+                    proposedPlans.addAll( plans );
 
                 }
 
-                return proposedPlans;
+                val distinctPlans = proposedPlans.stream().distinct().collect( Collectors.toList() );
+
+                return distinctPlans;
             }
             // TODO: long running queries
         }
@@ -1040,6 +1064,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         return rootRel4;
     }
 
+    // endregion
+
+    // region private helpers
+
 
     private PreparedResult implement( RelRoot root, RelDataType parameterRowType ) {
         if ( log.isTraceEnabled() ) {
@@ -1127,10 +1155,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
         };
     }
-
-    // endregion
-
-    // region private helpers
 
 
     private RelCollation relCollation( RelNode node ) {
@@ -1313,6 +1337,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
     }
 
+    // endregion
+
+    // region plan selection with cost calculation
+
 
     private void cacheRouterPlans( List<ProposedRoutingPlan> proposedRoutingPlans, List<RelOptCost> approximatedCosts, String queryId ) {
         val cachedPlans = new ArrayList<CachedProposedRoutingPlan>();
@@ -1328,10 +1356,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             RoutingPlanCache.INSTANCE.put( queryId, cachedPlans );
         }
     }
-
-    // endregion
-
-    // region plan selection with cost calculation
 
 
     private CachedProposedRoutingPlan selectCachedPlan( List<CachedProposedRoutingPlan> routingPlansCached, String queryId ) {
@@ -1398,21 +1422,21 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 .collect( Collectors.toList() );
 
         if ( RouterManager.PLAN_SELECTION_STRATEGY.getEnum() == RouterPlanSelectionStrategy.BEST ) {
-            val bestResult = this.selectBestPlan(routingPlans, signatures, effectiveCosts);
-            result  = bestResult;
-        }else if (RouterManager.PLAN_SELECTION_STRATEGY.getEnum() == RouterPlanSelectionStrategy.PERCENTAGE){
-            val percentageResult = this.selectPlanFromPercentage(routingPlans, signatures, effectiveCosts);
+            val bestResult = this.selectBestPlan( routingPlans, signatures, effectiveCosts );
+            result = bestResult;
+        } else if ( RouterManager.PLAN_SELECTION_STRATEGY.getEnum() == RouterPlanSelectionStrategy.PERCENTAGE ) {
+            val percentageResult = this.selectPlanFromPercentage( routingPlans, signatures, effectiveCosts );
             result = percentageResult.left;
             percentageCosts = Optional.of( percentageResult.right );
 
         }
 
-        if(result == null){
-            throw new IllegalStateException("should never happen!");
+        if ( result == null ) {
+            throw new IllegalStateException( "should never happen!" );
         }
 
         if ( statement.getTransaction().isAnalyze() ) {
-            this.printDebugOutput( approximatedCosts, preCosts, postCosts, icarusCosts, routingPlans, ratioPre, rationPost, result.right, effectiveCosts , percentageCosts);
+            this.printDebugOutput( approximatedCosts, preCosts, postCosts, icarusCosts, routingPlans, ratioPre, rationPost, result.right, effectiveCosts, percentageCosts );
         }
 
         return result;
@@ -1424,25 +1448,25 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // List<Double> weights = new ArrayList<>();
         // todo: check for list all 0
-        if(effectiveCosts.stream().allMatch( value -> value <=  RelOptUtil.EPSILON )){
+        if ( effectiveCosts.stream().allMatch( value -> value <= RelOptUtil.EPSILON ) ) {
             effectiveCosts = Collections.nCopies( effectiveCosts.size(), 1.0 );
         }
 
         // calc percentageTable
         double hundredPercent = effectiveCosts.stream().mapToDouble( Double::doubleValue ).sum();
         //double onePercent = hundredPercent / 100.0;
-        val percentage = effectiveCosts.stream().map( cost -> cost / hundredPercent ).collect( Collectors.toList());
+        val percentage = effectiveCosts.stream().map( cost -> cost / hundredPercent ).collect( Collectors.toList() );
         // invert percentages
         val inversePercentage = percentage.stream()
-                .map( value -> 1.0 / value  )
-                .map( value -> Double.isInfinite( value ) ? 0.0 : value).collect( Collectors.toList());
+                .map( value -> 1.0 / value )
+                .map( value -> Double.isInfinite( value ) ? 0.0 : value ).collect( Collectors.toList() );
 
         val totalInversePercentage = inversePercentage.stream().mapToDouble( Double::doubleValue ).sum();
 
         // normalize again
-        val weights = inversePercentage.stream().map( value -> (value / totalInversePercentage) * 100.0 ).collect( Collectors.toList());
+        val weights = inversePercentage.stream().map( value -> (value / totalInversePercentage) * 100.0 ).collect( Collectors.toList() );
 
-        for(int i = 0; i < routingPlans.size(); i++){
+        for ( int i = 0; i < routingPlans.size(); i++ ) {
             percentageTable.put(
                     new Pair( signatures.isPresent() ? Optional.of( signatures.get().get( 0 ) ) : Optional.empty(), routingPlans.get( i ) ),
                     weights.get( i ).intValue()
@@ -1450,32 +1474,22 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         // TODO: CM: I think sorting is not necessary here.
-        val sortedEntries =  entriesSortedByValues(percentageTable);
+        val sortedEntries = entriesSortedByValues( percentageTable );
 
         int p = 0;
         int random = Math.min( (int) (Math.random() * 100) + 1, 100 );
         for ( Map.Entry<Pair<Optional<PolyphenyDbSignature>, RoutingPlan>, Integer> entry : sortedEntries ) {
             p += Math.max( entry.getValue(), 0 ); // avoid subtracting -2
             if ( p >= random ) {
-                return new Pair<>( entry.getKey(), weights);
+                return new Pair<>( entry.getKey(), weights );
             }
         }
 
-        throw new IllegalStateException("should never happen from percentages");
+        throw new IllegalStateException( "should never happen from percentages" );
     }
 
-    private static <K, V extends Comparable<? super V>> SortedSet<Entry<K, V>> entriesSortedByValues( Map<K, V> map ) {
-        SortedSet<Map.Entry<K, V>> sortedEntries = new TreeSet<>( ( e1, e2 ) -> {
-            // reverse ordering, biggest numbers first
-            int res = e2.getValue().compareTo( e1.getValue() );
-            // if element has same costs decide to mark it as 1
-            return res != 0 ? res : 1;
-        } );
-        sortedEntries.addAll( map.entrySet() );
-        return sortedEntries;
-    }
 
-    private Pair<Optional<PolyphenyDbSignature>, RoutingPlan> selectBestPlan( List<? extends RoutingPlan> routingPlans, Optional<List<PolyphenyDbSignature>> signatures, List<Double> effectiveCosts ){
+    private Pair<Optional<PolyphenyDbSignature>, RoutingPlan> selectBestPlan( List<? extends RoutingPlan> routingPlans, Optional<List<PolyphenyDbSignature>> signatures, List<Double> effectiveCosts ) {
         var currentPlan = routingPlans.get( 0 );
         Optional<PolyphenyDbSignature> currentSignature = signatures.isPresent() ? Optional.of( signatures.get().get( 0 ) ) : Optional.empty();
         var currentCost = effectiveCosts.get( 0 );
@@ -1523,7 +1537,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         statement.getTransaction().getQueryAnalyzer().addGroup( group );
         InformationTable table = new InformationTable(
                 group,
-                ImmutableList.of( "Physical Query Id", "router", "Approx. Costs", "Icarus Costs", "Norm. approx Costs", "Norm. Icarus Costs",  "Total Costs", "Adapter Info", "Percentage" ) );
+                ImmutableList.of( "Physical Query Id", "router", "Approx. Costs", "Icarus Costs", "Norm. approx Costs", "Norm. Icarus Costs", "Total Costs", "Adapter Info", "Percentage" ) );
 
         for ( int i = 0; i < routingPlans.size(); i++ ) {
             val routingPlan = routingPlans.get( i );
@@ -1536,7 +1550,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     isIcarus ? postCosts.get( i ) : "-",
                     effectiveCosts.get( i ),
                     routingPlan.getOptionalPhysicalPlacementsOfPartitions(),
-                    percentageCosts.isPresent() ? percentageCosts.get().get( i ) : "-"); //.isPresent() ? routingPlan.getOptionalPhysicalPlacementsOfPartitions().get(): "-"
+                    percentageCosts.isPresent() ? percentageCosts.get().get( i ) : "-" ); //.isPresent() ? routingPlan.getOptionalPhysicalPlacementsOfPartitions().get(): "-"
         }
 
         statement.getTransaction().getQueryAnalyzer().registerInformation( table );
@@ -1556,7 +1570,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     private List<Double> normalizeCots( List<Double> costs ) {
         // check all zero
-        if(costs.stream().allMatch( value -> value <= RelOptUtil.EPSILON )){
+        if ( costs.stream().allMatch( value -> value <= RelOptUtil.EPSILON ) ) {
             return costs;
         }
 

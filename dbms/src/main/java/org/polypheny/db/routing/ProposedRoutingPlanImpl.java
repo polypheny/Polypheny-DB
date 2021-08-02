@@ -16,6 +16,7 @@
 
 package org.polypheny.db.routing;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,52 +33,57 @@ import org.polypheny.db.util.Pair;
 @Setter
 @Getter
 public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
+
     protected RelRoot routedRoot;
     protected String queryId;
     protected Optional<String> physicalQueryId = Optional.empty();
     protected Optional<Class<? extends Router>> router = Optional.empty();
-    protected Optional<Map<Long, List<Pair<Integer, Long>>>>  physicalPlacementsOfPartitions = Optional.empty(); // partitionId, list<CatalogPlacementIds>
+    protected Optional<Map<Long, List<Pair<Integer, Long>>>> physicalPlacementsOfPartitions = Optional.empty(); // partitionId, list<CatalogPlacementIds>
     protected Optional<RelOptCost> preCosts = Optional.empty();
 
-    public ProposedRoutingPlanImpl( RoutedRelBuilder routedRelBuilder, RelRoot logicalRoot, String queryId){
+
+    public ProposedRoutingPlanImpl( RoutedRelBuilder routedRelBuilder, RelRoot logicalRoot, String queryId ) {
         this.physicalPlacementsOfPartitions = Optional.of( routedRelBuilder.getPhysicalPlacementsOfPartitions() );
         this.queryId = queryId;
         this.physicalQueryId = Optional.of( queryId + this.physicalPlacementsOfPartitions.get() );
         val rel = routedRelBuilder.build();
-        this.routedRoot = new RelRoot( rel , logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
+        this.routedRoot = new RelRoot( rel, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
     }
 
-    public ProposedRoutingPlanImpl( RoutedRelBuilder routedRelBuilder, RelRoot logicalRoot, String queryId, Class<? extends Router> routerClass){
+
+    public ProposedRoutingPlanImpl( RoutedRelBuilder routedRelBuilder, RelRoot logicalRoot, String queryId, Class<? extends Router> routerClass ) {
         this.physicalPlacementsOfPartitions = Optional.of( routedRelBuilder.getPhysicalPlacementsOfPartitions() );
         this.queryId = queryId;
         this.physicalQueryId = Optional.of( queryId + this.physicalPlacementsOfPartitions.get() );
         this.router = Optional.of( routerClass );
         val rel = routedRelBuilder.build();
-        this.routedRoot = new RelRoot( rel , logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
+        this.routedRoot = new RelRoot( rel, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
     }
 
-    public ProposedRoutingPlanImpl( RoutedRelBuilder routedRelBuilder, RelRoot logicalRoot, String queryId, CachedProposedRoutingPlan cachedPlan){
+
+    public ProposedRoutingPlanImpl( RoutedRelBuilder routedRelBuilder, RelRoot logicalRoot, String queryId, CachedProposedRoutingPlan cachedPlan ) {
         this.physicalPlacementsOfPartitions = Optional.of( cachedPlan.getPhysicalPlacementsOfPartitions() );
         this.queryId = queryId;
         this.physicalQueryId = Optional.of( queryId + this.physicalPlacementsOfPartitions.get() );
         this.router = cachedPlan.getRouter();
         val rel = routedRelBuilder.build();
-        this.routedRoot = new RelRoot( rel , logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
+        this.routedRoot = new RelRoot( rel, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
     }
 
 
-
-    public ProposedRoutingPlanImpl( RelNode routedConditional, RelRoot logicalRoot, String queryId){
+    public ProposedRoutingPlanImpl( RelNode routedConditional, RelRoot logicalRoot, String queryId ) {
         this.queryId = queryId;
-        this.routedRoot = new RelRoot( routedConditional , logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
+        this.routedRoot = new RelRoot( routedConditional, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
     }
 
-    public ProposedRoutingPlanImpl( RelRoot routedRoot, String queryId){
+
+    public ProposedRoutingPlanImpl( RelRoot routedRoot, String queryId ) {
         this.queryId = queryId;
         this.routedRoot = routedRoot;
     }
 
-    public CachedProposedRoutingPlan convert(ProposedRoutingPlan routingPlan, RelOptCost approximatedCosts ){
+
+    public CachedProposedRoutingPlan convert( ProposedRoutingPlan routingPlan, RelOptCost approximatedCosts ) {
         return new CachedProposedRoutingPlan( routingPlan, approximatedCosts );
     }
 
@@ -92,6 +98,7 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
     public void setOptionalPhysicalQueryId( Optional<String> physicalQueryId ) {
         this.physicalQueryId = physicalQueryId;
     }
+
 
     @Override
     public String getPhysicalQueryId() {
@@ -108,6 +115,50 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
     @Override
     public boolean isCachable() {
         return this.physicalPlacementsOfPartitions.isPresent() && this.getOptionalPhysicalQueryId().isPresent() && !this.routedRoot.kind.belongsTo( SqlKind.DML );
+    }
+
+
+    @Override
+    public boolean equals( Object obj ) {
+        val other = (ProposedRoutingPlanImpl) obj;
+        if ( other == null ) {
+            return false;
+        }
+
+        if ( !this.physicalPlacementsOfPartitions.isPresent() && !other.physicalPlacementsOfPartitions.isPresent() ) {
+            return true;
+        }
+
+        if ( !this.physicalPlacementsOfPartitions.isPresent() || !other.physicalPlacementsOfPartitions.isPresent() ) {
+            return true;
+        }
+
+        for ( val entry : this.physicalPlacementsOfPartitions.get().entrySet() ) {
+            val id = entry.getKey();
+            val values = entry.getValue();
+
+            if ( !other.physicalPlacementsOfPartitions.get().containsKey( id ) ) {
+                return false;
+            } else {
+                if ( !values.containsAll( other.physicalPlacementsOfPartitions.get().get( id ) ) ) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+
+    @Override
+    public int hashCode() {
+        if ( this.physicalPlacementsOfPartitions.isPresent() ) {
+            val value = this.physicalPlacementsOfPartitions.get().values()
+                    .stream().flatMap( Collection::stream )
+                    .map( elem -> elem.right.hashCode() * elem.left.hashCode() )
+                    .reduce( ( a, b ) -> a + b ).get();
+            return value;
+        }
+        return super.hashCode();
     }
 
 }
