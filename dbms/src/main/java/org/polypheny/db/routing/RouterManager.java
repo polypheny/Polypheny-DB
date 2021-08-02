@@ -32,6 +32,7 @@ import org.polypheny.db.config.ConfigBoolean;
 import org.polypheny.db.config.ConfigClazz;
 import org.polypheny.db.config.ConfigClazzList;
 import org.polypheny.db.config.ConfigDouble;
+import org.polypheny.db.config.ConfigEnum;
 import org.polypheny.db.config.ConfigInteger;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.WebUiGroup;
@@ -60,6 +61,11 @@ public class RouterManager {
             "routing/distinctionBetweenShortAndLongRunning",
             "Boolean whether to distinguish between long and short running queries. If set to false, the following configuration will not be considered.",
             false );
+
+    public static final ConfigEnum PLAN_SELECTION_STRATEGY = new ConfigEnum(
+            "routing/planSelectionStrategy",
+            "Defines whether the best plan will be returned or the plan based on percentage calculated for each plan orderd by costs",
+            RouterPlanSelectionStrategy.class, RouterPlanSelectionStrategy.BEST);
 
 
     private static final RouterManager INSTANCE = new RouterManager();
@@ -118,8 +124,11 @@ public class RouterManager {
         configManager.registerConfig( PRE_COST_POST_COST_RATIO );
         PRE_COST_POST_COST_RATIO.withUi( routingGroup.getId(), 1 );
 
+        configManager.registerConfig( PLAN_SELECTION_STRATEGY );
+        PLAN_SELECTION_STRATEGY.withUi( routingGroup.getId(), 2 );
+
         configManager.registerConfig( IS_LONG_ACTIVE );
-        IS_LONG_ACTIVE.withUi( routingGroup.getId(), 2 );
+        IS_LONG_ACTIVE.withUi( routingGroup.getId(), 3 );
         IS_LONG_ACTIVE.addObserver( getLongRunningLister( routingGroup ) );
     }
 
@@ -141,11 +150,11 @@ public class RouterManager {
                     // long running activate, make it configurable:
                     // Routing overall settings
                     configManager.registerConfig( SHORT_RUNNING_LONG_RUNNING_THRESHOLD );
-                    SHORT_RUNNING_LONG_RUNNING_THRESHOLD.withUi( routingGroup.getId(), 3 );
+                    SHORT_RUNNING_LONG_RUNNING_THRESHOLD.withUi( routingGroup.getId(), 4 );
 
                     final ConfigClazzList longRunningRouter = new ConfigClazzList( "routing/longRunningRouter", RouterFactory.class, true );
                     configManager.registerConfig( longRunningRouter );
-                    longRunningRouter.withUi( routingGroup.getId(), 4 );
+                    longRunningRouter.withUi( routingGroup.getId(), 5 );
                     longRunningRouter.addObserver( getConfigListener( false ) );
                     longRunningRouters = Optional.of( getFactoryList( longRunningRouter ) );
                 } else {

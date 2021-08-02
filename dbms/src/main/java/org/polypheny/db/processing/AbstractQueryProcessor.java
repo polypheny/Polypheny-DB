@@ -31,8 +31,11 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -115,6 +118,7 @@ import org.polypheny.db.routing.ProposedRoutingPlanImpl;
 import org.polypheny.db.routing.QueryProcessorHelpers;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.routing.RouterManager;
+import org.polypheny.db.routing.RouterPlanSelectionStrategy;
 import org.polypheny.db.routing.RoutingPlan;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
@@ -336,7 +340,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 }
             }
 
-            if(proposedRoutingPlans == null) {
+            if ( proposedRoutingPlans == null ) {
                 if ( isAnalyze ) {
                     statement.getDuration().start( "Routing" );
                 }
@@ -945,9 +949,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 return proposedPlans;
             }
             // TODO: long running queries
-
-            //routed = builders.stream().map( RelBuilder::build ).collect( Collectors.toList() );
-            log.info( "End DQL" );
         }
 
         throw new IllegalStateException( "This point should never be reached!" );
@@ -1316,7 +1317,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     private void cacheRouterPlans( List<ProposedRoutingPlan> proposedRoutingPlans, List<RelOptCost> approximatedCosts, String queryId ) {
         val cachedPlans = new ArrayList<CachedProposedRoutingPlan>();
         for ( int i = 0; i < proposedRoutingPlans.size(); i++ ) {
-            if ( proposedRoutingPlans.get( i ).isCachable() && !RoutingPlanCache.INSTANCE.isKeyPresent( queryId )) {
+            if ( proposedRoutingPlans.get( i ).isCachable() && !RoutingPlanCache.INSTANCE.isKeyPresent( queryId ) ) {
                 cachedPlans.add(
                         new CachedProposedRoutingPlan( proposedRoutingPlans.get( i ), approximatedCosts.get( i ) )
                 );
@@ -1377,9 +1378,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         val calcPreCosts = Math.abs( ratioPre ) >= RelOptUtil.EPSILON; // <=0
         List<Double> preCosts = calcPreCosts ? normalizeApproximatedCosts( approximatedCosts ) : Collections.nCopies( n, 0.0 );
 
-        val calcPostCosts = Math.abs( ratioPre ) >= RelOptUtil.EPSILON; // > 0
+        val calcPostCosts = Math.abs( rationPost ) >= RelOptUtil.EPSILON; // > 0
         Optional<List<Double>> icarusCosts;
         List<Double> postCosts;
+        Optional<List<Double>> percentageCosts = Optional.empty();
         if ( calcPostCosts ) {
             val icarusResult = calcIcarusPostCosts( routingPlans, queryId );
             icarusCosts = Optional.of( icarusResult.right );
@@ -1389,20 +1391,102 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             icarusCosts = Optional.empty();
         }
 
-        RoutingPlan currentPlan = routingPlans.get( 0 );
+        Pair<Optional<PolyphenyDbSignature>, RoutingPlan> result = null;
+        val effectiveCosts = IntStream.rangeClosed( 0, n - 1 )
+                .mapToDouble( i -> (preCosts.get( i ) * ratioPre) + (postCosts.get( i ) * rationPost) )
+                .boxed()
+                .collect( Collectors.toList() );
+
+        if ( RouterManager.PLAN_SELECTION_STRATEGY.getEnum() == RouterPlanSelectionStrategy.BEST ) {
+            val bestResult = this.selectBestPlan(routingPlans, signatures, effectiveCosts);
+            result  = bestResult;
+        }else if (RouterManager.PLAN_SELECTION_STRATEGY.getEnum() == RouterPlanSelectionStrategy.PERCENTAGE){
+            val percentageResult = this.selectPlanFromPercentage(routingPlans, signatures, effectiveCosts);
+            result = percentageResult.left;
+            percentageCosts = Optional.of( percentageResult.right );
+
+        }
+
+        if(result == null){
+            throw new IllegalStateException("should never happen!");
+        }
+
+        if ( statement.getTransaction().isAnalyze() ) {
+            this.printDebugOutput( approximatedCosts, preCosts, postCosts, icarusCosts, routingPlans, ratioPre, rationPost, result.right, effectiveCosts , percentageCosts);
+        }
+
+        return result;
+    }
+
+
+    private Pair<Pair<Optional<PolyphenyDbSignature>, RoutingPlan>, List<Double>> selectPlanFromPercentage( List<? extends RoutingPlan> routingPlans, Optional<List<PolyphenyDbSignature>> signatures, List<Double> effectiveCosts ) {
+        Map<Pair<Optional<PolyphenyDbSignature>, RoutingPlan>, Integer> percentageTable = new HashMap();
+
+        // List<Double> weights = new ArrayList<>();
+        // todo: check for list all 0
+        if(effectiveCosts.stream().allMatch( value -> value <=  RelOptUtil.EPSILON )){
+            effectiveCosts = Collections.nCopies( effectiveCosts.size(), 1.0 );
+        }
+
+        // calc percentageTable
+        double hundredPercent = effectiveCosts.stream().mapToDouble( Double::doubleValue ).sum();
+        //double onePercent = hundredPercent / 100.0;
+        val percentage = effectiveCosts.stream().map( cost -> cost / hundredPercent ).collect( Collectors.toList());
+        // invert percentages
+        val inversePercentage = percentage.stream()
+                .map( value -> 1.0 / value  )
+                .map( value -> Double.isInfinite( value ) ? 0.0 : value).collect( Collectors.toList());
+
+        val totalInversePercentage = inversePercentage.stream().mapToDouble( Double::doubleValue ).sum();
+
+        // normalize again
+        val weights = inversePercentage.stream().map( value -> (value / totalInversePercentage) * 100.0 ).collect( Collectors.toList());
+
+        for(int i = 0; i < routingPlans.size(); i++){
+            percentageTable.put(
+                    new Pair( signatures.isPresent() ? Optional.of( signatures.get().get( 0 ) ) : Optional.empty(), routingPlans.get( i ) ),
+                    weights.get( i ).intValue()
+            );
+        }
+
+        // TODO: CM: I think sorting is not necessary here.
+        val sortedEntries =  entriesSortedByValues(percentageTable);
+
+        int p = 0;
+        int random = Math.min( (int) (Math.random() * 100) + 1, 100 );
+        for ( Map.Entry<Pair<Optional<PolyphenyDbSignature>, RoutingPlan>, Integer> entry : sortedEntries ) {
+            p += Math.max( entry.getValue(), 0 ); // avoid subtracting -2
+            if ( p >= random ) {
+                return new Pair<>( entry.getKey(), weights);
+            }
+        }
+
+        throw new IllegalStateException("should never happen from percentages");
+    }
+
+    private static <K, V extends Comparable<? super V>> SortedSet<Entry<K, V>> entriesSortedByValues( Map<K, V> map ) {
+        SortedSet<Map.Entry<K, V>> sortedEntries = new TreeSet<>( ( e1, e2 ) -> {
+            // reverse ordering, biggest numbers first
+            int res = e2.getValue().compareTo( e1.getValue() );
+            // if element has same costs decide to mark it as 1
+            return res != 0 ? res : 1;
+        } );
+        sortedEntries.addAll( map.entrySet() );
+        return sortedEntries;
+    }
+
+    private Pair<Optional<PolyphenyDbSignature>, RoutingPlan> selectBestPlan( List<? extends RoutingPlan> routingPlans, Optional<List<PolyphenyDbSignature>> signatures, List<Double> effectiveCosts ){
+        var currentPlan = routingPlans.get( 0 );
         Optional<PolyphenyDbSignature> currentSignature = signatures.isPresent() ? Optional.of( signatures.get().get( 0 ) ) : Optional.empty();
-        double currentCost = (preCosts.get( 0 ) * ratioPre) + (postCosts.get( 0 ) * rationPost);
+        var currentCost = effectiveCosts.get( 0 );
+
         for ( int i = 1; i < routingPlans.size(); i++ ) {
-            val cost = (preCosts.get( i ) * ratioPre) + (postCosts.get( i ) * rationPost);
+            val cost = effectiveCosts.get( i );
             if ( cost < currentCost ) {
                 currentPlan = routingPlans.get( i );
                 currentSignature = signatures.isPresent() ? Optional.of( signatures.get().get( i ) ) : Optional.empty();
                 currentCost = cost;
             }
-        }
-
-        if ( statement.getTransaction().isAnalyze() ) {
-            this.printDebugOutput( approximatedCosts, preCosts, postCosts, icarusCosts, routingPlans, ratioPre, rationPost, currentPlan );
         }
 
         return new Pair<>( currentSignature, currentPlan );
@@ -1417,7 +1501,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             List<? extends RoutingPlan> routingPlans,
             Double ratioPre,
             Double ratioPost,
-            RoutingPlan selectedPlan ) {
+            RoutingPlan selectedPlan,
+            List<Double> effectiveCosts,
+            Optional<List<Double>> percentageCosts ) {
 
         // initialize information for query analyzer
         InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
@@ -1437,18 +1523,20 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         statement.getTransaction().getQueryAnalyzer().addGroup( group );
         InformationTable table = new InformationTable(
                 group,
-                ImmutableList.of( "Physical Query Id", "router", "Approx. Costs", "Norm. approx Costs", "Icarus Costs", "Norm. Icarus Costs", "Partitioning - Placements" ) );
+                ImmutableList.of( "Physical Query Id", "router", "Approx. Costs", "Icarus Costs", "Norm. approx Costs", "Norm. Icarus Costs",  "Total Costs", "Adapter Info", "Percentage" ) );
 
         for ( int i = 0; i < routingPlans.size(); i++ ) {
             val routingPlan = routingPlans.get( i );
             table.addRow(
                     routingPlan.getPhysicalQueryId(),
-                    routingPlan.getRouter(),
+                    routingPlan.getRouter().isPresent() ? routingPlan.getRouter().get() : "",
                     approximatedCosts.get( i ),
-                    preCosts.get( i ),
                     isIcarus ? icarusCosts.get().get( i ) : "-",
+                    preCosts.get( i ),
                     isIcarus ? postCosts.get( i ) : "-",
-                    routingPlan.getOptionalPhysicalPlacementsOfPartitions() ); //.isPresent() ? routingPlan.getOptionalPhysicalPlacementsOfPartitions().get(): "-"
+                    effectiveCosts.get( i ),
+                    routingPlan.getOptionalPhysicalPlacementsOfPartitions(),
+                    percentageCosts.isPresent() ? percentageCosts.get().get( i ) : "-"); //.isPresent() ? routingPlan.getOptionalPhysicalPlacementsOfPartitions().get(): "-"
         }
 
         statement.getTransaction().getQueryAnalyzer().registerInformation( table );
@@ -1467,6 +1555,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private List<Double> normalizeCots( List<Double> costs ) {
+        // check all zero
+        if(costs.stream().allMatch( value -> value <= RelOptUtil.EPSILON )){
+            return costs;
+        }
+
         val min = costs.stream().min( Double::compareTo );
         val max = costs.stream().max( Double::compareTo );
         if ( !min.isPresent() || !max.isPresent() ) {

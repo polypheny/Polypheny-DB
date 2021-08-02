@@ -172,20 +172,12 @@ public abstract class AbstractRouter extends BaseRouter implements Router {
 
         // get info from whereClauseVisitor
         StatementEvent event = (StatementEvent) statement.getTransaction().getMonitoringEvent();
-        List<String> partitionValues = event.getAnalyzeRelShuttle().getFilterMap().get( node.getId() );
+        List<Long> partitionIds = event.getAccessedPartitions().get( catalogTable.id );
 
         Map<Long, List<CatalogColumnPlacement>> placementDistribution;
 
-        if ( partitionValues != null ) {
-            List<Long> identifiedPartitions = new ArrayList<>();
-            for ( String partitionValue : partitionValues ) {
-                log.debug( "Extracted PartitionValue: {}", partitionValue );
-                long identifiedParts = partitionManager.getTargetPartitionId( catalogTable, partitionValue );
-                identifiedPartitions.add( identifiedParts );
-                log.debug( "Identified PartitionId: {} for value: {}", identifiedParts, partitionValue );
-            }
-            // Currently only one partition is identified, therefore LIST is not needed YET.
-            placementDistribution = partitionManager.getRelevantPlacements( catalogTable, identifiedPartitions );
+        if ( partitionIds != null ) {
+            placementDistribution = partitionManager.getRelevantPlacements( catalogTable, partitionIds );
         } else {
             placementDistribution = partitionManager.getRelevantPlacements( catalogTable, catalogTable.partitionProperty.partitionIds );
         }
