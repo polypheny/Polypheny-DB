@@ -3988,15 +3988,13 @@ public class Crud implements InformationObserver {
      * disguised as a query result
      */
     public Result getDocumentDatabases( Request request, Response response ) {
-        List<String> names = Catalog.getInstance()
+        Map<String, String> names = Catalog.getInstance()
                 .getSchemas( Catalog.defaultDatabaseId, null )
                 .stream()
-                .filter( s -> s.schemaType == SchemaType.DOCUMENT )
-                .map( CatalogSchema::getName )
-                .collect( Collectors.toList() );
+                .collect( Collectors.toMap( CatalogSchema::getName, s -> s.schemaType.name() ) );
 
-        String[][] data = names.stream().map( n -> new String[]{ n } ).toArray( String[][]::new );
-        return new Result( new DbColumn[]{ new DbColumn( "Databases" ) }, data );
+        String[][] data = names.entrySet().stream().map( n -> new String[]{ n.getKey(), n.getValue() } ).toArray( String[][]::new );
+        return new Result( new DbColumn[]{ new DbColumn( "Database/Schema" ), new DbColumn( "Type" ) }, data );
     }
 
 

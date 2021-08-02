@@ -63,6 +63,7 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.AggregateCall;
 import org.polypheny.db.rel.core.CorrelationId;
+import org.polypheny.db.rel.core.Project;
 import org.polypheny.db.rel.core.TableModify.Operation;
 import org.polypheny.db.rel.logical.LogicalAggregate;
 import org.polypheny.db.rel.logical.LogicalDocuments;
@@ -747,6 +748,12 @@ public class MqlToRelConverter {
                 case "$unwind":
                     node = combineUnwind( value.asDocument().get( "$unwind" ), node );
                     break;
+                case "$replaceRoot":
+                    node = combineReplaceRoot( value.asDocument().get( "$replaceRoot" ), node, false );
+                    break;
+                case "$replaceWith":
+                    node = combineReplaceRoot( value.asDocument().get( "$replaceWith" ), node, true );
+                    break;
                 // todo dl add more pipeline statements
                 default:
                     throw new IllegalStateException( "Unexpected value: " + ((BsonDocument) value).getFirstKey() );
@@ -759,6 +766,46 @@ public class MqlToRelConverter {
         }
 
         return node;
+    }
+
+
+    private RelNode combineReplaceRoot( BsonValue value, RelNode node, boolean isWith ) {
+        BsonValue newRoot = value;
+        if ( !isWith ) {
+            if ( !value.isDocument() ) {
+                throw new RuntimeException( "$replaceRoot requires a document." );
+            }
+            BsonDocument doc = value.asDocument();
+            if ( !doc.containsKey( "newRoot" ) ) {
+                throw new RuntimeException( "$replaceRoot requires a document with the key 'newRoot'" );
+            }
+            newRoot = doc.get( "newRoot" );
+        }
+
+        if ( !newRoot.isDocument() && !newRoot.isString() ) {
+            throw new RuntimeException( "The used root for $replaceRoot needs to either be a string or a document" );
+        }
+
+        Project project;
+        if ( newRoot.isDocument() ) {
+            project = LogicalProject.create(
+                    node,
+                    Collections.singletonList( translateDocument( newRoot.asDocument(), node.getRowType(), null ) ),
+                    Collections.singletonList( "_data" )
+            );
+        } else {
+            if ( !newRoot.asString().getValue().startsWith( "$" ) ) {
+                throw new RuntimeException( "The used root needs to be a reference to a field" );
+            }
+
+            project = LogicalProject.create(
+                    node,
+                    Collections.singletonList( getIdentifier( newRoot.asString().getValue().substring( 1 ), node.getRowType() ) ),
+                    Collections.singletonList( "_data" )
+            );
+        }
+        _dataExists = false;
+        return project;
     }
 
 
@@ -1500,17 +1547,27 @@ public class MqlToRelConverter {
 
     private RexNode convertExists( BsonValue value, String parentKey, RelDataType rowType ) {
         if ( value.isBoolean() ) {
+            List<String> keys = Arrays.asList( parentKey.split( "\\." ) );
 
-            int index = getIndexOfParentField( parentKey, rowType );
+            String key = keys.get( 0 );
+            if ( !rowType.getFieldNames().contains( key ) ) {
+                key = "_data";
+            } else {
+                keys = keys.subList( 1, keys.size() );
+            }
 
-            RexNode exists = translateJsonExists( index, rowType, parentKey );
+            RexCall exists = new RexCall(
+                    cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
+                    MqlStdOperatorTable.DOC_EXISTS,
+                    Arrays.asList( getIdentifier( key, rowType ), getStringArray( keys ) ) );
+
             if ( !value.asBoolean().getValue() ) {
                 return negate( exists );
             }
             return exists;
 
         } else {
-            throw new RuntimeException( "$exist without a boolean is not supported" );
+            throw new RuntimeException( "$exists without a boolean is not supported" );
         }
     }
 

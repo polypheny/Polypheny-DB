@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -333,6 +334,32 @@ public class MqlFunctions {
         } else {
             return obj;
         }
+    }
+
+
+    public static boolean docExists( Object obj, List<String> path ) {
+        obj = deserializeBsonIfNecessary( obj );
+        if ( !(obj instanceof Map) ) {
+            return false;
+        }
+        Map<String, ?> map = ((Map<String, ?>) obj);
+        Iterator<String> iter = path.iterator();
+        String current = iter.next();
+
+        while ( map.containsKey( current ) ) {
+            obj = map.get( current );
+            if ( !iter.hasNext() ) {
+                return true;
+            }
+            if ( !(obj instanceof Map) ) {
+                return false;
+            }
+            map = (Map<String, ?>) map.get( current );
+            current = iter.next();
+        }
+
+        return false;
+
     }
 
 

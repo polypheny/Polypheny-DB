@@ -63,4 +63,6 @@ public interface MqlStdOperatorTable {
 
     MqlFunctionOperator DOC_UNWIND = new MqlFunctionOperator( "DOC_UNWIND", SqlKind.DOC_UNWIND );
 
+    MqlFunctionOperator DOC_EXISTS = new MqlFunctionOperator( "DOC_EXISTS", SqlKind.DOC_EXISTS );
+
 }

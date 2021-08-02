@@ -802,6 +802,9 @@ public class DdlManagerImpl extends DdlManager {
             throw new RuntimeException( "Cannot drop sole column of table " + catalogTable.name );
         }
 
+        // check if model permits operation
+        checkModelLogic( catalogTable, columnName );
+
         //check if views are dependent from this view
         checkViewDependencies( catalogTable );
 
@@ -843,6 +846,14 @@ public class DdlManagerImpl extends DdlManager {
 
         // Rest plan cache and implementation cache (not sure if required in this case)
         statement.getQueryProcessor().resetCaches();
+    }
+
+
+    private void checkModelLogic( CatalogTable catalogTable, String columnName ) {
+        if ( catalogTable.getSchemaType() == SchemaType.DOCUMENT
+                && (columnName.equals( "_data" ) || columnName.equals( "_id" )) ) {
+            throw new RuntimeException( "Cannot modify structure of schema type DOCUMENT" );
+        }
     }
 
 
@@ -956,6 +967,9 @@ public class DdlManagerImpl extends DdlManager {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfTableType( catalogTable.tableType );
 
+        // check if model permits operation
+        checkModelLogic( catalogTable, columnName );
+
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
 
         catalog.setColumnType(
@@ -986,6 +1000,9 @@ public class DdlManagerImpl extends DdlManager {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfTableType( catalogTable.tableType );
 
+        // check if model permits operation
+        checkModelLogic( catalogTable, columnName );
+
         catalog.setNullable( catalogColumn.id, nullable );
 
         // Rest plan cache and implementation cache (not sure if required in this case)
@@ -995,6 +1012,9 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void setColumnPosition( CatalogTable catalogTable, String columnName, String beforeColumnName, String afterColumnName, Statement statement ) throws ColumnNotExistsException {
+        // check if model permits operation
+        checkModelLogic( catalogTable, columnName );
+
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
 
         int targetPosition;
@@ -1045,6 +1065,9 @@ public class DdlManagerImpl extends DdlManager {
     public void setColumnCollation( CatalogTable catalogTable, String columnName, Collation collation, Statement statement ) throws ColumnNotExistsException, DdlOnSourceException {
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
 
+        // check if model permits operation
+        checkModelLogic( catalogTable, columnName );
+
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfTableType( catalogTable.tableType );
 
@@ -1059,6 +1082,9 @@ public class DdlManagerImpl extends DdlManager {
     public void setDefaultValue( CatalogTable catalogTable, String columnName, String defaultValue, Statement statement ) throws ColumnNotExistsException {
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
 
+        // check if model permits operation
+        checkModelLogic( catalogTable, columnName );
+
         addDefaultValue( defaultValue, catalogColumn.id );
 
         // Rest plan cache and implementation cache (not sure if required in this case)
@@ -1069,6 +1095,9 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void dropDefaultValue( CatalogTable catalogTable, String columnName, Statement statement ) throws ColumnNotExistsException {
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
+
+        // check if model permits operation
+        checkModelLogic( catalogTable, columnName );
 
         catalog.deleteDefaultValue( catalogColumn.id );
 

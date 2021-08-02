@@ -47,7 +47,7 @@ public abstract class Mql2RelTest extends MqlTest {
 
 
     public RelRoot translate( String mql ) {
-        return mqlToRelConverter.convert( parse( mql ), false, true );
+        return mqlToRelConverter.convert( parse( mql ), false, true, "private" );
     }
 
 }

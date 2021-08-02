@@ -53,6 +53,7 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.bson.BsonArray;
+import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonRegularExpression;
@@ -257,9 +258,25 @@ public class MongoFilter extends Filter implements MongoRel {
                     return translateTypeMatch( (RexCall) node );
                 case DOC_ELEM_MATCH:
                     return translateElemMatch( (RexCall) node );
+                case DOC_EXISTS:
+                    return translateExists( (RexCall) node );
                 default:
                     throw new AssertionError( "cannot translate " + node );
             }
+        }
+
+
+        private Void translateExists( RexCall node ) {
+            assert node.operands.size() == 2;
+            assert node.operands.get( 1 ) instanceof RexCall;
+            String key = getParamAsKey( node.operands.get( 0 ) );
+            key += "." + ((RexCall) node.operands.get( 1 ))
+                    .operands
+                    .stream()
+                    .map( o -> ((RexLiteral) o).getValueAs( String.class ) )
+                    .collect( Collectors.joining( "." ) );
+            addToOrs( new BsonDocument( key, new BsonDocument( "$exists", new BsonBoolean( true ) ) ) );
+            return null;
         }
 
 

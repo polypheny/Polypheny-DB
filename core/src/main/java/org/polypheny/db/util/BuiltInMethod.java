@@ -425,7 +425,8 @@ public enum BuiltInMethod {
     DOC_UPDATE_REMOVE( MqlFunctions.class, "docUpdateRemove", Object.class, List.class ),
     DOC_UPDATE_REPLACE( MqlFunctions.class, "docUpdateReplace", Object.class, List.class, List.class ),
     DOC_UPDATE_RENAME( MqlFunctions.class, "docUpdateRename", Object.class, List.class, List.class ),
-    DOC_GET_ARRAY( MqlFunctions.class, "docGetArray", Object.class );
+    DOC_GET_ARRAY( MqlFunctions.class, "docGetArray", Object.class ),
+    DOC_EXISTS( MqlFunctions.class, "docExists", Object.class, List.class );
 
     public final Method method;
     public final Constructor constructor;

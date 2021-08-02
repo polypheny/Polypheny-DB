@@ -1247,7 +1247,9 @@ public enum SqlKind {
 
     DOC_UPDATE_RENAME,
 
-    DOC_UPDATE;
+    DOC_UPDATE,
+
+    DOC_EXISTS;
 
     // Most of the static fields are categories, aggregating several kinds into a set.
 
@@ -1385,7 +1387,8 @@ public enum SqlKind {
             DOC_UPDATE_ADD,
             DOC_UPDATE_REMOVE,
             DOC_UPDATE_RENAME,
-            DOC_UPDATE );
+            DOC_UPDATE,
+            DOC_EXISTS );
 
     /**
      * Lower-case name.

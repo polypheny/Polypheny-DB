@@ -24,7 +24,6 @@ import lombok.Getter;
 import org.bson.BsonDocument;
 import org.bson.BsonNull;
 import org.bson.BsonObjectId;
-import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
@@ -118,9 +117,18 @@ public class LogicalDocuments extends LogicalValues implements Documents {
                     }
                     doc.put( "_id", new BsonObjectId( objectId ) );
                 } else if ( field.getName().equals( "_data" ) ) {
-                    doc.put( "_data", BsonDocument.parse( BsonUtil.fixBson( value.getValueAs( String.class ) ) ) );
+                    BsonDocument docVal = new BsonDocument();
+                    if ( !value.isNull() && value.getValueAs( String.class ).length() != 0 ) {
+                        String data = BsonUtil.fixBson( value.getValueAs( String.class ) );
+                        if ( data.matches( "[{].*[}]" ) ) {
+                            docVal = BsonDocument.parse( data );
+                        } else {
+                            throw new RuntimeException( "The inserted document is not valid." );
+                        }
+                    }
+                    doc.put( "_data", docVal );
                 } else {
-                    doc.put( field.getName(), new BsonString( BsonUtil.fixBson( value.getValueAs( String.class ) ) ) );
+                    doc.put( field.getName(), BsonUtil.getAsBson( value, null ) );
                 }
 
                 pos++;
