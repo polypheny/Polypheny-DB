@@ -24,8 +24,8 @@ import lombok.val;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.routing.factories.RouterFactory;
 import org.polypheny.db.transaction.Statement;
@@ -33,10 +33,9 @@ import org.polypheny.db.transaction.Statement;
 public class HorizontalFullPlacementQueryRouter extends NoneHorizontalPartitioningRouter {
 
     @Override
-    protected Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable catalogTable, Statement statement ) {
+    protected Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable catalogTable, Statement statement, LogicalQueryInformation queryInformation ) {
         // get used columns from analyze
-        StatementEvent event = (StatementEvent) statement.getTransaction().getMonitoringEvent();
-        val usedColumns = event.getAnalyzeRelShuttle().getAllColumnsPerTable( catalogTable.id );
+        val usedColumns = queryInformation.getAllColumnsPerTable( catalogTable.id );
 
         // filter for placements by adapters
         val adapters = catalogTable.placementsByAdapter.entrySet()

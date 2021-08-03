@@ -66,22 +66,6 @@ public class LogicalRelQueryAnalyzeShuttle extends RelShuttleImpl {
     @Getter
     protected final List<String> tables = new ArrayList<>();
 
-    public List<Long> getAllColumnsPerTable(Long tableId){
-        val usedCols = this.availableColumns;
-        return availableColumnsWithTable.entrySet().stream()
-                .filter( x -> x.getValue().equals( tableId ) && usedCols.keySet().contains( x.getKey() ))
-                .map( x -> x.getKey() )
-                .collect( Collectors.toList() );
-    }
-
-    public List<Long> getUsedColumnsPerTable(Long tableId) {
-        val usedCols = getUsedColumns();
-        return availableColumnsWithTable.entrySet().stream()
-                .filter( x -> x.getValue().equals( tableId ) && usedCols.keySet().contains( x.getKey() ))
-                .map( x -> x.getKey() )
-                .collect( Collectors.toList() );
-    }
-
     public Map<Long, String> getUsedColumns() {
         val availableColumnNames = new ArrayList<String>(this.availableColumns.values());
         val availableColumnKeys = new ArrayList<Long>(this.availableColumns.keySet());

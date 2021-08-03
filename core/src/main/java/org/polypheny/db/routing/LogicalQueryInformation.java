@@ -16,14 +16,16 @@
 
 package org.polypheny.db.routing;
 
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.tools.RoutedRelBuilder;
-import org.polypheny.db.transaction.Statement;
+import java.util.List;
+import java.util.Map;
 
-public interface DmlRouter {
+public interface LogicalQueryInformation {
 
-    RoutedRelBuilder routeDml( RelNode node, Statement statement );
-
-    RelNode handleConditionalExecute( RelNode node, Statement statement, Router router, LogicalQueryInformation queryInformation );
+    Map<Long, List<Long>> getAccessedPartitions();
+    Map<Long, Long> getAvailableColumnsWithTable(); // columnId -> tableId
+    List<Long> getAllColumnsPerTable(Long tableId);
+    List<Long> getUsedColumnsPerTable(Long tableId);
+    Map<Long, String> getUsedColumns();
+    String getQueryId();
 
 }

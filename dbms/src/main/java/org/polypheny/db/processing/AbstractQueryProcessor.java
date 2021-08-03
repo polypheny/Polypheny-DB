@@ -116,6 +116,8 @@ import org.polypheny.db.routing.QueryProcessorHelpers;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.routing.RouterManager;
 import org.polypheny.db.routing.RouterPlanSelectionStrategy;
+import org.polypheny.db.routing.LogicalQueryInformation;
+import org.polypheny.db.routing.LogicalQueryInformationImpl;
 import org.polypheny.db.routing.RoutingPlan;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
@@ -236,7 +238,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private Quartet<List<ProposedRoutingPlan>, List<RelNode>, List<PolyphenyDbSignature>, String>
+    private Quartet<List<ProposedRoutingPlan>, List<RelNode>, List<PolyphenyDbSignature>, LogicalQueryInformation>
 
     prepareQueryList( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery ) {
         boolean isAnalyze = statement.getTransaction().isAnalyze() && !isSubquery;
@@ -261,17 +263,17 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         // analyze query, get logical partitions, queryId and initialize monitoring
-        val queryId = this.analyzeQueryAndPrepareMonitoring( statement, logicalRoot, isAnalyze, isSubquery );
+        val logicalQueryInformation = this.analyzeQueryAndPrepareMonitoring( statement, logicalRoot, isAnalyze, isSubquery );
 
         if ( isAnalyze ) {
             statement.getDuration().stop( "Analyze" );
         }
 
         ExecutionTimeMonitor executionTimeMonitor = new ExecutionTimeMonitor();
-        executionTimeMonitor.subscribe( this, queryId );
+        executionTimeMonitor.subscribe( this, logicalQueryInformation.getQueryId() );
 
         if ( isRouted ) {
-            proposedRoutingPlans = Lists.newArrayList( new ProposedRoutingPlanImpl( logicalRoot, queryId ) );
+            proposedRoutingPlans = Lists.newArrayList( new ProposedRoutingPlanImpl( logicalRoot, logicalQueryInformation.getQueryId() ) );
         } else {
             if ( lock ) {
                 this.acquireLock( isAnalyze, logicalRoot );
@@ -316,9 +318,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             if ( RuntimeConfig.ROUTING_PLAN_CACHING.getBoolean() &&
                     !indexLookupRoot.kind.belongsTo( SqlKind.DML )
             ) {
-                val routingPlansCached = RoutingPlanCache.INSTANCE.getIfPresent( queryId );
+                val routingPlansCached = RoutingPlanCache.INSTANCE.getIfPresent( logicalQueryInformation.getQueryId() );
                 if ( !routingPlansCached.isEmpty() ) {
-                    proposedRoutingPlans = routeCached( indexLookupRoot, routingPlansCached, statement, queryId, isAnalyze );
+                    proposedRoutingPlans = routeCached( indexLookupRoot, routingPlansCached, statement, logicalQueryInformation, isAnalyze );
                 }
             }
 
@@ -326,7 +328,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 if ( isAnalyze ) {
                     statement.getDuration().start( "Routing" );
                 }
-                proposedRoutingPlans = route( indexLookupRoot, statement, queryId );
+                proposedRoutingPlans = route( indexLookupRoot, statement, logicalQueryInformation );
             }
 
             proposedRoutingPlans.forEach( proposedRoutingPlan -> {
@@ -410,7 +412,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     proposedRoutingPlans,
                     optimalNodeList.stream().filter( Optional::isPresent ).map( Optional::get ).collect( Collectors.toList() ),
                     signatures.stream().filter( Optional::isPresent ).map( Optional::get ).collect( Collectors.toList() ),
-                    queryId );
+                    logicalQueryInformation );
         }
 
         optimalNodeList = new ArrayList<>( Collections.nCopies( optimalNodeList.size(), Optional.empty() ) );
@@ -500,7 +502,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 proposedRoutingPlans,
                 optimalNodeList.stream().filter( Optional::isPresent ).map( Optional::get ).collect( Collectors.toList() ),
                 signatures.stream().filter( Optional::isPresent ).map( Optional::get ).collect( Collectors.toList() ),
-                queryId );
+                logicalQueryInformation );
     }
     // endregion
 
@@ -905,22 +907,22 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private List<ProposedRoutingPlan> route( RelRoot logicalRoot, Statement statement, String queryId ) {
+    private List<ProposedRoutingPlan> route( RelRoot logicalRoot, Statement statement, LogicalQueryInformation queryInformation ) {
         InformationPage page = null;
         if ( logicalRoot.rel instanceof LogicalTableModify ) {
             val routedDml = RouterManager.getInstance().getDmlRouter().routeDml( logicalRoot.rel, statement );
-            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryId ) );
+            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryId() ) );
         } else if ( logicalRoot.rel instanceof ConditionalExecute ) {
-            val routedConditionalExecute = RouterManager.getInstance().getDmlRouter().handleConditionalExecute( logicalRoot.rel, statement, RouterManager.getInstance().getFallbackRouter() );
-            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedConditionalExecute, logicalRoot, queryId ) );
+            val routedConditionalExecute = RouterManager.getInstance().getDmlRouter().handleConditionalExecute( logicalRoot.rel, statement, RouterManager.getInstance().getFallbackRouter(), queryInformation);
+            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedConditionalExecute, logicalRoot, queryInformation.getQueryId() ) );
         } else {
             val proposedPlans = new ArrayList<ProposedRoutingPlan>();
             for ( val router : RouterManager.getInstance().getRouters() ) {
-                val builders = router.route( logicalRoot, statement );
+                val builders = router.route( logicalRoot, statement, queryInformation );
 
                 val plans =
                         builders.stream().map( builder ->
-                                new ProposedRoutingPlanImpl( builder, logicalRoot, queryId, router.getClass() )
+                                new ProposedRoutingPlanImpl( builder, logicalRoot, queryInformation.getQueryId(), router.getClass() )
                         ).collect( Collectors.toList() );
 
                 proposedPlans.addAll( plans );
@@ -929,19 +931,23 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             val distinctPlans = proposedPlans.stream().distinct().collect( Collectors.toList() );
 
+            if ( distinctPlans.isEmpty() ) {
+                throw new RuntimeException( "No routing of query found" );
+            }
+
             return distinctPlans;
         }
     }
 
 
-    private List<ProposedRoutingPlan> routeCached( RelRoot logicalRoot, List<CachedProposedRoutingPlan> routingPlansCached, Statement statement, String queryId, boolean isAnalyze ) {
+    private List<ProposedRoutingPlan> routeCached( RelRoot logicalRoot, List<CachedProposedRoutingPlan> routingPlansCached, Statement statement, LogicalQueryInformation queryInformation, boolean isAnalyze ) {
         // todo: get only best plan.
 
         if ( isAnalyze ) {
             statement.getDuration().start( "Plan Selection" );
         }
 
-        val selectedCachedPlan = selectCachedPlan( routingPlansCached, queryId );
+        val selectedCachedPlan = selectCachedPlan( routingPlansCached, queryInformation.getQueryId() );
 
         if ( isAnalyze ) {
             statement.getDuration().stop( "Plan Selection" );
@@ -953,7 +959,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         val builder = RouterManager.getInstance().getCachedPlanRouter().routeCached( logicalRoot, selectedCachedPlan, statement );
 
-        val proposed = new ProposedRoutingPlanImpl( builder, logicalRoot, queryId, selectedCachedPlan );
+        val proposed = new ProposedRoutingPlanImpl( builder, logicalRoot, queryInformation.getQueryId(), selectedCachedPlan );
 
         return Lists.newArrayList( proposed );
     }
@@ -1018,10 +1024,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         return rootRel4;
     }
-
-    // endregion
-
-    // region private helpers
 
 
     private PreparedResult implement( RelRoot root, RelDataType parameterRowType ) {
@@ -1111,6 +1113,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         };
     }
 
+    // endregion
+
+    // region private helpers
 
     private RelCollation relCollation( RelNode node ) {
         return node instanceof Sort
@@ -1198,7 +1203,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private String analyzeQueryAndPrepareMonitoring( Statement statement, RelRoot logicalRoot, boolean isAnalyze, boolean isSubquery ) {
+    private LogicalQueryInformation analyzeQueryAndPrepareMonitoring( Statement statement, RelRoot logicalRoot, boolean isAnalyze, boolean isSubquery ) {
         val analyzeRelShuttle = new LogicalRelQueryAnalyzeShuttle( statement );
         logicalRoot.rel.accept( analyzeRelShuttle );
 
@@ -1208,14 +1213,16 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         String queryId = analyzeRelShuttle.getQueryName() + accessedPartitionMap;
 
-        this.prepareMonitoring( analyzeRelShuttle, statement, logicalRoot, accessedPartitionMap, queryId, isAnalyze, isSubquery );
+        this.prepareMonitoring( statement, logicalRoot, queryId, isAnalyze, isSubquery );
 
-        return queryId;
+        val routingInformation = new LogicalQueryInformationImpl(queryId, accessedPartitionMap, analyzeRelShuttle.availableColumns , analyzeRelShuttle.availableColumnsWithTable, analyzeRelShuttle.getUsedColumns());
+
+        return routingInformation;
     }
 
 
     private Map<Long, List<Long>> getAccessedPartitionsPerTable( RelNode rel, List<String> partitionValues ) {
-        Map<Long, List<Long>> accessedPartitionList = new HashMap<>();
+        Map<Long, List<Long>> accessedPartitionList = new HashMap<>(); // tableId  -> partitionIds
         if ( !(rel instanceof LogicalTableScan) ) {
             for ( int i = 0; i < rel.getInputs().size(); i++ ) {
                 val result = getAccessedPartitionsPerTable( rel.getInput( i ), partitionValues );
@@ -1265,7 +1272,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private void prepareMonitoring( LogicalRelQueryAnalyzeShuttle shuttle, Statement statement, RelRoot logicalRoot, Map<Long, List<Long>> accessedPartitionList, String queryId, boolean isAnalyze, boolean isSubquery ) {
+    private void prepareMonitoring( Statement statement, RelRoot logicalRoot, String queryId, boolean isAnalyze, boolean isSubquery ) {
 
         // initialize Monitoring
         if ( statement.getTransaction().getMonitoringEvent() == null ) {
@@ -1278,15 +1285,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             } else {
                 log.error( "No corresponding monitoring event class found" );
                 event = new QueryEvent();
-                return;
-            }
+             }
 
-            event.setFieldNames( ImmutableList.copyOf( shuttle.availableColumns.values() ) );
             event.setAnalyze( isAnalyze );
             event.setSubQuery( isSubquery );
-
-            event.setAccessedPartitions( accessedPartitionList );
-            event.setAnalyzeRelShuttle( shuttle );
             event.setQueryId( queryId );
             statement.getTransaction().setMonitoringEvent( event );
         }
@@ -1341,17 +1343,17 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private Pair<PolyphenyDbSignature, ProposedRoutingPlan> selectPlan( Quartet<List<ProposedRoutingPlan>, List<RelNode>, List<PolyphenyDbSignature>, String> proposedResults ) {
+    private Pair<PolyphenyDbSignature, ProposedRoutingPlan> selectPlan( Quartet<List<ProposedRoutingPlan>, List<RelNode>, List<PolyphenyDbSignature>, LogicalQueryInformation> proposedResults ) {
         // lists should all be same size
         val proposedRoutingPlans = proposedResults.getA();
         val optimalRels = proposedResults.getB();
         val signatures = proposedResults.getC();
-        val queryId = proposedResults.getD();
+        val queryInformation = proposedResults.getD();
 
         List<RelOptCost> approximatedCosts;
         if ( RuntimeConfig.ROUTING_PLAN_CACHING.getBoolean() ) {
-            approximatedCosts = optimalRels.stream().map( rel -> rel.computeSelfCost( getPlanner(), RelMetadataQuery.instance() ) ).collect( Collectors.toList() );
-            this.cacheRouterPlans( proposedRoutingPlans, approximatedCosts, queryId );
+            approximatedCosts = optimalRels.stream().map( rel -> rel.computeSelfCost( getPlanner(), rel.getCluster().getMetadataQuery() ) ).collect( Collectors.toList() );
+            this.cacheRouterPlans( proposedRoutingPlans, approximatedCosts, queryInformation.getQueryId() );
         }
 
         if ( signatures.size() == 1 ) {
@@ -1361,8 +1363,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             return new Pair<>( signatures.get( 0 ), proposedRoutingPlans.get( 0 ) );
         }
-        approximatedCosts = optimalRels.stream().map( rel -> rel.computeSelfCost( getPlanner(), RelMetadataQuery.instance() ) ).collect( Collectors.toList() );
-        val planPair = selectPlanBasedOnCosts( proposedRoutingPlans, approximatedCosts, queryId, signatures );
+        approximatedCosts = optimalRels.stream().map( rel -> rel.computeSelfCost( getPlanner(), rel.getCluster().getMetadataQuery() ) ).collect( Collectors.toList() );
+        val planPair = selectPlanBasedOnCosts( proposedRoutingPlans, approximatedCosts, queryInformation.getQueryId(), signatures );
 
         if ( statement.getTransaction().isAnalyze() ) {
             val id = proposedRoutingPlans.indexOf( planPair.right );

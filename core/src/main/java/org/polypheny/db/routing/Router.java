@@ -25,9 +25,9 @@ import org.polypheny.db.transaction.Statement;
 
 public interface Router {
 
-    List<RoutedRelBuilder> route( RelRoot relRoot, Statement statement );
+    List<RoutedRelBuilder> route( RelRoot relRoot, Statement statement, LogicalQueryInformation queryInformation );
 
-    RoutedRelBuilder buildSelect( RelNode node, RoutedRelBuilder builder, Statement statement, RelOptCluster cluster );
+    RoutedRelBuilder buildSelect( RelNode node, RoutedRelBuilder builder, Statement statement, RelOptCluster cluster, LogicalQueryInformation queryInformation );
 
     void resetCaches();
 }

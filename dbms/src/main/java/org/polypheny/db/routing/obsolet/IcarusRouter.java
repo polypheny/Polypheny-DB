@@ -76,6 +76,7 @@ import org.polypheny.db.rel.logical.LogicalSort;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalUnion;
 import org.polypheny.db.rel.logical.LogicalValues;
+import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.routers.AbstractRouter;
 import org.polypheny.db.routing.ExecutionTimeMonitor.ExecutionTimeObserver;
 import org.polypheny.db.transaction.Statement;
@@ -248,7 +249,7 @@ public class IcarusRouter extends AbstractRouter {
     // therefore assumes that there is either no placement of a table on a adapter or a full placement.
     //
     @Override
-    protected Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable table, Statement statement ) {
+    protected Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable table, Statement statement, LogicalQueryInformation queryInformation ) {
         // Update known adapters
         updateKnownAdapters( table.placementsByAdapter.keySet() );
 

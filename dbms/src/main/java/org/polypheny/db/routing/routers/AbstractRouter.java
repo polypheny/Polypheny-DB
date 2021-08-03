@@ -32,7 +32,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.plan.RelOptCluster;
@@ -45,6 +44,7 @@ import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalValues;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
+import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.tools.RoutedRelBuilder;
@@ -63,7 +63,7 @@ public abstract class AbstractRouter extends BaseRouter implements Router {
 
 
     @Override
-    public List<RoutedRelBuilder> route( RelRoot logicalRoot, Statement statement ) {
+    public List<RoutedRelBuilder> route( RelRoot logicalRoot, Statement statement, LogicalQueryInformation queryInformation ) {
         this.executionTimeMonitor = executionTimeMonitor;
         //this.selectedAdapter = new HashMap<>();
         this.cancelQuery = false;
@@ -74,28 +74,28 @@ public abstract class AbstractRouter extends BaseRouter implements Router {
             throw new IllegalStateException( "Should never happen for conditional executes" );
         } else {
             val builder = RoutedRelBuilder.create( statement, logicalRoot.rel.getCluster() );
-            return buildDql( logicalRoot.rel, Lists.newArrayList( builder ), statement, logicalRoot.rel.getCluster() );
+            return buildDql( logicalRoot.rel, Lists.newArrayList( builder ), statement, logicalRoot.rel.getCluster(), queryInformation );
 
         }
     }
 
 
     // Select the placement on which a table scan should be executed
-    protected abstract Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable catalogTable, Statement statement );
+    protected abstract Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable catalogTable, Statement statement, LogicalQueryInformation queryInformation );
 
 
-    protected List<RoutedRelBuilder> buildDql( RelNode node, List<RoutedRelBuilder> builders, Statement statement, RelOptCluster cluster ) {
+    protected List<RoutedRelBuilder> buildDql( RelNode node, List<RoutedRelBuilder> builders, Statement statement, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
         if ( node instanceof SetOp ) {
-            return buildSetOp( node, builders, statement, cluster );
+            return buildSetOp( node, builders, statement, cluster, queryInformation );
         } else {
-            return buildSelect( node, builders, statement, cluster );
+            return buildSelect( node, builders, statement, cluster, queryInformation );
         }
     }
 
 
     @Override
-    public RoutedRelBuilder buildSelect( RelNode node, RoutedRelBuilder builder, Statement statement, RelOptCluster cluster ) {
-        val result = this.buildSelect( node, Lists.newArrayList( builder ), statement, cluster );
+    public RoutedRelBuilder buildSelect( RelNode node, RoutedRelBuilder builder, Statement statement, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
+        val result = this.buildSelect( node, Lists.newArrayList( builder ), statement, cluster, queryInformation );
         if ( result.size() > 1 ) {
             log.error( "Single build select with multiple results " );
         }
@@ -103,13 +103,13 @@ public abstract class AbstractRouter extends BaseRouter implements Router {
     }
 
 
-    protected List<RoutedRelBuilder> buildSelect( RelNode node, List<RoutedRelBuilder> builders, Statement statement, RelOptCluster cluster ) {
+    protected List<RoutedRelBuilder> buildSelect( RelNode node, List<RoutedRelBuilder> builders, Statement statement, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
         if ( cancelQuery ) {
             return Collections.emptyList();
         }
 
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            builders = this.buildDql( node.getInput( i ), builders, statement, cluster );
+            builders = this.buildDql( node.getInput( i ), builders, statement, cluster, queryInformation );
         }
 
         if ( node instanceof LogicalTableScan && node.getTable() != null ) {
@@ -125,11 +125,11 @@ public abstract class AbstractRouter extends BaseRouter implements Router {
             if ( catalogTable.isPartitioned ) {
 
                 // default routing
-                return handleHorizontalPartitioning( node, catalogTable, statement, logicalTable, builders, cluster );
+                return handleHorizontalPartitioning( node, catalogTable, statement, logicalTable, builders, cluster, queryInformation );
 
             } else {
                 // at the moment multiple strategies
-                return handleNoneHorizontalPartitioning( node, catalogTable, statement, builders, cluster );
+                return handleNoneHorizontalPartitioning( node, catalogTable, statement, builders, cluster, queryInformation );
             }
 
         } else if ( node instanceof LogicalValues ) {
@@ -140,9 +140,9 @@ public abstract class AbstractRouter extends BaseRouter implements Router {
     }
 
 
-    protected List<RoutedRelBuilder> handleNoneHorizontalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, List<RoutedRelBuilder> builders, RelOptCluster cluster ) {
+    protected List<RoutedRelBuilder> handleNoneHorizontalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
         log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
-        val placements = selectPlacement( node, catalogTable, statement );
+        val placements = selectPlacement( node, catalogTable, statement, queryInformation );
 
         val newBuilders = new ArrayList<RoutedRelBuilder>();
         for ( val placementCombination : placements ) {
@@ -166,13 +166,12 @@ public abstract class AbstractRouter extends BaseRouter implements Router {
     }
 
 
-    protected List<RoutedRelBuilder> handleHorizontalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RoutedRelBuilder> builders, RelOptCluster cluster ) {
+    protected List<RoutedRelBuilder> handleHorizontalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionType );
 
         // get info from whereClauseVisitor
-        StatementEvent event = (StatementEvent) statement.getTransaction().getMonitoringEvent();
-        List<Long> partitionIds = event.getAccessedPartitions().get( catalogTable.id );
+        List<Long> partitionIds = queryInformation.getAccessedPartitions().get( catalogTable.id );
 
         Map<Long, List<CatalogColumnPlacement>> placementDistribution;
 
@@ -187,14 +186,14 @@ public abstract class AbstractRouter extends BaseRouter implements Router {
     }
 
 
-    protected List<RoutedRelBuilder> buildSetOp( RelNode node, List<RoutedRelBuilder> builders, Statement statement, RelOptCluster cluster ) {
+    protected List<RoutedRelBuilder> buildSetOp( RelNode node, List<RoutedRelBuilder> builders, Statement statement, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
         if ( cancelQuery ) {
             return Collections.emptyList();
         }
-        builders = buildDql( node.getInput( 0 ), builders, statement, cluster );
+        builders = buildDql( node.getInput( 0 ), builders, statement, cluster, queryInformation );
 
         RoutedRelBuilder builder0 = RoutedRelBuilder.create( statement, cluster );
-        val b0 = buildDql( node.getInput( 1 ), Lists.newArrayList( builder0 ), statement, cluster ).get( 0 );
+        val b0 = buildDql( node.getInput( 1 ), Lists.newArrayList( builder0 ), statement, cluster, queryInformation ).get( 0 );
 
         builders.forEach(
                 builder -> builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek(), b0.build() ) ) )

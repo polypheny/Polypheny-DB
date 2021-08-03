@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.tools.RoutedRelBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -31,7 +32,7 @@ public abstract class NoneHorizontalPartitioningRouter extends AbstractDqlRouter
 
 
     @Override
-    protected List<RoutedRelBuilder> handleHorizontalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RoutedRelBuilder> builders, RelOptCluster cluster ) {
+    protected List<RoutedRelBuilder> handleHorizontalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
         this.cancelQuery = true;
         return Collections.emptyList();
     }

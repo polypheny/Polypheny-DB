@@ -17,16 +17,18 @@
 package org.polypheny.db.routing.routers;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import lombok.var;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.routing.factories.RouterFactory;
 import org.polypheny.db.tools.RoutedRelBuilder;
@@ -36,10 +38,10 @@ import org.polypheny.db.transaction.Statement;
 public class IcarusRouter extends HorizontalFullPlacementQueryRouter {
 
     @Override
-    protected List<RoutedRelBuilder> handleNoneHorizontalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, List<RoutedRelBuilder> builders, RelOptCluster cluster ) {
+    protected List<RoutedRelBuilder> handleNoneHorizontalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
         log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
 
-        val placements = selectPlacement( node, catalogTable, statement );
+        val placements = selectPlacement( node, catalogTable, statement, queryInformation );
         val newBuilders = new ArrayList<RoutedRelBuilder>();
         if ( placements.isEmpty() ) {
             this.cancelQuery = true;
@@ -66,18 +68,34 @@ public class IcarusRouter extends HorizontalFullPlacementQueryRouter {
                 log.error( " not allowed! icarus should not happen" );
             }
 
-            var counter = 0;
             for ( val currentPlacement : placements ) {
 
                 val currentPlacementDistribution = new HashMap<Long, List<CatalogColumnPlacement>>();
                 currentPlacementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ), currentPlacement );
 
-                val newBuilder = RoutedRelBuilder.createCopy( statement, cluster, builders.get( counter ) );
+                // adapterId for all col placements same
+                val adapterId = currentPlacement.get( 0 ).adapterId;
+
+                // find corresponding builder:
+                val builder = builders.stream().filter( b -> {
+                        val listPairs = b.getPhysicalPlacementsOfPartitions().values()
+                            .stream().flatMap( Collection::stream ).collect( Collectors.toList());
+
+                        val found = listPairs.stream().map( elem -> elem.left ).filter( elem -> elem == adapterId ).findFirst();
+
+                        return found.isPresent();
+                        }
+                ).findAny();
+
+                if(!builder.isPresent()){
+                    // if builder not found, adapter with id will be removed.
+                    continue;
+                }
+
+                val newBuilder = RoutedRelBuilder.createCopy( statement, cluster, builder.get( ) );
                 newBuilder.addPhysicalInfo( currentPlacementDistribution );
                 newBuilder.push( super.buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) );
                 newBuilders.add( newBuilder );
-
-                counter++;
             }
 
         }

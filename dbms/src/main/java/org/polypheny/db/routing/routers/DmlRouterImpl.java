@@ -61,6 +61,7 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.routing.DmlRouter;
+import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.ModifiableTable;
@@ -619,13 +620,13 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
-    public RelNode handleConditionalExecute( RelNode node, Statement statement, Router router ) {
+    public RelNode handleConditionalExecute( RelNode node, Statement statement, Router router, LogicalQueryInformation queryInformation ) {
         LogicalConditionalExecute lce = (LogicalConditionalExecute) node;
         RoutedRelBuilder builder = RoutedRelBuilder.create( statement, node.getCluster() );
-        builder = router.buildSelect( lce.getLeft(), builder, statement, node.getCluster() );
+        builder = router.buildSelect( lce.getLeft(), builder, statement, node.getCluster(), queryInformation );
         RelNode action;
         if ( lce.getRight() instanceof LogicalConditionalExecute ) {
-            action = handleConditionalExecute( lce.getRight(), statement, router );
+            action = handleConditionalExecute( lce.getRight(), statement, router, queryInformation );
         } else if ( lce.getRight() instanceof TableModify ) {
             action = routeDml( lce.getRight(), statement ).build();
         } else {
