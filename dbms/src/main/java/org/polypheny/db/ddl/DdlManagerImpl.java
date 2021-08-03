@@ -17,7 +17,6 @@
 package org.polypheny.db.ddl;
 
 import static java.util.stream.Collectors.toCollection;
-import static org.polypheny.db.util.Static.RESOURCE;
 import static org.reflections.Reflections.log;
 
 import com.google.common.collect.ImmutableList;
@@ -750,6 +749,19 @@ public class DdlManagerImpl extends DdlManager {
                         tempPartitionGroupList);
                 addedColumns.add( catalog.getColumn( cid ) );
             }
+        }
+
+
+
+        //Need to create partitionPlacements first in order to trigger schema creation on PolySchemaBuilder
+        for ( long partitionId : partitionIds ) {
+            catalog.addPartitionPlacement(
+                    dataStore.getAdapterId(),
+                    catalogTable.id,
+                    partitionId,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null);
         }
 
         // Create table on store
@@ -1593,6 +1605,18 @@ public class DdlManagerImpl extends DdlManager {
             CatalogTable catalogTable = catalog.getTable( tableId );
 
             for ( DataStore store : stores ) {
+
+
+
+                catalog.addPartitionPlacement(
+                        store.getAdapterId(),
+                        catalogTable.id,
+                        catalogTable.partitionProperty.partitionIds.get( 0 ),
+                        PlacementType.AUTOMATIC,
+                        null,
+                        null);
+
+
                 store.createTable( statement.getPrepareContext(), catalogTable, catalogTable.partitionProperty.partitionIds);
             }
 
@@ -1829,6 +1853,17 @@ public class DdlManagerImpl extends DdlManager {
 
 
         for ( DataStore store : stores ) {
+
+            for ( long partitionId : partitionIds ) {
+                catalog.addPartitionPlacement(
+                        store.getAdapterId(),
+                        partitionedTable.id,
+                        partitionId,
+                        PlacementType.AUTOMATIC,
+                        null,
+                        null);
+            }
+
 
             //First create new tables
             store.createTable( statement.getPrepareContext(), partitionedTable, partitionedTable.partitionProperty.partitionIds);

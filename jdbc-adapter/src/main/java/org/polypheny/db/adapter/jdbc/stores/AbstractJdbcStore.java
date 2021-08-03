@@ -140,12 +140,9 @@ public abstract class AbstractJdbcStore extends DataStore {
             log.info( query.toString() + " on store " + this.getUniqueName() );
             executeUpdate( query, context );
 
-
-            catalog.addPartitionPlacement(
+            catalog.updatePartitionPlacementPhysicalNames(
                     getAdapterId(),
-                    catalogTable.id,
                     partitionId,
-                    PlacementType.AUTOMATIC,
                     getDefaultPhysicalSchemaName(),
                     physicalTableName);
 

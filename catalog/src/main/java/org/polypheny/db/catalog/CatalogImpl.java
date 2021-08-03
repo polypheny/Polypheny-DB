@@ -1750,6 +1750,38 @@ public class CatalogImpl extends Catalog {
 
 
 
+    /**
+     * Change physical names of a partition placement.
+     *  @param adapterId The id of the adapter
+     * @param partitionId The id of the partition
+     * @param physicalSchemaName The physical schema name
+     * @param physicalTableName The physical table name
+     */
+    @Override
+    public void updatePartitionPlacementPhysicalNames( int adapterId, long partitionId, String physicalSchemaName, String physicalTableName) {
+        try {
+            CatalogPartitionPlacement old = Objects.requireNonNull( partitionPlacements.get( new Object[]{ adapterId, partitionId } ) );
+            CatalogPartitionPlacement placement = new CatalogPartitionPlacement(
+                    old.tableId,
+                    old.adapterId,
+                    old.adapterUniqueName,
+                    old.placementType,
+                    physicalSchemaName,
+                    physicalTableName,
+                    old.partitionId);
+
+            synchronized ( this ) {
+                partitionPlacements.replace( new Object[]{ adapterId, partitionId}, placement );
+            }
+            listeners.firePropertyChange( "partitionPlacement", old, placement );
+        } catch ( NullPointerException e ) {
+            getAdapter( adapterId );
+            getPartition( partitionId );
+            throw new UnknownPartitionPlacementException( adapterId, partitionId );
+        }
+    }
+
+
 
 
 
@@ -4109,28 +4141,8 @@ public class CatalogImpl extends Catalog {
             synchronized ( this ) {
                 partitionPlacements.put( new Object[]{ adapterId, partitionId }, partitionPlacement );
             }
-            //listeners.firePropertyChange( "partitionPlacement", null, partitionPlacements );
+            listeners.firePropertyChange( "partitionPlacement", null, partitionPlacements );
         }
-    }
-
-
-    /**
-     * Updates the partition placements on the store.
-     *
-     * @param adapterId The adapter on which the table should be placed on
-     * @param tableId
-     */
-    @Override
-    public void updatePartitionPlacements( int adapterId, long tableId ) {
-
-        //TODO get all partitionGroups of table on specific store
-        //TODO get all partitions of these partitionGroups of this store
-        List<Long> partitionIds =  getPartitionsOnDataPlacement( adapterId, tableId );
-        synchronized ( this ){
-            //addPartitionPlacement(  );
-        }
-        //TODO iterate over list of partitions and add or delete PartitionPlacements on this adapter
-
     }
 
 
