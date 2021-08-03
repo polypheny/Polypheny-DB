@@ -35,62 +35,71 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Pair;
 
-public class RoutedRelBuilder extends RelBuilder{
+public class RoutedRelBuilder extends RelBuilder {
 
     @Getter
     protected Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions = new HashMap<>(); // partitionId, list<adapterId - colId>
+
 
     public RoutedRelBuilder( Context context, RelOptCluster cluster, RelOptSchema relOptSchema ) {
         super( context, cluster, relOptSchema );
     }
 
-    public static RoutedRelBuilder create( Statement statement, RelOptCluster cluster){
-        return new RoutedRelBuilder(  Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getCatalogReader()  );
+
+    public static RoutedRelBuilder create( Statement statement, RelOptCluster cluster ) {
+        return new RoutedRelBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getCatalogReader() );
     }
 
-    public static RoutedRelBuilder createCopy( Statement statement, RelOptCluster cluster, RoutedRelBuilder builder){
+
+    public static RoutedRelBuilder createCopy( Statement statement, RelOptCluster cluster, RoutedRelBuilder builder ) {
         val newBuilder = RoutedRelBuilder.create( statement, cluster );
         newBuilder.getPhysicalPlacementsOfPartitions().putAll( ImmutableMap.copyOf( builder.getPhysicalPlacementsOfPartitions() ) );
 
-        for ( int i = 0; i < builder.stackSize(); i++ ) {
-            val node = builder.peek(i).accept( new RelDeepCopyShuttle() );
+        if ( builder.stackSize() > 0 ) {
+            val node = builder.peek().accept( new RelDeepCopyShuttle() );
             newBuilder.push( node );
         }
+
         return newBuilder;
     }
 
 
     public RoutedRelBuilder values( Iterable<? extends List<RexLiteral>> tupleList, RelDataType rowType ) {
-      super.values( tupleList, rowType );
+        super.values( tupleList, rowType );
         return this;
     }
 
-    public RoutedRelBuilder scan( Iterable<String> tableNames ){
+
+    public RoutedRelBuilder scan( Iterable<String> tableNames ) {
         super.scan( tableNames );
         return this;
     }
+
 
     public RoutedRelBuilder push( RelNode node ) {
         super.push( node );
         return this;
     }
 
-    public RoutedRelBuilder addPhysicalInfo(Long partitionId,  List<Pair<Integer, Long>> physicalInfos){ // list<adapterId - colId>
+
+    public RoutedRelBuilder addPhysicalInfo( Long partitionId, List<Pair<Integer, Long>> physicalInfos ) { // list<adapterId - colId>
         physicalPlacementsOfPartitions.put( partitionId, physicalInfos );
         return this;
     }
 
-    public RoutedRelBuilder addPhysicalInfo( Map<Long, List<CatalogColumnPlacement>> physicalPlacements){ // list<adapterId - colId>
+
+    public RoutedRelBuilder addPhysicalInfo( Map<Long, List<CatalogColumnPlacement>> physicalPlacements ) { // list<adapterId - colId>
         val map = physicalPlacements.entrySet().stream().collect( Collectors.toMap(
                 Map.Entry::getKey,
-                entry -> map(entry.getValue())));
+                entry -> map( entry.getValue() ) ) );
 
         physicalPlacementsOfPartitions.putAll( map );
         return this;
     }
 
-    private List<Pair<Integer, Long>> map(List<CatalogColumnPlacement> catalogCols){
-        return catalogCols.stream().map( col -> new Pair<>( col.adapterId, col.columnId ) ).collect( Collectors.toList() ) ;
+
+    private List<Pair<Integer, Long>> map( List<CatalogColumnPlacement> catalogCols ) {
+        return catalogCols.stream().map( col -> new Pair<>( col.adapterId, col.columnId ) ).collect( Collectors.toList() );
     }
 
 }

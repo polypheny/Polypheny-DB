@@ -455,6 +455,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     queryId );
         }
 
+        optimalNodeList = new ArrayList<>(Collections.nCopies( optimalNodeList.size(), Optional.empty()));
+
         assert (signatures.size() == proposedRoutingPlans.size());
         assert (optimalNodeList.size() == proposedRoutingPlans.size());
         assert (parameterizedRootList.size() == proposedRoutingPlans.size());
@@ -464,12 +466,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getDuration().start( "Plan Caching" );
         }
         for ( int i = 0; i < proposedRoutingPlans.size(); i++ ) {
-            if ( optimalNodeList.get( i ).isPresent() ) {
-                continue;
-            }
-            val routedRoot = proposedRoutingPlans.get( i ).getRoutedRoot();
-
-            if ( this.isQueryPlanCachingActive( statement, routedRoot ) ) {
+            if ( this.isQueryPlanCachingActive( statement, proposedRoutingPlans.get( i ).getRoutedRoot() ) ) {
                 // should always be the case
                 val cachedElem = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRootList.get( i ).rel );
                 if ( cachedElem != null ) {
@@ -486,13 +483,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // optimalNode same size as routed, parametrized and signature
         for ( int i = 0; i < optimalNodeList.size(); i++ ) {
+            if(optimalNodeList.get( i ).isPresent()){
+                continue;
+            }
             val parameterizedRoot = parameterizedRootList.get( i );
             val routedRoot = proposedRoutingPlans.get( i ).getRoutedRoot();
-            if ( !optimalNodeList.get( i ).isPresent() ) {
-                optimalNodeList.set( i, Optional.of( optimize( parameterizedRoot, resultConvention ) ) );
-                if ( this.isQueryPlanCachingActive( statement, routedRoot ) ) {
-                    QueryPlanCache.INSTANCE.put( parameterizedRoot.rel, optimalNodeList.get( i ).get() );
-                }
+            optimalNodeList.set( i, Optional.of( optimize( parameterizedRoot, resultConvention ) ) );
+
+            if ( this.isQueryPlanCachingActive( statement, routedRoot ) ) {
+                QueryPlanCache.INSTANCE.put( parameterizedRoot.rel, optimalNodeList.get( i ).get() );
             }
         }
 
@@ -1343,6 +1342,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private void cacheRouterPlans( List<ProposedRoutingPlan> proposedRoutingPlans, List<RelOptCost> approximatedCosts, String queryId ) {
+        if ( !RuntimeConfig.ROUTING_PLAN_CACHING.getBoolean() ) {
+            return;
+        }
+
         val cachedPlans = new ArrayList<CachedProposedRoutingPlan>();
         for ( int i = 0; i < proposedRoutingPlans.size(); i++ ) {
             if ( proposedRoutingPlans.get( i ).isCachable() && !RoutingPlanCache.INSTANCE.isKeyPresent( queryId ) ) {
@@ -1477,7 +1480,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         val sortedEntries = entriesSortedByValues( percentageTable );
 
         int p = 0;
-        int random = Math.min( (int) (Math.random() * 100) + 1, 100 );
+        int random = (int) (Math.random() * 100);
         for ( Map.Entry<Pair<Optional<PolyphenyDbSignature>, RoutingPlan>, Integer> entry : sortedEntries ) {
             p += Math.max( entry.getValue(), 0 ); // avoid subtracting -2
             if ( p >= random ) {
@@ -1527,9 +1530,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         InformationGroup overview = new InformationGroup( page, "Stats overview" );
         statement.getTransaction().getQueryAnalyzer().addGroup( overview );
-        InformationTable overviewTable = new InformationTable( overview, ImmutableList.of( "# Proposed plans", "Pre Cost factor", "Post cost factor" ) );
-        overviewTable.addRow( routingPlans.size(), ratioPre, ratioPost );
-        statement.getTransaction().getQueryAnalyzer().registerInformation( overviewTable );
+        InformationTable overviewTable = new InformationTable( overview, ImmutableList.of( "# Proposed plans", "Pre Cost factor", "Post cost factor", "Selection Strategy" ) );
+        overviewTable.addRow( routingPlans.size(), ratioPre, ratioPost, RouterManager.PLAN_SELECTION_STRATEGY.getEnum() );
 
         val isIcarus = icarusCosts.isPresent();
 
@@ -1553,8 +1555,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     percentageCosts.isPresent() ? percentageCosts.get().get( i ) : "-" ); //.isPresent() ? routingPlan.getOptionalPhysicalPlacementsOfPartitions().get(): "-"
         }
 
-        statement.getTransaction().getQueryAnalyzer().registerInformation( table );
-
         InformationGroup selected = new InformationGroup( page, "Selected Plan" );
         statement.getTransaction().getQueryAnalyzer().addGroup( selected );
         InformationTable selectedTable = new InformationTable( selected, ImmutableList.of( "QueryId", "Physical QueryId", "Router", "Partitioning - Placements" ) );
@@ -1564,7 +1564,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 selectedPlan.getRouter(),
                 selectedPlan.getOptionalPhysicalPlacementsOfPartitions() );
 
-        statement.getTransaction().getQueryAnalyzer().registerInformation( selectedTable );
+        statement.getTransaction().getQueryAnalyzer().registerInformation( overviewTable, table, selectedTable );
     }
 
 

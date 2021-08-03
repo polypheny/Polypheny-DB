@@ -17,6 +17,7 @@
 package org.polypheny.db.routing.routers;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -40,11 +41,15 @@ public class IcarusRouter extends HorizontalFullPlacementQueryRouter {
 
         val placements = selectPlacement( node, catalogTable, statement );
         val newBuilders = new ArrayList<RoutedRelBuilder>();
+        if ( placements.isEmpty() ) {
+            this.cancelQuery = true;
+            return Collections.emptyList();
+        }
 
         // initial case with multiple placements
         // create new builds
-        if(placements.size() > builders.size() && builders.size() == 1){
-            for (val currentPlacement : placements) {
+        if ( placements.size() > builders.size() && builders.size() == 1 ) {
+            for ( val currentPlacement : placements ) {
 
                 val currentPlacementDistribution = new HashMap<Long, List<CatalogColumnPlacement>>();
                 currentPlacementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ), currentPlacement );
@@ -54,15 +59,15 @@ public class IcarusRouter extends HorizontalFullPlacementQueryRouter {
                 newBuilder.push( super.buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) );
                 newBuilders.add( newBuilder );
             }
-        }else{
+        } else {
             // already one placement
             // add placement in order of list to combine full placements of one store
-            if(placements.size() != builders.size()){
+            if ( placements.size() != builders.size() ) {
                 log.error( " not allowed! icarus should not happen" );
             }
 
             var counter = 0;
-            for (val currentPlacement : placements) {
+            for ( val currentPlacement : placements ) {
 
                 val currentPlacementDistribution = new HashMap<Long, List<CatalogColumnPlacement>>();
                 currentPlacementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ), currentPlacement );
@@ -82,6 +87,7 @@ public class IcarusRouter extends HorizontalFullPlacementQueryRouter {
 
         return builders;
     }
+
 
     public static class IcarusRouterFactory extends RouterFactory {
 

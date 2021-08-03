@@ -389,6 +389,7 @@ public enum RuntimeConfig {
         configManager.registerWebUiGroup( queryPlanCachingGroup );
         configManager.registerWebUiGroup( implementationCachingGroup );
         configManager.registerWebUiGroup( queryParameterizationGroup );
+        configManager.registerWebUiGroup( routingPlanCachingGroup );
         configManager.registerWebUiGroup( constraintEnforcementGroup );
         configManager.registerWebUiGroup( polystoreIndexGroup );
         configManager.registerWebUiGroup( validationGroup );
