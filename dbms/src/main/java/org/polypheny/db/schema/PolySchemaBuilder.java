@@ -212,10 +212,6 @@ public class PolySchemaBuilder implements PropertyChangeListener {
         return storeName + "_" + logicalSchema + "_" + physicalSchema + "_" + partitionId;
     }
 
-    public static String buildAdapterSchemaName( String storeName, String logicalSchema, String physicalSchema ) {
-        return storeName + "_" + logicalSchema + "_" + physicalSchema;
-    }
-
 
     // Listens on changes to the catalog
     @Override
