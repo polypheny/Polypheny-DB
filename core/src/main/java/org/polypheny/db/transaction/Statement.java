@@ -36,9 +36,7 @@ public interface Statement {
 
     InformationDuration getDuration();
 
-    List<Router> getShortRunningRouters();
-
-    List<Router> getLongRunningRouters();
+    List<Router> getRouters();
 
     void close();
 
