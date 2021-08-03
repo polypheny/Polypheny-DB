@@ -29,11 +29,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.excluded.CassandraExcluded;
 
-
+@SuppressWarnings({"SqlDialectInspection", "SqlNoDataSourceInspection"})
 @Slf4j
+@Category({AdapterTestSuite.class, CassandraExcluded.class})
 public class PowerAbsModFunctionTest {
 
 
@@ -140,7 +144,7 @@ public class PowerAbsModFunctionTest {
 
 
     @Test
-    public void AbsTest() throws SQLException {
+    public void absTest() throws SQLException {
         try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
             Connection connection = polyphenyDbConnection.getConnection();
 
@@ -198,7 +202,7 @@ public class PowerAbsModFunctionTest {
 
 
     @Test
-    public void ModTest() throws SQLException {
+    public void modTest() throws SQLException {
         try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
             Connection connection = polyphenyDbConnection.getConnection();
 

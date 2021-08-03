@@ -28,11 +28,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.excluded.CassandraExcluded;
 
 
+@SuppressWarnings({"SqlDialectInspection", "SqlNoDataSourceInspection"})
 @Slf4j
+@Category({AdapterTestSuite.class, CassandraExcluded.class})
 public class OperatorsTest {
 
 
@@ -79,7 +84,7 @@ public class OperatorsTest {
 
 
     @Test
-    public void comparsionOperatorsTest() throws SQLException {
+    public void comparisonOperatorsTest() throws SQLException {
         try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
             Connection connection = polyphenyDbConnection.getConnection();
 
@@ -284,17 +289,17 @@ public class OperatorsTest {
 
 
                 //AND(boolean1 AND boolean2)
-                List<Object[]> expectedResult1 = ImmutableList.of(
+                expectedResult = ImmutableList.of(
 
                 );
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable Where TRUE AND FALSE"),
-                        expectedResult1
+                        expectedResult
                 );
 
                 //NOT(NOT boolean)
-                List<Object[]> expectedResult2 = ImmutableList.of(
+                expectedResult = ImmutableList.of(
                         new Object[]{0, "dataA"},
                         new Object[]{1, "dataB"},
                         new Object[]{2, "dataC"}
@@ -302,23 +307,23 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable Where NOT FALSE "),
-                        expectedResult2
+                        expectedResult
                 );
 
 
                 //IS FALSE(boolean is FALSE)
-                List<Object[]> expectedResult3 = ImmutableList.of(
+                expectedResult = ImmutableList.of(
 
                 );
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable Where TRUE is FALSE"),
-                        expectedResult3
+                        expectedResult
                 );
 
 
                 //IS NOT FALSE(boolean is NOT FALSE)
-                List<Object[]> expectedResult4 = ImmutableList.of(
+                expectedResult = ImmutableList.of(
                         new Object[]{0, "dataA"},
                         new Object[]{1, "dataB"},
                         new Object[]{2, "dataC"}
@@ -326,12 +331,12 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable Where TRUE IS NOT FALSE "),
-                        expectedResult4
+                        expectedResult
                 );
 
 
                 //IS TRUE(boolean is TRUE)
-                List<Object[]> expectedResult5 = ImmutableList.of(
+                expectedResult = ImmutableList.of(
                         new Object[]{0, "dataA"},
                         new Object[]{1, "dataB"},
                         new Object[]{2, "dataC"}
@@ -339,11 +344,11 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable Where TRUE IS TRUE"),
-                        expectedResult4
+                        expectedResult
                 );
 
                 //NOT TRUE(boolean is NOT TRUE)
-                List<Object[]> expectedResult6 = ImmutableList.of(
+                expectedResult = ImmutableList.of(
                         new Object[]{0, "dataA"},
                         new Object[]{1, "dataB"},
                         new Object[]{2, "dataC"}
@@ -351,7 +356,7 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable Where FALSE IS NOT TRUE"),
-                        expectedResult6
+                        expectedResult
                 );
 
 
@@ -382,7 +387,7 @@ public class OperatorsTest {
 
 
                 // - (numeric1 - numeric2)
-                List<Object[]> expectedResult1 = ImmutableList.of(
+                expectedResult = ImmutableList.of(
                         new Object[]{4, 2},
                         new Object[]{5, -6},
                         new Object[]{6, -1}
@@ -391,11 +396,11 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, -(NumberData - ID) FROM TestTableB"),
-                        expectedResult1
+                        expectedResult
                 );
 
                 // * (numeric1 * numeric2)
-                List<Object[]> expectedResult2 = ImmutableList.of(
+                expectedResult = ImmutableList.of(
                         new Object[]{4, 8},
                         new Object[]{5, 55},
                         new Object[]{6, 42}
@@ -403,12 +408,12 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, NumberData*ID FROM TestTableB"),
-                        expectedResult2
+                        expectedResult
                 );
 
 
                 // / (numeric/numeric2)
-                List<Object[]> expectedResult3 = ImmutableList.of(
+                expectedResult = ImmutableList.of(
                         new Object[]{4, 2},
                         new Object[]{5, 0},
                         new Object[]{6, 0}
@@ -416,7 +421,7 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, ID/NumberData FROM TestTableB"),
-                        expectedResult3
+                        expectedResult
                 );
 
 

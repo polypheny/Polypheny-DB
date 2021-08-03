@@ -30,11 +30,15 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.excluded.CassandraExcluded;
 
-@SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
+@SuppressWarnings({"SqlDialectInspection", "SqlNoDataSourceInspection"})
 @Slf4j
+@Category({AdapterTestSuite.class, CassandraExcluded.class})
 public class LogExponentialFunctionsTest {
 
 
@@ -91,7 +95,7 @@ public class LogExponentialFunctionsTest {
 
     @Ignore
     @Test
-    public void LogTest() throws SQLException {
+    public void logTest() throws SQLException {
         try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
             Connection connection = polyphenyDbConnection.getConnection();
 
@@ -108,16 +112,16 @@ public class LogExponentialFunctionsTest {
                         expectedResult
                 );
 
-//                //For Double
-//                expectedResult = ImmutableList.of(
-//                        new Object[]{0, 0.3010299956639812},
-//                        new Object[]{2, 0.6020599913279624}
-//                );
-//
-//                TestHelper.checkResultSet(
-//                        statement.executeQuery("SELECT ID, LN(Data) FROM TableDouble where data > 0"),
-//                        expectedResult
-//                );
+                //For Double
+                expectedResult = ImmutableList.of(
+                        new Object[]{0, 0.3010299956639812},
+                        new Object[]{2, 0.6020599913279624}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT ID, LN(Data) FROM TableDouble where data > 0"),
+                        expectedResult
+                );
 
 //
 //                //For Integer

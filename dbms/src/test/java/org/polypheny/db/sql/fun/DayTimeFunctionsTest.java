@@ -22,14 +22,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.excluded.CassandraExcluded;
 
 import java.sql.*;
 import java.util.List;
 
 
 @Slf4j
+@Category({AdapterTestSuite.class, CassandraExcluded.class})
 public class DayTimeFunctionsTest {
 
 
@@ -42,7 +46,6 @@ public class DayTimeFunctionsTest {
     }
 
 
-    //Inserting into table not working
     private static void addTestData() throws SQLException {
         try (JdbcConnection jdbcConnection = new JdbcConnection(false)) {
             Connection connection = jdbcConnection.getConnection();
@@ -61,8 +64,6 @@ public class DayTimeFunctionsTest {
                 statement.executeUpdate("INSERT INTO TimeStampTestTable VALUES (1,TIMESTAMP '2000-01-01 12:30:35',TIMESTAMP '2002-03-03 23:59:59')");
                 statement.executeUpdate("INSERT INTO TimeStampTestTable VALUES (2,TIMESTAMP '2001-02-02 06:34:59',TIMESTAMP '2001-02-02 06:34:59')");
                 statement.executeUpdate("INSERT INTO TimeStampTestTable VALUES (3,TIMESTAMP '2002-03-03 23:59:59',TIMESTAMP '2000-01-01 12:30:35')");
-
-
 
 
                 connection.commit();
@@ -96,9 +97,9 @@ public class DayTimeFunctionsTest {
 
                 //Select Test Is working
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{1,Date.valueOf("2000-01-01")},
-                        new Object[]{2,Date.valueOf("2001-02-02")},
-                        new Object[]{3,Date.valueOf("2002-03-03")}
+                        new Object[]{1, Date.valueOf("2000-01-01")},
+                        new Object[]{2, Date.valueOf("2001-02-02")},
+                        new Object[]{3, Date.valueOf("2002-03-03")}
 
                 );
 
@@ -109,9 +110,9 @@ public class DayTimeFunctionsTest {
 
                 //YEAR() Equivalent to EXTRACT(YEAR FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{1,Long.valueOf(2000)},
-                        new Object[]{2,Long.valueOf(2001)},
-                        new Object[]{3,Long.valueOf(2002)}
+                        new Object[]{1, Long.valueOf(2000)},
+                        new Object[]{2, Long.valueOf(2001)},
+                        new Object[]{3, Long.valueOf(2002)}
                 );
 
                 TestHelper.checkResultSet(
@@ -133,9 +134,9 @@ public class DayTimeFunctionsTest {
 
                 //MONTH(date) Equivalent to EXTRACT(MONTH FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{1,Long.valueOf(1)},
-                        new Object[]{2,Long.valueOf(2)},
-                        new Object[]{3,Long.valueOf(3)}
+                        new Object[]{1, Long.valueOf(1)},
+                        new Object[]{2, Long.valueOf(2)},
+                        new Object[]{3, Long.valueOf(3)}
                 );
 
                 TestHelper.checkResultSet(
@@ -143,7 +144,7 @@ public class DayTimeFunctionsTest {
                         expectedResult
                 );
 
-              // WEEK(date) Equivalent to EXTRACT(WEEK FROM date) NOT WORKING
+                // WEEK(date) Equivalent to EXTRACT(WEEK FROM date) NOT WORKING
 //                expectedResult = ImmutableList.of(
 //                        new Object[]{1,Long.valueOf(1)},
 //                        new Object[]{2,Long.valueOf(5)},
@@ -171,9 +172,9 @@ public class DayTimeFunctionsTest {
 
                 //DAYOFMONTH(date) Equivalent to EXTRACT(DAY FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{1,Long.valueOf(1)},
-                        new Object[]{2,Long.valueOf(2)},
-                        new Object[]{3,Long.valueOf(3)}
+                        new Object[]{1, Long.valueOf(1)},
+                        new Object[]{2, Long.valueOf(2)},
+                        new Object[]{3, Long.valueOf(3)}
                 );
 
                 TestHelper.checkResultSet(
@@ -184,9 +185,9 @@ public class DayTimeFunctionsTest {
 
                 //DAYOFWEEK(date) Equivalent to EXTRACT(DOW FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{1,Long.valueOf(1)},
-                        new Object[]{2,Long.valueOf(2)},
-                        new Object[]{3,Long.valueOf(3)}
+                        new Object[]{1, Long.valueOf(1)},
+                        new Object[]{2, Long.valueOf(2)},
+                        new Object[]{3, Long.valueOf(3)}
                 );
 
                 TestHelper.checkResultSet(
@@ -210,9 +211,9 @@ public class DayTimeFunctionsTest {
 
                 //Select IS working
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{1,Time.valueOf("12:30:35")},
-                        new Object[]{2,Time.valueOf("6:34:59")},
-                        new Object[]{3,Time.valueOf("23:59:59")}
+                        new Object[]{1, Time.valueOf("12:30:35")},
+                        new Object[]{2, Time.valueOf("6:34:59")},
+                        new Object[]{3, Time.valueOf("23:59:59")}
                 );
 
                 TestHelper.checkResultSet(
@@ -223,9 +224,9 @@ public class DayTimeFunctionsTest {
 
                 //HOUR() Equivalent to EXTRACT(HOUR FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{1,Long.valueOf(12)},
-                        new Object[]{2,Long.valueOf(6)},
-                        new Object[]{3,Long.valueOf(23)}
+                        new Object[]{1, Long.valueOf(12)},
+                        new Object[]{2, Long.valueOf(6)},
+                        new Object[]{3, Long.valueOf(23)}
                 );
 
                 TestHelper.checkResultSet(
@@ -235,9 +236,9 @@ public class DayTimeFunctionsTest {
 
                 //MINUTE() Equivalent to EXTRACT(HOUR FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{1,Long.valueOf(30)},
-                        new Object[]{2,Long.valueOf(34)},
-                        new Object[]{3,Long.valueOf(59)}
+                        new Object[]{1, Long.valueOf(30)},
+                        new Object[]{2, Long.valueOf(34)},
+                        new Object[]{3, Long.valueOf(59)}
                 );
 
                 TestHelper.checkResultSet(
@@ -247,10 +248,10 @@ public class DayTimeFunctionsTest {
 
 
                 //SECOND() Equivalent to EXTRACT(HOUR FROM date)
-                 expectedResult = ImmutableList.of(
-                        new Object[]{1,Long.valueOf(35)},
-                        new Object[]{2,Long.valueOf(59)},
-                        new Object[]{3,Long.valueOf(59)}
+                expectedResult = ImmutableList.of(
+                        new Object[]{1, Long.valueOf(35)},
+                        new Object[]{2, Long.valueOf(59)},
+                        new Object[]{3, Long.valueOf(59)}
                 );
 
                 TestHelper.checkResultSet(
@@ -260,7 +261,7 @@ public class DayTimeFunctionsTest {
 
 
                 ResultSet rs = statement.executeQuery("SELECT ID FROM DateTestTable");
-                while(rs.next()) {
+                while (rs.next()) {
                     System.out.println(rs.getInt(1));
                 }
 
@@ -280,9 +281,9 @@ public class DayTimeFunctionsTest {
 
                 //Select IS working
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{1,Timestamp.valueOf("2000-01-01 12:30:35")},
-                        new Object[]{2,Timestamp.valueOf("2001-02-02 06:34:59")},
-                        new Object[]{3,Timestamp.valueOf("2002-03-03 23:59:59")}
+                        new Object[]{1, Timestamp.valueOf("2000-01-01 12:30:35")},
+                        new Object[]{2, Timestamp.valueOf("2001-02-02 06:34:59")},
+                        new Object[]{3, Timestamp.valueOf("2002-03-03 23:59:59")}
                 );
 
                 TestHelper.checkResultSet(
@@ -293,9 +294,9 @@ public class DayTimeFunctionsTest {
 
                 //EXTRACT(timeUnit FROM timestamp) Extracts and returns the value of a specified timestamp field from a timestamp value expression.
                 expectedResult = ImmutableList.of(
-                        new Object[]{1,Long.valueOf("2000")},
-                        new Object[]{2,Long.valueOf("2001")},
-                        new Object[]{3,Long.valueOf("2002")}
+                        new Object[]{1, Long.valueOf("2000")},
+                        new Object[]{2, Long.valueOf("2001")},
+                        new Object[]{3, Long.valueOf("2002")}
                 );
 
                 TestHelper.checkResultSet(
@@ -318,9 +319,9 @@ public class DayTimeFunctionsTest {
 
                 //FLOOR(timestamp TO timeUnit)Rounds timestamp down to timeUnit
                 expectedResult = ImmutableList.of(
-                        new Object[]{1,Timestamp.valueOf("2000-01-01 00:00:00.0")},
-                        new Object[]{2,Timestamp.valueOf("2001-01-01 00:00:00.0")},
-                        new Object[]{3,Timestamp.valueOf("2002-01-01 00:00:00.0")}
+                        new Object[]{1, Timestamp.valueOf("2000-01-01 00:00:00.0")},
+                        new Object[]{2, Timestamp.valueOf("2001-01-01 00:00:00.0")},
+                        new Object[]{3, Timestamp.valueOf("2002-01-01 00:00:00.0")}
                 );
 
                 TestHelper.checkResultSet(
@@ -331,9 +332,9 @@ public class DayTimeFunctionsTest {
 
                 //TIMESTAMPADD(timeUnit, integer, timestamp) Returns timestamp with an interval of (signed) integer timeUnits added.
                 expectedResult = ImmutableList.of(
-                        new Object[]{1,Timestamp.valueOf("2005-01-01 12:30:35")},
-                        new Object[]{2,Timestamp.valueOf("2006-02-02 06:34:59")},
-                        new Object[]{3,Timestamp.valueOf("2007-03-03 23:59:59")}
+                        new Object[]{1, Timestamp.valueOf("2005-01-01 12:30:35")},
+                        new Object[]{2, Timestamp.valueOf("2006-02-02 06:34:59")},
+                        new Object[]{3, Timestamp.valueOf("2007-03-03 23:59:59")}
                 );
 
                 TestHelper.checkResultSet(
@@ -355,7 +356,6 @@ public class DayTimeFunctionsTest {
 //                        expectedResult
 //                );
 //
-
 
 
             }

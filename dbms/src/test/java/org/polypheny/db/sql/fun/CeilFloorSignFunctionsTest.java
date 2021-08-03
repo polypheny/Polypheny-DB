@@ -26,16 +26,21 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 
+import junit.framework.TestSuite;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.excluded.CassandraExcluded;
 
 
-@SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
+@SuppressWarnings({"SqlDialectInspection", "SqlNoDataSourceInspection"})
 @Slf4j
+@Category({AdapterTestSuite.class, CassandraExcluded.class})
 public class CeilFloorSignFunctionsTest {
 
 
@@ -92,7 +97,7 @@ public class CeilFloorSignFunctionsTest {
 
 
     @Test
-    public void CeilTest() throws SQLException {
+    public void ceilTest() throws SQLException {
         try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
             Connection connection = polyphenyDbConnection.getConnection();
 
@@ -148,7 +153,7 @@ public class CeilFloorSignFunctionsTest {
 
 
     @Test
-    public void FloorTest() throws SQLException {
+    public void floorTest() throws SQLException {
         try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
             Connection connection = polyphenyDbConnection.getConnection();
 
@@ -205,7 +210,7 @@ public class CeilFloorSignFunctionsTest {
     }
 
     @Test
-    public void SignTest() throws SQLException {
+    public void signTest() throws SQLException {
         try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
             Connection connection = polyphenyDbConnection.getConnection();
 
