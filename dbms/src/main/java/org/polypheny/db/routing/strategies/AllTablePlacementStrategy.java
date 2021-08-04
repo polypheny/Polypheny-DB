@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.routing.tablePlacements;
+package org.polypheny.db.routing.strategies;
 
 import java.util.List;
 import java.util.stream.Collectors;

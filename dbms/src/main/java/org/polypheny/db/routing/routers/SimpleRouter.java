@@ -18,32 +18,79 @@ package org.polypheny.db.routing.routers;
 
 
 import com.google.common.collect.ImmutableList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.partition.PartitionManager;
+import org.polypheny.db.partition.PartitionManagerFactory;
+import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.routing.factories.RouterFactory;
+import org.polypheny.db.schema.LogicalTable;
+import org.polypheny.db.tools.RoutedRelBuilder;
 import org.polypheny.db.transaction.Statement;
 
 @Slf4j
-public class SimpleRouter extends AbstractRouter {
+public class SimpleRouter extends AbstractDqlRouter {
 
     private SimpleRouter() {
         // Intentionally left empty
     }
 
 
-    // Execute the table scan on the first placement of a table
     @Override
-    protected Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable table, Statement statement, LogicalQueryInformation queryInformation ) {
+    protected List<RoutedRelBuilder> handleVerticalPartitioningOrReplication( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
+        // do same as without any partitioning
+        return handleNonePartitioning( node, catalogTable, statement, builders, cluster, queryInformation );
+    }
+
+
+    @Override
+    protected List<RoutedRelBuilder> handleNonePartitioning( RelNode node, CatalogTable catalogTable, Statement statement, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
+        // get placements and convert i
+        val placements = selectPlacement( node, catalogTable, statement, queryInformation );
+
+        // only one builder available
+        builders.get( 0 ).addPhysicalInfo( placements );
+        builders.get( 0 ).push( super.buildJoinedTableScan( statement, cluster, placements ) );
+
+        return builders;
+    }
+
+
+    @Override
+    protected List<RoutedRelBuilder> handleHorizontalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
+        PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
+        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionType );
+
+        // get info from whereClauseVisitor
+        List<Long> partitionIds = queryInformation.getAccessedPartitions().get( catalogTable.id );
+
+        Map<Long, List<CatalogColumnPlacement>> placementDistribution = partitionIds != null
+                ? partitionManager.getRelevantPlacements( catalogTable, partitionIds )
+                : partitionManager.getRelevantPlacements( catalogTable, catalogTable.partitionProperty.partitionIds );
+
+        // only one builder available
+        builders.get( 0 ).addPhysicalInfo( placementDistribution );
+        builders.get( 0 ).push( super.buildJoinedTableScan( statement, cluster, placementDistribution ) );
+
+        return builders;
+    }
+
+
+    /**
+     * // Execute the table scan on the first placement of a table
+     */
+    private Map<Long, List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable table, Statement statement, LogicalQueryInformation queryInformation ) {
         // Find the adapter with the most column placements
         int adapterIdWithMostPlacements = -1;
         int numOfPlacements = 0;
@@ -64,8 +111,8 @@ public class SimpleRouter extends AbstractRouter {
             }
         }
 
-        return new HashSet<List<CatalogColumnPlacement>>() {{
-            add( placementList );
+        return new HashMap<Long, List<CatalogColumnPlacement>>() {{
+            put( table.partitionProperty.partitionIds.get( 0 ), placementList );
         }};
     }
 

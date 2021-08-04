@@ -128,7 +128,7 @@ public class StatementImpl implements Statement {
 
     @Override
     public List<Router> getRouters() {
-        return RouterManager.getInstance().getRouters();
+        return RouterManager.getInstance().getRouterFactories();
     }
 
 

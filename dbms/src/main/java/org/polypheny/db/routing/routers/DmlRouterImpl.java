@@ -661,12 +661,10 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                 builder = super.handleTableScan(
                         builder,
-                        placements.get( 0 ).tableId,
                         placements.get( 0 ).adapterUniqueName,
                         catalogTable.getSchemaName(),
                         catalogTable.name,
                         placements.get( 0 ).physicalSchemaName,
-                        partitionPlacement.physicalTableName,
                         partitionPlacement.partitionId );
 
                 return builder;

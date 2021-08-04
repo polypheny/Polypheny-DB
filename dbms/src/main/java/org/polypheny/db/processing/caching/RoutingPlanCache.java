@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.processing;
+package org.polypheny.db.processing.caching;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -35,7 +35,7 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.information.InformationText;
-import org.polypheny.db.routing.CachedProposedRoutingPlan;
+import org.polypheny.db.routing.dto.CachedProposedRoutingPlan;
 
 public class RoutingPlanCache {
 

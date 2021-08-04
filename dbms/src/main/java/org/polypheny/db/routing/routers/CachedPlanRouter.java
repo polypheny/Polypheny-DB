@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.routing;
+package org.polypheny.db.routing.routers;
 
 import java.util.HashMap;
 import java.util.List;
@@ -31,7 +31,7 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalValues;
-import org.polypheny.db.routing.routers.BaseRouter;
+import org.polypheny.db.routing.dto.CachedProposedRoutingPlan;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.tools.RoutedRelBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -67,9 +67,9 @@ public class CachedPlanRouter extends BaseRouter {
             val partitionIds = catalogTable.partitionProperty.partitionIds;
             val placement = new HashMap<Long, List<CatalogColumnPlacement>>();
             for ( val partition : partitionIds ) {
-                val colPlacemets =
+                val colPlacements =
                         cachedPlan.physicalPlacementsOfPartitions.get( partition ).stream().map( placementInfo -> catalog.getColumnPlacement( placementInfo.left, placementInfo.right ) ).collect( Collectors.toList() );
-                placement.put( partition, colPlacemets );
+                placement.put( partition, colPlacements );
             }
 
             return builder.push( super.buildJoinedTableScan( statement, cluster, placement ) );

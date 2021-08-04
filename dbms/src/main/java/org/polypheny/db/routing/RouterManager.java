@@ -34,11 +34,13 @@ import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.WebUiGroup;
 import org.polypheny.db.config.WebUiPage;
 import org.polypheny.db.routing.factories.RouterFactory;
+import org.polypheny.db.routing.routers.CachedPlanRouter;
 import org.polypheny.db.routing.routers.DmlRouterImpl;
 import org.polypheny.db.routing.routers.SimpleRouter;
 import org.polypheny.db.routing.routers.SimpleRouter.SimpleRouterFactory;
-import org.polypheny.db.routing.tablePlacements.SingleTablePlacementStrategy;
-import org.polypheny.db.routing.tablePlacements.TablePlacementStrategy;
+import org.polypheny.db.routing.strategies.RoutingPlanSelector;
+import org.polypheny.db.routing.strategies.SingleTablePlacementStrategy;
+import org.polypheny.db.routing.strategies.TablePlacementStrategy;
 
 @Slf4j
 public class RouterManager {
@@ -55,18 +57,38 @@ public class RouterManager {
 
 
     private static final RouterManager INSTANCE = new RouterManager();
-    protected final WebUiPage routingPage;
+    @Getter
+    final RoutingDebugUiPrinter debugUiPrinter = new RoutingDebugUiPrinter();
     @Getter
     private final DmlRouter dmlRouter = new DmlRouterImpl();
     @Getter
     private final CachedPlanRouter cachedPlanRouter = new CachedPlanRouter();
     @Getter
     private final SimpleRouter fallbackRouter = (SimpleRouter) new SimpleRouterFactory().createInstance();
-    private List<RouterFactory> shortRunningRouters;
+    @Getter
+    private final RoutingPlanSelector routingPlanSelector = new RoutingPlanSelector();
+    @Getter
     private TablePlacementStrategy tablePlacementStrategy = new SingleTablePlacementStrategy();
+    private List<RouterFactory> routerFactories;
+    private WebUiPage routingPage;
 
 
     public RouterManager() {
+        this.initializeConfigUi();
+    }
+
+
+    public static RouterManager getInstance() {
+        return INSTANCE;
+    }
+
+
+    public List<Router> getRouters() {
+        return routerFactories.stream().map( RouterFactory::createInstance ).collect( Collectors.toList() );
+    }
+
+
+    private void initializeConfigUi() {
         final ConfigManager configManager = ConfigManager.getInstance();
         routingPage = new WebUiPage(
                 "routingPage",
@@ -101,40 +123,25 @@ public class RouterManager {
         final ConfigClazzList shortRunningRouter = new ConfigClazzList( "routing/routers", RouterFactory.class, true );
         configManager.registerConfig( shortRunningRouter );
         shortRunningRouter.withUi( routingGroup.getId(), 0 );
-        shortRunningRouter.addObserver( getRouterConfigListener(  ) );
-        shortRunningRouters = getFactoryList( shortRunningRouter );
+        shortRunningRouter.addObserver( getRouterConfigListener() );
+        routerFactories = getFactoryList( shortRunningRouter );
 
         configManager.registerConfig( PRE_COST_POST_COST_RATIO );
         PRE_COST_POST_COST_RATIO.withUi( routingGroup.getId(), 1 );
 
         configManager.registerConfig( PLAN_SELECTION_STRATEGY );
         PLAN_SELECTION_STRATEGY.withUi( routingGroup.getId(), 2 );
-    }
 
-
-    public static RouterManager getInstance() {
-        return INSTANCE;
-    }
-
-
-    public TablePlacementStrategy getTablePlacementStrategy() {
-        return this.tablePlacementStrategy;
     }
 
 
     private void setTablePlacementStrategy( ConfigClazz implementation ) {
         try {
             Constructor<?> ctor = implementation.getClazz().getConstructor();
-            TablePlacementStrategy instance = (TablePlacementStrategy) ctor.newInstance();
-            this.tablePlacementStrategy = instance;
+            this.tablePlacementStrategy = (TablePlacementStrategy) ctor.newInstance();
         } catch ( InstantiationException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e ) {
             log.error( "Exception while changing table placement strategy", e );
         }
-    }
-
-
-    public List<Router> getRouters() {
-        return shortRunningRouters.stream().map( elem -> elem.createInstance() ).collect( Collectors.toList() );
     }
 
 
@@ -143,7 +150,7 @@ public class RouterManager {
             @Override
             public void onConfigChange( Config c ) {
                 ConfigClazzList configClazzList = (ConfigClazzList) c;
-                shortRunningRouters = getFactoryList( configClazzList );
+                routerFactories = getFactoryList( configClazzList );
             }
 
 
@@ -156,7 +163,7 @@ public class RouterManager {
 
     private List<RouterFactory> getFactoryList( ConfigClazzList configList ) {
         val result = new ArrayList<RouterFactory>();
-        for ( Class c : configList.getClazzList() ) {
+        for ( Class<? extends RouterFactory> c : configList.getClazzList() ) {
             try {
                 Constructor<?> ctor = c.getConstructor();
                 RouterFactory instance = (RouterFactory) ctor.newInstance();

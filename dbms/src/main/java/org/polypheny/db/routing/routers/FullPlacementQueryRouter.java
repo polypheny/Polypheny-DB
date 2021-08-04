@@ -16,23 +16,71 @@
 
 package org.polypheny.db.routing.routers;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.routing.factories.RouterFactory;
+import org.polypheny.db.schema.LogicalTable;
+import org.polypheny.db.tools.RoutedRelBuilder;
 import org.polypheny.db.transaction.Statement;
 
-public class HorizontalFullPlacementQueryRouter extends NoneHorizontalPartitioningRouter {
+@Slf4j
+public class FullPlacementQueryRouter extends AbstractDqlRouter {
 
     @Override
+    protected List<RoutedRelBuilder> handleHorizontalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
+        this.cancelQuery = true;
+        return Collections.emptyList();
+    }
+
+
+    @Override
+    protected List<RoutedRelBuilder> handleVerticalPartitioningOrReplication( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
+        return handleNonePartitioning( node, catalogTable, statement, builders, cluster, queryInformation );
+    }
+
+
+    @Override
+    protected List<RoutedRelBuilder> handleNonePartitioning( RelNode node, CatalogTable catalogTable, Statement statement, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
+        log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
+        val placements = selectPlacement( node, catalogTable, statement, queryInformation );
+
+        val newBuilders = new ArrayList<RoutedRelBuilder>();
+        for ( val placementCombination : placements ) {
+
+            val currentPlacementDistribution = new HashMap<Long, List<CatalogColumnPlacement>>();
+            currentPlacementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ), placementCombination );
+
+            for ( val builder : builders ) {
+                val newBuilder = RoutedRelBuilder.createCopy( statement, cluster, builder );
+                newBuilder.addPhysicalInfo( currentPlacementDistribution );
+                newBuilder.push( super.buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) );
+                newBuilders.add( newBuilder );
+            }
+
+        }
+
+        builders.clear();
+        builders.addAll( newBuilders );
+
+        return builders;
+
+    }
+
+
     protected Set<List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable catalogTable, Statement statement, LogicalQueryInformation queryInformation ) {
         // get used columns from analyze
         val usedColumns = queryInformation.getAllColumnsPerTable( catalogTable.id );
@@ -50,9 +98,9 @@ public class HorizontalFullPlacementQueryRouter extends NoneHorizontalPartitioni
                     .map( colId -> Catalog.getInstance().getColumnPlacement( adapterId, colId ) )
                     .collect( Collectors.toList() );
 
-            if(!placements.isEmpty()){
+            if ( !placements.isEmpty() ) {
                 result.add( placements );
-            }else {
+            } else {
                 // no available placements found
                 this.cancelQuery = true;
             }
@@ -69,7 +117,7 @@ public class HorizontalFullPlacementQueryRouter extends NoneHorizontalPartitioni
 
         @Override
         public Router createInstance() {
-            return new HorizontalFullPlacementQueryRouter();
+            return new FullPlacementQueryRouter();
         }
 
     }

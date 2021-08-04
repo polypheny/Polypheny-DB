@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.processing;
+package org.polypheny.db.processing.caching;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -33,62 +33,54 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.information.InformationText;
-import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.rel.RelNode;
 
-public class ImplementationCache {
+public class QueryPlanCache {
 
-    public static final ImplementationCache INSTANCE = new ImplementationCache();
+    public static final QueryPlanCache INSTANCE = new QueryPlanCache();
 
-    private final Cache<String, PreparedResult> implementationCache;
+    private final Cache<String, RelNode> planCache;
 
     private final AtomicLong hitsCounter = new AtomicLong(); // Number of requests for which the cache contained the value
     private final AtomicLong missesCounter = new AtomicLong(); // Number of requests for which the cache hasn't contained the value
-    private final AtomicLong uncacheableCounter = new AtomicLong(); // Number of requests for which the cache hasn't contained the value
 
 
-    public ImplementationCache() {
-        implementationCache = CacheBuilder.newBuilder()
-                .maximumSize( RuntimeConfig.IMPLEMENTATION_CACHING_SIZE.getInteger() )
+    public QueryPlanCache() {
+        planCache = CacheBuilder.newBuilder()
+                .maximumSize( RuntimeConfig.QUERY_PLAN_CACHING_SIZE.getInteger() )
                 //  .expireAfterWrite(10, TimeUnit.MINUTES)
                 .build();
         registerMonitoringPage();
     }
 
 
-    public PreparedResult getIfPresent( RelNode parameterizedNode ) {
-        PreparedResult preparedResult = implementationCache.getIfPresent( parameterizedNode.relCompareString() );
-        if ( preparedResult == null ) {
+    public RelNode getIfPresent( RelNode parameterizedNode ) {
+        RelNode node = planCache.getIfPresent( parameterizedNode.relCompareString() );
+        if ( node == null ) {
             missesCounter.incrementAndGet();
         } else {
             hitsCounter.incrementAndGet();
         }
-        return preparedResult;
+        return node;
     }
 
 
-    public void put( RelNode parameterizedNode, PreparedResult preparedResult ) {
-        implementationCache.put( parameterizedNode.relCompareString(), preparedResult );
-    }
-
-
-    public void countUncacheable() {
-        uncacheableCounter.incrementAndGet();
+    public void put( RelNode parameterizedNode, RelNode optimalNode ) {
+        planCache.put( parameterizedNode.relCompareString(), optimalNode );
     }
 
 
     public void reset() {
-        implementationCache.invalidateAll();
+        planCache.invalidateAll();
         hitsCounter.set( 0 );
         missesCounter.set( 0 );
-        uncacheableCounter.set( 0 );
     }
 
 
     private void registerMonitoringPage() {
         InformationManager im = InformationManager.getInstance();
 
-        InformationPage page = new InformationPage( "Implementation Cache" );
+        InformationPage page = new InformationPage( "Query Plan Cache" );
         im.addPage( page );
 
         // General
@@ -98,9 +90,9 @@ public class ImplementationCache {
         InformationKeyValue generalKv = new InformationKeyValue( generalGroup );
         im.registerInformation( generalKv );
         generalGroup.setRefreshFunction( () -> {
-            generalKv.putPair( "Status", RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() ? "Active" : "Disabled" );
-            generalKv.putPair( "Current Cache Size", implementationCache.size() + "" );
-            generalKv.putPair( "Maximum Cache Size", RuntimeConfig.IMPLEMENTATION_CACHING_SIZE.getInteger() + "" );
+            generalKv.putPair( "Status", RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() ? "Active" : "Disabled" );
+            generalKv.putPair( "Current Cache Size", planCache.size() + "" );
+            generalKv.putPair( "Maximum Cache Size", RuntimeConfig.QUERY_PLAN_CACHING_SIZE.getInteger() + "" );
         } );
 
         // Hit ratio
@@ -124,17 +116,14 @@ public class ImplementationCache {
 
         hitRatioGroup.setRefreshFunction( () -> {
             long hits = hitsCounter.longValue();
-            long misses = missesCounter.longValue() - uncacheableCounter.longValue();
-            long uncacheable = uncacheableCounter.longValue();
-            long total = hits + misses + uncacheable;
-
+            long misses = missesCounter.longValue();
+            long total = hits + misses;
             double hitPercent = (double) hits / total;
-            double missesPercent = (double) misses / total;
-            double uncacheablePercent = 1.0 - hitPercent - missesPercent;
+            double missesPercent = 1.0 - hitPercent;
 
             hitInfoGraph.updateGraph(
-                    new String[]{ "Misses", "Hits", "Uncacheable" },
-                    new GraphData<>( "heap-data", new Long[]{ misses, hits, uncacheable } )
+                    new String[]{ "Misses", "Hits" },
+                    new GraphData<>( "heap-data", new Long[]{ misses, hits } )
             );
 
             DecimalFormatSymbols symbols = DecimalFormatSymbols.getInstance();
@@ -143,14 +132,13 @@ public class ImplementationCache {
             hitInfoTable.reset();
             hitInfoTable.addRow( "Hits", df.format( total == 0 ? 0 : (hitPercent * 100) ) + " %", hits );
             hitInfoTable.addRow( "Misses", df.format( total == 0 ? 0 : (missesPercent * 100) ) + " %", misses );
-            hitInfoTable.addRow( "Uncacheable", df.format( total == 0 ? 0 : (uncacheablePercent * 100) ) + " %", uncacheable );
         } );
 
         // Invalidate cache
         InformationGroup invalidateGroup = new InformationGroup( page, "Invalidate" ).setOrder( 3 );
         im.addGroup( invalidateGroup );
 
-        InformationText invalidateText = new InformationText( invalidateGroup, "Invalidate the implementation cache including the hit and miss counters." );
+        InformationText invalidateText = new InformationText( invalidateGroup, "Invalidate the query plan cache including the hit and miss counters." );
         invalidateText.setOrder( 1 );
         im.registerInformation( invalidateText );
 
@@ -158,7 +146,7 @@ public class ImplementationCache {
             reset();
             generalGroup.refresh();
             hitRatioGroup.refresh();
-            return "Successfully invalidated the implementation cache!";
+            return "Successfully invalidated the query plan cache!";
         } );
         invalidateAction.setOrder( 2 );
         im.registerInformation( invalidateAction );

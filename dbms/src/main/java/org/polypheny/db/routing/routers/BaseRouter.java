@@ -46,6 +46,9 @@ import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.tools.RoutedRelBuilder;
 import org.polypheny.db.transaction.Statement;
 
+/**
+ * Base Router for all routers including DML, DQL and Cached plans.
+ */
 @Slf4j
 public abstract class BaseRouter {
 
@@ -68,16 +71,11 @@ public abstract class BaseRouter {
 
     public RoutedRelBuilder handleTableScan(
             RoutedRelBuilder builder,
-            long tableId,
             String storeUniqueName,
             String logicalSchemaName,
             String logicalTableName,
             String physicalSchemaName,
-            String physicalTableName,
             long partitionId ) {
-        //if ( selectedAdapter != null ) {
-        //    selectedAdapter.put( tableId, new SelectedAdapterInfo( storeUniqueName, physicalSchemaName, physicalTableName ) );
-        //}
         return builder.scan( ImmutableList.of(
                 PolySchemaBuilder.buildAdapterSchemaName( storeUniqueName, logicalSchemaName, physicalSchemaName, partitionId ),
                 logicalTableName ) );
@@ -90,9 +88,6 @@ public abstract class BaseRouter {
 
 
     protected List<RoutedRelBuilder> handleValues( LogicalValues node, List<RoutedRelBuilder> builders ) {
-        //if ( cancelQuery ) {
-        //    return Collections.emptyList();
-        //}
         return builders.stream().map( builder -> builder.values( node.tuples, node.getRowType() ) ).collect( Collectors.toList() );
     }
 
@@ -107,9 +102,6 @@ public abstract class BaseRouter {
 
 
     protected List<RoutedRelBuilder> handleGeneric( RelNode node, List<RoutedRelBuilder> builders ) {
-        /*if ( cancelQuery ) {
-            return Collections.emptyList();
-        }*/
         if ( node.getInputs().size() == 1 ) {
             builders.forEach(
                     builder -> builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 0 ) ) ) )
@@ -156,12 +148,10 @@ public abstract class BaseRouter {
 
                 builder = handleTableScan(
                         builder,
-                        ccp.tableId,
                         ccp.adapterUniqueName,
                         ccp.getLogicalSchemaName(),
                         ccp.getLogicalTableName(),
                         ccp.physicalSchemaName,
-                        cpp.physicalTableName,
                         cpp.partitionId );
                 // final project
                 ArrayList<RexNode> rexNodes = new ArrayList<>();
@@ -203,12 +193,10 @@ public abstract class BaseRouter {
 
                     handleTableScan(
                             builder,
-                            ccp.tableId,
                             ccp.adapterUniqueName,
                             ccp.getLogicalSchemaName(),
                             ccp.getLogicalTableName(),
                             ccp.physicalSchemaName,
-                            cpp.physicalTableName,
                             cpp.partitionId );
                     if ( first ) {
                         first = false;

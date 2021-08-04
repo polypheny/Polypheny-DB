@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.routing;
+package org.polypheny.db.routing.dto;
 
 import java.util.Collection;
 import java.util.List;
@@ -26,6 +26,8 @@ import lombok.val;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.routing.ProposedRoutingPlan;
+import org.polypheny.db.routing.Router;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.tools.RoutedRelBuilder;
 import org.polypheny.db.util.Pair;

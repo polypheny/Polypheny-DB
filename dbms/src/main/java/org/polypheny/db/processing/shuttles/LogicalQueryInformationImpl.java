@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.routing;
+package org.polypheny.db.processing.shuttles;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.val;
+import org.polypheny.db.routing.LogicalQueryInformation;
 
 public class LogicalQueryInformationImpl implements LogicalQueryInformation {
 

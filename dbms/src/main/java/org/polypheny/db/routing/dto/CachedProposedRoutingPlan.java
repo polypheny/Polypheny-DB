@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.routing;
+package org.polypheny.db.routing.dto;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.List;
@@ -24,17 +24,20 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.plan.RelOptCost;
+import org.polypheny.db.routing.ProposedRoutingPlan;
+import org.polypheny.db.routing.Router;
+import org.polypheny.db.routing.RoutingPlan;
 import org.polypheny.db.util.Pair;
 
 @Getter
 @Setter
 @Slf4j
-public class CachedProposedRoutingPlan implements RoutingPlan{
+public class CachedProposedRoutingPlan implements RoutingPlan {
     protected String queryId;
     protected String physicalQueryId;
     protected RelOptCost preCosts;
     protected Optional<Class<? extends Router>> router;
-    protected Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions; // partitionId, list<CatalogPlacementIds>
+    public Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions; // partitionId, list<CatalogPlacementIds>
 
 
     public CachedProposedRoutingPlan( ProposedRoutingPlan routingPlan, RelOptCost approximatedCosts){

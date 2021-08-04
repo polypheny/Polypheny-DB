@@ -35,10 +35,11 @@ import org.polypheny.db.tools.RoutedRelBuilder;
 import org.polypheny.db.transaction.Statement;
 
 @Slf4j
-public class IcarusRouter extends HorizontalFullPlacementQueryRouter {
+public class IcarusRouter extends FullPlacementQueryRouter {
+
 
     @Override
-    protected List<RoutedRelBuilder> handleNoneHorizontalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
+    protected List<RoutedRelBuilder> handleNonePartitioning( RelNode node, CatalogTable catalogTable, Statement statement, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
         log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
 
         val placements = selectPlacement( node, catalogTable, statement, queryInformation );
@@ -78,21 +79,21 @@ public class IcarusRouter extends HorizontalFullPlacementQueryRouter {
 
                 // find corresponding builder:
                 val builder = builders.stream().filter( b -> {
-                        val listPairs = b.getPhysicalPlacementsOfPartitions().values()
-                            .stream().flatMap( Collection::stream ).collect( Collectors.toList());
+                            val listPairs = b.getPhysicalPlacementsOfPartitions().values()
+                                    .stream().flatMap( Collection::stream ).collect( Collectors.toList() );
 
-                        val found = listPairs.stream().map( elem -> elem.left ).filter( elem -> elem == adapterId ).findFirst();
+                            val found = listPairs.stream().map( elem -> elem.left ).filter( elem -> elem == adapterId ).findFirst();
 
-                        return found.isPresent();
+                            return found.isPresent();
                         }
                 ).findAny();
 
-                if(!builder.isPresent()){
+                if ( !builder.isPresent() ) {
                     // if builder not found, adapter with id will be removed.
                     continue;
                 }
 
-                val newBuilder = RoutedRelBuilder.createCopy( statement, cluster, builder.get( ) );
+                val newBuilder = RoutedRelBuilder.createCopy( statement, cluster, builder.get() );
                 newBuilder.addPhysicalInfo( currentPlacementDistribution );
                 newBuilder.push( super.buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) );
                 newBuilders.add( newBuilder );
