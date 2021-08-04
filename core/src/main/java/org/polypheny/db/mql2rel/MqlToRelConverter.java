@@ -128,13 +128,13 @@ public class MqlToRelConverter {
 
         mappings.put( "$lt", SqlStdOperatorTable.LESS_THAN );
         mappings.put( "$gt", SqlStdOperatorTable.GREATER_THAN );
-        mappings.put( "$eq", MqlStdOperatorTable.DOC_EQ );
-        mappings.put( "$ne", SqlStdOperatorTable.NOT_EQUALS );
         mappings.put( "$lte", SqlStdOperatorTable.LESS_THAN_OR_EQUAL );
         mappings.put( "$gte", SqlStdOperatorTable.GREATER_THAN_OR_EQUAL );
 
         mathComperators.putAll( mappings );
 
+        mappings.put( "$eq", MqlStdOperatorTable.DOC_EQ );
+        mappings.put( "$ne", SqlStdOperatorTable.NOT_EQUALS );
         mappings.put( "$in", SqlStdOperatorTable.IN );
         mappings.put( "$nin", SqlStdOperatorTable.NOT_IN );
 
@@ -227,6 +227,7 @@ public class MqlToRelConverter {
     private void resetDefaults() {
         excludedId = false;
         _dataExists = true;
+        notActive = false;
     }
 
 

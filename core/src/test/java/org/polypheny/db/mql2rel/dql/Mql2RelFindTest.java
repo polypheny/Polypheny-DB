@@ -40,7 +40,6 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlJsonExistsFunction;
 
 public class Mql2RelFindTest extends Mql2RelTest {
 
@@ -555,8 +554,6 @@ public class Mql2RelFindTest extends Mql2RelTest {
     }
 
 
-
-
     @Test
     public void testMathProjection() {
         RelRoot root = translate( find( "", "\"key\": {\"$multiply\":[1,3]}" ) );
@@ -622,11 +619,16 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
 
     private void testJsonExists( RexCall condition, String key ) {
-        assertTrue( condition.op instanceof SqlJsonExistsFunction );
-        assertEquals( 1, condition.operands.size() );
+        assertEquals( SqlKind.DOC_EXISTS, condition.op.kind );
+        assertEquals( 2, condition.operands.size() );
 
-        RexCall common = assertRexCall( condition, 0 );
-        testJsonCommon( key, common );
+        assertEquals(
+                Arrays.asList( key.split( "\\." ) ),
+                assertRexCall( condition, 1 )
+                        .operands
+                        .stream()
+                        .map( e -> ((RexLiteral) e).getValueAs( String.class ) )
+                        .collect( Collectors.toList() ) );
     }
 
 
@@ -712,8 +714,19 @@ public class Mql2RelFindTest extends Mql2RelTest {
     private void testJsonValueCond( RexCall condition, String key, Object value, SqlKind kind ) {
         assertEquals( kind, condition.op.kind );
 
-        // test json value
-        testJsonValue( assertRexCall( condition, 0 ), key );
+        if ( Arrays.asList(
+                SqlKind.GREATER_THAN,
+                SqlKind.GREATER_THAN_OR_EQUAL,
+                SqlKind.LESS_THAN,
+                SqlKind.LESS_THAN_OR_EQUAL ).contains( kind ) ) {
+            assertEquals( SqlKind.CAST, condition.operands.get( 0 ).getKind() );
+
+            // test json value
+            testJsonValue( assertRexCall( assertRexCall( condition, 0 ), 0 ), key );
+        } else {
+            // test json value
+            testJsonValue( assertRexCall( condition, 0 ), key );
+        }
 
         // test initial comp value
         testCastLiteral( condition.operands.get( 1 ), value, value.getClass() );
