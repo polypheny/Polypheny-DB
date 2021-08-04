@@ -33,6 +33,7 @@ import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileStore;
+import org.polypheny.db.adapter.mongodb.MongoStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
@@ -164,7 +165,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
                         List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementByTable( adapter.getAdapterId(), tableId );
 
-                        if ( adapter instanceof FileStore ) {
+                        if ( adapter instanceof FileStore  ) {
                             final String schemaName = buildAdapterSchemaName( catalogAdapter.uniqueName, catalogSchema.name, physicalSchemaName, catalogTable.partitionProperty.partitionIds.get( 0 ) );
 
                             adapter.createNewSchema( rootSchema, schemaName );
@@ -209,10 +210,6 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
     public static String buildAdapterSchemaName( String storeName, String logicalSchema, String physicalSchema, long partitionId ) {
         return storeName + "_" + logicalSchema + "_" + physicalSchema + "_" + partitionId;
-    }
-
-    public static String buildAdapterSchemaName( String storeName, String logicalSchema, String physicalSchema ) {
-        return storeName + "_" + logicalSchema + "_" + physicalSchema;
     }
 
 

@@ -43,7 +43,7 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
-import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
+import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.transaction.Statement;
@@ -116,11 +116,17 @@ public class FrequencyMapImpl extends FrequencyMap {
         log.debug( "Finished processing access frequency of tables" );
     }
 
-    private void incrementPartitionAccess(long partitionId){
-        if ( accessCounter.containsKey( partitionId ) ){
-            accessCounter.replace( partitionId, accessCounter.get( partitionId ) + 1 );
-        }else{
-            accessCounter.put( partitionId, (long)1 );
+    private void incrementPartitionAccess( long partitionId, List<Long> partitionIds ){
+
+        //Outer of is needed to ignore frequencies from old non-existing partitionIds
+        //Which are not yet linked to the table but are still in monitoring
+        //TODO @CEDRIC or @HENNLO introduce monitoring cleanisng of datapoints
+        if ( partitionIds.contains( partitionId ) ) {
+            if ( accessCounter.containsKey( partitionId ) ) {
+                accessCounter.replace( partitionId, accessCounter.get( partitionId ) + 1 );
+            } else {
+                accessCounter.put( partitionId, (long) 1 );
+            }
         }
     }
 
@@ -259,6 +265,17 @@ public class FrequencyMapImpl extends FrequencyMap {
                     //IF this store contains both Groups HOT & COLD do nothing
                     if (hotPartitionsToCreate.size() != 0) {
                         Catalog.getInstance().getPartitionsOnDataPlacement( store.getAdapterId(), table.id );
+
+                        for ( long partitionId: hotPartitionsToCreate ){
+                            catalog.addPartitionPlacement(
+                                    store.getAdapterId(),
+                                    table.id,
+                                    partitionId,
+                                    PlacementType.AUTOMATIC,
+                                    null,
+                                    null);
+                        }
+
                         store.createTable( statement.getPrepareContext(), table, hotPartitionsToCreate );
 
                         List<CatalogColumn> catalogColumns =  new ArrayList<>();
@@ -296,6 +313,17 @@ public class FrequencyMapImpl extends FrequencyMap {
                     List<Long> coldPartitionsToCreate = filterList( catalogAdapter.id, table.id, partitionsFromHotToCold );
                     if (coldPartitionsToCreate.size() != 0) {
                         Catalog.getInstance().getPartitionsOnDataPlacement( store.getAdapterId(), table.id );
+
+
+                        for ( long partitionId: coldPartitionsToCreate ){
+                            catalog.addPartitionPlacement(
+                                    store.getAdapterId(),
+                                    table.id,
+                                    partitionId,
+                                    PlacementType.AUTOMATIC,
+                                    null,
+                                    null);
+                        }
                         store.createTable( statement.getPrepareContext(), table, coldPartitionsToCreate );
 
                         List<CatalogColumn> catalogColumns =  new ArrayList<>();
@@ -364,30 +392,31 @@ public class FrequencyMapImpl extends FrequencyMap {
         Timestamp queryStart = new Timestamp(  invocationTimestamp - ((TemperaturePartitionProperty) table.partitionProperty).getFrequencyInterval()*1000 );
 
         accessCounter = new HashMap<>();
-        table.partitionProperty.partitionIds.forEach( p -> accessCounter.put( p, (long) 0 ) );
+        List<Long> tempPartitionIds = table.partitionProperty.partitionIds.stream().collect(toCollection(ArrayList::new));;
+        tempPartitionIds.forEach( p -> accessCounter.put( p, (long) 0 ) );
 
         switch ( ((TemperaturePartitionProperty) table.partitionProperty).getPartitionCostIndication() ){
             case ALL:
-                for ( QueryDataPointImpl queryDataPoint: MonitoringServiceProvider.getInstance().getDataPointsAfter( QueryDataPointImpl.class, queryStart ) ) {
-                    queryDataPoint.getAccessedPartitions().keySet().forEach( p -> incrementPartitionAccess( p ) );
+                for ( QueryDataPoint queryDataPoint: MonitoringServiceProvider.getInstance().getDataPointsAfter( QueryDataPoint.class, queryStart ) ) {
+                    queryDataPoint.getAccessedPartitions().forEach( p -> incrementPartitionAccess( p, tempPartitionIds) );
                 }
                 for ( DMLDataPoint dmlDataPoint: MonitoringServiceProvider.getInstance().getDataPointsAfter( DMLDataPoint.class, queryStart ) ) {
-                    dmlDataPoint.getAccessedPartitions().keySet().forEach( p -> incrementPartitionAccess( p ) );
+                    dmlDataPoint.getAccessedPartitions().forEach( p -> incrementPartitionAccess( p, tempPartitionIds) );
                 }
 
                 break;
 
             case READ:
-                List<QueryDataPointImpl> readAccesses= MonitoringServiceProvider.getInstance().getDataPointsAfter( QueryDataPointImpl.class, queryStart );
-                for ( QueryDataPointImpl queryDataPoint: readAccesses ) {
-                    queryDataPoint.getAccessedPartitions().keySet().forEach( p -> incrementPartitionAccess( p ) );
+                List<QueryDataPoint> readAccesses= MonitoringServiceProvider.getInstance().getDataPointsAfter( QueryDataPoint.class, queryStart );
+                for ( QueryDataPoint queryDataPoint: readAccesses ) {
+                    queryDataPoint.getAccessedPartitions().forEach( p -> incrementPartitionAccess( p, tempPartitionIds) );
                 }
                 break;
 
             case WRITE:
                 List<DMLDataPoint> writeAccesses= MonitoringServiceProvider.getInstance().getDataPointsAfter( DMLDataPoint.class, queryStart );
                 for ( DMLDataPoint dmlDataPoint: writeAccesses ) {
-                    dmlDataPoint.getAccessedPartitions().keySet().forEach( p -> incrementPartitionAccess( p ) );
+                    dmlDataPoint.getAccessedPartitions().forEach( p -> incrementPartitionAccess( p, tempPartitionIds) );
                 }
         }
 

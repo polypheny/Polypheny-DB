@@ -749,6 +749,19 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
+
+
+        //Need to create partitionPlacements first in order to trigger schema creation on PolySchemaBuilder
+        for ( long partitionId : partitionIds ) {
+            catalog.addPartitionPlacement(
+                    dataStore.getAdapterId(),
+                    catalogTable.id,
+                    partitionId,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null);
+        }
+
         // Create table on store
         dataStore.createTable( statement.getPrepareContext(), catalogTable, catalogTable.partitionProperty.partitionIds);
         // Copy data to the newly added placements
@@ -1282,6 +1295,17 @@ public class DdlManagerImpl extends DdlManager {
         // Copy the data to the newly added column placements
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
         if ( newPartitions.size() > 0 ) {
+            //Need to create partitionPlacements first in order to trigger schema creation on PolySchemaBuilder
+            for ( long partitionId : newPartitions ) {
+                catalog.addPartitionPlacement(
+                        storeInstance.getAdapterId(),
+                        catalogTable.id,
+                        partitionId,
+                        PlacementType.AUTOMATIC,
+                        null,
+                        null);
+            }
+
             storeInstance.createTable( statement.getPrepareContext(), catalogTable, newPartitions );
 
 
@@ -1584,6 +1608,18 @@ public class DdlManagerImpl extends DdlManager {
             CatalogTable catalogTable = catalog.getTable( tableId );
 
             for ( DataStore store : stores ) {
+
+
+
+                catalog.addPartitionPlacement(
+                        store.getAdapterId(),
+                        catalogTable.id,
+                        catalogTable.partitionProperty.partitionIds.get( 0 ),
+                        PlacementType.AUTOMATIC,
+                        null,
+                        null);
+
+
                 store.createTable( statement.getPrepareContext(), catalogTable, catalogTable.partitionProperty.partitionIds);
             }
 
@@ -1821,6 +1857,17 @@ public class DdlManagerImpl extends DdlManager {
 
         for ( DataStore store : stores ) {
 
+            for ( long partitionId : partitionIds ) {
+                catalog.addPartitionPlacement(
+                        store.getAdapterId(),
+                        partitionedTable.id,
+                        partitionId,
+                        PlacementType.AUTOMATIC,
+                        null,
+                        null);
+            }
+
+
             //First create new tables
             store.createTable( statement.getPrepareContext(), partitionedTable, partitionedTable.partitionProperty.partitionIds);
 
@@ -1889,6 +1936,17 @@ public class DdlManagerImpl extends DdlManager {
 
             List<Long> partitionIdsOnStore = new ArrayList<>();
             catalog.getPartitionPlacementByTable( store.getAdapterId() ,partitionedTable.id ).forEach( p -> partitionIdsOnStore.add( p.partitionId ) );
+
+            //Need to create partitionPlacements first in order to trigger schema creation on PolySchemaBuilder
+            for ( long partitionId : mergedTable.partitionProperty.partitionIds ) {
+                catalog.addPartitionPlacement(
+                        store.getAdapterId(),
+                        mergedTable.id,
+                        partitionId,
+                        PlacementType.AUTOMATIC,
+                        null,
+                        null);
+            }
 
             //First create new tables
             store.createTable( statement.getPrepareContext(), mergedTable, mergedTable.partitionProperty.partitionIds);

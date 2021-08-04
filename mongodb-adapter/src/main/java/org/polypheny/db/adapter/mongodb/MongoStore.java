@@ -230,7 +230,12 @@ public class MongoStore extends DataStore {
             String physicalTableName = getPhysicalTableName(catalogTable.id,partitionId);
             this.currentSchema.database.createCollection( physicalTableName );
 
-            catalog.addPartitionPlacement( getAdapterId(), catalogTable.id, partitionIds.get( 0 ), PlacementType.AUTOMATIC, catalogTable.getSchemaName(), physicalTableName );
+            catalog.updatePartitionPlacementPhysicalNames(
+                    getAdapterId(),
+                    partitionId,
+                    catalogTable.getSchemaName(),
+                    physicalTableName);
+
             for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ) ) {
                 catalog.updateColumnPlacementPhysicalNames(
                         getAdapterId(),

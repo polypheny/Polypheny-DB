@@ -1297,14 +1297,13 @@ public abstract class Catalog {
     public abstract void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName);
 
     /**
-     * Updates the partition placements on the store.
-     *
-     * @param adapterId The adapter on which the table should be placed on
-     * @param tableId
-
+     * Change physical names of a partition placement.
+     *  @param adapterId The id of the adapter
+     * @param partitionId The id of the partition
+     * @param physicalSchemaName The physical schema name
+     * @param physicalTableName The physical table name
      */
-    public abstract void updatePartitionPlacements( int adapterId, long tableId );
-
+    public abstract void updatePartitionPlacementPhysicalNames( int adapterId, long partitionId, String physicalSchemaName, String physicalTableName) ;
 
     /**
      * Delets a placement for a partition.

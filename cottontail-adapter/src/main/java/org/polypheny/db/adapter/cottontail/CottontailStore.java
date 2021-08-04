@@ -184,6 +184,10 @@ public class CottontailStore extends DataStore {
         List<String> physicalColumnNames = new LinkedList<>();
         String physicalSchemaName = partitionPlacement.physicalSchemaName;
         String physicalTableName = partitionPlacement.physicalTableName;
+
+        if ( physicalSchemaName == null  ) physicalSchemaName = this.dbName;
+        if ( physicalTableName == null  ) physicalTableName = CottontailNameUtil.createPhysicalTableName( combinedTable.id, partitionPlacement.partitionId );
+
         for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
             CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
 
@@ -232,7 +236,11 @@ public class CottontailStore extends DataStore {
         for ( long partitionId : partitionIds ) {
 
             final String physicalTableName = CottontailNameUtil.createPhysicalTableName( combinedTable.id, partitionId );
-            catalog.addPartitionPlacement( getAdapterId(), combinedTable.id, partitionIds.get( 0 ), PlacementType.AUTOMATIC, combinedTable.getSchemaName(), physicalTableName );
+            catalog.updatePartitionPlacementPhysicalNames(
+                    getAdapterId(),
+                    partitionId,
+                    combinedTable.getSchemaName(),
+                    physicalTableName);
 
             final EntityName tableEntity = EntityName.newBuilder()
                     .setSchema( this.currentSchema.getCottontailSchema() )
