@@ -30,7 +30,6 @@ public class DmlEventAnalyzer {
     public static DmlDataPoint analyze( DmlEvent dmlEvent ) {
         DmlDataPoint metric = DmlDataPoint
                 .builder()
-                .description( dmlEvent.getDescription() )
                 .Id( dmlEvent.getId() )
                 .fieldNames( dmlEvent.getFieldNames() )
                 .executionTime( dmlEvent.getExecutionTime() )
@@ -38,11 +37,11 @@ public class DmlEventAnalyzer {
                 .isSubQuery( dmlEvent.isSubQuery() )
                 .recordedTimestamp( dmlEvent.getRecordedTimestamp() )
                 .accessedPartitions( dmlEvent.getAccessedPartitions() )
-                .queryId( dmlEvent.getQueryId() )
+                .queryId( dmlEvent.getLogicalQueryInformation().getQueryId() )
                 .monitoringType( "DML" )
                 .physicalQueryId( dmlEvent.getPhysicalQueryId() )
                 .build();
-        metric.getTables().addAll( dmlEvent.getAnalyzeRelShuttle().getTables() );
+        metric.getTables().addAll( dmlEvent.getLogicalQueryInformation().getTables() );
 
         if ( dmlEvent.isAnalyze() ) {
             processDurationInfo( dmlEvent, metric );

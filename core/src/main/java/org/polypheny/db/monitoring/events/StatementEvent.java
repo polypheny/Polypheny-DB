@@ -23,7 +23,7 @@ import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.processing.LogicalRelQueryAnalyzeShuttle;
+import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -36,8 +36,6 @@ public abstract class StatementEvent extends BaseEvent {
 
     protected PolyphenyDbSignature signature;
     protected Statement statement;
-    protected List<List<Object>> rows;
-    protected String description;
     protected List<String> fieldNames;
     protected long executionTime;
     protected int rowCount;
@@ -45,9 +43,8 @@ public abstract class StatementEvent extends BaseEvent {
     protected boolean isSubQuery;
     protected String durations;
     protected Map<Long, List<Long>> accessedPartitions;
-    protected LogicalRelQueryAnalyzeShuttle analyzeRelShuttle;
+    protected LogicalQueryInformation logicalQueryInformation;
     protected String relCompareString;
-    protected String queryId;
     protected String physicalQueryId;
 
 

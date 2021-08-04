@@ -29,7 +29,6 @@ public class QueryEventAnalyzer {
     public static QueryDataPointImpl analyze( QueryEvent queryEvent ) {
         QueryDataPointImpl metric = QueryDataPointImpl
                 .builder()
-                .description( queryEvent.getDescription() )
                 .Id( queryEvent.getId() )
                 .fieldNames( queryEvent.getFieldNames() )
                 .executionTime( queryEvent.getExecutionTime() )
@@ -38,11 +37,11 @@ public class QueryEventAnalyzer {
                 .recordedTimestamp( queryEvent.getRecordedTimestamp() )
                 .relCompareString( queryEvent.getRelCompareString() )
                 .accessedPartitions( queryEvent.getAccessedPartitions() )
-                .queryId( queryEvent.getQueryId() )
+                .queryId( queryEvent.getLogicalQueryInformation().getQueryId() )
                 .monitoringType( "SELECT" )
                 .physicalQueryId( queryEvent.getPhysicalQueryId() )
                 .build();
-        metric.getTables().addAll( queryEvent.getAnalyzeRelShuttle().getTables() );
+        metric.getTables().addAll( queryEvent.getLogicalQueryInformation().getTables() );
 
         if ( queryEvent.isAnalyze() ) {
             processDurationInfo( queryEvent, metric );

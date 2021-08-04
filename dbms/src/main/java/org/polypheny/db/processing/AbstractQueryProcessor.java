@@ -102,7 +102,6 @@ import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalValues;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
@@ -183,7 +182,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     @Override
     public void executionTime( String reference, long nanoTime ) {
         val event = (StatementEvent) statement.getTransaction().getMonitoringEvent();
-        if ( reference.equals( event.getQueryId() ) ) {
+        if ( reference.equals( event.getLogicalQueryInformation().getQueryId() ) ) {
             event.setExecutionTime( nanoTime );
         }
     }
@@ -1224,11 +1223,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         String queryId = analyzeRelShuttle.getQueryName() + accessedPartitionMap;
 
-        this.prepareMonitoring( statement, logicalRoot, queryId, isAnalyze, isSubquery );
+        val queryInformation = new LogicalQueryInformationImpl( queryId, accessedPartitionMap, analyzeRelShuttle.availableColumns, analyzeRelShuttle.availableColumnsWithTable, analyzeRelShuttle.getUsedColumns(), analyzeRelShuttle.getTables() );
+        this.prepareMonitoring( statement, logicalRoot, queryId, isAnalyze, isSubquery, queryInformation );
 
-        val routingInformation = new LogicalQueryInformationImpl( queryId, accessedPartitionMap, analyzeRelShuttle.availableColumns, analyzeRelShuttle.availableColumnsWithTable, analyzeRelShuttle.getUsedColumns() );
-
-        return routingInformation;
+        return queryInformation;
     }
 
 
@@ -1283,7 +1281,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private void prepareMonitoring( Statement statement, RelRoot logicalRoot, String queryId, boolean isAnalyze, boolean isSubquery ) {
+    private void prepareMonitoring( Statement statement, RelRoot logicalRoot, String queryId, boolean isAnalyze, boolean isSubquery, LogicalQueryInformation queryInformation) {
 
         // initialize Monitoring
         if ( statement.getTransaction().getMonitoringEvent() == null ) {
@@ -1300,7 +1298,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             event.setAnalyze( isAnalyze );
             event.setSubQuery( isSubquery );
-            event.setQueryId( queryId );
+            event.setLogicalQueryInformation( queryInformation );
             statement.getTransaction().setMonitoringEvent( event );
         }
     }
@@ -1313,7 +1311,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             eventData.setRelCompareString( selectedPlan.getRoutedRoot().rel.relCompareString() );
             if ( selectedPlan.getOptionalPhysicalQueryId().isPresent() ) {
                 eventData.setPhysicalQueryId( selectedPlan.getOptionalPhysicalQueryId().get() );
-                eventData.setRowCount( (int) selectedPlan.getRoutedRoot().rel.estimateRowCount( RelMetadataQuery.instance() ) );
+                eventData.setRowCount( (int) selectedPlan.getRoutedRoot().rel.estimateRowCount( selectedPlan.getRoutedRoot().rel.getCluster().getMetadataQuery() ) );
             }
 
             MonitoringServiceProvider.getInstance().monitorEvent( eventData );

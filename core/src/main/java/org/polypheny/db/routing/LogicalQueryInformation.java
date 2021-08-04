@@ -27,5 +27,6 @@ public interface LogicalQueryInformation {
     List<Long> getUsedColumnsPerTable(Long tableId);
     Map<Long, String> getUsedColumns();
     String getQueryId();
+    List<String> getTables();
 
 }

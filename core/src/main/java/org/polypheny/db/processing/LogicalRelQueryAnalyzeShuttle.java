@@ -17,6 +17,7 @@
 package org.polypheny.db.processing;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -67,6 +68,10 @@ public class LogicalRelQueryAnalyzeShuttle extends RelShuttleImpl {
     protected final List<String> tables = new ArrayList<>();
 
     public Map<Long, String> getUsedColumns() {
+        if(this.availableColumns.isEmpty()){
+            return Collections.emptyMap();
+        }
+
         val availableColumnNames = new ArrayList<String>(this.availableColumns.values());
         val availableColumnKeys = new ArrayList<Long>(this.availableColumns.keySet());
 
