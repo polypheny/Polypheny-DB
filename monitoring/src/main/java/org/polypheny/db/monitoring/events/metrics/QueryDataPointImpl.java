@@ -69,6 +69,3 @@ public class QueryDataPointImpl implements QueryDataPoint, Serializable {
     }
 
 }
-
-
-

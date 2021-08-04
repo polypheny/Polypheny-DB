@@ -38,6 +38,7 @@ import org.polypheny.db.util.background.BackgroundTask;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
 
+
 /**
  * MonitoringQueue implementation which stores the monitoring jobs in a
  * concurrentQueue and will process them with a background worker task.
@@ -48,13 +49,13 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     // region private fields
 
     /**
-     * monitoring queue which will queue all the incoming jobs.
+     * Monitoring queue which will queue all the incoming jobs.
      */
     private final Queue<MonitoringEvent> monitoringJobQueue = new ConcurrentLinkedQueue<>();
+
     private final Set<UUID> queueIds = Sets.newConcurrentHashSet();
     private final Lock processingQueueLock = new ReentrantLock();
     private final MonitoringRepository repository;
-
 
     private String backgroundTaskId;
 
@@ -117,7 +118,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     /**
      * Display current number of elements in queue
      *
-     * @return Current numbe of elements in Queue
+     * @return Current number of elements in Queue
      */
     @Override
     public long getNumberOfElementsInQueue() {
@@ -173,7 +174,9 @@ public class MonitoringQueueImpl implements MonitoringQueue {
             // while there are jobs to consume:
             int countEvents = 0;
             while ( (event = this.getNextJob()).isPresent() && countEvents < RuntimeConfig.QUEUE_PROCESSING_ELEMENTS.getInteger() ) {
-                log.debug( "get new monitoring job" + event.get().getId().toString() );
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "get new monitoring job {}", event.get().getId().toString() );
+                }
                 queueIds.remove( event.get().getId() );
 
                 // returns list of metrics which was produced by this particular event

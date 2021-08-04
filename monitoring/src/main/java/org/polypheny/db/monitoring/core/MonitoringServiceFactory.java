@@ -22,23 +22,25 @@ import org.polypheny.db.monitoring.persistence.MapDbRepository;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUiImpl;
 
+
 @Slf4j
 public class MonitoringServiceFactory {
 
-    public static MonitoringServiceImpl CreateMonitoringService() {
-
-        // create mapDB repository
+    public static MonitoringServiceImpl createMonitoringService() {
+        // Create mapDB repository
         MapDbRepository repo = new MapDbRepository();
-        // initialize the mapDB repo and open connection
+
+        // Initialize the mapDB repo and open connection
         repo.initialize();
 
-        // create monitoring service with dependencies
+        // Create monitoring service with dependencies
         MonitoringQueue queueWriteService = new MonitoringQueueImpl( repo );
         MonitoringServiceUi uiService = new MonitoringServiceUiImpl( repo, queueWriteService );
         uiService.registerDataPointForUi( QueryDataPointImpl.class );
 
-        // initialize the monitoringService
+        // Initialize the monitoringService
         MonitoringServiceImpl monitoringService = new MonitoringServiceImpl( queueWriteService, repo, uiService );
+
         return monitoringService;
     }
 

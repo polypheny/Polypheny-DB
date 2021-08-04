@@ -22,6 +22,7 @@ import lombok.NonNull;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.QueryDataPoint;
 
+
 /**
  * Interface for writing monitoring jobs to repository.
  */

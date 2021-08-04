@@ -20,15 +20,15 @@ package org.polypheny.db.monitoring.events.analyzer;
 import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.InformationDuration;
-import org.polypheny.db.monitoring.events.DMLEvent;
-import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
+import org.polypheny.db.monitoring.events.DmlEvent;
+import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
+
 
 @Slf4j
-public class DMLEventAnalyzer {
-    // TODO: Bis jetzt sind die Klassen mehr oder weniger identisch. Ist das einfach vorbereitet für später oder wie?
+public class DmlEventAnalyzer {
 
-    public static DMLDataPoint analyze( DMLEvent dmlEvent ) {
-        DMLDataPoint metric = DMLDataPoint
+    public static DmlDataPoint analyze( DmlEvent dmlEvent ) {
+        DmlDataPoint metric = DmlDataPoint
                 .builder()
                 .description( dmlEvent.getDescription() )
                 .Id( dmlEvent.getId() )
@@ -36,7 +36,7 @@ public class DMLEventAnalyzer {
                 .executionTime( dmlEvent.getExecutionTime() )
                 .rowCount( dmlEvent.getRowCount() )
                 .isSubQuery( dmlEvent.isSubQuery() )
-                .recordedTimestamp( dmlEvent.getRecordedTimestamp()  )
+                .recordedTimestamp( dmlEvent.getRecordedTimestamp() )
                 .accessedPartitions( dmlEvent.getAccessedPartitions() )
                 .queryId( dmlEvent.getQueryId() )
                 .monitoringType( "DML" )
@@ -52,7 +52,7 @@ public class DMLEventAnalyzer {
     }
 
 
-    private static void processDurationInfo( DMLEvent dmlEvent, DMLDataPoint metric ) {
+    private static void processDurationInfo( DmlEvent dmlEvent, DmlDataPoint metric ) {
         try {
             InformationDuration duration = new Gson().fromJson( dmlEvent.getDurations(), InformationDuration.class );
             getDurationInfo( metric, "Plan Caching", duration );
@@ -70,12 +70,12 @@ public class DMLEventAnalyzer {
     }
 
 
-    private static void getDurationInfo( DMLDataPoint dmlMetric, String durationName, InformationDuration duration ) {
+    private static void getDurationInfo( DmlDataPoint dmlMetric, String durationName, InformationDuration duration ) {
         try {
             long time = duration.getDuration( durationName );
             dmlMetric.getDataElements().put( durationName, time );
         } catch ( Exception e ) {
-            log.debug( "could no find duration:" + durationName );
+            log.debug( "could no find duration:{}", durationName );
         }
     }
 

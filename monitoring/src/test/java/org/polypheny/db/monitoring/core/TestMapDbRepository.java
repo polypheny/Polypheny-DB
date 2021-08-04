@@ -20,6 +20,7 @@ import java.io.File;
 import org.polypheny.db.monitoring.persistence.MapDbRepository;
 import org.polypheny.db.util.FileSystemManager;
 
+
 public class TestMapDbRepository extends MapDbRepository {
 
     private static final String FILE_PATH = "testDb";
@@ -29,12 +30,13 @@ public class TestMapDbRepository extends MapDbRepository {
     @Override
     public void initialize() {
         this.reset();
-        super.initialize(FILE_PATH, FOLDER_NAME);
+        super.initialize( FILE_PATH, FOLDER_NAME );
     }
 
 
-    private void reset(){
+    private void reset() {
         File folder = FileSystemManager.getInstance().registerNewFolder( FOLDER_NAME );
         new File( folder, FILE_PATH ).delete();
     }
+
 }

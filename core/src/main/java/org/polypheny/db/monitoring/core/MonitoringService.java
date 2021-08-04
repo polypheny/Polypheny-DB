@@ -22,6 +22,7 @@ import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.events.QueryDataPoint;
 
+
 /**
  * Main interface for working with the MonitoringService environment. Jobs can be registered, monitored
  * and subscriber can the registered based on MonitoringEventData
@@ -67,4 +68,3 @@ public interface MonitoringService {
     List<QueryDataPoint> getQueryDataPoints( String queryClassString );
 
 }
-

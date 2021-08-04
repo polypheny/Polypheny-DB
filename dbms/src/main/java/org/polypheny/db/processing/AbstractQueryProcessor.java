@@ -68,7 +68,7 @@ import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
-import org.polypheny.db.monitoring.events.DMLEvent;
+import org.polypheny.db.monitoring.events.DmlEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.partition.PartitionManagerFactory;
@@ -1289,7 +1289,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         if ( statement.getTransaction().getMonitoringEvent() == null ) {
             StatementEvent event;
             if ( logicalRoot.kind.belongsTo( SqlKind.DML ) ) {
-                event = new DMLEvent();
+                event = new DmlEvent();
 
             } else if ( logicalRoot.kind.belongsTo( SqlKind.QUERY ) ) {
                 event = new QueryEvent();

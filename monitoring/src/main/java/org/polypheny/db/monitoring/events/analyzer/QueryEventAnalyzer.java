@@ -22,6 +22,7 @@ import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 
+
 @Slf4j
 public class QueryEventAnalyzer {
 
@@ -75,9 +76,8 @@ public class QueryEventAnalyzer {
             long time = duration.getDuration( durationName );
             queryMetric.getDataElements().put( durationName, time );
         } catch ( Exception e ) {
-            log.debug( "could no find duration:" + durationName );
+            log.debug( "could no find duration: {}", durationName );
         }
     }
-
 
 }

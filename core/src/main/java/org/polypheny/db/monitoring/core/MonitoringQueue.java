@@ -38,12 +38,12 @@ public interface MonitoringQueue {
     /**
      * Display current number of elements in queue
      *
-     * @return Current numbe of elements in Queue
+     * @return Current number of elements in Queue
      */
     long getNumberOfElementsInQueue();
 
     List<HashMap<String, String>> getInformationOnElementsInQueue();
 
-    long getNumberOfProcessedEvents( );
+    long getNumberOfProcessedEvents();
 
 }

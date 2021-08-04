@@ -29,6 +29,7 @@ import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 
+
 class MonitoringServiceImplTest {
 
     @Test

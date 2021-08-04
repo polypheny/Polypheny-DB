@@ -99,7 +99,7 @@ public enum RuntimeConfig {
             "Time after which queries are aborted. 0 means infinite.",
             0,
             ConfigType.INTEGER,
-            "runtimExecutionGroup" ),
+            "runtimeExecutionGroup" ),
 
     DEFAULT_COLLATION( "runtime/defaultCollation",
             "Collation to use if no collation is specified",
@@ -145,7 +145,7 @@ public enum RuntimeConfig {
             "Use two-phase commit protocol for committing queries on data stores.",
             false,
             ConfigType.BOOLEAN,
-            "runtimExecutionGroup" ),
+            "runtimeExecutionGroup" ),
 
     DYNAMIC_QUERYING( "statistics/useDynamicQuerying",
             "Use statistics for query assistance.",
@@ -335,7 +335,7 @@ public enum RuntimeConfig {
             "Size (in Bytes) up to which media files are cached in-memory instead of creating a temporary file. Needs to be >= 0 and smaller than Integer.MAX_SIZE. Setting to zero disables caching of media files.",
             0,
             ConfigType.INTEGER,
-            "runtimExecutionGroup" ),
+            "runtimeExecutionGroup" ),
 
 
     QUEUE_PROCESSING_INTERVAL( "runtime/queueProcessingInterval",
@@ -399,10 +399,10 @@ public enum RuntimeConfig {
                 "runtimePage",
                 "Runtime Settings",
                 "Settings influencing the runtime behavior of the whole system." );
-        final WebUiGroup runtimExecutionGroup = new WebUiGroup( "runtimExecutionGroup", runtimePage.getId() );
-        runtimExecutionGroup.withTitle( "Query Execution" );
+        final WebUiGroup runtimeExecutionGroup = new WebUiGroup( "runtimeExecutionGroup", runtimePage.getId() );
+        runtimeExecutionGroup.withTitle( "Query Execution" );
         configManager.registerWebUiPage( runtimePage );
-        configManager.registerWebUiGroup( runtimExecutionGroup );
+        configManager.registerWebUiGroup( runtimeExecutionGroup );
 
         // Statistics and dynamic querying settings
         final WebUiPage queryStatisticsPage = new WebUiPage(
@@ -610,9 +610,11 @@ public enum RuntimeConfig {
         return configManager.getConfig( key ).getEnum();
     }
 
-    public void setEnum(Enum value) {
-        configManager.getConfig( key ).setEnum(value);
+
+    public void setEnum( Enum value ) {
+        configManager.getConfig( key ).setEnum( value );
     }
+
 
     public int getInteger() {
         return configManager.getConfig( key ).getInt();

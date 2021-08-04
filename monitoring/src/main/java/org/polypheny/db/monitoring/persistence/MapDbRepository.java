@@ -36,6 +36,7 @@ import org.polypheny.db.monitoring.events.QueryDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 import org.polypheny.db.util.FileSystemManager;
 
+
 @Slf4j
 public class MapDbRepository implements MonitoringRepository {
 
@@ -166,5 +167,4 @@ public class MapDbRepository implements MonitoringRepository {
     }
 
     // endregion
-
 }

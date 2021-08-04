@@ -31,6 +31,7 @@ import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
+
 class MonitoringQueueImplIntegrationTest {
 
     @Test
@@ -56,7 +57,7 @@ class MonitoringQueueImplIntegrationTest {
 
         // act
         val events = createQueryEvent( 15 );
-        events.forEach( event -> sut.monitorEvent( event ) );
+        events.forEach( sut::monitorEvent );
 
         try {
             Thread.sleep( 2000L );
@@ -75,7 +76,6 @@ class MonitoringQueueImplIntegrationTest {
         } catch ( Throwable throwable ) {
             throwable.printStackTrace();
         }
-
 
     }
 

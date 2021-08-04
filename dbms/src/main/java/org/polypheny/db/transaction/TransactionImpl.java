@@ -80,7 +80,6 @@ public class TransactionImpl implements Transaction, Comparable {
 
     @Getter
     private final boolean analyze;
-    private final AtomicLong statementCounter = new AtomicLong();
     private final List<Statement> statements = new ArrayList<>();
     private final List<String> changedTables = new ArrayList<>();
     @Getter
@@ -277,7 +276,6 @@ public class TransactionImpl implements Transaction, Comparable {
     }
 
     // For locking
-
 
     Set<Lock> getLocks() {
         return lockList;

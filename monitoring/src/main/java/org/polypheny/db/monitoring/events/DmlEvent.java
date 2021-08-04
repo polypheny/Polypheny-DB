@@ -23,26 +23,27 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.monitoring.events.analyzer.DMLEventAnalyzer;
-import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
+import org.polypheny.db.monitoring.events.analyzer.DmlEventAnalyzer;
+import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
+
 
 
 @Getter
 @Setter
 @Slf4j
-public class DMLEvent extends StatementEvent {
+public class DmlEvent extends StatementEvent {
 
 
     @Override
     public <T extends MonitoringDataPoint> List<Class<T>> getMetrics() {
-        return Arrays.asList( (Class<T>) DMLDataPoint.class );
+        return Arrays.asList( (Class<T>) DmlDataPoint.class );
     }
 
 
     @Override
     public List<MonitoringDataPoint> analyze() {
         try {
-            return Arrays.asList( DMLEventAnalyzer.analyze( this ) );
+            return Arrays.asList( DmlEventAnalyzer.analyze( this ) );
         } catch ( Exception e ) {
             log.error( "Could not analyze dml event:" );
             return Collections.emptyList();
