@@ -26,6 +26,7 @@ dependencies {
     implementation project(":catalog")
     implementation project(":webui")
     implementation project(":jdbc-interface")
+    implementation project(":mongoql-interface")
     implementation project(":rest-interface")
     implementation project(":statistic")
     implementation project(":explore-by-example")

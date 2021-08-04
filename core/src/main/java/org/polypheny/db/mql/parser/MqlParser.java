@@ -38,7 +38,6 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.Objects;
 import org.polypheny.db.mql.MqlNode;
-import org.polypheny.db.mql.parser.impl.MqlParserImpl;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.sql.SqlSelect;
 import org.polypheny.db.sql.parser.SqlParseException;
@@ -171,7 +170,7 @@ public class MqlParser {
      */
     public static class ConfigBuilder {
 
-        private MqlParserImplFactory parserFactory = MqlParserImpl.FACTORY;
+        private MqlParserImplFactory parserFactory = org.polypheny.db.mql.mql.parser.impl.MqlParserImpl.FACTORY;
 
 
         private ConfigBuilder() {

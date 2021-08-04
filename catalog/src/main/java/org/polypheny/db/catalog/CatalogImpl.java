@@ -655,6 +655,12 @@ public class CatalogImpl extends Catalog {
             restSettings.put( "port", "8089" );
             restSettings.put( "maxUploadSizeMb", "10000" );
             addQueryInterface( "rest", "org.polypheny.db.restapi.HttpRestServer", restSettings );
+
+            // Add REST interface
+            Map<String, String> mongoSettings = new HashMap<>();
+            mongoSettings.put( "port", "2717" );
+            mongoSettings.put( "maxUploadSizeMb", "10000" );
+            addQueryInterface( "mongo", "org.polypheny.db.mongoql.MongoQlServer", mongoSettings );
         }
 
         try {

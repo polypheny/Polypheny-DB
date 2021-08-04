@@ -17,18 +17,27 @@
 package org.polypheny.db;
 
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import kong.unirest.HttpRequest;
+import kong.unirest.HttpResponse;
+import kong.unirest.Unirest;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
@@ -37,6 +46,7 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.mongoql.model.Result;
 import org.polypheny.db.runtime.SqlFunctions;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
@@ -207,6 +217,76 @@ public class TestHelper {
             }
         }
         Assert.assertEquals( "Wrong number of rows in the result set", expected.size(), i );
+    }
+
+
+    public static class MongoConnection implements AutoCloseable {
+
+        static Gson gson = new Gson();
+
+
+        public MongoConnection() {
+        }
+
+
+        public static boolean checkResultSet( List<Result> results, List<Object[]> expected ) {
+
+            assertEquals( expected.size(), results.size() );
+            int pos = 0;
+            for ( Result result : results ) {
+                int j = 0;
+                for ( String[] data : result.getData() ) {
+                    int i = 0;
+                    for ( String entry : data ) {
+                        if ( !result.getHeader()[i].name.equals( "_id" ) ) {
+                            assertEquals( expected.get( pos )[i], entry );
+                        }
+                        i++;
+                    }
+                    j++;
+                }
+
+                pos++;
+            }
+
+            return true;
+        }
+
+
+        @Override
+        public void close() throws Exception {
+            // empty on purpose
+        }
+
+
+        private HttpRequest<?> buildQuery( String mql ) {
+            JsonObject data = new JsonObject();
+            data.addProperty( "query", mql );
+            data.addProperty( "database", "test" );
+
+            return Unirest.post( "{protocol}://{host}:{port}/mongo" )
+                    .header( "Content-Type", "application/json" )
+                    .body( data );
+
+        }
+
+
+        public HttpResponse<String> execute( String mql ) {
+            HttpRequest<?> request = buildQuery( mql );
+            request.basicAuth( "pa", "" );
+            request.routeParam( "protocol", "http" );
+            request.routeParam( "host", "127.0.0.1" );
+            request.routeParam( "port", "2717" );
+            return request.asString();
+        }
+
+
+        public List<Result> getBody( HttpResponse<String> res ) {
+            Type type = new TypeToken<ArrayList<Result>>() {
+            }.getType();
+            return gson.fromJson( res.getBody(), type );
+        }
+
     }
 
 

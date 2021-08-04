@@ -10,11 +10,11 @@
 data: {
     parser: {
         # Generated parser implementation package and class name.
-        package: "org.polypheny.db.mql.parser.impl",
+        package: "org.polypheny.db.mql.mql.parser.impl",
         class: "MqlParserImpl",
 
         # List of additional classes and packages to import.
-        # Example. "org.polypheny.db.mql.*", "java.util.List".
+        # Example. "org.polypheny.db.mql.mql.*", "java.util.List".
         imports: [
         ]
 
