@@ -67,7 +67,6 @@ import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelTrait;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.AbstractRelNode;
 import org.polypheny.db.rel.InvalidRelException;
 import org.polypheny.db.rel.RelCollations;
@@ -672,7 +671,7 @@ public class MongoRules {
         @Override
         public void implement( Implementor implementor ) {
             implementor.setDML( true );
-            Table preTable = ((RelOptTableImpl) table).getTable();
+            Table preTable = table.getTable();
 
             if ( !(preTable instanceof MongoTable) ) {
                 throw new RuntimeException( "There seems to be a problem with the correct costs for one of stores." );

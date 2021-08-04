@@ -112,12 +112,17 @@ public class MqlToRelConverter {
     private static final HashMap<String, SqlOperator> singleMathOperators;
 
 
+    private static final HashMap<String, SqlOperator> mathComperators;
+
+
     static {
         gates = new HashMap<>();
         gates.put( "$and", Collections.singletonList( SqlStdOperatorTable.AND ) );
         gates.put( "$or", Collections.singletonList( SqlStdOperatorTable.OR ) );
         gates.put( "$nor", Arrays.asList( SqlStdOperatorTable.AND, SqlStdOperatorTable.NOT ) );
         gates.put( "$not", Collections.singletonList( SqlStdOperatorTable.NOT ) );
+
+        mathComperators = new HashMap<>();
 
         mappings = new HashMap<>();
 
@@ -127,6 +132,8 @@ public class MqlToRelConverter {
         mappings.put( "$ne", SqlStdOperatorTable.NOT_EQUALS );
         mappings.put( "$lte", SqlStdOperatorTable.LESS_THAN_OR_EQUAL );
         mappings.put( "$gte", SqlStdOperatorTable.GREATER_THAN_OR_EQUAL );
+
+        mathComperators.putAll( mappings );
 
         mappings.put( "$in", SqlStdOperatorTable.IN );
         mappings.put( "$nin", SqlStdOperatorTable.NOT_IN );
@@ -200,6 +207,7 @@ public class MqlToRelConverter {
     private boolean _dataExists = true;
     private boolean elemMatchActive;
     private String defaultDatabase;
+    private boolean notActive = false;
 
 
     public MqlToRelConverter( MqlProcessor mqlProcessor, PolyphenyDbCatalogReader catalogReader, RelOptCluster cluster ) {
@@ -1320,15 +1328,25 @@ public class MqlToRelConverter {
         SqlOperator op;
         switch ( key ) {
             case "$and":
+                if ( notActive ) {
+                    throw new RuntimeException( "$logical operations inside $not operations are not possible." );
+                }
                 op = SqlStdOperatorTable.AND;
                 return convertLogicalArray( parentKey, bsonValue, rowType, op, false );
             case "$or":
+                if ( notActive ) {
+                    throw new RuntimeException( "$logical operations inside $not operations are not possible." );
+                }
                 op = SqlStdOperatorTable.OR;
                 return convertLogicalArray( parentKey, bsonValue, rowType, op, false );
             case "$nor":
+                if ( notActive ) {
+                    throw new RuntimeException( "$logical operations inside $not operations are not possible." );
+                }
                 op = SqlStdOperatorTable.OR;
                 return convertLogicalArray( parentKey, bsonValue, rowType, op, true );
             case "$not":
+                this.notActive = true;
                 op = SqlStdOperatorTable.NOT;
                 if ( bsonValue.isDocument() ) {
                     RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
@@ -1499,7 +1517,11 @@ public class MqlToRelConverter {
                 return convertIn( bsonValue, op, parentKey, rowType );
             default:
                 if ( parentKey != null ) {
-                    nodes.add( getIdentifier( parentKey, rowType ) );
+                    RexNode id = getIdentifier( parentKey, rowType );
+                    if ( mathComperators.containsKey( key ) ) {
+                        id = cluster.getRexBuilder().makeCast( cluster.getTypeFactory().createPolyType( PolyType.BIGINT ), id );
+                    }
+                    nodes.add( id );
                 }
                 nodes.add( convertLiteral( bsonValue ) );
                 return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), op, nodes );

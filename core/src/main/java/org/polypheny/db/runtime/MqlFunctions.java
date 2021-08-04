@@ -45,6 +45,14 @@ public class MqlFunctions {
                 } else {
                     input = null;
                 }
+            } else if ( input instanceof List && filtersCopy.get( 0 ).matches( "[0-9]*" ) ) {
+                int pos = Integer.parseInt( filtersCopy.get( 0 ) );
+                if ( ((List<?>) input).size() >= pos ) {
+                    input = ((List<?>) input).get( pos );
+                    filtersCopy.remove( 0 );
+                } else {
+                    input = null;
+                }
             } else {
                 input = null;
             }

@@ -36,6 +36,7 @@ package org.polypheny.db.adapter.mongodb;
 
 import static org.polypheny.db.sql.SqlKind.AND;
 import static org.polypheny.db.sql.SqlKind.ARRAY_VALUE_CONSTRUCTOR;
+import static org.polypheny.db.sql.SqlKind.CAST;
 import static org.polypheny.db.sql.SqlKind.DISTANCE;
 import static org.polypheny.db.sql.SqlKind.DOC_VALUE;
 import static org.polypheny.db.sql.SqlKind.DYNAMIC_PARAM;
@@ -47,6 +48,8 @@ import static org.polypheny.db.sql.SqlKind.OTHER_FUNCTION;
 import com.mongodb.client.gridfs.GridFSBucket;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -132,7 +135,7 @@ public class MongoFilter extends Filter implements MongoRel {
         private final BsonDocument preProjections = new BsonDocument();
         private final Implementor implementor;
         private boolean useTempFlag = false;
-        private final ArrayList<BsonDocument> temp = new ArrayList<>();
+        private Map<String, List<BsonValue>> map = new HashMap<>();
 
 
         Translator( List<String> fieldNames, Implementor implementor ) {
@@ -150,7 +153,7 @@ public class MongoFilter extends Filter implements MongoRel {
 
 
         private void translateMatch( RexNode condition, Implementor implementor ) {
-            BsonDocument value = translateOr( condition );
+            BsonDocument value = translateFinalOr( condition );
             if ( !value.isEmpty() ) {
                 implementor.filter.add( value );
             }
@@ -161,18 +164,47 @@ public class MongoFilter extends Filter implements MongoRel {
         }
 
 
-        private BsonDocument translateOr( RexNode condition ) {
+        private BsonDocument translateFinalOr( RexNode condition ) {
             for ( RexNode node : RelOptUtil.disjunctions( condition ) ) {
+                HashMap<String, List<BsonValue>> shallowCopy = new HashMap<>( this.map );
+                this.map = new HashMap<>();
                 translateAnd( node );
+
+                mergeMaps( this.map, shallowCopy, "$or" );
+                this.map = shallowCopy;
             }
 
-            switch ( ors.size() ) {
-                case 0:
-                    return new BsonDocument();
-                case 1:
-                    return ors.get( 0 );
-                default:
-                    return new BsonDocument( "$or", new BsonArray( ors ) );
+            return asConditionDocument( this.map );
+        }
+
+
+        private BsonDocument asConditionDocument( Map<String, List<BsonValue>> map ) {
+            if ( map.size() == 0 ) {
+                return new BsonDocument();
+            }
+            BsonDocument doc = new BsonDocument();
+            List<BsonValue> ands = new ArrayList<>();
+            for ( Entry<String, List<BsonValue>> entry : map.entrySet() ) {
+                if ( entry.getValue().size() == 1 && !entry.getKey().equals( "$or" ) && !entry.getKey().equals( "$and" ) ) {
+                    doc.put( entry.getKey(), entry.getValue().get( 0 ) );
+                } else if ( entry.getKey().equals( "$or" ) || entry.getKey().equals( "$and" ) ) {
+                    doc.put( entry.getKey(), new BsonArray( entry.getValue() ) );
+                } else {
+                    ands.addAll( entry.getValue().stream().map( e -> new BsonDocument( entry.getKey(), e ) ).collect( Collectors.toList() ) );
+                }
+            }
+            if ( ands.size() != 0 ) {
+                doc.put( "$and", new BsonArray( ands ) );
+            }
+            return doc;
+        }
+
+
+        private BsonValue asCondition( List<BsonValue> bsonValues ) {
+            if ( bsonValues.size() == 1 ) {
+                return bsonValues.get( 0 );
+            } else {
+                return new BsonDocument( "$or", new BsonArray( bsonValues ) );
             }
         }
 
@@ -181,35 +213,9 @@ public class MongoFilter extends Filter implements MongoRel {
          * Translates a condition that may be an AND of other conditions. Gathers together conditions that apply to the same field.
          */
         private void translateAnd( RexNode node0 ) {
-            int count = 0;
             for ( RexNode node : RelOptUtil.conjunctions( node0 ) ) {
                 translateMatch2( node );
-                count++;
             }
-            if ( count > 1 ) {
-
-                // we transforms the previously handle statements into one AND statements to handle them correctly
-                List<BsonDocument> ands = new ArrayList<>();
-                if ( useTempFlag ) {
-                    for ( int i = 0; i < count; i++ ) {
-                        ands.add( temp.remove( temp.size() - 1 ) );
-                    }
-                } else {
-                    for ( int i = 0; i < count; i++ ) {
-                        ands.add( ors.remove( ors.size() - 1 ) );
-                    }
-                }
-
-                addToOrs( new BsonDocument( "$and", new BsonArray( ands ) ) );
-            }
-        }
-
-
-        private void addPredicate( Map<String, Object> map, String op, Object v ) {
-            if ( map.containsKey( op ) && stronger( op, map.get( op ), v ) ) {
-                return;
-            }
-            map.put( op, v );
         }
 
 
@@ -234,39 +240,128 @@ public class MongoFilter extends Filter implements MongoRel {
         }
 
 
-        private Void translateMatch2( RexNode node ) {
+        private void translateMatch2( RexNode node ) {
             switch ( node.getKind() ) {
                 case EQUALS:
-                    return translateBinary( null, null, (RexCall) node );
+                    translateBinary( null, null, (RexCall) node );
+                    return;
                 case LESS_THAN:
-                    return translateBinary( "$lt", "$gt", (RexCall) node );
+                    translateBinary( "$lt", "$gt", (RexCall) node );
+                    return;
                 case LESS_THAN_OR_EQUAL:
-                    return translateBinary( "$lte", "$gte", (RexCall) node );
+                    translateBinary( "$lte", "$gte", (RexCall) node );
+                    return;
                 case NOT_EQUALS:
-                    return translateBinary( "$ne", "$ne", (RexCall) node );
+                    translateBinary( "$ne", "$ne", (RexCall) node );
+                    return;
                 case GREATER_THAN:
-                    return translateBinary( "$gt", "$lt", (RexCall) node );
+                    translateBinary( "$gt", "$lt", (RexCall) node );
+                    return;
                 case GREATER_THAN_OR_EQUAL:
-                    return translateBinary( "$gte", "$lte", (RexCall) node );
+                    translateBinary( "$gte", "$lte", (RexCall) node );
+                    return;
                 case LIKE:
-                    return translateLike( (RexCall) node );
+                    translateLike( (RexCall) node );
+                    return;
                 case DOC_SIZE_MATCH:
-                    return translateSize( (RexCall) node );
+                    translateSize( (RexCall) node );
+                    return;
                 case DOC_REGEX_MATCH:
-                    return translateRegex( (RexCall) node );
+                    translateRegex( (RexCall) node );
+                    return;
                 case DOC_TYPE_MATCH:
-                    return translateTypeMatch( (RexCall) node );
+                    translateTypeMatch( (RexCall) node );
+                    return;
                 case DOC_ELEM_MATCH:
-                    return translateElemMatch( (RexCall) node );
+                    translateElemMatch( (RexCall) node );
+                    return;
+                case NOT:
+                    translateNot( (RexCall) node );
+                    return;
+                case OR:
+                    translateOr( (RexCall) node );
+                    return;
                 case DOC_EXISTS:
-                    return translateExists( (RexCall) node );
+                    translateExists( (RexCall) node );
+                    return;
                 default:
                     throw new AssertionError( "cannot translate " + node );
             }
         }
 
 
-        private Void translateExists( RexCall node ) {
+        private Void translateOr( RexCall node ) {
+            Map<String, List<BsonValue>> shallowCopy = new HashMap<>( this.map );
+            this.map = new HashMap<>();
+
+            translateNode( node.operands.get( 0 ) );
+
+            mergeMaps( this.map, shallowCopy, "$or" );
+            this.map = shallowCopy;
+
+            return null;
+        }
+
+
+        private void translateNot( RexCall node ) {
+            Map<String, List<BsonValue>> shallowCopy = new HashMap<>( this.map );
+            this.map = new HashMap<>();
+
+            translateNode( node.operands.get( 0 ) );
+
+            mergeMaps( this.map, shallowCopy, "$not" );
+            this.map = shallowCopy;
+
+        }
+
+
+        private void translateNode( RexNode node0 ) {
+            if ( node0.getKind() == AND ) {
+                translateAnd( node0 );
+            } else if ( node0.getKind() == OR ) {
+                translateFinalOr( node0 );
+            } else {
+                translateMatch2( node0 );
+            }
+        }
+
+
+        private void mergeMaps( Map<String, List<BsonValue>> newValueMap, Map<String, List<BsonValue>> finalValueMap, String op ) {
+            if ( !op.equals( "$or" ) ) {
+                newValueMap
+                        .replaceAll( ( k, v ) -> v.stream().map( e -> new BsonDocument( "$not", e ) )
+                                .collect( Collectors.toList() ) );
+
+                for ( Entry<String, List<BsonValue>> values : newValueMap.entrySet() ) {
+                    if ( finalValueMap.containsKey( values.getKey() ) ) {
+                        finalValueMap.get( values.getKey() ).add( new BsonDocument( op, asCondition( values.getValue() ) ) );
+                    } else {
+                        List<BsonValue> bsons = new ArrayList<>();
+                        bsons.add( new BsonDocument( op, asCondition( values.getValue() ) ) );
+                        finalValueMap.put( values.getKey(), bsons );
+                    }
+                }
+            } else {
+                List<BsonValue> ors = new ArrayList<>();
+
+                for ( Entry<String, List<BsonValue>> entry : newValueMap.entrySet() ) {
+                    List<BsonValue> ands = new ArrayList<>();
+                    for ( BsonValue value : entry.getValue() ) {
+                        ands.add( new BsonDocument( entry.getKey(), value ) );
+                    }
+                    ors.add( new BsonDocument( "$and", new BsonArray( ands ) ) );
+                }
+
+                if ( finalValueMap.containsKey( "$or" ) ) {
+                    finalValueMap.get( "$or" ).addAll( ors );
+                } else {
+                    finalValueMap.put( "$or", ors );
+                }
+            }
+        }
+
+
+        private void translateExists( RexCall node ) {
             assert node.operands.size() == 2;
             assert node.operands.get( 1 ) instanceof RexCall;
             String key = getParamAsKey( node.operands.get( 0 ) );
@@ -275,8 +370,7 @@ public class MongoFilter extends Filter implements MongoRel {
                     .stream()
                     .map( o -> ((RexLiteral) o).getValueAs( String.class ) )
                     .collect( Collectors.joining( "." ) );
-            addToOrs( new BsonDocument( key, new BsonDocument( "$exists", new BsonBoolean( true ) ) ) );
-            return null;
+            attachCondition( "$exists", key, new BsonBoolean( true ) );
         }
 
 
@@ -286,89 +380,23 @@ public class MongoFilter extends Filter implements MongoRel {
             }
             String key = getParamAsKey( node.operands.get( 0 ) );
 
-            clearAndToggleTemp( true );
-            if ( node.operands.get( 1 ).getKind() == AND ) {
-                translateAnd( node.operands.get( 1 ) );
-            } else if ( node.operands.get( 1 ).getKind() == OR ) {
-                translateOr( node.operands.get( 1 ) );
-            } else {
-                translateMatch2( node.operands.get( 1 ) );
-            }
+            Map<String, List<BsonValue>> shallowCopy = new HashMap<>( this.map );
+            this.map = new HashMap<>();
 
-            BsonValue condition = extractCondition( this.temp, key.split( "\\." )[0] );
-            clearAndToggleTemp( false );
+            translateNode( node.operands.get( 1 ) );
 
-            if ( condition.isDocument() ) {
-                addToOrs( new BsonDocument().append( key, new BsonDocument().append( "$elemMatch", condition ) ) );
-            } else {
-                addToOrs( new BsonDocument().append( key, new BsonDocument().append( "$elemMatch", new BsonDocument( "$or", condition ) ) ) );
-            }
+            mergeMaps( this.map, shallowCopy, "$elemMatch" );
+            this.map = shallowCopy;
 
             return null;
         }
 
 
-        private BsonValue extractCondition( ArrayList<BsonDocument> temp, String oldKey ) {
-            temp.forEach( or -> replace( or, oldKey ) );
-            BsonDocument doc = new BsonDocument();
-            if ( temp.size() == 1 ) {
-                doc.putAll( temp.get( 0 ) );
-                return doc;
-            }
-
-            BsonArray or = new BsonArray();
-            or.addAll( temp );
-            return or;
-        }
-
-
-        /**
-         * $elemMach can be kinda tricky and we move the underling condition up one layer to fix it
-         *
-         * @param value
-         * @param oldKey
-         */
-        private void replace( BsonValue value, String oldKey ) {
-            if ( value.isDocument() ) {
-                for ( Entry<String, BsonValue> entry : value.asDocument().entrySet() ) {
-                    if ( entry.getKey().equals( oldKey ) ) {
-                        if ( entry.getValue().isDocument() ) {
-                            for ( Entry<String, BsonValue> childEntry : entry.getValue().asDocument().entrySet() ) {
-                                replace( childEntry.getValue(), oldKey );
-                                value.asDocument().put( childEntry.getKey(), childEntry.getValue() );
-                            }
-                        } else {
-                            value.asDocument().put( "$eq", entry.getValue() );
-                        }
-                        value.asDocument().remove( entry.getKey() );
-                    } else if ( entry.getKey().equals( "$and" ) ) {
-                        for ( BsonValue bsonValue : entry.getValue().asArray() ) {
-                            replace( bsonValue.asDocument(), oldKey );
-                            value.asDocument().putAll( bsonValue.asDocument() );
-                        }
-                        value.asDocument().remove( entry.getKey() );
-                    } else {
-                        replace( entry.getValue(), oldKey );
-                    }
-                }
-
-            } else if ( value.isArray() ) {
-                value.asArray().forEach( el -> replace( el, oldKey ) );
-            }
-        }
-
-
-        private void clearAndToggleTemp( boolean status ) {
-            this.temp.clear();
-            this.useTempFlag = status;
-        }
-
-
-        private Void translateTypeMatch( RexCall node ) {
+        private void translateTypeMatch( RexCall node ) {
             if ( node.operands.size() != 2
                     || !(node.operands.get( 1 ) instanceof RexCall)
                     || ((RexCall) node.operands.get( 1 )).op.kind != ARRAY_VALUE_CONSTRUCTOR ) {
-                return null;
+                return;
             }
 
             String key = getParamAsKey( node.operands.get( 0 ) );
@@ -377,25 +405,13 @@ public class MongoFilter extends Filter implements MongoRel {
                     .map( el -> ((RexLiteral) el).getValueAs( Integer.class ) )
                     .map( BsonInt32::new )
                     .collect( Collectors.toList() );
-            addToOrs( new BsonDocument().append( key, new BsonDocument( "$type", new BsonArray( types ) ) ) );
-
-            return null;
+            attachCondition( "$type", key, new BsonArray( types ) );
         }
 
 
-        private void addToOrs( BsonDocument doc ) {
-            if ( useTempFlag ) {
-                this.temp.add( doc );
-            } else {
-                this.ors.add( doc );
-            }
-
-        }
-
-
-        private Void translateRegex( RexCall node ) {
+        private void translateRegex( RexCall node ) {
             if ( node.operands.size() != 6 ) {
-                return null;
+                return;
             }
             String left = getParamAsKey( node.operands.get( 0 ) );
             String value = getLiteralAs( node, 1, String.class );
@@ -410,9 +426,7 @@ public class MongoFilter extends Filter implements MongoRel {
                     + (doesIgnoreWhitespace ? "x" : "")
                     + (allowsDot ? "s" : "");
 
-            addToOrs( new BsonDocument().append( left, new BsonRegularExpression( value, options ) ) );
-
-            return null;
+            attachCondition( null, left, new BsonRegularExpression( value, options ) );
         }
 
 
@@ -421,18 +435,13 @@ public class MongoFilter extends Filter implements MongoRel {
         }
 
 
-        private Void translateSize( RexCall node ) {
+        private void translateSize( RexCall node ) {
             if ( node.operands.size() != 2 ) {
-                return null;
+                return;
             }
             String left = getParamAsKey( node.operands.get( 0 ) );
             BsonValue value = getParamAsValue( node.operands.get( 1 ) );
-
-            addToOrs( new BsonDocument().append(
-                    left, new BsonDocument( "$size", value )
-            ) );
-
-            return null;
+            attachCondition( null, left, new BsonDocument( "$size", value ) );
 
         }
 
@@ -471,22 +480,20 @@ public class MongoFilter extends Filter implements MongoRel {
         }
 
 
-        private Void translateLike( RexCall call ) {
+        private void translateLike( RexCall call ) {
             final RexNode left = call.operands.get( 0 );
             final RexNode right = call.operands.get( 1 );
 
             switch ( right.getKind() ) {
                 case DYNAMIC_PARAM:
-                    addToOrs( new BsonDocument(
-                            getPhysicalName( (RexInputRef) left ),
-                            new BsonDynamic( (RexDynamicParam) right ).setIsRegex( true ) ) );
-                    return null;
+                    attachCondition( null, getPhysicalName( (RexInputRef) left ),
+                            new BsonDynamic( (RexDynamicParam) right ).setIsRegex( true ) );
+                    break;
 
                 case LITERAL:
-                    addToOrs( new BsonDocument(
-                            getPhysicalName( (RexInputRef) left ),
-                            MongoTypeUtil.replaceLikeWithRegex( ((RexLiteral) right).getValueAs( String.class ) ) ) );
-                    return null;
+                    attachCondition( null, getPhysicalName( (RexInputRef) left ),
+                            MongoTypeUtil.replaceLikeWithRegex( ((RexLiteral) right).getValueAs( String.class ) ) );
+                    break;
 
                 default:
                     throw new IllegalStateException( "Unexpected value: " + right.getKind() );
@@ -497,29 +504,31 @@ public class MongoFilter extends Filter implements MongoRel {
         /**
          * Translates a call to a binary operator, reversing arguments if necessary.
          */
-        private Void translateBinary( String op, String rop, RexCall call ) {
+        private void translateBinary( String op, String rop, RexCall call ) {
             final RexNode left = call.operands.get( 0 );
             final RexNode right = call.operands.get( 1 );
             boolean b = translateBinary2( op, left, right );
             if ( b ) {
-                return null;
+                return;
             }
             b = translateBinary2( rop, right, left );
             if ( b ) {
-                return null;
+                return;
             }
-            b = translateArray( op, right, left );
-            if ( b ) {
-                return null;
-            }
+
             b = translateArray( op, left, right );
             if ( b ) {
-                return null;
+                return;
+            }
+
+            b = translateArray( op, right, left );
+            if ( b ) {
+                return;
             }
 
             b = translateExpr( op, left, right );
             if ( b ) {
-                return null;
+                return;
             }
 
             throw new AssertionError( "cannot translate op " + op + " call " + call );
@@ -535,7 +544,7 @@ public class MongoFilter extends Filter implements MongoRel {
                 BsonValue l = new BsonString( getPhysicalName( (RexInputRef) left ) );
                 BsonValue r = new BsonString( getPhysicalName( (RexInputRef) right ) );
 
-                addToOrs( new BsonDocument( "$expr", new BsonDocument( op, new BsonArray( Arrays.asList( l, r ) ) ) ) );
+                attachCondition( null, "$expr", new BsonDocument( op, new BsonArray( Arrays.asList( l, r ) ) ) );
                 return true;
             }
 
@@ -547,11 +556,7 @@ public class MongoFilter extends Filter implements MongoRel {
             if ( right instanceof RexCall && left instanceof RexInputRef ) {
                 // $9 ( index ) -> [el1, el2]
                 String name = getPhysicalName( (RexInputRef) left );
-                if ( op == null ) {
-                    addToOrs( new BsonDocument( "$expr", translateCall( name, (RexCall) right ) ) );
-                } else {
-                    addToOrs( new BsonDocument( "$expr", new BsonDocument( op, translateCall( name, (RexCall) right ) ) ) );
-                }
+                attachCondition( op, "$expr", translateCall( name, (RexCall) right ) );
                 return true;
             } else if ( right instanceof RexCall && left instanceof RexLiteral ) {
                 if ( right.isA( DISTANCE ) ) {
@@ -620,21 +625,11 @@ public class MongoFilter extends Filter implements MongoRel {
 
             switch ( left.getKind() ) {
                 case LITERAL:
-                    if ( op == null ) {
-                        addToOrs( new BsonDocument( randomName, MongoTypeUtil.getAsBson( (RexLiteral) left, bucket ) ) );
-                        return true;
-                    } else {
-                        addToOrs( new BsonDocument( randomName, new BsonDocument( op, MongoTypeUtil.getAsBson( (RexLiteral) left, bucket ) ) ) );
-                        return true;
-                    }
+                    attachCondition( op, randomName, MongoTypeUtil.getAsBson( (RexLiteral) left, bucket ) );
+                    return true;
                 case DYNAMIC_PARAM:
-                    if ( op == null ) {
-                        addToOrs( new BsonDocument( randomName, new BsonDynamic( (RexDynamicParam) left ) ) );
-                        return true;
-                    } else {
-                        addToOrs( new BsonDocument( randomName, new BsonDocument( op, new BsonDynamic( (RexDynamicParam) left ) ) ) );
-                        return true;
-                    }
+                    attachCondition( op, randomName, new BsonDynamic( (RexDynamicParam) left ) );
+                    return true;
                 default:
                     return false;
             }
@@ -691,15 +686,7 @@ public class MongoFilter extends Filter implements MongoRel {
 
         private boolean translateDynamic( String op, RexNode left, RexDynamicParam right ) {
             if ( left.getKind() == INPUT_REF ) {
-                if ( op == null ) {
-                    addToOrs( new BsonDocument().append(
-                            getPhysicalName( (RexInputRef) left ),
-                            new BsonDynamic( right ) ) );
-                } else {
-                    addToOrs( new BsonDocument().append(
-                            getPhysicalName( (RexInputRef) left ),
-                            new BsonDocument().append( op, new BsonDynamic( right ) ) ) );
-                }
+                attachCondition( op, getPhysicalName( (RexInputRef) left ), new BsonDynamic( right ) );
                 return true;
             }
             if ( left.getKind() == DISTANCE ) {
@@ -710,6 +697,9 @@ public class MongoFilter extends Filter implements MongoRel {
             }
             if ( left.getKind() == DOC_VALUE ) {
                 return translateDocValue( op, (RexCall) left, right );
+            }
+            if ( left.getKind() == CAST ) {
+                return translateDynamic( op, ((RexCall) left).operands.get( 0 ), right );
             }
 
             return false;
@@ -738,12 +728,7 @@ public class MongoFilter extends Filter implements MongoRel {
                         .collect( Collectors.joining( "." ) );
             }
 
-            if ( op == null ) {
-                addToOrs( new BsonDocument().append( mergedName, item ) );
-            } else {
-                addToOrs( new BsonDocument().append( mergedName, new BsonDocument().append( op, item ) ) );
-            }
-
+            attachCondition( op, mergedName, item );
             return true;
         }
 
@@ -765,7 +750,7 @@ public class MongoFilter extends Filter implements MongoRel {
                                     new BsonDocument( "$add", new BsonArray( Arrays.asList( item, new BsonInt32( -1 ) ) ) ) ) );
                     this.preProjections.put( name, new BsonDocument( "$arrayElemAt", array ) );
 
-                    addToOrs( new BsonDocument( name, new BsonDynamic( right ) ) );
+                    attachCondition( null, name, new BsonDynamic( right ) );
 
                     return true;
                 }
@@ -804,12 +789,25 @@ public class MongoFilter extends Filter implements MongoRel {
 
 
         private void translateOp2( String op, String name, RexLiteral right ) {
+            attachCondition( op, name, MongoTypeUtil.getAsBson( right, bucket ) );
+        }
+
+
+        private void attachCondition( String op, String name, BsonValue right ) {
             if ( op == null ) {
                 // E.g.: {deptno: 100}
-                addToOrs( new BsonDocument().append( name, MongoTypeUtil.getAsBson( right, bucket ) ) );
+                if ( map.containsKey( name ) ) {
+                    map.get( name ).add( right );
+                } else {
+                    map.put( name, new ArrayList<>( Collections.singletonList( right ) ) );
+                }
             } else {
                 // E.g. {deptno: {$lt: 100}} which may later be combined with other conditions: E.g. {deptno: [$lt: 100, $gt: 50]}
-                addToOrs( new BsonDocument().append( name, new BsonDocument().append( op, MongoTypeUtil.getAsBson( right, bucket ) ) ) );
+                if ( map.containsKey( name ) ) {
+                    map.get( name ).add( new BsonDocument( op, right ) );
+                } else {
+                    map.put( name, new ArrayList<>( Collections.singletonList( new BsonDocument( op, right ) ) ) );
+                }
             }
         }
 
