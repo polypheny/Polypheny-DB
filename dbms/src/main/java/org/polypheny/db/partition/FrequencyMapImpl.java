@@ -17,6 +17,8 @@
 package org.polypheny.db.partition;
 
 
+import static java.util.stream.Collectors.toCollection;
+
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,6 +34,7 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PartitionType;
+import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogPartition;
@@ -42,8 +45,8 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
-import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
-import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
+import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
+import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.transaction.Statement;
@@ -397,26 +400,26 @@ public class FrequencyMapImpl extends FrequencyMap {
 
         switch ( ((TemperaturePartitionProperty) table.partitionProperty).getPartitionCostIndication() ){
             case ALL:
-                for ( QueryDataPoint queryDataPoint: MonitoringServiceProvider.getInstance().getDataPointsAfter( QueryDataPoint.class, queryStart ) ) {
-                    queryDataPoint.getAccessedPartitions().forEach( p -> incrementPartitionAccess( p, tempPartitionIds) );
+                for ( QueryDataPointImpl queryDataPoint: MonitoringServiceProvider.getInstance().getDataPointsAfter( QueryDataPointImpl.class, queryStart ) ) {
+                    queryDataPoint.getAccessedPartitions().keySet().forEach( p -> incrementPartitionAccess( p, tempPartitionIds) );
                 }
-                for ( DMLDataPoint dmlDataPoint: MonitoringServiceProvider.getInstance().getDataPointsAfter( DMLDataPoint.class, queryStart ) ) {
-                    dmlDataPoint.getAccessedPartitions().forEach( p -> incrementPartitionAccess( p, tempPartitionIds) );
+                for ( DmlDataPoint dmlDataPoint: MonitoringServiceProvider.getInstance().getDataPointsAfter( DmlDataPoint.class, queryStart ) ) {
+                    dmlDataPoint.getAccessedPartitions().keySet().forEach( p -> incrementPartitionAccess( p, tempPartitionIds) );
                 }
 
                 break;
 
             case READ:
-                List<QueryDataPoint> readAccesses= MonitoringServiceProvider.getInstance().getDataPointsAfter( QueryDataPoint.class, queryStart );
-                for ( QueryDataPoint queryDataPoint: readAccesses ) {
-                    queryDataPoint.getAccessedPartitions().forEach( p -> incrementPartitionAccess( p, tempPartitionIds) );
+                List<QueryDataPointImpl> readAccesses= MonitoringServiceProvider.getInstance().getDataPointsAfter( QueryDataPointImpl.class, queryStart );
+                for ( QueryDataPointImpl queryDataPoint: readAccesses ) {
+                    queryDataPoint.getAccessedPartitions().keySet().forEach( p -> incrementPartitionAccess( p, tempPartitionIds) );
                 }
                 break;
 
             case WRITE:
-                List<DMLDataPoint> writeAccesses= MonitoringServiceProvider.getInstance().getDataPointsAfter( DMLDataPoint.class, queryStart );
-                for ( DMLDataPoint dmlDataPoint: writeAccesses ) {
-                    dmlDataPoint.getAccessedPartitions().forEach( p -> incrementPartitionAccess( p, tempPartitionIds) );
+                List<DmlDataPoint> writeAccesses= MonitoringServiceProvider.getInstance().getDataPointsAfter( DmlDataPoint.class, queryStart );
+                for ( DmlDataPoint dmlDataPoint: writeAccesses ) {
+                    dmlDataPoint.getAccessedPartitions().keySet().forEach( p -> incrementPartitionAccess( p, tempPartitionIds) );
                 }
         }
 
