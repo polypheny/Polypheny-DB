@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
+import org.polypheny.db.config.ConfigBoolean;
 import org.polypheny.db.config.ConfigClazz;
 import org.polypheny.db.config.ConfigClazzList;
 import org.polypheny.db.config.ConfigDouble;
@@ -49,6 +50,11 @@ public class RouterManager {
             "routing/preCostPostCostRatio",
             "The ratio between how much post cost are considered. 0 means post cost are ignored, 1 means pre cost are ignored. Value most be between 0 and 1.",
             0 );
+
+    public static final ConfigBoolean POST_COST_AGGREGATION_ACTIVE = new ConfigBoolean(
+            "routing/postCostAggregationActive",
+            "Determines whether the post cost aggregation is active or not. If active, system should be in single thread mode, otherwise costs hard to compare.",
+            true );
 
     public static final ConfigEnum PLAN_SELECTION_STRATEGY = new ConfigEnum(
             "routing/planSelectionStrategy",
@@ -131,6 +137,9 @@ public class RouterManager {
 
         configManager.registerConfig( PLAN_SELECTION_STRATEGY );
         PLAN_SELECTION_STRATEGY.withUi( routingGroup.getId(), 2 );
+
+        configManager.registerConfig( POST_COST_AGGREGATION_ACTIVE );
+        POST_COST_AGGREGATION_ACTIVE.withUi( routingGroup.getId(), 3 );
 
     }
 

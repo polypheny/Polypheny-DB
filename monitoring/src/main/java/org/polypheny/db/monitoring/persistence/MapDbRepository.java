@@ -32,8 +32,8 @@ import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.Serializer;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
-import org.polypheny.db.monitoring.events.QueryDataPoint;
-import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
+import org.polypheny.db.monitoring.events.QueryPostCosts;
+import org.polypheny.db.monitoring.events.metrics.QueryPostCostsImpl;
 import org.polypheny.db.util.FileSystemManager;
 
 
@@ -46,6 +46,7 @@ public class MapDbRepository implements MonitoringRepository {
     private static final String FOLDER_NAME = "monitoring";
     protected final HashMap<Class, BTreeMap<UUID, MonitoringDataPoint>> data = new HashMap<>();
     protected DB simpleBackendDb;
+    protected BTreeMap<String, QueryPostCostsImpl> queryPostCosts;
 
     // endregion
 
@@ -108,7 +109,6 @@ public class MapDbRepository implements MonitoringRepository {
 
     @Override
     public <T extends MonitoringDataPoint> List<T> getDataPointsAfter( @NonNull Class<T> dataPointClass, @NonNull Timestamp timestamp ) {
-        // TODO: not tested yet
         val table = this.data.get( dataPointClass );
         if ( table == null ) {
             return Collections.emptyList();
@@ -125,16 +125,45 @@ public class MapDbRepository implements MonitoringRepository {
 
 
     @Override
-    public List<QueryDataPoint> getQueryDataPoints( @NonNull String queryId ) {
-        val table = this.data.get( QueryDataPointImpl.class );
-        if ( table == null ) {
-            return Collections.emptyList();
+    public QueryPostCosts getQueryPostCosts( @NonNull String physicalQueryClass ) {
+        if ( queryPostCosts == null ) {
+            this.initializePostCosts();
         }
 
-        return table.values().stream()
-                .map( data -> (QueryDataPoint) data )
-                .filter( elem -> elem.getQueryId().equals( queryId ) )
-                .collect( Collectors.toList());
+        val result = queryPostCosts.get( physicalQueryClass );
+        return result != null ? result : new QueryPostCostsImpl( physicalQueryClass, 0, 0 );
+    }
+
+
+    @Override
+    public void updateQueryPostCosts( @NonNull String physicalQueryClass, long executionTime ) {
+        if ( queryPostCosts == null ) {
+            this.initializePostCosts();
+            return;
+        }
+
+        val result = queryPostCosts.get( physicalQueryClass );
+        if ( result == null ) {
+            queryPostCosts.put( physicalQueryClass, new QueryPostCostsImpl( physicalQueryClass, executionTime, 1 ) );
+
+        } else {
+            val newTotalTime = (result.getExecutionTime() * result.getNumberOfSamples()) + executionTime;
+            val samples = result.getNumberOfSamples() + 1;
+            val newTime = newTotalTime / samples;
+            queryPostCosts.replace( physicalQueryClass, new QueryPostCostsImpl( physicalQueryClass, newTime, samples ) );
+        }
+
+        this.simpleBackendDb.commit();
+    }
+
+
+    @Override
+    public void resetQueryPostCosts() {
+        if ( queryPostCosts == null ) {
+            return;
+        }
+        queryPostCosts.clear();
+        this.simpleBackendDb.commit();
     }
 
     // endregion
@@ -156,6 +185,11 @@ public class MapDbRepository implements MonitoringRepository {
                 .make();
 
         simpleBackendDb.getStore().fileLoad();
+    }
+
+
+    private void initializePostCosts() {
+        queryPostCosts = simpleBackendDb.treeMap( QueryPostCosts.class.getName(), Serializer.STRING, Serializer.JAVA ).createOrOpen();
     }
 
 

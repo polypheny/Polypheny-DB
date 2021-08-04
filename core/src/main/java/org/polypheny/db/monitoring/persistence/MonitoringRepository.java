@@ -20,7 +20,7 @@ import java.sql.Timestamp;
 import java.util.List;
 import lombok.NonNull;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
-import org.polypheny.db.monitoring.events.QueryDataPoint;
+import org.polypheny.db.monitoring.events.QueryPostCosts;
 
 
 /**
@@ -67,6 +67,10 @@ public interface MonitoringRepository {
      */
     <T extends MonitoringDataPoint> List<T> getDataPointsAfter( Class<T> dataPointClass, Timestamp timestamp );
 
-    List<QueryDataPoint> getQueryDataPoints( @NonNull String queryId );
+    QueryPostCosts getQueryPostCosts( @NonNull String physicalQueryClass );
+
+    void updateQueryPostCosts(@NonNull String physicalQueryClass , long executionTime);
+
+    void resetQueryPostCosts();
 
 }

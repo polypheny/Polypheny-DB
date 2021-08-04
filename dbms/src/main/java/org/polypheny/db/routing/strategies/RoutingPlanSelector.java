@@ -16,7 +16,6 @@
 
 package org.polypheny.db.routing.strategies;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -27,7 +26,6 @@ import lombok.val;
 import lombok.var;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
-import org.polypheny.db.monitoring.events.QueryDataPoint;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.routing.RouterManager;
@@ -159,39 +157,18 @@ public class RoutingPlanSelector {
 
 
     private Pair<List<Double>, List<Double>> calcIcarusPostCosts( List<? extends RoutingPlan> proposedRoutingPlans, String queryId ) {
-        val measuredData = MonitoringServiceProvider.getInstance().getQueryDataPoints( queryId );
-        val icarusCosts = new ArrayList<Double>();
+        val postCosts = proposedRoutingPlans.stream()
+                .map( plan -> MonitoringServiceProvider.getInstance().getQueryPostCosts( plan.getPhysicalQueryId() ).getExecutionTime() )
+                .collect( Collectors.toList() );
 
-        for ( final RoutingPlan plan : proposedRoutingPlans ) {
-            val dataPoints = measuredData.stream()
-                    .filter( elem -> elem.getPhysicalQueryId().equals( plan.getPhysicalQueryId() ) )
-                    .collect( Collectors.toList() );
-            if ( dataPoints.isEmpty() ) {
-
-                // fallback for pure icarus routing.
-                if ( RouterManager.PRE_COST_POST_COST_RATIO.getDouble() >= 1 ) {
-                    icarusCosts.add( 1.0 );
-                } else {
-                    icarusCosts.add( 0.0 );
-                }
+        val icarusCosts = postCosts.stream().map( value -> {
+            // fallback for pure icarus routing.
+            if ( RouterManager.PRE_COST_POST_COST_RATIO.getDouble() >= 1 ) {
+                return 1.0;
             } else {
-                val value = dataPoints.stream()
-                        .map( QueryDataPoint::getExecutionTime )
-                        .mapToDouble( d -> d )
-                        .average();
-
-                if ( value.isPresent() ) {
-                    icarusCosts.add( value.getAsDouble() );
-                } else {
-                    // fallback for pure icarus routing.
-                    if ( RouterManager.PRE_COST_POST_COST_RATIO.getDouble() >= 1 ) {
-                        icarusCosts.add( 1.0 );
-                    } else {
-                        icarusCosts.add( 0.0 );
-                    }
-                }
+                return (double) value;
             }
-        }
+        } ).collect( Collectors.toList() );
 
         // normalize values
         val normalized = calculatePercentage( icarusCosts );

@@ -14,25 +14,10 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.core;
+package org.polypheny.db.monitoring.events;
 
-import lombok.extern.slf4j.Slf4j;
-
-
-/**
- * Provider for the MonitoringService singleton instance.
- */
-@Slf4j
-public class MonitoringServiceProvider  {
-
-    private static MonitoringService INSTANCE = null;
-
-
-    public static MonitoringService getInstance() {
-        if ( INSTANCE == null ) {
-            INSTANCE = MonitoringServiceFactory.createMonitoringService();
-        }
-        return INSTANCE;
-    }
-
+public interface QueryPostCosts {
+    String getPhysicalQueryClass();
+    long getExecutionTime();
+    int getNumberOfSamples();
 }

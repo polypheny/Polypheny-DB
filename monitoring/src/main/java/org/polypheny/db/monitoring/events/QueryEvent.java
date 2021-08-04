@@ -22,15 +22,18 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.analyzer.QueryEventAnalyzer;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
-
 
 
 @Getter
 @Setter
 @Slf4j
 public class QueryEvent extends StatementEvent {
+
+    protected boolean updatePostCosts = false;
 
 
     @Override
@@ -42,7 +45,11 @@ public class QueryEvent extends StatementEvent {
     @Override
     public List<MonitoringDataPoint> analyze() {
         try {
-            return Arrays.asList( QueryEventAnalyzer.analyze( this ) );
+            val queryDataPoint = QueryEventAnalyzer.analyze( this );
+            if ( updatePostCosts ) {
+                MonitoringServiceProvider.getInstance().updateQueryPostCosts( this.physicalQueryId, this.executionTime );
+            }
+            return Arrays.asList( queryDataPoint );
         } catch ( Exception e ) {
             log.error( "Could not analyze query event:" );
             return Collections.emptyList();
