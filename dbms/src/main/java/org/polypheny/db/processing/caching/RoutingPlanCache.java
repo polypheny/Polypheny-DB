@@ -35,6 +35,7 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.information.InformationText;
+import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.routing.dto.CachedProposedRoutingPlan;
 
 public class RoutingPlanCache {
@@ -54,9 +55,11 @@ public class RoutingPlanCache {
         registerMonitoringPage();
     }
 
-    public boolean isKeyPresent(String queryId){
+
+    public boolean isKeyPresent( String queryId ) {
         return planCache.getIfPresent( queryId ) != null;
     }
+
 
     public List<CachedProposedRoutingPlan> getIfPresent( String queryId ) {
         List<CachedProposedRoutingPlan> routingPlans = planCache.getIfPresent( queryId );
@@ -71,7 +74,7 @@ public class RoutingPlanCache {
 
 
     public void put( String queryId, List<CachedProposedRoutingPlan> routingPlans ) {
-        planCache.put( queryId, routingPlans);
+        planCache.put( queryId, routingPlans );
     }
 
 
@@ -151,9 +154,30 @@ public class RoutingPlanCache {
             reset();
             generalGroup.refresh();
             hitRatioGroup.refresh();
-            return "Successfully invalidated the query plan cache!";
+            return "Successfully invalidated the routing query plan cache!";
         } );
         invalidateAction.setOrder( 2 );
         im.registerInformation( invalidateAction );
+
+        // Invalidate post cost aggregation
+        InformationGroup invalidatePostCosts = new InformationGroup( page, "Invalidate" ).setOrder( 4 );
+        im.addGroup( invalidatePostCosts );
+
+        InformationText invalidatePostCostsText = new InformationText( invalidatePostCosts, "Invalidate aggregated query post costs." );
+        invalidatePostCostsText.setOrder( 1 );
+        im.registerInformation( invalidatePostCostsText );
+
+        InformationAction invalidatePostCostsTextAction = new InformationAction( invalidatePostCosts, "Invalidate", parameters -> {
+            resetPostCosts();
+            return "Successfully invalidated the query post costs!";
+        } );
+        invalidatePostCostsTextAction.setOrder( 2 );
+        im.registerInformation( invalidatePostCostsTextAction );
     }
+
+
+    private void resetPostCosts() {
+        MonitoringServiceProvider.getInstance().resetQueryPostCosts();
+    }
+
 }

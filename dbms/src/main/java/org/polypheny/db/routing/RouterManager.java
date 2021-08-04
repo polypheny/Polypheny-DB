@@ -100,7 +100,7 @@ public class RouterManager {
                 "routingPage",
                 "Query Routing",
                 "Settings influencing the query routing." );
-        final WebUiGroup routingGroup = new WebUiGroup( "routingGroup", routingPage.getId(), 1 );
+        final WebUiGroup routingGroup = new WebUiGroup( "routingGroup", routingPage.getId() );
         routingGroup.withTitle( "General" );
         configManager.registerWebUiPage( routingPage );
         configManager.registerWebUiGroup( routingGroup );
@@ -140,7 +140,6 @@ public class RouterManager {
 
         configManager.registerConfig( POST_COST_AGGREGATION_ACTIVE );
         POST_COST_AGGREGATION_ACTIVE.withUi( routingGroup.getId(), 3 );
-
     }
 
 
