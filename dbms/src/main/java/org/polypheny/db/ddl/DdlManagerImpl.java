@@ -1429,7 +1429,6 @@ public class DdlManagerImpl extends DdlManager {
                     column.typeInformation.nullable,
                     column.collation );
 
-            //do i need default values: addDefaultValue( defaultValue, addedColumnId );
 
             for ( DataStore s : stores ) {
                 int adapterId = s.getAdapterId();

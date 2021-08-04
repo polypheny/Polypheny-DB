@@ -126,8 +126,6 @@ public class DataMigratorImpl implements DataMigrator {
                 }
             }
 
-            //sourceRel.validatedRowType.getFieldList().get( 0 );
-
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
             while ( sourceIterator.hasNext() ) {
                 List<List<Object>> rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
@@ -142,7 +140,6 @@ public class DataMigratorImpl implements DataMigrator {
                     }
                 }
 
-                //sourceRel.validatedRowType.getFieldList().get( 0 ).getType()
                 List<RelDataTypeField> fields = sourceRel.validatedRowType.getFieldList();
                 int pos = 0;
                 for ( Map.Entry<Long, List<Object>> v : values.entrySet() ) {

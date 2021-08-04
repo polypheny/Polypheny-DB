@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
@@ -81,13 +80,13 @@ public class MaterializedManagerImpl extends MaterializedManager {
         this.transactionManager = transactionManager;
         this.materializedInfo = new HashMap<>();
         this.potentialInteresting = new HashMap<PolyXid, Long>();
-        //MaterializedFreshnessLoop materializedFreshnessLoop = new MaterializedFreshnessLoop( this );
-        //Thread t = new Thread( materializedFreshnessLoop );
-        //t.start();
+        MaterializedFreshnessLoop materializedFreshnessLoop = new MaterializedFreshnessLoop( this );
+        Thread t = new Thread( materializedFreshnessLoop );
+        t.start();
     }
 
 
-    public Map<Long, MaterializedCriteria> updateMaterializedViewInfo() {
+    public synchronized Map<Long, MaterializedCriteria> updateMaterializedViewInfo() {
         List<Long> toRemove = new ArrayList<>();
         for ( Long id : materializedInfo.keySet() ) {
             if ( Catalog.getInstance().getTable( id ) == null ) {
@@ -143,7 +142,6 @@ public class MaterializedManagerImpl extends MaterializedManager {
         if ( potentialInteresting.containsKey( xid ) ) {
             materializedUpdate( potentialInteresting.remove( xid ) );
         }
-
     }
 
 
@@ -172,57 +170,18 @@ public class MaterializedManagerImpl extends MaterializedManager {
 
     @Override
     public void manualUpdate( Transaction transaction, Long viewId ) {
-        AdapterManager adapterManager = AdapterManager.getInstance();
-        Catalog catalog = Catalog.getInstance();
-        CatalogMaterialized catalogMaterialized = (CatalogMaterialized) catalog.getTable( viewId );
-        Map<Integer, List<CatalogColumn>> columns = new HashMap<>();
 
-        System.out.println( "Inside MANUAL UPDATE" );
-        List<DataStore> dataStores = new ArrayList<>();
-        for ( int id : catalogMaterialized.placementsByAdapter.keySet() ) {
-            dataStores.add( adapterManager.getStore( id ) );
-            List<CatalogColumn> catalogColumns = new ArrayList<>();
-            if ( catalogMaterialized.placementsByAdapter.containsKey( id ) ) {
-
-                catalogMaterialized.placementsByAdapter.get( id ).forEach( col ->
-                        catalogColumns.add( catalog.getColumn( col ) )
-                );
-                columns.put( id, catalogColumns );
-            }
-        }
-
-        updateData( transaction, dataStores, columns, RelRoot.of( catalogMaterialized.getDefinition(), SqlKind.SELECT ), catalogMaterialized );
-
+        updateData( transaction, viewId );
 
     }
 
 
     public void prepareToUpdate( Long viewId ) {
-        AdapterManager adapterManager = AdapterManager.getInstance();
         Catalog catalog = Catalog.getInstance();
-        CatalogMaterialized catalogMaterialized = (CatalogMaterialized) catalog.getTable( viewId );
-        Map<Integer, List<CatalogColumn>> columns = new HashMap<>();
-
-        System.out.println( "Inside WhileLoop" );
-        List<DataStore> dataStores = new ArrayList<>();
-        for ( int id : catalogMaterialized.placementsByAdapter.keySet() ) {
-            dataStores.add( adapterManager.getStore( id ) );
-            List<CatalogColumn> catalogColumns = new ArrayList<>();
-            if ( catalogMaterialized.placementsByAdapter.containsKey( id ) ) {
-
-                catalogMaterialized.placementsByAdapter.get( id ).forEach( col ->
-                        catalogColumns.add( catalog.getColumn( col ) )
-                );
-                columns.put( id, catalogColumns );
-            }
-        }
-
-
-        String databaseName = catalog.getDatabase( catalogMaterialized.databaseId ).name;
-        Transaction transaction;
+        CatalogTable catalogTable = catalog.getTable( viewId );
 
         try {
-            transaction = getTransactionManager().startTransaction( catalogMaterialized.ownerName, databaseName, true, "Materialized View" );
+            Transaction transaction = getTransactionManager().startTransaction( catalogTable.ownerName, catalog.getDatabase( catalogTable.databaseId ).name, true, "Materialized View" );
 
             try {
                 // Get a exclusive global schema lock
@@ -230,12 +189,92 @@ public class MaterializedManagerImpl extends MaterializedManager {
             } catch ( DeadlockException e ) {
                 throw new RuntimeException( e );
             }
-            updateData( transaction, dataStores, columns, RelRoot.of( catalogMaterialized.getDefinition(), SqlKind.SELECT ), catalogMaterialized );
+            updateData( transaction, viewId );
             commitTransaction( transaction );
 
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             e.printStackTrace();
         }
+    }
+
+
+    @Override
+    public void addData( Transaction transaction, List<DataStore> stores, Map<Integer, List<CatalogColumn>> columns, RelRoot sourceRel, CatalogMaterialized materializedView ) {
+        addMaterializedInfo( materializedView.id, materializedView.getMaterializedCriteria() );
+
+        Statement sourceStatement = transaction.createStatement();
+        List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
+        DataMigrator dataMigrator = transaction.getDataMigrator();
+
+        RelOptCluster cluster = RelOptCluster.create(
+                sourceStatement.getQueryProcessor().getPlanner(),
+                new RexBuilder( sourceStatement.getTransaction().getTypeFactory() ) );
+
+        prepareNode( sourceRel.rel, cluster, materializedView.getRelCollation() );
+
+        for ( int id : materializedView.placementsByAdapter.keySet() ) {
+            Statement targetStatement = transaction.createStatement();
+            columnPlacements.clear();
+
+            columns.get( id ).forEach( column -> columnPlacements.add( Catalog.getInstance().getColumnPlacement( id, column.id ) ) );
+
+            RelRoot targetRel = dataMigrator.buildInsertStatement( targetStatement, columnPlacements );
+
+            dataMigrator.executeQuery( columns.get( id ), sourceRel, sourceStatement, targetStatement, targetRel, true );
+        }
+
+    }
+
+
+    public void updateData( Transaction transaction, Long viewId ) {
+        Catalog catalog = Catalog.getInstance();
+
+        DataMigrator dataMigrator = transaction.getDataMigrator();
+        Statement sourceStatement = transaction.createStatement();
+        Statement deleteStatement = transaction.createStatement();
+
+        List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
+        Map<Integer, List<CatalogColumn>> columns = new HashMap<>();
+
+        List<Integer> ids = new ArrayList<>();
+        CatalogMaterialized catalogMaterialized = (CatalogMaterialized) catalog.getTable( viewId );
+        for ( int id : catalogMaterialized.placementsByAdapter.keySet() ) {
+            ids.add( id );
+            List<CatalogColumn> catalogColumns = new ArrayList<>();
+            if ( catalogMaterialized.placementsByAdapter.containsKey( id ) ) {
+                catalogMaterialized.placementsByAdapter.get( id ).forEach( col ->
+                        catalogColumns.add( catalog.getColumn( col ) )
+                );
+                columns.put( id, catalogColumns );
+            }
+        }
+
+        RelOptCluster cluster = RelOptCluster.create(
+                sourceStatement.getQueryProcessor().getPlanner(),
+                new RexBuilder( sourceStatement.getTransaction().getTypeFactory() ) );
+
+        prepareNode( catalogMaterialized.getDefinition(), cluster, catalogMaterialized.getRelCollation() );
+
+        RelRoot targetRel;
+
+        for ( int id : ids ) {
+            columnPlacements.clear();
+            Statement targetStatement = transaction.createStatement();
+
+            columns.get( id ).forEach( column -> columnPlacements.add( Catalog.getInstance().getColumnPlacement( id, column.id ) ) );
+            RelBuilder relBuilder = RelBuilder.create( deleteStatement );
+            RelNode relNode = relBuilder.scan( catalogMaterialized.name ).build();
+
+            //delete all data
+            targetRel = dataMigrator.buildDeleteStatement( targetStatement, columnPlacements );
+            dataMigrator.executeQuery( columns.get( id ), RelRoot.of( relNode, SqlKind.SELECT ), deleteStatement, targetStatement, targetRel, true );
+
+            //insert new data
+            targetRel = dataMigrator.buildInsertStatement( targetStatement, columnPlacements );
+            dataMigrator.executeQuery( columns.get( id ), RelRoot.of( catalogMaterialized.getDefinition(), SqlKind.SELECT ), sourceStatement, targetStatement, targetRel, true );
+
+        }
+
     }
 
 
@@ -257,104 +296,6 @@ public class MaterializedManagerImpl extends MaterializedManager {
         }
     }
 
-
-    @Override
-    public void addData( Transaction transaction, List<DataStore> stores, Map<Integer, List<CatalogColumn>> columns, RelRoot sourceRel, CatalogMaterialized materializedView ) {
-        addMaterializedInfo( materializedView.id, materializedView.getMaterializedCriteria() );
-
-        Statement sourceStatement = transaction.createStatement();
-        List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
-        DataMigrator dataMigrator = transaction.getDataMigrator();
-
-        List<Integer> ids = new ArrayList<>();
-        for ( DataStore store : stores ) {
-            ids.add( store.getAdapterId() );
-        }
-
-        RelCollation relCollation = materializedView.getRelCollation();
-
-        RelOptCluster cluster = RelOptCluster.create(
-                sourceStatement.getQueryProcessor().getPlanner(),
-                new RexBuilder( sourceStatement.getTransaction().getTypeFactory() ) );
-
-        prepareNode( sourceRel.rel, cluster, relCollation );
-
-        for ( int id : ids ) {
-            Statement targetStatement = transaction.createStatement();
-            columnPlacements.clear();
-
-            columns.get( id ).forEach( column -> columnPlacements.add( Catalog.getInstance().getColumnPlacement( id, column.id ) ) );
-
-            RelRoot targetRel = dataMigrator.buildInsertStatement( targetStatement, columnPlacements );
-
-            dataMigrator.executeQuery( columns.get( id ), sourceRel, sourceStatement, targetStatement, targetRel, true );
-        }
-
-    }
-
-
-    public void updateData( Transaction transaction, List<DataStore> stores, Map<Integer, List<CatalogColumn>> columns, RelRoot sourceRel, CatalogMaterialized view ) {
-        Statement sourceStatement = transaction.createStatement();
-        Statement deleteStatement = transaction.createStatement();
-        List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
-        DataMigrator dataMigrator = transaction.getDataMigrator();
-
-        List<Integer> ids = new ArrayList<>();
-        for ( DataStore store : stores ) {
-            ids.add( store.getAdapterId() );
-        }
-
-        RelCollation relCollation = view.getRelCollation();
-
-        RelOptCluster cluster = RelOptCluster.create(
-                sourceStatement.getQueryProcessor().getPlanner(),
-                new RexBuilder( sourceStatement.getTransaction().getTypeFactory() ) );
-
-        prepareNode( sourceRel.rel, cluster, relCollation );
-
-        RelRoot targetRel;
-
-        for ( int id : ids ) {
-            columnPlacements.clear();
-            Statement targetStatement = transaction.createStatement();
-
-            columns.get( id ).forEach( column -> columnPlacements.add( Catalog.getInstance().getColumnPlacement( id, column.id ) ) );
-            RelBuilder relBuilder = RelBuilder.create( deleteStatement );
-            RelNode relNode = relBuilder.scan( view.name ).build();
-
-            //delete all data
-            targetRel = dataMigrator.buildDeleteStatement( targetStatement, columnPlacements );
-            dataMigrator.executeQuery( columns.get( id ), RelRoot.of( relNode, SqlKind.SELECT ), deleteStatement, targetStatement, targetRel, true );
-
-            //RelRoot sourceRel = getSourceRel( view, sourceStatement, dataMigrator );
-
-            //insert new data
-            targetRel = dataMigrator.buildInsertStatement( targetStatement, columnPlacements );
-            dataMigrator.executeQuery( columns.get( id ), sourceRel, sourceStatement, targetStatement, targetRel, true );
-
-        }
-
-    }
-
-
-    /*
-    private RelRoot getSourceRel( CatalogMaterialized view, Statement sourceStatement, DataMigrator dataMigrator ) {
-        List<CatalogColumnPlacement> catalogColumns = new ArrayList<>();
-        for ( Long tableId : view.getUnderlyingTables().keySet() ) {
-            Catalog catalog = Catalog.getInstance();
-            CatalogTable catalogTable = catalog.getTable( tableId );
-            for ( int colId : catalogTable.placementsByAdapter.keySet() ) {
-
-                if ( catalogTable.placementsByAdapter.containsKey( colId ) ) {
-                    catalogTable.placementsByAdapter.get( colId ).forEach( col ->
-                            catalogColumns.add( catalog.getColumnPlacement( AdapterManager.getInstance().getStore( colId ).getAdapterId(), col ) )
-                    );
-                }
-            }
-        }
-        return dataMigrator.getSourceIterator( sourceStatement, catalogColumns );
-    }
-*/
 
     public void prepareNode( RelNode viewLogicalRoot, RelOptCluster relOptCluster, RelCollation relCollation ) {
         if ( viewLogicalRoot instanceof AbstractRelNode ) {
