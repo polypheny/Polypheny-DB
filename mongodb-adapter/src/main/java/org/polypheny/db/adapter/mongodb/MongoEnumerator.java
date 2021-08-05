@@ -129,14 +129,18 @@ class MongoEnumerator implements Enumerator<Object> {
 
     // s -> stream
     private Object handleDocument( Document el ) {
-        String type = el.getString( "_type" );
-        if ( type.equals( "s" ) ) {
-            // if we have inserted a document and have distributed chunks which we have to fetch
-            ObjectId objectId = new ObjectId( (String) ((Document) current).get( "_id" ) );
-            GridFSDownloadStream stream = bucket.openDownloadStream( objectId );
-            return new PushbackInputStream( stream );
+        if ( el.containsKey( "_type" ) ) {
+            String type = el.getString( "_type" );
+            if ( type.equals( "s" ) ) {
+                // if we have inserted a document and have distributed chunks which we have to fetch
+                ObjectId objectId = new ObjectId( (String) ((Document) current).get( "_id" ) );
+                GridFSDownloadStream stream = bucket.openDownloadStream( objectId );
+                return new PushbackInputStream( stream );
+            }
+            throw new RuntimeException( "The document type was not recognized" );
+        } else {
+            return el.toJson();
         }
-        throw new RuntimeException( "The document type was not recognized" );
     }
 
 

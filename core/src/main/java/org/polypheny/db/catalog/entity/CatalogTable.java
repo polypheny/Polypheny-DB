@@ -88,7 +88,7 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
         this.partitionIds = null;
         this.partitionColumnId = 0;
         this.numPartitions = 0;
-        this.connectedViews = ImmutableList.<Long>builder().build();
+        this.connectedViews = ImmutableList.of();
 
         if ( type == TableType.TABLE && !modifiable ) {
             throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );

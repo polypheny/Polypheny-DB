@@ -187,6 +187,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
      * "{$group: {_id: '$city', c: {$sum: 1}, p: {$sum: '$pop'}}}")
      * </code>
      *
+     * @param dataContext
      * @param session
      * @param mongoDb MongoDB connection
      * @param fields List of fields to project; or null to return map
@@ -196,7 +197,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
      * @return Enumerator of results
      */
     private Enumerable<Object> aggregate(
-            ClientSession session,
+            DataContext dataContext, ClientSession session,
             final MongoDatabase mongoDb,
             MongoTable table,
             final List<Entry<String, Class>> fields,
@@ -222,16 +223,16 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
         } else {
             // prepared
             preOps.stream()
-                    .map( op -> new MongoDynamic( new BsonDocument( "$addFields", op ), mongoSchema.getBucket() ) )
+                    .map( op -> new MongoDynamic( new BsonDocument( "$addFields", op ), mongoSchema.getBucket(), dataContext ) )
                     .forEach( util -> list.add( util.insert( parameterValues ) ) );
 
             if ( !filter.isEmpty() ) {
-                MongoDynamic util = new MongoDynamic( filter, getMongoSchema().getBucket() );
+                MongoDynamic util = new MongoDynamic( filter, getMongoSchema().getBucket(), dataContext );
                 list.add( new BsonDocument( "$match", util.insert( parameterValues ) ) );
             }
 
             for ( String operation : operations ) {
-                MongoDynamic opUtil = new MongoDynamic( BsonDocument.parse( operation ), getMongoSchema().getBucket() );
+                MongoDynamic opUtil = new MongoDynamic( BsonDocument.parse( operation ), getMongoSchema().getBucket(), dataContext );
                 list.add( opUtil.insert( parameterValues ) );
             }
 
@@ -348,6 +349,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
             }
 
             return getTable().aggregate(
+                    dataContext,
                     session,
                     getMongoDb(),
                     getTable(),
@@ -418,7 +420,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                     if ( dataContext.getParameterValues().size() != 0 ) {
                         assert operations.size() == 1;
                         // prepared
-                        MongoDynamic util = new MongoDynamic( BsonDocument.parse( operations.get( 0 ) ), bucket );
+                        MongoDynamic util = new MongoDynamic( BsonDocument.parse( operations.get( 0 ) ), bucket, dataContext );
                         List<Document> inserts = util.getAll( dataContext.getParameterValues() );
                         mongoTable.getCollection().insertMany( session, inserts );
                         changes = inserts.size();
@@ -435,8 +437,8 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                     // we use only update docs
                     if ( dataContext.getParameterValues().size() != 0 ) {
                         // prepared
-                        MongoDynamic filterUtil = new MongoDynamic( BsonDocument.parse( filter ), bucket );
-                        MongoDynamic docUtil = new MongoDynamic( BsonDocument.parse( operations.get( 0 ) ), bucket );
+                        MongoDynamic filterUtil = new MongoDynamic( BsonDocument.parse( filter ), bucket, dataContext );
+                        MongoDynamic docUtil = new MongoDynamic( BsonDocument.parse( operations.get( 0 ) ), bucket, dataContext );
                         for ( Map<Long, Object> parameterValue : dataContext.getParameterValues() ) {
                             if ( onlyOne ) {
                                 changes += mongoTable
@@ -470,7 +472,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                 case DELETE:
                     if ( dataContext.getParameterValues().size() != 0 ) {
                         // prepared
-                        MongoDynamic filterUtil = new MongoDynamic( BsonDocument.parse( filter ), bucket );
+                        MongoDynamic filterUtil = new MongoDynamic( BsonDocument.parse( filter ), bucket, dataContext );
                         List<? extends WriteModel<Document>> filters;
                         if ( onlyOne ) {
                             filters = filterUtil.getAll( dataContext.getParameterValues(), DeleteOneModel::new );

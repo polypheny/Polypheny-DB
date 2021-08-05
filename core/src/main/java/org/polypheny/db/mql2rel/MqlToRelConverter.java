@@ -205,7 +205,7 @@ public class MqlToRelConverter {
 
     private boolean excludedId = false;
     private boolean _dataExists = true;
-    private boolean elemMatchActive;
+    private boolean elemMatchActive = false;
     private String defaultDatabase;
     private boolean notActive = false;
 
@@ -228,6 +228,7 @@ public class MqlToRelConverter {
         excludedId = false;
         _dataExists = true;
         notActive = false;
+        elemMatchActive = false;
     }
 
 

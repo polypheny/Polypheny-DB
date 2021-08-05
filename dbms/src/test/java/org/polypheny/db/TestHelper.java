@@ -22,6 +22,7 @@ import static org.junit.Assert.fail;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -279,7 +280,12 @@ public class TestHelper {
 
 
         private static Result getBody( HttpResponse<String> res ) {
-            return gson.fromJson( res.getBody(), Result.class );
+            try {
+                return gson.fromJson( res.getBody(), Result.class );
+            } catch ( JsonSyntaxException e ) {
+                fail();
+                throw new RuntimeException( "This cannot happen" );
+            }
         }
 
     }

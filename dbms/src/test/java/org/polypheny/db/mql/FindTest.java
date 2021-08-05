@@ -32,9 +32,14 @@ import org.polypheny.db.mongoql.model.Result;
 public class FindTest extends MqlTestTemplate {
 
 
-    private List<String> DATA_0 = Arrays.asList(
+    private final List<String> DATA_0 = Arrays.asList(
             "{\"test\":1}",
             "{\"test\":1.3,\"key\":\"val\"}",
+            "{\"test\":\"test\",\"key\":13}" );
+
+    private final List<String> DATA_1 = Arrays.asList(
+            "{\"test\":{\"sub\":[1,3]}}",
+            "{\"test\":{\"sub\":1.3,\"sub2\":[1,23]},\"key\":\"val\"}",
             "{\"test\":\"test\",\"key\":13}" );
 
 
@@ -108,6 +113,57 @@ public class FindTest extends MqlTestTemplate {
                                 .map( e -> new Object[]{ "_id", e } )
                                 .collect( Collectors.toList() ) ) );
 
+    }
+
+
+    @Test
+    public void projectExcludeIdTest() {
+        List<Object[]> expected = Arrays.asList(
+                new String[]{ "{\"test\":1}" },
+                new String[]{ "{\"test\":1.3,\"key\":\"val\"}" },
+                new String[]{ "{\"test\":\"test\",\"key\":13}" } );
+        insertMany( DATA_0 );
+
+        Result result = find( "{}", "{\"_id\":0}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        expected ) );
+    }
+
+
+    @Test
+    public void projectExcludeTest() {
+        List<Object[]> expected = Arrays.asList(
+                new String[]{ "id_", "{}" },
+                new String[]{ "id_", "{\"key\":\"val\"}" },
+                new String[]{ "id_", "{\"key\":13}" } );
+        insertMany( DATA_0 );
+
+        Result result = find( "{}", "{\"test\":0}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        expected ) );
+    }
+
+
+    @Test
+    public void projectExcludeSubTest() {
+        List<Object[]> expected = Arrays.asList(
+                new String[]{ "id_", "{\"test\":{}}" },
+                new String[]{ "id_", "{\"test\":{\"sub2\":[1,23]},\"key\":\"val\"}" },
+                new String[]{ "id_", "{\"test\":\"test\",\"key\":13}" } );
+        insertMany( DATA_1 );
+
+        Result result = find( "{}", "{\"test.sub\":0}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        expected ) );
     }
 
 

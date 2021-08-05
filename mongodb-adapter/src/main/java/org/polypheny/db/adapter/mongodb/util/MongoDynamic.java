@@ -31,7 +31,9 @@ import org.bson.BsonString;
 import org.bson.BsonType;
 import org.bson.BsonValue;
 import org.bson.Document;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.type.PolyType;
 
 
@@ -49,9 +51,11 @@ public class MongoDynamic {
     private final BsonDocument document;
     private final HashMap<Long, Boolean> isRegexMap = new HashMap<>();
     private final HashMap<Long, Boolean> isFuncMap = new HashMap<>();
+    private final DataContext dataContext;
 
 
-    public MongoDynamic( BsonDocument preDocument, GridFSBucket bucket ) {
+    public MongoDynamic( BsonDocument preDocument, GridFSBucket bucket, DataContext dataContext ) {
+        this.dataContext = dataContext;
         this.document = preDocument.clone();
         this.bucket = bucket;
         this.document.forEach( ( k, bsonValue ) -> replaceDynamic( bsonValue, this.document, k, true ) );
@@ -80,7 +84,21 @@ public class MongoDynamic {
                 } else {
                     pos = bsonIndex.asInt32().getValue();
                 }
+                // due to the caching the type saved in the MongoDynamic may vary for the document model
                 PolyType polyTyp = PolyType.valueOf( ((BsonDocument) preDocument).get( "_type" ).asString().getValue() );
+
+                RelDataType prepRelType = dataContext.getParameterType( bsonIndex.asNumber().intValue() );
+                if ( prepRelType != null ) {
+                    PolyType prepPolyType = prepRelType.getPolyType();
+
+                    if ( prepPolyType == PolyType.ARRAY ) {
+                        prepPolyType = prepRelType.getComponentType().getPolyType();
+                    }
+
+                    if ( polyTyp != prepPolyType ) {
+                        polyTyp = prepPolyType;
+                    }
+                }
 
                 if ( isDoc ) {
                     addHandle( pos, (BsonDocument) parent, (String) key, polyTyp, isRegex, isFunction );

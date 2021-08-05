@@ -17,6 +17,7 @@
 package org.polypheny.db.mql;
 
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -54,6 +55,71 @@ public class MqlTestTemplate {
     }
 
 
+    protected String $addFields( String doc ) {
+        return "{\"$addFields\":" + doc + "}";
+    }
+
+
+    protected String $count( String doc ) {
+        return "{\"$count\":" + doc + "}";
+    }
+
+
+    protected String $group( String doc ) {
+        return "{\"$group\":" + doc + "}";
+    }
+
+
+    protected String $limit( Integer limit ) {
+        return "{\"$limit\":" + limit + "}";
+    }
+
+
+    protected String $match( String doc ) {
+        return "{\"$match\":" + doc + "}";
+    }
+
+
+    protected String $project( String doc ) {
+        return "{\"$project\":" + doc + "}";
+    }
+
+
+    protected String $replaceRoot( String doc ) {
+        return "{\"$replaceRoot\":" + doc + "}";
+    }
+
+
+    protected String $replaceWith( String doc ) {
+        return "{\"$replaceWith\":" + doc + "}";
+    }
+
+
+    protected String $set( String doc ) {
+        return "{\"$set\":" + doc + "}";
+    }
+
+
+    protected String $skip( String doc ) {
+        return "{\"$skip\":" + doc + "}";
+    }
+
+
+    protected String $sort( String doc ) {
+        return "{\"$skip\":" + doc + "}";
+    }
+
+
+    protected String $unset( String doc ) {
+        return "{\"$unset\":" + doc + "}";
+    }
+
+
+    protected String $unwind( String path ) {
+        return "{\"$unwind\":" + path + "}";
+    }
+
+
     public static void insert( String json ) {
         insert( json, database );
     }
@@ -81,6 +147,16 @@ public class MqlTestTemplate {
 
     protected Result find( String query, String project, String db ) {
         return MongoConnection.executeGetResponse( "db." + db + ".find(" + query + "," + project + ")" );
+    }
+
+
+    protected Result aggregate( String... stages ) {
+        return aggregate( database, Arrays.asList( stages ) );
+    }
+
+
+    protected Result aggregate( String db, List<String> stages ) {
+        return MongoConnection.executeGetResponse( "db." + db + ".aggregate([" + String.join( ",", stages ) + "])" );
     }
 
 
