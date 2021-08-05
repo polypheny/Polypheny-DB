@@ -176,6 +176,8 @@ public class PostgresqlSqlDialect extends SqlDialect {
                 return "int2"; // Postgres has no tinyint (1 byte), so instead cast to smallint (2 bytes)
             case DOUBLE:
                 return "float8";
+            case REAL:
+                return "float4";
             default:
                 return super.getArrayComponentTypeString( type );
         }

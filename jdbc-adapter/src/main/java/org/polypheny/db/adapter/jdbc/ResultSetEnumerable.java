@@ -299,17 +299,11 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             if ( connectionHandler.getDialect().supportsNestedArrays() ) {
                 SqlType componentType;
                 if ( type != null ) {
-                    if ( value instanceof ArrayList ) {
-                        preparedStatement.setArray( i, (Array) value );
-                    } else {
-                        RelDataType t = type;
-                        while ( t.getComponentType().getPolyType() == PolyType.ARRAY ) {
-                            t = t.getComponentType();
-                        }
-                        componentType = SqlType.valueOf( t.getComponentType().getPolyType().getJdbcOrdinal() );
-                        Array array = connectionHandler.createArrayOf( connectionHandler.getDialect().getArrayComponentTypeString( componentType ), ((List<?>) value).toArray() );
-                        preparedStatement.setArray( i, array );
+                    RelDataType t = type;
+                    while ( t.getComponentType().getPolyType() == PolyType.ARRAY ) {
+                        t = t.getComponentType();
                     }
+                    componentType = SqlType.valueOf( t.getComponentType().getPolyType().getJdbcOrdinal() );
                 } else {
                     if ( ((List<?>) value).get( 0 ) instanceof String ) {
                         componentType = SqlType.VARCHAR;
@@ -328,9 +322,9 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
                     } else {
                         throw new RuntimeException( "Unknown array type: " + ((List<?>) value).get( 0 ).getClass().getName() );
                     }
-                    Array array = connectionHandler.createArrayOf( connectionHandler.getDialect().getArrayComponentTypeString( componentType ), ((List<?>) value).toArray() );
-                    preparedStatement.setArray( i, array );
                 }
+                Array array = connectionHandler.createArrayOf( connectionHandler.getDialect().getArrayComponentTypeString( componentType ), ((List<?>) value).toArray() );
+                preparedStatement.setArray( i, array );
             } else {
                 preparedStatement.setString( i, gson.toJson( value ) );
             }
