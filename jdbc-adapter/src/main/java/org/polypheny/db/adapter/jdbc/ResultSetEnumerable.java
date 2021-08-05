@@ -299,7 +299,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             if ( connectionHandler.getDialect().supportsNestedArrays() ) {
                 SqlType componentType;
                 if ( type != null ) {
-                    if ( value instanceof Array ) {
+                    if ( value instanceof ArrayList ) {
                         preparedStatement.setArray( i, (Array) value );
                     } else {
                         RelDataType t = type;
