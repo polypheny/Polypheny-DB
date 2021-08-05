@@ -65,4 +65,12 @@ public interface MqlStdOperatorTable {
 
     MqlFunctionOperator DOC_EXISTS = new MqlFunctionOperator( "DOC_EXISTS", SqlKind.DOC_EXISTS );
 
+    MqlFunctionOperator DOC_LT = new MqlFunctionOperator( "DOC_LT", SqlKind.LESS_THAN );
+
+    MqlFunctionOperator DOC_GT = new MqlFunctionOperator( "DOC_GT", SqlKind.GREATER_THAN );
+
+    MqlFunctionOperator DOC_LTE = new MqlFunctionOperator( "DOC_LTE", SqlKind.LESS_THAN_OR_EQUAL );
+
+    MqlFunctionOperator DOC_GTE = new MqlFunctionOperator( "DOC_GTE", SqlKind.GREATER_THAN_OR_EQUAL );
+
 }

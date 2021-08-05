@@ -22,16 +22,13 @@ import static org.junit.Assert.fail;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Field;
-import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -220,46 +217,41 @@ public class TestHelper {
     }
 
 
-    public static class MongoConnection implements AutoCloseable {
+    public static class MongoConnection {
 
         static Gson gson = new Gson();
+        static String defaultDB = "test";
 
 
-        public MongoConnection() {
+        private MongoConnection() {
         }
 
 
-        public static boolean checkResultSet( List<Result> results, List<Object[]> expected ) {
+        public static boolean checkResultSet( Result result, List<Object[]> expected ) {
 
-            assertEquals( expected.size(), results.size() );
-            int pos = 0;
-            for ( Result result : results ) {
-                int j = 0;
-                for ( String[] data : result.getData() ) {
-                    int i = 0;
-                    for ( String entry : data ) {
-                        if ( !result.getHeader()[i].name.equals( "_id" ) ) {
-                            assertEquals( expected.get( pos )[i], entry );
+            assertEquals( expected.size(), result.getData().length );
+
+            int j = 0;
+            for ( String[] data : result.getData() ) {
+                int i = 0;
+                for ( String entry : data ) {
+                    if ( !result.getHeader()[i].name.equals( "_id" ) ) {
+                        if ( entry != null && expected.get( j )[i] != null ) {
+                            assertEquals( ((String) expected.get( j )[i]).replace( " ", "" ), entry.replace( " ", "" ) );
+                        } else {
+                            assertEquals( expected.get( j )[i], entry );
                         }
-                        i++;
                     }
-                    j++;
+                    i++;
                 }
-
-                pos++;
+                j++;
             }
 
             return true;
         }
 
 
-        @Override
-        public void close() throws Exception {
-            // empty on purpose
-        }
-
-
-        private HttpRequest<?> buildQuery( String mql ) {
+        private static HttpRequest<?> buildQuery( String mql ) {
             JsonObject data = new JsonObject();
             data.addProperty( "query", mql );
             data.addProperty( "database", "test" );
@@ -271,8 +263,13 @@ public class TestHelper {
         }
 
 
-        public HttpResponse<String> execute( String mql ) {
-            HttpRequest<?> request = buildQuery( mql );
+        public static Result executeGetResponse( String mongoQl ) {
+            return getBody( execute( mongoQl ) );
+        }
+
+
+        private static HttpResponse<String> execute( String mql ) {
+            HttpRequest<?> request = MongoConnection.buildQuery( mql );
             request.basicAuth( "pa", "" );
             request.routeParam( "protocol", "http" );
             request.routeParam( "host", "127.0.0.1" );
@@ -281,10 +278,8 @@ public class TestHelper {
         }
 
 
-        public List<Result> getBody( HttpResponse<String> res ) {
-            Type type = new TypeToken<ArrayList<Result>>() {
-            }.getType();
-            return gson.fromJson( res.getBody(), type );
+        private static Result getBody( HttpResponse<String> res ) {
+            return gson.fromJson( res.getBody(), Result.class );
         }
 
     }

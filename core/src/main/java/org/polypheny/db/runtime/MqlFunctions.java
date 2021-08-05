@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.bson.BsonArray;
@@ -273,8 +274,50 @@ public class MqlFunctions {
             }
         }
 
-        boolean tes = SqlFunctions.eqAny( b0, b1 );
-        return tes;
+        return SqlFunctions.eqAny( b0, b1 );
+    }
+
+
+    public static boolean docGt( Object b0, Object b1 ) {
+        return compNullExecute(
+                b0,
+                b1,
+                () -> SqlFunctions.gtAny( b0, b1 ) );
+    }
+
+
+    public static boolean docGte( Object b0, Object b1 ) {
+        return compNullExecute(
+                b0,
+                b1,
+                () -> (SqlFunctions.gtAny( b0, b1 ) || SqlFunctions.eqAny( b0, b1 )) );
+    }
+
+
+    public static boolean docLt( Object b0, Object b1 ) {
+        return compNullExecute(
+                b0,
+                b1,
+                () -> SqlFunctions.ltAny( b0, b1 ) );
+    }
+
+
+    public static boolean docLte( Object b0, Object b1 ) {
+        return compNullExecute(
+                b0,
+                b1,
+                () -> (SqlFunctions.ltAny( b0, b1 ) || SqlFunctions.eqAny( b0, b1 )) );
+    }
+
+
+    private static boolean compNullExecute( Object b0, Object b1, Supplier<Boolean> predicate ) {
+        if ( b0 == null || b1 == null ) {
+            return false;
+        }
+        if ( !(b0 instanceof Number) || !(b1 instanceof Number) ) {
+            return false;
+        }
+        return predicate.get();
     }
 
 
@@ -380,6 +423,8 @@ public class MqlFunctions {
                 return doc.asInt32().getValue();
             case INT64:
                 return doc.asInt64().getValue();
+            case DOUBLE:
+                return doc.asDouble().getValue();
             case STRING:
                 return doc.asString().getValue();
             case DECIMAL128:

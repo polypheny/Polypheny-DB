@@ -433,11 +433,11 @@ public class Mql2RelFindTest extends Mql2RelTest {
     public void testMultipleInclusion() {
         RelRoot root = translate( find( "", "\"key\": 1, \"key1\": 1" ) );
 
-        RexCall projection1 = getUnderlyingProjection( root, 2 );
+        RexCall projection1 = getUnderlyingProjection( root, 1 );
 
         testJsonValue( projection1, "key" );
 
-        RexCall projection2 = getUnderlyingProjection( root, 1 );
+        RexCall projection2 = getUnderlyingProjection( root, 2 );
 
         testJsonValue( projection2, "key1" );
 
@@ -542,11 +542,11 @@ public class Mql2RelFindTest extends Mql2RelTest {
     public void testMixRenameAndInclusion() {
         RelRoot root = translate( find( "", "\"newName\": \"$key\", \"key1\": 1" ) );
 
-        RexCall key = getUnderlyingProjection( root, 2 );
+        RexCall key = getUnderlyingProjection( root, 1 );
 
         testJsonValue( key, "key" );
 
-        RexCall key1 = getUnderlyingProjection( root, 1 );
+        RexCall key1 = getUnderlyingProjection( root, 2 );
 
         testJsonValue( key1, "key1" );
 
@@ -714,7 +714,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
     private void testJsonValueCond( RexCall condition, String key, Object value, SqlKind kind ) {
         assertEquals( kind, condition.op.kind );
 
-        if ( Arrays.asList(
+       /*if ( Arrays.asList(
                 SqlKind.GREATER_THAN,
                 SqlKind.GREATER_THAN_OR_EQUAL,
                 SqlKind.LESS_THAN,
@@ -722,11 +722,11 @@ public class Mql2RelFindTest extends Mql2RelTest {
             assertEquals( SqlKind.CAST, condition.operands.get( 0 ).getKind() );
 
             // test json value
-            testJsonValue( assertRexCall( assertRexCall( condition, 0 ), 0 ), key );
-        } else {
+            testJsonValue( assertRexCall(, 0 ), key );
+        } else {*/
             // test json value
             testJsonValue( assertRexCall( condition, 0 ), key );
-        }
+        //}
 
         // test initial comp value
         testCastLiteral( condition.operands.get( 1 ), value, value.getClass() );

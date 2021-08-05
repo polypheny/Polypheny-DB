@@ -411,6 +411,10 @@ public enum BuiltInMethod {
     RESULTSET_GETBINARYSTREAM( ResultSet.class, "getBinaryStream", int.class ),
     /// MQL BUILT-IN METHODS
     DOC_EQ( MqlFunctions.class, "docEq", Object.class, Object.class ),
+    DOC_GT( MqlFunctions.class, "docGt", Object.class, Object.class ),
+    DOC_GTE( MqlFunctions.class, "docGte", Object.class, Object.class ),
+    DOC_LT( MqlFunctions.class, "docLt", Object.class, Object.class ),
+    DOC_LTE( MqlFunctions.class, "docLte", Object.class, Object.class ),
     DOC_SIZE_MATCH( MqlFunctions.class, "docSizeMatch", Object.class, int.class ),
     DOC_JSON_MATCH( MqlFunctions.class, "docJsonMatch", Object.class, String.class ),
     DOC_REGEX_MATCH( MqlFunctions.class, "docRegexMatch", Object.class, String.class, boolean.class, boolean.class, boolean.class, boolean.class ),

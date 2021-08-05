@@ -172,7 +172,7 @@ public class MongoQlServer extends QueryInterface {
             throw new RuntimeException( "error while committing" );
         }
 
-        return gson.toJson( results );
+        return gson.toJson( results.get( 0 ) );
     }
 
 

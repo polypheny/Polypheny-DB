@@ -126,10 +126,10 @@ public class MqlToRelConverter {
 
         mappings = new HashMap<>();
 
-        mappings.put( "$lt", SqlStdOperatorTable.LESS_THAN );
-        mappings.put( "$gt", SqlStdOperatorTable.GREATER_THAN );
-        mappings.put( "$lte", SqlStdOperatorTable.LESS_THAN_OR_EQUAL );
-        mappings.put( "$gte", SqlStdOperatorTable.GREATER_THAN_OR_EQUAL );
+        mappings.put( "$lt", MqlStdOperatorTable.DOC_LT );
+        mappings.put( "$gt", MqlStdOperatorTable.DOC_GT );
+        mappings.put( "$lte", MqlStdOperatorTable.DOC_LTE );
+        mappings.put( "$gte", MqlStdOperatorTable.DOC_GTE );
 
         mathComperators.putAll( mappings );
 
@@ -1520,7 +1520,7 @@ public class MqlToRelConverter {
                 if ( parentKey != null ) {
                     RexNode id = getIdentifier( parentKey, rowType );
                     if ( mathComperators.containsKey( key ) ) {
-                        id = cluster.getRexBuilder().makeCast( cluster.getTypeFactory().createPolyType( PolyType.BIGINT ), id );
+                        //id = cluster.getRexBuilder().makeCast( cluster.getTypeFactory().createPolyType( PolyType.BIGINT ), id );
                     }
                     nodes.add( id );
                 }
@@ -1921,15 +1921,15 @@ public class MqlToRelConverter {
     private RelNode combineProjection( BsonDocument projection, RelNode node, RelDataType rowType, boolean isAddFields, boolean isUnset ) {
         Map<String, RexNode> includes = new HashMap<>();
         List<String> excludes = new ArrayList<>();
+        List<String> includesOrder = new ArrayList<>();
 
         for ( Entry<String, BsonValue> entry : projection.entrySet() ) {
             BsonValue value = entry.getValue();
             if ( value.isNumber() && !isAddFields ) {
                 // we have a simple projection; [name]: 1 (include) or [name]:0 (exclude)
-                RelDataTypeField field = getTypeFieldOrDefault( rowType, entry.getKey() );
-
                 if ( value.asNumber().intValue() == 1 ) {
                     includes.put( entry.getKey(), getIdentifier( entry.getKey(), rowType ) );
+                    includesOrder.add( entry.getKey() );
                 } else if ( value.asNumber().intValue() == 0 ) {
                     excludes.add( entry.getKey() );
                 }
@@ -1937,23 +1937,27 @@ public class MqlToRelConverter {
             } else if ( value.isString() && value.asString().getValue().startsWith( "$" ) ) {
                 // we have a renaming; [new name]: $[old name] ( this counts as a inclusion projection
                 String oldName = value.asString().getValue().substring( 1 );
-                RelDataTypeField field = getTypeFieldOrDefault( rowType, oldName );
 
                 includes.put( entry.getKey(), getIdentifier( oldName, rowType ) );
+                includesOrder.add( entry.getKey() );
             } else if ( value.isDocument() && value.asDocument().size() == 1 && value.asDocument().getFirstKey().startsWith( "$" ) ) {
                 String func = value.asDocument().getFirstKey();
                 RelDataTypeField field = getDefaultDataField( rowType );
                 if ( mathOperators.containsKey( func ) ) {
                     includes.put( entry.getKey(), convertMath( func, entry.getKey(), value.asDocument().get( func ), rowType, false ) );
+                    includesOrder.add( entry.getKey() );
                 } else if ( func.equals( "$arrayElemAt" ) ) {
                     includes.put( entry.getKey(), convertArrayAt( entry.getKey(), value.asDocument().get( func ), rowType, field ) );
+                    includesOrder.add( entry.getKey() );
                 } else if ( func.equals( "$slice" ) ) {
                     includes.put( entry.getKey(), convertSlice( entry.getKey(), value.asDocument().get( func ), rowType, field ) );
+                    includesOrder.add( entry.getKey() );
                 } else if ( func.equals( "$literal" ) ) {
                     if ( value.asDocument().get( func ).isInt32() && value.asDocument().get( func ).asInt32().getValue() == 0 ) {
                         excludes.add( entry.getKey() );
                     } else {
                         includes.put( entry.getKey(), getIdentifier( entry.getKey(), rowType ) );
+                        includesOrder.add( entry.getKey() );
                     }
                 }
             } else if ( isAddFields && !value.isDocument() ) {
@@ -1966,7 +1970,7 @@ public class MqlToRelConverter {
                 } else {
                     includes.put( entry.getKey(), convertLiteral( value ) );
                 }
-
+                includesOrder.add( entry.getKey() );
             } else if ( isUnset && value.isArray() ) {
                 for ( BsonValue bsonValue : value.asArray() ) {
                     if ( bsonValue.isString() ) {
@@ -2055,8 +2059,8 @@ public class MqlToRelConverter {
 
             return node;
         } else if ( includes.size() > 0 ) {
-            List<RexNode> values = new ArrayList<>( includes.values() );
-            List<String> names = new ArrayList<>( includes.keySet() );
+            List<RexNode> values = includesOrder.stream().map( includes::get ).collect( Collectors.toList() );
+            List<String> names = includesOrder;
 
             if ( !includes.containsKey( "_id" ) && !excludedId ) {
                 names.add( 0, "_id" );

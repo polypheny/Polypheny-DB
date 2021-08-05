@@ -313,6 +313,10 @@ public class RexImpTable {
 
         defineBinary( MqlStdOperatorTable.DOC_ITEM, ExpressionType.Parameter, NullPolicy.STRICT, "docItem" );
         defineImplementor( MqlStdOperatorTable.DOC_EQ, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_EQ.method ), false );
+        defineImplementor( MqlStdOperatorTable.DOC_GT, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_GT.method ), false );
+        defineImplementor( MqlStdOperatorTable.DOC_GTE, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_GTE.method ), false );
+        defineImplementor( MqlStdOperatorTable.DOC_LT, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_LT.method ), false );
+        defineImplementor( MqlStdOperatorTable.DOC_LTE, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_LTE.method ), false );
         defineImplementor( MqlStdOperatorTable.DOC_SIZE_MATCH, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_SIZE_MATCH.method ), false );
         defineImplementor( MqlStdOperatorTable.DOC_REGEX_MATCH, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_REGEX_MATCH.method ), false );
         defineImplementor( MqlStdOperatorTable.DOC_JSON_MATCH, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_JSON_MATCH.method ), false );

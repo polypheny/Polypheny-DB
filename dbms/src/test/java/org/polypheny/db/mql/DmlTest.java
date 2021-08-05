@@ -19,27 +19,52 @@ package org.polypheny.db.mql;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableList;
+import java.util.Arrays;
 import java.util.List;
-import kong.unirest.HttpResponse;
-import org.bson.BsonDocument;
-import org.bson.BsonInt32;
+import java.util.stream.Collectors;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.mongoql.model.Result;
 
+/**
+ * Integration tests, which use the MongoQL-interface to observe
+ * correctness of the MongoQL language and the document model
+ */
+@Category(AdapterTestSuite.class)
 public class DmlTest extends MqlTestTemplate {
 
     @Test
-    public void insert() {
-        MongoConnection connection = new MongoConnection();
+    public void insertTest() {
+        String data = "{\"test\":3}";
+        insert( data );
 
-        connection.execute( "db.test.insert({\"test\":3})" );
+        Result result = find( "{}", "{}" );
 
-        HttpResponse<String> res = connection.execute( "db.test.find({})" );
-        List<Result> results = connection.getBody( res );
         assertTrue(
-                MongoConnection.checkResultSet( results,
-                        ImmutableList.of( new Object[]{ "test", new BsonDocument( "test", new BsonInt32( 3 ) ).toJson().replace( " ", "" ) } ) ) );
+                MongoConnection.checkResultSet( result,
+                        ImmutableList.of( new Object[]{ "id_", data } ) ) );
+
     }
+
+
+    @Test
+    public void insertManyTest() {
+        List<String> data = Arrays.asList( "{\"test\":1}", "{\"test\":2}", "{\"test\":3}" );
+        insertMany( data );
+
+        Result result = find( "{}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        data
+                                .stream()
+                                .map( d -> new Object[]{ "id_", d } )
+                                .collect( Collectors.toList() ) ) );
+
+    }
+
 
 }

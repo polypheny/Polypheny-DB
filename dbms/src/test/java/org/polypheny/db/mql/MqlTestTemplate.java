@@ -17,14 +17,21 @@
 package org.polypheny.db.mql;
 
 import java.sql.SQLException;
+import java.util.List;
+import org.junit.After;
 import org.junit.BeforeClass;
-import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.MongoConnection;
+import org.polypheny.db.mongoql.model.Result;
 
+
+/**
+ * Test template, which wraps often-used MongoQL commands
+ * for easier execution
+ */
 public class MqlTestTemplate {
 
-    private static String database = "test";
+    public static String database = "test";
 
 
     @BeforeClass
@@ -36,15 +43,54 @@ public class MqlTestTemplate {
     }
 
 
-    private static void initDatabase() {
-        MongoConnection connection = new MongoConnection();
-
-        connection.execute( "use " + database );
+    @After
+    public void cleanDocuments() {
+        deleteMany( "{}" );
     }
 
 
-    @Test
-    public void useDatabase() {
+    private static void initDatabase() {
+        MongoConnection.executeGetResponse( "use " + database );
+    }
+
+
+    public static void insert( String json ) {
+        insert( json, database );
+    }
+
+
+    public static void insert( String json, String db ) {
+        MongoConnection.executeGetResponse( "db." + db + ".insert(" + json + ")" );
+    }
+
+
+    public static void insertMany( List<String> jsons ) {
+        insertMany( jsons, database );
+    }
+
+
+    public static void insertMany( List<String> jsons, String db ) {
+        MongoConnection.executeGetResponse( "db." + db + ".insertMany([" + String.join( ",", jsons ) + "])" );
+    }
+
+
+    protected Result find( String query, String project ) {
+        return find( query, project, database );
+    }
+
+
+    protected Result find( String query, String project, String db ) {
+        return MongoConnection.executeGetResponse( "db." + db + ".find(" + query + "," + project + ")" );
+    }
+
+
+    protected static void deleteMany( String query ) {
+        deleteMany( query, database );
+    }
+
+
+    protected static void deleteMany( String query, String database ) {
+        MongoConnection.executeGetResponse( "db." + database + ".deleteMany(" + query + ")" );
     }
 
 }

@@ -40,10 +40,10 @@ public abstract class MqlTest {
 
     public static final SqlOperator eq = MqlStdOperatorTable.DOC_EQ;
     public static final SqlOperator ne = SqlStdOperatorTable.NOT_EQUALS;
-    public static final SqlOperator gt = SqlStdOperatorTable.GREATER_THAN;
-    public static final SqlOperator gte = SqlStdOperatorTable.GREATER_THAN_OR_EQUAL;
-    public static final SqlOperator lt = SqlStdOperatorTable.LESS_THAN;
-    public static final SqlOperator lte = SqlStdOperatorTable.LESS_THAN_OR_EQUAL;
+    public static final SqlOperator gt = MqlStdOperatorTable.DOC_GT;
+    public static final SqlOperator gte = MqlStdOperatorTable.DOC_GTE;
+    public static final SqlOperator lt = MqlStdOperatorTable.DOC_LT;
+    public static final SqlOperator lte = MqlStdOperatorTable.DOC_LTE;
 
 
     static {
