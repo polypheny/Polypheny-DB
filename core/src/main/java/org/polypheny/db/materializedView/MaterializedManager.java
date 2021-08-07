@@ -62,7 +62,7 @@ public abstract class MaterializedManager {
 
     public abstract void addTables( Transaction transaction, List<String> names );
 
-    public abstract void manualUpdate( Transaction transaction, Long viewId );
+    public abstract void updateData( Transaction transaction, Long viewId );
 
     public abstract void updateCommitedXid( PolyXid xid );
 

@@ -494,13 +494,13 @@ public class BasicMaterializedTest {
                 statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
 
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable ON STORE \"store3\" FRESHNESS INTERVAL 100 \"milliseconds\" " );
-                waiter.await( 1, TimeUnit.SECONDS );
+                waiter.await( 2, TimeUnit.SECONDS );
                 try {
 
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                     connection.commit();
 
-                    waiter.await( 1, TimeUnit.SECONDS );
+                    waiter.await( 2, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
@@ -510,7 +510,7 @@ public class BasicMaterializedTest {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
                     connection.commit();
 
-                    waiter.await( 1, TimeUnit.SECONDS );
+                    waiter.await( 2, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
@@ -547,13 +547,13 @@ public class BasicMaterializedTest {
                 statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
 
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable ON STORE \"store2\", \"store3\" FRESHNESS INTERVAL 100 \"milliseconds\" " );
-                waiter.await( 1, TimeUnit.SECONDS );
+                waiter.await( 2, TimeUnit.SECONDS );
                 try {
 
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                     connection.commit();
 
-                    waiter.await( 1, TimeUnit.SECONDS );
+                    waiter.await( 2, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
@@ -563,7 +563,7 @@ public class BasicMaterializedTest {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
                     connection.commit();
 
-                    waiter.await( 1, TimeUnit.SECONDS );
+                    waiter.await( 2, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(

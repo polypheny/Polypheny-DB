@@ -1468,7 +1468,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void refreshView( Statement statement, Long materializedId ) {
         MaterializedManager materializedManager = MaterializedManager.getInstance();
-        materializedManager.manualUpdate( statement.getTransaction(), materializedId );
+        materializedManager.updateData( statement.getTransaction(), materializedId );
     }
 
 
