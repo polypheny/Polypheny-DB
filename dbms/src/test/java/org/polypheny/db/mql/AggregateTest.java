@@ -33,6 +33,11 @@ public class AggregateTest extends MqlTestTemplate {
             "{\"test\":1.3,\"key\":{\"key\": \"val\"}}",
             "{\"test\":\"test\",\"key\":13}" );
 
+    private final List<String> DATA_1 = Arrays.asList(
+            "{\"test\":\"val1\",\"key\":1}",
+            "{\"test\":\"val2\",\"key\":5}",
+            "{\"test\":\"val1\",\"key\":13}" );
+
 
     @Test
     public void projectTest() {
@@ -144,17 +149,16 @@ public class AggregateTest extends MqlTestTemplate {
 
     //$group
 
-    @Test
+    /*@Test
     public void groupNullTest() {
         List<Object[]> expected = ImmutableList.of(
                 new String[]{ "3" } );
                 insertMany( DATA_0 );
 
-        Result result = aggregate( $group( "{\"_id\": null}" )  );
-        // todo test name
+        Result result = aggregate( $group( "{\"_id\": null, \"count\":{\"$avg\":\"$test\"}}" )  );
 
         MongoConnection.checkResultSet( result, expected );
-    }
+    }*/
 
     @Test
     public void groupFieldTest() {
@@ -179,18 +183,6 @@ public class AggregateTest extends MqlTestTemplate {
     }
 
     @Test
-    public void groupMultipleTest() {
-        List<Object[]> expected = ImmutableList.of(
-                new String[]{ null },
-                new String[]{ "val"});
-        insertMany( DATA_0 );
-
-        Result result = aggregate( $group( "{\"_id\":{\"first\":\"$test\",\"second\":\"$key\"}}" )  );
-
-        MongoConnection.checkResultSet( result, expected );
-    }
-
-    @Test
     public void groupSubFieldTest() {
         List<Object[]> expected = ImmutableList.of(
                 new String[]{ null },
@@ -202,14 +194,15 @@ public class AggregateTest extends MqlTestTemplate {
         MongoConnection.checkResultSet( result, expected );
     }
 
-    @Test
-    public void groupAddToSetTest() {
-        List<Object[]> expected = ImmutableList.of(
-                new String[]{ null },
-                new String[]{ "val"});
-        insertMany( DATA_0 );
 
-        Result result = aggregate( $group( "{\"_id\":\"$key.key\"}" )  );
+    @Test
+    public void groupAvgTest() {
+        List<Object[]> expected = ImmutableList.of(
+                new String[]{ "val2", "5" },
+                new String[]{ "val1", "7" } );
+        insertMany( DATA_1 );
+
+        Result result = aggregate( $group( "{\"_id\":\"$test\", \"avgValue\": {\"$avg\":\"$key\"}}" ) );
 
         MongoConnection.checkResultSet( result, expected );
     }
