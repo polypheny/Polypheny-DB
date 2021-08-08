@@ -333,6 +333,7 @@ public class RexImpTable {
         defineMethod( MqlStdOperatorTable.DOC_UPDATE_REPLACE, BuiltInMethod.DOC_UPDATE_REPLACE.method, NullPolicy.STRICT );
         defineMethod( MqlStdOperatorTable.DOC_UPDATE_REMOVE, BuiltInMethod.DOC_UPDATE_REMOVE.method, NullPolicy.STRICT );
         defineMethod( MqlStdOperatorTable.DOC_EXISTS, BuiltInMethod.DOC_EXISTS.method, NullPolicy.STRICT );
+        defineMethod( MqlStdOperatorTable.DOC_JSONIZE, BuiltInMethod.DOC_JSONIZE.method, NullPolicy.STRICT );
         map.put( MqlStdOperatorTable.DOC_ELEM_MATCH, new ElemMatchImplementor() );
         map.put( MqlStdOperatorTable.DOC_UNWIND, new UnwindImplementor() );
 

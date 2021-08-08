@@ -283,6 +283,7 @@ public class TestHelper {
             try {
                 return gson.fromJson( res.getBody(), Result.class );
             } catch ( JsonSyntaxException e ) {
+                log.warn( res.getBody() + "\nmessage: " + e.getMessage() );
                 fail();
                 throw new RuntimeException( "This cannot happen" );
             }

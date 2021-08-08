@@ -16,10 +16,15 @@
 
 package org.polypheny.db.runtime;
 
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.reflect.TypeToken;
+import com.google.gson.Gson;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +37,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.polypheny.db.document.DocumentTypeUtil;
 import org.polypheny.db.util.Pair;
+
 
 public class MqlFunctions {
 
@@ -80,6 +86,19 @@ public class MqlFunctions {
         }
 
         return null;
+    }
+
+
+    public static Object docJsonize( Object input ) {
+        if ( input instanceof Map ) {
+            Gson gson = new Gson();
+            return gson.toJson( input );
+        } else if ( input instanceof List ) {
+            Gson gson = new Gson();
+            return gson.toJson( input );
+        } else {
+            return input;
+        }
     }
 
 

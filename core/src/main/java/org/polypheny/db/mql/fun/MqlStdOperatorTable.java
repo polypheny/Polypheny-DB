@@ -17,6 +17,7 @@
 package org.polypheny.db.mql.fun;
 
 import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlOperator;
 
 
 /**
@@ -73,4 +74,5 @@ public interface MqlStdOperatorTable {
 
     MqlFunctionOperator DOC_GTE = new MqlFunctionOperator( "DOC_GTE", SqlKind.GREATER_THAN_OR_EQUAL );
 
+    MqlFunctionOperator DOC_JSONIZE = new MqlFunctionOperator( "DOC_JSONIZE", SqlKind.UPDATE );
 }

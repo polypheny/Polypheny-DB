@@ -16,6 +16,9 @@
 
 package org.polypheny.db.mql2rel;
 
+
+import static org.polypheny.db.rel.logical.LogicalProject.create;
+
 import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -89,6 +92,7 @@ import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimestampString;
+
 
 public class MqlToRelConverter {
 
@@ -208,6 +212,7 @@ public class MqlToRelConverter {
     private boolean elemMatchActive = false;
     private String defaultDatabase;
     private boolean notActive = false;
+    private boolean jsonized = false;
 
 
     public MqlToRelConverter( MqlProcessor mqlProcessor, PolyphenyDbCatalogReader catalogReader, RelOptCluster cluster ) {
@@ -719,6 +724,7 @@ public class MqlToRelConverter {
 
     private RelNode convertAggregate( MqlAggregate query, RelDataType rowType, RelNode node ) {
         this.excludedId = false;
+        boolean isAggregate = false;
         boolean updateRowType;
         for ( BsonValue value : query.getPipeline() ) {
             if ( !value.isDocument() && ((BsonDocument) value).size() > 1 ) {
@@ -745,6 +751,7 @@ public class MqlToRelConverter {
                     break;
                 case "$group":
                     node = combineGroup( value.asDocument().get( "$group" ), node, rowType );
+                    isAggregate = true;
                     break;
                 case "$sort":
                     node = combineSort( value.asDocument().get( "$sort" ), node, rowType );
@@ -775,7 +782,13 @@ public class MqlToRelConverter {
             }
         }
 
-        return node;
+        if ( !isAggregate ) {
+            List<RelDataTypeField> fields = node.getRowType().getFieldList().stream().filter( f -> !f.getName().equals( "_id" ) ).collect( Collectors.toList() );
+            RelNode finalNode = node;
+            return create( node, fields.stream().map( el -> new RexCall( any, MqlStdOperatorTable.DOC_JSONIZE, Collections.singletonList( new RexInputRef( el.getIndex(), finalNode.getRowType() ) ) ) ).collect( Collectors.toList() ), node.getRowType().getFieldNames() );
+        } else {
+            return node;
+        }
     }
 
 
@@ -798,7 +811,7 @@ public class MqlToRelConverter {
 
         Project project;
         if ( newRoot.isDocument() ) {
-            project = LogicalProject.create(
+            project = create(
                     node,
                     Collections.singletonList( translateDocument( newRoot.asDocument(), node.getRowType(), null ) ),
                     Collections.singletonList( "_data" )
@@ -808,7 +821,7 @@ public class MqlToRelConverter {
                 throw new RuntimeException( "The used root needs to be a reference to a field" );
             }
 
-            project = LogicalProject.create(
+            project = create(
                     node,
                     Collections.singletonList( getIdentifier( newRoot.asString().getValue().substring( 1 ), node.getRowType() ) ),
                     Collections.singletonList( "_data" )
@@ -866,7 +879,7 @@ public class MqlToRelConverter {
         names.add( path );
         values.add( call );
 
-        return LogicalProject.create( node, values, names );
+        return create( node, values, names );
     }
 
 
@@ -915,12 +928,6 @@ public class MqlToRelConverter {
 
     /**
      * This function wraps document fields which are either hidden in the default data field _data or in another parent field
-     *
-     * @param node
-     * @param rowType
-     * @param names
-     * @param nodeFunction
-     * @return
      */
     private RelNode conditionalWrap( RelNode node, RelDataType rowType, List<String> names, BiFunction<RelNode, RelDataType, RelNode> nodeFunction ) {
         // we filter for names which are underlying
@@ -944,14 +951,14 @@ public class MqlToRelConverter {
             nodes.addAll( projectionNodes );
             List<String> nodeNames = rowType.getFieldList().stream().map( RelDataTypeField::getName ).collect( Collectors.toList() );
             nodeNames.addAll( hiddenNames );
-            node = LogicalProject.create( node, nodes, nodeNames );
+            node = create( node, nodes, nodeNames );
 
             node = nodeFunction.apply( node, node.getRowType() );
 
             nodes.removeAll( projectionNodes );
             nodeNames.removeAll( hiddenNames );
 
-            return LogicalProject.create( node, nodes, nodeNames );
+            return create( node, nodes, nodeNames );
         }
         return nodeFunction.apply( node, node.getRowType() );
     }
@@ -986,9 +993,16 @@ public class MqlToRelConverter {
                     names.addAll( 0, rowType.getFieldNames() );
                     nodes.addAll( 0, rowType.getFieldList().stream().map( f -> RexInputRef.of( f.getIndex(), rowType ) ).collect( Collectors.toList() ) );
 
-                } else {
+                } else if ( entry.getValue().isString() ) {
                     names.add( entry.getValue().asString().getValue().substring( 1 ) );
                     nodes.add( getIdentifier( entry.getValue().asString().getValue().substring( 1 ), rowType ) );
+                } else if ( entry.getValue().isDocument() ) {
+                    for ( Entry<String, BsonValue> idEntry : entry.getValue().asDocument().entrySet() ) {
+                        names.add( idEntry.getValue().asString().getValue().substring( 1 ) );
+                        nodes.add( getIdentifier( idEntry.getValue().asString().getValue().substring( 1 ), rowType ) );
+                    }
+                } else {
+                    throw new RuntimeException( "$group takes as _id values either a document or a string" );
                 }
             } else {
                 if ( !entry.getValue().isDocument() ) {
@@ -1002,7 +1016,7 @@ public class MqlToRelConverter {
             }
         }
 
-        node = LogicalProject.create( node, nodes, names );
+        node = create( node, nodes, names );
 
         return groupBy( value, node, node.getRowType(), aggNames, ops );
     }
@@ -1067,7 +1081,7 @@ public class MqlToRelConverter {
 
 
     private RelNode combineCount( BsonValue value, RelNode node, RelDataType rowType ) {
-        if ( value.isString() ) {
+        if ( !value.isString() ) {
             throw new RuntimeException( "$count pipeline stage needs only a string" );
         }
         return LogicalAggregate.create(
@@ -2015,7 +2029,7 @@ public class MqlToRelConverter {
                     this.excludedId = true;
                 }
 
-                return LogicalProject.create( node, values, names );
+                return create( node, values, names );
             } else {
                 // we already projected the _data field away and have to work with what we got
                 List<RexNode> values = new ArrayList<>();
@@ -2028,7 +2042,7 @@ public class MqlToRelConverter {
                     }
                 }
 
-                return LogicalProject.create( node, values, names );
+                return create( node, values, names );
             }
         } else if ( isAddFields && _dataExists ) {
             List<String> names = rowType.getFieldNames();
@@ -2055,7 +2069,7 @@ public class MqlToRelConverter {
                     }
                 }
 
-                node = LogicalProject.create( node, values, names );
+                node = create( node, values, names );
             }
 
             return node;
@@ -2080,7 +2094,7 @@ public class MqlToRelConverter {
             // the _data field does not longer exist, as we made a projection "out" of it
             this._dataExists = false;
 
-            return LogicalProject.create( node, values, names );
+            return create( node, values, names );
         }
         return node;
     }

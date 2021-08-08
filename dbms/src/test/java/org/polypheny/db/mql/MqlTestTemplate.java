@@ -61,7 +61,7 @@ public class MqlTestTemplate {
 
 
     protected String $count( String doc ) {
-        return "{\"$count\":" + doc + "}";
+        return "{\"$count\":\"" + doc + "\"}";
     }
 
 
