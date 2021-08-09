@@ -162,6 +162,24 @@ public class Tree<M, N> {
     }
 
 
+    @Override
+    public String toString() {
+        StringBuilder stringBuilder = new StringBuilder();
+
+        stringBuilder.append( " (" );
+        if ( isLeaf() ) {
+            stringBuilder.append( externalNode );
+        } else {
+            stringBuilder.append( left.toString() );
+            stringBuilder.append( internalNode );
+            stringBuilder.append( right.toString() );
+        }
+        stringBuilder.append( ") " );
+
+        return stringBuilder.toString();
+    }
+
+
     public enum TraversalType {
         PREORDER,
         INORDER,
