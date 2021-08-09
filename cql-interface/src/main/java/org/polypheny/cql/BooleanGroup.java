@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql.parser;
+package org.polypheny.cql;
 
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 
 public class BooleanGroup<E extends BooleanGroup.BooleanOperator> {
 
