@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql.cql2rel;
+package org.polypheny.cql;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,12 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import org.polypheny.cql.exception.InvalidMethodInvocation;
+import org.polypheny.cql.BooleanGroup.ColumnOpsBooleanOperator;
 import org.polypheny.cql.exception.UnexpectedTypeException;
-import org.polypheny.cql.parser.BooleanGroup;
-import org.polypheny.cql.parser.BooleanGroup.ColumnOpsBooleanOperators;
-import org.polypheny.cql.parser.QueryNode;
-import org.polypheny.cql.parser.SearchClause;
 import org.polypheny.cql.utils.Tree;
 import org.polypheny.cql.utils.Tree.NodeType;
 import org.polypheny.cql.utils.Tree.TraversalType;
@@ -51,10 +47,17 @@ import org.polypheny.db.util.Pair;
 
 public class Cql2RelConverter {
 
-    public static RelRoot convert2Rel( final CqlResource cqlResource, RelBuilder relBuilder, RexBuilder rexBuilder ) {
-        relBuilder = generateTableScan( cqlResource.queryRelation, relBuilder, rexBuilder );
-        relBuilder = generateProjection( cqlResource.queryRelation, relBuilder, rexBuilder );
-        relBuilder = generateFilters( cqlResource.filters, cqlResource.indexMapping, relBuilder, rexBuilder );
+    private final Map<String, Integer> columnOrdinalities = new HashMap<>();
+
+    public RelRoot convert2Rel( final CqlQuery cqlQuery, RelBuilder relBuilder, RexBuilder rexBuilder ) {
+        relBuilder = generateTableScan( cqlQuery.queryRelation, relBuilder, rexBuilder );
+        if ( cqlQuery.filters != null ) {
+            relBuilder = generateFilters( cqlQuery.filters, relBuilder, rexBuilder );
+        }
+        relBuilder = generateProjection( cqlQuery.queryRelation, relBuilder, rexBuilder );
+        if ( cqlQuery.sortSpecifications != null && cqlQuery.sortSpecifications.size() != 0 ) {
+            relBuilder = generateSort( cqlQuery.sortSpecifications, relBuilder, rexBuilder );
+        }
         RelNode relNode = relBuilder.build();
 
         final RelDataType rowType = relNode.getRowType();
@@ -63,13 +66,12 @@ public class Cql2RelConverter {
                 relNode instanceof Sort
                         ? ((Sort) relNode).collation
                         : RelCollations.EMPTY;
-        RelRoot root = new RelRoot( relNode, relNode.getRowType(), SqlKind.SELECT, fields, collation );
 
-        return root;
+        return new RelRoot( relNode, relNode.getRowType(), SqlKind.SELECT, fields, collation );
     }
 
 
-    private static RelBuilder generateTableScan( Tree<Combiner, Index> tableOperations,
+    private RelBuilder generateTableScan( Tree<Combiner, TableIndex> tableOperations,
             RelBuilder relBuilder, RexBuilder rexBuilder ) {
 
         AtomicReference<RelBuilder> relBuilderAtomicReference = new AtomicReference<>( relBuilder );
@@ -78,7 +80,7 @@ public class Cql2RelConverter {
             if ( nodeType == NodeType.DESTINATION_NODE ) {
                 try {
                     if ( treeNode.isLeaf() ) {
-                        CatalogTable catalogTable = treeNode.getExternalNode().getCatalogTable();
+                        CatalogTable catalogTable = treeNode.getExternalNode().catalogTable;
                         relBuilderAtomicReference.set(
                                 relBuilderAtomicReference.get().scan( catalogTable.getSchemaName(), catalogTable.name )
                         );
@@ -91,9 +93,6 @@ public class Cql2RelConverter {
                 } catch ( UnexpectedTypeException e ) {
                     throw new RuntimeException( "This exception will never be thrown since checks have been made before"
                             + " calling the getExternalNode and getInternalNode methods." );
-                } catch ( InvalidMethodInvocation e ) {
-                    throw new RuntimeException( "This exception will never be thrown since queryRelation only has "
-                            + "table type indices." );
                 }
             }
             return true;
@@ -103,7 +102,7 @@ public class Cql2RelConverter {
     }
 
 
-    private static RelBuilder generateProjection( Tree<Combiner, Index> queryRelation, RelBuilder relBuilder,
+    private RelBuilder generateProjection( Tree<Combiner, TableIndex> queryRelation, RelBuilder relBuilder,
             RexBuilder rexBuilder ) {
 
         RelNode baseNode = relBuilder.peek();
@@ -115,22 +114,20 @@ public class Cql2RelConverter {
         queryRelation.traverse( TraversalType.INORDER, ( treeNode, nodeType, direction, frame ) -> {
             if ( nodeType == NodeType.DESTINATION_NODE && treeNode.isLeaf() ) {
                 try {
-                    Index index = treeNode.getExternalNode();
-                    String columnNamePrefix = index.fullyQualifiedName + ".";
-                    CatalogTable catalogTable = index.getCatalogTable();
+                    TableIndex tableIndex = treeNode.getExternalNode();
+                    String columnNamePrefix = tableIndex.fullyQualifiedName + ".";
+                    CatalogTable catalogTable = tableIndex.catalogTable;
                     for ( Long columnId : catalogTable.columnIds ) {
                         RexNode inputRef = rexBuilder.makeInputRef( baseNode, ordinal.get() );
                         inputRefs.add( inputRef );
                         CatalogColumn column = catalog.getColumn( columnId );
                         columnNames.add( columnNamePrefix + column.name );
+                        columnOrdinalities.put( columnNamePrefix + column.name, ordinal.get() );
                         ordinal.getAndIncrement();
                     }
                 } catch ( UnexpectedTypeException e ) {
                     throw new RuntimeException( "This exception will never be thrown since checks have been made before"
                             + " calling the getExternalNode method." );
-                } catch ( InvalidMethodInvocation e ) {
-                    throw new RuntimeException( "This exception will never be thrown since queryRelation only has "
-                            + "table type indices." );
                 }
             }
 
@@ -142,7 +139,7 @@ public class Cql2RelConverter {
     }
 
 
-    private static RelBuilder generateFilters( QueryNode filters, Map<String, Index> indexMapping,
+    private RelBuilder generateFilters( Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> filters,
             RelBuilder relBuilder, RexBuilder rexBuilder ) {
 
         if ( filters == null ) {
@@ -162,17 +159,15 @@ public class Cql2RelConverter {
                 try {
                     RexNode rexNode;
                     if ( treeNode.isLeaf() ) {
-                        SearchClause searchClause = treeNode.getExternalNode();
-                        Filter filter = Filter.createFilter( searchClause, indexMapping );
-                        RelDataTypeField relDataTypeField = filterMap.get( searchClause.indexStr );
-                        rexNode = filter.convert2RexNode( baseNode, rexBuilder, relDataTypeField );
+                        Filter filter = treeNode.getExternalNode();
+                        rexNode = filter.convert2RexNode( baseNode, rexBuilder, filterMap );
                     } else {
-                        BooleanGroup booleanGroup = treeNode.getInternalNode();
-                        if ( booleanGroup.booleanOperator == ColumnOpsBooleanOperators.AND ) {
+                        BooleanGroup<ColumnOpsBooleanOperator> booleanGroup = treeNode.getInternalNode();
+                        if ( booleanGroup.booleanOperator == ColumnOpsBooleanOperator.AND ) {
                             rexNode = rexBuilder.makeCall( SqlStdOperatorTable.AND, secondToLastRexNode.get(), lastRexNode.get() );
-                        } else if ( booleanGroup.booleanOperator == ColumnOpsBooleanOperators.OR ) {
+                        } else if ( booleanGroup.booleanOperator == ColumnOpsBooleanOperator.OR ) {
                             rexNode = rexBuilder.makeCall( SqlStdOperatorTable.OR, secondToLastRexNode.get(), lastRexNode.get() );
-                        } else if ( booleanGroup.booleanOperator == ColumnOpsBooleanOperators.NOT ) {
+                        } else if ( booleanGroup.booleanOperator == ColumnOpsBooleanOperator.NOT ) {
                             rexNode = rexBuilder.makeCall( SqlStdOperatorTable.NOT, lastRexNode.get() );
                             rexNode = rexBuilder.makeCall( SqlStdOperatorTable.AND, secondToLastRexNode.get(), rexNode );
                         } else {
@@ -192,6 +187,26 @@ public class Cql2RelConverter {
 
         relBuilder = relBuilder.filter( lastRexNode.get() );
 
+        return relBuilder;
+    }
+
+
+    private RelBuilder generateSort( List<Pair<ColumnIndex, Map<String, Modifier>>> sortSpecifications,
+            RelBuilder relBuilder, RexBuilder rexBuilder ) {
+
+        List<RexNode> sortingNodes = new ArrayList<>();
+        RelNode baseNode = relBuilder.peek();
+        for ( Pair<ColumnIndex, Map<String, Modifier>> sortSpecification : sortSpecifications ) {
+            ColumnIndex columnIndex = sortSpecification.left;
+            int ordinality = columnOrdinalities.get( columnIndex.fullyQualifiedName );
+            RexNode sortingNode = rexBuilder.makeInputRef( baseNode, ordinality );
+
+            // TODO: Handle Modifiers
+
+            sortingNodes.add( sortingNode );
+        }
+
+        relBuilder = relBuilder.sort( sortingNodes );
         return relBuilder;
     }
 
