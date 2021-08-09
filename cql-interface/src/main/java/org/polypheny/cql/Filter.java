@@ -14,32 +14,16 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql.cql2rel;
+package org.polypheny.cql;
 
 import java.util.Map;
-import org.polypheny.cql.parser.Relation;
-import org.polypheny.cql.parser.SearchClause;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 
-public abstract class Filter {
+public interface Filter {
 
-    public abstract RexNode convert2RexNode( RelNode baseNode, RexBuilder rexBuilder, RelDataTypeField typeField );
-
-
-    public static Filter createFilter( SearchClause searchClause, Map<String, Index> indexMapping ) {
-        Index index = indexMapping.get( searchClause.indexStr );
-        Relation relation = searchClause.relation;
-
-        if ( searchClause.isColumnFilter() ) {
-            Index value = indexMapping.get( searchClause.searchTerm );
-            return new ColumnFilter( index, relation, value );
-        } else {
-            return new LiteralFilter( index, relation, searchClause.searchTerm );
-        }
-
-    }
+    RexNode convert2RexNode( RelNode baseNode, RexBuilder rexBuilder, Map<String, RelDataTypeField> filterMap );
 
 }

@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql.cql2rel;
+package org.polypheny.cql;
 
-import org.polypheny.cql.parser.Relation;
+import java.util.Map;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 
-public class ColumnFilter extends Filter {
+public class ColumnFilter implements Filter {
 
-    private final Index left;
+    private final ColumnIndex left;
     private final Relation relation;
-    private final Index right;
+    private final ColumnIndex right;
 
 
-    public ColumnFilter( Index left, Relation relation, Index right ) {
+    public ColumnFilter( ColumnIndex left, Relation relation, ColumnIndex right ) {
         this.left = left;
         this.relation = relation;
         this.right = right;
@@ -37,8 +37,14 @@ public class ColumnFilter extends Filter {
 
 
     @Override
-    public RexNode convert2RexNode( RelNode baseNode, RexBuilder rexBuilder, RelDataTypeField typeField ) {
+    public RexNode convert2RexNode( RelNode baseNode, RexBuilder rexBuilder, Map<String, RelDataTypeField> typeField ) {
         throw new RuntimeException( "Not Implemented." );
+    }
+
+
+    @Override
+    public String toString() {
+        return left.toString() + relation.toString() + right.toString();
     }
 
 }

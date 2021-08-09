@@ -14,40 +14,47 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql.cql2rel;
+package org.polypheny.cql;
 
-import org.polypheny.cql.parser.Relation;
+import java.util.Map;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 
-public class LiteralFilter extends Filter {
+public class LiteralFilter implements Filter {
 
-    private final Index index;
+    private final ColumnIndex columnIndex;
     private final Relation relation;
     private final String searchTerm;
 
 
-    public LiteralFilter( Index index, Relation relation, String searchTerm ) {
-        this.index = index;
+    public LiteralFilter( ColumnIndex columnIndex, Relation relation, String searchTerm ) {
+        this.columnIndex = columnIndex;
         this.relation = relation;
         this.searchTerm = searchTerm;
     }
 
 
     @Override
-    public RexNode convert2RexNode( RelNode baseNode, RexBuilder rexBuilder, RelDataTypeField typeField ) {
+    public RexNode convert2RexNode( RelNode baseNode, RexBuilder rexBuilder, Map<String, RelDataTypeField> filterMap ) {
+        RelDataTypeField typeField = filterMap.get( columnIndex.fullyQualifiedName );
         RexNode lhs = rexBuilder.makeInputRef( baseNode, typeField.getIndex() );
         RexNode rhs = rexBuilder.makeLiteral( searchTerm );
         rhs = rexBuilder.makeCast( typeField.getType(), rhs );
         if ( relation.comparator.isSymbolComparator() ) {
             return rexBuilder.makeCall(
-                    relation.comparator.SymbolComparator.toSqlStdOperatorTable( SqlStdOperatorTable.EQUALS ), lhs, rhs );
+                    relation.comparator.toSqlStdOperatorTable( SqlStdOperatorTable.EQUALS ), lhs, rhs );
         } else {
             throw new RuntimeException( "Not Implemented!" );
         }
+    }
+
+
+    @Override
+    public String toString() {
+        return columnIndex.toString() + relation.toString() + " \"" + searchTerm + "\" ";
     }
 
 }
