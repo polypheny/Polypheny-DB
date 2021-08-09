@@ -23,9 +23,7 @@ import java.util.Map;
 import org.polypheny.cql.exception.InvalidMethodInvocation;
 import org.polypheny.cql.exception.InvalidModifierException;
 import org.polypheny.cql.parser.BooleanGroup;
-import org.polypheny.cql.parser.BooleanOperator;
 import org.polypheny.cql.parser.Comparator;
-import org.polypheny.cql.parser.ComparatorSymbol;
 import org.polypheny.cql.parser.Modifier;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.rel.core.JoinRelType;
@@ -186,7 +184,7 @@ public class Combiner {
 
         String c = comparator.isNamedComparator() ? comparator.NamedComparator : comparator.SymbolComparator.name();
         if ( comparator.isNamedComparator() ||
-                ( comparator.SymbolComparator != ComparatorSymbol.SERVER_CHOICE ) ) {
+                ( comparator.SymbolComparator != Comparator.SERVER_CHOICE ) ) {
             throw new InvalidModifierException( "Invalid usage of comparator '" + c + "' with modifier 'null'." );
         }
     }

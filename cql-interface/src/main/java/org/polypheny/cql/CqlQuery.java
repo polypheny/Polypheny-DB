@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql.cql2rel;
+package org.polypheny.cql;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,12 +24,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.polypheny.cql.exception.InvalidMethodInvocation;
 import org.polypheny.cql.exception.InvalidModifierException;
 import org.polypheny.cql.exception.UnexpectedTypeException;
-import org.polypheny.cql.parser.BooleanGroup;
-import org.polypheny.cql.parser.BooleanOperator;
-import org.polypheny.cql.parser.CqlQuery;
-import org.polypheny.cql.parser.QueryNode;
-import org.polypheny.cql.parser.SearchClause;
-import org.polypheny.cql.parser.SortSpecification;
 import org.polypheny.cql.utils.Tree;
 import org.polypheny.cql.utils.Tree.NodeType;
 import org.polypheny.cql.utils.Tree.TraversalType;

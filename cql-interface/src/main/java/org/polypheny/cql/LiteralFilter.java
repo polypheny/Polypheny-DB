@@ -16,15 +16,12 @@
 
 package org.polypheny.cql.cql2rel;
 
-import org.polypheny.cql.parser.ComparatorSymbol;
 import org.polypheny.cql.parser.Relation;
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.tools.RelBuilder;
 
 public class LiteralFilter extends Filter {
 

@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.polypheny.cql.exception.InvalidMethodInvocation;
 import org.polypheny.cql.exception.UnexpectedTypeException;
 import org.polypheny.cql.parser.BooleanGroup;
-import org.polypheny.cql.parser.BooleanOperator;
+import org.polypheny.cql.parser.BooleanGroup.ColumnOpsBooleanOperators;
 import org.polypheny.cql.parser.QueryNode;
 import org.polypheny.cql.parser.SearchClause;
 import org.polypheny.cql.utils.Tree;
@@ -168,11 +168,11 @@ public class Cql2RelConverter {
                         rexNode = filter.convert2RexNode( baseNode, rexBuilder, relDataTypeField );
                     } else {
                         BooleanGroup booleanGroup = treeNode.getInternalNode();
-                        if ( booleanGroup.booleanOperator == BooleanOperator.AND ) {
+                        if ( booleanGroup.booleanOperator == ColumnOpsBooleanOperators.AND ) {
                             rexNode = rexBuilder.makeCall( SqlStdOperatorTable.AND, secondToLastRexNode.get(), lastRexNode.get() );
-                        } else if ( booleanGroup.booleanOperator == BooleanOperator.OR ) {
+                        } else if ( booleanGroup.booleanOperator == ColumnOpsBooleanOperators.OR ) {
                             rexNode = rexBuilder.makeCall( SqlStdOperatorTable.OR, secondToLastRexNode.get(), lastRexNode.get() );
-                        } else if ( booleanGroup.booleanOperator == BooleanOperator.NOT ) {
+                        } else if ( booleanGroup.booleanOperator == ColumnOpsBooleanOperators.NOT ) {
                             rexNode = rexBuilder.makeCall( SqlStdOperatorTable.NOT, lastRexNode.get() );
                             rexNode = rexBuilder.makeCall( SqlStdOperatorTable.AND, secondToLastRexNode.get(), rexNode );
                         } else {

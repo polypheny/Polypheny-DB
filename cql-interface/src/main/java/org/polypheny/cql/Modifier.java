@@ -16,31 +16,30 @@
 
 package org.polypheny.cql.parser;
 
-import java.util.ArrayList;
-import java.util.stream.Collectors;
+public class Modifier {
 
-public class SortSpecification {
-
-    public final String index;
-    public final ArrayList<Modifier> modifiers;
+    public final String modifierName;
+    public final Comparator comparator;
+    public final String modifierValue;
 
 
-    public SortSpecification( String index, ArrayList<Modifier> modifiers ) {
-        this.index = index;
-        this.modifiers = modifiers;
+    public Modifier( final String modifierName, final Comparator comparator, final String modifierValue ) {
+        this.modifierName = modifierName;
+        this.comparator = comparator;
+        this.modifierValue = modifierValue;
     }
 
 
-    public SortSpecification( String index ) {
-        this.index = index;
-        this.modifiers = new ArrayList<>();
+    public Modifier( final String modifierName ) {
+        this.modifierName = modifierName;
+        this.comparator = Comparator.SERVER_CHOICE;
+        this.modifierValue = "";
     }
 
 
     @Override
     public String toString() {
-        return index + ( modifiers.isEmpty() ? " " : "/ " +
-                modifiers.stream().map( Object::toString ).collect( Collectors.joining( " " ) ) );
+        return "/ " + modifierName + " " + comparator + " " + modifierValue;
     }
 
 }

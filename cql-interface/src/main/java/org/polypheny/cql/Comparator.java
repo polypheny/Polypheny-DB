@@ -19,14 +19,42 @@ package org.polypheny.cql.parser;
 import org.polypheny.db.sql.SqlBinaryOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 
-public enum ComparatorSymbol {
-    SERVER_CHOICE,
-    EQUALS,
-    NOT_EQUALS,
-    GREATER_THAN,
-    LESS_THAN,
-    GREATER_THAN_OR_EQUALS,
-    LESS_THAN_OR_EQUALS;
+public enum Comparator {
+    SERVER_CHOICE( "=", true ),
+    EQUALS( "==", true ),
+    NOT_EQUALS( "<>", true ),
+    GREATER_THAN( ">", true ),
+    LESS_THAN( "<", true ),
+    GREATER_THAN_OR_EQUALS( ">=", true ),
+    LESS_THAN_OR_EQUALS( "<=", true ),
+    NAMED_COMPARATOR( "", true );
+
+
+    private String comparisonOp;
+
+
+    private final boolean isSymbolComparator;
+
+
+    Comparator( String comparisonOp, boolean isSymbolComparator ) {
+        this.comparisonOp = comparisonOp;
+        this.isSymbolComparator = isSymbolComparator;
+    }
+
+
+    public String getComparisonOp() {
+        return this.comparisonOp;
+    }
+
+
+    public boolean isSymbolComparator() {
+        return this.isSymbolComparator;
+    }
+
+
+    public boolean isNamedComparator() {
+        return !this.isSymbolComparator;
+    }
 
 
     public SqlBinaryOperator toSqlStdOperatorTable( SqlBinaryOperator fallback ) {
@@ -45,5 +73,18 @@ public enum ComparatorSymbol {
         } else {
             return SqlStdOperatorTable.LESS_THAN_OR_EQUAL;
         }
+    }
+
+
+    public static Comparator createNamedComparator( String comparisonOp ) {
+        Comparator namedComparator = Comparator.NAMED_COMPARATOR;
+        namedComparator.comparisonOp = comparisonOp;
+        return namedComparator;
+    }
+
+
+    @Override
+    public String toString() {
+        return name() + "(" + comparisonOp + ") ";
     }
 }
