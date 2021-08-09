@@ -43,8 +43,9 @@ PARSER_END( CqlParser )
 
 < DEFAULT > SKIP : { " " | "\t" | "\n" | "\r" | "\f" }
 
-TOKEN : { < SORT_BY : "sortby" > }
 TOKEN : { < RELATION : "relation" > }
+TOKEN : { < SORT_BY : "sortby" > }
+TOKEN : { < PROJECT : "project" > }
 TOKEN : { < ALIAS_OPERATOR : "as" > }
 
 TOKEN : { < BOOLEAN_AND : "and" | "\"and\"" > }
@@ -90,6 +91,9 @@ CqlQuery parse() :
     ]
     [
         SORTING()
+    ]
+    [
+        PROJECT()
     ]
     < EOF >
     {
@@ -183,6 +187,24 @@ void SORTING() :
         ]
         {
             cqlQueryBuilder.addSortSpecification( columnIndex, modifiers );
+        }
+    )+
+}
+
+void PROJECT() :
+{
+    ColumnIndex columnIndex = null;
+    Map<String, Modifier> modifiers = null;
+}
+{
+    < PROJECT >
+    (
+        columnIndex = COLUMN_INDEX()
+        [
+            modifiers = MODIFIERS()
+        ]
+        {
+            cqlQueryBuilder.addProjection( columnIndex, modifiers );
         }
     )+
 }

@@ -29,6 +29,7 @@ public class CqlQuery {
     public final Map<String, TableIndex> tableIndexMapping;
     public final Map<String, ColumnIndex> columnIndexMapping;
     public final List<Pair<ColumnIndex, Map<String, Modifier>>> sortSpecifications;
+    public final List<Pair<ColumnIndex, Map<String, Modifier>>> projections;
 
     /*
         TODO: projecting : Projection and Aggregation.
@@ -38,12 +39,14 @@ public class CqlQuery {
     public CqlQuery( final Tree<Combiner, TableIndex> queryRelation,
             final Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> filters,
             final Map<String, TableIndex> tableIndexMapping, final Map<String, ColumnIndex> columnIndexMapping,
-            final List<Pair<ColumnIndex, Map<String, Modifier>>> sortSpecifications ) {
+            final List<Pair<ColumnIndex, Map<String, Modifier>>> sortSpecifications,
+            final List<Pair<ColumnIndex, Map<String, Modifier>>> projections ) {
         this.queryRelation = queryRelation;
         this.filters = filters;
         this.tableIndexMapping = tableIndexMapping;
         this.columnIndexMapping = columnIndexMapping;
         this.sortSpecifications = sortSpecifications;
+        this.projections = projections;
     }
 
 

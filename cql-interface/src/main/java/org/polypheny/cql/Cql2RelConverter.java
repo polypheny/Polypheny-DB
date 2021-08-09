@@ -51,10 +51,11 @@ public class Cql2RelConverter {
 
     public RelRoot convert2Rel( final CqlQuery cqlQuery, RelBuilder relBuilder, RexBuilder rexBuilder ) {
         relBuilder = generateTableScan( cqlQuery.queryRelation, relBuilder, rexBuilder );
+        relBuilder = generateProjections( cqlQuery.queryRelation, relBuilder, rexBuilder );
         if ( cqlQuery.filters != null ) {
             relBuilder = generateFilters( cqlQuery.filters, relBuilder, rexBuilder );
         }
-        relBuilder = generateProjection( cqlQuery.queryRelation, relBuilder, rexBuilder );
+        relBuilder = generateProjections( cqlQuery.projections, relBuilder, rexBuilder );
         if ( cqlQuery.sortSpecifications != null && cqlQuery.sortSpecifications.size() != 0 ) {
             relBuilder = generateSort( cqlQuery.sortSpecifications, relBuilder, rexBuilder );
         }
@@ -102,7 +103,26 @@ public class Cql2RelConverter {
     }
 
 
-    private RelBuilder generateProjection( Tree<Combiner, TableIndex> queryRelation, RelBuilder relBuilder,
+    private RelBuilder generateProjections( List<Pair<ColumnIndex, Map<String, Modifier>>> projections,
+            RelBuilder relBuilder, RexBuilder rexBuilder ) {
+
+        RelNode baseNode = relBuilder.peek();
+        List<RexNode> inputRefs = new ArrayList<>();
+
+        for ( Pair<ColumnIndex, Map<String, Modifier>> projection : projections ) {
+            ColumnIndex columnIndex = projection.left;
+            int ordinality = columnOrdinalities.get( columnIndex.fullyQualifiedName );
+            RexNode inputRef = rexBuilder.makeInputRef( baseNode, ordinality );
+            inputRefs.add( inputRef );
+        }
+
+        relBuilder = relBuilder.project( inputRefs );
+
+        return relBuilder;
+    }
+
+
+    private RelBuilder generateProjections( Tree<Combiner, TableIndex> queryRelation, RelBuilder relBuilder,
             RexBuilder rexBuilder ) {
 
         RelNode baseNode = relBuilder.peek();
@@ -209,5 +229,4 @@ public class Cql2RelConverter {
         relBuilder = relBuilder.sort( sortingNodes );
         return relBuilder;
     }
-
 }

@@ -19,9 +19,9 @@ package org.polypheny.cql;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Stack;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.polypheny.cql.BooleanGroup.ColumnOpsBooleanOperator;
 import org.polypheny.cql.BooleanGroup.TableOpsBooleanOperator;
 import org.polypheny.cql.exception.UnknownIndexException;
@@ -37,6 +37,7 @@ public class CqlQueryBuilder {
     private Map<String, TableIndex> tableAliases;
     private Map<String, ColumnIndex> columnIndexMapping;
     private List<Pair<ColumnIndex, Map<String, Modifier>>> sortSpecifications;
+    private List<Pair<ColumnIndex, Map<String, Modifier>>> projections;
 
     private TableIndex lastTableIndex;
 
@@ -48,6 +49,7 @@ public class CqlQueryBuilder {
         this.tableAliases = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
         this.columnIndexMapping = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
         this.sortSpecifications = new ArrayList<>();
+        this.projections = new ArrayList<>();
     }
 
 
@@ -67,15 +69,17 @@ public class CqlQueryBuilder {
             queryFilters = filters.pop();
         }
 
-        return new CqlQuery( queryRelation, queryFilters, tableIndexMapping, columnIndexMapping, sortSpecifications );
+        return new CqlQuery( queryRelation, queryFilters, tableIndexMapping,
+                columnIndexMapping, sortSpecifications, projections );
     }
 
 
     private void generateDefaultQueryRelation() {
-        boolean first = true;
+        AtomicBoolean first = new AtomicBoolean( true );
         tableIndexMapping.forEach( ( tableName, tableIndex ) -> {
-            if ( first ) {
+            if ( first.get() ) {
                 addTable( tableIndex );
+                first.set( false );
             } else {
                 BooleanGroup<TableOpsBooleanOperator> innerJoin = new BooleanGroup<>( TableOpsBooleanOperator.AND );
                 combineRelationWith( tableIndex, innerJoin );
@@ -180,6 +184,12 @@ public class CqlQueryBuilder {
 
     public void addSortSpecification( ColumnIndex columnIndex, Map<String, Modifier> modifiers ) {
         this.sortSpecifications.add(
+                new Pair<>( columnIndex, modifiers )
+        );
+    }
+
+    public void addProjection( ColumnIndex columnIndex, Map<String, Modifier> modifiers ) {
+        this.projections.add(
                 new Pair<>( columnIndex, modifiers )
         );
     }
