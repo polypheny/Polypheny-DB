@@ -14,17 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql.cql2rel;
+package org.polypheny.cql;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.cql.BooleanGroup.TableOpsBooleanOperator;
 import org.polypheny.cql.exception.InvalidMethodInvocation;
-import org.polypheny.cql.exception.InvalidModifierException;
-import org.polypheny.cql.parser.BooleanGroup;
-import org.polypheny.cql.parser.Comparator;
-import org.polypheny.cql.parser.Modifier;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.rel.core.JoinRelType;
 import org.polypheny.db.rex.RexBuilder;
@@ -67,22 +64,23 @@ public class Combiner {
     }
 
 
-    public static Combiner createCombiner( BooleanGroup booleanGroup, Index left, Index right )
-            throws InvalidMethodInvocation, InvalidModifierException {
+    public static Combiner createCombiner( BooleanGroup<TableOpsBooleanOperator> booleanGroup,
+            TableIndex left, TableIndex right ) {
+
         Map<String, Object> modifiers = new HashMap<>( modifiersLookupTable );
-        if ( booleanGroup.booleanOperator == BooleanOperator.AND ) {
+        if ( booleanGroup.booleanOperator == TableOpsBooleanOperator.AND ) {
             modifiers.put( "on", new String[] { "all" } );
         } else {
             modifiers.put( "on", new String[] { "none" } );
         }
 
-        for ( Modifier modifier : booleanGroup.modifiers ) {
-            if ( modifier.modifierName.equalsIgnoreCase( "on" ) ) {
+        booleanGroup.modifiers.forEach( ( modifierName, modifier ) -> {
+            if ( modifierName.equalsIgnoreCase( "on" ) ) {
                 modifiers.put( "on", parseOnModifier( modifier.comparator, modifier.modifierValue.trim() ) );
             } else if ( modifier.modifierName.equalsIgnoreCase( "null" ) ) {
                 modifiers.put( "null", parseNullModifier( modifier.comparator, modifier.modifierValue.trim() ) );
             }
-        }
+        } );
 
         CombinerType combinerType =
                 determineCombinerType( booleanGroup.booleanOperator, (String) modifiers.get( "null" ) );
@@ -92,10 +90,7 @@ public class Combiner {
     }
 
 
-    private static String[] parseOnModifier( Comparator comparator, String modifierValue )
-            throws InvalidModifierException {
-
-        assertValidity( comparator, modifierValue );
+    private static String[] parseOnModifier( Comparator comparator, String modifierValue ) {
 
         if ( modifierValue.equalsIgnoreCase( "all" ) ) {
             return new String[] { "all" };
@@ -104,28 +99,25 @@ public class Combiner {
         } else {
             return modifierValue.trim().split( "\\s*,\\s*" );
         }
+
     }
 
 
-    private static String parseNullModifier( Comparator comparator, String modifierValue )
-            throws InvalidModifierException {
-
-        assertValidity( comparator, modifierValue );
+    private static String parseNullModifier( Comparator comparator, String modifierValue ) {
 
         if ( modifierValue.equalsIgnoreCase( "left" ) ) {
             return "left";
         } else if ( modifierValue.equalsIgnoreCase( "right" ) ) {
             return "right";
-        } else if ( modifierValue.equalsIgnoreCase( "both" ) ) {
-            return "both";
         } else {
-            throw new InvalidModifierException( "Invalid value '" + modifierValue + "' for modifier 'null'." );
+            return "both";
         }
+
     }
 
 
-    private static CombinerType determineCombinerType( BooleanOperator booleanOperator, String nullValue ) {
-        if ( booleanOperator == BooleanOperator.OR ) {
+    private static CombinerType determineCombinerType( TableOpsBooleanOperator tableOpsBooleanOperator, String nullValue ) {
+        if ( tableOpsBooleanOperator == TableOpsBooleanOperator.OR ) {
             if ( nullValue.equals( "both" ) ) {
                 return CombinerType.JOIN_FULL;
             } else if ( nullValue.equals( "left" ) ) {
@@ -139,21 +131,20 @@ public class Combiner {
     }
 
 
-    private static String[] getColumnsToJoinOn( Index left, Index right, String[] columnStrs )
-            throws InvalidMethodInvocation {
+    private static String[] getColumnsToJoinOn( TableIndex left, TableIndex right, String[] columnStrs ) {
 
         assert columnStrs.length > 0;
 
         if ( columnStrs.length == 1 ) {
             if ( columnStrs[0].equals( "all" ) ) {
-                return getCommonColumns( left.getCatalogTable(), right.getCatalogTable() );
+                return getCommonColumns( left.catalogTable, right.catalogTable );
             } else if ( columnStrs[0].equals( "none" ) ) {
                 return new String[0];
             }
         }
 
-        CatalogTable leftCatalogTable = left.getCatalogTable();
-        CatalogTable rightCatalogTable = right.getCatalogTable();
+        CatalogTable leftCatalogTable = left.catalogTable;
+        CatalogTable rightCatalogTable = right.catalogTable;
         List<String> columnList = Arrays.asList( columnStrs );
 
         if ( !leftCatalogTable.getColumnNames().containsAll( columnList ) ||
@@ -177,16 +168,9 @@ public class Combiner {
     }
 
 
-    private static void assertValidity( Comparator comparator, String modifierValue ) throws InvalidModifierException {
-        if ( comparator == null || modifierValue == null ) {
-            throw new InvalidModifierException( "Invalid usage of modifier 'null'." );
-        }
-
-        String c = comparator.isNamedComparator() ? comparator.NamedComparator : comparator.SymbolComparator.name();
-        if ( comparator.isNamedComparator() ||
-                ( comparator.SymbolComparator != Comparator.SERVER_CHOICE ) ) {
-            throw new InvalidModifierException( "Invalid usage of comparator '" + c + "' with modifier 'null'." );
-        }
+    @Override
+    public String toString() {
+        return combinerType.name() + " ON " + Arrays.toString( joinOnColumns );
     }
 
 
