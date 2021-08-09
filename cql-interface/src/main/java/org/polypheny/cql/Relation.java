@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql.parser;
+package org.polypheny.cql;
 
-import java.util.ArrayList;
-import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class Relation {
 
     public final Comparator comparator;
-    public final ArrayList<Modifier> modifiers;
+    public final Map<String, Modifier> modifiers;
 
 
     public Relation( Comparator comparator ) {
         this.comparator = comparator;
-        this.modifiers = new ArrayList<>();
+        this.modifiers = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
     }
 
 
-    public Relation( Comparator comparator, ArrayList<Modifier> modifiers ) {
+    public Relation( Comparator comparator, Map<String, Modifier> modifiers ) {
         this.comparator = comparator;
         this.modifiers = modifiers;
     }
@@ -39,8 +39,20 @@ public class Relation {
 
     @Override
     public String toString() {
-        return comparator.toString() + " " +
-                modifiers.stream().map( Object::toString ).collect( Collectors.joining( " " ) );
+        StringBuilder stringBuilder = new StringBuilder();
+
+        modifiers.forEach( ( modifierName, modifier ) -> {
+            stringBuilder.append( " / " )
+                    .append( modifierName )
+                    .append( " " )
+                    .append( modifier.comparator.toString() )
+                    .append( " " )
+                    .append( modifier.modifierValue );
+        } );
+
+        stringBuilder.append( " " );
+
+        return comparator.toString() + stringBuilder;
     }
 
 }
