@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql.parser;
+package org.polypheny.cql;
 
 public class Modifier {
 
