@@ -1,0 +1,432 @@
+options {
+    STATIC = false;
+    IGNORE_CASE = true;
+}
+
+PARSER_BEGIN( CqlParser )
+
+package org.polypheny.cql.parser;
+
+import java.io.BufferedReader;
+import java.io.StringReader;
+import java.util.Map;
+import java.util.TreeMap;
+
+import org.polypheny.cql.BooleanGroup.ColumnOpsBooleanOperator;
+import org.polypheny.cql.BooleanGroup.TableOpsBooleanOperator;
+import org.polypheny.cql.BooleanGroup;
+import org.polypheny.cql.ColumnFilter;
+import org.polypheny.cql.ColumnIndex;
+import org.polypheny.cql.Comparator;
+import org.polypheny.cql.CqlQuery;
+import org.polypheny.cql.CqlQueryBuilder;
+import org.polypheny.cql.Filter;
+import org.polypheny.cql.LiteralFilter;
+import org.polypheny.cql.Modifier;
+import org.polypheny.cql.Relation;
+import org.polypheny.cql.TableIndex;
+import org.polypheny.cql.exception.InvalidMethodInvocation;
+import org.polypheny.cql.exception.UnknownIndexException;
+
+public class  CqlParser {
+
+    private CqlQueryBuilder cqlQueryBuilder;
+
+    public CqlParser( String cqlQueryStr, String databaseName ) {
+        this( new BufferedReader( new StringReader( cqlQueryStr ) ) );
+        this.cqlQueryBuilder = new CqlQueryBuilder( databaseName );
+    }
+
+}
+
+PARSER_END( CqlParser )
+
+< DEFAULT > SKIP : { " " | "\t" | "\n" | "\r" | "\f" }
+
+TOKEN : { < SORT_BY : "sortby" > }
+TOKEN : { < RELATION : "relation" > }
+TOKEN : { < ALIAS_OPERATOR : "as" > }
+
+TOKEN : { < BOOLEAN_AND : "and" | "\"and\"" > }
+TOKEN : { < BOOLEAN_OR : "or" | "\"or\"" > }
+TOKEN : { < BOOLEAN_NOT : "not" | "\"not\"" > }
+TOKEN : { < BOOLEAN_PROX : "prox" | "\"prox\"" > }
+
+TOKEN : { < COMPARATOR_SERVER_CHOICE : "=" > }
+TOKEN : { < COMPARATOR_EQUALS : "==" > }
+TOKEN : { < COMPARATOR_NOT_EQUALS : "<>" > }
+TOKEN : { < COMPARATOR_GREATER_THAN : ">" > }
+TOKEN : { < COMPARATOR_LESS_THAN : "<" > }
+TOKEN : { < COMPARATOR_GREATER_THAN_OR_EQUALS : ">=" > }
+TOKEN : { < COMPARATOR_LESS_THAN_OR_EQUALS : "<=" > }
+
+TOKEN : { < TABLE_NAME : ( [ "A"-"Z", "a"-"z" ] )+"."( [ "A"-"Z", "a"-"z" ] )+ > }
+TOKEN : { < COLUMN_NAME : ( [ "A"-"Z", "a"-"z" ] )+"."( [ "A"-"Z", "a"-"z" ] )+"."( [ "A"-"Z", "a"-"z" ] )+ > }
+
+TOKEN : { < STRING_WITHOUT_DOUBLE_QUOTES : ( ~[ " ", "\t", "\n", "\r", "\f", "(", ")", "\"", "=", "<", ">", "/" ] )+ > }
+TOKEN : {
+    < STRING_WITH_DOUBLE_QUOTES :
+        "\""
+        (
+             "\\" ~[]
+        |
+            ~["\"","\\"]
+        )*
+        "\"" >
+}
+
+TOKEN : { < COMPARATOR_NAMED : ( [ "A"-"Z", "a"-"z" ] )+ > }
+TOKEN : { < ALIAS : ( [ "A"-"Z", "a"-"z" ] )+ > }
+
+CqlQuery parse() :
+{
+}
+{
+    [
+        QUERY_FILTERS()
+    ]
+    [
+        QUERY_RELATION()
+    ]
+    [
+        SORTING()
+    ]
+    < EOF >
+    {
+        try {
+            return cqlQueryBuilder.build();
+        } catch ( Exception e ) {
+            throw new ParseException( e.getMessage() );
+        }
+    }
+}
+
+void QUERY_RELATION() :
+{
+    TableIndex tableIndex = null;
+    BooleanGroup<TableOpsBooleanOperator> tableOpsBooleanGroup = null;
+}
+{
+    < RELATION >
+    tableIndex = TABLE_INDEX()
+    {
+        cqlQueryBuilder.addTable( tableIndex );
+    }
+    (
+        LOOKAHEAD( 2 )
+        tableOpsBooleanGroup = TABLE_OPS_BOOLEAN_GROUP()
+        tableIndex = TABLE_INDEX()
+        {
+            cqlQueryBuilder.combineRelationWith( tableIndex, tableOpsBooleanGroup );
+        }
+    )*
+}
+
+void QUERY_FILTERS() :
+{
+    BooleanGroup<ColumnOpsBooleanOperator> columnOpsBooleanGroup = null;
+}
+{
+    SEARCH_CLAUSE()
+    [
+        columnOpsBooleanGroup = COLUMN_OPS_BOOLEAN_GROUP()
+        SEARCH_CLAUSE()
+        {
+            cqlQueryBuilder.mergeFilterSubtreesWith( columnOpsBooleanGroup );
+        }
+    ]
+}
+
+void SEARCH_CLAUSE() :
+{
+    Filter filter = null;
+    ColumnIndex left = null;
+    Relation relation = null;
+    ColumnIndex rightColumnIndex = null;
+    String rightSearchTerm = null;
+}
+{
+    "("
+    QUERY_FILTERS()
+    ")"
+|
+    left = COLUMN_INDEX()
+    relation = RELATION()
+    (
+        LOOKAHEAD( 2 )
+        rightColumnIndex = COLUMN_INDEX()
+        {
+            filter = new ColumnFilter( left, relation, rightColumnIndex );
+        }
+    |
+        rightSearchTerm = IDENTIFIER()
+        {
+            filter = new LiteralFilter( left, relation, rightSearchTerm );
+        }
+    )
+    {
+        cqlQueryBuilder.addNewFilter( filter );
+    }
+}
+
+void SORTING() :
+{
+    ColumnIndex columnIndex = null;
+    Map<String, Modifier> modifiers = null;
+}
+{
+    < SORT_BY >
+    (
+        columnIndex = COLUMN_INDEX()
+        [
+            modifiers = MODIFIERS()
+        ]
+        {
+            cqlQueryBuilder.addSortSpecification( columnIndex, modifiers );
+        }
+    )+
+}
+
+TableIndex TABLE_INDEX() :
+{
+    TableIndex tableIndex = null;
+    Token tableToken = null;
+    Token aliasToken = null;
+}
+{
+    tableToken = < TABLE_NAME >
+    [
+        < ALIAS_OPERATOR >
+        aliasToken = < ALIAS >
+    ]
+    {
+        try {
+            tableIndex = cqlQueryBuilder.addTableIndex( tableToken.image );
+        } catch ( UnknownIndexException e ) {
+            throw new Error( e.getMessage() );
+        }
+        return tableIndex;
+    }
+}
+
+ColumnIndex COLUMN_INDEX() :
+{
+    ColumnIndex columnIndex = null;
+    Token columnToken = null;
+}
+{
+    columnToken = < COLUMN_NAME >
+    {
+        try {
+            columnIndex = cqlQueryBuilder.addColumnIndex( columnToken.image );
+        } catch ( UnknownIndexException e ) {
+            throw new Error( e.getMessage() );
+        }
+        return columnIndex;
+    }
+}
+
+BooleanGroup<TableOpsBooleanOperator> TABLE_OPS_BOOLEAN_GROUP() :
+{
+    BooleanGroup<TableOpsBooleanOperator> booleanGroup = null;
+    TableOpsBooleanOperator tableOpsBooleanOperator = null;
+    Map<String, Modifier> modifiers = null;
+}
+{
+    tableOpsBooleanOperator = TABLE_OPS_BOOLEAN_OPERATOR()
+    [
+        modifiers = MODIFIERS()
+        {
+            booleanGroup = new BooleanGroup<TableOpsBooleanOperator>( tableOpsBooleanOperator, modifiers );
+        }
+    ]
+    {
+        if ( modifiers == null ) {
+            booleanGroup = new BooleanGroup<TableOpsBooleanOperator>( tableOpsBooleanOperator );
+        }
+        return booleanGroup;
+    }
+}
+
+BooleanGroup<ColumnOpsBooleanOperator> COLUMN_OPS_BOOLEAN_GROUP() :
+{
+    BooleanGroup<ColumnOpsBooleanOperator> booleanGroup = null;
+    ColumnOpsBooleanOperator columnOpsBooleanOperator = null;
+    Map<String, Modifier> modifiers = null;
+}
+{
+    columnOpsBooleanOperator = COLUMN_OPS_BOOLEAN_OPERATOR()
+    [
+        modifiers = MODIFIERS()
+        {
+            booleanGroup = new BooleanGroup<ColumnOpsBooleanOperator>( columnOpsBooleanOperator, modifiers );
+        }
+    ]
+    {
+        if ( modifiers == null ) {
+            booleanGroup = new BooleanGroup<ColumnOpsBooleanOperator>( columnOpsBooleanOperator );
+        }
+        return booleanGroup;
+    }
+}
+
+Relation RELATION() :
+{
+    Relation relation = null;
+    Comparator comparator = null;
+    Map<String, Modifier> modifiers = null;
+}
+{
+    comparator = COMPARATOR()
+    [
+        modifiers = MODIFIERS()
+    ]
+    {
+        if ( modifiers == null ) {
+            relation = new Relation( comparator );
+        } else {
+            relation = new Relation( comparator, modifiers );
+        }
+        return relation;
+    }
+}
+
+Map<String, Modifier> MODIFIERS() :
+{
+    Map<String, Modifier> modifiers = new TreeMap<String, Modifier>( String.CASE_INSENSITIVE_ORDER );
+    Modifier modifier = null;
+}
+{
+    modifier = MODIFIER()
+    { modifiers.put( modifier.modifierName, modifier ); }
+    (
+        modifier = MODIFIER()
+        { modifiers.put( modifier.modifierName, modifier ); }
+    )*
+    {
+        return modifiers;
+    }
+}
+
+Modifier MODIFIER() :
+{
+    Modifier modifier = null;
+    Token modifierNameToken = null;
+    String modifierValue = null;
+    Comparator comparator = null;
+}
+{
+    "/"
+    modifierNameToken = < STRING_WITHOUT_DOUBLE_QUOTES >
+    [
+        LOOKAHEAD( 2 )
+        comparator = COMPARATOR()
+        modifierValue = IDENTIFIER()
+        {
+            modifier = new Modifier( modifierNameToken.image, comparator, modifierValue );
+        }
+    ]
+    {
+        if ( modifier == null ) {
+            modifier = new Modifier( modifierNameToken.image );
+        }
+        return modifier;
+    }
+}
+
+String IDENTIFIER() :
+{
+    Token t = null;
+    String identifier = null;
+}
+{
+    (
+        t = < STRING_WITHOUT_DOUBLE_QUOTES >
+        {
+            identifier = t.image;
+        }
+    |
+        t = < STRING_WITH_DOUBLE_QUOTES >
+        {
+            String str = t.image;
+            str = str.substring( 1, str.length() - 1 );
+            str = str.replace( "\\\"", "\"" );
+            identifier = str;
+        }
+    )
+    { return identifier; }
+}
+
+TableOpsBooleanOperator TABLE_OPS_BOOLEAN_OPERATOR() :
+{
+    TableOpsBooleanOperator tableOpsBooleanOperator = null;
+}
+{
+    (
+        < BOOLEAN_AND >
+        { tableOpsBooleanOperator = TableOpsBooleanOperator.AND; }
+    |
+        < BOOLEAN_OR >
+        { tableOpsBooleanOperator = TableOpsBooleanOperator.OR; }
+    )
+    { return tableOpsBooleanOperator; }
+}
+
+ColumnOpsBooleanOperator COLUMN_OPS_BOOLEAN_OPERATOR() :
+{
+    ColumnOpsBooleanOperator columnOpsBooleanOperator = null;
+}
+{
+    (
+        < BOOLEAN_AND >
+        { columnOpsBooleanOperator = ColumnOpsBooleanOperator.AND; }
+    |
+        < BOOLEAN_OR >
+        { columnOpsBooleanOperator = ColumnOpsBooleanOperator.OR; }
+    |
+        < BOOLEAN_NOT >
+        { columnOpsBooleanOperator = ColumnOpsBooleanOperator.NOT; }
+    |
+        < BOOLEAN_PROX >
+        { columnOpsBooleanOperator = ColumnOpsBooleanOperator.PROX; }
+    )
+    {
+        return columnOpsBooleanOperator;
+    }
+}
+
+Comparator COMPARATOR() :
+{
+    Token namedComparator = null;
+    Comparator comparator = null;
+}
+{
+    (
+        < COMPARATOR_SERVER_CHOICE >
+        { comparator = Comparator.SERVER_CHOICE; }
+    |
+        < COMPARATOR_EQUALS >
+        { comparator = Comparator.EQUALS; }
+    |
+        < COMPARATOR_NOT_EQUALS >
+        { comparator = Comparator.NOT_EQUALS; }
+    |
+        < COMPARATOR_GREATER_THAN >
+        { comparator = Comparator.GREATER_THAN; }
+    |
+        < COMPARATOR_LESS_THAN >
+        { comparator = Comparator.LESS_THAN; }
+    |
+        < COMPARATOR_GREATER_THAN_OR_EQUALS >
+        { comparator = Comparator.GREATER_THAN_OR_EQUALS; }
+    |
+        < COMPARATOR_LESS_THAN_OR_EQUALS >
+        { comparator = Comparator.LESS_THAN_OR_EQUALS; }
+    |
+        namedComparator = < COMPARATOR_NAMED >
+        { comparator = Comparator.createNamedComparator( namedComparator.image ); }
+    )
+    {
+        return comparator;
+    }
+}
