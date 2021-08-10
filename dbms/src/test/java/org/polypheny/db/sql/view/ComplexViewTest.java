@@ -327,6 +327,19 @@ public class ComplexViewTest {
             new BigDecimal( "20.15" ),
             1L };
 
+    private final static Object[] q1_TEST_DATA_MAT = new Object[]{
+            "R",
+            "L",
+            new BigDecimal( "20.15" ),
+            new BigDecimal( "50.15" ),
+            new BigDecimal( "-960.3725" ),
+            new BigDecimal( "-10708.153375" ),
+            new BigDecimal( "20.15" ),
+            new BigDecimal( "50.15" ),
+            new BigDecimal( "20.15" ),
+            1L,
+            0 };
+
     private final static Object[] q3_TEST_DATA = new Object[]{
             1,
             new BigDecimal( "-960.3725" ),
@@ -791,7 +804,7 @@ public class ComplexViewTest {
                             + "FRESHNESS INTERVAL 10 \"min\"" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM q1_Materialized " ),
-                            ImmutableList.of( q1_TEST_DATA )
+                            ImmutableList.of( q1_TEST_DATA_MAT )
                     );
 
                     connection.commit();

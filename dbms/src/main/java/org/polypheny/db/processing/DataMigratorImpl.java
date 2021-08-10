@@ -24,6 +24,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.MetaImpl;
@@ -125,27 +126,50 @@ public class DataMigratorImpl implements DataMigrator {
                     i++;
                 }
             }
+            if ( isMaterializedView ) {
+                for ( CatalogColumn catalogColumn : selectColumnList ) {
+                    if ( !resultColMapping.containsKey( catalogColumn.id ) ) {
+                        int i = resultColMapping.values().stream().mapToInt( v -> v ).max().orElseThrow( NoSuchElementException::new );
+                        resultColMapping.put( catalogColumn.id, i + 1 );
+                    }
+                }
+            }
 
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
             while ( sourceIterator.hasNext() ) {
                 List<List<Object>> rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
 
                 Map<Long, List<Object>> values = new HashMap<>();
+                int i = 0;
                 for ( List<Object> list : rows ) {
                     for ( Map.Entry<Long, Integer> entry : resultColMapping.entrySet() ) {
                         if ( !values.containsKey( entry.getKey() ) ) {
                             values.put( entry.getKey(), new LinkedList<>() );
                         }
-                        values.get( entry.getKey() ).add( list.get( entry.getValue() ) );
+                        if ( isMaterializedView ) {
+                            if ( entry.getValue() > list.size() - 1 ) {
+                                values.get( entry.getKey() ).add( i );
+                                i++;
+                            } else {
+                                values.get( entry.getKey() ).add( list.get( entry.getValue() ) );
+                            }
+                        } else {
+                            values.get( entry.getKey() ).add( list.get( entry.getValue() ) );
+                        }
                     }
                 }
-
-                List<RelDataTypeField> fields = sourceRel.validatedRowType.getFieldList();
+                List<RelDataTypeField> fields;
+                if ( isMaterializedView ) {
+                    fields = targetRel.rel.getTable().getRowType().getFieldList();
+                } else {
+                    fields = sourceRel.validatedRowType.getFieldList();
+                }
                 int pos = 0;
                 for ( Map.Entry<Long, List<Object>> v : values.entrySet() ) {
                     targetStatement.getDataContext().addParameterValues( v.getKey(), fields.get( resultColMapping.get( v.getKey() ) ).getType(), v.getValue() );
                     pos++;
                 }
+
                 Iterator iterator = targetStatement.getQueryProcessor()
                         .prepareQuery( targetRel, sourceRel.validatedRowType, true )
                         .enumerable( targetStatement.getDataContext() )

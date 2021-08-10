@@ -90,14 +90,14 @@ public class BasicMaterializedTest {
                 statement.executeUpdate( VIEWTESTDEPTABLE_DATA_SQL );
 
                 try {
-                    statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
-                    statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmpDep AS SELECT viewTestEmpTable.firstName, viewTestDepTable.depName FROM viewTestEmpTable INNER JOIN viewTestDepTable ON viewTestEmpTable.depId = viewTestDepTable.depId" );
+                    statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS MANUAL" );
+                    statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmpDep AS SELECT viewTestEmpTable.firstName, viewTestDepTable.depName FROM viewTestEmpTable INNER JOIN viewTestDepTable ON viewTestEmpTable.depId = viewTestDepTable.depId FRESHNESS MANUAL" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1 },
-                                    new Object[]{ 2, "Ernst", "Walter", 2 },
-                                    new Object[]{ 3, "Elsa", "Kuster", 3 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2, 1 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
                             )
                     );
                     TestHelper.checkResultSet(
@@ -111,9 +111,9 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmpDep" ),
                             ImmutableList.of(
-                                    new Object[]{ "Max", "IT" },
-                                    new Object[]{ "Ernst", "Sales" },
-                                    new Object[]{ "Elsa", "HR" }
+                                    new Object[]{ "Max", "IT", 0 },
+                                    new Object[]{ "Ernst", "Sales", 1 },
+                                    new Object[]{ "Elsa", "HR", 2 }
                             )
                     );
                     connection.commit();
@@ -198,9 +198,9 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewRenameEmpTest" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1 },
-                                    new Object[]{ 2, "Ernst", "Walter", 2 },
-                                    new Object[]{ 3, "Elsa", "Kuster", 3 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2, 1 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
                             )
                     );
                     /*
@@ -292,9 +292,9 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp, viewTestDepTable WHERE depname = 'IT'" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1, 1, "IT", 1 },
-                                    new Object[]{ 2, "Ernst", "Walter", 2, 1, "IT", 1 },
-                                    new Object[]{ 3, "Elsa", "Kuster", 3, 1, "IT", 1 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0, 1, "IT", 1 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2, 1, 1, "IT", 1 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3, 2, 1, "IT", 1 }
                             )
                     );
 
@@ -325,9 +325,9 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp, viewTestDep WHERE depname = 'IT'" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1, 1, "IT", 1 },
-                                    new Object[]{ 2, "Ernst", "Walter", 2, 1, "IT", 1 },
-                                    new Object[]{ 3, "Elsa", "Kuster", 3, 1, "IT", 1 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0, 1, "IT", 1, 0 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2, 1, 1, "IT", 1, 0 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3, 2, 1, "IT", 1, 0 }
                             )
                     );
 
@@ -360,9 +360,9 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewFromView" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1, 1, "IT", 1 },
-                                    new Object[]{ 2, "Ernst", "Walter", 2, 1, "IT", 1 },
-                                    new Object[]{ 3, "Elsa", "Kuster", 3, 1, "IT", 1 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0, 1, "IT", 1, 0, 0 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2, 1, 1, "IT", 1, 0, 1 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3, 2, 1, "IT", 1, 0, 2 }
                             )
                     );
 
@@ -393,9 +393,9 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1 },
-                                    new Object[]{ 2, "Ernst", "Walter", 2 },
-                                    new Object[]{ 3, "Elsa", "Kuster", 3 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2, 1 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
                             )
                     );
                 } catch ( InterruptedException e ) {
@@ -422,9 +422,9 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1 },
-                                    new Object[]{ 2, "Ernst", "Walter", 2 },
-                                    new Object[]{ 3, "Elsa", "Kuster", 3 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2, 1 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
                             )
                     );
 
@@ -455,7 +455,7 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 }
                             ) );
 
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
@@ -465,9 +465,9 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1 },
-                                    new Object[]{ 2, "Ernst", "Walter", 2 },
-                                    new Object[]{ 3, "Elsa", "Kuster", 3 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2, 1 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
                             )
                     );
 
@@ -504,7 +504,7 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 }
                             ) );
 
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
@@ -514,9 +514,9 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1 },
-                                    new Object[]{ 2, "Ernst", "Walter", 2 },
-                                    new Object[]{ 3, "Elsa", "Kuster", 3 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2, 1 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
                             )
                     );
 
@@ -557,7 +557,7 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 }
                             ) );
 
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
@@ -567,9 +567,9 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1 },
-                                    new Object[]{ 2, "Ernst", "Walter", 2 },
-                                    new Object[]{ 3, "Elsa", "Kuster", 3 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2, 1 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
                             )
                     );
 
@@ -604,9 +604,9 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1 },
-                                    new Object[]{ 2, "Ernst", "Walter", 2 },
-                                    new Object[]{ 3, "Elsa", "Kuster", 3 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2, 1 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
                             )
                     );
 
@@ -619,7 +619,7 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 }
                             )
                     );
 
@@ -661,9 +661,9 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1 },
-                                    new Object[]{ 2, "Ernst", "Walter", 2 },
-                                    new Object[]{ 3, "Elsa", "Kuster", 3 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2, 1 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
                             )
                     );
 
@@ -705,7 +705,7 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 }
                             )
                     );
 
@@ -717,7 +717,7 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 }
                             )
                     );
 
@@ -728,9 +728,9 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1 },
-                                    new Object[]{ 2, "Ernst", "Walter", 2 },
-                                    new Object[]{ 3, "Elsa", "Kuster", 3 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2, 1 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
                             )
                     );
 
@@ -765,13 +765,13 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 }
                             ) );
 
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestDep" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "IT", 1 }
+                                    new Object[]{ 1, "IT", 1, 0 }
                             ) );
 
                     statement.executeUpdate( "INSERT INTO viewTestDepTable VALUES ( 2, 'Sales', 2), ( 3, 'HR', 3)");
@@ -782,18 +782,18 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1 },
-                                    new Object[]{ 2, "Ernst", "Walter", 2 },
-                                    new Object[]{ 3, "Elsa", "Kuster", 3 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2, 1 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
                             )
                     );
 
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestDep" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "IT", 1 },
-                                    new Object[]{ 2, "Sales", 2 },
-                                    new Object[]{ 3, "HR", 3 }
+                                    new Object[]{ 1, "IT", 1, 0 },
+                                    new Object[]{ 2, "Sales", 2, 1 },
+                                    new Object[]{ 3, "HR", 3, 2 }
                             ) );
 
                 } finally {
@@ -846,18 +846,18 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1 },
-                                    new Object[]{ 2, "Ernst", "Walter", 2 },
-                                    new Object[]{ 3, "Elsa", "Kuster", 3 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2, 1 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
                             )
                     );
 
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestDep" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "IT", 1 },
-                                    new Object[]{ 2, "Sales", 2 },
-                                    new Object[]{ 3, "HR", 3 }
+                                    new Object[]{ 1, "IT", 1, 0 },
+                                    new Object[]{ 2, "Sales", 2, 1 },
+                                    new Object[]{ 3, "HR", 3, 2 }
                             ) );
 
                     statement.executeUpdate( "DELETE FROM viewTestEmpTable" );
@@ -869,18 +869,18 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1 },
-                                    new Object[]{ 2, "Ernst", "Walter", 2 },
-                                    new Object[]{ 3, "Elsa", "Kuster", 3 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2, 1 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
                             )
                     );
 
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestDep" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "IT", 1 },
-                                    new Object[]{ 2, "Sales", 2 },
-                                    new Object[]{ 3, "HR", 3 }
+                                    new Object[]{ 1, "IT", 1, 0 },
+                                    new Object[]{ 2, "Sales", 2, 1 },
+                                    new Object[]{ 3, "HR", 3, 2 }
                             ) );
 
                 } finally {
@@ -916,13 +916,13 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 }
                             ) );
 
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestDep" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "IT", 1 }
+                                    new Object[]{ 1, "IT", 1, 0 }
                             ) );
 
                     statement.executeUpdate( "INSERT INTO viewTestDepTable VALUES ( 2, 'Sales', 2), ( 3, 'HR', 3)" );
@@ -933,18 +933,18 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1 },
-                                    new Object[]{ 2, "Ernst", "Walter", 2 },
-                                    new Object[]{ 3, "Elsa", "Kuster", 3 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2, 1 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
                             )
                     );
 
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestDep" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "IT", 1 },
-                                    new Object[]{ 2, "Sales", 2 },
-                                    new Object[]{ 3, "HR", 3 }
+                                    new Object[]{ 1, "IT", 1, 0 },
+                                    new Object[]{ 2, "Sales", 2, 1 },
+                                    new Object[]{ 3, "HR", 3, 2 }
                             ) );
 
                     statement.executeUpdate( "DELETE FROM viewTestEmpTable" );
@@ -970,13 +970,13 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 }
                             ) );
 
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestDep" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "IT", 1 }
+                                    new Object[]{ 1, "IT", 1, 0 }
                             ) );
 
                 } finally {
@@ -1006,7 +1006,7 @@ public class BasicMaterializedTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1 }
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 }
                             ) );
 
                     statement.executeUpdate( "DELETE FROM viewTestEmpTable" );

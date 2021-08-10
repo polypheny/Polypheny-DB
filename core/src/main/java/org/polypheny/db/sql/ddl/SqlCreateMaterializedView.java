@@ -30,6 +30,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
+import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -37,6 +38,7 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.rel.RelRoot;
@@ -188,6 +190,8 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
         } catch ( GenericCatalogException | UnknownColumnException e ) {
             // we just added the table/column so it has to exist or we have a internal problem
             throw new RuntimeException( e );
+        } catch ( ColumnNotExistsException | ColumnAlreadyExistsException e ) {
+            e.printStackTrace();
         }
 
 

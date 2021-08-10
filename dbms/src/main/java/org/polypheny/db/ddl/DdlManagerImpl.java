@@ -1384,7 +1384,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createMaterializedView( String viewName, long schemaId, RelRoot relRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException {
+    public void createMaterializedView( String viewName, long schemaId, RelRoot relRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException, ColumnNotExistsException, ColumnAlreadyExistsException {
         if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
             throw new TableAlreadyExistsException();
         }
@@ -1397,7 +1397,7 @@ public class DdlManagerImpl extends DdlManager {
         prepareView( relRoot.rel );
         RelDataType fieldList = relRoot.rel.getRowType();
 
-        List<ColumnInformation> columns = getColumnInformation( projectedColumns, fieldList );
+        List<ColumnInformation> columns = getColumnInformation( projectedColumns, fieldList, true );
 
         Map<Long, List<Long>> underlyingTables = new HashMap<>();
         long tableId = catalog.addMaterializedView(
@@ -1415,6 +1415,8 @@ public class DdlManagerImpl extends DdlManager {
 
         Map<Integer, List<CatalogColumn>> addedColumns = new HashMap<>();
 
+        List<Long> columnIds = new ArrayList<>();
+
         for ( ColumnInformation column : columns ) {
             long columnId = catalog.addColumn(
                     column.name,
@@ -1429,6 +1431,9 @@ public class DdlManagerImpl extends DdlManager {
                     column.typeInformation.nullable,
                     column.collation );
 
+            if ( column.name.equals( "primaryKey" ) ) {
+                columnIds.add( columnId );
+            }
 
             for ( DataStore s : stores ) {
                 int adapterId = s.getAdapterId();
@@ -1452,6 +1457,8 @@ public class DdlManagerImpl extends DdlManager {
             }
 
         }
+        renameColumn( catalog.getTable( tableId ), "primaryKey", "matId_" + tableId, statement );
+        catalog.addPrimaryKey( tableId, columnIds );
 
         CatalogMaterialized catalogMaterialized = (CatalogMaterialized) catalog.getTable( tableId );
         for ( DataStore store : stores ) {
@@ -1473,6 +1480,11 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private List<ColumnInformation> getColumnInformation( List<String> projectedColumns, RelDataType fieldList ) {
+        return getColumnInformation( projectedColumns, fieldList, false );
+    }
+
+
+    private List<ColumnInformation> getColumnInformation( List<String> projectedColumns, RelDataType fieldList, boolean addPrimary ) {
         List<ColumnInformation> columns = new ArrayList<>();
 
         int position = 1;
@@ -1501,7 +1513,25 @@ public class DdlManagerImpl extends DdlManager {
                     null,
                     position ) );
             position++;
+
         }
+
+        if ( addPrimary ) {
+            columns.add( new ColumnInformation(
+                    "primaryKey",
+                    new ColumnTypeInformation(
+                            PolyType.INTEGER,
+                            PolyType.INTEGER,
+                            -1,
+                            -1,
+                            -1,
+                            -1,
+                            false ),
+                    Collation.getDefaultCollation(),
+                    null,
+                    position ) );
+        }
+
         return columns;
     }
 

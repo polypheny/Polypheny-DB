@@ -1543,23 +1543,51 @@ public class CatalogImpl extends Catalog {
     @Override
     public void setPrimaryKey( long tableId, Long keyId ) {
         CatalogTable old = getTable( tableId );
-        CatalogTable table = new CatalogTable( old.id,
-                old.name,
-                old.columnIds,
-                old.schemaId,
-                old.databaseId,
-                old.ownerId,
-                old.ownerName,
-                old.tableType,
-                keyId,
-                old.placementsByAdapter,
-                old.modifiable,
-                old.numPartitions,
-                old.partitionType,
-                old.partitionIds,
-                old.partitionColumnId,
-                old.isPartitioned,
-                old.connectedViews );
+
+        CatalogTable table;
+        if ( old instanceof CatalogMaterialized ) {
+            table = new CatalogMaterialized( old.id,
+                    old.name,
+                    old.columnIds,
+                    old.schemaId,
+                    old.databaseId,
+                    old.ownerId,
+                    old.ownerName,
+                    old.tableType,
+                    ((CatalogMaterialized) old).getDefinition(),
+                    keyId,
+                    old.placementsByAdapter,
+                    old.modifiable,
+                    old.numPartitions,
+                    old.partitionType,
+                    old.partitionIds,
+                    old.partitionColumnId,
+                    old.isPartitioned,
+                    ((CatalogMaterialized) old).getRelCollation(),
+                    old.connectedViews,
+                    ((CatalogMaterialized) old).getUnderlyingTables(),
+                    ((CatalogMaterialized) old).getFieldList(),
+                    ((CatalogMaterialized) old).getMaterializedCriteria() );
+        } else {
+            table = new CatalogTable( old.id,
+                    old.name,
+                    old.columnIds,
+                    old.schemaId,
+                    old.databaseId,
+                    old.ownerId,
+                    old.ownerName,
+                    old.tableType,
+                    keyId,
+                    old.placementsByAdapter,
+                    old.modifiable,
+                    old.numPartitions,
+                    old.partitionType,
+                    old.partitionIds,
+                    old.partitionColumnId,
+                    old.isPartitioned,
+                    old.connectedViews );
+        }
+
         synchronized ( this ) {
             tables.replace( tableId, table );
             tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
