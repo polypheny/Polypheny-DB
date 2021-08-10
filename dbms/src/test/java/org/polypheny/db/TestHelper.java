@@ -18,6 +18,7 @@ package org.polypheny.db;
 
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.google.gson.Gson;
@@ -30,6 +31,8 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -221,7 +224,6 @@ public class TestHelper {
     public static class MongoConnection {
 
         static Gson gson = new Gson();
-        static String defaultDB = "test";
 
 
         private MongoConnection() {
@@ -287,6 +289,43 @@ public class TestHelper {
                 fail();
                 throw new RuntimeException( "This cannot happen" );
             }
+        }
+
+
+        public static void checkUnorderedResultSet( Result result, List<String[]> expected, boolean excludeId ) {
+
+            assertEquals( expected.size(), result.getData().length );
+
+            List<List<String>> parsedResults = new ArrayList<>();
+            int j = 0;
+            for ( String[] data : result.getData() ) {
+                int i = 0;
+                List<String> row = new ArrayList<>();
+                for ( String entry : data ) {
+                    if ( !result.getHeader()[i].name.equals( "_id" ) ) {
+                        if ( entry != null && expected.get( j )[i] != null ) {
+                            //assertEquals( ((String) expected.get( j )[i]).replace( " ", "" ), entry.replace( " ", "" ) );
+                            row.add( entry.replace( " ", "" ) );
+                        } else {
+                            row.add( null );
+                        }
+                    }
+                    i++;
+                }
+                parsedResults.add( row );
+                j++;
+            }
+            List<List<String>> parsedExpected = new ArrayList<>();
+
+            if ( !excludeId ) {
+                expected.forEach( row -> parsedExpected.add( Arrays.asList( row ) ) );
+            } else {
+                expected.forEach( row -> parsedExpected.add( Arrays.asList( row ).subList( 1, Arrays.asList( row ).size() ) ) );
+            }
+
+            assertTrue( parsedExpected.containsAll( parsedResults ) );
+            assertTrue( parsedResults.containsAll( parsedExpected ) );
+
         }
 
     }

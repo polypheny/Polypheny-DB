@@ -211,7 +211,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 
         if ( parameterValues.size() == 0 ) {
             // direct query
-            preOps.forEach( op -> list.add( new BsonDocument( "$project", op ) ) );
+            preOps.forEach( op -> list.add( new BsonDocument( "$addFields", op ) ) );
 
             if ( !filter.isEmpty() ) {
                 list.add( new BsonDocument( "$match", filter ) );

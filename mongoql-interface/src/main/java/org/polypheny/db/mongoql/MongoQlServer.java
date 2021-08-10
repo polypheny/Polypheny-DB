@@ -153,26 +153,32 @@ public class MongoQlServer extends QueryInterface {
 
         long executionTime = System.nanoTime();
 
-        if ( parsed.getFamily() == Family.DDL ) {
-            mqlProcessor.prepareDdl( statement, parsed, mql, query.database );
-            Result result = new Result( 1 ).setGeneratedQuery( mql ).setXid( statement.getTransaction().getXid().toString() );
-            results.add( result );
-        } else {
-            RelRoot logicalRoot = mqlProcessor.translate( statement, parsed, query.database );
-
-            // Prepare
-            signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
-
-            results = getResults( statement, query, signature );
-        }
-        executionTime = System.nanoTime() - executionTime;
         try {
-            statement.getTransaction().commit();
-        } catch ( TransactionException e ) {
-            throw new RuntimeException( "error while committing" );
+            if ( parsed.getFamily() == Family.DDL ) {
+                mqlProcessor.prepareDdl( statement, parsed, mql, query.database );
+                Result result = new Result( 1 ).setGeneratedQuery( mql ).setXid( statement.getTransaction().getXid().toString() );
+                results.add( result );
+            } else {
+                RelRoot logicalRoot = mqlProcessor.translate( statement, parsed, query.database );
+
+                // Prepare
+                signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
+
+                results = getResults( statement, query, signature );
+            }
+            executionTime = System.nanoTime() - executionTime;
+            try {
+                statement.getTransaction().commit();
+            } catch ( TransactionException e ) {
+                throw new RuntimeException( "error while committing" );
+            }
+
+            return gson.toJson( results.get( 0 ) );
+        } catch ( Exception e ) {
+            return gson.toJson( e.toString() );
         }
 
-        return gson.toJson( results.get( 0 ) );
+
     }
 
 

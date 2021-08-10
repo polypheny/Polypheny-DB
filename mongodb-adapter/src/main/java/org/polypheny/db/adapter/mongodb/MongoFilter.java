@@ -345,11 +345,15 @@ public class MongoFilter extends Filter implements MongoRel {
                 List<BsonValue> ors = new ArrayList<>();
 
                 for ( Entry<String, List<BsonValue>> entry : newValueMap.entrySet() ) {
-                    List<BsonValue> ands = new ArrayList<>();
-                    for ( BsonValue value : entry.getValue() ) {
-                        ands.add( new BsonDocument( entry.getKey(), value ) );
+                    if ( !entry.getKey().equals( "$or" ) ) {
+                        List<BsonValue> ands = new ArrayList<>();
+                        for ( BsonValue value : entry.getValue() ) {
+                            ands.add( new BsonDocument( entry.getKey(), value ) );
+                        }
+                        ors.add( new BsonDocument( "$and", new BsonArray( ands ) ) );
+                    } else {
+                        ors.addAll( entry.getValue() );
                     }
-                    ors.add( new BsonDocument( "$and", new BsonArray( ands ) ) );
                 }
 
                 if ( finalValueMap.containsKey( "$or" ) ) {

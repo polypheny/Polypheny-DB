@@ -52,12 +52,14 @@ public class MongoDynamic {
     private final HashMap<Long, Boolean> isRegexMap = new HashMap<>();
     private final HashMap<Long, Boolean> isFuncMap = new HashMap<>();
     private final DataContext dataContext;
+    private final boolean isProject;
 
 
     public MongoDynamic( BsonDocument preDocument, GridFSBucket bucket, DataContext dataContext ) {
         this.dataContext = dataContext;
         this.document = preDocument.clone();
         this.bucket = bucket;
+        this.isProject = !document.isEmpty() && document.getFirstKey().equals( "$project" );
         this.document.forEach( ( k, bsonValue ) -> replaceDynamic( bsonValue, this.document, k, true ) );
     }
 
@@ -184,8 +186,14 @@ public class MongoDynamic {
                     docHandles.get( entry.getKey() ).forEach( el -> el.insert( new BsonString( BsonFunctionHelper.getUsedFunction( entry.getValue() ) ) ) );
                 } else {
                     Function<Object, BsonValue> transformer = transformerMap.get( entry.getKey() );
-                    arrayHandles.get( entry.getKey() ).forEach( el -> el.insert( transformer.apply( entry.getValue() ) ) );
-                    docHandles.get( entry.getKey() ).forEach( el -> el.insert( transformer.apply( entry.getValue() ) ) );
+                    if ( this.isProject ) {
+                        arrayHandles.get( entry.getKey() ).forEach( el -> el.insert( new BsonDocument( "$literal", transformer.apply( entry.getValue() ) ) ) );
+                        docHandles.get( entry.getKey() ).forEach( el -> el.insert( new BsonDocument( "$literal", transformer.apply( entry.getValue() ) ) ) );
+                    } else {
+                        arrayHandles.get( entry.getKey() ).forEach( el -> el.insert( transformer.apply( entry.getValue() ) ) );
+                        docHandles.get( entry.getKey() ).forEach( el -> el.insert( transformer.apply( entry.getValue() ) ) );
+                    }
+
                 }
             }
         }

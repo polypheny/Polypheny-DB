@@ -58,6 +58,7 @@ import org.polypheny.db.adapter.mongodb.util.MongoTypeUtil;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.document.DocumentRules;
+import org.polypheny.db.mql.fun.MqlStdOperatorTable;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -206,6 +207,16 @@ public class MongoRules {
     }
 
 
+    public static Pair<String, RexNode> getAddFields( RexCall call, RelDataType rowType ) {
+        assert call.operands.size() == 3;
+        assert call.operands.get( 0 ) instanceof RexInputRef;
+        assert call.operands.get( 1 ) instanceof RexLiteral;
+        String field = rowType.getFieldNames().get( ((RexInputRef) call.operands.get( 0 )).getIndex() );
+        field += "." + ((RexLiteral) call.operands.get( 1 )).getValueAs( String.class );
+        return new Pair<>( field, call.operands.get( 2 ) );
+    }
+
+
     /**
      * Translator from {@link RexNode} to strings in MongoDB's expression language.
      */
@@ -325,6 +336,9 @@ public class MongoRules {
             String special = handleSpecialCases( call );
             if ( special != null ) {
                 return special;
+            }
+            if ( call.op == MqlStdOperatorTable.DOC_JSONIZE ) {
+                return call.operands.get( 0 ).accept( this );
             }
 
             throw new IllegalArgumentException( "Translation of " + call + " is not supported by MongoProject" );

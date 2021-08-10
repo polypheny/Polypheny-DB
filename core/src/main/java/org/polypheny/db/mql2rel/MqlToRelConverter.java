@@ -723,16 +723,14 @@ public class MqlToRelConverter {
     private RelNode convertAggregate( MqlAggregate query, RelDataType rowType, RelNode node ) {
         this.excludedId = false;
 
-        boolean updateRowType;
         for ( BsonValue value : query.getPipeline() ) {
             if ( !value.isDocument() && ((BsonDocument) value).size() > 1 ) {
                 throw new RuntimeException( "The aggregation pipeline is not used correctly." );
             }
-            updateRowType = true;
             switch ( ((BsonDocument) value).getFirstKey() ) {
                 case "$match":
                     node = combineFilter( value.asDocument().getDocument( "$match" ), node, rowType );
-                    updateRowType = false;
+                    node.getRowType();
                     break;
                 case "$unset":
                     node = combineProjection( value.asDocument().getDocument( "$unset" ), node, rowType, false, true );
@@ -773,20 +771,26 @@ public class MqlToRelConverter {
                 default:
                     throw new IllegalStateException( "Unexpected value: " + ((BsonDocument) value).getFirstKey() );
             }
-            if ( updateRowType ) {
-                if ( rowType != null ) {
-                    rowType = node.getRowType();
-                }
+            if ( rowType != null ) {
+                rowType = node.getRowType();
             }
         }
 
-        List<RelDataTypeField> fields = node.getRowType().getFieldList().stream().filter( f -> !f.getName().equals( "_id" ) ).collect( Collectors.toList() );
+        //List<RelDataTypeField> fields = node.getRowType().getFieldList().stream().filter( f -> !f.getName().equals( "_id" ) ).collect( Collectors.toList() );
         RelNode finalNode = node;
-        return LogicalProject.create( node,
-                fields
+        node = LogicalProject.create( node,
+                node.getRowType().getFieldList()
                         .stream()
-                        .map( el -> new RexCall( any, MqlStdOperatorTable.DOC_JSONIZE, Collections.singletonList( new RexInputRef( el.getIndex(), finalNode.getRowType() ) ) ) )
+                        .map( el -> {
+                            RexInputRef ref = new RexInputRef( el.getIndex(), finalNode.getRowType().getFieldList().get( el.getIndex() ).getType() );
+                            if ( !el.getName().equals( "_id" ) ) {
+                                return new RexCall( any, MqlStdOperatorTable.DOC_JSONIZE, Collections.singletonList( ref ) );
+                            } else {
+                                return ref;
+                            }
+                        } )
                         .collect( Collectors.toList() ), node.getRowType().getFieldNames() );
+        return node;
     }
 
 
@@ -1010,8 +1014,9 @@ public class MqlToRelConverter {
                 ops.add( accumulators.get( doc.getFirstKey() ) );
                 aggNames.add( entry.getKey() );
                 names.add( entry.getKey() );
+                // when using aggregations mongoql automatically casts to doubles
                 nodes.add( cluster.getRexBuilder().makeCast(
-                        cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( PolyType.DECIMAL ), true ),
+                        cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( PolyType.DOUBLE ), true ),
                         convertExpression( doc.get( doc.getFirstKey() ), rowType ) ) );
             }
         }
@@ -1050,12 +1055,13 @@ public class MqlToRelConverter {
             convertedAggs.add(
                     AggregateCall.create(
                             aggs.get( pos ),
-                            true,
+                            false,
                             false,
                             Collections.singletonList( rowType.getFieldNames().indexOf( name ) ),
                             -1,
                             RelCollations.EMPTY,
-                            cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( PolyType.DECIMAL ), true ),
+                            // when using aggregations mongoql automatically casts to doubles
+                            cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( PolyType.DOUBLE ), true ),
                             name ) );
             pos++;
         }

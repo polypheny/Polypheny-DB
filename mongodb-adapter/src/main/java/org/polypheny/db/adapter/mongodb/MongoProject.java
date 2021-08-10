@@ -113,6 +113,16 @@ public class MongoProject extends Project implements MongoRel {
                 continue;
             }
 
+            if ( pair.left instanceof RexCall ) {
+                if ( ((RexCall) pair.left).operands.get( 0 ).isA( SqlKind.DOC_UPDATE_ADD ) ) {
+                    Pair<String, RexNode> ret = MongoRules.getAddFields( (RexCall) ((RexCall) pair.left).operands.get( 0 ), rowType );
+                    String expr = ret.right.accept( translator );
+                    implementor.preProjections.add( new BsonDocument( ret.left, BsonDocument.parse( expr ) ) );
+                    items.add( ret.left.split( "\\." )[0] + ":1" );
+                    continue;
+                }
+            }
+
             String expr = pair.left.accept( translator );
             if ( expr == null ) {
                 continue;
