@@ -136,7 +136,11 @@ public class MaterializedManagerImpl extends MaterializedManager {
         }
     }
 
-
+    /**
+     * if a transaction is committed, it checks if it is connected to a materialized view
+     * with freshness update, if it is the materialized view is updated
+     * @param xid of committed transaction
+     */
     @Override
     public void updateCommitedXid( PolyXid xid ) {
         if ( potentialInteresting.containsKey( xid ) ) {
@@ -167,15 +171,10 @@ public class MaterializedManagerImpl extends MaterializedManager {
         }
     }
 
-
-    @Override
-    public void manualUpdate( Transaction transaction, Long viewId ) {
-
-        updateData( transaction, viewId );
-
-    }
-
-
+    /**
+     * starts transition and acquires a global schema lock before the materialized view is updated
+     * @param viewId of materialized view, which is updated
+     */
     public void prepareToUpdate( Long viewId ) {
         Catalog catalog = Catalog.getInstance();
         CatalogTable catalogTable = catalog.getTable( viewId );
@@ -187,13 +186,13 @@ public class MaterializedManagerImpl extends MaterializedManager {
                 // Get a exclusive global schema lock
                 LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) transaction, LockMode.EXCLUSIVE );
             } catch ( DeadlockException e ) {
-                throw new RuntimeException( e );
+                throw new RuntimeException( "DeadLock while locking for materialized view update", e );
             }
             updateData( transaction, viewId );
             commitTransaction( transaction );
 
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
-            e.printStackTrace();
+           throw new RuntimeException("Not possible to create Transaction for Materialized View update", e);
         }
     }
 
@@ -206,11 +205,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
         List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
         DataMigrator dataMigrator = transaction.getDataMigrator();
 
-        RelOptCluster cluster = RelOptCluster.create(
-                sourceStatement.getQueryProcessor().getPlanner(),
-                new RexBuilder( sourceStatement.getTransaction().getTypeFactory() ) );
-
-        prepareNode( sourceRel.rel, cluster, materializedView.getRelCollation() );
+        prepareSourceRel(sourceStatement, materializedView.getRelCollation(),  sourceRel.rel);
 
         for ( int id : materializedView.placementsByAdapter.keySet() ) {
             Statement targetStatement = transaction.createStatement();
@@ -222,10 +217,10 @@ public class MaterializedManagerImpl extends MaterializedManager {
 
             dataMigrator.executeQuery( columns.get( id ), sourceRel, sourceStatement, targetStatement, targetRel, true );
         }
-
     }
 
 
+    @Override
     public void updateData( Transaction transaction, Long viewId ) {
         Catalog catalog = Catalog.getInstance();
 
@@ -249,11 +244,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
             }
         }
 
-        RelOptCluster cluster = RelOptCluster.create(
-                sourceStatement.getQueryProcessor().getPlanner(),
-                new RexBuilder( sourceStatement.getTransaction().getTypeFactory() ) );
-
-        prepareNode( catalogMaterialized.getDefinition(), cluster, catalogMaterialized.getRelCollation() );
+        prepareSourceRel(sourceStatement, catalogMaterialized.getRelCollation(),  catalogMaterialized.getDefinition());
 
         RelRoot targetRel;
 
@@ -262,6 +253,8 @@ public class MaterializedManagerImpl extends MaterializedManager {
             Statement targetStatement = transaction.createStatement();
 
             columns.get( id ).forEach( column -> columnPlacements.add( Catalog.getInstance().getColumnPlacement( id, column.id ) ) );
+
+            //Build RelNode to build delete Statement from materialized view
             RelBuilder relBuilder = RelBuilder.create( deleteStatement );
             RelNode relNode = relBuilder.scan( catalogMaterialized.name ).build();
 
@@ -294,6 +287,15 @@ public class MaterializedManagerImpl extends MaterializedManager {
             // Release lock
             LockManager.INSTANCE.unlock( LockManager.GLOBAL_LOCK, (TransactionImpl) transaction );
         }
+    }
+
+
+    private void prepareSourceRel(Statement sourceStatement, RelCollation relCollation, RelNode sourceRel) {
+        RelOptCluster cluster = RelOptCluster.create(
+                sourceStatement.getQueryProcessor().getPlanner(),
+                new RexBuilder( sourceStatement.getTransaction().getTypeFactory() ) );
+
+        prepareNode( sourceRel, cluster, relCollation );
     }
 
 
