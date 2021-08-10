@@ -35,6 +35,7 @@ import org.polypheny.db.mongoql.model.Result;
 @Category(AdapterTestSuite.class)
 public class DmlTest extends MqlTestTemplate {
 
+
     @Test
     public void insertTest() {
         String data = "{\"test\":3}";

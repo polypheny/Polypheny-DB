@@ -590,7 +590,7 @@ public class MongoRules {
 
         public MongoDocuments( RelOptCluster cluster, RelDataType defaultRowType, ImmutableList<BsonValue> documentTuples, RelTraitSet traitSet, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
             super( cluster, defaultRowType, normalizedTuples, traitSet );
-            this.tuples = normalizedTuples;
+            //this.tuples = normalizedTuples;
             this.documentTuples = documentTuples;
         }
 
@@ -1028,8 +1028,10 @@ public class MongoRules {
             CatalogTable catalogTable = implementor.mongoTable.getCatalogTable();
             GridFSBucket bucket = implementor.mongoTable.getMongoSchema().getBucket();
 
-            if ( rowType == null ) {
-                rowType = values.getRowType();
+            RelDataType valRowType = rowType;
+
+            if ( valRowType == null ) {
+                valRowType = values.getRowType();
             }
 
             List<String> columnNames = catalogTable.getColumnNames();
@@ -1038,7 +1040,7 @@ public class MongoRules {
                 BsonDocument doc = new BsonDocument();
                 int pos = 0;
                 for ( RexLiteral literal : literals ) {
-                    String name = rowType.getFieldNames().get( pos );
+                    String name = valRowType.getFieldNames().get( pos );
                     if ( columnNames.contains( name ) ) {
                         doc.append(
                                 MongoStore.getPhysicalColumnName( name, columnIds.get( columnNames.indexOf( name ) ) ),

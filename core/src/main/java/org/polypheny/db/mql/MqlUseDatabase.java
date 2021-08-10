@@ -20,7 +20,6 @@ import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.exceptions.SchemaAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.mql.Mql.Type;
@@ -45,9 +44,9 @@ public class MqlUseDatabase extends MqlNode implements MqlExecutableStatement {
 
         try {
             DdlManager.getInstance().createSchema( this.database, Catalog.defaultDatabaseId, SchemaType.DOCUMENT, Catalog.defaultUser, true, false );
-            long schemaId = catalog.getSchema( Catalog.defaultDatabaseId, this.database ).id;
-            catalog.setUserSchema( userId, schemaId );
-        } catch ( UnknownSchemaException | SchemaAlreadyExistsException e ) {
+            /*long schemaId = catalog.getSchema( Catalog.defaultDatabaseId, this.database ).id;
+            catalog.setUserSchema( userId, schemaId );*/
+        } catch ( SchemaAlreadyExistsException e ) {
             throw new RuntimeException( "The schema creation failed" );
         }
     }

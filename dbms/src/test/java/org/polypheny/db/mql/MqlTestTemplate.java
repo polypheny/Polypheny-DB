@@ -16,10 +16,10 @@
 
 package org.polypheny.db.mql;
 
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.MongoConnection;
@@ -36,11 +36,15 @@ public class MqlTestTemplate {
 
 
     @BeforeClass
-    public static void start() throws SQLException {
-        // Ensures that Polypheny-DB is running
-        //noinspection ResultOfMethodCallIgnored
+    public static void start() {
         TestHelper.getInstance();
         initDatabase();
+    }
+
+
+    @AfterClass
+    public static void clean() {
+        dropDatabase();
     }
 
 
@@ -50,7 +54,12 @@ public class MqlTestTemplate {
     }
 
 
-    private static void initDatabase() {
+    protected static void dropDatabase() {
+        dropDatabase( database );
+    }
+
+
+    protected static void initDatabase() {
         MongoConnection.executeGetResponse( "use " + database );
     }
 
@@ -167,6 +176,11 @@ public class MqlTestTemplate {
 
     protected static void deleteMany( String query, String database ) {
         MongoConnection.executeGetResponse( "db." + database + ".deleteMany(" + query + ")" );
+    }
+
+
+    protected static void dropDatabase( String database ) {
+        MongoConnection.executeGetResponse( "db." + database + ".drop()" );
     }
 
 }

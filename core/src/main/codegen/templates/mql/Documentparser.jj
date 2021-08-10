@@ -131,7 +131,7 @@ TOKEN : /* IDENTIFIERS */ // for nested documents check out Document_Splits()
 |
 < DB: "db" >
 |
-< DROP: "drop" >
+< DROP: "drop(" >
 |
 < DROP_DATABASE: "dropDatabase" >
 |
@@ -424,7 +424,7 @@ MqlNode Db_Statement():
         <CREATE_VIEW> name = Literal() < COMMA > source = Literal() (< COMMA > doc=Document() )? ")"
         {n = new MqlCreateView(name, source, doc);}
     |
-        <DROP_DATABASE> "()"
+        <DROP_DATABASE> ")"
         {n = new MqlDropDatabase();}
     |
         n = Collection_Statement(null)
@@ -498,7 +498,7 @@ MqlNode Drop_Statement(String collection):
     BsonDocument doc = null;
 }
 {
-    <DROP> "("[doc=Document()]")"
+    <DROP>[doc=Document()]")"
     {return new MqlDrop(collection);}
 }
 

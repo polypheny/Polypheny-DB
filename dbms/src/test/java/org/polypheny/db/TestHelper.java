@@ -303,8 +303,7 @@ public class TestHelper {
                 List<String> row = new ArrayList<>();
                 for ( String entry : data ) {
                     if ( !result.getHeader()[i].name.equals( "_id" ) ) {
-                        if ( entry != null && expected.get( j )[i] != null ) {
-                            //assertEquals( ((String) expected.get( j )[i]).replace( " ", "" ), entry.replace( " ", "" ) );
+                        if ( entry != null ) {
                             row.add( entry.replace( " ", "" ) );
                         } else {
                             row.add( null );
