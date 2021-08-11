@@ -75,7 +75,7 @@ public class QueryEventAnalyzer {
 
     private static void getDurationInfo( QueryDataPoint queryMetric, String durationName, InformationDuration duration ) {
         try {
-            long time = duration.getDuration( durationName );
+            long time = duration.getNanoDuration( durationName );
             queryMetric.getDataElements().put( durationName, time );
         } catch ( Exception e ) {
             log.debug( "could no find duration: {}", durationName );

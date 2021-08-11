@@ -249,58 +249,6 @@ public class Crud implements InformationObserver {
 
 
     /**
-     * Converts a String, such as "'12:00:00'" into a valid SQL statement, such as "TIME '12:00:00'"
-     */
-    public static String uiValueToSql( final String value, final PolyType type, final PolyType collectionsType ) {
-        if ( value == null ) {
-            return "NULL";
-        }
-        if ( collectionsType == PolyType.ARRAY ) {
-            return "ARRAY " + value;
-        }
-        switch ( type ) {
-            case TIME:
-                return String.format( "TIME '%s'", value );
-            case DATE:
-                return String.format( "DATE '%s'", value );
-            case TIMESTAMP:
-                return String.format( "TIMESTAMP '%s'", value );
-        }
-        if ( type.getFamily() == PolyTypeFamily.CHARACTER ) {
-            return String.format( "'%s'", value );
-        }
-        return value;
-    }
-
-
-    /**
-     * Helper method to zip a directory
-     * from https://stackoverflow.com/questions/2403830
-     */
-    private static void zipDirectory( String basePath, File dir, ZipOutputStream zipOut ) throws IOException {
-        byte[] buffer = new byte[4096];
-        File[] files = dir.listFiles();
-        for ( File file : files ) {
-            if ( file.isDirectory() ) {
-                String path = basePath + file.getName() + "/";
-                zipOut.putNextEntry( new ZipEntry( path ) );
-                zipDirectory( path, file, zipOut );
-                zipOut.closeEntry();
-            } else {
-                FileInputStream fin = new FileInputStream( file );
-                zipOut.putNextEntry( new ZipEntry( basePath + file.getName() ) );
-                int length;
-                while ( (length = fin.read( buffer )) > 0 ) {
-                    zipOut.write( buffer, 0, length );
-                }
-                zipOut.closeEntry();
-                fin.close();
-            }
-        }
-    }
-
-
-    /**
      * Ensures that changes in the ConfigManger toggle the statistics correctly
      */
     private void registerStatisticObserver() {
@@ -1158,6 +1106,31 @@ public class Crud implements InformationObserver {
         Explore explore = e.exploreData( exploreData.id, exploreData.classified, dataType );
 
         return new ExploreResult( exploreData.header, explore.getDataAfterClassification(), explore.getId(), explore.getBuildGraph() );
+    }
+
+
+    /**
+     * Converts a String, such as "'12:00:00'" into a valid SQL statement, such as "TIME '12:00:00'"
+     */
+    public static String uiValueToSql( final String value, final PolyType type, final PolyType collectionsType ) {
+        if ( value == null ) {
+            return "NULL";
+        }
+        if ( collectionsType == PolyType.ARRAY ) {
+            return "ARRAY " + value;
+        }
+        switch ( type ) {
+            case TIME:
+                return String.format( "TIME '%s'", value );
+            case DATE:
+                return String.format( "DATE '%s'", value );
+            case TIMESTAMP:
+                return String.format( "TIMESTAMP '%s'", value );
+        }
+        if ( type.getFamily() == PolyTypeFamily.CHARACTER ) {
+            return String.format( "'%s'", value );
+        }
+        return value;
     }
 
 
@@ -3442,10 +3415,6 @@ public class Crud implements InformationObserver {
         return "";
     }
 
-    // -----------------------------------------------------------------------
-    //                                Helper
-    // -----------------------------------------------------------------------
-
 
     String getDirectory( File dir, Response res ) {
         res.header( "Content-Type", "application/zip" );
@@ -3468,6 +3437,10 @@ public class Crud implements InformationObserver {
         zipFile.delete();
         return "";
     }
+
+    // -----------------------------------------------------------------------
+    //                                Helper
+    // -----------------------------------------------------------------------
 
 
     /**
@@ -3988,6 +3961,33 @@ public class Crud implements InformationObserver {
      */
     public Map<Integer, List<Integer>> getUsedDockerPorts( Request req, Response res ) {
         return DockerManager.getInstance().getUsedPortsSorted();
+    }
+
+
+    /**
+     * Helper method to zip a directory
+     * from https://stackoverflow.com/questions/2403830
+     */
+    private static void zipDirectory( String basePath, File dir, ZipOutputStream zipOut ) throws IOException {
+        byte[] buffer = new byte[4096];
+        File[] files = dir.listFiles();
+        for ( File file : files ) {
+            if ( file.isDirectory() ) {
+                String path = basePath + file.getName() + "/";
+                zipOut.putNextEntry( new ZipEntry( path ) );
+                zipDirectory( path, file, zipOut );
+                zipOut.closeEntry();
+            } else {
+                FileInputStream fin = new FileInputStream( file );
+                zipOut.putNextEntry( new ZipEntry( basePath + file.getName() ) );
+                int length;
+                while ( (length = fin.read( buffer )) > 0 ) {
+                    zipOut.write( buffer, 0, length );
+                }
+                zipOut.closeEntry();
+                fin.close();
+            }
+        }
     }
 
 

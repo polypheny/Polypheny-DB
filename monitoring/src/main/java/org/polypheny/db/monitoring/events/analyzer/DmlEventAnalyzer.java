@@ -74,9 +74,10 @@ public class DmlEventAnalyzer {
 
     private static void getDurationInfo( DmlDataPoint dmlMetric, String durationName, InformationDuration duration ) {
         try {
-            long time = duration.getDuration( durationName );
+            long time = duration.getNanoDuration( durationName );
             dmlMetric.getDataElements().put( durationName, time );
         } catch ( Exception e ) {
+
             log.debug( "could no find duration:{}", durationName );
         }
     }

@@ -140,56 +140,16 @@ import org.polypheny.db.util.Util;
 @Slf4j
 public abstract class AbstractQueryProcessor implements QueryProcessor {
 
+    private final Statement statement;
+
     protected static final boolean ENABLE_BINDABLE = false;
     protected static final boolean ENABLE_COLLATION_TRAIT = true;
     protected static final boolean ENABLE_ENUMERABLE = true;
     protected static final boolean CONSTANT_REDUCTION = false;
     protected static final boolean ENABLE_STREAM = true;
-    private final Statement statement;
-
 
     protected AbstractQueryProcessor( Statement statement ) {
         this.statement = statement;
-    }
-
-
-    private static RelDataType makeStruct( RelDataTypeFactory typeFactory, RelDataType type ) {
-        if ( type.isStruct() ) {
-            return type;
-        }
-        // TODO MV: This "null" might be wrong
-        return typeFactory.builder().add( "$0", null, type ).build();
-    }
-
-
-    private static String origin( List<String> origins, int offsetFromEnd ) {
-        return origins == null || offsetFromEnd >= origins.size()
-                ? null
-                : origins.get( origins.size() - 1 - offsetFromEnd );
-    }
-
-
-    private static int getScale( RelDataType type ) {
-        return type.getScale() == RelDataType.SCALE_NOT_SPECIFIED
-                ? 0
-                : type.getScale();
-    }
-
-
-    private static int getPrecision( RelDataType type ) {
-        return type.getPrecision() == RelDataType.PRECISION_NOT_SPECIFIED
-                ? 0
-                : type.getPrecision();
-    }
-
-
-    private static String getClassName( RelDataType type ) {
-        return Object.class.getName();
-    }
-
-
-    private static int getTypeOrdinal( RelDataType type ) {
-        return type.getPolyType().getJdbcOrdinal();
     }
 
 
@@ -1028,6 +988,46 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     }
 
 
+    private static RelDataType makeStruct( RelDataTypeFactory typeFactory, RelDataType type ) {
+        if ( type.isStruct() ) {
+            return type;
+        }
+        // TODO MV: This "null" might be wrong
+        return typeFactory.builder().add( "$0", null, type ).build();
+    }
+
+
+    private static String origin( List<String> origins, int offsetFromEnd ) {
+        return origins == null || offsetFromEnd >= origins.size()
+                ? null
+                : origins.get( origins.size() - 1 - offsetFromEnd );
+    }
+
+
+    private static int getScale( RelDataType type ) {
+        return type.getScale() == RelDataType.SCALE_NOT_SPECIFIED
+                ? 0
+                : type.getScale();
+    }
+
+
+    private static int getPrecision( RelDataType type ) {
+        return type.getPrecision() == RelDataType.PRECISION_NOT_SPECIFIED
+                ? 0
+                : type.getPrecision();
+    }
+
+
+    private static String getClassName( RelDataType type ) {
+        return Object.class.getName();
+    }
+
+
+    private static int getTypeOrdinal( RelDataType type ) {
+        return type.getPolyType().getJdbcOrdinal();
+    }
+
+
     protected LogicalTableModify.Operation mapTableModOp( boolean isDml, SqlKind sqlKind ) {
         if ( !isDml ) {
             return null;
@@ -1128,14 +1128,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     @Override
     public RelRoot expandView( RelDataType rowType, String queryString, List<String> schemaPath, List<String> viewPath ) {
         return null; // TODO
-    }
-
-
-    @Override
-    public void resetCaches() {
-        ImplementationCache.INSTANCE.reset();
-        QueryPlanCache.INSTANCE.reset();
-        statement.getRouter().resetCaches();
     }
 
 
@@ -1258,5 +1250,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
     }
 
+
+    @Override
+    public void resetCaches() {
+        ImplementationCache.INSTANCE.reset();
+        QueryPlanCache.INSTANCE.reset();
+        statement.getRouter().resetCaches();
+    }
 
 }

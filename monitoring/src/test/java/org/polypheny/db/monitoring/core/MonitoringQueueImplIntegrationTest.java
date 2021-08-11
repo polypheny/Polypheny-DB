@@ -70,13 +70,6 @@ class MonitoringQueueImplIntegrationTest {
         val result = sut.getAllDataPoints( QueryDataPoint.class );
         Assertions.assertEquals( 15, result.size() );
 
-        // cleanup
-        try {
-            queueWriteService.finalize();
-        } catch ( Throwable throwable ) {
-            throwable.printStackTrace();
-        }
-
     }
 
 
@@ -89,7 +82,7 @@ class MonitoringQueueImplIntegrationTest {
             event.setSignature( null );
             event.setStatement( Mockito.mock( Statement.class ) );
             event.setDescription( UUID.randomUUID().toString() );
-            event.setExecutionTime( (long) Math.random() * 1000L );
+            event.setExecutionTime( (long) (Math.random() * 1000L) );
             event.setFieldNames( Lists.newArrayList( "T1", "T2", "T3" ) );
             event.setRowCount( 15 );
             event.setAnalyze( true );
