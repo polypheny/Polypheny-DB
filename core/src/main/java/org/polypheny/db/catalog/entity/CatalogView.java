@@ -44,11 +44,9 @@ public class CatalogView extends CatalogTable {
 
     @Getter
     private final Map<Long, List<Long>> underlyingTables;
-    @Getter
     private final RelDataType fieldList;
     @Getter
     private final RelCollation relCollation;
-    @Getter
     RelNode definition;
 
 
@@ -182,7 +180,7 @@ public class CatalogView extends CatalogTable {
 
 
     public RelNode prepareView( RelOptCluster cluster, RelCollation relCollation ) {
-        RelNode viewLogicalRoot = definition;
+        RelNode viewLogicalRoot = getDefinition();
         prepareView( viewLogicalRoot, cluster, relCollation );
         if ( viewLogicalRoot.hasView() ) {
             viewLogicalRoot.tryExpandView( viewLogicalRoot );
@@ -218,6 +216,18 @@ public class CatalogView extends CatalogTable {
         if ( viewLogicalRoot instanceof LogicalViewTableScan ) {
             prepareView( ((LogicalViewTableScan) viewLogicalRoot).getRelNode(), relOptCluster, relCollation );
         }
+    }
+
+
+    /*
+        public RelDataType getFieldList() {
+            return Catalog.getInstance().getRelTypeInfo().get( id );
+        }
+
+
+     */
+    public RelNode getDefinition() {
+        return Catalog.getInstance().getNodeInfo().get( id );
     }
 
 }

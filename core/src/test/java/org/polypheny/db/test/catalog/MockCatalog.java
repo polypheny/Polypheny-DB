@@ -95,6 +95,21 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
+    public Map<Long, RelNode> getNodeInfo() {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public Map<Long, RelDataType> getRelTypeInfo() {
+        throw new NotImplementedException();
+    }
+
+
+    ;
+
+
+    @Override
     public void deleteDatabase( long databaseId ) {
         throw new NotImplementedException();
     }

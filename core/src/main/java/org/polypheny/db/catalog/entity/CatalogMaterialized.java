@@ -36,13 +36,11 @@ public class CatalogMaterialized extends CatalogView {
     @Getter
     private final Map<Long, List<Long>> underlyingTables;
 
-    @Getter
     private final RelDataType fieldList;
 
     @Getter
     private final RelCollation relCollation;
 
-    @Getter
     private final RelNode definition;
 
     @Getter
@@ -184,6 +182,11 @@ public class CatalogMaterialized extends CatalogView {
                 underlyingTables,
                 fieldList,
                 materializedCriteria );
+    }
+
+
+    public RelNode getDefinition() {
+        return Catalog.getInstance().getNodeInfo().get( id );
     }
 
 }

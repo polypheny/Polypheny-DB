@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
@@ -166,6 +167,11 @@ public class CatalogImpl extends Catalog {
     private static final AtomicLong physicalPositionBuilder = new AtomicLong();
 
     Comparator<CatalogColumn> columnComparator = Comparator.comparingInt( o -> o.position );
+
+    @Getter
+    private final Map<Long, RelNode> nodeInfo = new HashMap<>();
+    @Getter
+    private final Map<Long, RelDataType> relTypeInfo = new HashMap<>();
 
 
     public CatalogImpl() {
@@ -1324,16 +1330,19 @@ public class CatalogImpl extends Catalog {
                     ownerId,
                     owner.name,
                     tableType,
-                    definition,
+                    null,//definition,
                     null,
                     ImmutableMap.of(),
                     modifiable,
                     relCollation,
                     ImmutableMap.copyOf( underlyingTables ),
-                    fieldList
+                    null//fieldList
             );
             addConnectedViews( underlyingTables, viewTable.id );
             updateTableLogistics( name, schemaId, id, schema, viewTable );
+            relTypeInfo.put( id, fieldList );
+            nodeInfo.put( id, definition );
+
         } else {
 
             //Should not happen, addViewTable is only called with TableType.View
@@ -1359,17 +1368,20 @@ public class CatalogImpl extends Catalog {
                     ownerId,
                     owner.name,
                     tableType,
-                    definition,
+                    null,//definition,
                     null,
                     ImmutableMap.of(),
                     modifiable,
                     relCollation,
                     ImmutableMap.copyOf( underlyingTables ),
-                    fieldList,
+                    null, //fieldList,
                     materializedCriteria
             );
             addConnectedViews( underlyingTables, materializedViewTable.id );
             updateTableLogistics( name, schemaId, id, schema, materializedViewTable );
+
+            relTypeInfo.put( id, fieldList );
+            nodeInfo.put( id, definition );
         } else {
 
             //Should not happen, addViewTable is only called with TableType.View
@@ -1377,6 +1389,7 @@ public class CatalogImpl extends Catalog {
         }
         return id;
     }
+
 
 
     private void updateTableLogistics( String name, long schemaId, long id, CatalogSchema schema, CatalogTable table ) {
@@ -1554,7 +1567,7 @@ public class CatalogImpl extends Catalog {
                     old.ownerId,
                     old.ownerName,
                     old.tableType,
-                    ((CatalogMaterialized) old).getDefinition(),
+                    null,
                     keyId,
                     old.placementsByAdapter,
                     old.modifiable,
@@ -1566,7 +1579,7 @@ public class CatalogImpl extends Catalog {
                     ((CatalogMaterialized) old).getRelCollation(),
                     old.connectedViews,
                     ((CatalogMaterialized) old).getUnderlyingTables(),
-                    ((CatalogMaterialized) old).getFieldList(),
+                    null,
                     ((CatalogMaterialized) old).getMaterializedCriteria() );
         } else {
             table = new CatalogTable( old.id,
@@ -1658,7 +1671,7 @@ public class CatalogImpl extends Catalog {
                             old.ownerId,
                             old.ownerName,
                             old.tableType,
-                            ((CatalogMaterialized) old).getDefinition(),
+                            null,
                             old.primaryKey,
                             ImmutableMap.copyOf( placementsByStore ),
                             old.modifiable,
@@ -1670,7 +1683,7 @@ public class CatalogImpl extends Catalog {
                             ((CatalogMaterialized) old).getRelCollation(),
                             old.connectedViews,
                             ((CatalogMaterialized) old).getUnderlyingTables(),
-                            ((CatalogMaterialized) old).getFieldList(),
+                            null,
                             ((CatalogMaterialized) old).getMaterializedCriteria()
                     );
                 } else {
@@ -1726,7 +1739,7 @@ public class CatalogImpl extends Catalog {
                             old.ownerId,
                             old.ownerName,
                             old.tableType,
-                            ((CatalogMaterialized) old).getDefinition(),
+                            null,
                             old.primaryKey,
                             ImmutableMap.copyOf( placementsByStore ),
                             old.modifiable,
@@ -1738,7 +1751,7 @@ public class CatalogImpl extends Catalog {
                             ((CatalogMaterialized) old).getRelCollation(),
                             old.connectedViews,
                             ((CatalogMaterialized) old).getUnderlyingTables(),
-                            ((CatalogMaterialized) old).getFieldList(),
+                            null,
                             ((CatalogMaterialized) old).getMaterializedCriteria()
                     );
                 } else {

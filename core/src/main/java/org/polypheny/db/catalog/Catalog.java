@@ -111,6 +111,10 @@ public abstract class Catalog {
 
     public abstract void rollback();
 
+    public abstract Map<Long, RelDataType> getRelTypeInfo();
+
+    public abstract Map<Long, RelNode> getNodeInfo();
+
 
     /**
      * Adds a listener which gets notified on updates
