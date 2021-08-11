@@ -912,10 +912,7 @@ public class MqlToRelConverter {
         List<Direction> dirs = new ArrayList<>();
 
         for ( Entry<String, BsonValue> entry : value.asDocument().entrySet() ) {
-            if ( !entry.getKey().startsWith( "$" ) ) {
-                throw new RuntimeException( "$sort needs references to fields preceding with $" );
-            }
-            names.add( entry.getKey().substring( 1 ) );
+            names.add( entry.getKey() );
             if ( entry.getValue().asNumber().intValue() == 1 ) {
                 dirs.add( Direction.ASCENDING );
             } else {
@@ -1014,9 +1011,9 @@ public class MqlToRelConverter {
                 ops.add( accumulators.get( doc.getFirstKey() ) );
                 aggNames.add( entry.getKey() );
                 names.add( entry.getKey() );
+                RelDataType nullableDouble = cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( PolyType.DOUBLE ), true );
                 // when using aggregations mongoql automatically casts to doubles
-                nodes.add( cluster.getRexBuilder().makeCast(
-                        cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( PolyType.DOUBLE ), true ),
+                nodes.add( cluster.getRexBuilder().makeAbstractCast( nullableDouble,
                         convertExpression( doc.get( doc.getFirstKey() ), rowType ) ) );
             }
         }

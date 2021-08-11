@@ -56,7 +56,7 @@ public class BsonUtil {
 
 
     static {
-        mappings.add( new Pair<>( "(?<=[a-zA-Z0-9)\"])\\-", "$subtract" ) );
+        //mappings.add( new Pair<>( "(?<=[a-zA-Z0-9)\"])\\-", "$subtract" ) );
         mappings.add( new Pair<>( "\\+", "$add" ) );
         mappings.add( new Pair<>( "\\*", "$multiply" ) );
         mappings.add( new Pair<>( "\\/", "$divide" ) );
@@ -74,6 +74,7 @@ public class BsonUtil {
      * TODO DL: edge-case in string is not handled properly
      */
     public static String fixBson( String bson ) {
+        bson = bson.replace( "/", "\\/" );
         String reg = "[a-zA-Z0-9$.\"]+(\\s*[*/+-]\\s*[-]*\\s*[a-zA-Z0-9$.\"]+)+";
 
         if ( bson.split( reg ).length == 1 ) {

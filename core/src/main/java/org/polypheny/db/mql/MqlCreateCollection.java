@@ -63,7 +63,7 @@ public class MqlCreateCollection extends MqlNode implements MqlExecutableStateme
                     name,
                     new ArrayList<>(),
                     new ArrayList<>(),
-                    false,
+                    true,
                     dataStores.size() == 0 ? null : dataStores,
                     placementType,
                     statement );

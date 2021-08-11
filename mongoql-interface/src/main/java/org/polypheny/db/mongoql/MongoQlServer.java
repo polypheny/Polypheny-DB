@@ -175,6 +175,11 @@ public class MongoQlServer extends QueryInterface {
 
             return gson.toJson( results.get( 0 ) );
         } catch ( Exception e ) {
+            try {
+                statement.getTransaction().rollback();
+            } catch ( TransactionException transactionException ) {
+                throw new RuntimeException( "error happened during rollback" );
+            }
             return gson.toJson( e.toString() );
         }
 
