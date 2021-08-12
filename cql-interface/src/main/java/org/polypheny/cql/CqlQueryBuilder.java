@@ -37,7 +37,7 @@ public class CqlQueryBuilder {
     private Map<String, TableIndex> tableAliases;
     private Map<String, ColumnIndex> columnIndexMapping;
     private List<Pair<ColumnIndex, Map<String, Modifier>>> sortSpecifications;
-    private List<Pair<ColumnIndex, Map<String, Modifier>>> projections;
+    private Projections projections;
 
     private TableIndex lastTableIndex;
 
@@ -49,7 +49,7 @@ public class CqlQueryBuilder {
         this.tableAliases = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
         this.columnIndexMapping = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
         this.sortSpecifications = new ArrayList<>();
-        this.projections = new ArrayList<>();
+        this.projections = new Projections();
     }
 
 
@@ -189,8 +189,6 @@ public class CqlQueryBuilder {
     }
 
     public void addProjection( ColumnIndex columnIndex, Map<String, Modifier> modifiers ) {
-        this.projections.add(
-                new Pair<>( columnIndex, modifiers )
-        );
+        projections.add( columnIndex, modifiers );
     }
 }
