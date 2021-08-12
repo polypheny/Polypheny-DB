@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.polypheny.cql.BooleanGroup.ColumnOpsBooleanOperator;
 import org.polypheny.cql.exception.UnexpectedTypeException;
@@ -47,17 +46,51 @@ import org.polypheny.db.util.Pair;
 
 public class Cql2RelConverter {
 
-    private final Map<String, Integer> columnOrdinalities = new HashMap<>();
+    private final CqlQuery cqlQuery;
+    private final Map<Long, Integer> tableScanColumnOrdinalities;
 
-    public RelRoot convert2Rel( final CqlQuery cqlQuery, RelBuilder relBuilder, RexBuilder rexBuilder ) {
-        relBuilder = generateTableScan( cqlQuery.queryRelation, relBuilder, rexBuilder );
-        relBuilder = generateProjections( cqlQuery.queryRelation, relBuilder, rexBuilder );
+    public Cql2RelConverter( final CqlQuery cqlQuery ) {
+        this.cqlQuery = cqlQuery;
+        this.tableScanColumnOrdinalities = new HashMap<>();
+        addColumnOrdinalitiesForFullRelation();
+    }
+
+
+    private void addColumnOrdinalitiesForFullRelation() {
+        Tree<Combiner, TableIndex> queryRelation = cqlQuery.queryRelation;
+
+        queryRelation.traverse( TraversalType.INORDER, ( treeNode, nodeType, direction, frame ) -> {
+            try {
+                if ( nodeType == NodeType.DESTINATION_NODE ) {
+                    if ( treeNode.isLeaf() ) {
+                        TableIndex tableIndex = treeNode.getExternalNode();
+                        for ( Long columnId : tableIndex.catalogTable.columnIds ) {
+                            tableScanColumnOrdinalities.put( columnId, tableScanColumnOrdinalities.size() );
+                        }
+                    }
+                }
+            } catch ( UnexpectedTypeException e ) {
+                throw new RuntimeException( "This exception will never be thrown since we have checked that the"
+                        + " node is a leaf node before calling the getExternalNode method." );
+            }
+
+            return true;
+        } );
+    }
+
+
+    public RelRoot convert2Rel( RelBuilder relBuilder, RexBuilder rexBuilder ) {
+
+        relBuilder = generateTableScan( relBuilder, rexBuilder );
+        relBuilder = generateProjections( relBuilder, rexBuilder );
         if ( cqlQuery.filters != null ) {
-            relBuilder = generateFilters( cqlQuery.filters, relBuilder, rexBuilder );
+            relBuilder = generateFilters( relBuilder, rexBuilder );
         }
-        relBuilder = generateProjections( cqlQuery.projections, relBuilder, rexBuilder );
         if ( cqlQuery.sortSpecifications != null && cqlQuery.sortSpecifications.size() != 0 ) {
-            relBuilder = generateSort( cqlQuery.sortSpecifications, relBuilder, rexBuilder );
+            relBuilder = generateSort( relBuilder, rexBuilder );
+        }
+        if ( cqlQuery.projections.exists() ) {
+            relBuilder = cqlQuery.projections.convert2Rel( tableScanColumnOrdinalities, relBuilder, rexBuilder );
         }
         RelNode relNode = relBuilder.build();
 
@@ -72,9 +105,9 @@ public class Cql2RelConverter {
     }
 
 
-    private RelBuilder generateTableScan( Tree<Combiner, TableIndex> tableOperations,
-            RelBuilder relBuilder, RexBuilder rexBuilder ) {
+    private RelBuilder generateTableScan( RelBuilder relBuilder, RexBuilder rexBuilder ) {
 
+        Tree<Combiner, TableIndex> tableOperations = cqlQuery.queryRelation;
         AtomicReference<RelBuilder> relBuilderAtomicReference = new AtomicReference<>( relBuilder );
 
         tableOperations.traverse( TraversalType.POSTORDER, ( treeNode, nodeType, direction, frame ) -> {
@@ -103,33 +136,13 @@ public class Cql2RelConverter {
     }
 
 
-    private RelBuilder generateProjections( List<Pair<ColumnIndex, Map<String, Modifier>>> projections,
-            RelBuilder relBuilder, RexBuilder rexBuilder ) {
+    private RelBuilder generateProjections( RelBuilder relBuilder, RexBuilder rexBuilder ) {
 
-        RelNode baseNode = relBuilder.peek();
-        List<RexNode> inputRefs = new ArrayList<>();
-
-        for ( Pair<ColumnIndex, Map<String, Modifier>> projection : projections ) {
-            ColumnIndex columnIndex = projection.left;
-            int ordinality = columnOrdinalities.get( columnIndex.fullyQualifiedName );
-            RexNode inputRef = rexBuilder.makeInputRef( baseNode, ordinality );
-            inputRefs.add( inputRef );
-        }
-
-        relBuilder = relBuilder.project( inputRefs );
-
-        return relBuilder;
-    }
-
-
-    private RelBuilder generateProjections( Tree<Combiner, TableIndex> queryRelation, RelBuilder relBuilder,
-            RexBuilder rexBuilder ) {
-
+        Tree<Combiner, TableIndex> queryRelation = cqlQuery.queryRelation;
         RelNode baseNode = relBuilder.peek();
         List<RexNode> inputRefs = new ArrayList<>();
         List<String> columnNames = new ArrayList<>();
         Catalog catalog = Catalog.getInstance();
-        AtomicInteger ordinal = new AtomicInteger();
 
         queryRelation.traverse( TraversalType.INORDER, ( treeNode, nodeType, direction, frame ) -> {
             if ( nodeType == NodeType.DESTINATION_NODE && treeNode.isLeaf() ) {
@@ -138,12 +151,11 @@ public class Cql2RelConverter {
                     String columnNamePrefix = tableIndex.fullyQualifiedName + ".";
                     CatalogTable catalogTable = tableIndex.catalogTable;
                     for ( Long columnId : catalogTable.columnIds ) {
-                        RexNode inputRef = rexBuilder.makeInputRef( baseNode, ordinal.get() );
+                        int ordinal = tableScanColumnOrdinalities.get( columnId );
+                        RexNode inputRef = rexBuilder.makeInputRef( baseNode, ordinal );
                         inputRefs.add( inputRef );
                         CatalogColumn column = catalog.getColumn( columnId );
                         columnNames.add( columnNamePrefix + column.name );
-                        columnOrdinalities.put( columnNamePrefix + column.name, ordinal.get() );
-                        ordinal.getAndIncrement();
                     }
                 } catch ( UnexpectedTypeException e ) {
                     throw new RuntimeException( "This exception will never be thrown since checks have been made before"
@@ -159,9 +171,9 @@ public class Cql2RelConverter {
     }
 
 
-    private RelBuilder generateFilters( Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> filters,
-            RelBuilder relBuilder, RexBuilder rexBuilder ) {
+    private RelBuilder generateFilters( RelBuilder relBuilder, RexBuilder rexBuilder ) {
 
+        Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> filters = cqlQuery.filters;
         if ( filters == null ) {
             return relBuilder;
         }
@@ -211,14 +223,14 @@ public class Cql2RelConverter {
     }
 
 
-    private RelBuilder generateSort( List<Pair<ColumnIndex, Map<String, Modifier>>> sortSpecifications,
-            RelBuilder relBuilder, RexBuilder rexBuilder ) {
+    private RelBuilder generateSort( RelBuilder relBuilder, RexBuilder rexBuilder ) {
 
+        List<Pair<ColumnIndex, Map<String, Modifier>>> sortSpecifications = cqlQuery.sortSpecifications;
         List<RexNode> sortingNodes = new ArrayList<>();
         RelNode baseNode = relBuilder.peek();
         for ( Pair<ColumnIndex, Map<String, Modifier>> sortSpecification : sortSpecifications ) {
             ColumnIndex columnIndex = sortSpecification.left;
-            int ordinality = columnOrdinalities.get( columnIndex.fullyQualifiedName );
+            int ordinality = tableScanColumnOrdinalities.get( columnIndex.catalogColumn.id );
             RexNode sortingNode = rexBuilder.makeInputRef( baseNode, ordinality );
 
             // TODO: Handle Modifiers
