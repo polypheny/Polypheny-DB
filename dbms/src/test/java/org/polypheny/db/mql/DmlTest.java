@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.MongoConnection;
+import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.mongoql.model.Result;
 
 /**
@@ -51,6 +52,7 @@ public class DmlTest extends MqlTestTemplate {
 
 
     @Test
+    @Category(FileExcluded.class)
     public void insertManyTest() {
         List<String> data = Arrays.asList( "{\"test\":1}", "{\"test\":2}", "{\"test\":3}" );
         insertMany( data );

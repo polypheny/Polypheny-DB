@@ -21,10 +21,12 @@ import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.polypheny.db.TestHelper.MongoConnection;
+import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.mongoql.model.Result;
 
-
+@Category({ FileExcluded.class })
 public class AggregateTest extends MqlTestTemplate {
 
 
@@ -41,7 +43,7 @@ public class AggregateTest extends MqlTestTemplate {
 
     @Test
     public void projectTest() {
-        List<Object[]> expected = Arrays.asList(
+        List<String[]> expected = Arrays.asList(
                 new String[]{ "id_", "1" },
                 new String[]{ "id_", "1.3" },
                 new String[]{ "id_", "test" } );
@@ -49,13 +51,13 @@ public class AggregateTest extends MqlTestTemplate {
 
         Result result = aggregate( $project( "{\"test\":1}" ) );
 
-        MongoConnection.checkResultSet( result, expected );
+        MongoConnection.checkUnorderedResultSet( result, expected, true );
     }
 
 
     @Test
     public void projectMultipleTest() {
-        List<Object[]> expected = Arrays.asList(
+        List<String[]> expected = Arrays.asList(
                 new String[]{ "_id", null, "1", "1" },
                 new String[]{ "_id", "{\"key\":\"val\"}", "1.3", "1.3" },
                 new String[]{ "_id", "13", "test", "test" } );
@@ -63,7 +65,7 @@ public class AggregateTest extends MqlTestTemplate {
 
         Result result = aggregate( $project( "{\"test\":1,\"key\":1}" ), $project( "{\"newName2\":\"$key\",\"newName1\":\"$test\",\"test\":1}" ) );
 
-        MongoConnection.checkResultSet( result, expected );
+        MongoConnection.checkUnorderedResultSet( result, expected, true );
     }
 
 
@@ -107,21 +109,21 @@ public class AggregateTest extends MqlTestTemplate {
 
     @Test
     public void addFieldsTest() {
-        List<Object[]> expected = Arrays.asList(
-                new String[]{ "id_", "{\"test\":1, \"added\":52}" },
-                new String[]{ "id_", "{\"test\":1.3,\"key\":{\"key\": \"val\"},\"added\":52}" },
+        List<String[]> expected = Arrays.asList(
+                new String[]{ "id_", "{\"test\":1,\"added\":52}" },
+                new String[]{ "id_", "{\"test\":1.3,\"key\":{\"key\":\"val\"},\"added\":52}" },
                 new String[]{ "id_", "{\"test\":\"test\",\"key\":13,\"added\":52}" } );
         insertMany( DATA_0 );
 
         Result result = aggregate( $addFields( "{\"added\": 52}" ) );
 
-        MongoConnection.checkResultSet( result, expected );
+        MongoConnection.checkUnorderedResultSet( result, expected, true );
     }
 
 
     @Test
     public void projectAddFieldsTest() {
-        List<Object[]> expected = Arrays.asList(
+        List<String[]> expected = Arrays.asList(
                 new String[]{ "id_", "52", "1" },
                 new String[]{ "id_", "52", "1.3" },
                 new String[]{ "id_", "52", "test" } );
@@ -129,7 +131,7 @@ public class AggregateTest extends MqlTestTemplate {
 
         Result result = aggregate( $project( "{\"test\":1}" ), $addFields( "{\"added\": 52}" ) );
 
-        MongoConnection.checkResultSet( result, expected );
+        MongoConnection.checkUnorderedResultSet( result, expected, true );
     }
 
     //$count

@@ -95,6 +95,7 @@ public class CassandraTypesUtils {
             case CHAR:
                 // TODO: What to return for char?
             case VARCHAR:
+            case JSON:
                 return DataTypes.TEXT;
             case BINARY:
             case VARBINARY:

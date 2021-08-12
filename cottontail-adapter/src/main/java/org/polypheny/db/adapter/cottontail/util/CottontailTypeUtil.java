@@ -159,6 +159,7 @@ public class CottontailTypeUtil {
                     return Type.FLOAT;
                 case VARCHAR:
                 case CHAR:
+                case JSON:
                     return Type.STRING;
                 // Types that require special treatment.
                 case TINYINT:
@@ -223,6 +224,7 @@ public class CottontailTypeUtil {
                     break;
                 case VARCHAR:
                 case CHAR:
+                case JSON:
                     constantExpression = Expressions.constant( rexLiteral.getValueAs( String.class ) );
                     break;
                 case DATE:
@@ -353,6 +355,7 @@ public class CottontailTypeUtil {
                 }
                 break;
             }
+            case JSON:
             case VARCHAR: {
                 if ( value instanceof String ) {
                     return builder.setStringData( (String) value ).build();
@@ -549,6 +552,7 @@ public class CottontailTypeUtil {
                 return rexLiteral.getValueAs( Float.class );
             case VARCHAR:
             case CHAR:
+            case JSON:
                 return rexLiteral.getValueAs( String.class );
             case TIMESTAMP:
                 return rexLiteral.getValueAs( Long.class );
@@ -722,6 +726,7 @@ public class CottontailTypeUtil {
                 return Linq4JFixer.getFloatData( data );
             case VARCHAR:
             case CHAR:
+            case JSON:
                 return Linq4JFixer.getStringData( data );
             case TIMESTAMP:
                 return Linq4JFixer.getTimestampData( data );

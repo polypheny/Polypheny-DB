@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Set;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.rel.CottontailSort;
+import org.polypheny.db.document.DocumentRules;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.RelTraitSet;
@@ -43,7 +44,7 @@ import org.polypheny.db.util.Pair;
 public class CottontailSortRule extends CottontailConverterRule {
 
     CottontailSortRule( CottontailConvention out, RelBuilderFactory relBuilderFactory ) {
-        super( Sort.class, r -> true, Convention.NONE, out, relBuilderFactory, "CottontailSortRule" + out.getName() );
+        super( Sort.class, r -> !DocumentRules.containsDocument( r ), Convention.NONE, out, relBuilderFactory, "CottontailSortRule" + out.getName() );
     }
 
 

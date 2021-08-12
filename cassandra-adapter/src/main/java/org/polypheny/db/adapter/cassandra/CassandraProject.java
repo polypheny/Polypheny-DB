@@ -161,10 +161,13 @@ public class CassandraProject extends Project implements CassandraRel {
             final List<Selector> fields = new ArrayList<>();
             for ( Pair<RexNode, String> pair : getNamedProjects() ) {
                 if ( pair.left instanceof RexInputRef ) {
-                    final String name = pair.right;
+                    String name = pair.right;
 //                getRowType()
 //                ((RexInputRef) pair.left);
                     final String originalName = pair.left.accept( translator );
+                    if ( name.startsWith( "_" ) ) {
+                        name = "\"" + name + "\"";
+                    }
                     fields.add( Selector.column( originalName ).as( name ) );
                 }
             }
