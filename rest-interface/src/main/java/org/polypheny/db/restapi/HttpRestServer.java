@@ -37,10 +37,9 @@ import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.http.Part;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.cql.cql2rel.CqlResource;
-import org.polypheny.cql.parser.CqlQuery;
+import org.polypheny.cql.CqlQuery;
+import org.polypheny.cql.parser.CqlParser;
 import org.polypheny.cql.parser.ParseException;
-import org.polypheny.cql.parser.Parser;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
@@ -145,12 +144,10 @@ public class HttpRestServer extends QueryInterface {
     String processCQLRequest( Rest rest, RequestType type, Request request, Response response ) {
         try {
             String cqlQueryStr = request.body();
-            Parser cqlParser = new Parser( cqlQueryStr, databaseName );
-
+            CqlParser cqlParser = new CqlParser( cqlQueryStr, databaseName );
             CqlQuery cqlQuery = cqlParser.parse();
-            CqlResource cqlResource = CqlResource.createCqlResource( cqlQuery );
 
-            return rest.processCqlResource( cqlResource, request, response );
+            return rest.processCqlResource( cqlQuery, request, response );
         } catch ( ParseException e ) {
             e.printStackTrace();
         }
