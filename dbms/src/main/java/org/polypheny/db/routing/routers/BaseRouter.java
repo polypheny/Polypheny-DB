@@ -155,11 +155,12 @@ public abstract class BaseRouter {
                         cpp.partitionId );
                 // final project
                 ArrayList<RexNode> rexNodes = new ArrayList<>();
-                List<CatalogColumnPlacement> placementList = currentPlacements.stream()
-                        .sorted( Comparator.comparingLong( col -> col.physicalPosition ) )
+                List<CatalogColumn> placementList = currentPlacements.stream()
+                        .map( col -> Catalog.getInstance().getColumn( col.columnId ) )
+                        .sorted( Comparator.comparingInt( col -> col.position) )
                         .collect( Collectors.toList() );
-                for ( CatalogColumnPlacement catalogColumnPlacement : placementList ) {
-                    rexNodes.add( builder.field( catalogColumnPlacement.getLogicalColumnName() ) );
+                for ( CatalogColumn catalogColumn : placementList ) {
+                    rexNodes.add( builder.field( catalogColumn.name ) );
                 }
                 builder.project( rexNodes );
 
@@ -226,11 +227,12 @@ public abstract class BaseRouter {
                 }
                 // final project
                 ArrayList<RexNode> rexNodes = new ArrayList<>();
-                List<CatalogColumnPlacement> placementList = currentPlacements.stream()
-                        .sorted( Comparator.comparingLong(col -> col.physicalPosition))
+                List<CatalogColumn> placementList = currentPlacements.stream()
+                        .map( col -> Catalog.getInstance().getColumn( col.columnId ) )
+                        .sorted( Comparator.comparingInt( col -> col.position) )
                         .collect( Collectors.toList() );
-                for ( CatalogColumnPlacement ccp : placementList ) {
-                    rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
+                for ( CatalogColumn catalogColumn : placementList ) {
+                    rexNodes.add( builder.field( catalogColumn.name ) );
                 }
                 builder.project( rexNodes );
             } else {
