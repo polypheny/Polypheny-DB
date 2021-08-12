@@ -63,7 +63,9 @@ public class TransactionProvider {
         if ( !sessions.containsKey( xid ) ) {
             session = client.startSession();
             session.startTransaction( options );
-            sessions.put( xid, session );
+            synchronized ( this ) {
+                sessions.put( xid, session );
+            }
         } else {
             session = sessions.get( xid );
             if ( !session.hasActiveTransaction() ) {
@@ -95,7 +97,9 @@ public class TransactionProvider {
                 }
             } finally {
                 session.close();
-                sessions.remove( xid );
+                synchronized ( this ) {
+                    sessions.remove( xid );
+                }
             }
         } else {
             log.info( "No-op commit" );
@@ -126,8 +130,11 @@ public class TransactionProvider {
             } catch ( MongoClientException e ) {
                 // empty on purpose
             } finally {
-                sessions.remove( xid );
                 sessions.get( xid ).close();
+                synchronized ( this ) {
+                    sessions.remove( xid );
+                }
+
             }
         } else {
             log.info( "No-op rollback" );
