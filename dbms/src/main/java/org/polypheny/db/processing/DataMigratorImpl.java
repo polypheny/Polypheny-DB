@@ -87,12 +87,12 @@ public class DataMigratorImpl implements DataMigrator {
             }
         }
 
-        //We need a columnPlacement for every partition
+        // We need a columnPlacement for every partition
         Map<Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
         if ( table.isPartitioned ) {
             PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
             PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( table.partitionProperty.partitionType );
-            placementDistribution = partitionManager.getRelevantPlacements( table, partitionIds );
+            placementDistribution = partitionManager.getFirstPlacements( table, partitionIds );
         } else {
             placementDistribution.put( table.partitionProperty.partitionIds.get( 0 ), selectSourcePlacements( table, selectColumnList, targetColumnPlacements.get( 0 ).adapterId ) );
         }

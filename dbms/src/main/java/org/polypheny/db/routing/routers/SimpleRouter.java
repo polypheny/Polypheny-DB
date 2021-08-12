@@ -57,7 +57,7 @@ public class SimpleRouter extends AbstractDqlRouter {
     @Override
     protected List<RoutedRelBuilder> handleNonePartitioning( RelNode node, CatalogTable catalogTable, Statement statement, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
         // get placements and convert i
-        val placements = selectPlacement( node, catalogTable, statement, queryInformation );
+        val placements = selectPlacement( catalogTable );
 
         // only one builder available
         builders.get( 0 ).addPhysicalInfo( placements );
@@ -76,8 +76,8 @@ public class SimpleRouter extends AbstractDqlRouter {
         List<Long> partitionIds = queryInformation.getAccessedPartitions().get( catalogTable.id );
 
         Map<Long, List<CatalogColumnPlacement>> placementDistribution = partitionIds != null
-                ? partitionManager.getRelevantPlacements( catalogTable, partitionIds )
-                : partitionManager.getRelevantPlacements( catalogTable, catalogTable.partitionProperty.partitionIds );
+                ? partitionManager.getFirstPlacements( catalogTable, partitionIds )
+                : partitionManager.getFirstPlacements( catalogTable, catalogTable.partitionProperty.partitionIds );
 
         // only one builder available
         builders.get( 0 ).addPhysicalInfo( placementDistribution );
@@ -90,7 +90,7 @@ public class SimpleRouter extends AbstractDqlRouter {
     /**
      * // Execute the table scan on the first placement of a table
      */
-    private Map<Long, List<CatalogColumnPlacement>> selectPlacement( RelNode node, CatalogTable table, Statement statement, LogicalQueryInformation queryInformation ) {
+    private Map<Long, List<CatalogColumnPlacement>> selectPlacement( CatalogTable table ) {
         // Find the adapter with the most column placements
         int adapterIdWithMostPlacements = -1;
         int numOfPlacements = 0;

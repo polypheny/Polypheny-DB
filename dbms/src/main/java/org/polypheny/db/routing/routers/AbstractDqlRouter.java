@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.prepare.RelOptTableImpl;
@@ -135,7 +134,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             }
 
             LogicalTable logicalTable = ((LogicalTable) table.getTable());
-            CatalogTable catalogTable = Catalog.getInstance().getTable( logicalTable.getTableId() );
+            CatalogTable catalogTable = catalog.getTable( logicalTable.getTableId() );
 
             // Check if table is even horizontal partitioned
             if ( catalogTable.isPartitioned ) {

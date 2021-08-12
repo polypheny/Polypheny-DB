@@ -31,18 +31,30 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.routing.factories.RouterFactory;
+import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.tools.RoutedRelBuilder;
 import org.polypheny.db.transaction.Statement;
 
 @Slf4j
 public class IcarusRouter extends FullPlacementQueryRouter {
 
+    @Override
+    protected List<RoutedRelBuilder> handleHorizontalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
+        this.cancelQuery = true;
+        return Collections.emptyList();
+    }
+
+    @Override
+    protected List<RoutedRelBuilder> handleVerticalPartitioningOrReplication( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
+        // same as no partitioning
+        return handleNonePartitioning( node, catalogTable, statement, builders, cluster, queryInformation );
+    }
 
     @Override
     protected List<RoutedRelBuilder> handleNonePartitioning( RelNode node, CatalogTable catalogTable, Statement statement, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
         log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
 
-        val placements = selectPlacement( node, catalogTable, statement, queryInformation );
+        val placements = selectPlacement( catalogTable, queryInformation );
         val newBuilders = new ArrayList<RoutedRelBuilder>();
         if ( placements.isEmpty() ) {
             this.cancelQuery = true;

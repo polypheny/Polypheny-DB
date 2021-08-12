@@ -156,7 +156,7 @@ public abstract class BaseRouter {
                 // final project
                 ArrayList<RexNode> rexNodes = new ArrayList<>();
                 List<CatalogColumn> placementList = currentPlacements.stream()
-                        .map( col -> Catalog.getInstance().getColumn( col.columnId ) )
+                        .map( col -> catalog.getColumn( col.columnId ) )
                         .sorted( Comparator.comparingInt( col -> col.position) )
                         .collect( Collectors.toList() );
                 for ( CatalogColumn catalogColumn : placementList ) {
@@ -169,16 +169,16 @@ public abstract class BaseRouter {
 
                 // Get primary key
                 long pkid = catalog.getTable( currentPlacements.get( 0 ).tableId ).primaryKey;
-                List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
+                List<Long> pkColumnIds = catalog.getPrimaryKey( pkid ).columnIds;
                 List<CatalogColumn> pkColumns = new LinkedList<>();
                 for ( long pkColumnId : pkColumnIds ) {
-                    pkColumns.add( Catalog.getInstance().getColumn( pkColumnId ) );
+                    pkColumns.add( catalog.getColumn( pkColumnId ) );
                 }
 
                 // Add primary key
                 for ( Entry<Integer, List<CatalogColumnPlacement>> entry : placementsByAdapter.entrySet() ) {
                     for ( CatalogColumn pkColumn : pkColumns ) {
-                        CatalogColumnPlacement pkPlacement = Catalog.getInstance().getColumnPlacement( entry.getKey(), pkColumn.id );
+                        CatalogColumnPlacement pkPlacement = catalog.getColumnPlacement( entry.getKey(), pkColumn.id );
                         if ( !entry.getValue().contains( pkPlacement ) ) {
                             entry.getValue().add( pkPlacement );
                         }
@@ -228,7 +228,7 @@ public abstract class BaseRouter {
                 // final project
                 ArrayList<RexNode> rexNodes = new ArrayList<>();
                 List<CatalogColumn> placementList = currentPlacements.stream()
-                        .map( col -> Catalog.getInstance().getColumn( col.columnId ) )
+                        .map( col -> catalog.getColumn( col.columnId ) )
                         .sorted( Comparator.comparingInt( col -> col.position) )
                         .collect( Collectors.toList() );
                 for ( CatalogColumn catalogColumn : placementList ) {

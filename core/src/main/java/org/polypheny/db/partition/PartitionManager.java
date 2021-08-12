@@ -33,12 +33,20 @@ public interface PartitionManager {
     boolean probePartitionGroupDistributionChange( CatalogTable catalogTable, int storeId, long columnId, int threshold );
 
     /**
-     *
+     * Returns the first found placement of catalogTable and partitionIds
      * @param catalogTable The table we are looking for placements.
      * @param partitionIds List of all asked partitions ids
      * @return Returns map of PartitionsId -> needed Columns Placements
      */
-    Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds );
+    Map<Long, List<CatalogColumnPlacement>> getFirstPlacements( CatalogTable catalogTable, List<Long> partitionIds );
+
+    /**
+     * Returns all placements of catalogTable and partitionIds
+     * @param catalogTable The table we are looking for placements.
+     * @param partitionIds List of all asked partitions ids
+     * @return Returns map of AdapterId  -> [Map PartitionsId -> needed Columns Placements]
+     */
+    Map<Integer, Map<Long, List<CatalogColumnPlacement>>> getAllPlacements( CatalogTable catalogTable, List<Long> partitionIds );
 
     boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, CatalogColumn partitionColumn );
 

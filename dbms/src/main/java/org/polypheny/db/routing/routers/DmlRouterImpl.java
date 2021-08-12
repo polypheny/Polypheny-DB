@@ -28,7 +28,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -75,9 +74,6 @@ import org.polypheny.db.transaction.Statement;
 @Slf4j
 public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
-    final static Catalog catalog = Catalog.getInstance();
-
-
     // Default implementation: Execute DML on all placements
     @Override
     public RoutedRelBuilder routeDml( RelNode node, Statement statement ) {
@@ -103,11 +99,11 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 }
 
                 long pkid = catalogTable.primaryKey;
-                List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
-                CatalogColumn pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );
+                List<Long> pkColumnIds = catalog.getPrimaryKey( pkid ).columnIds;
+                CatalogColumn pkColumn = catalog.getColumn( pkColumnIds.get( 0 ) );
 
                 //Essentially gets a list of all stores where this table resides
-                List<CatalogColumnPlacement> pkPlacements = Catalog.getInstance().getColumnPlacement( pkColumn.id );
+                List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacement( pkColumn.id );
 
                 if ( catalogTable.isPartitioned && log.isDebugEnabled() ) {
                     log.debug( "\nListing all relevant stores for table: '{}' and all partitions: {}", catalogTable.name, catalogTable.partitionProperty.partitionGroupIds );
@@ -751,11 +747,11 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 } else {
                     throw new RuntimeException( "Invalid column name: " + field.getName() );
                 }
-                column = Catalog.getInstance().getColumn( catalogTable.id, columnName );
+                column = catalog.getColumn( catalogTable.id, columnName );
             } catch ( UnknownColumnException e ) {
                 throw new RuntimeException( e );
             }
-            if ( !Catalog.getInstance().checkIfExistsColumnPlacement( placements.get( 0 ).adapterId, column.id ) ) {
+            if ( !catalog.checkIfExistsColumnPlacement( placements.get( 0 ).adapterId, column.id ) ) {
                 throw new RuntimeException( "Current implementation of vertical partitioning does not allow conditions on partitioned columns. " );
                 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 // TODO: Use indexes

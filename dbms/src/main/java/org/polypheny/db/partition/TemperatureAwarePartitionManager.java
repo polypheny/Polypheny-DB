@@ -31,7 +31,7 @@ import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.type.PolyType;
 
 
-public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
+public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
 
     public static final boolean REQUIRES_UNBOUND_PARTITION_GROUP = false;
     public static final String FUNCTION_TITLE = "TEMPERATURE";
@@ -40,27 +40,37 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
 
     @Override
     public long getTargetPartitionId( CatalogTable catalogTable, String columnValue ) {
-
         // Get partition manager
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager(
                 ((TemperaturePartitionProperty) catalogTable.partitionProperty).getInternalPartitionFunction()
         );
 
-        return partitionManager.getTargetPartitionId( catalogTable,columnValue );
+        return partitionManager.getTargetPartitionId( catalogTable, columnValue );
     }
 
 
     @Override
-    public Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
-
+    public Map<Long, List<CatalogColumnPlacement>> getFirstPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
         // Get partition manager
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager(
                 ((TemperaturePartitionProperty) catalogTable.partitionProperty).getInternalPartitionFunction()
         );
 
-        return partitionManager.getRelevantPlacements( catalogTable, partitionIds );
+        return partitionManager.getFirstPlacements( catalogTable, partitionIds );
+    }
+
+
+    @Override
+    public Map<Integer, Map<Long, List<CatalogColumnPlacement>>> getAllPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
+        // Get partition manager
+        PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
+        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager(
+                ((TemperaturePartitionProperty) catalogTable.partitionProperty).getInternalPartitionFunction()
+        );
+
+        return partitionManager.getAllPlacements( catalogTable, partitionIds );
     }
 
 
@@ -75,9 +85,10 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
         return SUPPORTED_TYPES.contains( type );
     }
 
+
     //ToDo place everything on COLD and then on later on by distribution on HOT
     @Override
-    public int getNumberOfPartitionsPerGroup( int numberOfPartitions){
+    public int getNumberOfPartitionsPerGroup( int numberOfPartitions ) {
         return 1;
     }
 
@@ -92,11 +103,11 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
         return true;
     }
 
+
     @Override
     public PartitionFunctionInfo getPartitionFunctionInfo() {
 
         List<List<PartitionFunctionInfoColumn>> rowsBefore = new ArrayList<>();
-
 
         //ROW for HOT partition infos about custom name & hot-label,
         List<PartitionFunctionInfoColumn> hotRow = new ArrayList<>();
@@ -119,7 +130,6 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
                 .defaultValue( "HOT" )
                 .build() );
 
-
         //ROW for COLD partition infos about custom name & cold-label,
         List<PartitionFunctionInfoColumn> coldRow = new ArrayList<>();
         coldRow.add( PartitionFunctionInfoColumn.builder()
@@ -140,7 +150,6 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
                 .valueSeparation( "" )
                 .defaultValue( "COLD" )
                 .build() );
-
 
         List<PartitionFunctionInfoColumn> rowInHot = new ArrayList<>();
         rowInHot.add( PartitionFunctionInfoColumn.builder()
@@ -190,21 +199,9 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
         rowsBefore.add( coldRow );
         rowsBefore.add( rowOutHot );
 
-
-
         //COST MODEL
         //Fixed rows to display after dynamically generated ones
         List<List<PartitionFunctionInfoColumn>> rowsAfter = new ArrayList<>();
-
-
-
-
-
-
-
-
-
-
 
         List<PartitionFunctionInfoColumn> costRow = new ArrayList<>();
         costRow.add( PartitionFunctionInfoColumn.builder()
@@ -224,7 +221,7 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
                 .sqlPrefix( "USING FREQUENCY" )
                 .sqlSuffix( "" )
                 .valueSeparation( "" )
-                .options(new ArrayList<>( Arrays.asList( "ALL", "WRITE", "READ" )  ))
+                .options( new ArrayList<>( Arrays.asList( "ALL", "WRITE", "READ" ) ) )
                 .build() );
 
         List<PartitionFunctionInfoColumn> extendedCostRow = new ArrayList<>();
@@ -256,9 +253,8 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
                 .sqlPrefix( "" )
                 .sqlSuffix( "" )
                 .valueSeparation( "" )
-                .options(new ArrayList<>( Arrays.asList( "Minutes", "Hours", "Days" )  ))
+                .options( new ArrayList<>( Arrays.asList( "Minutes", "Hours", "Days" ) ) )
                 .build() );
-
 
         List<PartitionFunctionInfoColumn> chunkRow = new ArrayList<>();
         chunkRow.add( PartitionFunctionInfoColumn.builder()
@@ -299,19 +295,13 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
                 .sqlPrefix( "" )
                 .sqlSuffix( "PARTITIONS" )
                 .valueSeparation( "" )
-                .options(new ArrayList<>( Arrays.asList( "HASH")  ))
+                .options( new ArrayList<>( Arrays.asList( "HASH" ) ) )
                 .build() );
-
-
-
-
 
         rowsAfter.add( costRow );
         rowsAfter.add( extendedCostRow );
         rowsAfter.add( chunkRow );
         rowsAfter.add( unboundRow );
-
-
 
         //Bring all rows and columns together
         PartitionFunctionInfo uiObject = PartitionFunctionInfo.builder()
@@ -328,10 +318,7 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager{
                 .headings( new ArrayList<>( Arrays.asList( "Partition Name", "Classification" ) ) )
                 .build();
 
-
-
-
-
         return uiObject;
     }
+
 }
