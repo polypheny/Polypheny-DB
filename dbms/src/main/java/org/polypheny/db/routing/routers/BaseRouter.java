@@ -156,7 +156,7 @@ public abstract class BaseRouter {
                 // final project
                 ArrayList<RexNode> rexNodes = new ArrayList<>();
                 List<CatalogColumnPlacement> placementList = currentPlacements.stream()
-                        .sorted( Comparator.comparingInt( p -> Catalog.getInstance().getColumn( p.columnId ).position ) )
+                        .sorted( Comparator.comparingLong( col -> col.physicalPosition ) )
                         .collect( Collectors.toList() );
                 for ( CatalogColumnPlacement catalogColumnPlacement : placementList ) {
                     rexNodes.add( builder.field( catalogColumnPlacement.getLogicalColumnName() ) );
@@ -227,7 +227,7 @@ public abstract class BaseRouter {
                 // final project
                 ArrayList<RexNode> rexNodes = new ArrayList<>();
                 List<CatalogColumnPlacement> placementList = currentPlacements.stream()
-                        .sorted( Comparator.comparingInt( p -> Catalog.getInstance().getColumn( p.columnId ).position ) )
+                        .sorted( Comparator.comparingLong(col -> col.physicalPosition))
                         .collect( Collectors.toList() );
                 for ( CatalogColumnPlacement ccp : placementList ) {
                     rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
