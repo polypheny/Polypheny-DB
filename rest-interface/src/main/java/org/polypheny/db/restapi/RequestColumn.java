@@ -26,7 +26,7 @@ public class RequestColumn {
 
     private final CatalogColumn column;
     private final int tableScanIndex;
-    private final int logicalIndex;
+    private int logicalIndex;
     private final String fullyQualifiedName;
     private final String alias;
     private final SqlAggFunction aggregate;
@@ -95,6 +95,11 @@ public class RequestColumn {
 
     public boolean isExplicit() {
         return explicit;
+    }
+
+
+    public void setLogicalIndex( int logicalIndex ) {
+        this.logicalIndex = logicalIndex;
     }
 
     // The alias of a column in a request perfectly identifies it when it comes to uniqueness!
