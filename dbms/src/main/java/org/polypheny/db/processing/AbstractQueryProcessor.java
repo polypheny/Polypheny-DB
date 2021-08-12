@@ -323,6 +323,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             if ( isAnalyze ) {
                 statement.getDuration().stop( "Index Lookup Rewrite" );
+                statement.getDuration().start( "Routing" );
             }
 
             if ( RuntimeConfig.ROUTING_PLAN_CACHING.getBoolean() &&
@@ -335,10 +336,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
 
             if ( proposedRoutingPlans == null ) {
-                if ( isAnalyze ) {
-                    statement.getDuration().start( "Routing" );
-                }
                 proposedRoutingPlans = route( indexLookupRoot, statement, logicalQueryInformation );
+            }
+
+            if ( isAnalyze ) {
+                statement.getDuration().stop( "Routing" );
+                statement.getDuration().start( "Routing flattener" );
             }
 
             proposedRoutingPlans.forEach( proposedRoutingPlan -> {
@@ -352,8 +355,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             } );
 
             if ( isAnalyze ) {
-                statement.getDuration().stop( "Routing" );
+                statement.getDuration().stop( "Routing flattener" );
             }
+        }
+
+        if ( isAnalyze ) {
+            statement.getDuration().start( "Parameter validation" );
         }
 
         // Validate parameterValues
@@ -361,8 +368,16 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 new ParameterValueValidator( proposedRoutingPlan.getRoutedRoot().validatedRowType, statement.getDataContext() )
                         .visit( proposedRoutingPlan.getRoutedRoot().rel ) );
 
+        if ( isAnalyze ) {
+            statement.getDuration().stop( "Parameter validation" );
+        }
+
         //
         // Parameterize
+
+        if ( isAnalyze ) {
+            statement.getDuration().start( "Parameterize" );
+        }
 
         // Add optional parameterizedRoots and signatures for all routed RelRoots.
         // Index of routedRoot, parameterizedRootList and signatures correspond!
@@ -382,6 +397,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
 
             parameterizedRootList.add( parameterizedRoot );
+        }
+
+        if ( isAnalyze ) {
+            statement.getDuration().stop( "Parameterize" );
         }
 
         //
@@ -918,6 +937,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private List<ProposedRoutingPlan> route( RelRoot logicalRoot, Statement statement, LogicalQueryInformation queryInformation ) {
+
+
         if ( logicalRoot.rel instanceof LogicalTableModify ) {
             val routedDml = dmlRouter.routeDml( logicalRoot.rel, statement );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryId() ) );
@@ -926,6 +947,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedConditionalExecute, logicalRoot, queryInformation.getQueryId() ) );
         } else {
             val proposedPlans = new ArrayList<ProposedRoutingPlan>();
+            if ( statement.getTransaction().isAnalyze() ) {
+                statement.getDuration().start( "Routing Plan proposing" );
+            }
+
             for ( val router : RouterManager.getInstance().getRouters() ) {
                 val builders = router.route( logicalRoot, statement, queryInformation );
 
@@ -938,10 +963,19 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             }
 
+            if ( statement.getTransaction().isAnalyze() ) {
+                statement.getDuration().stop( "Routing Plan proposing" );
+                statement.getDuration().start( "Routing Plan remove duplicates" );
+            }
+
             val distinctPlans = proposedPlans.stream().distinct().collect( Collectors.toList() );
 
             if ( distinctPlans.isEmpty() ) {
                 throw new RuntimeException( "No routing of query found" );
+            }
+
+            if ( statement.getTransaction().isAnalyze() ) {
+                statement.getDuration().stop( "Routing Plan remove duplicates" );
             }
 
             return distinctPlans;
@@ -963,12 +997,21 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         if ( isAnalyze ) {
-            statement.getDuration().start( "Routing" );
+            statement.getDuration().start( "Route cached" );
         }
 
         val builder = cachedPlanRouter.routeCached( logicalRoot, selectedCachedPlan, statement );
 
+        if ( isAnalyze ) {
+            statement.getDuration().stop( "Route cached" );
+            statement.getDuration().start( "Create plan from cache" );
+        }
+
         val proposed = new ProposedRoutingPlanImpl( builder, logicalRoot, queryInformation.getQueryId(), selectedCachedPlan );
+
+        if ( isAnalyze ) {
+            statement.getDuration().stop( "Create plan from cache" );
+        }
 
         return Lists.newArrayList( proposed );
     }

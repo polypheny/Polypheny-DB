@@ -17,10 +17,30 @@
 package org.polypheny.db.routing.strategies;
 
 import java.util.List;
+import java.util.stream.Collectors;
+import lombok.val;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 
-public interface TablePlacementStrategy {
-    List<DataStore> getDataStoresForNewColumn( CatalogColumn addedColumn );
-    List<DataStore> getDataStoresForNewTable();
+public class CreateAllPlacementStrategy implements CreatePlacementStrategy {
+
+    @Override
+    public List<DataStore> getDataStoresForNewColumn( CatalogColumn addedColumn ) {
+        val catalogTable = Catalog.getInstance().getTable( addedColumn.tableId );
+
+        return catalogTable.placementsByAdapter.keySet()
+                .stream()
+                .map( elem -> AdapterManager.getInstance().getStore(elem))
+                .collect( Collectors.toList());
+
+    }
+
+
+    @Override
+    public List<DataStore> getDataStoresForNewTable() {
+        return AdapterManager.getInstance().getStores().values().asList();
+    }
+
 }

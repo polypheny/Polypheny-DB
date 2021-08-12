@@ -25,7 +25,7 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 
-public class SingleTablePlacementStrategy implements TablePlacementStrategy {
+public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {
 
     @Override
     public List<DataStore> getDataStoresForNewColumn( CatalogColumn addedColumn ) {

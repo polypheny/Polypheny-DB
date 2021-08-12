@@ -40,8 +40,8 @@ import org.polypheny.db.routing.routers.DmlRouterImpl;
 import org.polypheny.db.routing.routers.SimpleRouter;
 import org.polypheny.db.routing.routers.SimpleRouter.SimpleRouterFactory;
 import org.polypheny.db.routing.strategies.RoutingPlanSelector;
-import org.polypheny.db.routing.strategies.SingleTablePlacementStrategy;
-import org.polypheny.db.routing.strategies.TablePlacementStrategy;
+import org.polypheny.db.routing.strategies.CreateSinglePlacementStrategy;
+import org.polypheny.db.routing.strategies.CreatePlacementStrategy;
 
 @Slf4j
 public class RouterManager {
@@ -74,7 +74,7 @@ public class RouterManager {
     @Getter
     private final RoutingPlanSelector routingPlanSelector = new RoutingPlanSelector();
     @Getter
-    private TablePlacementStrategy tablePlacementStrategy = new SingleTablePlacementStrategy();
+    private CreatePlacementStrategy createPlacementStrategy = new CreateSinglePlacementStrategy();
     private List<RouterFactory> routerFactories;
     private WebUiPage routingPage;
 
@@ -106,7 +106,7 @@ public class RouterManager {
         configManager.registerWebUiGroup( routingGroup );
 
         // Settings
-        final ConfigClazz tablePlacementStrategy = new ConfigClazz( "routing/tablePlacementStrategy", TablePlacementStrategy.class, SingleTablePlacementStrategy.class );
+        final ConfigClazz tablePlacementStrategy = new ConfigClazz( "routing/tablePlacementStrategy", CreatePlacementStrategy.class, CreateSinglePlacementStrategy.class );
         configManager.registerConfig( tablePlacementStrategy );
         tablePlacementStrategy.withUi( routingGroup.getId() );
         tablePlacementStrategy.addObserver( new ConfigListener() {
@@ -115,7 +115,7 @@ public class RouterManager {
                 ConfigClazz configClazz = (ConfigClazz) c;
                 if ( tablePlacementStrategy.getClass() != configClazz.getClazz() ) {
                     log.warn( "Change router implementation: " + configClazz.getClazz() );
-                    setTablePlacementStrategy( configClazz );
+                    setCreatePlacementStrategy( configClazz );
                 }
             }
 
@@ -143,10 +143,10 @@ public class RouterManager {
     }
 
 
-    private void setTablePlacementStrategy( ConfigClazz implementation ) {
+    private void setCreatePlacementStrategy( ConfigClazz implementation ) {
         try {
             Constructor<?> ctor = implementation.getClazz().getConstructor();
-            this.tablePlacementStrategy = (TablePlacementStrategy) ctor.newInstance();
+            this.createPlacementStrategy = (CreatePlacementStrategy) ctor.newInstance();
         } catch ( InstantiationException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e ) {
             log.error( "Exception while changing table placement strategy", e );
         }
