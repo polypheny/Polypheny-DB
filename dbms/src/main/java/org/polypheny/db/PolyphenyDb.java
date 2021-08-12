@@ -79,7 +79,7 @@ public class PolyphenyDb {
     public boolean testMode = false;
 
     @Option(name = { "-defaultStore" }, description = "Type of default store")
-    public String defaultStoreName = "cassandra";
+    public String defaultStoreName = "hsqldb";
 
     @Option(name = { "-defaultSource" }, description = "Type of default source")
     public String defaultSourceName = "csv";

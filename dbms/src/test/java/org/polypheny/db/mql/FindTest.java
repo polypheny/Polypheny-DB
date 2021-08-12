@@ -24,12 +24,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.mongoql.model.Result;
 
-@Category({ FileExcluded.class, CassandraExcluded.class })
+@Category({ AdapterTestSuite.class, FileExcluded.class, CassandraExcluded.class })
 public class FindTest extends MqlTestTemplate {
 
 
