@@ -144,7 +144,7 @@ public class MongoStore extends DataStore {
                         .maxConnectionLifeTime( 4, TimeUnit.HOURS ) )
                 .applyToSocketSettings( builder -> builder
                         .connectTimeout( 4, TimeUnit.HOURS )
-                        .readTimeout( 30, TimeUnit.MINUTES ) )
+                        .readTimeout( 1, TimeUnit.HOURS ) )
                 .applyToClusterSettings( builder ->
                         builder.hosts( Collections.singletonList( new ServerAddress( c.getHost() ) ) )
                 )
