@@ -155,8 +155,8 @@ public class CatalogTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
 
-            final Object[] table1 = new Object[]{ "APP", "schema1", "table1", "TABLE", "", null, null, null, null, null, "pa", null };
-            final Object[] table2 = new Object[]{ "APP", "schema1", "table2", "TABLE", "", null, null, null, null, null, "pa", null };
+            final Object[] table1 = new Object[]{ "APP", "schema1", "table1", "TABLE", "", null, null, null, null, null, "pa" };
+            final Object[] table2 = new Object[]{ "APP", "schema1", "table2", "TABLE", "", null, null, null, null, null, "pa" };
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getTables( "APP", "schema1", null, null ),

@@ -9,6 +9,7 @@ buildscript {
     dependencies {
         classpath group: "io.freefair.gradle", name: "lombok-plugin", version: lombok_version
         classpath group: "com.adarshr", name: "gradle-test-logger-plugin", version: gradle_test_logger_version
+        classpath group: "org.reflections", name: "reflections", version: reflections_version
     }
 }
 
@@ -85,11 +86,25 @@ allprojects {
         options.memberLevel = JavadocMemberLevel.PRIVATE
     }
 
-    task integrationTests(type: Test) {
-        description = 'Runs integration tests.'
+    task dockerTests(type: Test) {
+        description = 'Runs docker tests.'
         group = 'verification'
         useJUnit {
             includeCategories 'org.polypheny.db.docker.DockerManagerTest'
+        }
+        shouldRunAfter(tasks.named('test'))
+    }
+    dockerTests.dependsOn(testClasses)
+
+    String storeName = System.getProperty("store.default") != null ? System.getProperty("store.default") : "hsqldb"
+
+    task integrationTests(type: Test) {
+        description = 'Runs integration tests.'
+        group = 'verification'
+        systemProperty 'store.default', storeName
+        useJUnit {
+            includeCategories 'org.polypheny.db.AdapterTestSuite'
+            excludeCategories 'org.polypheny.db.excluded.' + storeName.capitalize() + "Excluded"
         }
         shouldRunAfter(tasks.named('test'))
     }

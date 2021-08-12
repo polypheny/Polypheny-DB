@@ -24,11 +24,15 @@ import org.apache.calcite.avatica.AvaticaSqlException;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.excluded.CassandraExcluded;
 
 
 @SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
+@Category(AdapterTestSuite.class)
 public class HorizontalPartitioningTest {
 
     @BeforeClass
@@ -354,6 +358,7 @@ public class HorizontalPartitioningTest {
 
 
     @Test
+    @Category(CassandraExcluded.class)
     public void rangePartitioningTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -371,14 +376,14 @@ public class HorizontalPartitioningTest {
                     statement.executeUpdate( "INSERT INTO rangepartitioning1 VALUES (1, 3, 'hans')" );
                     statement.executeUpdate( "INSERT INTO rangepartitioning1 VALUES (2, 7, 'bob')" );
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM rangepartitioning1" ),
+                            statement.executeQuery( "SELECT * FROM rangepartitioning1 ORDER BY tprimary" ),
                             ImmutableList.of(
                                     new Object[]{ 1, 3, "hans" },
                                     new Object[]{ 2, 7, "bob" } ) );
 
                     statement.executeUpdate( "UPDATE rangepartitioning1 SET tinteger = 4 WHERE tinteger = 7" );
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM rangepartitioning1" ),
+                            statement.executeQuery( "SELECT * FROM rangepartitioning1 ORDER BY tprimary" ),
                             ImmutableList.of(
                                     new Object[]{ 1, 3, "hans" },
                                     new Object[]{ 2, 4, "bob" } ) );
@@ -403,7 +408,7 @@ public class HorizontalPartitioningTest {
                     Assert.assertTrue( failed );
                 } finally {
                     statement.executeUpdate( "DROP TABLE rangepartitioning1" );
-                    statement.executeUpdate( "DROP TABLE rangepartitioning2" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS rangepartitioning2" );
                 }
             }
         }

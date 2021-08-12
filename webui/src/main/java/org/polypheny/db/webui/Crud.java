@@ -87,6 +87,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.avatica.MetaImpl;
+import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
@@ -108,6 +109,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.PartitionType;
+import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
@@ -119,6 +121,9 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogView;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
@@ -129,6 +134,7 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.exploreByExample.Explore;
 import org.polypheny.db.exploreByExample.ExploreManager;
@@ -195,6 +201,7 @@ import org.polypheny.db.webui.models.SortState;
 import org.polypheny.db.webui.models.Status;
 import org.polypheny.db.webui.models.TableConstraint;
 import org.polypheny.db.webui.models.Uml;
+import org.polypheny.db.webui.models.UnderlyingTables;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest.Update;
 import org.polypheny.db.webui.models.requests.ClassifyAllData;
@@ -396,6 +403,7 @@ public class Crud implements InformationObserver {
             if ( request.depth > 1 ) {
                 ArrayList<SidebarElement> tableTree = new ArrayList<>();
                 ArrayList<SidebarElement> viewTree = new ArrayList<>();
+                ArrayList<SidebarElement> collectionTree = new ArrayList<>();
                 List<CatalogTable> tables = catalog.getTables( schema.id, null );
                 for ( CatalogTable table : tables ) {
                     String icon = "fa fa-table";
@@ -405,26 +413,50 @@ public class Crud implements InformationObserver {
                         icon = "icon-eye";
                     }
                     SidebarElement tableElement = new SidebarElement( schema.name + "." + table.name, table.name, request.routerLinkRoot, icon );
-
                     if ( request.depth > 2 ) {
                         List<CatalogColumn> columns = catalog.getColumns( table.id );
                         for ( CatalogColumn column : columns ) {
                             tableElement.addChild( new SidebarElement( schema.name + "." + table.name + "." + column.name, column.name, request.routerLinkRoot ).setCssClass( "sidebarColumn" ) );
                         }
                     }
+
+                    if ( request.views ) {
+                        if ( table.tableType == TableType.TABLE || table.tableType == TableType.SOURCE ) {
+                            tableElement.setTableType( "TABLE" );
+                        } else if ( table.tableType == TableType.VIEW ) {
+                            tableElement.setTableType( "VIEW" );
+                        }
+                    }
+
+                    /*
                     if ( table.tableType == TableType.TABLE || table.tableType == TableType.SOURCE ) {
                         tableTree.add( tableElement );
                     } else if ( request.views && table.tableType == TableType.VIEW ) {
                         viewTree.add( tableElement );
                     }
+                     */
+                    collectionTree.add( tableElement );
                 }
-                if ( request.showTable ) {
+
+
+
+                /*if ( request.showTable ) {
                     schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tableTree ).setRouterLink( "" ) );
                 } else {
                     schemaTree.addChildren( tableTree ).setRouterLink( "" );
                 }
                 if ( request.views ) {
-                    schemaTree.addChild( new SidebarElement( schema.name + ".views", "views", request.routerLinkRoot, "icon-eye" ).addChildren( viewTree ).setRouterLink( "" ) );
+                    if ( request.showTable ) {
+                        schemaTree.addChild( new SidebarElement( schema.name + ".views", "views", request.routerLinkRoot, "icon-eye" ).addChildren( viewTree ).setRouterLink( "" ) );
+                    } else {
+                        schemaTree.addChildren( viewTree ).setRouterLink( "" );
+                    }
+
+                }*/
+                if ( request.showTable ) {
+                    schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( collectionTree ).setRouterLink( "" ) );
+                } else {
+                    schemaTree.addChildren( collectionTree ).setRouterLink( "" );
                 }
             }
             result.add( schemaTree );
@@ -438,8 +470,27 @@ public class Crud implements InformationObserver {
      * Get all tables of a schema
      */
     List<DbTable> getTables( final Request req, final Response res ) {
+        Transaction transaction = getTransaction();
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
-        List<CatalogTable> tables = catalog.getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( request.schema ), null );
+        long schemaId = transaction.getDefaultSchema().id;
+        String requestedSchema;
+        if ( request.schema != null ) {
+            requestedSchema = request.schema;
+        } else {
+            requestedSchema = catalog.getSchema( schemaId ).name;
+        }
+
+        try {
+            transaction.commit();
+        } catch ( TransactionException e ) {
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback", ex );
+            }
+        }
+
+        List<CatalogTable> tables = catalog.getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( requestedSchema ), null );
         ArrayList<DbTable> result = new ArrayList<>();
         for ( CatalogTable t : tables ) {
             result.add( new DbTable( t.name, t.getSchemaName(), t.modifiable, t.tableType ) );
@@ -477,7 +528,9 @@ public class Crud implements InformationObserver {
         Transaction transaction = getTransaction();
         Result result;
         StringBuilder query = new StringBuilder();
-        if ( request.action.equalsIgnoreCase( "drop" ) ) {
+        if ( request.tableType != null && request.action.equalsIgnoreCase( "drop" ) && request.tableType.equals( "VIEW" ) ) {
+            query.append( "DROP VIEW " );
+        } else if ( request.action.equalsIgnoreCase( "drop" ) ) {
             query.append( "DROP TABLE " );
         } else if ( request.action.equalsIgnoreCase( "truncate" ) ) {
             query.append( "TRUNCATE TABLE " );
@@ -1312,29 +1365,54 @@ public class Crud implements InformationObserver {
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
         try {
             CatalogTable catalogTable = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
-            if ( catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).size() != 1 ) {
-                throw new RuntimeException( "The table has an unexpected number of placements!" );
+
+            if ( catalogTable.tableType == TableType.VIEW ) {
+                Map<Long, List<Long>> underlyingTable = ((CatalogView) catalogTable).getUnderlyingTables();
+
+                List<DbColumn> columns = new ArrayList<>();
+                for ( Long columnIds : catalogTable.columnIds ) {
+                    CatalogColumn col = catalog.getColumn( columnIds );
+                    columns.add( new DbColumn(
+                            col.name,
+                            col.type.getName(),
+                            col.collectionsType == null ? "" : col.collectionsType.getName(),
+                            col.nullable,
+                            col.length,
+                            col.scale,
+                            col.dimension,
+                            col.cardinality,
+                            false,
+                            col.defaultValue == null ? null : col.defaultValue.value
+                    ).setPhysicalName( col.name ) );
+
+                }
+                return new Result( columns.toArray( new DbColumn[0] ), null ).setType( ResultType.VIEW );
+            } else {
+                if ( catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).size() != 1 ) {
+                    throw new RuntimeException( "The table has an unexpected number of placements!" );
+                }
+
+                int adapterId = catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).get( 0 ).adapterId;
+                CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
+                List<String> pkColumnNames = primaryKey.getColumnNames();
+                List<DbColumn> columns = new ArrayList<>();
+                for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapter( adapterId, catalogTable.id ) ) {
+                    CatalogColumn col = catalog.getColumn( ccp.columnId );
+                    columns.add( new DbColumn(
+                            col.name,
+                            col.type.getName(),
+                            col.collectionsType == null ? "" : col.collectionsType.getName(),
+                            col.nullable,
+                            col.length,
+                            col.scale,
+                            col.dimension,
+                            col.cardinality,
+                            pkColumnNames.contains( col.name ),
+                            col.defaultValue == null ? null : col.defaultValue.value
+                    ).setPhysicalName( ccp.physicalColumnName ) );
+                }
+                return new Result( columns.toArray( new DbColumn[0] ), null ).setType( ResultType.VIEW );
             }
-            int adapterId = catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).get( 0 ).adapterId;
-            CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
-            List<String> pkColumnNames = primaryKey.getColumnNames();
-            List<DbColumn> columns = new ArrayList<>();
-            for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapter( adapterId, catalogTable.id ) ) {
-                CatalogColumn col = catalog.getColumn( ccp.columnId );
-                columns.add( new DbColumn(
-                        col.name,
-                        col.type.getName(),
-                        col.collectionsType == null ? "" : col.collectionsType.getName(),
-                        col.nullable,
-                        col.length,
-                        col.scale,
-                        col.dimension,
-                        col.cardinality,
-                        pkColumnNames.contains( col.name ),
-                        col.defaultValue == null ? null : col.defaultValue.value
-                ).setPhysicalName( ccp.physicalColumnName ) );
-            }
-            return new Result( columns.toArray( new DbColumn[0] ), null ).setType( ResultType.VIEW );
         } catch ( UnknownDatabaseException | UnknownSchemaException | UnknownTableException e ) {
             return new Result( e );
         }
@@ -1924,6 +2002,33 @@ public class Crud implements InformationObserver {
     }
 
 
+    UnderlyingTables getUnderlyingTable( final Request req, final Response res ) {
+
+        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
+        try {
+            CatalogTable catalogTable = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
+
+            if ( catalogTable.tableType == TableType.VIEW ) {
+                Map<Long, List<Long>> underlyingTableOriginal = ((CatalogView) catalogTable).getUnderlyingTables();
+                Map<String, List<String>> underlyingTable = new HashMap<>();
+                for ( Entry<Long, List<Long>> entry : underlyingTableOriginal.entrySet() ) {
+                    List<String> columns = new ArrayList<>();
+                    for ( Long ids : entry.getValue() ) {
+                        columns.add( catalog.getColumn( ids ).name );
+                    }
+                    underlyingTable.put( catalog.getTable( entry.getKey() ).name, columns );
+                }
+                return new UnderlyingTables( underlyingTable );
+            } else {
+                throw new RuntimeException( "only possible with Views" );
+            }
+
+        } catch ( UnknownDatabaseException | UnknownSchemaException | UnknownTableException e ) {
+            return new UnderlyingTables( e );
+        }
+    }
+
+
     /**
      * Get placements of a table
      */
@@ -1938,22 +2043,28 @@ public class Crud implements InformationObserver {
         String tableName = index.getTable();
         try {
             CatalogTable table = catalog.getTable( databaseName, schemaName, tableName );
-            Placement p = new Placement( table.isPartitioned, catalog.getPartitionNames( table.id ) );
-            long pkid = table.primaryKey;
-            List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
-            CatalogColumn pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );
-            List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacements( pkColumn.id );
-            for ( CatalogColumnPlacement placement : pkPlacements ) {
-                Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
-                p.addAdapter( new Placement.Store(
-                        adapter.getUniqueName(),
-                        adapter.getAdapterName(),
-                        catalog.getColumnPlacementsOnAdapter( adapter.getAdapterId(), table.id ),
-                        catalog.getPartitionsIndexOnDataPlacement( placement.adapterId, placement.tableId ),
-                        table.numPartitions,
-                        table.partitionType ) );
+            Placement p = new Placement( table.isPartitioned, catalog.getPartitionNames( table.id ), table.tableType );
+            if ( table.tableType == TableType.VIEW ) {
+
+                return p;
+            } else {
+                long pkid = table.primaryKey;
+                List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
+                CatalogColumn pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );
+                List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacements( pkColumn.id );
+                for ( CatalogColumnPlacement placement : pkPlacements ) {
+                    Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
+                    p.addAdapter( new Placement.Store(
+                            adapter.getUniqueName(),
+                            adapter.getAdapterName(),
+                            catalog.getColumnPlacementsOnAdapter( adapter.getAdapterId(), table.id ),
+                            catalog.getPartitionsIndexOnDataPlacement( placement.adapterId, placement.tableId ),
+                            table.numPartitions,
+                            table.partitionType ) );
+                }
+                return p;
             }
-            return p;
+
         } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             log.error( "Caught exception while getting placements", e );
             return new Placement( e );
@@ -2641,12 +2752,14 @@ public class Crud implements InformationObserver {
         Transaction transaction = getTransaction( true );
         transaction.getQueryAnalyzer().setSession( session );
         Statement statement = transaction.createStatement();
+        long executionTime = 0;
+        long temp = 0;
 
-        InformationManager im = transaction.getQueryAnalyzer().observe( this );
-        im.addPage( new InformationPage( "Query analysis" ) );
+        InformationManager queryAnalyzer = transaction.getQueryAnalyzer().observe( this );
 
         RelNode result;
         try {
+            temp = System.nanoTime();
             result = QueryPlanBuilder.buildFromTree( request.topNode, statement );
         } catch ( Exception e ) {
             log.error( "Caught exception while building the plan builder tree", e );
@@ -2664,6 +2777,52 @@ public class Crud implements InformationObserver {
 
         // Prepare
         PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( root );
+
+        if ( request.createView ) {
+
+            String viewName = request.viewName;
+            boolean replace = false;
+            List<DataStore> store = null;
+            PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
+
+            List<String> columns = new ArrayList<>();
+            root.rel.getRowType().getFieldList().forEach( f -> columns.add( f.getName() ) );
+
+            //default Schema
+            long schemaId = transaction.getDefaultSchema().id;
+
+            try {
+                DdlManager.getInstance().createView(
+                        viewName,
+                        schemaId,
+                        root.rel,
+                        root.collation,
+                        replace,
+                        statement,
+                        store,
+                        placementType,
+                        columns
+                );
+            } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
+                log.error( "Not possible to create View because the Name is already used", e );
+                Result finalResult = new Result( e );
+                finalResult.setGeneratedQuery( "Execute logical query plan" );
+                return finalResult;
+            }
+            try {
+                transaction.commit();
+            } catch ( TransactionException e ) {
+                log.error( "Caught exception while creating View from Planbuilder.", e );
+                try {
+                    transaction.rollback();
+                } catch ( TransactionException transactionException ) {
+                    log.error( "Exception while rollback", transactionException );
+                }
+                throw new RuntimeException( e );
+            }
+
+            return new Result().setGeneratedQuery( "Created View \"" + viewName + "\" from logical query plan" );
+        }
 
         List<List<Object>> rows;
         try {
@@ -2693,6 +2852,7 @@ public class Crud implements InformationObserver {
         ArrayList<String[]> data = computeResultData( rows, Arrays.asList( header ), statement.getTransaction() );
 
         try {
+            executionTime += System.nanoTime() - temp;
             transaction.commit();
         } catch ( TransactionException e ) {
             log.error( "Caught exception while committing the plan builder tree", e );
@@ -2703,8 +2863,30 @@ public class Crud implements InformationObserver {
             }
             throw new RuntimeException( e );
         }
+        Result finalResult = new Result( header, data.toArray( new String[0][] ) ).setXid( transaction.getXid().toString() );
 
-        return new Result( header, data.toArray( new String[0][] ) ).setXid( transaction.getXid().toString() );
+        finalResult.setGeneratedQuery( "Execute logical query plan" );
+
+        if ( queryAnalyzer != null ) {
+            InformationPage p1 = new InformationPage( "Query analysis", "Analysis of the query." );
+            InformationGroup g1 = new InformationGroup( p1, "Execution time" );
+            InformationText text;
+            if ( executionTime < 1e4 ) {
+                text = new InformationText( g1, String.format( "Execution time: %d nanoseconds", signature ) );
+            } else {
+                long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
+                // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444
+                //noinspection SuspiciousDateFormat
+                DateFormat df = new SimpleDateFormat( "m 'min' s 'sec' S 'ms'" );
+                String durationText = df.format( new Date( millis ) );
+                text = new InformationText( g1, String.format( "Execution time: %s", durationText ) );
+            }
+            queryAnalyzer.addPage( p1 );
+            queryAnalyzer.addGroup( g1 );
+            queryAnalyzer.registerInformation( text );
+        }
+
+        return finalResult;
     }
 
 
@@ -3299,7 +3481,9 @@ public class Crud implements InformationObserver {
             }
             if ( iterator != null ) {
                 try {
-                    ((AutoCloseable) iterator).close();
+                    if ( iterator instanceof AutoCloseable ) {
+                        ((AutoCloseable) iterator).close();
+                    }
                 } catch ( Exception e ) {
                     log.error( "Exception while closing result iterator", e );
                 }
@@ -3308,11 +3492,13 @@ public class Crud implements InformationObserver {
         }
 
         try {
+            TableType tableType = null;
             CatalogTable catalogTable = null;
             if ( request.tableId != null ) {
                 String[] t = request.tableId.split( "\\." );
                 try {
                     catalogTable = catalog.getTable( this.databaseName, t[0], t[1] );
+                    tableType = catalogTable.tableType;
                 } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
                     log.error( "Caught exception", e );
                 }
@@ -3360,10 +3546,18 @@ public class Crud implements InformationObserver {
 
             ArrayList<String[]> data = computeResultData( rows, header, statement.getTransaction() );
 
-            return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
+            if ( tableType != null ) {
+                return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
+            } else {
+                //if we do not have a fix table it is not possible to change anything within the resultSet therefore we use TableType.SOURCE
+                return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
+            }
+
         } finally {
             try {
-                ((AutoCloseable) iterator).close();
+                if ( iterator instanceof AutoCloseable ) {
+                    ((AutoCloseable) iterator).close();
+                }
             } catch ( Exception e ) {
                 log.error( "Exception while closing result iterator", e );
             }
@@ -3535,17 +3729,17 @@ public class Crud implements InformationObserver {
     private PolyphenyDbSignature processQuery( Statement statement, String sql ) {
         PolyphenyDbSignature signature;
         SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
-
         SqlNode parsed = sqlProcessor.parse( sql );
-
+        RelRoot logicalRoot = null;
         if ( parsed.isA( SqlKind.DDL ) ) {
             signature = sqlProcessor.prepareDdl( statement, parsed );
-        } else {
-            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
-            RelRoot logicalRoot = sqlProcessor.translate( statement, validated.left );
 
-            // Prepare
+        } else {
+
+            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
+            logicalRoot = sqlProcessor.translate( statement, validated.left );
             signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
+
         }
         return signature;
     }
@@ -3570,7 +3764,12 @@ public class Crud implements InformationObserver {
                 analyzer.addGroup( exceptionGroup );
                 analyzer.registerInformation( exceptionElement );
             }
-            throw new QueryExecutionException( t.getMessage(), t );
+            if ( t instanceof AvaticaRuntimeException ) {
+                throw new QueryExecutionException( ((AvaticaRuntimeException) t).getErrorMessage(), t );
+            } else {
+                throw new QueryExecutionException( t.getMessage(), t );
+            }
+
         }
 
         if ( signature.statementType == StatementType.OTHER_DDL ) {

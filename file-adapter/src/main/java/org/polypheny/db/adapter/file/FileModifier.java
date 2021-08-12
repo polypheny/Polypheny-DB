@@ -21,13 +21,17 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
 import org.apache.commons.io.IOUtils;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.FileInputHandle;
+import org.polypheny.db.util.TimeString;
+import org.polypheny.db.util.TimestampString;
 
 
 public class FileModifier extends FileEnumerator {
@@ -90,24 +94,7 @@ public class FileModifier extends FileEnumerator {
                             ((FileInputHandle) value).materializeAsFile( newFile.toPath() );
                             continue;
                         }
-                        if ( !newFile.createNewFile() ) {
-                            throw new RuntimeException( "Primary key conflict! You are trying to insert a row with a primary key that already exists." );
-                        }
-                        if ( value instanceof byte[] ) {
-                            Files.write( newFile.toPath(), (byte[]) value );
-                        } else if ( value instanceof InputStream ) {
-                            //see https://attacomsian.com/blog/java-convert-inputstream-to-outputstream
-                            try ( InputStream is = (InputStream) value; FileOutputStream os = new FileOutputStream( newFile ) ) {
-                                IOUtils.copyLarge( is, os );
-                            }
-                        } else if ( FileHelper.isSqlDateOrTimeOrTS( value ) ) {
-                            Long l = FileHelper.sqlToLong( value );
-                            Files.write( newFile.toPath(), l.toString().getBytes( FileStore.CHARSET ) );
-                        } else {
-                            String writeString = value.toString();
-                            Files.write( newFile.toPath(), writeString.getBytes( FileStore.CHARSET ) );
-                        }
-
+                        write( newFile, value );
                     }
                 }
                 current = Long.valueOf( insertPosition );
@@ -116,6 +103,33 @@ public class FileModifier extends FileEnumerator {
             }
         } catch ( IOException | RuntimeException e ) {
             throw new RuntimeException( e );
+        }
+    }
+
+
+    static void write( File newFile, Object value ) throws IOException {
+        if ( !newFile.createNewFile() ) {
+            throw new RuntimeException( "Primary key conflict! You are trying to insert a row with a primary key that already exists." );
+        }
+        if ( value instanceof byte[] ) {
+            Files.write( newFile.toPath(), (byte[]) value );
+        } else if ( value instanceof InputStream ) {
+            //see https://attacomsian.com/blog/java-convert-inputstream-to-outputstream
+            try ( InputStream is = (InputStream) value; FileOutputStream os = new FileOutputStream( newFile ) ) {
+                IOUtils.copyLarge( is, os );
+            }
+        } else if ( FileHelper.isSqlDateOrTimeOrTS( value ) ) {
+            Long l = FileHelper.sqlToLong( value );
+            Files.write( newFile.toPath(), l.toString().getBytes( FileStore.CHARSET ) );
+        } else if ( value instanceof TimestampString ) {
+            Files.write( newFile.toPath(), ("" + ((TimestampString) value).getMillisSinceEpoch()).getBytes( StandardCharsets.UTF_8 ) );
+        } else if ( value instanceof DateString ) {
+            Files.write( newFile.toPath(), ("" + ((DateString) value).getDaysSinceEpoch()).getBytes( StandardCharsets.UTF_8 ) );
+        } else if ( value instanceof TimeString ) {
+            Files.write( newFile.toPath(), ("" + ((TimeString) value).getMillisOfDay()).getBytes( StandardCharsets.UTF_8 ) );
+        } else {
+            String writeString = value.toString();
+            Files.write( newFile.toPath(), writeString.getBytes( FileStore.CHARSET ) );
         }
     }
 

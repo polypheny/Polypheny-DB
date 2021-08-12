@@ -34,10 +34,13 @@
 package org.polypheny.db.adapter.jdbc;
 
 
+import com.google.common.io.ByteStreams;
 import com.google.gson.Gson;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.net.URL;
@@ -65,6 +68,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.SqlType;
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -74,9 +78,16 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.SqlDialect.IntervalParameterStrategy;
+import org.polypheny.db.type.IntervalPolyType;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.FileInputHandle;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Static;
+import org.polypheny.db.util.TimeString;
+import org.polypheny.db.util.TimestampString;
 
 
 /**
@@ -240,6 +251,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
                             preparedStatement,
                             i + 1,
                             values.get( index ),
+                            context.getParameterType( index ),
                             preparedStatement.getParameterMetaData().getParameterType( i + 1 ),
                             connectionHandler );
                 }
@@ -256,9 +268,17 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
      * Assigns a value to a dynamic parameter in a prepared statement, calling the appropriate {@code setXxx}
      * method based on the type of the parameter.
      */
-    private static void setDynamicParam( PreparedStatement preparedStatement, int i, Object value, int sqlType, ConnectionHandler connectionHandler ) throws SQLException {
+    private static void setDynamicParam( PreparedStatement preparedStatement, int i, Object value, RelDataType type, int sqlType, ConnectionHandler connectionHandler ) throws SQLException {
         if ( value == null ) {
             preparedStatement.setNull( i, SqlType.NULL.id );
+        } else if ( type instanceof IntervalPolyType && connectionHandler.getDialect().getIntervalParameterStrategy() != IntervalParameterStrategy.NONE ) {
+            if ( connectionHandler.getDialect().getIntervalParameterStrategy() == IntervalParameterStrategy.MULTIPLICATION ) {
+                preparedStatement.setInt( i, ((BigDecimal) value).intValue() );
+            } else if ( connectionHandler.getDialect().getIntervalParameterStrategy() == IntervalParameterStrategy.CAST ) {
+                preparedStatement.setString( i, value.toString() + " " + type.getIntervalQualifier().timeUnitRange.name() );
+            } else {
+                throw new RuntimeException( "Unknown IntervalParameterStrategy: " + connectionHandler.getDialect().getIntervalParameterStrategy().name() );
+            }
         } else if ( value instanceof Timestamp ) {
             preparedStatement.setTimestamp( i, (Timestamp) value );
         } else if ( value instanceof Time ) {
@@ -274,22 +294,30 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
         } else if ( value instanceof List ) {
             if ( connectionHandler.getDialect().supportsNestedArrays() ) {
                 SqlType componentType;
-                if ( ((List<?>) value).get( 0 ) instanceof String ) {
-                    componentType = SqlType.VARCHAR;
-                } else if ( ((List<?>) value).get( 0 ) instanceof Integer ) {
-                    componentType = SqlType.INTEGER;
-                } else if ( ((List<?>) value).get( 0 ) instanceof Double ) {
-                    componentType = SqlType.DOUBLE;
-                } else if ( ((List<?>) value).get( 0 ) instanceof BigDecimal ) {
-                    componentType = SqlType.DECIMAL;
-                } else if ( ((List<?>) value).get( 0 ) instanceof Boolean ) {
-                    componentType = SqlType.BOOLEAN;
-                } else if ( ((List<?>) value).get( 0 ) instanceof Float ) {
-                    componentType = SqlType.FLOAT;
-                } else if ( ((List<?>) value).get( 0 ) instanceof Long ) {
-                    componentType = SqlType.BIGINT;
+                if ( type != null ) {
+                    RelDataType t = type;
+                    while ( t.getComponentType().getPolyType() == PolyType.ARRAY ) {
+                        t = t.getComponentType();
+                    }
+                    componentType = SqlType.valueOf( t.getComponentType().getPolyType().getJdbcOrdinal() );
                 } else {
-                    throw new RuntimeException( "Unknown data type: " + ((List<?>) value).get( 0 ).getClass() );
+                    if ( ((List<?>) value).get( 0 ) instanceof String ) {
+                        componentType = SqlType.VARCHAR;
+                    } else if ( ((List<?>) value).get( 0 ) instanceof Integer ) {
+                        componentType = SqlType.INTEGER;
+                    } else if ( ((List<?>) value).get( 0 ) instanceof Double ) {
+                        componentType = SqlType.DOUBLE;
+                    } else if ( ((List<?>) value).get( 0 ) instanceof BigDecimal ) {
+                        componentType = SqlType.DECIMAL;
+                    } else if ( ((List<?>) value).get( 0 ) instanceof Boolean ) {
+                        componentType = SqlType.BOOLEAN;
+                    } else if ( ((List<?>) value).get( 0 ) instanceof Float ) {
+                        componentType = SqlType.FLOAT;
+                    } else if ( ((List<?>) value).get( 0 ) instanceof Long ) {
+                        componentType = SqlType.BIGINT;
+                    } else {
+                        throw new RuntimeException( "Unknown array type: " + ((List<?>) value).get( 0 ).getClass().getName() );
+                    }
                 }
                 Array array = connectionHandler.createArrayOf( connectionHandler.getDialect().getArrayComponentTypeString( componentType ), ((List<?>) value).toArray() );
                 preparedStatement.setArray( i, array );
@@ -297,21 +325,50 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
                 preparedStatement.setString( i, gson.toJson( value ) );
             }
         } else if ( value instanceof BigDecimal ) {
-            preparedStatement.setBigDecimal( i, (BigDecimal) value );
+            BigDecimal bigDecimal = (BigDecimal) value;
+            if ( type != null && type.getPolyType() == PolyType.REAL ) {
+                preparedStatement.setFloat( i, bigDecimal.floatValue() );
+            } else if ( type != null && type.getPolyType() == PolyType.DOUBLE ) {
+                preparedStatement.setDouble( i, bigDecimal.doubleValue() );
+            } else {
+                preparedStatement.setBigDecimal( i, (BigDecimal) value );
+            }
         } else if ( value instanceof Boolean ) {
             preparedStatement.setBoolean( i, (Boolean) value );
         } else if ( value instanceof Blob ) {
             preparedStatement.setBlob( i, (Blob) value );
         } else if ( value instanceof Byte ) {
             preparedStatement.setByte( i, (Byte) value );
+        } else if ( value instanceof ByteString ) {
+            if ( connectionHandler.getDialect().supportsBinaryStream() ) {
+                preparedStatement.setBinaryStream( i, new ByteArrayInputStream( ((ByteString) value).getBytes() ) );
+            } else {
+                preparedStatement.setBytes( i, ((ByteString) value).getBytes() );
+            }
         } else if ( value instanceof File ) {
-            try {
-                preparedStatement.setBinaryStream( i, new FileInputStream( (File) value ) );
-            } catch ( FileNotFoundException e ) {
-                throw new RuntimeException( "Could not generate FileInputStream", e );
+            if ( connectionHandler.getDialect().supportsBinaryStream() ) {
+                try {
+                    preparedStatement.setBinaryStream( i, new FileInputStream( (File) value ) );
+                } catch ( FileNotFoundException e ) {
+                    throw new RuntimeException( "Could not generate FileInputStream", e );
+                }
+            } else {
+                try {
+                    preparedStatement.setBytes( i, ByteStreams.toByteArray( new FileInputStream( (File) value ) ) );
+                } catch ( IOException e ) {
+                    throw new RuntimeException( "Could not generate FileInputStream", e );
+                }
             }
         } else if ( value instanceof FileInputHandle ) {
-            preparedStatement.setBinaryStream( i, ((FileInputHandle) value).getData() );
+            if ( connectionHandler.getDialect().supportsBinaryStream() ) {
+                preparedStatement.setBinaryStream( i, ((FileInputHandle) value).getData() );
+            } else {
+                try {
+                    preparedStatement.setBytes( i, ByteStreams.toByteArray( ((FileInputHandle) value).getData() ) );
+                } catch ( IOException e ) {
+                    throw new RuntimeException( "Could not generate FileInputStream", e );
+                }
+            }
         } else if ( value instanceof NClob ) {
             preparedStatement.setNClob( i, (NClob) value );
         } else if ( value instanceof Clob ) {
@@ -346,6 +403,12 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             } else {
                 throw new RuntimeException( "Unsupported use of Calendar" );
             }
+        } else if ( value instanceof DateString ) {
+            preparedStatement.setDate( i, new java.sql.Date( ((DateString) value).getMillisSinceEpoch() ) );
+        } else if ( value instanceof TimestampString ) {
+            preparedStatement.setTimestamp( i, new java.sql.Timestamp( ((TimestampString) value).getMillisSinceEpoch() ), ((TimestampString) value).toCalendar() );
+        } else if ( value instanceof TimeString ) {
+            preparedStatement.setTime( i, new java.sql.Time( ((TimeString) value).getMillisOfDay() ), ((TimeString) value).toCalendar() );
         } else {
             preparedStatement.setObject( i, value );
         }

@@ -186,8 +186,8 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                                 Expressions.call( Schemas.unwrap( convention.expression, CottontailSchema.class ), "getWrapper" )
                         ) );
                 break;
-            case INSERT:
 
+            case INSERT:
                 if ( cottontailContext.valuesHashMapList != null ) {
                     enumerable = list.append( "enumerable",
                             Expressions.call( CottontailInsertEnumerable.CREATE_INSERT_VALUES,
@@ -210,6 +210,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                     );
                 }
                 break;
+
             case UPDATE:
                 enumerable = list.append( "enumerable",
                         Expressions.call( CottontailUpdateEnumerable.CREATE_UPDATE_METHOD,
@@ -222,6 +223,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                         )
                 );
                 break;
+
             case DELETE:
                 enumerable = list.append( "enumerable",
                         Expressions.call( CottontailDeleteEnumerable.CREATE_DELETE_METHOD,
@@ -233,6 +235,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                         )
                 );
                 break;
+
             default:
                 enumerable = null;
         }
@@ -322,7 +325,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                 // Linq4JFixer takes care of decoding
             case TINYINT:
             case SMALLINT:
-                // Handled by linq4jfixer
+                // Handled by linq4jFixer
             case DATE:
             case TIME:
             case TIMESTAMP:

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,15 +20,16 @@ package org.polypheny.db.type.checker;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.ImmutableList;
+import java.io.Serializable;
 import java.util.List;
 import java.util.function.Predicate;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlUtil;
+import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -37,7 +38,7 @@ import org.polypheny.db.type.PolyTypeFamily;
 /**
  * Operand type-checking strategy which checks operands for inclusion in type families.
  */
-public class FamilyOperandTypeChecker implements PolySingleOperandTypeChecker {
+public class FamilyOperandTypeChecker implements PolySingleOperandTypeChecker, Serializable {
 
     protected final ImmutableList<PolyTypeFamily> families;
     protected final Predicate<Integer> optional;
@@ -108,7 +109,7 @@ public class FamilyOperandTypeChecker implements PolySingleOperandTypeChecker {
 
 
     @Override
-    public SqlOperandCountRange getOperandCountRange() {
+    public OperandCountRange getOperandCountRange() {
         final int max = families.size();
         int min = max;
         while ( min > 0 && optional.test( min - 1 ) ) {
@@ -128,5 +129,6 @@ public class FamilyOperandTypeChecker implements PolySingleOperandTypeChecker {
     public Consistency getConsistency() {
         return Consistency.NONE;
     }
+
 }
 
