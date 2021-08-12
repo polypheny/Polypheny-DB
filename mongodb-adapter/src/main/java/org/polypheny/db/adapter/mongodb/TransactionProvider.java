@@ -20,16 +20,12 @@ import static org.reflections.Reflections.log;
 
 import com.mongodb.MongoClientException;
 import com.mongodb.MongoCommandException;
-import com.mongodb.ReadConcern;
-import com.mongodb.ReadPreference;
 import com.mongodb.TransactionOptions;
-import com.mongodb.WriteConcern;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoClient;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import lombok.Setter;
 import org.polypheny.db.transaction.PolyXid;
 
@@ -59,10 +55,10 @@ public class TransactionProvider {
      */
     public ClientSession startTransaction( PolyXid xid ) {
         TransactionOptions options = TransactionOptions.builder()
-                .readPreference( ReadPreference.primary() )
+                /*.readPreference( ReadPreference.primary() )
                 .readConcern( ReadConcern.LOCAL )
                 .maxCommitTime( 3L, TimeUnit.MINUTES )
-                .writeConcern( WriteConcern.MAJORITY ).build();
+                .writeConcern( WriteConcern.MAJORITY )*/.build();
         ClientSession session;
         if ( !sessions.containsKey( xid ) ) {
             session = client.startSession();
