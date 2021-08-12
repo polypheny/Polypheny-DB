@@ -138,13 +138,14 @@ public class JdbcPreparedStatementsTest {
                     preparedInsert.executeBatch();
                     connection.commit();
 
-                    PreparedStatement preparedSelect = connection.prepareStatement( "SELECT tinteger,tvarchar FROM pstest WHERE tinteger >= ? ORDER BY tinteger" );
+                    PreparedStatement preparedSelect = connection.prepareStatement( "SELECT tinteger,tvarchar FROM pstest WHERE tinteger >= ?" );
                     preparedSelect.setInt( 1, 1 );
                     TestHelper.checkResultSet(
                             preparedSelect.executeQuery(),
                             ImmutableList.of(
                                     new Object[]{ 1, "Foo" },
-                                    new Object[]{ 2, "Bar" } ) );
+                                    new Object[]{ 2, "Bar" } ),
+                            true );
 
                 } finally {
                     statement.executeUpdate( "DROP TABLE pstest" );
@@ -173,12 +174,13 @@ public class JdbcPreparedStatementsTest {
                     preparedInsert.executeBatch();
                     connection.commit();
 
-                    PreparedStatement preparedSelect = connection.prepareStatement( "SELECT tinteger,tvarchar FROM pstest ORDER BY tinteger" );
+                    PreparedStatement preparedSelect = connection.prepareStatement( "SELECT tinteger,tvarchar FROM pstest" );
                     TestHelper.checkResultSet(
                             preparedSelect.executeQuery(),
                             ImmutableList.of(
                                     new Object[]{ 1, "hans" },
-                                    new Object[]{ 2, "hans" } ) );
+                                    new Object[]{ 2, "hans" } ),
+                            true );
                 } finally {
                     statement.executeUpdate( "DROP TABLE pstest" );
                 }
