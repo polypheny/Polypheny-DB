@@ -1,6 +1,7 @@
 package org.polypheny.db.mql;
 
 import org.bson.BsonArray;
+import org.bson.BsonDocument;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -42,8 +43,9 @@ public class MqlCreateView extends MqlNode implements MqlExecutableStatement {
         } catch ( UnknownSchemaException e ) {
             throw new RuntimeException( "Poly schema was not found." );
         }
+        String json = new BsonDocument( "key", this.pipeline ).toJson();
 
-        MqlNode mqlNode = statement.getTransaction().getMqlProcessor().parse( "db." + source + ".aggregate(" + this.pipeline + ")" );
+        MqlNode mqlNode = statement.getTransaction().getMqlProcessor().parse( "db." + source + ".aggregate(" + json.substring( 8, json.length() - 1 ) + ")" );
 
         RelRoot relRoot = statement.getTransaction().getMqlProcessor().translate( statement, mqlNode, context.getDefaultDocumentSchemaName() );
         PlacementType placementType = PlacementType.AUTOMATIC;
