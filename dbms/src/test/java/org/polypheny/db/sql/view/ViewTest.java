@@ -94,7 +94,7 @@ public class ViewTest {
                     statement.executeUpdate( "CREATE VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
                     statement.executeUpdate( "CREATE VIEW viewTestEmpDep AS SELECT viewTestEmpTable.firstName, viewTestDepTable.depName FROM viewTestEmpTable INNER JOIN viewTestDepTable ON viewTestEmpTable.depId = viewTestDepTable.depId" );
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            statement.executeQuery( "SELECT * FROM viewTestEmp ORDER BY empid" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "Max", "Muster", 1 },
                                     new Object[]{ 2, "Ernst", "Walter", 2 },
@@ -102,11 +102,11 @@ public class ViewTest {
                             )
                     );
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT viewTestEmp.firstName FROM viewTestEmp" ),
+                            statement.executeQuery( "SELECT viewTestEmp.firstName FROM viewTestEmp ORDER BY viewTestEmp.firstName" ),
                             ImmutableList.of(
-                                    new Object[]{ "Max" },
+                                    new Object[]{ "Elsa" },
                                     new Object[]{ "Ernst" },
-                                    new Object[]{ "Elsa" }
+                                    new Object[]{ "Max" }
                             )
                     );
                     TestHelper.checkResultSet(
@@ -115,7 +115,8 @@ public class ViewTest {
                                     new Object[]{ "Max", "IT" },
                                     new Object[]{ "Ernst", "Sales" },
                                     new Object[]{ "Elsa", "HR" }
-                            )
+                            ),
+                            true
                     );
                     connection.commit();
                 } finally {
@@ -149,21 +150,24 @@ public class ViewTest {
                             ImmutableList.of(
                                     new Object[]{ 1 },
                                     new Object[]{ 2 },
-                                    new Object[]{ 3 } ) );
+                                    new Object[]{ 3 } ),
+                            true );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT fName FROM viewTestEmp" ),
                             ImmutableList.of(
                                     new Object[]{ "Max" },
                                     new Object[]{ "Ernst" },
-                                    new Object[]{ "Elsa" } ) );
+                                    new Object[]{ "Elsa" } ),
+                            true );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT lName FROM viewTestEmp" ),
                             ImmutableList.of(
+                                    new Object[]{ "Kuster" },
                                     new Object[]{ "Muster" },
-                                    new Object[]{ "Walter" },
-                                    new Object[]{ "Kuster" } ) );
+                                    new Object[]{ "Walter" } ),
+                            true );
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT departmentId FROM viewTestEmp" ),
+                            statement.executeQuery( "SELECT departmentId FROM viewTestEmp ORDER BY departmentId" ),
                             ImmutableList.of(
                                     new Object[]{ 1 },
                                     new Object[]{ 2 },
@@ -196,7 +200,7 @@ public class ViewTest {
                     statement.executeUpdate( "ALTER TABLE viewTestDep RENAME TO viewRenameDepTest" );
 
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM viewRenameEmpTest" ),
+                            statement.executeQuery( "SELECT * FROM viewRenameEmpTest ORDER BY empid" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "Max", "Muster", 1 },
                                     new Object[]{ 2, "Ernst", "Walter", 2 },
@@ -209,7 +213,8 @@ public class ViewTest {
                                     new Object[]{ 1, "IT", 1 },
                                     new Object[]{ 2, "Sales", 2 },
                                     new Object[]{ 3, "HR", 3 }
-                            )
+                            ),
+                            true
                     );
                     connection.commit();
                 } finally {
@@ -317,7 +322,7 @@ public class ViewTest {
                 try {
                     statement.executeUpdate( "CREATE VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM viewTestEmp, viewTestDepTable WHERE depname = 'IT'" ),
+                            statement.executeQuery( "SELECT * FROM viewTestEmp, viewTestDepTable WHERE depname = 'IT' ORDER BY empid" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "Max", "Muster", 1, 1, "IT", 1 },
                                     new Object[]{ 2, "Ernst", "Walter", 2, 1, "IT", 1 },
@@ -355,7 +360,8 @@ public class ViewTest {
                                     new Object[]{ 1, "Max", "Muster", 1, 1, "IT", 1 },
                                     new Object[]{ 2, "Ernst", "Walter", 2, 1, "IT", 1 },
                                     new Object[]{ 3, "Elsa", "Kuster", 3, 1, "IT", 1 }
-                            )
+                            ),
+                            true
                     );
 
                     connection.commit();
@@ -390,7 +396,8 @@ public class ViewTest {
                                     new Object[]{ 1, "Max", "Muster", 1, 1, "IT", 1 },
                                     new Object[]{ 2, "Ernst", "Walter", 2, 1, "IT", 1 },
                                     new Object[]{ 3, "Elsa", "Kuster", 3, 1, "IT", 1 }
-                            )
+                            ),
+                            true
                     );
 
                     connection.commit();
