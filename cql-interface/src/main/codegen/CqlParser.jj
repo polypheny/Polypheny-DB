@@ -61,8 +61,8 @@ TOKEN : { < COMPARATOR_LESS_THAN : "<" > }
 TOKEN : { < COMPARATOR_GREATER_THAN_OR_EQUALS : ">=" > }
 TOKEN : { < COMPARATOR_LESS_THAN_OR_EQUALS : "<=" > }
 
-TOKEN : { < TABLE_NAME : ( [ "A"-"Z", "a"-"z" ] )+"."( [ "A"-"Z", "a"-"z" ] )+ > }
-TOKEN : { < COLUMN_NAME : ( [ "A"-"Z", "a"-"z" ] )+"."( [ "A"-"Z", "a"-"z" ] )+"."( [ "A"-"Z", "a"-"z" ] )+ > }
+TOKEN : { < TABLE_NAME : ( [ "A"-"Z", "a"-"z", "_" ] )+"."( [ "A"-"Z", "a"-"z", "_" ] )+ > }
+TOKEN : { < COLUMN_NAME : ( [ "A"-"Z", "a"-"z", "_" ] )+"."( [ "A"-"Z", "a"-"z", "_" ] )+"."( [ "A"-"Z", "a"-"z", "_" ] )+ > }
 
 TOKEN : { < STRING_WITHOUT_DOUBLE_QUOTES : ( ~[ " ", "\t", "\n", "\r", "\f", "(", ")", "\"", "=", "<", ">", "/" ] )+ > }
 TOKEN : {
@@ -187,6 +187,7 @@ void SORTING() :
         ]
         {
             cqlQueryBuilder.addSortSpecification( columnIndex, modifiers );
+            modifiers = null;
         }
     )+
 }
@@ -204,7 +205,11 @@ void PROJECT() :
             modifiers = MODIFIERS()
         ]
         {
+            if ( modifiers == null ) {
+                modifiers = new TreeMap<String, Modifier>( String.CASE_INSENSITIVE_ORDER );
+            }
             cqlQueryBuilder.addProjection( columnIndex, modifiers );
+            modifiers = null;
         }
     )+
 }
