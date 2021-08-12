@@ -407,6 +407,7 @@ MqlNode Db_Statement():
     MqlNode n;
     String name;
     String source;
+    BsonArray array = null;
     BsonDocument doc = null;
 }
 {
@@ -421,8 +422,8 @@ MqlNode Db_Statement():
         (Details(n))* (Primary(n))*
 
     |
-        <CREATE_VIEW> name = Literal() < COMMA > source = Literal() (< COMMA > doc=Document() )? ")"
-        {n = new MqlCreateView(name, source, doc);}
+        <CREATE_VIEW> name = Literal() < COMMA > source = Literal() (< COMMA > array=Array() )? ")"
+        {n = new MqlCreateView(name, source, array);}
     |
         <DROP_DATABASE> ")"
         {n = new MqlDropDatabase();}

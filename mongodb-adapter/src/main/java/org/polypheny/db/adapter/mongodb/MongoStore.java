@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ByteString;
@@ -137,6 +138,9 @@ public class MongoStore extends DataStore {
 
         MongoClientSettings mongoSettings = MongoClientSettings
                 .builder()
+                .applyToSocketSettings( builder -> builder
+                        .connectTimeout( 4, TimeUnit.HOURS )
+                        .readTimeout( 30, TimeUnit.MINUTES ) )
                 .applyToClusterSettings( builder ->
                         builder.hosts( Collections.singletonList( new ServerAddress( c.getHost() ) ) )
                 )
