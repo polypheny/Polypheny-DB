@@ -61,7 +61,7 @@ public class TransactionProvider {
         TransactionOptions options = TransactionOptions.builder()
                 .readPreference( ReadPreference.primary() )
                 .readConcern( ReadConcern.LOCAL )
-                .maxCommitTime( 2L, TimeUnit.MINUTES )
+                .maxCommitTime( 3L, TimeUnit.MINUTES )
                 .writeConcern( WriteConcern.MAJORITY ).build();
         ClientSession session;
         if ( !sessions.containsKey( xid ) ) {
@@ -131,6 +131,7 @@ public class TransactionProvider {
                 // empty on purpose
             } finally {
                 sessions.remove( xid );
+                sessions.get( xid ).close();
             }
         } else {
             log.info( "No-op rollback" );
