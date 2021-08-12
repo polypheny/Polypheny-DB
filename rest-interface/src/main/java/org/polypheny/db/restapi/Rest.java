@@ -494,6 +494,20 @@ public class Rest {
 
             relBuilder = relBuilder.aggregate( groupKey, aggregateCalls );
         }
+
+        int groupingsLogicalIndex = 0;
+        int aggregationsLogicalIndex = groupings.size();
+
+        for ( RequestColumn requestColumn : requestColumns ) {
+            if ( requestColumn.isAggregateColumn() ) {
+                requestColumn.setLogicalIndex( aggregationsLogicalIndex );
+                aggregationsLogicalIndex++;
+            } else {
+                requestColumn.setLogicalIndex( groupingsLogicalIndex );
+                groupingsLogicalIndex++;
+            }
+        }
+
         return relBuilder;
     }
 
