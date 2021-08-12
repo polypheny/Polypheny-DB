@@ -23,10 +23,11 @@ import java.util.List;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.TestHelper.MongoConnection;
+import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.mongoql.model.Result;
 
-@Category({ FileExcluded.class })
+@Category({ FileExcluded.class, CassandraExcluded.class })
 public class AggregateTest extends MqlTestTemplate {
 
 

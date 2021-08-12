@@ -284,7 +284,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
     @Test
     public void testFunctionalOperators() {
-        RelRoot root = translate( find( "\"key\": 2-3*10" ) );
+        RelRoot root = translate( find( "\"key\": 2+3*10" ) );
 
         RexCall condition = getConditionTestFilter( root );
 
@@ -295,7 +295,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
         testJsonValue( assertRexCall( condition, 0 ), "key" );
 
-        assertEquals( SqlKind.MINUS, calc.op.kind );
+        assertEquals( SqlKind.PLUS, calc.op.kind );
         assertEquals( 2, calc.operands.size() );
 
         testCastLiteral( calc.operands.get( 0 ), 2, Integer.class );

@@ -132,7 +132,7 @@ public class MongoQlServer extends QueryInterface {
 
         Transaction transaction = null;
         transaction = getTransaction();
-        System.out.println( query.query );
+
         PolyphenyDbSignature<?> signature;
         MqlProcessor mqlProcessor = transaction.getMqlProcessor();
         String mql = query.query;
