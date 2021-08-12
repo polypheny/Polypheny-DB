@@ -28,6 +28,7 @@ import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.entity.CatalogView.QueryLanguage;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
@@ -184,7 +185,9 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
                     stores,
                     placementType,
                     columns,
-                    materializedCriteria );
+                    materializedCriteria,
+                    query.toString().replaceAll( "`", "\"" ),
+                    QueryLanguage.SQL );
         } catch ( TableAlreadyExistsException e ) {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( viewName ) );
         } catch ( GenericCatalogException | UnknownColumnException e ) {

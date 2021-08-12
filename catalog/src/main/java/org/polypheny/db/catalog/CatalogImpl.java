@@ -19,6 +19,7 @@ package org.polypheny.db.catalog;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.gson.Gson;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,6 +36,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.NotImplementedException;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DBException.SerializationError;
@@ -63,6 +65,7 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
+import org.polypheny.db.catalog.entity.CatalogView.QueryLanguage;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
@@ -90,13 +93,24 @@ import org.polypheny.db.catalog.exceptions.UnknownUserIdRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
+import org.polypheny.db.processing.SqlProcessor;
+import org.polypheny.db.rel.QueryPlanBuilder;
 import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.rel.UIRelNode;
+import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.FileSystemManager;
+import org.polypheny.db.util.ImmutableIntList;
+import org.polypheny.db.util.Pair;
 
 
 @Slf4j
@@ -400,6 +414,61 @@ public class CatalogImpl extends Catalog {
                 }
             }
         }
+    }
+
+
+    @Override
+    public void restoreViews( Transaction transaction ) {
+        Statement statement = transaction.createStatement();
+
+        for ( CatalogTable c : tables.values() ) {
+            if ( c.tableType == TableType.VIEW || c.tableType == TableType.MATERIALIZEDVIEW ) {
+                String query;
+                QueryLanguage language;
+                if ( c.tableType == TableType.VIEW ) {
+                    query = ((CatalogView) c).getQuery();
+                    language = ((CatalogView) c).getLanguage();
+                } else {
+                    query = ((CatalogMaterialized) c).getQuery();
+                    language = ((CatalogMaterialized) c).getLanguage();
+                }
+
+                switch ( language ) {
+                    case SQL:
+                        SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
+                        SqlNode sqlNode = sqlProcessor.parse( query );
+                        RelRoot relRoot = sqlProcessor.translate(
+                                statement,
+                                sqlProcessor.validate( statement.getTransaction(), sqlNode, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left );
+                        nodeInfo.put( c.id, relRoot.rel );
+                        relTypeInfo.put( c.id, relRoot.validatedRowType );
+                        break;
+                    case RELALG:
+                        Gson gson = new Gson();
+                        RelNode result = QueryPlanBuilder.buildFromTree( gson.fromJson( query, UIRelNode.class ), statement );
+
+                        final RelDataType rowType = result.getRowType();
+                        final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
+                        final RelCollation collation =
+                                result instanceof Sort
+                                        ? ((Sort) result).collation
+                                        : RelCollations.EMPTY;
+                        RelRoot root = new RelRoot( result, result.getRowType(), SqlKind.SELECT, fields, collation );
+
+                        nodeInfo.put( c.id, root.rel );
+                        relTypeInfo.put( c.id, root.validatedRowType );
+                        break;
+                    case MONGOQL:
+                        throw new NotImplementedException();
+
+                }
+
+
+            }
+
+
+        }
+
     }
 
 
@@ -1315,7 +1384,7 @@ public class CatalogImpl extends Catalog {
      * @return The id of the inserted table
      */
     @Override
-    public long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList ) {
+    public long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, String query, QueryLanguage language ) {
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( schemaId );
         CatalogUser owner = getUser( ownerId );
@@ -1330,13 +1399,13 @@ public class CatalogImpl extends Catalog {
                     ownerId,
                     owner.name,
                     tableType,
-                    null,//definition,
+                    query,//definition,
                     null,
                     ImmutableMap.of(),
                     modifiable,
                     relCollation,
                     ImmutableMap.copyOf( underlyingTables ),
-                    null//fieldList
+                    language//fieldList
             );
             addConnectedViews( underlyingTables, viewTable.id );
             updateTableLogistics( name, schemaId, id, schema, viewTable );
@@ -1353,7 +1422,7 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, MaterializedCriteria materializedCriteria ) {
+    public long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language ) {
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( schemaId );
         CatalogUser owner = getUser( ownerId );
@@ -1368,13 +1437,13 @@ public class CatalogImpl extends Catalog {
                     ownerId,
                     owner.name,
                     tableType,
-                    null,//definition,
+                    query,
                     null,
                     ImmutableMap.of(),
                     modifiable,
                     relCollation,
                     ImmutableMap.copyOf( underlyingTables ),
-                    null, //fieldList,
+                    language,
                     materializedCriteria
             );
             addConnectedViews( underlyingTables, materializedViewTable.id );
@@ -1567,7 +1636,7 @@ public class CatalogImpl extends Catalog {
                     old.ownerId,
                     old.ownerName,
                     old.tableType,
-                    null,
+                    ((CatalogMaterialized) old).getQuery(),
                     keyId,
                     old.placementsByAdapter,
                     old.modifiable,
@@ -1579,7 +1648,7 @@ public class CatalogImpl extends Catalog {
                     ((CatalogMaterialized) old).getRelCollation(),
                     old.connectedViews,
                     ((CatalogMaterialized) old).getUnderlyingTables(),
-                    null,
+                    ((CatalogMaterialized) old).getLanguage(),
                     ((CatalogMaterialized) old).getMaterializedCriteria() );
         } else {
             table = new CatalogTable( old.id,
@@ -1671,7 +1740,7 @@ public class CatalogImpl extends Catalog {
                             old.ownerId,
                             old.ownerName,
                             old.tableType,
-                            null,
+                            ((CatalogMaterialized) old).getQuery(),
                             old.primaryKey,
                             ImmutableMap.copyOf( placementsByStore ),
                             old.modifiable,
@@ -1683,7 +1752,7 @@ public class CatalogImpl extends Catalog {
                             ((CatalogMaterialized) old).getRelCollation(),
                             old.connectedViews,
                             ((CatalogMaterialized) old).getUnderlyingTables(),
-                            null,
+                            ((CatalogMaterialized) old).getLanguage(),
                             ((CatalogMaterialized) old).getMaterializedCriteria()
                     );
                 } else {
@@ -1739,7 +1808,7 @@ public class CatalogImpl extends Catalog {
                             old.ownerId,
                             old.ownerName,
                             old.tableType,
-                            null,
+                            ((CatalogMaterialized) old).getQuery(),
                             old.primaryKey,
                             ImmutableMap.copyOf( placementsByStore ),
                             old.modifiable,
@@ -1751,7 +1820,7 @@ public class CatalogImpl extends Catalog {
                             ((CatalogMaterialized) old).getRelCollation(),
                             old.connectedViews,
                             ((CatalogMaterialized) old).getUnderlyingTables(),
-                            null,
+                            ((CatalogMaterialized) old).getLanguage(),
                             ((CatalogMaterialized) old).getMaterializedCriteria()
                     );
                 } else {

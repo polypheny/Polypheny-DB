@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,17 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui;
+package org.polypheny.db.rel;
 
 
 import java.util.ArrayList;
 import org.apache.commons.lang.math.NumberUtils;
-import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Util;
-import org.polypheny.db.webui.models.SortDirection;
-import org.polypheny.db.webui.models.SortState;
-import org.polypheny.db.webui.models.UIRelNode;
 
 
 public class QueryPlanBuilder {

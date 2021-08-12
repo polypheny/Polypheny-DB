@@ -36,7 +36,6 @@ import org.polypheny.db.rel.RelCollationTraitDef;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.SingleRel;
 import org.polypheny.db.rel.logical.LogicalViewTableScan;
-import org.polypheny.db.rel.type.RelDataType;
 
 public class CatalogView extends CatalogTable {
 
@@ -44,10 +43,12 @@ public class CatalogView extends CatalogTable {
 
     @Getter
     private final Map<Long, List<Long>> underlyingTables;
-    private final RelDataType fieldList;
+    @Getter
+    private final QueryLanguage language;
     @Getter
     private final RelCollation relCollation;
-    RelNode definition;
+    @Getter
+    String query;
 
 
     public CatalogView(
@@ -59,18 +60,18 @@ public class CatalogView extends CatalogTable {
             int ownerId,
             @NonNull String ownerName,
             @NonNull Catalog.TableType type,
-            RelNode definition,
+            String query,
             Long primaryKey,
             @NonNull ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             boolean modifiable,
             RelCollation relCollation,
             Map<Long, List<Long>> underlyingTables,
-            RelDataType fieldList ) {
+            QueryLanguage language ) {
         super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, primaryKey, placementsByAdapter, modifiable );
-        this.definition = definition;
+        this.query = query;
         this.relCollation = relCollation;
         this.underlyingTables = underlyingTables;
-        this.fieldList = fieldList;
+        this.language = language;
     }
 
 
@@ -83,7 +84,7 @@ public class CatalogView extends CatalogTable {
             int ownerId,
             String ownerName,
             TableType tableType,
-            RelNode definition,
+            String query,
             Long primaryKey,
             ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             boolean modifiable,
@@ -95,12 +96,12 @@ public class CatalogView extends CatalogTable {
             RelCollation relCollation,
             ImmutableList<Long> connectedViews,
             Map<Long, List<Long>> underlyingTables,
-            RelDataType fieldList ) {
+            QueryLanguage language ) {
         super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, primaryKey, placementsByAdapter, modifiable, numPartitions, partitionType, partitionIds, partitionColumnId, isPartitioned, connectedViews );
-        this.definition = definition;
+        this.query = query;
         this.relCollation = relCollation;
         this.underlyingTables = underlyingTables;
-        this.fieldList = fieldList;
+        this.language = language;
     }
 
 
@@ -115,7 +116,7 @@ public class CatalogView extends CatalogTable {
                 ownerId,
                 ownerName,
                 tableType,
-                definition,
+                query,
                 primaryKey,
                 placementsByAdapter,
                 modifiable,
@@ -127,7 +128,7 @@ public class CatalogView extends CatalogTable {
                 relCollation,
                 newConnectedViews,
                 underlyingTables,
-                fieldList );
+                language );
     }
 
 
@@ -142,7 +143,7 @@ public class CatalogView extends CatalogTable {
                 ownerId,
                 ownerName,
                 tableType,
-                definition,
+                query,
                 primaryKey,
                 placementsByAdapter,
                 modifiable,
@@ -154,7 +155,7 @@ public class CatalogView extends CatalogTable {
                 relCollation,
                 connectedViews,
                 underlyingTables,
-                fieldList );
+                language );
     }
 
 
@@ -169,13 +170,13 @@ public class CatalogView extends CatalogTable {
                 ownerId,
                 ownerName,
                 tableType,
-                definition,
+                query,
                 primaryKey,
                 placementsByAdapter,
                 modifiable,
                 relCollation,
                 underlyingTables,
-                fieldList );
+                language );
     }
 
 
@@ -228,6 +229,11 @@ public class CatalogView extends CatalogTable {
      */
     public RelNode getDefinition() {
         return Catalog.getInstance().getNodeInfo().get( id );
+    }
+
+
+    public enum QueryLanguage {
+        SQL, MONGOQL, RELALG
     }
 
 }

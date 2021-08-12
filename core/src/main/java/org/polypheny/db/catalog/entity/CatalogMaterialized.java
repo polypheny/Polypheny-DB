@@ -27,7 +27,6 @@ import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
 
 public class CatalogMaterialized extends CatalogView {
 
@@ -36,12 +35,14 @@ public class CatalogMaterialized extends CatalogView {
     @Getter
     private final Map<Long, List<Long>> underlyingTables;
 
-    private final RelDataType fieldList;
+    @Getter
+    private final QueryLanguage language;
 
     @Getter
     private final RelCollation relCollation;
 
-    private final RelNode definition;
+    @Getter
+    private final String query;
 
     @Getter
     private final MaterializedCriteria materializedCriteria;
@@ -56,20 +57,20 @@ public class CatalogMaterialized extends CatalogView {
             int ownerId,
             @NonNull String ownerName,
             @NonNull Catalog.TableType type,
-            RelNode definition,
+            String query,
             Long primaryKey,
             @NonNull ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             boolean modifiable,
             RelCollation relCollation,
             Map<Long, List<Long>> underlyingTables,
-            RelDataType fieldList,
+            QueryLanguage language,
             MaterializedCriteria materializedCriteria
     ) {
-        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, definition, primaryKey, placementsByAdapter, modifiable, relCollation, underlyingTables, fieldList );
-        this.definition = definition;
+        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, query, primaryKey, placementsByAdapter, modifiable, relCollation, underlyingTables, language );
+        this.query = query;
         this.relCollation = relCollation;
         this.underlyingTables = underlyingTables;
-        this.fieldList = fieldList;
+        this.language = language;
         this.materializedCriteria = materializedCriteria;
     }
 
@@ -83,7 +84,7 @@ public class CatalogMaterialized extends CatalogView {
             int ownerId,
             String ownerName,
             TableType tableType,
-            RelNode definition,
+            String query,
             Long primaryKey,
             ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             boolean modifiable,
@@ -95,14 +96,14 @@ public class CatalogMaterialized extends CatalogView {
             RelCollation relCollation,
             ImmutableList<Long> connectedViews,
             Map<Long, List<Long>> underlyingTables,
-            RelDataType fieldList,
+            QueryLanguage language,
             MaterializedCriteria materializedCriteria
     ) {
-        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, definition, primaryKey, placementsByAdapter, modifiable, numPartitions, partitionType, partitionIds, partitionColumnId, isPartitioned, relCollation, connectedViews, underlyingTables, fieldList );
-        this.definition = definition;
+        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, query, primaryKey, placementsByAdapter, modifiable, numPartitions, partitionType, partitionIds, partitionColumnId, isPartitioned, relCollation, connectedViews, underlyingTables, language );
+        this.query = query;
         this.relCollation = relCollation;
         this.underlyingTables = underlyingTables;
-        this.fieldList = fieldList;
+        this.language = language;
         this.materializedCriteria = materializedCriteria;
     }
 
@@ -118,13 +119,13 @@ public class CatalogMaterialized extends CatalogView {
                 ownerId,
                 ownerName,
                 tableType,
-                definition,
+                query,
                 primaryKey,
                 placementsByAdapter,
                 modifiable,
                 relCollation,
                 underlyingTables,
-                fieldList,
+                language,
                 materializedCriteria );
     }
 
@@ -140,7 +141,7 @@ public class CatalogMaterialized extends CatalogView {
                 ownerId,
                 ownerName,
                 tableType,
-                definition,
+                query,
                 primaryKey,
                 placementsByAdapter,
                 modifiable,
@@ -152,7 +153,7 @@ public class CatalogMaterialized extends CatalogView {
                 relCollation,
                 newConnectedViews,
                 underlyingTables,
-                fieldList,
+                language,
                 materializedCriteria );
     }
 
@@ -168,7 +169,7 @@ public class CatalogMaterialized extends CatalogView {
                 ownerId,
                 ownerName,
                 tableType,
-                definition,
+                query,
                 primaryKey,
                 placementsByAdapter,
                 modifiable,
@@ -180,7 +181,7 @@ public class CatalogMaterialized extends CatalogView {
                 relCollation,
                 connectedViews,
                 underlyingTables,
-                fieldList,
+                language,
                 materializedCriteria );
     }
 

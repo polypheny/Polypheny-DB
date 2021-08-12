@@ -227,6 +227,7 @@ public class PolyphenyDb {
             QueryInterfaceManager.getInstance().restoreInterfaces( catalog );
             trx.commit();
             trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );
+            catalog.restoreViews( trx );
             catalog.restoreColumnPlacements( trx );
             trx.commit();
         } catch ( UnknownDatabaseException | UnknownUserException | UnknownSchemaException | TransactionException e ) {

@@ -59,6 +59,7 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
+import org.polypheny.db.catalog.entity.CatalogView.QueryLanguage;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -1335,7 +1336,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createView( String viewName, long schemaId, RelNode relNode, RelCollation relCollation, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns ) throws TableAlreadyExistsException {
+    public void createView( String viewName, long schemaId, RelNode relNode, RelCollation relCollation, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language ) throws TableAlreadyExistsException {
         if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
             if ( replace ) {
                 try {
@@ -1363,7 +1364,9 @@ public class DdlManagerImpl extends DdlManager {
                 relNode,
                 relCollation,
                 findUnderlyingTablesOfView( relNode, underlyingTables, fieldList ),
-                fieldList
+                fieldList,
+                query,
+                language
         );
 
         for ( ColumnInformation column : columns ) {
@@ -1384,7 +1387,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createMaterializedView( String viewName, long schemaId, RelRoot relRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException, ColumnNotExistsException, ColumnAlreadyExistsException {
+    public void createMaterializedView( String viewName, long schemaId, RelRoot relRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException, ColumnNotExistsException, ColumnAlreadyExistsException {
         if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
             throw new TableAlreadyExistsException();
         }
@@ -1410,7 +1413,9 @@ public class DdlManagerImpl extends DdlManager {
                 relRoot.collation,
                 findUnderlyingTablesOfView( relRoot.rel, underlyingTables, fieldList ),
                 fieldList,
-                materializedCriteria
+                materializedCriteria,
+                query,
+                language
         );
 
         Map<Integer, List<CatalogColumn>> addedColumns = new HashMap<>();

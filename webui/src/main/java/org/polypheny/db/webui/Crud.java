@@ -122,7 +122,9 @@ import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogView;
+import org.polypheny.db.catalog.entity.CatalogView.QueryLanguage;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -155,10 +157,12 @@ import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoCol
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.processing.SqlProcessor;
+import org.polypheny.db.rel.QueryPlanBuilder;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.rel.SortState;
 import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlKind;
@@ -197,7 +201,6 @@ import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.ResultType;
 import org.polypheny.db.webui.models.Schema;
 import org.polypheny.db.webui.models.SidebarElement;
-import org.polypheny.db.webui.models.SortState;
 import org.polypheny.db.webui.models.Status;
 import org.polypheny.db.webui.models.TableConstraint;
 import org.polypheny.db.webui.models.Uml;
@@ -2791,6 +2794,8 @@ public class Crud implements InformationObserver {
             //default Schema
             long schemaId = transaction.getDefaultSchema().id;
 
+            Gson gson = new Gson();
+
             try {
                 DdlManager.getInstance().createView(
                         viewName,
@@ -2801,7 +2806,9 @@ public class Crud implements InformationObserver {
                         statement,
                         store,
                         placementType,
-                        columns
+                        columns,
+                        gson.toJson( request.topNode ),
+                        QueryLanguage.RELALG
                 );
             } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
                 log.error( "Not possible to create View because the Name is already used", e );
@@ -2811,6 +2818,7 @@ public class Crud implements InformationObserver {
             }
             try {
                 transaction.commit();
+                Catalog.getInstance().commit();
             } catch ( TransactionException e ) {
                 log.error( "Caught exception while creating View from Planbuilder.", e );
                 try {
@@ -2819,6 +2827,8 @@ public class Crud implements InformationObserver {
                     log.error( "Exception while rollback", transactionException );
                 }
                 throw new RuntimeException( e );
+            } catch ( NoTablePrimaryKeyException e ) {
+                e.printStackTrace();
             }
 
             return new Result().setGeneratedQuery( "Created View \"" + viewName + "\" from logical query plan" );

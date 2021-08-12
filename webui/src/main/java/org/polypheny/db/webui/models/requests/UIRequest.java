@@ -18,7 +18,7 @@ package org.polypheny.db.webui.models.requests;
 
 
 import java.util.Map;
-import org.polypheny.db.webui.models.SortState;
+import org.polypheny.db.rel.SortState;
 
 
 /**

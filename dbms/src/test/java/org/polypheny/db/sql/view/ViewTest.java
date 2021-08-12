@@ -71,12 +71,23 @@ public class ViewTest {
             + "(2, 'Waldstrasse 11', 99900, 'Singen', 'Germany'),"
             + "(3, '5th Avenue 1234', 10001, 'New York', 'USA') ";
 
+    private final static String DROP_viewTestEmpTable = "DROP TABLE IF EXISTS viewTestEmpTable";
+    private final static String DROP_viewTestDepTable = "DROP TABLE IF EXISTS viewTestDepTable";
+    private final static String DROP_viewTestLocTable = "DROP TABLE IF EXISTS viewTestLocTable";
+
 
     @BeforeClass
     public static void start() {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
+    }
+
+
+    public void dropTables( Statement statement ) throws SQLException {
+        statement.executeUpdate( DROP_viewTestEmpTable );
+        statement.executeUpdate( DROP_viewTestDepTable );
+        statement.executeUpdate( DROP_viewTestLocTable );
     }
 
 
@@ -123,6 +134,7 @@ public class ViewTest {
                     statement.executeUpdate( "Drop VIEW viewTestEmpDep" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
                     statement.executeUpdate( "DROP TABLE viewTestDepTable" );
+                    dropTables( statement );
                 }
             }
         }
@@ -172,6 +184,7 @@ public class ViewTest {
                 } finally {
                     statement.executeUpdate( "DROP VIEW viewTestEmp" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
+                    dropTables( statement );
                 }
 
             }
@@ -217,6 +230,7 @@ public class ViewTest {
                     statement.executeUpdate( "DROP VIEW viewRenameDepTest" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
                     statement.executeUpdate( "DROP TABLE viewTestDepTable" );
+                    dropTables( statement );
                 }
             }
         }
@@ -246,6 +260,7 @@ public class ViewTest {
                 } finally {
                     statement.executeUpdate( "DROP TABLE viewTestDepTable" );
                     statement.executeUpdate( "DROP TABLE viewTestLocTable" );
+                    dropTables( statement );
                 }
             }
         }
@@ -298,6 +313,7 @@ public class ViewTest {
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
                     statement.executeUpdate( "DROP TABLE viewTestDepTable" );
                     statement.executeUpdate( "DROP TABLE viewTestLocTable" );
+                    dropTables( statement );
                 }
             }
         }
@@ -330,6 +346,7 @@ public class ViewTest {
                     statement.executeUpdate( "DROP VIEW viewTestEmp" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
                     statement.executeUpdate( "DROP TABLE viewTestDepTable" );
+                    dropTables( statement );
                 }
             }
         }
@@ -364,6 +381,7 @@ public class ViewTest {
                     statement.executeUpdate( "DROP VIEW viewTestDep" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
                     statement.executeUpdate( "DROP TABLE viewTestDepTable" );
+                    dropTables( statement );
                 }
             }
         }
@@ -400,6 +418,7 @@ public class ViewTest {
                     statement.executeUpdate( "DROP VIEW viewTestDep" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
                     statement.executeUpdate( "DROP TABLE viewTestDepTable" );
+                    dropTables( statement );
                 }
             }
         }

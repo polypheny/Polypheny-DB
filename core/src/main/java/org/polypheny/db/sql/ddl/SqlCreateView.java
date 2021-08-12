@@ -44,6 +44,7 @@ import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.entity.CatalogView.QueryLanguage;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -156,7 +157,9 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
                     statement,
                     store,
                     placementType,
-                    columns );
+                    columns,
+                    query.toString().replaceAll( "`", "\"" ),
+                    QueryLanguage.SQL );
         } catch ( TableAlreadyExistsException e ) {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( viewName ) );
         } catch ( GenericCatalogException | UnknownColumnException e ) {
