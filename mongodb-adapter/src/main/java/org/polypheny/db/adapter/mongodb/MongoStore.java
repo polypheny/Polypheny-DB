@@ -138,6 +138,10 @@ public class MongoStore extends DataStore {
 
         MongoClientSettings mongoSettings = MongoClientSettings
                 .builder()
+                .applyToConnectionPoolSettings( builder -> builder
+                        .maxConnectionIdleTime( 4, TimeUnit.HOURS )
+                        .maxWaitTime( 1, TimeUnit.HOURS )
+                        .maxConnectionLifeTime( 4, TimeUnit.HOURS ) )
                 .applyToSocketSettings( builder -> builder
                         .connectTimeout( 4, TimeUnit.HOURS )
                         .readTimeout( 30, TimeUnit.MINUTES ) )
