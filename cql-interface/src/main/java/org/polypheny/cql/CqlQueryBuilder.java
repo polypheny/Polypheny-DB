@@ -28,6 +28,11 @@ import org.polypheny.cql.exception.UnknownIndexException;
 import org.polypheny.cql.utils.Tree;
 import org.polypheny.db.util.Pair;
 
+
+/**
+ * Packaging all the information and algorithm used by
+ * {@link org.polypheny.cql.parser.CqlParser} to build {@link CqlQuery}.
+ */
 public class CqlQueryBuilder {
 
     private final String databaseName;
@@ -52,6 +57,14 @@ public class CqlQueryBuilder {
     }
 
 
+    /**
+     * Build the {@link CqlQuery} object. To be called after
+     * the {@link org.polypheny.cql.parser.CqlParser} has parsed
+     * the full query.
+     *
+     * @return {@link CqlQuery}
+     * @throws Exception Thrown if the query specified no relation or filters.
+     */
     public CqlQuery build() throws Exception {
         if ( queryRelation == null && filters.size() == 0 ) {
             throw new Exception( "Query relations and filters cannot be both empty." );
@@ -73,6 +86,11 @@ public class CqlQueryBuilder {
     }
 
 
+    /**
+     * Generates a default relation made by of INNER JOIN-ing the tables
+     * of all the columns (including columns in filters, sort specifications
+     * and projections) used in the query.
+     */
     private void generateDefaultQueryRelation() {
         AtomicBoolean first = new AtomicBoolean( true );
         tableIndexMapping.forEach( ( tableName, tableIndex ) -> {
@@ -87,7 +105,16 @@ public class CqlQueryBuilder {
     }
 
 
-    public TableIndex addTableIndex ( String fullyQualifiedTableName )
+    /**
+     * Creates and adds a {@link TableIndex} as represented by the
+     * input parameter.
+     *
+     * @param fullyQualifiedTableName Expected format: SCHEMA_NAME.TABLE_NAME.
+     * @return {@link TableIndex}.
+     * @throws UnknownIndexException Thrown if the {@link org.polypheny.db.catalog.Catalog}
+     * does not contain the table as specified by the input parameter.
+     */
+    public TableIndex addTableIndex( String fullyQualifiedTableName )
             throws UnknownIndexException {
 
         String[] split = fullyQualifiedTableName.split( "\\." );
@@ -98,6 +125,14 @@ public class CqlQueryBuilder {
     }
 
 
+    /**
+     * Creates and adds a {@link TableIndex} as represented by the
+     * input parameters.
+     *
+     * @return {@link TableIndex}.
+     * @throws UnknownIndexException Thrown if the {@link org.polypheny.db.catalog.Catalog}
+     * does not contain the table as specified by the input parameters.
+     */
     public TableIndex addTableIndex( String schemaName, String tableName ) throws UnknownIndexException {
 
         String fullyQualifiedTableName = schemaName + "." + tableName;
@@ -110,6 +145,16 @@ public class CqlQueryBuilder {
     }
 
 
+    /**
+     * Creates and adds a {@link ColumnIndex} as represented by the
+     * input parameter. It also adds the {@link TableIndex} of the
+     * table that the column belongs to.
+     *
+     * @param fullyQualifiedColumnName Expected format: SCHEMA_NAME.TABLE_NAME.COLUMN_NAME.
+     * @return {@link ColumnIndex}.
+     * @throws UnknownIndexException Thrown if the {@link org.polypheny.db.catalog.Catalog}
+     * does not contain the column as specified by the input parameter.
+     */
     public ColumnIndex addColumnIndex( String fullyQualifiedColumnName )
             throws UnknownIndexException {
 
@@ -121,6 +166,15 @@ public class CqlQueryBuilder {
     }
 
 
+    /**
+     * Creates and adds a {@link ColumnIndex} as represented by the
+     * input parameter. It also adds the {@link TableIndex} of the
+     * table that the column belongs to.
+     *
+     * @return {@link ColumnIndex}.
+     * @throws UnknownIndexException Thrown if the {@link org.polypheny.db.catalog.Catalog}
+     * does not contain the column as specified by the input parameter.
+     */
     public ColumnIndex addColumnIndex( String schemaName, String tableName, String columnName )
             throws UnknownIndexException {
 
@@ -136,6 +190,10 @@ public class CqlQueryBuilder {
     }
 
 
+    /**
+     * Adds the first {@link TableIndex} to {@link #queryRelation}.
+     * It should only be called once, when adding the first {@link TableIndex}.
+     */
     public void addTable( TableIndex tableIndex ) {
         assert this.queryRelation == null;
 
@@ -144,6 +202,14 @@ public class CqlQueryBuilder {
     }
 
 
+    /**
+     * Combines the existing {@link #queryRelation} with {@link TableIndex}
+     * using {@link Combiner}. It should only be called after {@link #addTable(TableIndex)}.
+     *
+     * @param tableIndex table to be combined.
+     * @param booleanGroup {@link BooleanGroup<TableOpsBooleanOperator>} to
+     * create {@link Combiner}.
+     */
     public void combineRelationWith( TableIndex tableIndex, BooleanGroup<TableOpsBooleanOperator> booleanGroup ) {
 
         assert this.queryRelation != null;
@@ -160,17 +226,23 @@ public class CqlQueryBuilder {
     }
 
 
+    /**
+     * Creates a {@link Tree} leaf node using the input parameter
+     * ({@link Filter}).
+     */
     public void addNewFilter( Filter filter ) {
         Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> root = new Tree<>( filter );
         this.filters.push( root );
     }
 
 
+    /**
+     * Merges the last two added {@link Filter}s using the
+     * {@link BooleanGroup<ColumnOpsBooleanOperator>}
+     */
     public void mergeFilterSubtreesWith( BooleanGroup<ColumnOpsBooleanOperator> booleanGroup ) {
         Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> right = this.filters.pop();
         Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> left = this.filters.pop();
-        assert right != null;
-        assert left != null;
 
         left = new Tree<>(
                 left,
@@ -181,12 +253,20 @@ public class CqlQueryBuilder {
         this.filters.push( left );
     }
 
+
+    /**
+     * Adds to the sort specification list.
+     */
     public void addSortSpecification( ColumnIndex columnIndex, Map<String, Modifier> modifiers ) {
         this.sortSpecifications.add(
                 new Pair<>( columnIndex, modifiers )
         );
     }
 
+
+    /**
+     * Creates and adds the {@link Projections.Projection}.
+     */
     public void addProjection( ColumnIndex columnIndex, Map<String, Modifier> modifiers ) {
         projections.add( columnIndex, modifiers );
     }

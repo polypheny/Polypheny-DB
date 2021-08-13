@@ -22,6 +22,10 @@ import org.polypheny.cql.BooleanGroup.ColumnOpsBooleanOperator;
 import org.polypheny.cql.utils.Tree;
 import org.polypheny.db.util.Pair;
 
+
+/**
+ * Packaging all the information in a CQL query together.
+ */
 public class CqlQuery {
 
     public final Tree<Combiner, TableIndex> queryRelation;

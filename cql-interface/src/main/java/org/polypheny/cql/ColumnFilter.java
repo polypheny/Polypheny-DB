@@ -22,6 +22,10 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 
+
+/**
+ * Filter comparing two columns.
+ */
 public class ColumnFilter implements Filter {
 
     private final ColumnIndex left;

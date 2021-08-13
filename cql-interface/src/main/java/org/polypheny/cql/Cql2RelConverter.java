@@ -44,6 +44,11 @@ import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 
+
+/**
+ * Packaging information and algorithm to convert a {@link CqlQuery}
+ * to relational algebra ({@link RelNode}, {@link RelRoot}, {@link RexNode})
+ */
 public class Cql2RelConverter {
 
     private final CqlQuery cqlQuery;
@@ -56,29 +61,14 @@ public class Cql2RelConverter {
     }
 
 
-    private void addColumnOrdinalitiesForFullRelation() {
-        Tree<Combiner, TableIndex> queryRelation = cqlQuery.queryRelation;
-
-        queryRelation.traverse( TraversalType.INORDER, ( treeNode, nodeType, direction, frame ) -> {
-            try {
-                if ( nodeType == NodeType.DESTINATION_NODE ) {
-                    if ( treeNode.isLeaf() ) {
-                        TableIndex tableIndex = treeNode.getExternalNode();
-                        for ( Long columnId : tableIndex.catalogTable.columnIds ) {
-                            tableScanColumnOrdinalities.put( columnId, tableScanColumnOrdinalities.size() );
-                        }
-                    }
-                }
-            } catch ( UnexpectedTypeException e ) {
-                throw new RuntimeException( "This exception will never be thrown since we have checked that the"
-                        + " node is a leaf node before calling the getExternalNode method." );
-            }
-
-            return true;
-        } );
-    }
-
-
+    /**
+     * Packaging of all algorithms involved in converting {@link CqlQuery}
+     * to relational algebra.
+     *
+     * @param relBuilder {@link RelBuilder}.
+     * @param rexBuilder {@link RexBuilder}.
+     * @return {@link RelRoot}.
+     */
     public RelRoot convert2Rel( RelBuilder relBuilder, RexBuilder rexBuilder ) {
 
         relBuilder = generateTableScan( relBuilder, rexBuilder );
@@ -105,6 +95,14 @@ public class Cql2RelConverter {
     }
 
 
+    /**
+     * Generates table scan i.e. Combines all the tables that
+     * are to be queried using the {@link Combiner}.
+     *
+     * @param relBuilder {@link RelBuilder}.
+     * @param rexBuilder {@link RexBuilder}.
+     * @return {@link RelBuilder}.
+     */
     private RelBuilder generateTableScan( RelBuilder relBuilder, RexBuilder rexBuilder ) {
 
         Tree<Combiner, TableIndex> tableOperations = cqlQuery.queryRelation;
@@ -136,6 +134,20 @@ public class Cql2RelConverter {
     }
 
 
+    /**
+     * Generate initial projection and set the ordinalities for all columns.
+     * This projection, simply, maps the order in which tables were scanned
+     * to the order in which columns are placed.
+     *
+     * These projections and ordinalities will be later used for getting column
+     * references for filtering ({@link #generateFilters(RelBuilder, RexBuilder)}),
+     * sorting ({@link #generateSort(RelBuilder, RexBuilder)}), aggregating
+     * ({@link Projections#convert2Rel(Map, RelBuilder, RexBuilder)}), etc.
+     *
+     * @param relBuilder {@link RelBuilder}.
+     * @param rexBuilder {@link RexBuilder}.
+     * @return {@link RelBuilder}.
+     */
     private RelBuilder generateProjections( RelBuilder relBuilder, RexBuilder rexBuilder ) {
 
         Tree<Combiner, TableIndex> queryRelation = cqlQuery.queryRelation;
@@ -172,6 +184,13 @@ public class Cql2RelConverter {
     }
 
 
+    /**
+     * Convert {@link Filter}s to relational algebra.
+     *
+     * @param relBuilder {@link RelBuilder}.
+     * @param rexBuilder {@link RexBuilder}.
+     * @return {@link RelBuilder}.
+     */
     private RelBuilder generateFilters( RelBuilder relBuilder, RexBuilder rexBuilder ) {
 
         Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> filters = cqlQuery.filters;
@@ -224,6 +243,13 @@ public class Cql2RelConverter {
     }
 
 
+    /**
+     * Convert sort specifications to relational algebra.
+     *
+     * @param relBuilder {@link RelBuilder}.
+     * @param rexBuilder {@link RexBuilder}.
+     * @return {@link RelBuilder}.
+     */
     private RelBuilder generateSort( RelBuilder relBuilder, RexBuilder rexBuilder ) {
 
         List<Pair<ColumnIndex, Map<String, Modifier>>> sortSpecifications = cqlQuery.sortSpecifications;

@@ -33,6 +33,11 @@ import org.polypheny.db.tools.RelBuilder.AggCall;
 import org.polypheny.db.tools.RelBuilder.GroupKey;
 import org.polypheny.db.util.ImmutableBitSet;
 
+
+/**
+ * A collection of the columns explicitly stated in the query
+ * for projection.
+ */
 public class Projections {
 
     private static final List<String> aggregateFunctions = new ArrayList<>();
@@ -79,6 +84,10 @@ public class Projections {
     }
 
 
+    /**
+     * Create and adds a {@link Projection}.
+     * Also classified it into {@link Aggregation} or {@link Grouping}.
+     */
     public void add( ColumnIndex columnIndex, Map<String, Modifier> modifiers ) {
 
         Projection projection;
@@ -100,7 +109,18 @@ public class Projections {
     }
 
 
-    public RelBuilder convert2Rel( Map<Long, Integer> allColumnOrdinalities,
+    /**
+     * Makes the call to {@link RelBuilder#aggregate(GroupKey, AggCall...)}
+     * if there are any aggregations.
+     * Makes the final projection.
+     *
+     * @param tableScanOrdinalities Ordinalities of the columns after table scan /
+     * initial projection.
+     * @param relBuilder {@link RelBuilder}.
+     * @param rexBuilder {@link RexBuilder}.
+     * @return {@link RelBuilder}.
+     */
+    public RelBuilder convert2Rel( Map<Long, Integer> tableScanOrdinalities,
             RelBuilder relBuilder, RexBuilder rexBuilder ) {
 
         RelNode baseNode = relBuilder.peek();
@@ -148,6 +168,10 @@ public class Projections {
     }
 
 
+    /**
+     * Sets the column ordinalities to match the order in the aggregation
+     * rel node i.e. {@link #groupings} followed by {@link #aggregations}.
+     */
     private void setColumnOrdinalities() {
         assert projectedColumnOrdinalities.size() == 0;
 

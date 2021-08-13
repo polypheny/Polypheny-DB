@@ -19,6 +19,12 @@ package org.polypheny.cql;
 import java.util.Map;
 import java.util.TreeMap;
 
+
+/**
+ * Packaging {@link BooleanOperator} and corresponding {@link Modifier}s.
+ *
+ * @param <E> Type of the boolean operator.
+ */
 public class BooleanGroup<E extends BooleanGroup.BooleanOperator> {
 
     public final E booleanOperator;
@@ -53,6 +59,9 @@ public class BooleanGroup<E extends BooleanGroup.BooleanOperator> {
     }
 
 
+    /**
+     * Boolean operators that are to be used with tables.
+     */
     public enum TableOpsBooleanOperator implements BooleanOperator {
         AND( "and" ),
         OR( "or" );
@@ -75,6 +84,9 @@ public class BooleanGroup<E extends BooleanGroup.BooleanOperator> {
     }
 
 
+    /**
+     * Boolean operators that are to be used with columns.
+     */
     public enum ColumnOpsBooleanOperator implements BooleanOperator {
         AND( "and" ),
         OR( "or" ),

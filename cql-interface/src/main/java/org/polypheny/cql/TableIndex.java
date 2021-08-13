@@ -23,6 +23,10 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 
+
+/**
+ * Packaging table information together.
+ */
 public class TableIndex {
 
     public final CatalogTable catalogTable;
@@ -40,7 +44,7 @@ public class TableIndex {
     }
 
 
-    public static TableIndex createIndex(  String inDatabase, String schemaName, String tableName )
+    public static TableIndex createIndex( String inDatabase, String schemaName, String tableName )
             throws UnknownIndexException {
 
         try {

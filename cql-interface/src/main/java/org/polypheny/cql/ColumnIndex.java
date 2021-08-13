@@ -24,6 +24,10 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 
+
+/**
+ * Packaging column information together.
+ */
 public class ColumnIndex {
 
     public final CatalogColumn catalogColumn;

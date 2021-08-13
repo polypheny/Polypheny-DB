@@ -23,6 +23,10 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 
+
+/**
+ * Filter comparing a column with a value.
+ */
 public class LiteralFilter implements Filter {
 
     private final ColumnIndex columnIndex;

@@ -19,6 +19,10 @@ package org.polypheny.cql;
 import java.util.Map;
 import java.util.TreeMap;
 
+
+/**
+ * Packaging of information used for comparing in {@link Filter}.
+ */
 public class Relation {
 
     public final Comparator comparator;

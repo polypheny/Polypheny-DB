@@ -41,6 +41,21 @@ public enum Comparator {
     }
 
 
+    /**
+     * Create a {@link #NAMED_COMPARATOR}.
+     * Always use this function to create {@link #NAMED_COMPARATOR}
+     * to correctly set its name.
+     *
+     * @param comparisonOp the name of the comparison operator.
+     * @return {@link #NAMED_COMPARATOR}.
+     */
+    public static Comparator createNamedComparator( String comparisonOp ) {
+        Comparator namedComparator = Comparator.NAMED_COMPARATOR;
+        namedComparator.comparisonOp = comparisonOp;
+        return namedComparator;
+    }
+
+
     public String getComparisonOp() {
         return this.comparisonOp;
     }

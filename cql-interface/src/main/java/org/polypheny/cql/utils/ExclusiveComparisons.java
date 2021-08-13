@@ -16,11 +16,21 @@
 
 package org.polypheny.cql.utils;
 
+
+/**
+ * A collection of exclusive comparison methods on multiple booleans.
+ */
 public class ExclusiveComparisons {
 
-    // Returns true only if one of the booleans is true and all others are false.
-    // Otherwise, returns false.
-    public static boolean IsExclusivelyTrue( boolean firstBoolean, boolean ...booleans ) {
+    /**
+     * Checks if only one of the given boolean values is true.
+     *
+     * @param firstBoolean a mandatory single boolean value.
+     * @param booleans 0 or more boolean values.
+     * @return <code>true</code> if one and only one of the boolean arguments is true.
+     * Otherwise, returns <code>false</code>.
+     */
+    public static boolean IsExclusivelyTrue( boolean firstBoolean, boolean... booleans ) {
         int count = 0;
         if ( firstBoolean ) {
             count++;
@@ -34,7 +44,16 @@ public class ExclusiveComparisons {
     }
 
 
-    public static int GetExclusivelyTrue( boolean firstBoolean, boolean ...booleans ) {
+    /**
+     * Gets the index in the boolean argument that is true iff if it is exclusively
+     * true.
+     *
+     * @param firstBoolean a mandatory single boolean value.
+     * @param booleans 0 or more boolean values.
+     * @return index in the boolean argument that is true iff it is exclusively
+     * true. Otherwise, returns -1.
+     */
+    public static int GetExclusivelyTrue( boolean firstBoolean, boolean... booleans ) {
         int count = 0;
         int index = -1;
         if ( firstBoolean ) {

@@ -27,6 +27,10 @@ import org.polypheny.db.rel.core.JoinRelType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.tools.RelBuilder;
 
+
+/**
+ * Packaging information and algorithm to combine two tables.
+ */
 public class Combiner {
 
     private static final Map<String, Object> modifiersLookupTable = new HashMap<>();
@@ -175,6 +179,13 @@ public class Combiner {
     }
 
 
+    /**
+     * Type of the combiner.
+     *
+     * Broadly, there are two ways to combine tables. 1. Join and 2. Set Operations.
+     * Currently, only JoinType combiners are supported. Support for SetOpsType
+     * combiners will be added later.
+     */
     public enum CombinerType {
         JOIN_FULL( true ),
         JOIN_INNER( true ),

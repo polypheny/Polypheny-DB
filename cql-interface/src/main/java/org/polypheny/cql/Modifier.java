@@ -16,6 +16,12 @@
 
 package org.polypheny.cql;
 
+
+/**
+ * Packaging information used to modify an operation.
+ * Used in query relations, filters, sort specifications
+ * and projections.
+ */
 public class Modifier {
 
     public final String modifierName;
