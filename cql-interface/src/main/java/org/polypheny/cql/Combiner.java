@@ -29,6 +29,14 @@ import org.polypheny.db.tools.RelBuilder;
 
 public class Combiner {
 
+    private static final Map<String, Object> modifiersLookupTable = new HashMap<>();
+
+
+    static {
+        modifiersLookupTable.put( "null", "both" );
+    }
+
+
     public final CombinerType combinerType;
     public final String[] joinOnColumns;
 
@@ -39,39 +47,14 @@ public class Combiner {
     }
 
 
-    public RelBuilder combine( RelBuilder relBuilder, RexBuilder rexBuilder ) {
-        try {
-            if ( combinerType.isJoinType() ) {
-                if ( joinOnColumns.length == 0 ) {
-                    return relBuilder.join( combinerType.convertToJoinRelType(), rexBuilder.makeLiteral( true ) );
-                } else {
-                    return relBuilder.join( combinerType.convertToJoinRelType(), joinOnColumns );
-                }
-            } else {
-                return relBuilder;
-            }
-        } catch ( InvalidMethodInvocation e ) {
-            throw new RuntimeException( "This exception would never be thrown since we have checked if the combiner"
-                    + " isJoinType." );
-        }
-    }
-
-    private static final Map<String, Object> modifiersLookupTable = new HashMap<>();
-
-
-    static {
-        modifiersLookupTable.put( "null", "both" );
-    }
-
-
     public static Combiner createCombiner( BooleanGroup<TableOpsBooleanOperator> booleanGroup,
             TableIndex left, TableIndex right ) {
 
         Map<String, Object> modifiers = new HashMap<>( modifiersLookupTable );
         if ( booleanGroup.booleanOperator == TableOpsBooleanOperator.AND ) {
-            modifiers.put( "on", new String[] { "all" } );
+            modifiers.put( "on", new String[]{ "all" } );
         } else {
-            modifiers.put( "on", new String[] { "none" } );
+            modifiers.put( "on", new String[]{ "none" } );
         }
 
         booleanGroup.modifiers.forEach( ( modifierName, modifier ) -> {
@@ -93,9 +76,9 @@ public class Combiner {
     private static String[] parseOnModifier( Comparator comparator, String modifierValue ) {
 
         if ( modifierValue.equalsIgnoreCase( "all" ) ) {
-            return new String[] { "all" };
+            return new String[]{ "all" };
         } else if ( modifierValue.equalsIgnoreCase( "none" ) ) {
-            return new String[] { "none" };
+            return new String[]{ "none" };
         } else {
             return modifierValue.trim().split( "\\s*,\\s*" );
         }
@@ -165,6 +148,24 @@ public class Combiner {
         List<String> table2Columns = table2.getColumnNames();
 
         return table1Columns.stream().filter( table2Columns::contains ).toArray( String[]::new );
+    }
+
+
+    public RelBuilder combine( RelBuilder relBuilder, RexBuilder rexBuilder ) {
+        try {
+            if ( combinerType.isJoinType() ) {
+                if ( joinOnColumns.length == 0 ) {
+                    return relBuilder.join( combinerType.convertToJoinRelType(), rexBuilder.makeLiteral( true ) );
+                } else {
+                    return relBuilder.join( combinerType.convertToJoinRelType(), joinOnColumns );
+                }
+            } else {
+                return relBuilder;
+            }
+        } catch ( InvalidMethodInvocation e ) {
+            throw new RuntimeException( "This exception would never be thrown since we have checked if the combiner"
+                    + " isJoinType." );
+        }
     }
 
 
