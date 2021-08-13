@@ -49,10 +49,10 @@ public class Cql2RelConverter {
     private final CqlQuery cqlQuery;
     private final Map<Long, Integer> tableScanColumnOrdinalities;
 
+
     public Cql2RelConverter( final CqlQuery cqlQuery ) {
         this.cqlQuery = cqlQuery;
         this.tableScanColumnOrdinalities = new HashMap<>();
-        addColumnOrdinalitiesForFullRelation();
     }
 
 
@@ -156,6 +156,7 @@ public class Cql2RelConverter {
                         inputRefs.add( inputRef );
                         CatalogColumn column = catalog.getColumn( columnId );
                         columnNames.add( columnNamePrefix + column.name );
+                        tableScanColumnOrdinalities.put( columnId, tableScanColumnOrdinalities.size() );
                     }
                 } catch ( UnexpectedTypeException e ) {
                     throw new RuntimeException( "This exception will never be thrown since checks have been made before"
@@ -241,4 +242,5 @@ public class Cql2RelConverter {
         relBuilder = relBuilder.sort( sortingNodes );
         return relBuilder;
     }
+
 }
