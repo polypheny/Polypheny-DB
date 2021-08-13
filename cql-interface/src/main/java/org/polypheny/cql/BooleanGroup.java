@@ -44,24 +44,16 @@ public class BooleanGroup<E extends BooleanGroup.BooleanOperator> {
         stringBuilder.append( booleanOperator.getName() )
                 .append( " " );
 
-        modifiers.forEach( ( s, modifier ) -> {
-            stringBuilder.append( s )
-                    .append( " : " )
-                    .append( modifier )
-                    .append( " " );
-        } );
+        modifiers.forEach( ( s, modifier ) -> stringBuilder.append( s )
+                .append( " : " )
+                .append( modifier )
+                .append( " " ) );
 
         return stringBuilder.toString();
     }
 
 
-    protected interface BooleanOperator {
-
-        public String getName();
-
-    }
-
-    public static enum TableOpsBooleanOperator implements BooleanOperator {
+    public enum TableOpsBooleanOperator implements BooleanOperator {
         AND( "and" ),
         OR( "or" );
 
@@ -79,10 +71,11 @@ public class BooleanGroup<E extends BooleanGroup.BooleanOperator> {
             return this.booleanOperator;
         }
 
+
     }
 
 
-    public static enum ColumnOpsBooleanOperator implements BooleanOperator {
+    public enum ColumnOpsBooleanOperator implements BooleanOperator {
         AND( "and" ),
         OR( "or" ),
         NOT( "not" ),
@@ -101,9 +94,16 @@ public class BooleanGroup<E extends BooleanGroup.BooleanOperator> {
         public String getName() {
             return this.booleanOperator;
         }
+
+
     }
 
 
+    protected interface BooleanOperator {
+
+        String getName();
+
+    }
 
 
 }
