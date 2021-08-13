@@ -31,10 +31,6 @@ public class CqlQuery {
     public final List<Pair<ColumnIndex, Map<String, Modifier>>> sortSpecifications;
     public final Projections projections;
 
-    /*
-        TODO: projecting : Projection and Aggregation.
-        TODO: grouping : Group Specifications.
-     */
 
     public CqlQuery( final Tree<Combiner, TableIndex> queryRelation,
             final Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> filters,
