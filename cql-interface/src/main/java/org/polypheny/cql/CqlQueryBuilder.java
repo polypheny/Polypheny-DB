@@ -30,15 +30,14 @@ import org.polypheny.db.util.Pair;
 
 public class CqlQueryBuilder {
 
-    private String databaseName;
+    private final String databaseName;
+    private final Stack<Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter>> filters;
+    private final Map<String, TableIndex> tableIndexMapping;
+    private final Map<String, TableIndex> tableAliases;
+    private final Map<String, ColumnIndex> columnIndexMapping;
+    private final List<Pair<ColumnIndex, Map<String, Modifier>>> sortSpecifications;
+    private final Projections projections;
     private Tree<Combiner, TableIndex> queryRelation;
-    private Stack<Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter>> filters;
-    private Map<String, TableIndex> tableIndexMapping;
-    private Map<String, TableIndex> tableAliases;
-    private Map<String, ColumnIndex> columnIndexMapping;
-    private List<Pair<ColumnIndex, Map<String, Modifier>>> sortSpecifications;
-    private Projections projections;
-
     private TableIndex lastTableIndex;
 
 
@@ -191,4 +190,5 @@ public class CqlQueryBuilder {
     public void addProjection( ColumnIndex columnIndex, Map<String, Modifier> modifiers ) {
         projections.add( columnIndex, modifiers );
     }
+
 }
