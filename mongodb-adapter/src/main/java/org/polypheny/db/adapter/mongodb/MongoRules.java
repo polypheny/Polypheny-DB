@@ -337,7 +337,7 @@ public class MongoRules {
             if ( special != null ) {
                 return special;
             }
-            if ( call.op == MqlStdOperatorTable.DOC_JSONIZE ) {
+            if ( call.op.getName().equals( MqlStdOperatorTable.DOC_JSONIZE.getName() ) ) {
                 return call.operands.get( 0 ).accept( this );
             }
 

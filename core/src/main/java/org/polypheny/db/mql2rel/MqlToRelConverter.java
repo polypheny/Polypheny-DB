@@ -55,6 +55,7 @@ import org.polypheny.db.mql.fun.MqlStdOperatorTable;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
+import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.processing.MqlProcessor;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
@@ -73,6 +74,7 @@ import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalSort;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
+import org.polypheny.db.rel.logical.LogicalViewTableScan;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
@@ -81,6 +83,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.LogicalView;
 import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
@@ -252,7 +255,14 @@ public class MqlToRelConverter {
             throw new RuntimeException( "The used document database ( Polypheny Schema ) does not exist." );
         }
 
-        RelNode node = LogicalTableScan.create( cluster, table );
+        RelNode node;
+
+        if ( table instanceof RelOptTableImpl && table.getTable() instanceof LogicalView ) {
+            node = LogicalViewTableScan.create( cluster, table );
+        } else {
+            node = LogicalTableScan.create( cluster, table );
+        }
+
         this.builder = new RexBuilder( cluster.getTypeFactory() );
 
         switch ( kind ) {
