@@ -29,17 +29,14 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.RelBuilder.AggCall;
 import org.polypheny.db.tools.RelBuilder.GroupKey;
 import org.polypheny.db.util.ImmutableBitSet;
 
 public class Projections {
 
-    private final List<Projection> projections = new ArrayList<>();
-    private final List<Aggregation> aggregations = new ArrayList<>();
-    private final List<Grouping> groupings = new ArrayList<>();
-    private final Map<Long, Integer> projectedColumnOrdinalities = new HashMap<>();
-
     private static final List<String> aggregateFunctions = new ArrayList<>();
+
 
     static {
         aggregateFunctions.add( "count" );
@@ -50,8 +47,35 @@ public class Projections {
     }
 
 
+    private final List<Projection> projections = new ArrayList<>();
+    private final List<Aggregation> aggregations = new ArrayList<>();
+    private final List<Grouping> groupings = new ArrayList<>();
+    private final Map<Long, Integer> projectedColumnOrdinalities = new HashMap<>();
+
+
+    public static String getAggregationFunction( ColumnIndex columnIndex, Map<String, Modifier> modifiers ) {
+
+        boolean[] booleans = new boolean[]{
+                modifiers.containsKey( aggregateFunctions.get( 0 ) ),
+                modifiers.containsKey( aggregateFunctions.get( 1 ) ),
+                modifiers.containsKey( aggregateFunctions.get( 2 ) ),
+                modifiers.containsKey( aggregateFunctions.get( 3 ) ),
+                modifiers.containsKey( aggregateFunctions.get( 4 ) )
+        };
+
+        int index = ExclusiveComparisons.GetExclusivelyTrue( false, booleans );
+
+        if ( index != -1 ) {
+            index--;
+            return aggregateFunctions.get( index );
+        } else {
+            return null;
+        }
+    }
+
+
     public boolean exists() {
-        return projections.size() != 0 || aggregations.size() != 0;
+        return projections.size() != 0;
     }
 
 
@@ -88,7 +112,7 @@ public class Projections {
             for ( Aggregation aggregation : aggregations ) {
                 AggregateCall aggregateCall = aggregation.getAggregateCall(
                         baseNode,
-                        allColumnOrdinalities.get( aggregation.getColumnId() ),
+                        tableScanOrdinalities.get( aggregation.getColumnId() ),
                         groupings.size()
                 );
                 aggregateCalls.add( aggregateCall );
@@ -97,7 +121,7 @@ public class Projections {
             List<Integer> groupByOrdinals = new ArrayList<>();
             for ( Grouping grouping : groupings ) {
                 groupByOrdinals.add(
-                        allColumnOrdinalities.get( grouping.getColumnId() )
+                        tableScanOrdinalities.get( grouping.getColumnId() )
                 );
             }
 
@@ -133,99 +157,6 @@ public class Projections {
         for ( Aggregation aggregation : aggregations ) {
             projectedColumnOrdinalities.put( aggregation.getColumnId(), projectedColumnOrdinalities.size() );
         }
-    }
-
-
-    public static String getAggregationFunction( ColumnIndex columnIndex, Map<String, Modifier> modifiers ) {
-
-        boolean[] booleans = new boolean[] {
-                modifiers.containsKey( aggregateFunctions.get( 0 ) ),
-                modifiers.containsKey( aggregateFunctions.get( 1 ) ),
-                modifiers.containsKey( aggregateFunctions.get( 2 ) ),
-                modifiers.containsKey( aggregateFunctions.get( 3 ) ),
-                modifiers.containsKey( aggregateFunctions.get( 4 ) )
-        };
-
-        int index = ExclusiveComparisons.GetExclusivelyTrue( false, booleans );
-
-        if ( index != -1 ) {
-            index--;
-            return aggregateFunctions.get( index );
-        } else {
-            return null;
-        }
-    }
-
-
-    public static abstract class Projection {
-
-        protected final ColumnIndex columnIndex;
-        protected final Map<String, Modifier> modifiers;
-
-
-        public Projection( ColumnIndex columnIndex, Map<String, Modifier> modifiers ) {
-            this.columnIndex = columnIndex;
-            this.modifiers = modifiers;
-        }
-
-
-        public long getColumnId() {
-            return columnIndex.catalogColumn.id;
-        }
-
-
-        public String getProjectionName() {
-            return columnIndex.fullyQualifiedName;
-        }
-
-        public RexNode createRexNode( RexBuilder rexBuilder, RelNode baseNode, int ordinality ) {
-            return rexBuilder.makeInputRef( baseNode, ordinality );
-        }
-
-    }
-
-    public static class Aggregation extends Projection {
-
-        private final AggregationFunctions aggregationFunction;
-
-
-        public Aggregation( ColumnIndex columnIndex, Map<String, Modifier> modifiers, String aggregationFunction ) {
-            super( columnIndex, modifiers );
-            this.aggregationFunction = AggregationFunctions.createFromString( aggregationFunction );
-        }
-
-
-        public String getProjectionName() {
-            return aggregationFunction.getAliasWithColumnName( columnIndex.fullyQualifiedName );
-        }
-
-
-        public AggregateCall getAggregateCall( RelNode baseNode, int ordinality, int groupCount ) {
-            List<Integer> inputFields = new ArrayList<>();
-            inputFields.add( ordinality );
-            return AggregateCall.create(
-                    aggregationFunction.getSqlAggFunction(),
-                    false,
-                    false,
-                    inputFields,
-                    -1,
-                    RelCollations.EMPTY,
-                    groupCount,
-                    baseNode,
-                    null,
-                    aggregationFunction.getAliasWithColumnName( columnIndex.fullyQualifiedName )
-            );
-        }
-
-    }
-
-
-    private static class Grouping extends Projection {
-
-        public Grouping( ColumnIndex columnIndex, Map<String, Modifier> modifiers ) {
-            super( columnIndex, modifiers );
-        }
-
     }
 
 
@@ -268,12 +199,84 @@ public class Projections {
 
 
         public String getAliasWithColumnName( String fullyQualifiedName ) {
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.append( sqlAggFunction.getName() )
-                    .append( "( " )
-                    .append( fullyQualifiedName )
-                    .append( " )" );
-            return stringBuilder.toString();
+            return sqlAggFunction.getName()
+                    + "( "
+                    + fullyQualifiedName
+                    + " )";
+        }
+
+    }
+
+
+    public static abstract class Projection {
+
+        protected final ColumnIndex columnIndex;
+        protected final Map<String, Modifier> modifiers;
+
+
+        public Projection( ColumnIndex columnIndex, Map<String, Modifier> modifiers ) {
+            this.columnIndex = columnIndex;
+            this.modifiers = modifiers;
+        }
+
+
+        public long getColumnId() {
+            return columnIndex.catalogColumn.id;
+        }
+
+
+        public String getProjectionName() {
+            return columnIndex.fullyQualifiedName;
+        }
+
+
+        public RexNode createRexNode( RexBuilder rexBuilder, RelNode baseNode, int ordinality ) {
+            return rexBuilder.makeInputRef( baseNode, ordinality );
+        }
+
+    }
+
+
+    public static class Aggregation extends Projection {
+
+        private final AggregationFunctions aggregationFunction;
+
+
+        public Aggregation( ColumnIndex columnIndex, Map<String, Modifier> modifiers, String aggregationFunction ) {
+            super( columnIndex, modifiers );
+            this.aggregationFunction = AggregationFunctions.createFromString( aggregationFunction );
+        }
+
+
+        public String getProjectionName() {
+            return aggregationFunction.getAliasWithColumnName( columnIndex.fullyQualifiedName );
+        }
+
+
+        public AggregateCall getAggregateCall( RelNode baseNode, int ordinality, int groupCount ) {
+            List<Integer> inputFields = new ArrayList<>();
+            inputFields.add( ordinality );
+            return AggregateCall.create(
+                    aggregationFunction.getSqlAggFunction(),
+                    false,
+                    false,
+                    inputFields,
+                    -1,
+                    RelCollations.EMPTY,
+                    groupCount,
+                    baseNode,
+                    null,
+                    aggregationFunction.getAliasWithColumnName( columnIndex.fullyQualifiedName )
+            );
+        }
+
+    }
+
+
+    private static class Grouping extends Projection {
+
+        public Grouping( ColumnIndex columnIndex, Map<String, Modifier> modifiers ) {
+            super( columnIndex, modifiers );
         }
 
     }
