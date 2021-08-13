@@ -41,14 +41,12 @@ public class Relation {
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
 
-        modifiers.forEach( ( modifierName, modifier ) -> {
-            stringBuilder.append( " / " )
-                    .append( modifierName )
-                    .append( " " )
-                    .append( modifier.comparator.toString() )
-                    .append( " " )
-                    .append( modifier.modifierValue );
-        } );
+        modifiers.forEach( ( modifierName, modifier ) -> stringBuilder.append( " / " )
+                .append( modifierName )
+                .append( " " )
+                .append( modifier.comparator.toString() )
+                .append( " " )
+                .append( modifier.modifierValue ) );
 
         stringBuilder.append( " " );
 
