@@ -19,6 +19,7 @@ package org.polypheny.cql;
 import org.polypheny.db.sql.SqlBinaryOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 
+
 public enum Comparator {
     SERVER_CHOICE( "=", true ),
     EQUALS( "==", true ),
@@ -27,13 +28,11 @@ public enum Comparator {
     LESS_THAN( "<", true ),
     GREATER_THAN_OR_EQUALS( ">=", true ),
     LESS_THAN_OR_EQUALS( "<=", true ),
-    NAMED_COMPARATOR( "", true );
-
-
-    private String comparisonOp;
+    NAMED_COMPARATOR( "", false );
 
 
     private final boolean isSymbolComparator;
+    private String comparisonOp;
 
 
     Comparator( String comparisonOp, boolean isSymbolComparator ) {
@@ -76,15 +75,9 @@ public enum Comparator {
     }
 
 
-    public static Comparator createNamedComparator( String comparisonOp ) {
-        Comparator namedComparator = Comparator.NAMED_COMPARATOR;
-        namedComparator.comparisonOp = comparisonOp;
-        return namedComparator;
-    }
-
-
     @Override
     public String toString() {
         return name() + "(" + comparisonOp + ") ";
     }
+
 }
