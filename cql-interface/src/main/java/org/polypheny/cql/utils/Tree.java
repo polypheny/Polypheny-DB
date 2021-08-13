@@ -17,6 +17,7 @@
 package org.polypheny.cql.utils;
 
 import java.util.HashMap;
+import java.util.Objects;
 import org.polypheny.cql.exception.UnexpectedTypeException;
 
 /*
@@ -26,20 +27,18 @@ import org.polypheny.cql.exception.UnexpectedTypeException;
  */
 public class Tree<M, N> {
 
-    private final M internalNode;
-    private final N externalNode;
-
     public final Tree<M, N> left;
     public final Tree<M, N> right;
-
+    private final M internalNode;
+    private final N externalNode;
     private final boolean leaf;
 
 
     public Tree( Tree<M, N> left, M internalNode, Tree<M, N> right ) {
         this.internalNode = internalNode;
         this.externalNode = null;
-        this.left = left;
-        this.right = right;
+        this.left = Objects.requireNonNull( left );
+        this.right = Objects.requireNonNull( right );
         this.leaf = false;
     }
 
@@ -85,6 +84,11 @@ public class Tree<M, N> {
         if ( root.isLeaf() ) {
             action.performAction( root, NodeType.DESTINATION_NODE, Direction.UP_UP, frame );
         } else {
+            // To suppress warnings. root.left and root.right will never be null
+            // for an internal node.
+            Objects.requireNonNull( root.left );
+            Objects.requireNonNull( root.right );
+
             if ( traversalType == TraversalType.PREORDER ) {
                 proceed = action.performAction( root, NodeType.DESTINATION_NODE, Direction.UP_DOWN, frame );
                 if ( !proceed ) {
