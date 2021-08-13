@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import lombok.val;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationAction;
 import org.polypheny.db.information.InformationGraph;
@@ -173,6 +174,27 @@ public class RoutingPlanCache {
         } );
         invalidatePostCostsTextAction.setOrder( 2 );
         im.registerInformation( invalidatePostCostsTextAction );
+
+
+
+        val debugPostCostTable = new InformationTable( invalidatePostCosts,
+                Arrays.asList( "QueryClass", "time", "Samples" ) );
+
+        invalidatePostCosts.setRefreshFunction( () -> {
+            val postCosts = MonitoringServiceProvider.getInstance().getAllQueryPostCosts();
+            debugPostCostTable.reset();
+
+            for( val postCost : postCosts){
+                debugPostCostTable.addRow( postCost.getPhysicalQueryClass(), postCost.getExecutionTime(), postCost.getNumberOfSamples() );
+            }
+        } );
+        //debugPostCostTable.setRefreshFunction( () -> this.updateWorkloadInformationTable( informationTable ) );
+        debugPostCostTable.setOrder( 2 );
+        im.registerInformation( debugPostCostTable );
+
+
+
+
     }
 
 

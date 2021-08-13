@@ -68,6 +68,8 @@ public interface MonitoringService {
 
     QueryPostCosts getQueryPostCosts( String queryClassString );
 
+    List<QueryPostCosts> getAllQueryPostCosts( );
+
     void updateQueryPostCosts(@NonNull String physicalQueryClass , long executionTime);
 
     void resetQueryPostCosts();

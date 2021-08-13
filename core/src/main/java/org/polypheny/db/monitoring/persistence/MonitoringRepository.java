@@ -69,6 +69,8 @@ public interface MonitoringRepository {
 
     QueryPostCosts getQueryPostCosts( @NonNull String physicalQueryClass );
 
+    List<QueryPostCosts> getAllQueryPostCosts( );
+
     void updateQueryPostCosts(@NonNull String physicalQueryClass , long executionTime);
 
     void resetQueryPostCosts();

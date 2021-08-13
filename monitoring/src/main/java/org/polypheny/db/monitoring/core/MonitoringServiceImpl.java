@@ -85,6 +85,11 @@ public class MonitoringServiceImpl implements MonitoringService {
         return this.repository.getQueryPostCosts( queryClassString );
     }
 
+    @Override
+    public List<QueryPostCosts> getAllQueryPostCosts(  ) {
+        return this.repository.getAllQueryPostCosts( );
+    }
+
 
     @Override
     public void updateQueryPostCosts( @NonNull String physicalQueryClass, long executionTime ) {

@@ -146,7 +146,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
     }
 
 
-    public static class HorizontalFullPlacementQueryRouterFactory extends RouterFactory {
+    public static class FullPlacementQueryRouterFactory extends RouterFactory {
 
 
         @Override

@@ -18,6 +18,7 @@ package org.polypheny.db.monitoring.persistence;
 
 import java.io.File;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -132,6 +133,16 @@ public class MapDbRepository implements MonitoringRepository {
 
         val result = queryPostCosts.get( physicalQueryClass );
         return result != null ? result : new QueryPostCostsImpl( physicalQueryClass, 0, 0 );
+    }
+
+
+    @Override
+    public List<QueryPostCosts> getAllQueryPostCosts() {
+        if ( queryPostCosts == null ) {
+            this.initializePostCosts();
+        }
+
+        return new ArrayList<>(queryPostCosts.values());
     }
 
 
