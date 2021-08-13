@@ -163,12 +163,12 @@ public class Cql2RelConverter {
                     String columnNamePrefix = tableIndex.fullyQualifiedName + ".";
                     CatalogTable catalogTable = tableIndex.catalogTable;
                     for ( Long columnId : catalogTable.columnIds ) {
-                        int ordinal = tableScanColumnOrdinalities.get( columnId );
+                        int ordinal = tableScanColumnOrdinalities.size();
                         RexNode inputRef = rexBuilder.makeInputRef( baseNode, ordinal );
                         inputRefs.add( inputRef );
                         CatalogColumn column = catalog.getColumn( columnId );
                         columnNames.add( columnNamePrefix + column.name );
-                        tableScanColumnOrdinalities.put( columnId, tableScanColumnOrdinalities.size() );
+                        tableScanColumnOrdinalities.put( columnId, ordinal );
                     }
                 } catch ( UnexpectedTypeException e ) {
                     throw new RuntimeException( "This exception will never be thrown since checks have been made before"
