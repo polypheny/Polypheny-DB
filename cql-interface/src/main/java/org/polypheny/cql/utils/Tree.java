@@ -230,9 +230,9 @@ public class Tree<M, N> {
      * DESTINATION_NODE is a node we want to visit.
      *
      * For example,
-     * (1)
-     * /   \
-     * (2)   (3)
+     *                         (1)
+     *                        /   \
+     *                      (2)   (3)
      *
      * In traversing the above tree, when the traversalType is
      * TraversalType.INORDER, we visit (1) first (in code) while
@@ -256,11 +256,11 @@ public class Tree<M, N> {
      * direction we will be traversing to.
      *
      * For example,
-     * (1)
-     * /   \
-     * (2)   (3)
-     * /  \  /  \
-     * (4) (5)(6) (7)
+     *                          (1)
+     *                         /   \
+     *                       (2)   (3)
+     *                      /  \  /  \
+     *                    (4) (5)(6) (7)
      *
      * In traversing the above tree, when the traversalType is
      * TraversalType.INORDER, the actual order of traversal is
