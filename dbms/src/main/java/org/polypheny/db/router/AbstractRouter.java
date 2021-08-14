@@ -718,9 +718,9 @@ public abstract class AbstractRouter implements Router {
                                                             PolySchemaBuilder.buildAdapterSchemaName(
                                                                     pkPlacement.adapterUniqueName,
                                                                     catalogTable.getSchemaName(),
-                                                                    pkPlacement.physicalSchemaName,
-                                                                    tempPartitionId ),
-                                                            t.getLogicalTableName() );
+                                                                    pkPlacement.physicalSchemaName
+                                                            ),
+                                                            t.getLogicalTableName()+ "_" + tempPartitionId );
                                                     RelOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
                                                     ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
@@ -819,9 +819,9 @@ public abstract class AbstractRouter implements Router {
                                     PolySchemaBuilder.buildAdapterSchemaName(
                                             pkPlacement.adapterUniqueName,
                                             catalogTable.getSchemaName(),
-                                            pkPlacement.physicalSchemaName,
-                                            partitionId ),
-                                    t.getLogicalTableName() );
+                                            pkPlacement.physicalSchemaName
+                                    ),
+                                    t.getLogicalTableName() + "_" + partitionId );
                             RelOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
                             ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
@@ -1174,8 +1174,8 @@ public abstract class AbstractRouter implements Router {
             selectedAdapter.put( tableId, new SelectedAdapterInfo( storeUniqueName, physicalSchemaName, physicalTableName ) );
         }
         return builder.scan( ImmutableList.of(
-                PolySchemaBuilder.buildAdapterSchemaName( storeUniqueName, logicalSchemaName, physicalSchemaName,  partitionId),
-                logicalTableName ) );
+                PolySchemaBuilder.buildAdapterSchemaName( storeUniqueName, logicalSchemaName, physicalSchemaName ),
+                logicalTableName + "_" + partitionId) );
     }
 
 
