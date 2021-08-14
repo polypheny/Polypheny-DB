@@ -86,7 +86,6 @@ public class PolyphenyDb {
     private volatile boolean isReady = false;
 
 
-    @SuppressWarnings("unchecked")
     public static void main( final String[] args ) {
         try {
             if ( log.isDebugEnabled() ) {

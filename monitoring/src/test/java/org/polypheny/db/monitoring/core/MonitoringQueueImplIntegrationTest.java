@@ -36,26 +36,26 @@ class MonitoringQueueImplIntegrationTest {
 
     @Test
     public void queuedEventsAreProcessed() {
-        // arrange
-        // set background task timer
+        //  -- Arrange --
+        // Set background task timer
         RuntimeConfig.QUEUE_PROCESSING_INTERVAL.setEnum( TaskSchedulingType.EVERY_SECOND );
 
-        // initialize mock repository
+        // Initialize mock repository
         TestMapDbRepository repo = new TestMapDbRepository();
         repo.initialize(); // will delete the file
 
-        // mock ui service, not really needed for testing
+        // Mock ui service, not really needed for testing
         MonitoringServiceUi uiService = Mockito.mock( MonitoringServiceUi.class );
 
-        // create monitoring service with dependencies
+        // Create monitoring service with dependencies
         MonitoringQueueImpl queueWriteService = new MonitoringQueueImpl( repo );
 
-        // initialize the monitoringService
+        // Initialize the monitoringService
         val sut = new MonitoringServiceImpl( queueWriteService, repo, uiService );
 
         Assertions.assertNotNull( sut );
 
-        // act
+        // -- Act --
         val events = createQueryEvent( 15 );
         events.forEach( sut::monitorEvent );
 
@@ -65,8 +65,7 @@ class MonitoringQueueImplIntegrationTest {
             e.printStackTrace();
         }
 
-        // assert
-
+        // -- Assert --
         val result = sut.getAllDataPoints( QueryDataPoint.class );
         Assertions.assertEquals( 15, result.size() );
     }

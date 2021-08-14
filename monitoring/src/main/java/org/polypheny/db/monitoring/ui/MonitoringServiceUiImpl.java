@@ -57,7 +57,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
     @Override
     public void initializeInformationPage() {
-        //Initialize Information Page
+        // Initialize Information Page
         informationPage = new InformationPage( "Workload Monitoring" );
         informationPage.fullWidth();
         InformationManager im = InformationManager.getInstance();
@@ -110,8 +110,8 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
             for ( Field field : fields ) {
                 // TODO: get declared fields and fine corresponding Lombok getter to execute
-                // Therefore, nothing need to be done for serialVersionID
-                // and neither do we need to hacky set the setAccessible flag for the fields
+                //  Therefore, nothing need to be done for serialVersionID
+                //  and neither do we need to hacky set the setAccessible flag for the fields
                 if ( field.getName().equals( "serialVersionUID" ) ) {
                     continue;
                 }
@@ -148,8 +148,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
         //or which subscribers, exist and to which metrics they are subscribed
 
         val informationGroup = new InformationGroup( informationPage, "Monitoring Queue" ).setOrder( 2 );
-        val informationTable = new InformationTable( informationGroup,
-                Arrays.asList( "Event Type", "UUID", "Timestamp" ) );
+        val informationTable = new InformationTable( informationGroup, Arrays.asList( "Event Type", "UUID", "Timestamp" ) );
 
         informationGroup.setRefreshFunction( () -> this.updateQueueInformationTable( informationTable ) );
 
