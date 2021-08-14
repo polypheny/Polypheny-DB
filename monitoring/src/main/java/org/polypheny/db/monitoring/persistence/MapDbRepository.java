@@ -83,6 +83,7 @@ public class MapDbRepository implements MonitoringRepository {
                     .stream()
                     .map( monitoringPersistentData -> (TPersistent) monitoringPersistentData )
                     .sorted( Comparator.comparing( MonitoringDataPoint::timestamp ).reversed() )
+                    .limit( 100 )
                     .collect( Collectors.toList() );
         }
 
@@ -92,7 +93,6 @@ public class MapDbRepository implements MonitoringRepository {
 
     @Override
     public <T extends MonitoringDataPoint> List<T> getDataPointsBefore( @NonNull Class<T> dataPointClass, @NonNull Timestamp timestamp ) {
-        // TODO: not tested yet
         val table = this.data.get( dataPointClass );
         if ( table == null ) {
             return Collections.emptyList();
@@ -103,6 +103,7 @@ public class MapDbRepository implements MonitoringRepository {
                 .map( monitoringPersistentData -> (T) monitoringPersistentData )
                 .sorted( Comparator.comparing( MonitoringDataPoint::timestamp ).reversed() )
                 .filter( elem -> elem.timestamp().before( timestamp ) )
+                .limit( 100 )
                 .collect( Collectors.toList() );
 
     }
@@ -120,6 +121,7 @@ public class MapDbRepository implements MonitoringRepository {
                 .map( monitoringPersistentData -> (T) monitoringPersistentData )
                 .sorted( Comparator.comparing( MonitoringDataPoint::timestamp ).reversed() )
                 .filter( elem -> elem.timestamp().after( timestamp ) )
+                .limit( 100 )
                 .collect( Collectors.toList() );
 
     }

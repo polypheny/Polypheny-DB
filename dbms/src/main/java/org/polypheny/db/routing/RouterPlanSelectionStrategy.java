@@ -17,6 +17,6 @@
 package org.polypheny.db.routing;
 
 public enum RouterPlanSelectionStrategy {
-    PERCENTAGE,
+    PROBABILITY,
     BEST
 }

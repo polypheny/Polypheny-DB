@@ -85,7 +85,7 @@ public class RoutingPlanSelector {
         if ( RouterManager.PLAN_SELECTION_STRATEGY.getEnum() == RouterPlanSelectionStrategy.BEST ) {
             val bestResult = this.selectBestPlan( routingPlans, signatures, effectiveCosts );
             result = bestResult;
-        } else if ( RouterManager.PLAN_SELECTION_STRATEGY.getEnum() == RouterPlanSelectionStrategy.PERCENTAGE ) {
+        } else if ( RouterManager.PLAN_SELECTION_STRATEGY.getEnum() == RouterPlanSelectionStrategy.PROBABILITY ) {
             val percentageResult = this.selectPlanFromPercentage( routingPlans, signatures, effectiveCosts );
             result = percentageResult.left;
             percentageCosts = Optional.of( percentageResult.right );
@@ -161,9 +161,11 @@ public class RoutingPlanSelector {
                 .map( plan -> MonitoringServiceProvider.getInstance().getQueryPostCosts( plan.getPhysicalQueryId() ).getExecutionTime() )
                 .collect( Collectors.toList() );
 
+        // check null values in icarus special case
+        val checkNullValues = RouterManager.PRE_COST_POST_COST_RATIO.getDouble() >= 1;
         val icarusCosts = postCosts.stream().map( value -> {
-            // fallback for pure icarus routing.
-            if ( RouterManager.PRE_COST_POST_COST_RATIO.getDouble() >= 1 ) {
+            // fallback for pure icarus routing, when no time is available.
+            if ( checkNullValues && value == 0  ) {
                 return 1.0;
             } else {
                 return (double) value;

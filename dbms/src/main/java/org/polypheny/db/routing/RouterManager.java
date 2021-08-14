@@ -106,7 +106,7 @@ public class RouterManager {
         configManager.registerWebUiGroup( routingGroup );
 
         // Settings
-        final ConfigClazz tablePlacementStrategy = new ConfigClazz( "routing/tablePlacementStrategy", CreatePlacementStrategy.class, CreateSinglePlacementStrategy.class );
+        final ConfigClazz tablePlacementStrategy = new ConfigClazz( "routing/createPlacementStrategy", CreatePlacementStrategy.class, CreateSinglePlacementStrategy.class );
         configManager.registerConfig( tablePlacementStrategy );
         tablePlacementStrategy.withUi( routingGroup.getId() );
         tablePlacementStrategy.addObserver( new ConfigListener() {
