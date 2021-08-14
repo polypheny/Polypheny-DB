@@ -17,14 +17,13 @@
 package org.polypheny.db.monitoring.events;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.events.analyzer.QueryEventAnalyzer;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
-import org.polypheny.db.monitoring.exceptions.GenericEventAnalyzeException;
+import org.polypheny.db.monitoring.exceptions.GenericEventAnalyzeRuntimeException;
 
 
 @Getter
@@ -44,7 +43,7 @@ public class QueryEvent extends StatementEvent {
         try {
             return Arrays.asList( QueryEventAnalyzer.analyze( this ) );
         } catch ( Exception e ) {
-            throw new GenericEventAnalyzeException( "Could not analyze query event:" );
+            throw new GenericEventAnalyzeRuntimeException( "Could not analyze query event:" );
         }
     }
 

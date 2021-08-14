@@ -35,6 +35,7 @@ public interface MonitoringEvent {
     /**
      * Defined Class Types which will be generated from the event.
      * The analyze method will create the list of metrics.
+     *
      * @return List of all mandatory metrics associated with the Event
      */
     <T extends MonitoringDataPoint> List<Class<T>> getMetrics();
@@ -42,6 +43,7 @@ public interface MonitoringEvent {
     /**
      * defined Class Types which will optionally be generated from the event.
      * The analyze method will attach the optional metrics.
+     *
      * @return List of all optional metrics associated with the Event
      */
     <T extends MonitoringDataPoint> List<Class<T>> getOptionalMetrics();

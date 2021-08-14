@@ -39,7 +39,7 @@ public interface MonitoringService {
     /**
      * Get all data for given monitoring persistent type.
      *
-     * @param dataPointClass    DatapointClass of interest
+     * @param dataPointClass DatapointClass of interest
      * @return Returns List of all datapoints from teh specified dataPointClass
      */
     <T extends MonitoringDataPoint> List<T> getAllDataPoints( Class<T> dataPointClass );
@@ -47,8 +47,8 @@ public interface MonitoringService {
     /**
      * Get data before specified timestamp for given monitoring persistent type.
      *
-     * @param dataPointClass    datapointclass of interest to look for
-     * @param timestamp     youngest timestamp t return datapoints from
+     * @param dataPointClass datapointclass of interest to look for
+     * @param timestamp youngest timestamp t return datapoints from
      * @return Returns List of all datapoints from the specified dataPointClass
      */
     <T extends MonitoringDataPoint> List<T> getDataPointsBefore( Class<T> dataPointClass, Timestamp timestamp );
@@ -56,8 +56,8 @@ public interface MonitoringService {
     /**
      * Get data after specified timestamp for given monitoring persistent type.
      *
-     * @param dataPointClass    datapointclass of interest to look for
-     * @param timestamp     oldest timestamp t return datapoints from
+     * @param dataPointClass datapointclass of interest to look for
+     * @param timestamp oldest timestamp t return datapoints from
      * @return Returns List of all datapoints from teh specified dataPointClass
      */
     <T extends MonitoringDataPoint> List<T> getDataPointsAfter( Class<T> dataPointClass, Timestamp timestamp );

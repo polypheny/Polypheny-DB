@@ -17,14 +17,13 @@
 package org.polypheny.db.monitoring.events;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.events.analyzer.DmlEventAnalyzer;
 import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
-import org.polypheny.db.monitoring.exceptions.GenericEventAnalyzeException;
+import org.polypheny.db.monitoring.exceptions.GenericEventAnalyzeRuntimeException;
 
 
 @Getter
@@ -44,7 +43,7 @@ public class DmlEvent extends StatementEvent {
         try {
             return Arrays.asList( DmlEventAnalyzer.analyze( this ) );
         } catch ( Exception e ) {
-            throw new GenericEventAnalyzeException( "Could not analyze dml event" );
+            throw new GenericEventAnalyzeRuntimeException( "Could not analyze dml event" );
         }
     }
 
