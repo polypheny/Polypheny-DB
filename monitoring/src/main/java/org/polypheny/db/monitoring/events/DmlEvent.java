@@ -24,6 +24,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.events.analyzer.DmlEventAnalyzer;
 import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
+import org.polypheny.db.monitoring.exceptions.GenericEventAnalyzeException;
 
 
 @Getter
@@ -43,8 +44,7 @@ public class DmlEvent extends StatementEvent {
         try {
             return Arrays.asList( DmlEventAnalyzer.analyze( this ) );
         } catch ( Exception e ) {
-            log.error( "Could not analyze dml event" );
-            return Collections.emptyList();
+            throw new GenericEventAnalyzeException( "Could not analyze dml event" );
         }
     }
 

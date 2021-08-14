@@ -88,7 +88,6 @@ public class MapDbRepository implements MonitoringRepository {
 
     @Override
     public <T extends MonitoringDataPoint> List<T> getDataPointsBefore( @NonNull Class<T> dataPointClass, @NonNull Timestamp timestamp ) {
-        // TODO: not tested yet
         val table = this.data.get( dataPointClass );
         if ( table != null ) {
             return table.values()
@@ -105,7 +104,6 @@ public class MapDbRepository implements MonitoringRepository {
 
     @Override
     public <T extends MonitoringDataPoint> List<T> getDataPointsAfter( @NonNull Class<T> dataPointClass, @NonNull Timestamp timestamp ) {
-        // TODO: not tested yet
         val table = this.data.get( dataPointClass );
         if ( table != null ) {
             return table.values()

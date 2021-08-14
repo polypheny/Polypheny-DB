@@ -41,27 +41,26 @@ public interface MonitoringRepository {
     /**
      * Get all data for given monitoring persistent type.
      *
-     * @param dataPointClass
-     * @param <T>
-     * @return
+     * @param dataPointClass    DatapointClass of interest
+     * @return Returns List of all datapoints from teh specified dataPointClass
      */
     <T extends MonitoringDataPoint> List<T> getAllDataPoints( Class<T> dataPointClass );
 
     /**
      * Get data before specified timestamp for given monitoring persistent type.
      *
-     * @param dataPointClass
-     * @param <T>
-     * @return
+     * @param dataPointClass    datapointclass of interest to look for
+     * @param timestamp     youngest timestamp t return datapoints from
+     * @return Returns List of all datapoints from the specified dataPointClass
      */
     <T extends MonitoringDataPoint> List<T> getDataPointsBefore( Class<T> dataPointClass, Timestamp timestamp );
 
     /**
      * Get data after specified timestamp for given monitoring persistent type.
      *
-     * @param dataPointClass
-     * @param <T>
-     * @return
+     * @param dataPointClass    datapointclass of interest to look for
+     * @param timestamp     oldest timestamp t return datapoints from
+     * @return Returns List of all datapoints from teh specified dataPointClass
      */
     <T extends MonitoringDataPoint> List<T> getDataPointsAfter( Class<T> dataPointClass, Timestamp timestamp );
 

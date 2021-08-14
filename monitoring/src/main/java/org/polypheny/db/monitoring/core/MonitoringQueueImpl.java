@@ -70,8 +70,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
      * @param startBackGroundTask Indicates whether the background task for consuming the queue will be started.
      */
     public MonitoringQueueImpl( boolean startBackGroundTask, @NonNull MonitoringRepository repository ) {
-        log.info( "write queue service" );
-
         this.repository = repository;
 
         if ( startBackGroundTask ) {

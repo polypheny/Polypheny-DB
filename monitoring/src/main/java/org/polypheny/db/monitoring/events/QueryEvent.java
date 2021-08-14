@@ -24,6 +24,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.events.analyzer.QueryEventAnalyzer;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
+import org.polypheny.db.monitoring.exceptions.GenericEventAnalyzeException;
 
 
 @Getter
@@ -43,8 +44,7 @@ public class QueryEvent extends StatementEvent {
         try {
             return Arrays.asList( QueryEventAnalyzer.analyze( this ) );
         } catch ( Exception e ) {
-            log.error( "Could not analyze query event:" );
-            return Collections.emptyList();
+            throw new GenericEventAnalyzeException( "Could not analyze query event:" );
         }
     }
 

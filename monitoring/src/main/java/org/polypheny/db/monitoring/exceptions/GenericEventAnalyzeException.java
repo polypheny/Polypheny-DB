@@ -14,24 +14,15 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.ui;
-
-import org.polypheny.db.monitoring.events.MonitoringDataPoint;
+package org.polypheny.db.monitoring.exceptions;
 
 
+public class GenericEventAnalyzeException extends RuntimeException  {
 /**
- * UI abstraction service for monitoring.
+ * Generic Event Analyzer Exception
  */
-public interface MonitoringServiceUi {
-
-    void initializeInformationPage();
-
-    /**
-     * Will add new section to monitoring information page for the specified
-     * MonitoringPersistentData type and register the refresh function to read from repository.
-     *
-     * @param metricClass metric class to register in the monitoring UI for debugging purposes
-     */
-    <T extends MonitoringDataPoint> void registerDataPointForUi( Class<T> metricClass );
+    public GenericEventAnalyzeException( String message ) {
+        super( message );
+    }
 
 }

@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.UUID;
 import org.apache.commons.lang3.time.StopWatch;
+import org.polypheny.db.information.exception.InformationRuntimeException;
 
 
 public class InformationDuration extends Information {
@@ -61,12 +62,12 @@ public class InformationDuration extends Information {
     }
 
 
-    public long getNanoDuration( final String name ) {
+    public long getNanoDuration( final String name ) throws InformationRuntimeException{
         Duration child = this.get( name );
-        if ( child != null ) {
-            return child.duration;
+        if ( child == null ) {
+           throw new InformationRuntimeException( "could no find duration: " + name );
         }
-        return 0;
+        return child.duration;
     }
 
 
