@@ -148,6 +148,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     protected static final boolean CONSTANT_REDUCTION = false;
     protected static final boolean ENABLE_STREAM = true;
 
+
     protected AbstractQueryProcessor( Statement statement ) {
         this.statement = statement;
     }

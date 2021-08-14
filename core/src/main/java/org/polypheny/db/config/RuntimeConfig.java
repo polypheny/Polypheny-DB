@@ -333,17 +333,13 @@ public enum RuntimeConfig {
             "Rate of passive tracking of statistics.",
             BackgroundTask.TaskSchedulingType.EVERY_TEN_SECONDS,
             ConfigType.ENUM,
-            "monitoringSettingsQueueGroup"),
+            "monitoringSettingsQueueGroup" ),
 
     QUEUE_PROCESSING_ELEMENTS( "runtime/queueProcessingElements",
             "Number of elements in workload queue to process per time.",
             50,
             ConfigType.INTEGER,
             "monitoringSettingsQueueGroup" );
-
-
-
-
 
 
     private final String key;
@@ -435,7 +431,6 @@ public enum RuntimeConfig {
         uiSettingsDataViewGroup.withTitle( "Data View" );
         configManager.registerWebUiPage( uiSettingsPage );
         configManager.registerWebUiGroup( uiSettingsDataViewGroup );
-
 
         // Workload Monitoring specific setting
         final WebUiPage monitoringSettingsPage = new WebUiPage(
@@ -616,7 +611,9 @@ public enum RuntimeConfig {
     }
 
 
-    public void setEnum( Enum value ) { configManager.getConfig( key ).setEnum( value ); }
+    public void setEnum( Enum value ) {
+        configManager.getConfig( key ).setEnum( value );
+    }
 
 
     public void setInteger( final int value ) {

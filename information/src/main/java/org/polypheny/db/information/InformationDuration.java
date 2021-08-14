@@ -211,6 +211,7 @@ public class InformationDuration extends Information {
                 return jsonObj;
             };
         }
+
     }
 
 }

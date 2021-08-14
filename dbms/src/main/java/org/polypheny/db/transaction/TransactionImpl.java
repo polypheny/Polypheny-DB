@@ -277,6 +277,7 @@ public class TransactionImpl implements Transaction, Comparable {
 
     // For locking
 
+
     Set<Lock> getLocks() {
         return lockList;
     }

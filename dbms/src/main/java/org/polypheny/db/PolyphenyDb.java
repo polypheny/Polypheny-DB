@@ -261,7 +261,6 @@ public class PolyphenyDb {
             throw new RuntimeException( "Something went wrong while initializing index manager.", e );
         }
 
-
         // Call DockerManager once to remove old containers
         DockerManager.getInstance();
 
