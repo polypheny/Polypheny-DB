@@ -56,7 +56,6 @@ public class QueryEventAnalyzer {
 
 
     private static void processDurationInfo( QueryEvent queryEvent, QueryDataPoint metric ) {
-
         InformationDuration duration = new Gson().fromJson( queryEvent.getDurations(), InformationDuration.class );
         getDurationInfo( metric, "Plan Caching", duration );
         getDurationInfo( metric, "Index Lookup Rewrite", duration );
