@@ -3471,9 +3471,7 @@ public class Crud implements InformationObserver {
             }
             hasMoreRows = iterator.hasNext();
             stopWatch.stop();
-
-            long executionTime = stopWatch.getNanoTime();
-            signature.getExecutionTimeMonitor().setExecutionTime( executionTime );
+            signature.getExecutionTimeMonitor().setExecutionTime( stopWatch.getNanoTime() );
         } catch ( Throwable t ) {
             if ( statement.getTransaction().isAnalyze() ) {
                 InformationManager analyzer = statement.getTransaction().getQueryAnalyzer();

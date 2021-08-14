@@ -69,7 +69,6 @@ class MonitoringQueueImplIntegrationTest {
 
         val result = sut.getAllDataPoints( QueryDataPoint.class );
         Assertions.assertEquals( 15, result.size() );
-
     }
 
 

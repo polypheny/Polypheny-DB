@@ -43,7 +43,7 @@ public class DmlEvent extends StatementEvent {
         try {
             return Arrays.asList( DmlEventAnalyzer.analyze( this ) );
         } catch ( Exception e ) {
-            log.error( "Could not analyze dml event:" );
+            log.error( "Could not analyze dml event" );
             return Collections.emptyList();
         }
     }

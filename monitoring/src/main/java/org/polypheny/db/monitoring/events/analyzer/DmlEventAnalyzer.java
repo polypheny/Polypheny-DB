@@ -77,7 +77,6 @@ public class DmlEventAnalyzer {
             long time = duration.getNanoDuration( durationName );
             dmlMetric.getDataElements().put( durationName, time );
         } catch ( Exception e ) {
-
             log.debug( "could no find duration:{}", durationName );
         }
     }

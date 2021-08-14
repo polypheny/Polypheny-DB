@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 
+
 /**
  * Monitoring queue interface which will
  * queue the incoming MonitoringEvents in a queue.
