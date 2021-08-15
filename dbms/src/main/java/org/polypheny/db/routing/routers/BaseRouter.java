@@ -77,8 +77,8 @@ public abstract class BaseRouter {
             String physicalSchemaName,
             long partitionId ) {
         return builder.scan( ImmutableList.of(
-                PolySchemaBuilder.buildAdapterSchemaName( storeUniqueName, logicalSchemaName, physicalSchemaName, partitionId ),
-                logicalTableName ) );
+                PolySchemaBuilder.buildAdapterSchemaName( storeUniqueName, logicalSchemaName, physicalSchemaName),
+                logicalTableName + "_" + partitionId) );
     }
 
 

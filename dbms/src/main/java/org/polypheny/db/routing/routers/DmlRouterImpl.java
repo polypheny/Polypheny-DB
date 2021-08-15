@@ -266,9 +266,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                     PolySchemaBuilder.buildAdapterSchemaName(
                                                             pkPlacement.adapterUniqueName,
                                                             catalogTable.getSchemaName(),
-                                                            pkPlacement.physicalSchemaName,
-                                                            currentPart ),
-                                                    t.getLogicalTableName() );
+                                                            pkPlacement.physicalSchemaName ),
+                                                    t.getLogicalTableName() + "_" + partitionId) );
                                             RelOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
                                             ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
@@ -369,7 +368,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                     for ( i = 0; i < catalogTable.columnIds.size(); i++ ) {
                                         if ( catalogTable.columnIds.get( i ) == catalogTable.partitionColumnId ) {
                                             log.debug( "INSERT: Found PartitionColumnID: '{}' at column index: {}", catalogTable.partitionColumnId, i );
-                                            partitionColumnIdentified = true;
                                             worstCaseRouting = false;
                                             partitionValue = currentTuple.get( i ).toString().replace( "'", "" );
                                             identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
@@ -394,7 +392,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                 for ( int j = 0; j < fieldNames.size(); j++ ) {
                                     if ( fieldValues.get( j ) instanceof RexDynamicParam ) {
                                         long valueIndex = ((RexDynamicParam) fieldValues.get( j )).getIndex();
-                                        RelDataType type = ((RexDynamicParam) fieldValues.get( j )).getType();
+                                        RelDataType type = fieldValues.get( j ).getType();
 
                                         indexRemap.put( valueIndex, (RexDynamicParam) fieldValues.get( j ) );
                                     }
@@ -453,9 +451,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                         PolySchemaBuilder.buildAdapterSchemaName(
                                                                 pkPlacement.adapterUniqueName,
                                                                 catalogTable.getSchemaName(),
-                                                                pkPlacement.physicalSchemaName,
-                                                                tempPartitionId ),
-                                                        t.getLogicalTableName() );
+                                                                pkPlacement.physicalSchemaName),
+                                                        t.getLogicalTableName()  + "_" + tempPartitionId );
                                                 RelOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
                                                 ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
@@ -544,9 +541,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                     PolySchemaBuilder.buildAdapterSchemaName(
                                             pkPlacement.adapterUniqueName,
                                             catalogTable.getSchemaName(),
-                                            pkPlacement.physicalSchemaName,
-                                            partitionId ),
-                                    t.getLogicalTableName() );
+                                            pkPlacement.physicalSchemaName),
+                                    t.getLogicalTableName() + "_" + partitionId );
                             RelOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
                             ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
