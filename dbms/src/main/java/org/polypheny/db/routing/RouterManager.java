@@ -123,7 +123,7 @@ public class RouterManager {
         } );
 
         // Router settings
-        final ConfigClazzList shortRunningRouter = new ConfigClazzList( "routing/routers", RouterFactory.class, true );
+        final ConfigClazzList shortRunningRouter = new ConfigClazzList( "routing/router", RouterFactory.class, true );
         configManager.registerConfig( shortRunningRouter );
         shortRunningRouter.withUi( routingGroup.getId(), 0 );
         shortRunningRouter.addObserver( getRouterConfigListener() );
