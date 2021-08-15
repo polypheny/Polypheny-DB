@@ -16,6 +16,7 @@
 
 package org.polypheny.db.routing;
 
+import com.google.common.collect.Lists;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -123,12 +124,18 @@ public class RouterManager {
         } );
 
         // Router settings
-        final ConfigClazzList shortRunningRouter = new ConfigClazzList( "routing/router", RouterFactory.class, true );
+        final ConfigClazz shortRunningRouter = new ConfigClazz( "routing/router", RouterFactory.class, SimpleRouterFactory.class );
+        configManager.registerConfig( shortRunningRouter );
+        shortRunningRouter.withUi( routingGroup.getId(), 0 );
+        shortRunningRouter.addObserver( getRouterConfigListener() );
+        routerFactories = Lists.newArrayList( new SimpleRouterFactory() );
+
+        /*final ConfigClazzList shortRunningRouter = new ConfigClazzList( "routing/router", RouterFactory.class, true );
         configManager.registerConfig( shortRunningRouter );
         shortRunningRouter.withUi( routingGroup.getId(), 0 );
         shortRunningRouter.addObserver( getRouterConfigListener() );
         routerFactories = getFactoryList( shortRunningRouter );
-
+        */
         configManager.registerConfig( PRE_COST_POST_COST_RATIO );
         PRE_COST_POST_COST_RATIO.withUi( routingGroup.getId(), 1 );
 
@@ -147,6 +154,31 @@ public class RouterManager {
         } catch ( InstantiationException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e ) {
             log.error( "Exception while changing table placement strategy", e );
         }
+    }
+
+    private ConfigListener getRouterConfigListenerTemp() {
+        return new ConfigListener() {
+            @Override
+            public void onConfigChange( Config c ) {
+                ConfigClazz configClazz = (ConfigClazz) c;
+                try{
+                    Constructor<?> ctor = configClazz.getClazz().getConstructor(  );
+                    RouterFactory instance = (RouterFactory) ctor.newInstance();
+                    routerFactories = Lists.newArrayList(instance);
+                }catch ( InstantiationException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e ) {
+                    log.error( "Exception while changing table placement strategy", e );
+                }
+
+
+
+
+            }
+
+
+            @Override
+            public void restart( Config c ) {
+            }
+        };
     }
 
 
