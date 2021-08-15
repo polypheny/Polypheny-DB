@@ -19,13 +19,11 @@ package org.polypheny.db.schema;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -33,7 +31,6 @@ import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileStore;
-import org.polypheny.db.adapter.mongodb.MongoStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
@@ -160,16 +157,17 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
                     HashMap<String, SchemaPlus> schemaNames = new HashMap<>();
 
+                    final String schemaName = buildAdapterSchemaName( catalogAdapter.uniqueName, catalogSchema.name, physicalSchemaName);
+
+                    adapter.createNewSchema( rootSchema, schemaName );
+                    SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentSchema(), schemaName ).plus();
+
                     for ( long tableId : tableIds ) {
                         CatalogTable catalogTable = catalog.getTable( tableId );
 
                         List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementByTable( adapter.getAdapterId(), tableId );
 
                         if ( adapter instanceof FileStore  ) {
-                            final String schemaName = buildAdapterSchemaName( catalogAdapter.uniqueName, catalogSchema.name, physicalSchemaName, catalogTable.partitionProperty.partitionIds.get( 0 ) );
-
-                            adapter.createNewSchema( rootSchema, schemaName );
-                            SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentSchema(), schemaName ).plus();
 
                             Table table = adapter.createTableSchema(
                                     catalogTable,
@@ -184,16 +182,13 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
                             for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
 
-                                final String schemaName = buildAdapterSchemaName( catalogAdapter.uniqueName, catalogSchema.name, physicalSchemaName, partitionPlacement.partitionId );
-
-                                adapter.createNewSchema( rootSchema, schemaName );
-                                SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentSchema(), schemaName ).plus();
 
                                 Table table = adapter.createTableSchema(
                                         catalogTable,
-                                        Catalog.getInstance().getColumnPlacementsOnAdapterSortedByPhysicalPosition( adapter.getAdapterId(), catalogTable.id ), partitionPlacement );
+                                        Catalog.getInstance().getColumnPlacementsOnAdapterSortedByPhysicalPosition( adapter.getAdapterId(), catalogTable.id ),
+                                        partitionPlacement );
 
-                                physicalTables.put( catalog.getTable( tableId ).name, table );
+                                physicalTables.put( catalog.getTable( tableId ).name + "_" + partitionPlacement.partitionId, table );
 
                                 rootSchema.add( schemaName, s );
                                 physicalTables.forEach( rootSchema.getSubSchema( schemaName )::add );
@@ -208,8 +203,8 @@ public class PolySchemaBuilder implements PropertyChangeListener {
     }
 
 
-    public static String buildAdapterSchemaName( String storeName, String logicalSchema, String physicalSchema, long partitionId ) {
-        return storeName + "_" + logicalSchema + "_" + physicalSchema + "_" + partitionId;
+    public static String buildAdapterSchemaName( String storeName, String logicalSchema, String physicalSchema ) {
+        return storeName + "_" + logicalSchema + "_" + physicalSchema;
     }
 
 

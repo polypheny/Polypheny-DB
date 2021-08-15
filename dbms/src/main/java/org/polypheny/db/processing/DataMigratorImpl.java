@@ -38,6 +38,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
+import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.ViewExpanders;
@@ -67,7 +68,6 @@ public class DataMigratorImpl implements DataMigrator {
 
     @Override
     public void copyData( Transaction transaction, CatalogAdapter store, List<CatalogColumn> columns, List<Long> partitionIds ) {
-
         CatalogTable table = Catalog.getInstance().getTable( columns.get( 0 ).tableId );
         CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( table.primaryKey );
 
@@ -165,12 +165,8 @@ public class DataMigratorImpl implements DataMigrator {
 
     private RelRoot buildInsertStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId ) {
         List<String> qualifiedTableName = ImmutableList.of(
-                PolySchemaBuilder.buildAdapterSchemaName(
-                        to.get( 0 ).adapterUniqueName,
-                        to.get( 0 ).getLogicalSchemaName(),
-                        to.get( 0 ).physicalSchemaName,
-                        partitionId ),
-                to.get( 0 ).getLogicalTableName() );
+                PolySchemaBuilder.buildAdapterSchemaName( to.get( 0 ).adapterUniqueName, to.get( 0 ).getLogicalSchemaName(), to.get( 0 ).physicalSchemaName ),
+                to.get( 0 ).getLogicalTableName() + "_" + partitionId );
         RelOptTable physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
         ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
@@ -206,12 +202,8 @@ public class DataMigratorImpl implements DataMigrator {
 
     private RelRoot buildUpdateStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId ) {
         List<String> qualifiedTableName = ImmutableList.of(
-                PolySchemaBuilder.buildAdapterSchemaName(
-                        to.get( 0 ).adapterUniqueName,
-                        to.get( 0 ).getLogicalSchemaName(),
-                        to.get( 0 ).physicalSchemaName,
-                        partitionId ),
-                to.get( 0 ).getLogicalTableName() );
+                PolySchemaBuilder.buildAdapterSchemaName( to.get( 0 ).adapterUniqueName,to.get( 0 ).getLogicalSchemaName(), to.get( 0 ).physicalSchemaName ),
+                to.get( 0 ).getLogicalTableName() + "_" + partitionId );
         RelOptTable physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
         ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
