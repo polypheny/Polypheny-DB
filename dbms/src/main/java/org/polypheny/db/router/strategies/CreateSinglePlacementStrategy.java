@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.routing.strategies;
+package org.polypheny.db.router.strategies;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;

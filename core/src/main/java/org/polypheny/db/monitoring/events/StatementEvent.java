@@ -23,7 +23,7 @@ import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.routing.LogicalQueryInformation;
+import org.polypheny.db.router.LogicalQueryInformation;
 import org.polypheny.db.transaction.Statement;
 
 

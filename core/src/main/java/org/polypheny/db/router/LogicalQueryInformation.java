@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.routing;
+package org.polypheny.db.router;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import org.polypheny.db.util.Pair;
 
-public interface RoutingPlan {
+public interface LogicalQueryInformation {
 
+    Map<Long, List<Long>> getAccessedPartitions();
+    Map<Long, Long> getAvailableColumnsWithTable(); // columnId -> tableId
+    List<Long> getAllColumnsPerTable(Long tableId);
+    List<Long> getUsedColumnsPerTable(Long tableId);
+    Map<Long, String> getUsedColumns();
     String getQueryId();
-    String getPhysicalQueryId();
-    Optional<Class<? extends Router>> getRouter();
-    Optional<Map<Long, List<Pair<Integer, Long>>>>  getOptionalPhysicalPlacementsOfPartitions(); // partitionId, list<CatalogPlacementIds>
+    List<String> getTables();
+
 }

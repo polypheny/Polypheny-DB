@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.routing;
+package org.polypheny.db.router;
 
 
 import com.google.common.collect.ImmutableList;
@@ -33,9 +33,6 @@ import org.polypheny.db.rel.core.SetOp;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalValues;
-import org.polypheny.db.routing.BaseRouter;
-import org.polypheny.db.routing.LogicalQueryInformation;
-import org.polypheny.db.routing.Router;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.tools.RoutedRelBuilder;
 import org.polypheny.db.transaction.Statement;

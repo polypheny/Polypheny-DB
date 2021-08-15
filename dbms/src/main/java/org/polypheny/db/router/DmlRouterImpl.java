@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.routing;
+package org.polypheny.db.router;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
@@ -59,10 +59,6 @@ import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.routing.BaseRouter;
-import org.polypheny.db.routing.DmlRouter;
-import org.polypheny.db.routing.LogicalQueryInformation;
-import org.polypheny.db.routing.Router;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.PolySchemaBuilder;

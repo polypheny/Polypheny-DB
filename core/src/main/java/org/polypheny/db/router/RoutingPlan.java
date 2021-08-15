@@ -14,22 +14,17 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.routing;
+package org.polypheny.db.router;
 
 import java.util.List;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.tools.RoutedRelBuilder;
-import org.polypheny.db.transaction.Statement;
+import java.util.Map;
+import java.util.Optional;
+import org.polypheny.db.util.Pair;
 
-public interface Router {
+public interface RoutingPlan {
 
-    List<RoutedRelBuilder> route( RelRoot relRoot, Statement statement, LogicalQueryInformation queryInformation );
-
-    RoutedRelBuilder buildSelect( RelNode node, RoutedRelBuilder builder, Statement statement, RelOptCluster cluster, LogicalQueryInformation queryInformation );
-
-    void resetCaches();
+    String getQueryId();
+    String getPhysicalQueryId();
+    Optional<Class<? extends Router>> getRouter();
+    Optional<Map<Long, List<Pair<Integer, Long>>>>  getOptionalPhysicalPlacementsOfPartitions(); // partitionId, list<CatalogPlacementIds>
 }
-
-

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.routing;
+package org.polypheny.db.router;
 
 import com.google.common.collect.Lists;
 import java.lang.reflect.Constructor;
@@ -35,11 +35,11 @@ import org.polypheny.db.config.ConfigEnum;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.WebUiGroup;
 import org.polypheny.db.config.WebUiPage;
-import org.polypheny.db.routing.factories.RouterFactory;
-import org.polypheny.db.routing.SimpleRouter.SimpleRouterFactory;
-import org.polypheny.db.routing.strategies.RoutingPlanSelector;
-import org.polypheny.db.routing.strategies.CreateSinglePlacementStrategy;
-import org.polypheny.db.routing.strategies.CreatePlacementStrategy;
+import org.polypheny.db.router.factories.RouterFactory;
+import org.polypheny.db.router.SimpleRouter.SimpleRouterFactory;
+import org.polypheny.db.router.strategies.RoutingPlanSelector;
+import org.polypheny.db.router.strategies.CreateSinglePlacementStrategy;
+import org.polypheny.db.router.strategies.CreatePlacementStrategy;
 
 @Slf4j
 public class RouterManager {

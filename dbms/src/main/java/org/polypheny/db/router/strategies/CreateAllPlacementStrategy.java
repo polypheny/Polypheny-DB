@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.routing.strategies;
+package org.polypheny.db.router.strategies;
 
 import java.util.List;
 import java.util.stream.Collectors;

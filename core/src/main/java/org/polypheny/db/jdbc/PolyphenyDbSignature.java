@@ -31,7 +31,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.routing.ExecutionTimeMonitor;
+import org.polypheny.db.router.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 

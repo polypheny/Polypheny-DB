@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.routing.strategies;
+package org.polypheny.db.router.strategies;
 
 import java.util.Collections;
 import java.util.List;
@@ -28,9 +28,9 @@ import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.routing.RouterManager;
-import org.polypheny.db.routing.RouterPlanSelectionStrategy;
-import org.polypheny.db.routing.RoutingPlan;
+import org.polypheny.db.router.RouterManager;
+import org.polypheny.db.router.RouterPlanSelectionStrategy;
+import org.polypheny.db.router.RoutingPlan;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Pair;
 
