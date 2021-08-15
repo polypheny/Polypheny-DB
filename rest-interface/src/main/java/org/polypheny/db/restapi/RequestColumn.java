@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ public class RequestColumn {
 
     private final CatalogColumn column;
     private final int tableScanIndex;
-    private final int logicalIndex;
+    private int logicalIndex;
     private final String fullyQualifiedName;
     private final String alias;
     private final SqlAggFunction aggregate;
@@ -97,6 +97,11 @@ public class RequestColumn {
         return explicit;
     }
 
+
+    public void setLogicalIndex( int logicalIndex ) {
+        this.logicalIndex = logicalIndex;
+    }
+
     // The alias of a column in a request perfectly identifies it when it comes to uniqueness!
     // This is due to the fact that the same CatalogColumn may be present multiple times iff it is aliased to different names.
     // This usually happens if aggregate functions are used.
@@ -119,4 +124,5 @@ public class RequestColumn {
     public int hashCode() {
         return Objects.hash( alias );
     }
+
 }

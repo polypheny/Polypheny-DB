@@ -552,6 +552,7 @@ public class JdbcDdlTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT tdouble FROM ddltest" ),
                             ImmutableList.of( new Object[]{ BigDecimal.valueOf( (double) DDLTEST_DATA[4] ) } ),
+                            false,
                             true );
 
                     // Real --> Double
