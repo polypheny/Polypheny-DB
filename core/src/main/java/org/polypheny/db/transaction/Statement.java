@@ -21,7 +21,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.processing.QueryProcessor;
-import org.polypheny.db.router.Router;
+import org.polypheny.db.routing.Router;
 import org.polypheny.db.util.FileInputHandle;
 
 public interface Statement {

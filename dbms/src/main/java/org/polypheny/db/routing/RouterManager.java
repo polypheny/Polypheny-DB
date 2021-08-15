@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.router;
+package org.polypheny.db.routing;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -34,11 +34,14 @@ import org.polypheny.db.config.ConfigEnum;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.WebUiGroup;
 import org.polypheny.db.config.WebUiPage;
-import org.polypheny.db.router.SimpleRouter.SimpleRouterFactory;
-import org.polypheny.db.router.factories.RouterFactory;
-import org.polypheny.db.router.strategies.CreatePlacementStrategy;
-import org.polypheny.db.router.strategies.CreateSinglePlacementStrategy;
-import org.polypheny.db.router.strategies.RoutingPlanSelector;
+import org.polypheny.db.routing.factories.RouterFactory;
+import org.polypheny.db.routing.routers.CachedPlanRouter;
+import org.polypheny.db.routing.routers.DmlRouterImpl;
+import org.polypheny.db.routing.routers.SimpleRouter;
+import org.polypheny.db.routing.routers.SimpleRouter.SimpleRouterFactory;
+import org.polypheny.db.routing.strategies.RoutingPlanSelector;
+import org.polypheny.db.routing.strategies.CreateSinglePlacementStrategy;
+import org.polypheny.db.routing.strategies.CreatePlacementStrategy;
 
 @Slf4j
 public class RouterManager {

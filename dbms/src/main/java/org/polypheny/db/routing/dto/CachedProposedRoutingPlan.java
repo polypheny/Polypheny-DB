@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.router.dto;
+package org.polypheny.db.routing.dto;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.List;
@@ -24,9 +24,9 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.router.ProposedRoutingPlan;
-import org.polypheny.db.router.Router;
-import org.polypheny.db.router.RoutingPlan;
+import org.polypheny.db.routing.ProposedRoutingPlan;
+import org.polypheny.db.routing.Router;
+import org.polypheny.db.routing.RoutingPlan;
 import org.polypheny.db.util.Pair;
 
 @Getter

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.router;
+package org.polypheny.db.routing;
 
 import java.util.List;
 import java.util.Map;

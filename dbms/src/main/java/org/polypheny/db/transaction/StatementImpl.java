@@ -35,8 +35,8 @@ import org.polypheny.db.processing.DataContextImpl;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.processing.QueryProviderImpl;
 import org.polypheny.db.processing.VolcanoQueryProcessor;
-import org.polypheny.db.router.RouterManager;
-import org.polypheny.db.router.Router;
+import org.polypheny.db.routing.RouterManager;
+import org.polypheny.db.routing.Router;
 import org.polypheny.db.util.FileInputHandle;
 
 public class StatementImpl implements Statement {

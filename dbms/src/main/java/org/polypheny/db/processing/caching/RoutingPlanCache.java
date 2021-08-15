@@ -37,7 +37,7 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
-import org.polypheny.db.router.dto.CachedProposedRoutingPlan;
+import org.polypheny.db.routing.dto.CachedProposedRoutingPlan;
 
 public class RoutingPlanCache {
 

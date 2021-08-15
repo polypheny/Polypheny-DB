@@ -14,22 +14,11 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.router;
+package org.polypheny.db.routing.factories;
 
-import java.util.List;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.tools.RoutedRelBuilder;
-import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.routing.Router;
 
-public interface Router {
+public abstract class RouterFactory {
 
-    List<RoutedRelBuilder> route( RelRoot relRoot, Statement statement, LogicalQueryInformation queryInformation );
-
-    RoutedRelBuilder buildSelect( RelNode node, RoutedRelBuilder builder, Statement statement, RelOptCluster cluster, LogicalQueryInformation queryInformation );
-
-    void resetCaches();
+    public abstract Router createInstance();
 }
-
-

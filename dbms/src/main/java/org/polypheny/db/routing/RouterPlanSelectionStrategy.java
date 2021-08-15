@@ -14,13 +14,9 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.router.strategies;
+package org.polypheny.db.routing;
 
-import java.util.List;
-import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-
-public interface CreatePlacementStrategy {
-    List<DataStore> getDataStoresForNewColumn( CatalogColumn addedColumn );
-    List<DataStore> getDataStoresForNewTable();
+public enum RouterPlanSelectionStrategy {
+    PROBABILITY,
+    BEST
 }

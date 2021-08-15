@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.val;
-import org.polypheny.db.router.LogicalQueryInformation;
+import org.polypheny.db.routing.LogicalQueryInformation;
 
 public class LogicalQueryInformationImpl implements LogicalQueryInformation {
 
