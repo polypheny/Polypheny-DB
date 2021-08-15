@@ -33,7 +33,7 @@ import java.util.List;
 
 
 @Slf4j
-@Category({AdapterTestSuite.class, CassandraExcluded.class})
+@Category({AdapterTestSuite.class})
 public class DayTimeFunctionsTest {
 
 
@@ -105,7 +105,7 @@ public class DayTimeFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT id,DateData FROM DateTestTable"),
-                        expectedResult
+                        expectedResult, true
                 );
 
                 //YEAR() Equivalent to EXTRACT(YEAR FROM date)
@@ -117,7 +117,7 @@ public class DayTimeFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT id, YEAR(DateData) FROM DateTestTable"),
-                        expectedResult
+                        expectedResult, true
                 );
 
                 //QUARTER(date) Equivalent to  EXTRACT(MONTH FROM date)
@@ -129,7 +129,7 @@ public class DayTimeFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT id, QUARTER(DateData) FROM DateTestTable"),
-                        expectedResult
+                        expectedResult, true
                 );
 
                 //MONTH(date) Equivalent to EXTRACT(MONTH FROM date)
@@ -141,7 +141,7 @@ public class DayTimeFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT id, MONTH(DateData) FROM DateTestTable"),
-                        expectedResult
+                        expectedResult, true
                 );
 
                 // WEEK(date) Equivalent to EXTRACT(WEEK FROM date) NOT WORKING
@@ -179,7 +179,7 @@ public class DayTimeFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT id,DAYOFMONTH(DateData) FROM DateTestTable"),
-                        expectedResult
+                        expectedResult, true
                 );
 
 
@@ -192,7 +192,7 @@ public class DayTimeFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT id,DAYOFMONTH(DateData) FROM DateTestTable"),
-                        expectedResult
+                        expectedResult, true
                 );
 
 
@@ -201,6 +201,7 @@ public class DayTimeFunctionsTest {
         }
 
     }
+
 
     @Test
     public void timeTest() throws SQLException {
@@ -218,7 +219,7 @@ public class DayTimeFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT id, TimeData FROM TimeTestTable"),
-                        expectedResult
+                        expectedResult, true
                 );
 
 
@@ -231,7 +232,7 @@ public class DayTimeFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT id, HOUR(TimeData) FROM TimeTestTable"),
-                        expectedResult
+                        expectedResult, true
                 );
 
                 //MINUTE() Equivalent to EXTRACT(HOUR FROM date)
@@ -243,7 +244,7 @@ public class DayTimeFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT id, MINUTE(TimeData) FROM TimeTestTable"),
-                        expectedResult
+                        expectedResult, true
                 );
 
 
@@ -256,21 +257,15 @@ public class DayTimeFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT id, SECOND(TimeData) FROM TimeTestTable"),
-                        expectedResult
+                        expectedResult, true
                 );
-
-
-                ResultSet rs = statement.executeQuery("SELECT ID FROM DateTestTable");
-                while (rs.next()) {
-                    System.out.println(rs.getInt(1));
-                }
-
 
             }
 
         }
 
     }
+
 
     @Test
     public void timeStampTest() throws SQLException {
@@ -288,7 +283,7 @@ public class DayTimeFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT id, TimeStampData FROM TimeStampTestTable"),
-                        expectedResult
+                        expectedResult, true
                 );
 
 
@@ -301,7 +296,7 @@ public class DayTimeFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT id, EXTRACT(Year FROM TimeStampData) FROM TimeStampTestTable"),
-                        expectedResult
+                        expectedResult, true
                 );
 
 //                //CEIL(timestamp TO timeUnit) Rounds timestamp up to timeUnit. NOT WORKING COULD BE DUE TO WRONG SYNTAX
@@ -326,7 +321,7 @@ public class DayTimeFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT id, FLOOR(TimeStampData TO YEAR) FROM TimeStampTestTable"),
-                        expectedResult
+                        expectedResult, true
                 );
 
 
@@ -339,7 +334,7 @@ public class DayTimeFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT id, TIMESTAMPADD(YEAR,5,TimeStampData) FROM TimeStampTestTable"),
-                        expectedResult
+                        expectedResult, true
                 );
 
 
@@ -357,13 +352,11 @@ public class DayTimeFunctionsTest {
 //                );
 //
 
-
             }
 
         }
 
     }
-
 
 }
 

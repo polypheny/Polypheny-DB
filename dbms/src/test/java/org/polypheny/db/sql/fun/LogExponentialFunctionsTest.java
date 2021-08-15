@@ -20,7 +20,6 @@ package org.polypheny.db.sql.fun;
 import com.google.common.collect.ImmutableList;
 
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
@@ -28,7 +27,6 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
@@ -38,7 +36,7 @@ import org.polypheny.db.excluded.CassandraExcluded;
 
 @SuppressWarnings({"SqlDialectInspection", "SqlNoDataSourceInspection"})
 @Slf4j
-@Category({AdapterTestSuite.class, CassandraExcluded.class})
+@Category({AdapterTestSuite.class})
 public class LogExponentialFunctionsTest {
 
 
@@ -70,6 +68,26 @@ public class LogExponentialFunctionsTest {
                 statement.executeUpdate("INSERT INTO TableInteger VALUES (1, 3)");
                 statement.executeUpdate("INSERT INTO TableInteger VALUES (2, -4)");
 
+                statement.executeUpdate("CREATE TABLE TableTinyInt( ID INTEGER NOT NULL, Data TinyINT, PRIMARY KEY (ID) )");
+                statement.executeUpdate("INSERT INTO TableTinyInt VALUES (0, -128)");
+                statement.executeUpdate("INSERT INTO TableTinyInt VALUES (1, 23)");
+                statement.executeUpdate("INSERT INTO TableTinyInt VALUES (2, 127)");
+
+                statement.executeUpdate("CREATE TABLE TableBigInt( ID INTEGER NOT NULL, Data BigInt, PRIMARY KEY (ID) )");
+                statement.executeUpdate("INSERT INTO TableBigInt VALUES (0, 1241241)");
+                statement.executeUpdate("INSERT INTO TableBigInt VALUES (1, 1)");
+                statement.executeUpdate("INSERT INTO TableBigInt VALUES (2, -1241241)");
+
+                statement.executeUpdate("CREATE TABLE TableSmallInt( ID INTEGER NOT NULL, Data INTEGER, PRIMARY KEY (ID) )");
+                statement.executeUpdate("INSERT INTO TableSmallInt VALUES (0, -32768)");
+                statement.executeUpdate("INSERT INTO TableSmallInt VALUES (1, 3)");
+                statement.executeUpdate("INSERT INTO TableSmallInt VALUES (2, 32767)");
+
+                statement.executeUpdate("CREATE TABLE TableReal( ID INTEGER NOT NULL, Data INTEGER, PRIMARY KEY (ID) )");
+                statement.executeUpdate("INSERT INTO TableReal VALUES (0, 1.401)");
+                statement.executeUpdate("INSERT INTO TableReal VALUES (1, 3)");
+                statement.executeUpdate("INSERT INTO TableReal VALUES (2, 3.402)");
+
 
                 connection.commit();
             }
@@ -85,6 +103,11 @@ public class LogExponentialFunctionsTest {
                 statement.executeUpdate("DROP TABLE TableDecimal");
                 statement.executeUpdate("DROP TABLE TableDouble");
                 statement.executeUpdate("DROP TABLE TableInteger");
+                statement.executeUpdate("DROP TABLE TableTinyInt");
+                statement.executeUpdate("DROP TABLE TableSmallInt");
+                statement.executeUpdate("DROP TABLE TableBigInt");
+                statement.executeUpdate("DROP TABLE TableReal");
+
             }
             connection.commit();
         }
@@ -93,7 +116,6 @@ public class LogExponentialFunctionsTest {
     // --------------- Tests ---------------
 
 
-    @Ignore
     @Test
     public void logTest() throws SQLException {
         try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
@@ -103,45 +125,79 @@ public class LogExponentialFunctionsTest {
 
                 //For Decimal
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{1, 0.477121254719662435395122201953199692070484161376953125},
-                        new Object[]{2, 0.60205999132796239603493404501932673156261444091796875}
+                        new Object[]{1, Double.valueOf(1.0986122886681098)},
+                        new Object[]{2, Double.valueOf(1.3862943611198906)}
                 );
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, LN(Data) FROM TableDecimal where data > 0"),
-                        expectedResult
+                        expectedResult,true
                 );
+
+                //LOG10 FOR DECIMAL
+                expectedResult = ImmutableList.of(
+                        new Object[]{1, Double.valueOf(0.47712125471966244)},
+                        new Object[]{2, Double.valueOf(0.6020599913279624)}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT ID, LOG10(Data) FROM TableDecimal where data > 0"),
+                        expectedResult,true
+                );
+
 
                 //For Double
                 expectedResult = ImmutableList.of(
-                        new Object[]{0, 0.3010299956639812},
-                        new Object[]{2, 0.6020599913279624}
+                        new Object[]{0, Double.valueOf(0.6931471805599453)},
+                        new Object[]{2, Double.valueOf(1.3862943611198906)}
                 );
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, LN(Data) FROM TableDouble where data > 0"),
-                        expectedResult
+                        expectedResult,true
                 );
 
-//
-//                //For Integer
-//                expectedResult = ImmutableList.of(
-//                        new Object[]{0, 0.3010299956639812},
-//                        new Object[]{1, 0.47712125471966244}
-//
-//
-//                );
-//
-//                TestHelper.checkResultSet(
-//                        statement.executeQuery("SELECT ID, LN(Data) FROM TableInteger where Data > 0"),
-//                        expectedResult
-//                );
+                //LOG10 FOR DOUBLE
+                expectedResult = ImmutableList.of(
+                        new Object[]{0, Double.valueOf(0.3010299956639812)},
+                        new Object[]{2, Double.valueOf(0.6020599913279624)}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT ID, LOG10(Data) FROM TableDouble where data > 0"),
+                        expectedResult,true
+                );
+
+                //For Integer
+                expectedResult = ImmutableList.of(
+                        new Object[]{0, 0.6931471805599453},
+                        new Object[]{1, 1.0986122886681098}
+
+
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT ID, LN(Data) FROM TableInteger where Data > 0"),
+                        expectedResult,true
+                );
+
+                //LOG10 FOR INTEGER
+                expectedResult = ImmutableList.of(
+                        new Object[]{0, Double.valueOf(0.3010299956639812)},
+                        new Object[]{1, Double.valueOf(0.47712125471966244)}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT ID, LOG10(Data) FROM TableInteger where data > 0"),
+                        expectedResult,true
+                );
 
 
             }
         }
 
     }
+
 
     @Test
     public void exponentialTest() throws SQLException {
@@ -159,35 +215,33 @@ public class LogExponentialFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, EXP(Data) FROM TableDecimal"),
-                        expectedResult
+                        expectedResult,true
                 );
 
-//                //For Double
-//                expectedResult = ImmutableList.of(
-//                        new Object[]{0, 7.389056},
-//                        new Object[]{1, 0.049787},
-//                        new Object[]{2, 54.59815}
-//                );
-//
-//                TestHelper.checkResultSet(
-//                        statement.executeQuery("SELECT ID, ROUND(EXP(Data),6) FROM TableDouble"),
-//                        expectedResult
-//                );
-//
-//
-//                //For Integer
-//                expectedResult = ImmutableList.of(
-//                        new Object[]{0, 7.38905609893065},
-//                        new Object[]{1, 20.085536923187668},
-//                        new Object[]{2, 0.01831563888873418}
-//
-//                );
-//
-//                TestHelper.checkResultSet(
-//                        statement.executeQuery("SELECT ID, ROUND(EXP(Data),6) FROM TableInteger"),
-//                        expectedResult
-//                );
+                //For Double
+                expectedResult = ImmutableList.of(
+                        new Object[]{0, Double.valueOf(7.389056)},
+                        new Object[]{1, Double.valueOf(0.049787)},
+                        new Object[]{2, Double.valueOf(54.59815)}
+                );
 
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT ID, ROUND(EXP(Data),6) FROM TableDouble"),
+                        expectedResult,true
+                );
+
+                //For Integer
+                expectedResult = ImmutableList.of(
+                        new Object[]{0, Double.valueOf(7.38905609893065)},
+                        new Object[]{1, Double.valueOf(20.085536923187668)},
+                        new Object[]{2, Double.valueOf(0.01831563888873418)}
+
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT ID, ROUND(EXP(Data),6) FROM TableInteger"),
+                        expectedResult,true
+                );
 
             }
         }
@@ -195,5 +249,94 @@ public class LogExponentialFunctionsTest {
     }
 
 
+    @Test
+    public void sqrtTest() throws SQLException {
+        try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
+            Connection connection = polyphenyDbConnection.getConnection();
+
+            try (Statement statement = connection.createStatement()) {
+
+                //For Decimal
+                List<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{1, Double.valueOf(1.732050807568877193176604123436845839023590087890625)},
+                        new Object[]{2, Double.valueOf(2.0)}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT ID, SQRT(Data) FROM TableDecimal where data > 0"),
+                        expectedResult,true
+                );
+
+                //For Double
+                expectedResult = ImmutableList.of(
+                        new Object[]{0, Double.valueOf(1.4142135623730951)},
+                        new Object[]{2, Double.valueOf(2.0)}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT ID, SQRT(Data) FROM TableDouble where data > 0"),
+                        expectedResult,true
+                );
+
+
+                //For Integer
+                expectedResult = ImmutableList.of(
+                        new Object[]{0, Double.valueOf(1.4142135623730951)},
+                        new Object[]{1, Double.valueOf(1.732050807568877193176604123436845839023590087890625)}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT ID, SQRT(Data) FROM TableInteger where data > 0"),
+                        expectedResult,true
+                );
+
+                //For TinyInt
+                expectedResult = ImmutableList.of(
+                        new Object[]{1, Double.valueOf(4.795831523312719)},
+                        new Object[]{2, Double.valueOf(11.269427669584644)}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT ID, SQRT(Data) FROM TableTinyInt where data > 0"),
+                        expectedResult,true
+                );
+
+                //For BigInt
+                expectedResult = ImmutableList.of(
+                        new Object[]{0, Double.valueOf(1114.1099586665582)},
+                        new Object[]{1, Double.valueOf(1.0)}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT ID, SQRT(Data) FROM TableBigInt where data > 0"),
+                        expectedResult,true
+                );
+
+                //For SmallInt
+                expectedResult = ImmutableList.of(
+                        new Object[]{1, Double.valueOf(1.732050807568877193176604123436845839023590087890625)},
+                        new Object[]{2, Double.valueOf(181.01657382681842)}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT ID, SQRT(Data) FROM TableSmallInt where data > 0"),
+                        expectedResult,true
+                );
+
+                //For Real
+                expectedResult = ImmutableList.of(
+                        new Object[]{0, Double.valueOf(1.0)},
+                        new Object[]{1, Double.valueOf(1.7320508075688772)},
+                        new Object[]{2, Double.valueOf(1.7320508075688772)}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT ID, SQRT(Data) FROM TableReal where data > 0"),
+                        expectedResult,true
+                );
+
+            }
+        }
+    }
 }
 

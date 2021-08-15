@@ -17,23 +17,24 @@
 package org.polypheny.db.sql.clause;
 
 import com.google.common.collect.ImmutableList;
-
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
-
 import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
 
-@SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
+
+@SuppressWarnings({"SqlDialectInspection", "SqlNoDataSourceInspection"})
 @Slf4j
+@Category({AdapterTestSuite.class})
 public class GroupByTest {
 
 
@@ -68,7 +69,6 @@ public class GroupByTest {
                 statement.executeUpdate("INSERT INTO TestTableC VALUES(2,'Name2','loc2')");
                 statement.executeUpdate("INSERT INTO TestTableC VALUES(3,'Name3','loc3')");
 
-
                 statement.executeUpdate("CREATE TABLE TestTableD(Row_Code VARCHAR(255) NOT NULL,differentname VARCHAR(255),spec VARCHAR(255), Primary key(Row_Code))");
                 statement.executeUpdate("INSERT INTO TestTableD VALUES('A','names1','spec1')");
                 statement.executeUpdate("INSERT INTO TestTableD VALUES('B','names2','spec2')");
@@ -97,7 +97,7 @@ public class GroupByTest {
     // --------------- Tests ---------------
 
     @Test
-    public void groupbytest() throws SQLException {
+    public void groupByTest() throws SQLException {
         try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
             Connection connection = polyphenyDbConnection.getConnection();
 
@@ -113,9 +113,8 @@ public class GroupByTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT S.Name, sum (P.Frequency) FROM TestTableA S, TestTableB P WHERE P.Frequency > 84 GROUP BY S.Name ORDER BY S.Name"),
-                        expectedResult
+                        expectedResult,true
                 );
-
 
             }
 
@@ -125,12 +124,11 @@ public class GroupByTest {
 
 
     @Test
-    public void groupbywithInnerSelect() throws SQLException {
+    public void groupByWithInnerSelect() throws SQLException {
         try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
             Connection connection = polyphenyDbConnection.getConnection();
 
             try (Statement statement = connection.createStatement()) {
-
 
                 List<Object[]> expectedResult = ImmutableList.of(
                         new Object[]{1, "Name1"},
@@ -140,15 +138,13 @@ public class GroupByTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT s.id, s.name FROM TestTableC s, TestTableB t WHERE s.id = t.id AND Frequency >  (SELECT AVG (Frequency) FROM TestTableB WHERE row_code = 'C' GROUP BY row_code='C')\n"),
-                        expectedResult
+                        expectedResult,true
                 );
-
 
             }
 
         }
 
     }
-
 
 }

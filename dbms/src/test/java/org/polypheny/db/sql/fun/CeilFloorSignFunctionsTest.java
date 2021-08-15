@@ -18,15 +18,11 @@ package org.polypheny.db.sql.fun;
 
 
 import com.google.common.collect.ImmutableList;
-
 import java.math.BigDecimal;
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
-
-import junit.framework.TestSuite;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -35,12 +31,11 @@ import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.excluded.CassandraExcluded;
 
 
 @SuppressWarnings({"SqlDialectInspection", "SqlNoDataSourceInspection"})
 @Slf4j
-@Category({AdapterTestSuite.class, CassandraExcluded.class})
+@Category({AdapterTestSuite.class})
 public class CeilFloorSignFunctionsTest {
 
 
@@ -116,7 +111,7 @@ public class CeilFloorSignFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, CEIL(Data) FROM TableDecimal"),
-                        expectedResult
+                        expectedResult, true
                 );
 
                 //For Double
@@ -128,7 +123,7 @@ public class CeilFloorSignFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, CEIL(Data) FROM TableDouble"),
-                        expectedResult
+                        expectedResult, true
                 );
 
 
@@ -142,7 +137,7 @@ public class CeilFloorSignFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID,CEIL(Data) FROM TableInteger"),
-                        expectedResult
+                        expectedResult, true
                 );
 
 
@@ -172,7 +167,7 @@ public class CeilFloorSignFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, FLOOR(Data) FROM TableDecimal"),
-                        expectedResult
+                        expectedResult, true
                 );
 
 
@@ -185,7 +180,7 @@ public class CeilFloorSignFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, FLOOR(Data) FROM TableDouble"),
-                        expectedResult
+                        expectedResult, true
                 );
 
 
@@ -199,7 +194,7 @@ public class CeilFloorSignFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID,FLOOR(Data) FROM TableInteger"),
-                        expectedResult
+                        expectedResult, true
                 );
 
 
@@ -208,6 +203,7 @@ public class CeilFloorSignFunctionsTest {
         }
 
     }
+
 
     @Test
     public void signTest() throws SQLException {
@@ -229,7 +225,7 @@ public class CeilFloorSignFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, SIGN(Data) FROM TableDecimal"),
-                        expectedResult
+                        expectedResult, true
                 );
 
 
@@ -242,7 +238,7 @@ public class CeilFloorSignFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, SIGN(Data) FROM TableDouble"),
-                        expectedResult
+                        expectedResult, true
                 );
 
 
@@ -256,7 +252,7 @@ public class CeilFloorSignFunctionsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID,SIGN(Data) FROM TableInteger"),
-                        expectedResult
+                        expectedResult, true
                 );
 
 
@@ -265,7 +261,6 @@ public class CeilFloorSignFunctionsTest {
         }
 
     }
-
 
 }
 

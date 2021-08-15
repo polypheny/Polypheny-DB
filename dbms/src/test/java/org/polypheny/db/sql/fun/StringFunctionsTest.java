@@ -38,7 +38,7 @@ import org.polypheny.db.excluded.CassandraExcluded;
 
 @SuppressWarnings({"SqlDialectInspection", "SqlNoDataSourceInspection"})
 @Slf4j
-@Category({AdapterTestSuite.class, CassandraExcluded.class})
+@Category({AdapterTestSuite.class})
 public class StringFunctionsTest {
 
 
@@ -59,10 +59,12 @@ public class StringFunctionsTest {
                 statement.executeUpdate("INSERT INTO TableA VALUES (1, 'First')");
                 statement.executeUpdate("INSERT INTO TableA VALUES (2, 'Second')");
                 statement.executeUpdate("INSERT INTO TableA VALUES (3, 'Third')");
+
                 statement.executeUpdate("CREATE TABLE TableB(ID INTEGER NOT NULL, DataB VARCHAR(255), PRIMARY KEY (ID))");
                 statement.executeUpdate("INSERT INTO TableB VALUES (1, 'Fourth')");
                 statement.executeUpdate("INSERT INTO TableB VALUES (2, 'Fifth')");
                 statement.executeUpdate("INSERT INTO TableB VALUES (3, 'Sixth')");
+
                 statement.executeUpdate("CREATE TABLE TableC(ID INTEGER NOT NULL, DataC VARCHAR(255), PRIMARY KEY (ID))");
                 statement.executeUpdate("INSERT INTO TableC VALUES (1, ' Seventh')");
                 statement.executeUpdate("INSERT INTO TableC VALUES (2, 'Eighth ')");
@@ -105,7 +107,7 @@ public class StringFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT S.id ,S.DataA||T.DataB FROM TableA AS S NATURAL JOIN TableB AS T"),
-                        expectedResult);
+                        expectedResult,true);
 
             }
         }
@@ -127,7 +129,7 @@ public class StringFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT S.id ,CHAR_LENGTH(S.DataA||T.DataB) FROM TableA AS S NATURAL JOIN TableB AS T"),
-                        expectedResult);
+                        expectedResult,true);
 
 
                 expectedResult = ImmutableList.of(
@@ -137,7 +139,7 @@ public class StringFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT S.id ,CHAR_LENGTH(S.DataA) FROM TableA AS S"),
-                        expectedResult);
+                        expectedResult,true);
 
             }
         }
@@ -159,7 +161,7 @@ public class StringFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT S.id , Upper(S.DataA||T.DataB) FROM TableA AS S NATURAL JOIN TableB AS T"),
-                        expectedResult);
+                        expectedResult,true);
 
                 //LOWER(CONCATENATED STRING) MAKES STRING LOWER CASE
                 expectedResult = ImmutableList.of(
@@ -169,7 +171,7 @@ public class StringFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT S.id , LOWER(S.DataA||T.DataB) FROM TableA AS S NATURAL JOIN TableB AS T"),
-                        expectedResult);
+                        expectedResult,true);
 
             }
         }
@@ -191,7 +193,7 @@ public class StringFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT S.id ,POSITION('th' IN S.DataA||T.DataB) FROM TableA AS S NATURAL JOIN TableB AS T"),
-                        expectedResult);
+                        expectedResult,true);
 
                 //POSITION(string1 IN string2 FROM integer) Returns the position of the first occurrence of string1 in string2 starting at a given point (not standard SQL)
 //                expectedResult = ImmutableList.of(
@@ -224,7 +226,7 @@ public class StringFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT U.id, TRIM(TRAILING 'th' FROM U.dataC) FROM TableC AS U "),
-                        expectedResult);
+                        expectedResult,true);
 
             }
         }
@@ -246,7 +248,7 @@ public class StringFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT T.id ,Overlay(T.DataB placing 'ty' from 4) FROM TableB AS T"),
-                        expectedResult);
+                        expectedResult,true);
 
                 //OVERLAY() with Concatenated String Inside
                 expectedResult = ImmutableList.of(
@@ -256,7 +258,7 @@ public class StringFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT S.id ,Overlay(S.DataA||T.DataB placing 'ty' from 9) FROM TableA AS S NATURAL JOIN TableB AS T"),
-                        expectedResult);
+                        expectedResult,true);
 
             }
         }
@@ -273,12 +275,12 @@ public class StringFunctionsTest {
                 //SUBSTRING(string FROM integer) Returns a substring of a character string starting at a given point
                 List<Object[]> expectedResult = ImmutableList.of(
                         new Object[]{1, "First"},
-                        new Object[]{2, "Secon"},
+                        new Object[]{2, "Second"},
                         new Object[]{3, "Third"}
                 );
                 TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT S.id ,SUBSTRING(S.DataA,1,5) FROM TableA AS S"),
-                        expectedResult);
+                        statement.executeQuery("SELECT S.id ,SUBSTRING(S.DataA,1) FROM TableA AS S"),
+                        expectedResult,true);
 
                 //SUBSTRING(string FROM integer FOR integer) Returns a substring of a character string starting at a given point with a given length
                 expectedResult = ImmutableList.of(
@@ -288,11 +290,12 @@ public class StringFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT S.id ,SUBSTRING(S.DataA||T.DataB,1,5) FROM TableA AS S NATURAL JOIN TableB AS T"),
-                        expectedResult);
+                        expectedResult,true);
 
             }
         }
     }
+
 
     @Ignore
     @Test
@@ -310,17 +313,17 @@ public class StringFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT id , INITCAP(DataA) FROM TableA"),
-                        expectedResult);
+                        expectedResult,true);
 
                 //INITCAP(string) With String concatenation
-                List<Object[]> expectedResult1 = ImmutableList.of(
+                expectedResult = ImmutableList.of(
                         new Object[]{1, "Firstfourth"},
                         new Object[]{2, "Secondfifth"},
                         new Object[]{3, "Thirdsixth"}
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT S.id , INITCAP(S.DataA||T.DataB) FROM TableA AS S NATURAL JOIN TableB AS T"),
-                        expectedResult1);
+                        expectedResult,true);
 
             }
         }

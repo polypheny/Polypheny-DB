@@ -20,7 +20,6 @@ package org.polypheny.db.sql.fun;
 import com.google.common.collect.ImmutableList;
 
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
@@ -38,7 +37,7 @@ import org.polypheny.db.excluded.CassandraExcluded;
 
 @SuppressWarnings({"SqlDialectInspection", "SqlNoDataSourceInspection"})
 @Slf4j
-@Category({AdapterTestSuite.class, CassandraExcluded.class})
+@Category({AdapterTestSuite.class})
 public class TrigonometricFunctionsTest {
 
 
@@ -106,7 +105,7 @@ public class TrigonometricFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT Angleindegree, SIN(AngleinRadian) FROM trigotestdecimal"),
-                        expectedResult
+                        expectedResult, true
                 );
 
                 // For Double
@@ -117,7 +116,7 @@ public class TrigonometricFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT AngleinDegree, ROUND(SIN(AngleinRadian),6) FROM trigotestdouble"),
-                        expectedResult
+                        expectedResult, true
                 );
 
                 // For Integer
@@ -127,7 +126,7 @@ public class TrigonometricFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT AngleinDegree,SIN(AngleinRadian) FROM trigotestinteger"),
-                        expectedResult
+                        expectedResult, true
                 );
 
             }
@@ -150,7 +149,7 @@ public class TrigonometricFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT AngleinDegree, COS(AngleinRadian) FROM trigotestdecimal"),
-                        expectedResult
+                        expectedResult, true
                 );
 
                 // For Double
@@ -161,7 +160,7 @@ public class TrigonometricFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT AngleinDegree, ROUND(COS(AngleinRadian),6) FROM trigotestdouble"),
-                        expectedResult
+                        expectedResult, true
                 );
 
                 // For Integer
@@ -172,7 +171,7 @@ public class TrigonometricFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT AngleinDegree, COS(AngleinRadian) FROM trigotestinteger"),
-                        expectedResult
+                        expectedResult, true
                 );
 
             }
@@ -196,7 +195,7 @@ public class TrigonometricFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT AngleinDegree, TAN(AngleinRadian) FROM trigotestdecimal"),
-                        expectedResult
+                        expectedResult, true
                 );
 
                 // For Double
@@ -208,7 +207,7 @@ public class TrigonometricFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT AngleinDegree, ROUND(TAN(AngleinRadian),6) FROM trigotestdouble"),
-                        expectedResult
+                        expectedResult, true
                 );
 
                 // For Integer
@@ -219,7 +218,7 @@ public class TrigonometricFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT AngleinDegree, ROUND(TAN(AngleinRadian),6) FROM trigotestinteger"),
-                        expectedResult
+                        expectedResult, true
                 );
 
             }
@@ -242,7 +241,7 @@ public class TrigonometricFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT AngleinDegree, ASIN(AngleinRadian) FROM trigotestdecimal"),
-                        expectedResult
+                        expectedResult, true
                 );
 
                 // For Double
@@ -253,7 +252,7 @@ public class TrigonometricFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT AngleinDegree, ROUND(ASIN(AngleinRadian),6) FROM trigotestdouble"),
-                        expectedResult
+                        expectedResult, true
                 );
 
                 // For Integer
@@ -263,7 +262,47 @@ public class TrigonometricFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT AngleinDegree, ROUND(ASIN(AngleinRadian),6) FROM trigotestinteger"),
-                        expectedResult
+                        expectedResult, true
+                );
+
+            }
+        }
+    }
+
+    @Test
+    public void cot() throws SQLException {
+        try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
+            Connection connection = polyphenyDbConnection.getConnection();
+
+            try (Statement statement = connection.createStatement()) {
+
+                // For Decimal
+                List<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{30, Double.valueOf(1.7465362641453972)},
+                        new Object[]{45, Double.valueOf(1.4307812451098423)}
+                );
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT AngleinDegree, COT(AngleinRadian) FROM trigotestdecimal where AngleinDegree <> 0"),
+                        expectedResult, true
+                );
+
+                // For Double
+                expectedResult = ImmutableList.of(
+                        new Object[]{30, Double.valueOf(1.7465362641453972)},
+                        new Object[]{45, Double.valueOf(1.4307812451098423)}
+                );
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT AngleinDegree, COT(AngleinRadian) FROM trigotestdouble where AngleinDegree <> 0"),
+                        expectedResult, true
+                );
+
+                // For Integer
+                expectedResult = ImmutableList.of(
+                        new Object[]{58, 0.6420926159343306}
+                );
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT AngleinDegree, COT(AngleinRadian) FROM trigotestInteger where AngleinDegree <> 0"),
+                        expectedResult, true
                 );
 
             }
@@ -286,7 +325,7 @@ public class TrigonometricFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT AngleinDegree, ACOS(AngleinRadian) FROM trigotestdecimal"),
-                        expectedResult
+                        expectedResult, true
                 );
 
                 // For Double
@@ -297,9 +336,8 @@ public class TrigonometricFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT AngleinDegree, ROUND(ACOS(AngleinRadian),6) FROM trigotestdouble"),
-                        expectedResult
+                        expectedResult, true
                 );
-
 
                 // For Integer
                 expectedResult = ImmutableList.of(
@@ -308,9 +346,8 @@ public class TrigonometricFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT AngleinDegree, ROUND(ACOS(AngleinRadian),6) FROM trigotestinteger"),
-                        expectedResult
+                        expectedResult, true
                 );
-
 
             }
         }
@@ -332,7 +369,7 @@ public class TrigonometricFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT AngleinDegree, ATAN(AngleinRadian) FROM trigotestdecimal"),
-                        expectedResult
+                        expectedResult, true
                 );
 
                 // For Double
@@ -343,7 +380,7 @@ public class TrigonometricFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT AngleinDegree, ROUND(ATAN(AngleinRadian),6) FROM trigotestdouble"),
-                        expectedResult
+                        expectedResult, true
                 );
 
                 // For Integer
@@ -353,9 +390,59 @@ public class TrigonometricFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT AngleinDegree, ROUND(ATAN(AngleinRadian),6) FROM trigotestinteger"),
+                        expectedResult, true
+                );
+
+                //ATan2 For Decimal
+                expectedResult = ImmutableList.of(
+                        new Object[]{0, 0.0},
+                        new Object[]{58, 1.553557}
+                );
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT AngleinDegree, ROUND(ATAN2(AngleinDegree,AngleinRadian),6) FROM trigotestinteger"),
+                        expectedResult, true
+                );
+
+            }
+        }
+    }
+
+
+    @Test
+    public void degreeRadianPiTest() throws SQLException {
+        try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
+            Connection connection = polyphenyDbConnection.getConnection();
+
+            try (Statement statement = connection.createStatement()) {
+
+                //PI() NOT WORKING
+//                List<Object[]> expectedResult = ImmutableList.of(
+//                        new Object[]{3.1415926535897931}
+//                );
+//                TestHelper.checkResultSet(
+//                        statement.executeQuery("SELECT PI() - 1"),
+//                        expectedResult
+//                );
+
+
+                //Degree() with TRUNCATE and Round
+                List<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{30.0}
+                );
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT TRUNCATE(ROUND(DEGREES(0.523599),1),1)"),
                         expectedResult
                 );
 
+                //Radian with TRUNCATE and Round
+                expectedResult = ImmutableList.of(
+                        new Object[]{0.5235}
+
+                );
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT TRUNCATE(ROUND(RADIANS(30),6),4)"),
+                        expectedResult
+                );
             }
         }
     }

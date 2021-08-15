@@ -28,12 +28,16 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.excluded.CassandraExcluded;
 
 
 @SuppressWarnings({"SqlDialectInspection", "SqlNoDataSourceInspection"})
 @Slf4j
+@Category({AdapterTestSuite.class})
 public class SelectTest {
 
 
@@ -54,10 +58,12 @@ public class SelectTest {
                 statement.executeUpdate("INSERT INTO TableA VALUES (12, 'Name1', 60)");
                 statement.executeUpdate("INSERT INTO TableA VALUES (15, 'Name2', 24)");
                 statement.executeUpdate("INSERT INTO TableA VALUES (99, 'Name3', 11)");
+
                 statement.executeUpdate("CREATE TABLE TableB(  ID INTEGER NOT NULL, NAME VARCHAR(20), AGE INTEGER, PRIMARY KEY (ID) )");
                 statement.executeUpdate("INSERT INTO TableB VALUES (15, 'Name2', 24)");
                 statement.executeUpdate("INSERT INTO TableB VALUES (25, 'Name4', 40)");
                 statement.executeUpdate("INSERT INTO TableB VALUES (98, 'Name3', 20)");
+
                 statement.executeUpdate("CREATE TABLE TableC(  ID INTEGER NOT NULL, category VARCHAR(2), Tid BIGINT, PRIMARY KEY (ID) )");
                 statement.executeUpdate("INSERT INTO TableC VALUES (15, 'AB', 8200)");
                 statement.executeUpdate("INSERT INTO TableC VALUES (25, 'AB', 8201)");
@@ -78,7 +84,7 @@ public class SelectTest {
                 statement.executeUpdate("DROP TABLE TableA");
                 statement.executeUpdate("DROP TABLE TableB");
                 statement.executeUpdate("DROP TABLE TableC");
-                //   statement.executeUpdate( "DROP TABLE trigotestinteger" );
+
             }
             connection.commit();
         }
@@ -86,7 +92,8 @@ public class SelectTest {
 
     // --------------- Tests ---------------
 
-    @Ignore
+
+
     @Test
     public void nestedSelect() throws SQLException {
         try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
@@ -94,25 +101,108 @@ public class SelectTest {
 
             try (Statement statement = connection.createStatement()) {
 
+                //All with Inner Select
+                //ALL is only supported if expand = false
 
-                List<Object[]> expectedResult1 = ImmutableList.of(
+//                List<Object[]> expectedResult = ImmutableList.of(
+//                        new Object[]{12, "Name1"},
+//                        new Object[]{15, "Name2"}
+//                );
+//
+//                TestHelper.checkResultSet(
+//                        statement.executeQuery("SELECT TableA.id, TableA.name FROM  TableA WHERE  TableA.age > ALL (SELECT age FROM TableB WHERE TableB.name = 'Name3')"),
+//                        expectedResult,true
+//                );
+//
+//                //SOME with Inner Select
+//                //ALL is only supported if expand = false
+//                expectedResult = ImmutableList.of(
+//                        new Object[]{99, "Name3"}
+//                );
+//
+//                TestHelper.checkResultSet(
+//                        statement.executeQuery("SELECT TableA.id, TableA.name FROM  TableA WHERE  TableA.age < SOME (SELECT age FROM TableB WHERE TableB.name = 'Name3')"),
+//                        expectedResult
+//                );
+//
+//                //ANY with inner select
+//                //ALL is only supported if expand = false
+//               expectedResult = ImmutableList.of(
+//                        new Object[]{12, "Name1"},
+//                        new Object[]{15, "Name2"}
+//                );
+//
+//                TestHelper.checkResultSet(
+//                        statement.executeQuery("SELECT TableA.id, TableA.name FROM  TableA WHERE TableA.age > ANY (SELECT age FROM TableB WHERE TableB.name = 'Name3')"),
+//                        expectedResult,true
+//                );
+//
+//
+//                expectedResult = ImmutableList.of(
+//                        new Object[]{12, "Name1"},
+//                        new Object[]{15, "Name2"},
+//                        new Object[]{99, "Name3"}
+//                );
+//
+//                TestHelper.checkResultSet(
+//                        statement.executeQuery("SELECT TableA.id, TableA.name FROM  TableA WHERE TableA.age NOT IN (SELECT age FROM TableB WHERE TableB.name = 'Name3')"),
+//                        expectedResult,true
+//                );
+
+                //NOT IN(SUB-QUERY)
+                List<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{12, "Name1"},
+                        new Object[]{15, "Name2"},
+                        new Object[]{99, "Name3"}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT TableA.id, TableA.name FROM  TableA WHERE TableA.age NOT IN (SELECT age FROM TableB WHERE TableB.name = 'Name3')"),
+                        expectedResult,true
+                );
+
+                //IN(SUB-QUERY)
+                expectedResult = ImmutableList.of(
+                        new Object[]{12, "Name1"},
+                        new Object[]{99, "Name3"}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("\n" +
+                                "SELECT TableA.id, TableA.name FROM  TableA WHERE  TableA.age NOT IN (SELECT age FROM TableB WHERE TableB.name = 'Name2')"),
+                        expectedResult,true
+                );
+
+                //IN(value)
+                expectedResult = ImmutableList.of(
+                        new Object[]{12, "Name1"},
+                        new Object[]{99, "Name3"}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("\n" +
+                                "SELECT TableA.id, TableA.name FROM  TableA WHERE  TableA.age IN (60,11,50)"),
+                        expectedResult,true
+                );
+
+                //NOT IN(value)
+                expectedResult = ImmutableList.of(
                         new Object[]{12, "Name1"},
                         new Object[]{15, "Name2"}
                 );
 
-//'All' key word has to be used After > sign
-
                 TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT TableA.id, TableA.name FROM  TableA WHERE  TableA.age >  SELECT age FROM TableB WHERE TableB.name = 'Name3' "),
-                        expectedResult1
+                        statement.executeQuery("\n" +
+                                "SELECT TableA.id, TableA.name FROM  TableA WHERE  TableA.age NOT IN (11)"),
+                        expectedResult,true
                 );
-
 
             }
 
         }
 
     }
+
 
     @Test
     public void existsSelect() throws SQLException {
@@ -122,16 +212,15 @@ public class SelectTest {
             try (Statement statement = connection.createStatement()) {
 
 
-                List<Object[]> expectedResult1 = ImmutableList.of(
+                List<Object[]> expectedResult = ImmutableList.of(
                         new Object[]{98}
                 );
 
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT id FROM TABLEC WHERE category='AC' AND EXISTS (SELECT *  FROM TABLEB WHERE age > 19 AND TABLEB.id = TABLEC.id)"),
-                        expectedResult1
+                        expectedResult
                 );
-
 
             }
 

@@ -18,7 +18,6 @@ package org.polypheny.db.sql.fun;
 
 import com.google.common.collect.ImmutableList;
 
-import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -37,7 +36,7 @@ import org.polypheny.db.excluded.CassandraExcluded;
 
 @SuppressWarnings({"SqlDialectInspection", "SqlNoDataSourceInspection"})
 @Slf4j
-@Category({AdapterTestSuite.class, CassandraExcluded.class})
+@Category({AdapterTestSuite.class})
 public class OperatorsTest {
 
 
@@ -58,6 +57,7 @@ public class OperatorsTest {
                 statement.executeUpdate("INSERT INTO TestTable VALUES (0, 0,  'dataA')");
                 statement.executeUpdate("INSERT INTO TestTable VALUES (1, 10, 'dataB')");
                 statement.executeUpdate("INSERT INTO TestTable VALUES (2, 1,  'dataC')");
+
                 statement.executeUpdate("CREATE TABLE TestTableB( ID INTEGER NOT NULL,NumberData INTEGER, TextDataA VARCHAR(20), TextDataB VARCHAR(20), PRIMARY KEY (ID) )");
                 statement.executeUpdate("INSERT INTO TestTableB VALUES (4, 2,  'dataA','dataA')");
                 statement.executeUpdate("INSERT INTO TestTableB VALUES (5, 11, 'dataB','dataD')");
@@ -97,7 +97,7 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable AS A Where A.ID=A.NumberData"),
-                        expectedResult
+                        expectedResult, true
                 );
 
                 //Not Equal (<>)
@@ -109,7 +109,7 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable AS A Where A.ID<>A.NumberData"),
-                        expectedResult
+                        expectedResult, true
                 );
 
                 //NOT Equal(!=) only available at some conformance levels
@@ -133,7 +133,7 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable AS A Where A.ID >= A.NumberData"),
-                        expectedResult
+                        expectedResult, true
                 );
 
                 //Less than or Equal (<=)
@@ -145,7 +145,7 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable AS A Where A.ID <= A.NumberData"),
-                        expectedResult
+                        expectedResult, true
                 );
 
 
@@ -159,7 +159,7 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable AS A Where A.NumberData IS NOT NULL"),
-                        expectedResult
+                        expectedResult, true
                 );
 
 
@@ -181,7 +181,7 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable AS A Where A.NumberData IS DISTINCT FROM ID"),
-                        expectedResult
+                        expectedResult, true
                 );
 
                 //NOT DISTINCT (IS NOT DISTINCT FROM)
@@ -191,7 +191,7 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable AS A Where A.NumberData IS NOT DISTINCT FROM ID"),
-                        expectedResult
+                        expectedResult, true
                 );
 
                 //BETWEEN (BETWEEN VALUE1 AND VALUE2)
@@ -202,7 +202,7 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable AS A Where A.NumberData BETWEEN 1 AND 11"),
-                        expectedResult
+                        expectedResult, true
                 );
 
 
@@ -213,7 +213,7 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable AS A Where A.NumberData NOT BETWEEN 1 AND 11"),
-                        expectedResult
+                        expectedResult, true
                 );
 
                 //LIKE (string1 LIKE string 2)
@@ -223,7 +223,7 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextDataA FROM TestTableB AS B Where B.TextDataA LIKE B.TextDataB"),
-                        expectedResult
+                        expectedResult, true
                 );
 
                 //NOT LIKE (string1 NOT LIKE string 2)
@@ -234,7 +234,7 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextDataA FROM TestTableB AS B Where B.TextDataA NOT LIKE B.TextDataB"),
-                        expectedResult
+                        expectedResult, true
                 );
 
 
@@ -284,7 +284,7 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable Where TRUE or FALSE"),
-                        expectedResult
+                        expectedResult, true
                 );
 
 
@@ -307,7 +307,7 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable Where NOT FALSE "),
-                        expectedResult
+                        expectedResult, true
                 );
 
 
@@ -331,7 +331,7 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable Where TRUE IS NOT FALSE "),
-                        expectedResult
+                        expectedResult, true
                 );
 
 
@@ -344,7 +344,7 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable Where TRUE IS TRUE"),
-                        expectedResult
+                        expectedResult, true
                 );
 
                 //NOT TRUE(boolean is NOT TRUE)
@@ -356,7 +356,7 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, TextData FROM TestTable Where FALSE IS NOT TRUE"),
-                        expectedResult
+                        expectedResult, true
                 );
 
 
@@ -365,6 +365,7 @@ public class OperatorsTest {
         }
 
     }
+
 
     @Test
     public void arithmeticOperators() throws SQLException {
@@ -382,7 +383,7 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, NumberData + ID FROM TestTableB"),
-                        expectedResult
+                        expectedResult, true
                 );
 
 
@@ -396,7 +397,7 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, -(NumberData - ID) FROM TestTableB"),
-                        expectedResult
+                        expectedResult, true
                 );
 
                 // * (numeric1 * numeric2)
@@ -408,7 +409,7 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, NumberData*ID FROM TestTableB"),
-                        expectedResult
+                        expectedResult, true
                 );
 
 
@@ -421,7 +422,7 @@ public class OperatorsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, ID/NumberData FROM TestTableB"),
-                        expectedResult
+                        expectedResult, true
                 );
 
 
@@ -443,6 +444,38 @@ public class OperatorsTest {
 
     }
 
+
+    @Test
+    public void randTest() throws SQLException {
+        try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
+            Connection connection = polyphenyDbConnection.getConnection();
+
+            try (Statement statement = connection.createStatement()) {
+
+                //RAND([seed])
+                List<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{0.1181129375521941}
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("Select Rand(5)"),
+                        expectedResult, true
+                );
+
+
+                // RAND_INTEGER([seed, ] numeric)
+                expectedResult = ImmutableList.of(
+                        new Object[]{2}
+
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT RAND_INTEGER(5,5)"),
+                        expectedResult, true
+                );
+            }
+        }
+    }
 
 }
 

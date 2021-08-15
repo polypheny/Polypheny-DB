@@ -37,7 +37,7 @@ import org.polypheny.db.excluded.CassandraExcluded;
 
 @SuppressWarnings({"SqlDialectInspection", "SqlNoDataSourceInspection"})
 @Slf4j
-@Category({AdapterTestSuite.class, CassandraExcluded.class})
+@Category({AdapterTestSuite.class})
 public class PowerAbsModFunctionTest {
 
 
@@ -97,7 +97,6 @@ public class PowerAbsModFunctionTest {
 
             try (Statement statement = connection.createStatement()) {
 
-
                 //For Decimal
                 List<Object[]> expectedResult = ImmutableList.of(
                         new Object[]{0, 4.0},
@@ -107,7 +106,7 @@ public class PowerAbsModFunctionTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, Power(Data,2) FROM TableDecimal"),
-                        expectedResult
+                        expectedResult,true
                 );
 
                 //For Double
@@ -119,9 +118,8 @@ public class PowerAbsModFunctionTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, Power(Data,2) FROM TableDouble"),
-                        expectedResult
+                        expectedResult,true
                 );
-
 
                 //For Integer
                 expectedResult = ImmutableList.of(
@@ -133,9 +131,8 @@ public class PowerAbsModFunctionTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, Power(Data,2) FROM TableInteger"),
-                        expectedResult
+                        expectedResult,true
                 );
-
 
             }
         }
@@ -165,11 +162,11 @@ public class PowerAbsModFunctionTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, Abs(Data) FROM TableDecimal"),
-                        expectedResult
+                        expectedResult,true
                 );
 
                 //For Double
-                expectedResult= ImmutableList.of(
+                expectedResult = ImmutableList.of(
                         new Object[]{0, 2.0},
                         new Object[]{1, 3.0},
                         new Object[]{2, 4.0}
@@ -177,7 +174,7 @@ public class PowerAbsModFunctionTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, Abs(Data) FROM TableDouble"),
-                        expectedResult
+                        expectedResult,true
                 );
 
 
@@ -191,7 +188,7 @@ public class PowerAbsModFunctionTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, Abs(Data) FROM TableInteger"),
-                        expectedResult
+                        expectedResult,true
                 );
 
 
@@ -218,7 +215,7 @@ public class PowerAbsModFunctionTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, Mod(Data,2) FROM TableDecimal"),
-                        expectedResult
+                        expectedResult,true
                 );
 
 //MOD DOES NOT WOK ON DOUBLE AS THEY ARE NOT EXACT
@@ -245,7 +242,7 @@ public class PowerAbsModFunctionTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery("SELECT ID, Mod(Data,2) FROM TableInteger"),
-                        expectedResult
+                        expectedResult,true
                 );
 
 
@@ -253,7 +250,6 @@ public class PowerAbsModFunctionTest {
         }
 
     }
-
 
 }
 
