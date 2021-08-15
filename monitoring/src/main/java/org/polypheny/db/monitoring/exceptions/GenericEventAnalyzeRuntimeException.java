@@ -16,12 +16,12 @@
 
 package org.polypheny.db.monitoring.exceptions;
 
-
-public class GenericEventAnalyzeException extends RuntimeException  {
 /**
  * Generic Event Analyzer Exception
  */
-    public GenericEventAnalyzeException( String message ) {
+public class GenericEventAnalyzeRuntimeException extends RuntimeException {
+
+    public GenericEventAnalyzeRuntimeException( String message ) {
         super( message );
     }
 

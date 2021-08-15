@@ -62,10 +62,10 @@ public class InformationDuration extends Information {
     }
 
 
-    public long getNanoDuration( final String name ) throws InformationRuntimeException{
+    public long getNanoDuration( final String name ) throws InformationRuntimeException {
         Duration child = this.get( name );
         if ( child == null ) {
-           throw new InformationRuntimeException( "could no find duration: " + name );
+            throw new InformationRuntimeException( "could no find duration: " + name );
         }
         return child.duration;
     }
