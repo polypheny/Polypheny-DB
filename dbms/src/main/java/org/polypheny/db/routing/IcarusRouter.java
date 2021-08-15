@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.routing.routers;
+package org.polypheny.db.routing;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,8 +28,6 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.routing.LogicalQueryInformation;
-import org.polypheny.db.routing.Router;
 import org.polypheny.db.routing.factories.RouterFactory;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.tools.RoutedRelBuilder;

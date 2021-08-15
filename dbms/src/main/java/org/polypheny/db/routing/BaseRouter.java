@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.routing.routers;
+package org.polypheny.db.routing;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
