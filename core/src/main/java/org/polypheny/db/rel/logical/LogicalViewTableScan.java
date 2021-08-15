@@ -31,6 +31,7 @@ import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollationTraitDef;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Project;
 import org.polypheny.db.rel.core.TableScan;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
@@ -92,7 +93,11 @@ public class LogicalViewTableScan extends TableScan {
             exprs.add( rexBuilder.makeInputRef( this, i ) );
         }
 
-        return LogicalProject.create( relNode, exprs, this.getRowType().getFieldNames() );
+        if ( relNode instanceof Project && relNode.getRowType().getFieldNames().equals( this.getRowType().getFieldNames() ) ) {
+            return relNode;
+        } else {
+            return LogicalProject.create( relNode, exprs, this.getRowType().getFieldNames() );
+        }
     }
 
 }
