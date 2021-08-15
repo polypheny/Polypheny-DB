@@ -144,7 +144,8 @@ public class JdbcPreparedStatementsTest {
                             preparedSelect.executeQuery(),
                             ImmutableList.of(
                                     new Object[]{ 1, "Foo" },
-                                    new Object[]{ 2, "Bar" } ) );
+                                    new Object[]{ 2, "Bar" } ),
+                            true );
 
                 } finally {
                     statement.executeUpdate( "DROP TABLE pstest" );
@@ -178,7 +179,8 @@ public class JdbcPreparedStatementsTest {
                             preparedSelect.executeQuery(),
                             ImmutableList.of(
                                     new Object[]{ 1, "hans" },
-                                    new Object[]{ 2, "hans" } ) );
+                                    new Object[]{ 2, "hans" } ),
+                            true );
                 } finally {
                     statement.executeUpdate( "DROP TABLE pstest" );
                 }

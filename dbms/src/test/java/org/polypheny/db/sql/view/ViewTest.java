@@ -71,23 +71,12 @@ public class ViewTest {
             + "(2, 'Waldstrasse 11', 99900, 'Singen', 'Germany'),"
             + "(3, '5th Avenue 1234', 10001, 'New York', 'USA') ";
 
-    private final static String DROP_viewTestEmpTable = "DROP TABLE IF EXISTS viewTestEmpTable";
-    private final static String DROP_viewTestDepTable = "DROP TABLE IF EXISTS viewTestDepTable";
-    private final static String DROP_viewTestLocTable = "DROP TABLE IF EXISTS viewTestLocTable";
-
 
     @BeforeClass
     public static void start() {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
-    }
-
-
-    public void dropTables( Statement statement ) throws SQLException {
-        statement.executeUpdate( DROP_viewTestEmpTable );
-        statement.executeUpdate( DROP_viewTestDepTable );
-        statement.executeUpdate( DROP_viewTestLocTable );
     }
 
 
@@ -121,12 +110,13 @@ public class ViewTest {
                             )
                     );
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM viewTestEmpDep ORDER BY firstName" ),
+                            statement.executeQuery( "SELECT * FROM viewTestEmpDep" ),
                             ImmutableList.of(
-                                    new Object[]{ "Elsa", "HR" },
+                                    new Object[]{ "Max", "IT" },
                                     new Object[]{ "Ernst", "Sales" },
-                                    new Object[]{ "Max", "IT" }
-                            )
+                                    new Object[]{ "Elsa", "HR" }
+                            ),
+                            true
                     );
                     connection.commit();
                 } finally {
@@ -134,7 +124,6 @@ public class ViewTest {
                     statement.executeUpdate( "Drop VIEW viewTestEmpDep" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
                     statement.executeUpdate( "DROP TABLE viewTestDepTable" );
-                    dropTables( statement );
                 }
             }
         }
@@ -157,23 +146,26 @@ public class ViewTest {
                     statement.executeUpdate( "ALTER VIEW viewTestEmp RENAME COLUMN depId TO departmentId" );
 
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT employeeId FROM viewTestEmp ORDER BY employeeId" ),
+                            statement.executeQuery( "SELECT employeeId FROM viewTestEmp" ),
                             ImmutableList.of(
                                     new Object[]{ 1 },
                                     new Object[]{ 2 },
-                                    new Object[]{ 3 } ) );
+                                    new Object[]{ 3 } ),
+                            true );
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT fName FROM viewTestEmp ORDER BY fname" ),
+                            statement.executeQuery( "SELECT fName FROM viewTestEmp" ),
                             ImmutableList.of(
-                                    new Object[]{ "Elsa" },
+                                    new Object[]{ "Max" },
                                     new Object[]{ "Ernst" },
-                                    new Object[]{ "Max" } ) );
+                                    new Object[]{ "Elsa" } ),
+                            true );
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT lName FROM viewTestEmp ORDER BY lName" ),
+                            statement.executeQuery( "SELECT lName FROM viewTestEmp" ),
                             ImmutableList.of(
                                     new Object[]{ "Kuster" },
                                     new Object[]{ "Muster" },
-                                    new Object[]{ "Walter" } ) );
+                                    new Object[]{ "Walter" } ),
+                            true );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT departmentId FROM viewTestEmp ORDER BY departmentId" ),
                             ImmutableList.of(
@@ -184,7 +176,6 @@ public class ViewTest {
                 } finally {
                     statement.executeUpdate( "DROP VIEW viewTestEmp" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
-                    dropTables( statement );
                 }
 
             }
@@ -217,12 +208,13 @@ public class ViewTest {
                             )
                     );
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM viewRenameDepTest ORDER BY depid" ),
+                            statement.executeQuery( "SELECT * FROM viewRenameDepTest" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "IT", 1 },
                                     new Object[]{ 2, "Sales", 2 },
                                     new Object[]{ 3, "HR", 3 }
-                            )
+                            ),
+                            true
                     );
                     connection.commit();
                 } finally {
@@ -230,7 +222,6 @@ public class ViewTest {
                     statement.executeUpdate( "DROP VIEW viewRenameDepTest" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
                     statement.executeUpdate( "DROP TABLE viewTestDepTable" );
-                    dropTables( statement );
                 }
             }
         }
@@ -260,7 +251,6 @@ public class ViewTest {
                 } finally {
                     statement.executeUpdate( "DROP TABLE viewTestDepTable" );
                     statement.executeUpdate( "DROP TABLE viewTestLocTable" );
-                    dropTables( statement );
                 }
             }
         }
@@ -313,7 +303,6 @@ public class ViewTest {
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
                     statement.executeUpdate( "DROP TABLE viewTestDepTable" );
                     statement.executeUpdate( "DROP TABLE viewTestLocTable" );
-                    dropTables( statement );
                 }
             }
         }
@@ -346,7 +335,6 @@ public class ViewTest {
                     statement.executeUpdate( "DROP VIEW viewTestEmp" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
                     statement.executeUpdate( "DROP TABLE viewTestDepTable" );
-                    dropTables( statement );
                 }
             }
         }
@@ -367,12 +355,13 @@ public class ViewTest {
                     statement.executeUpdate( "CREATE VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
                     statement.executeUpdate( "CREATE VIEW viewTestDep AS SELECT * FROM viewTestDepTable" );
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM viewTestEmp, viewTestDep WHERE depname = 'IT' ORDER BY empid" ),
+                            statement.executeQuery( "SELECT * FROM viewTestEmp, viewTestDep WHERE depname = 'IT'" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "Max", "Muster", 1, 1, "IT", 1 },
                                     new Object[]{ 2, "Ernst", "Walter", 2, 1, "IT", 1 },
                                     new Object[]{ 3, "Elsa", "Kuster", 3, 1, "IT", 1 }
-                            )
+                            ),
+                            true
                     );
 
                     connection.commit();
@@ -381,7 +370,6 @@ public class ViewTest {
                     statement.executeUpdate( "DROP VIEW viewTestDep" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
                     statement.executeUpdate( "DROP TABLE viewTestDepTable" );
-                    dropTables( statement );
                 }
             }
         }
@@ -403,12 +391,13 @@ public class ViewTest {
                     statement.executeUpdate( "CREATE VIEW viewTestDep AS SELECT * FROM viewTestDepTable" );
                     statement.executeUpdate( "Create view viewFromView as Select * FROM viewTestEmp, viewTestDep WHERE depname = 'IT'" );
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM viewFromView ORDER BY empid" ),
+                            statement.executeQuery( "SELECT * FROM viewFromView" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "Max", "Muster", 1, 1, "IT", 1 },
                                     new Object[]{ 2, "Ernst", "Walter", 2, 1, "IT", 1 },
                                     new Object[]{ 3, "Elsa", "Kuster", 3, 1, "IT", 1 }
-                            )
+                            ),
+                            true
                     );
 
                     connection.commit();
@@ -418,7 +407,6 @@ public class ViewTest {
                     statement.executeUpdate( "DROP VIEW viewTestDep" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
                     statement.executeUpdate( "DROP TABLE viewTestDepTable" );
-                    dropTables( statement );
                 }
             }
         }
