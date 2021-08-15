@@ -68,24 +68,6 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
     }
 
 
-    @Override
-    public <T extends MonitoringDataPoint> void registerDataPointForUi( @NonNull Class<T> metricClass ) {
-        String className = metricClass.getName();
-        val informationGroup = new InformationGroup( informationPage, className );
-
-        // TODO: see todo below
-        val fieldAsString = Arrays.stream( metricClass.getDeclaredFields() )
-                .map( Field::getName )
-                .filter( str -> !str.equals( "serialVersionUID" ) )
-                .collect( Collectors.toList() );
-        val informationTable = new InformationTable( informationGroup, fieldAsString );
-
-        informationGroup.setRefreshFunction( () -> this.updateMetricInformationTable( informationTable, metricClass ) );
-
-        addInformationGroupTUi( informationGroup, Arrays.asList( informationTable ) );
-    }
-
-
     /**
      * Universal method to add arbitrary new information Groups to UI.
      */

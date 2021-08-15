@@ -36,7 +36,6 @@ public class MonitoringServiceFactory {
         // Create monitoring service with dependencies
         MonitoringQueue queueWriteService = new MonitoringQueueImpl( repo );
         MonitoringServiceUi uiService = new MonitoringServiceUiImpl( repo, queueWriteService );
-        uiService.registerDataPointForUi( QueryDataPoint.class );
 
         // Initialize the monitoringService
         MonitoringServiceImpl monitoringService = new MonitoringServiceImpl( queueWriteService, repo, uiService );

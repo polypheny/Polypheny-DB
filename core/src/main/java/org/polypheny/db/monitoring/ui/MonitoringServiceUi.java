@@ -26,12 +26,4 @@ public interface MonitoringServiceUi {
 
     void initializeInformationPage();
 
-    /**
-     * Will add new section to monitoring information page for the specified
-     * MonitoringPersistentData type and register the refresh function to read from repository.
-     *
-     * @param metricClass metric class to register in the monitoring UI for debugging purposes
-     */
-    <T extends MonitoringDataPoint> void registerDataPointForUi( Class<T> metricClass );
-
 }

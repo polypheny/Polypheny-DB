@@ -34,7 +34,7 @@ public interface MonitoringRepository {
     /**
      * Persist given monitoring metric.
      *
-     * @param dataPoint
+     * @param dataPoint to be persisted in repository backend
      */
     void persistDataPoint( MonitoringDataPoint dataPoint );
 
