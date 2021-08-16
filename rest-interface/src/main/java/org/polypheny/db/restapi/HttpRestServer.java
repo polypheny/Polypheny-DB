@@ -144,6 +144,9 @@ public class HttpRestServer extends QueryInterface {
     String processCQLRequest( Rest rest, RequestType type, Request request, Response response ) {
         try {
             String cqlQueryStr = request.body();
+            if ( request.queryParams( "testing" ) != null ) {
+                cqlQueryStr = request.queryParams( "cql" );
+            }
             CqlParser cqlParser = new CqlParser( cqlQueryStr, databaseName );
             CqlQuery cqlQuery = cqlParser.parse();
 

@@ -1,0 +1,393 @@
+/*
+ * Copyright 2019-2021 The Polypheny Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.polypheny.db.cql;
+
+import kong.unirest.GetRequest;
+import kong.unirest.HttpResponse;
+import kong.unirest.JsonNode;
+import kong.unirest.Unirest;
+import lombok.extern.slf4j.Slf4j;
+import org.junit.Assert;
+import org.junit.Test;
+import org.polypheny.db.cql.testhelpers.CqlTestHelper;
+
+
+@Slf4j
+public class CqlRestExecutionTest extends CqlTestHelper {
+
+    @Test
+    public void testRestCqlEmptyQueryReturnsException() {
+        JsonNode expectedJsonNode = new JsonNode( "{\"Exception\":"
+                + " \"Query relations and filters cannot both be empty.\"}" );
+
+        restCqlTestHelper( "", expectedJsonNode );
+    }
+
+
+    @Test
+    public void testRestCqlFilterOnlyQuery() {
+        JsonNode expectedJsonNode = new JsonNode( "{\"result\":[{\"test.employee.married\":false,"
+                + "\"test.employee.empname\":\"Anagha\",\"test.employee.empno\":18,"
+                + "\"test.employee.joining_date\":18914,\"test.employee.dob\":11244,"
+                + "\"test.employee.salary\":90000.0,\"test.employee.deptno\":5}],\"size\":1}" );
+
+        restCqlTestHelper( "test.employee.empname == \"Anagha\"", expectedJsonNode );
+    }
+
+
+    @Test
+    public void testRestCqlFiltersOnlyQueryWithANDOperator() {
+        JsonNode expectedJsonNode = new JsonNode( "{\"result\":[{\"test.employee.married\":true,"
+                + "\"test.employee.empname\":\"Holt\",\"test.dept.deptno\":6,\"test.employee.empno\":21,"
+                + "\"test.employee.joining_date\":7305,\"test.employee.dob\":-4328,\"test.employee.salary\":87000.0,"
+                + "\"test.employee.deptno\":6,\"test.dept.deptname\":\"IT\"},{\"test.employee.married\":true,"
+                + "\"test.employee.empname\":\"Mando\",\"test.dept.deptno\":6,\"test.employee.empno\":23,"
+                + "\"test.employee.joining_date\":7305,\"test.employee.dob\":-763,\"test.employee.salary\":35700.0,"
+                + "\"test.employee.deptno\":6,\"test.dept.deptname\":\"IT\"}],\"size\":2}" );
+
+        restCqlTestHelper( "test.dept.deptname = \"IT\" and test.employee.married = TRUE",
+                expectedJsonNode );
+    }
+
+
+    @Test
+    public void testRestCqlFiltersOnlyQueryWithOROperator() {
+        JsonNode expectedJsonNode = new JsonNode( "{\"result\":[{\"test.dept.deptno\":1,"
+                + "\"test.dept.deptname\":\"Human Resources\"},{\"test.dept.deptno\":6,"
+                + "\"test.dept.deptname\":\"IT\"}],\"size\":2}" );
+
+        restCqlTestHelper( "test.dept.deptname = \"IT\" or test.dept.deptname = \"Human Resources\"",
+                expectedJsonNode );
+    }
+
+
+    @Test
+    public void testRestCqlFiltersOnlyQueryWithNOTOperator() {
+        JsonNode expectedJsonNode = new JsonNode( "{\"result\":[{\"test.employee.married\":true,"
+                + "\"test.employee.empname\":\"Imane\",\"test.dept.deptno\":2,\"test.employee.empno\":5,"
+                + "\"test.employee.joining_date\":11627,\"test.employee.dob\":7001,\"test.employee.salary\":27000.0,"
+                + "\"test.employee.deptno\":2,\"test.dept.deptname\":\"Marketing\"},{\"test.employee.married\":false,"
+                + "\"test.employee.empname\":\"Rhody\",\"test.dept.deptno\":2,\"test.employee.empno\":6,"
+                + "\"test.employee.joining_date\":9812,\"test.employee.dob\":201,\"test.employee.salary\":67500.0,"
+                + "\"test.employee.deptno\":2,\"test.dept.deptname\":\"Marketing\"},{\"test.employee.married\":true,"
+                + "\"test.employee.empname\":\"Cryer\",\"test.dept.deptno\":2,\"test.employee.empno\":7,"
+                + "\"test.employee.joining_date\":7305,\"test.employee.dob\":-1,\"test.employee.salary\":17000.0,"
+                + "\"test.employee.deptno\":2,\"test.dept.deptname\":\"Marketing\"},{\"test.employee.married\":false,"
+                + "\"test.employee.empname\":\"Lily\",\"test.dept.deptno\":2,\"test.employee.empno\":8,"
+                + "\"test.employee.joining_date\":11747,\"test.employee.dob\":3685,\"test.employee.salary\":34000.0,"
+                + "\"test.employee.deptno\":2,\"test.dept.deptname\":\"Marketing\"},{\"test.employee.married\":true,"
+                + "\"test.employee.empname\":\"Rose\",\"test.dept.deptno\":3,\"test.employee.empno\":9,"
+                + "\"test.employee.joining_date\":13890,\"test.employee.dob\":4911,\"test.employee.salary\":15000.0,"
+                + "\"test.employee.deptno\":3,\"test.dept.deptname\":\"Production\"},{\"test.employee.married\":false,"
+                + "\"test.employee.empname\":\"Happy\",\"test.dept.deptno\":3,\"test.employee.empno\":10,"
+                + "\"test.employee.joining_date\":7563,\"test.employee.dob\":-1568,\"test.employee.salary\":19000.0,"
+                + "\"test.employee.deptno\":3,\"test.dept.deptname\":\"Production\"},{\"test.employee.married\":true,"
+                + "\"test.employee.empname\":\"Marcus\",\"test.dept.deptno\":3,\"test.employee.empno\":11,"
+                + "\"test.employee.joining_date\":7319,\"test.employee.dob\":-1116,\"test.employee.salary\":80000.0,"
+                + "\"test.employee.deptno\":3,\"test.dept.deptname\":\"Production\"},{\"test.employee.married\":false,"
+                + "\"test.employee.empname\":\"Mary\",\"test.dept.deptno\":3,\"test.employee.empno\":12,"
+                + "\"test.employee.joining_date\":112,\"test.employee.dob\":-6941,\"test.employee.salary\":60000.0,"
+                + "\"test.employee.deptno\":3,\"test.dept.deptname\":\"Production\"},{\"test.employee.married\":true,"
+                + "\"test.employee.empname\":\"Joy\",\"test.dept.deptno\":4,\"test.employee.empno\":13,"
+                + "\"test.employee.joining_date\":13239,\"test.employee.dob\":3364,\"test.employee.salary\":65000.0,"
+                + "\"test.employee.deptno\":4,\"test.dept.deptname\":\"Research and Development\"},"
+                + "{\"test.employee.married\":false,\"test.employee.empname\":\"Debby\",\"test.dept.deptno\":4,"
+                + "\"test.employee.empno\":14,\"test.employee.joining_date\":10592,\"test.employee.dob\":-246,"
+                + "\"test.employee.salary\":50000.0,\"test.employee.deptno\":4,"
+                + "\"test.dept.deptname\":\"Research and Development\"},{\"test.employee.married\":true,"
+                + "\"test.employee.empname\":\"Troy\",\"test.dept.deptno\":4,\"test.employee.empno\":15,"
+                + "\"test.employee.joining_date\":18855,\"test.employee.dob\":10712,\"test.employee.salary\":55000.0,"
+                + "\"test.employee.deptno\":4,\"test.dept.deptname\":\"Research and Development\"},"
+                + "{\"test.employee.married\":false,\"test.employee.empname\":\"Roy\",\"test.dept.deptno\":4,"
+                + "\"test.employee.empno\":16,\"test.employee.joining_date\":7740,\"test.employee.dob\":-1403,"
+                + "\"test.employee.salary\":57000.0,\"test.employee.deptno\":4,"
+                + "\"test.dept.deptname\":\"Research and Development\"},{\"test.employee.married\":true,"
+                + "\"test.employee.empname\":\"Rich\",\"test.dept.deptno\":5,\"test.employee.empno\":17,"
+                + "\"test.employee.joining_date\":17987,\"test.employee.dob\":10918,"
+                + "\"test.employee.salary\":45000.0,\"test.employee.deptno\":5,"
+                + "\"test.dept.deptname\":\"Accounting and Finance\"},{\"test.employee.married\":false,"
+                + "\"test.employee.empname\":\"Anagha\",\"test.dept.deptno\":5,\"test.employee.empno\":18,"
+                + "\"test.employee.joining_date\":18914,\"test.employee.dob\":11244,\"test.employee.salary\":90000.0,"
+                + "\"test.employee.deptno\":5,\"test.dept.deptname\":\"Accounting and Finance\"},"
+                + "{\"test.employee.married\":true,\"test.employee.empname\":\"Diana\",\"test.dept.deptno\":5,"
+                + "\"test.employee.empno\":19,\"test.employee.joining_date\":153,\"test.employee.dob\":-9129,"
+                + "\"test.employee.salary\":19700.0,\"test.employee.deptno\":5,"
+                + "\"test.dept.deptname\":\"Accounting and Finance\"},{\"test.employee.married\":false,"
+                + "\"test.employee.empname\":\"Matt\",\"test.dept.deptno\":5,\"test.employee.empno\":20,"
+                + "\"test.employee.joining_date\":7106,\"test.employee.dob\":-4767,\"test.employee.salary\":33000.0,"
+                + "\"test.employee.deptno\":5,\"test.dept.deptname\":\"Accounting and Finance\"},"
+                + "{\"test.employee.married\":true,\"test.employee.empname\":\"Holt\",\"test.dept.deptno\":6,"
+                + "\"test.employee.empno\":21,\"test.employee.joining_date\":7305,\"test.employee.dob\":-4328,"
+                + "\"test.employee.salary\":87000.0,\"test.employee.deptno\":6,\"test.dept.deptname\":\"IT\"},"
+                + "{\"test.employee.married\":false,\"test.employee.empname\":\"Peralta\",\"test.dept.deptno\":6,"
+                + "\"test.employee.empno\":22,\"test.employee.joining_date\":7305,\"test.employee.dob\":3682,"
+                + "\"test.employee.salary\":22000.0,\"test.employee.deptno\":6,\"test.dept.deptname\":\"IT\"},"
+                + "{\"test.employee.married\":true,\"test.employee.empname\":\"Mando\",\"test.dept.deptno\":6,"
+                + "\"test.employee.empno\":23,\"test.employee.joining_date\":7305,\"test.employee.dob\":-763,"
+                + "\"test.employee.salary\":35700.0,\"test.employee.deptno\":6,\"test.dept.deptname\":\"IT\"},"
+                + "{\"test.employee.married\":false,\"test.employee.empname\":\"Vader\",\"test.dept.deptno\":6,"
+                + "\"test.employee.empno\":24,\"test.employee.joining_date\":7305,\"test.employee.dob\":-3672,"
+                + "\"test.employee.salary\":3000.0,\"test.employee.deptno\":6,\"test.dept.deptname\":\"IT\"}],"
+                + "\"size\":20}" );
+
+        restCqlTestHelper( "test.employee.empno >= 1 NOT test.dept.deptname = \"Human Resources\"",
+                expectedJsonNode );
+    }
+
+
+    @Test
+    public void testRestCqlFiltersOnlyQueryWithPROXOperator() {
+        JsonNode expectedJsonNode = new JsonNode( "{\"Exception\":"
+                + " \"'PROX' boolean operator not implemented.\"}" );
+
+        restCqlTestHelper( "test.dept.deptname = \"IT\" PROX test.dept.deptname = \"Human Resources\"",
+                expectedJsonNode );
+    }
+
+
+    @Test
+    public void testRestCqlRelationOnlyQuery() {
+        JsonNode expectedJsonNode = new JsonNode( "{\"result\":[{\"test.dept.deptno\":1,"
+                + "\"test.dept.deptname\":\"Human Resources\"},{\"test.dept.deptno\":2,"
+                + "\"test.dept.deptname\":\"Marketing\"},{\"test.dept.deptno\":3,"
+                + "\"test.dept.deptname\":\"Production\"},{\"test.dept.deptno\":4,"
+                + "\"test.dept.deptname\":\"Research and Development\"},{\"test.dept.deptno\":5,"
+                + "\"test.dept.deptname\":\"Accounting and Finance\"},{\"test.dept.deptno\":6,"
+                + "\"test.dept.deptname\":\"IT\"}],\"size\":6}" );
+
+        restCqlTestHelper( "relation test.dept", expectedJsonNode );
+    }
+
+
+    @Test
+    public void testRestCqlRelationOnlyQueryWithANDOperator() {
+        JsonNode expectedJsonNode = new JsonNode( "{\"result\":[{\"test.employee.married\":true,"
+                + "\"test.employee.empname\":\"Joe\",\"test.dept.deptno\":1,\"test.employee.empno\":1,"
+                + "\"test.employee.joining_date\":7456,\"test.employee.dob\":33,\"test.employee.salary\":10000.0,"
+                + "\"test.employee.deptno\":1,\"test.dept.deptname\":\"Human Resources\"},"
+                + "{\"test.employee.married\":false,\"test.employee.empname\":\"Amy\",\"test.dept.deptno\":1,"
+                + "\"test.employee.empno\":2,\"test.employee.joining_date\":11388,\"test.employee.dob\":2710,"
+                + "\"test.employee.salary\":25000.0,\"test.employee.deptno\":1,"
+                + "\"test.dept.deptname\":\"Human Resources\"},{\"test.employee.married\":true,"
+                + "\"test.employee.empname\":\"Charlie\",\"test.dept.deptno\":1,\"test.employee.empno\":3,"
+                + "\"test.employee.joining_date\":11005,\"test.employee.dob\":3754,\"test.employee.salary\":16000.0,"
+                + "\"test.employee.deptno\":1,\"test.dept.deptname\":\"Human Resources\"},"
+                + "{\"test.employee.married\":false,\"test.employee.empname\":\"Ravi\",\"test.dept.deptno\":1,"
+                + "\"test.employee.empno\":4,\"test.employee.joining_date\":7655,\"test.employee.dob\":314,"
+                + "\"test.employee.salary\":40000.0,\"test.employee.deptno\":1,"
+                + "\"test.dept.deptname\":\"Human Resources\"},{\"test.employee.married\":true,"
+                + "\"test.employee.empname\":\"Imane\",\"test.dept.deptno\":2,\"test.employee.empno\":5,"
+                + "\"test.employee.joining_date\":11627,\"test.employee.dob\":7001,\"test.employee.salary\":27000.0,"
+                + "\"test.employee.deptno\":2,\"test.dept.deptname\":\"Marketing\"},{\"test.employee.married\":false,"
+                + "\"test.employee.empname\":\"Rhody\",\"test.dept.deptno\":2,\"test.employee.empno\":6,"
+                + "\"test.employee.joining_date\":9812,\"test.employee.dob\":201,\"test.employee.salary\":67500.0,"
+                + "\"test.employee.deptno\":2,\"test.dept.deptname\":\"Marketing\"},{\"test.employee.married\":true,"
+                + "\"test.employee.empname\":\"Cryer\",\"test.dept.deptno\":2,\"test.employee.empno\":7,"
+                + "\"test.employee.joining_date\":7305,\"test.employee.dob\":-1,\"test.employee.salary\":17000.0,"
+                + "\"test.employee.deptno\":2,\"test.dept.deptname\":\"Marketing\"},{\"test.employee.married\":false,"
+                + "\"test.employee.empname\":\"Lily\",\"test.dept.deptno\":2,\"test.employee.empno\":8,"
+                + "\"test.employee.joining_date\":11747,\"test.employee.dob\":3685,\"test.employee.salary\":34000.0,"
+                + "\"test.employee.deptno\":2,\"test.dept.deptname\":\"Marketing\"},{\"test.employee.married\":true,"
+                + "\"test.employee.empname\":\"Rose\",\"test.dept.deptno\":3,\"test.employee.empno\":9,"
+                + "\"test.employee.joining_date\":13890,\"test.employee.dob\":4911,\"test.employee.salary\":15000.0,"
+                + "\"test.employee.deptno\":3,\"test.dept.deptname\":\"Production\"},{\"test.employee.married\":false,"
+                + "\"test.employee.empname\":\"Happy\",\"test.dept.deptno\":3,\"test.employee.empno\":10,"
+                + "\"test.employee.joining_date\":7563,\"test.employee.dob\":-1568,\"test.employee.salary\":19000.0,"
+                + "\"test.employee.deptno\":3,\"test.dept.deptname\":\"Production\"},{\"test.employee.married\":true,"
+                + "\"test.employee.empname\":\"Marcus\",\"test.dept.deptno\":3,\"test.employee.empno\":11,"
+                + "\"test.employee.joining_date\":7319,\"test.employee.dob\":-1116,\"test.employee.salary\":80000.0,"
+                + "\"test.employee.deptno\":3,\"test.dept.deptname\":\"Production\"},{\"test.employee.married\":false,"
+                + "\"test.employee.empname\":\"Mary\",\"test.dept.deptno\":3,\"test.employee.empno\":12,"
+                + "\"test.employee.joining_date\":112,\"test.employee.dob\":-6941,\"test.employee.salary\":60000.0,"
+                + "\"test.employee.deptno\":3,\"test.dept.deptname\":\"Production\"},{\"test.employee.married\":true,"
+                + "\"test.employee.empname\":\"Joy\",\"test.dept.deptno\":4,\"test.employee.empno\":13,"
+                + "\"test.employee.joining_date\":13239,\"test.employee.dob\":3364,\"test.employee.salary\":65000.0,"
+                + "\"test.employee.deptno\":4,\"test.dept.deptname\":\"Research and Development\"},"
+                + "{\"test.employee.married\":false,\"test.employee.empname\":\"Debby\",\"test.dept.deptno\":4,"
+                + "\"test.employee.empno\":14,\"test.employee.joining_date\":10592,\"test.employee.dob\":-246,"
+                + "\"test.employee.salary\":50000.0,\"test.employee.deptno\":4,"
+                + "\"test.dept.deptname\":\"Research and Development\"},{\"test.employee.married\":true,"
+                + "\"test.employee.empname\":\"Troy\",\"test.dept.deptno\":4,\"test.employee.empno\":15,"
+                + "\"test.employee.joining_date\":18855,\"test.employee.dob\":10712,\"test.employee.salary\":55000.0,"
+                + "\"test.employee.deptno\":4,\"test.dept.deptname\":\"Research and Development\"},"
+                + "{\"test.employee.married\":false,\"test.employee.empname\":\"Roy\",\"test.dept.deptno\":4,"
+                + "\"test.employee.empno\":16,\"test.employee.joining_date\":7740,\"test.employee.dob\":-1403,"
+                + "\"test.employee.salary\":57000.0,\"test.employee.deptno\":4,"
+                + "\"test.dept.deptname\":\"Research and Development\"},{\"test.employee.married\":true,"
+                + "\"test.employee.empname\":\"Rich\",\"test.dept.deptno\":5,\"test.employee.empno\":17,"
+                + "\"test.employee.joining_date\":17987,\"test.employee.dob\":10918,\"test.employee.salary\":45000.0,"
+                + "\"test.employee.deptno\":5,\"test.dept.deptname\":\"Accounting and Finance\"},"
+                + "{\"test.employee.married\":false,\"test.employee.empname\":\"Anagha\",\"test.dept.deptno\":5,"
+                + "\"test.employee.empno\":18,\"test.employee.joining_date\":18914,\"test.employee.dob\":11244,"
+                + "\"test.employee.salary\":90000.0,\"test.employee.deptno\":5,"
+                + "\"test.dept.deptname\":\"Accounting and Finance\"},{\"test.employee.married\":true,"
+                + "\"test.employee.empname\":\"Diana\",\"test.dept.deptno\":5,\"test.employee.empno\":19,"
+                + "\"test.employee.joining_date\":153,\"test.employee.dob\":-9129,\"test.employee.salary\":19700.0,"
+                + "\"test.employee.deptno\":5,\"test.dept.deptname\":\"Accounting and Finance\"},"
+                + "{\"test.employee.married\":false,\"test.employee.empname\":\"Matt\",\"test.dept.deptno\":5,"
+                + "\"test.employee.empno\":20,\"test.employee.joining_date\":7106,\"test.employee.dob\":-4767,"
+                + "\"test.employee.salary\":33000.0,\"test.employee.deptno\":5,"
+                + "\"test.dept.deptname\":\"Accounting and Finance\"},{\"test.employee.married\":true,"
+                + "\"test.employee.empname\":\"Holt\",\"test.dept.deptno\":6,\"test.employee.empno\":21,"
+                + "\"test.employee.joining_date\":7305,\"test.employee.dob\":-4328,\"test.employee.salary\":87000.0,"
+                + "\"test.employee.deptno\":6,\"test.dept.deptname\":\"IT\"},{\"test.employee.married\":false,"
+                + "\"test.employee.empname\":\"Peralta\",\"test.dept.deptno\":6,\"test.employee.empno\":22,"
+                + "\"test.employee.joining_date\":7305,\"test.employee.dob\":3682,\"test.employee.salary\":22000.0,"
+                + "\"test.employee.deptno\":6,\"test.dept.deptname\":\"IT\"},{\"test.employee.married\":true,"
+                + "\"test.employee.empname\":\"Mando\",\"test.dept.deptno\":6,\"test.employee.empno\":23,"
+                + "\"test.employee.joining_date\":7305,\"test.employee.dob\":-763,\"test.employee.salary\":35700.0,"
+                + "\"test.employee.deptno\":6,\"test.dept.deptname\":\"IT\"},{\"test.employee.married\":false,"
+                + "\"test.employee.empname\":\"Vader\",\"test.dept.deptno\":6,\"test.employee.empno\":24,"
+                + "\"test.employee.joining_date\":7305,\"test.employee.dob\":-3672,\"test.employee.salary\":3000.0,"
+                + "\"test.employee.deptno\":6,\"test.dept.deptname\":\"IT\"}],\"size\":24}" );
+
+        restCqlTestHelper( "relation test.dept and test.employee", expectedJsonNode );
+    }
+
+
+    @Test
+    public void testRestCqlRelationOnlyQueryWithOROperator() {
+        HttpResponse<JsonNode> response = executeCQL( "relation test.dept or test.employee" );
+        String actualSize = response.getBody().getObject().getString( "size" );
+
+        Assert.assertEquals( "144", actualSize );
+    }
+
+
+    @Test
+    public void testRestCqlFilterAndRelationQuery() {
+        JsonNode expectedJsonNode = new JsonNode( "{\"result\":[{\"test.employee.married\":false,"
+                + "\"test.employee.empname\":\"Rhody\",\"test.dept.deptno\":2,\"test.employee.empno\":6,"
+                + "\"test.employee.joining_date\":9812,\"test.employee.dob\":201,\"test.employee.salary\":67500.0,"
+                + "\"test.employee.deptno\":2,\"test.dept.deptname\":\"Marketing\"},{\"test.employee.married\":false,"
+                + "\"test.employee.empname\":\"Mary\",\"test.dept.deptno\":3,\"test.employee.empno\":12,"
+                + "\"test.employee.joining_date\":112,\"test.employee.dob\":-6941,\"test.employee.salary\":60000.0,"
+                + "\"test.employee.deptno\":3,\"test.dept.deptname\":\"Production\"},{\"test.employee.married\":false,"
+                + "\"test.employee.empname\":\"Debby\",\"test.dept.deptno\":4,\"test.employee.empno\":14,"
+                + "\"test.employee.joining_date\":10592,\"test.employee.dob\":-246,\"test.employee.salary\":50000.0,"
+                + "\"test.employee.deptno\":4,\"test.dept.deptname\":\"Research and Development\"},"
+                + "{\"test.employee.married\":false,\"test.employee.empname\":\"Roy\",\"test.dept.deptno\":4,"
+                + "\"test.employee.empno\":16,\"test.employee.joining_date\":7740,\"test.employee.dob\":-1403,"
+                + "\"test.employee.salary\":57000.0,\"test.employee.deptno\":4,"
+                + "\"test.dept.deptname\":\"Research and Development\"},{\"test.employee.married\":false,"
+                + "\"test.employee.empname\":\"Anagha\",\"test.dept.deptno\":5,\"test.employee.empno\":18,"
+                + "\"test.employee.joining_date\":18914,\"test.employee.dob\":11244,\"test.employee.salary\":90000.0,"
+                + "\"test.employee.deptno\":5,\"test.dept.deptname\":\"Accounting and Finance\"}],\"size\":5}" );
+
+        restCqlTestHelper( "test.employee.salary >= 50000 and test.employee.married == FALSE"
+                + " relation test.dept and test.employee", expectedJsonNode );
+    }
+
+
+    @Test
+    public void testRestCqlProjectionQuery() {
+        JsonNode expectedJsonNode = new JsonNode( "{\"result\":[{\"test.employee.empname\":\"Joe\"},"
+                + "{\"test.employee.empname\":\"Amy\"},{\"test.employee.empname\":\"Charlie\"},"
+                + "{\"test.employee.empname\":\"Ravi\"},{\"test.employee.empname\":\"Imane\"},"
+                + "{\"test.employee.empname\":\"Rhody\"},{\"test.employee.empname\":\"Cryer\"},"
+                + "{\"test.employee.empname\":\"Lily\"},{\"test.employee.empname\":\"Rose\"},"
+                + "{\"test.employee.empname\":\"Happy\"},{\"test.employee.empname\":\"Marcus\"},"
+                + "{\"test.employee.empname\":\"Mary\"},{\"test.employee.empname\":\"Joy\"},"
+                + "{\"test.employee.empname\":\"Debby\"},{\"test.employee.empname\":\"Troy\"},"
+                + "{\"test.employee.empname\":\"Roy\"},{\"test.employee.empname\":\"Rich\"},"
+                + "{\"test.employee.empname\":\"Anagha\"},{\"test.employee.empname\":\"Diana\"},"
+                + "{\"test.employee.empname\":\"Matt\"},{\"test.employee.empname\":\"Holt\"},"
+                + "{\"test.employee.empname\":\"Peralta\"},{\"test.employee.empname\":\"Mando\"},"
+                + "{\"test.employee.empname\":\"Vader\"}],\"size\":24}" );
+
+        restCqlTestHelper( "relation test.dept and test.employee"
+                + " project test.employee.empname", expectedJsonNode );
+    }
+
+
+    @Test
+    public void testRestCqlProjectionQueryWithAggregation() {
+        JsonNode expectedJsonNode = new JsonNode( "{\"result\":[{\"COUNT( test.employee.empno )\":24}],\"size\":1}" );
+
+        restCqlTestHelper( "relation test.employee project test.employee.empno/count", expectedJsonNode );
+    }
+
+
+    @Test
+    public void testRestCqlProjectionQueryWithAggregationAndGrouping() {
+        JsonNode expectedJsonNode = new JsonNode( "{\"result\":[{\"test.employee.married\":true,"
+                + "\"COUNT( test.employee.empno )\":2,\"test.dept.deptname\":\"Human Resources\"},"
+                + "{\"test.employee.married\":false,\"COUNT( test.employee.empno )\":2,"
+                + "\"test.dept.deptname\":\"Human Resources\"},{\"test.employee.married\":true,"
+                + "\"COUNT( test.employee.empno )\":2,\"test.dept.deptname\":\"Marketing\"},"
+                + "{\"test.employee.married\":false,\"COUNT( test.employee.empno )\":2,"
+                + "\"test.dept.deptname\":\"Marketing\"},{\"test.employee.married\":true,"
+                + "\"COUNT( test.employee.empno )\":2,\"test.dept.deptname\":\"Production\"},"
+                + "{\"test.employee.married\":false,\"COUNT( test.employee.empno )\":2,"
+                + "\"test.dept.deptname\":\"Production\"},{\"test.employee.married\":true,"
+                + "\"COUNT( test.employee.empno )\":2,\"test.dept.deptname\":\"Research and Development\"},"
+                + "{\"test.employee.married\":false,\"COUNT( test.employee.empno )\":2,"
+                + "\"test.dept.deptname\":\"Research and Development\"},{\"test.employee.married\":true,"
+                + "\"COUNT( test.employee.empno )\":2,\"test.dept.deptname\":\"Accounting and Finance\"},"
+                + "{\"test.employee.married\":false,\"COUNT( test.employee.empno )\":2,"
+                + "\"test.dept.deptname\":\"Accounting and Finance\"},{\"test.employee.married\":true,"
+                + "\"COUNT( test.employee.empno )\":2,\"test.dept.deptname\":\"IT\"},"
+                + "{\"test.employee.married\":false,\"COUNT( test.employee.empno )\":2,"
+                + "\"test.dept.deptname\":\"IT\"}],\"size\":12}" );
+
+        restCqlTestHelper( "relation test.employee and test.dept"
+                        + " project test.employee.empno/count test.employee.married test.dept.deptname ",
+                expectedJsonNode );
+    }
+
+
+    @Test
+    public void testRestCqlSortingQuery() {
+        JsonNode expectedJsonNode = new JsonNode( "{\"result\":[{\"test.employee.empname\":\"Amy\"},"
+                + "{\"test.employee.empname\":\"Anagha\"},{\"test.employee.empname\":\"Charlie\"},"
+                + "{\"test.employee.empname\":\"Cryer\"},{\"test.employee.empname\":\"Debby\"},"
+                + "{\"test.employee.empname\":\"Diana\"},{\"test.employee.empname\":\"Happy\"},"
+                + "{\"test.employee.empname\":\"Holt\"},{\"test.employee.empname\":\"Imane\"},"
+                + "{\"test.employee.empname\":\"Joe\"},{\"test.employee.empname\":\"Joy\"},"
+                + "{\"test.employee.empname\":\"Lily\"},{\"test.employee.empname\":\"Mando\"},"
+                + "{\"test.employee.empname\":\"Marcus\"},{\"test.employee.empname\":\"Mary\"},"
+                + "{\"test.employee.empname\":\"Matt\"},{\"test.employee.empname\":\"Peralta\"},"
+                + "{\"test.employee.empname\":\"Ravi\"},{\"test.employee.empname\":\"Rhody\"},"
+                + "{\"test.employee.empname\":\"Rich\"},{\"test.employee.empname\":\"Rose\"},"
+                + "{\"test.employee.empname\":\"Roy\"},{\"test.employee.empname\":\"Troy\"},"
+                + "{\"test.employee.empname\":\"Vader\"}],\"size\":24}" );
+
+        restCqlTestHelper( "relation test.employee sortby test.employee.empname"
+                        + " project test.employee.empname",
+                expectedJsonNode );
+    }
+
+
+    private void restCqlTestHelper( String cqlQuery, JsonNode expectedJsonNode ) {
+        HttpResponse<JsonNode> response = executeCQL( cqlQuery );
+        Assert.assertEquals( expectedJsonNode.getObject(), response.getBody().getObject() );
+    }
+
+
+    private HttpResponse<JsonNode> executeCQL( String cqlQuery ) {
+        GetRequest request = Unirest.get( "{protocol}://{host}:{port}/restapi/v1/cql" );
+        request.basicAuth( "pa", "" );
+        request.routeParam( "protocol", "http" );
+        request.routeParam( "host", "127.0.0.1" );
+        request.routeParam( "port", "8089" );
+        request.queryString( "testing", "true" );
+        request.queryString( "cql", cqlQuery );
+        log.debug( request.getUrl() );
+        return request.asJson();
+    }
+
+}
