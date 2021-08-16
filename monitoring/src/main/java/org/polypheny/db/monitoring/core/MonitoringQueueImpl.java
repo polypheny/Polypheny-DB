@@ -134,10 +134,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         return processedEvents;
     }
 
-    // endregion
-
-    // region private helper methods
-
 
     private void startBackgroundTask() {
         if ( backgroundTaskId == null ) {
@@ -193,5 +189,4 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         return Optional.empty();
     }
 
-    // endregion
 }
