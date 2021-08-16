@@ -85,14 +85,8 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         this( true, repository );
     }
 
-    // endregion
 
-    // region public methods
-
-
-    @Override
-    protected void finalize() throws Throwable {
-        super.finalize();
+    public void terminateQueue() {
         if ( backgroundTaskId != null ) {
             BackgroundTaskManager.INSTANCE.removeBackgroundTask( backgroundTaskId );
         }
