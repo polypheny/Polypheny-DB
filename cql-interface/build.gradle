@@ -37,7 +37,7 @@ task generateParser(type: CompileJavaccTask) {
     getConventionMapping().map("classpath", { configurations.javacc })
     arguments = [static: "false"]
     inputDirectory = file("src/main/codegen")
-    outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/org/polypheny/cql/parser")
+    outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/org/polypheny/db/cql/parser")
 }
 
 compileJava {
