@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql;
+package org.polypheny.db.cql;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.polypheny.cql.utils.ExclusiveComparisons;
+import org.polypheny.db.cql.utils.ExclusiveComparisons;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.AggregateCall;

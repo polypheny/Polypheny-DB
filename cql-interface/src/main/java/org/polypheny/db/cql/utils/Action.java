@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql.utils;
+package org.polypheny.db.cql.utils;
 
 import java.util.HashMap;
-import org.polypheny.cql.utils.Tree.Direction;
-import org.polypheny.cql.utils.Tree.NodeType;
+import org.polypheny.db.cql.utils.Tree.Direction;
+import org.polypheny.db.cql.utils.Tree.NodeType;
 
 
 /**
  * Lambda interface for action to be performed while traversing
- * <code>org.polypheny.cql.utils.Tree</code>
+ * <code>org.polypheny.db.cql.utils.Tree</code>
  *
  * @param <M> Type of the internal node.
  * @param <N> Type of the external node.

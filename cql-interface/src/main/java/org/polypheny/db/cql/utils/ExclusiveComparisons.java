@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql.utils;
+package org.polypheny.db.cql.utils;
 
 
 /**

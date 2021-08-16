@@ -14,49 +14,46 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql;
+package org.polypheny.db.cql;
 
-import org.polypheny.cql.exception.UnknownIndexException;
+import org.polypheny.db.cql.exception.UnknownIndexException;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 
 
 /**
- * Packaging column information together.
+ * Packaging table information together.
  */
-public class ColumnIndex {
+public class TableIndex {
 
-    public final CatalogColumn catalogColumn;
+    public final CatalogTable catalogTable;
     public final String fullyQualifiedName;
     public final String schemaName;
     public final String tableName;
-    public final String columnName;
 
 
-    public ColumnIndex( final CatalogColumn catalogColumn, final String schemaName,
-            final String tableName, final String columnName ) {
-        this.catalogColumn = catalogColumn;
-        this.fullyQualifiedName = schemaName + "." + tableName + "." + columnName;
+    public TableIndex( final CatalogTable catalogTable,
+            final String schemaName, final String tableName ) {
+        this.catalogTable = catalogTable;
+        this.fullyQualifiedName = schemaName + "." + tableName;
         this.schemaName = schemaName;
         this.tableName = tableName;
-        this.columnName = columnName;
     }
 
 
-    public static ColumnIndex createIndex( String inDatabase, String schemaName, String tableName, String columnName )
+    public static TableIndex createIndex( String inDatabase, String schemaName, String tableName )
             throws UnknownIndexException {
 
         try {
             Catalog catalog = Catalog.getInstance();
-            CatalogColumn column = catalog.getColumn( inDatabase, schemaName, tableName, columnName );
+            CatalogTable table = catalog.getTable( inDatabase, schemaName, tableName );
 
-            return new ColumnIndex( column, schemaName, tableName, columnName );
+            return new TableIndex( table, schemaName, tableName );
 
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException | UnknownColumnException e ) {
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new UnknownIndexException( "Cannot find a underlying column for the specified column name: "
                     + schemaName + "." + tableName );
         }

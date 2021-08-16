@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql;
+package org.polypheny.db.cql;
 
 import java.util.List;
 import java.util.Map;
-import org.polypheny.cql.BooleanGroup.ColumnOpsBooleanOperator;
-import org.polypheny.cql.utils.Tree;
+import org.polypheny.db.cql.BooleanGroup.ColumnOpsBooleanOperator;
+import org.polypheny.db.cql.utils.Tree;
 import org.polypheny.db.util.Pair;
 
 

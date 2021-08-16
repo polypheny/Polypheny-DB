@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql;
+package org.polypheny.db.cql;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import org.polypheny.cql.BooleanGroup.ColumnOpsBooleanOperator;
-import org.polypheny.cql.exception.UnexpectedTypeException;
-import org.polypheny.cql.utils.Tree;
-import org.polypheny.cql.utils.Tree.NodeType;
-import org.polypheny.cql.utils.Tree.TraversalType;
+import org.polypheny.db.cql.BooleanGroup.ColumnOpsBooleanOperator;
+import org.polypheny.db.cql.exception.UnexpectedTypeException;
+import org.polypheny.db.cql.utils.Tree;
+import org.polypheny.db.cql.utils.Tree.NodeType;
+import org.polypheny.db.cql.utils.Tree.TraversalType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;

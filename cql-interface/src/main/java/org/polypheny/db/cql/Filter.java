@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql.exception;
+package org.polypheny.db.cql;
 
-public class InvalidMethodInvocation extends Exception {
+import java.util.Map;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexNode;
 
-    public InvalidMethodInvocation() {
-        super();
-    }
 
+public interface Filter {
 
-    public InvalidMethodInvocation( String message ) {
-        super( message );
-    }
+    RexNode convert2RexNode( RelNode baseNode, RexBuilder rexBuilder, Map<String, RelDataTypeField> filterMap );
 
 }

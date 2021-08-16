@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql;
+package org.polypheny.db.cql.exception;
 
-import java.util.Map;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexNode;
+public class UnknownIndexException extends Exception {
 
 
-public interface Filter {
+    public UnknownIndexException() {
+        super();
+    }
 
-    RexNode convert2RexNode( RelNode baseNode, RexBuilder rexBuilder, Map<String, RelDataTypeField> filterMap );
+
+    public UnknownIndexException( String message ) {
+        super( message );
+    }
 
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql;
+package org.polypheny.db.cql;
 
 import org.polypheny.db.sql.SqlBinaryOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;

@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql.exception;
+package org.polypheny.db.cql.exception;
 
-public class UnexpectedTypeException extends Exception {
+public class InvalidMethodInvocation extends Exception {
 
-    public UnexpectedTypeException() {
+    public InvalidMethodInvocation() {
         super();
     }
 
 
-    public UnexpectedTypeException( String message ) {
+    public InvalidMethodInvocation( String message ) {
         super( message );
     }
 

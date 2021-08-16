@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql.exception;
+package org.polypheny.db.cql.exception;
 
-public class UnknownIndexException extends Exception {
+public class UnexpectedTypeException extends Exception {
 
-
-    public UnknownIndexException() {
+    public UnexpectedTypeException() {
         super();
     }
 
 
-    public UnknownIndexException( String message ) {
+    public UnexpectedTypeException( String message ) {
         super( message );
     }
 

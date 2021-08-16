@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql;
+package org.polypheny.db.cql;
 
 import java.util.Arrays;
 import java.util.HashMap;

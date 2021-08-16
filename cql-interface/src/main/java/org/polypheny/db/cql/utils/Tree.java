@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql.utils;
+package org.polypheny.db.cql.utils;
 
 import java.util.HashMap;
 import java.util.Objects;
-import org.polypheny.cql.exception.UnexpectedTypeException;
+import org.polypheny.db.cql.exception.UnexpectedTypeException;
 
 
 /**

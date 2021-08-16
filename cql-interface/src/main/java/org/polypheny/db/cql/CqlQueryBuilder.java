@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.cql;
+package org.polypheny.db.cql;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,10 +22,10 @@ import java.util.Map;
 import java.util.Stack;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.polypheny.cql.BooleanGroup.ColumnOpsBooleanOperator;
-import org.polypheny.cql.BooleanGroup.TableOpsBooleanOperator;
-import org.polypheny.cql.exception.UnknownIndexException;
-import org.polypheny.cql.utils.Tree;
+import org.polypheny.db.cql.BooleanGroup.ColumnOpsBooleanOperator;
+import org.polypheny.db.cql.BooleanGroup.TableOpsBooleanOperator;
+import org.polypheny.db.cql.exception.UnknownIndexException;
+import org.polypheny.db.cql.utils.Tree;
 import org.polypheny.db.util.Pair;
 
 
