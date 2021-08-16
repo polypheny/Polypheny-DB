@@ -55,11 +55,13 @@ public class Cql2RelConverter {
 
     private final CqlQuery cqlQuery;
     private final Map<Long, Integer> tableScanColumnOrdinalities;
+    private final Map<Long, Integer> projectionColumnOrdinalities;
 
 
     public Cql2RelConverter( final CqlQuery cqlQuery ) {
         this.cqlQuery = cqlQuery;
         this.tableScanColumnOrdinalities = new HashMap<>();
+        this.projectionColumnOrdinalities = new HashMap<>();
     }
 
 
@@ -74,26 +76,56 @@ public class Cql2RelConverter {
     public RelRoot convert2Rel( RelBuilder relBuilder, RexBuilder rexBuilder ) {
 
         relBuilder = generateTableScan( relBuilder, rexBuilder );
-        relBuilder = generateProjections( relBuilder, rexBuilder );
         if ( cqlQuery.filters != null ) {
+            relBuilder = generateProjections( relBuilder, rexBuilder );
             relBuilder = generateFilters( relBuilder, rexBuilder );
+            if ( cqlQuery.projections.exists() ) {
+                relBuilder = cqlQuery.projections.convert2Rel( tableScanColumnOrdinalities, relBuilder, rexBuilder );
+                projectionColumnOrdinalities.putAll( cqlQuery.projections.getProjectionColumnOrdinalities() );
+            }
+        } else {
+            if ( cqlQuery.projections.exists() ) {
+                setTableScanColumnOrdinalities();
+                if ( cqlQuery.projections.hasAggregations() ) {
+                    relBuilder = cqlQuery.projections
+                            .convert2Rel( tableScanColumnOrdinalities, relBuilder, rexBuilder );
+                } else {
+                    relBuilder = cqlQuery.projections
+                            .convert2RelForSingleProjection( tableScanColumnOrdinalities, relBuilder, rexBuilder );
+                }
+                projectionColumnOrdinalities.putAll( cqlQuery.projections.getProjectionColumnOrdinalities() );
+            } else {
+                relBuilder = generateProjections( relBuilder, rexBuilder );
+            }
         }
         if ( cqlQuery.sortSpecifications != null && cqlQuery.sortSpecifications.size() != 0 ) {
             relBuilder = generateSort( relBuilder, rexBuilder );
         }
-        if ( cqlQuery.projections.exists() ) {
-            relBuilder = cqlQuery.projections.convert2Rel( tableScanColumnOrdinalities, relBuilder, rexBuilder );
-        }
         RelNode relNode = relBuilder.build();
 
         final RelDataType rowType = relNode.getRowType();
-        final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
+        final List<Pair<Integer, String>> fields =
+                Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
         final RelCollation collation =
                 relNode instanceof Sort
                         ? ((Sort) relNode).collation
                         : RelCollations.EMPTY;
 
         return new RelRoot( relNode, relNode.getRowType(), SqlKind.SELECT, fields, collation );
+    }
+
+
+    private void setTableScanColumnOrdinalities() {
+        cqlQuery.queryRelation.traverse( TraversalType.INORDER, ( treeNode, nodeType, direction, frame ) -> {
+            if ( nodeType == NodeType.DESTINATION_NODE && treeNode.isLeaf() ) {
+                TableIndex tableIndex = treeNode.getExternalNode();
+                for ( Long columnId : tableIndex.catalogTable.columnIds ) {
+                    tableScanColumnOrdinalities.put( columnId, tableScanColumnOrdinalities.size() );
+                }
+            }
+
+            return true;
+        } );
     }
 
 
@@ -286,7 +318,7 @@ public class Cql2RelConverter {
         RelNode baseNode = relBuilder.peek();
         for ( Pair<ColumnIndex, Map<String, Modifier>> sortSpecification : sortSpecifications ) {
             ColumnIndex columnIndex = sortSpecification.left;
-            int ordinality = tableScanColumnOrdinalities.get( columnIndex.catalogColumn.id );
+            int ordinality = projectionColumnOrdinalities.get( columnIndex.catalogColumn.id );
             RexNode sortingNode = rexBuilder.makeInputRef( baseNode, ordinality );
 
             // TODO: Handle Modifiers
