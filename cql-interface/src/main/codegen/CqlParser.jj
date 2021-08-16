@@ -30,6 +30,8 @@ import org.polypheny.db.cql.exception.InvalidMethodInvocation;
 import org.polypheny.db.cql.exception.InvalidModifierException;
 import org.polypheny.db.cql.exception.UnknownIndexException;
 
+
+@Slf4j
 public class  CqlParser {
 
     private CqlQueryBuilder cqlQueryBuilder;
@@ -85,8 +87,12 @@ CqlQuery parse() :
 {
 }
 {
+    { log.debug( "Parsing started." ); }
     [
+//        Logging here to prevent multiple logs, since QUERY_FILTERS is recursive.
+        { log.debug( "Query Filters parsing started." ); }
         QUERY_FILTERS()
+        { log.debug( "Query Filters parsing completed." ); }
     ]
     [
         QUERY_RELATION()
@@ -98,11 +104,12 @@ CqlQuery parse() :
         PROJECT()
     ]
     < EOF >
+    { log.debug( "Parsing completed." ); }
     {
         try {
             return cqlQueryBuilder.build();
         } catch ( Exception e ) {
-            throw new ParseException( e.getMessage() );
+            throw new Error( e.getMessage() );
         }
     }
 }
@@ -114,6 +121,7 @@ void QUERY_RELATION() :
 }
 {
     < RELATION >
+    { log.debug( "Query Relation parsing started." ); }
     tableIndex = TABLE_INDEX()
     {
         cqlQueryBuilder.addTable( tableIndex );
@@ -123,9 +131,14 @@ void QUERY_RELATION() :
         tableOpsBooleanGroup = TABLE_OPS_BOOLEAN_GROUP()
         tableIndex = TABLE_INDEX()
         {
-            cqlQueryBuilder.combineRelationWith( tableIndex, tableOpsBooleanGroup );
+            try {
+                cqlQueryBuilder.combineRelationWith( tableIndex, tableOpsBooleanGroup );
+            } catch ( InvalidModifierException e ) {
+                throw new Error( e.getMessage() );
+            }
         }
     )*
+    { log.debug( "Query Relation parsing completed." ); }
 }
 
 void QUERY_FILTERS() :
@@ -182,6 +195,7 @@ void SORTING() :
 }
 {
     < SORT_BY >
+    { log.debug( "Sort Specification parsing started." ); }
     (
         columnIndex = COLUMN_INDEX()
         [
@@ -192,6 +206,7 @@ void SORTING() :
             modifiers = null;
         }
     )+
+    { log.debug( "Sort Specification parsing completed." ); }
 }
 
 void PROJECT() :
@@ -201,6 +216,7 @@ void PROJECT() :
 }
 {
     < PROJECT >
+    { log.debug( "Projection specification parsing started." ); }
     (
         columnIndex = COLUMN_INDEX()
         [
@@ -214,6 +230,7 @@ void PROJECT() :
             modifiers = null;
         }
     )+
+    { log.debug( "Projection specification parsing completed." ); }
 }
 
 TableIndex TABLE_INDEX() :

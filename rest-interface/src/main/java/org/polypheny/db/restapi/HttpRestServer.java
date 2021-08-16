@@ -37,9 +37,9 @@ import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.http.Part;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.cql.CqlQuery;
-import org.polypheny.cql.parser.CqlParser;
-import org.polypheny.cql.parser.ParseException;
+import org.polypheny.db.cql.CqlQuery;
+import org.polypheny.db.cql.parser.CqlParser;
+import org.polypheny.db.cql.parser.ParseException;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
@@ -149,11 +149,24 @@ public class HttpRestServer extends QueryInterface {
 
             return rest.processCqlResource( cqlQuery, request, response );
         } catch ( ParseException e ) {
-            e.printStackTrace();
+            log.error( "ParseException", e );
+            response.status( 400 );
+            Map<String, Object> bodyReturn = new HashMap<>();
+            bodyReturn.put( "Exception", e.getMessage() );
+            return gson.toJson( bodyReturn );
+        } catch ( RuntimeException e ) {
+            log.error( "RuntimeException", e );
+            response.status( 400 );
+            Map<String, Object> bodyReturn = new HashMap<>();
+            bodyReturn.put( "Exception", e.getMessage() );
+            return gson.toJson( bodyReturn );
+        } catch ( Error e ) {
+            log.error( "Error", e );
+            response.status( 400 );
+            Map<String, Object> bodyReturn = new HashMap<>();
+            bodyReturn.put( "Exception", e.getMessage() );
+            return gson.toJson( bodyReturn );
         }
-
-        log.error( "processCQLRequest should never reach this point in the code!" );
-        throw new RuntimeException( "processCQLRequest should never reach this point in the code!" );
     }
 
 

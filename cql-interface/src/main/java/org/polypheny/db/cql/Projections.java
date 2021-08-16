@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.cql.utils.ExclusiveComparisons;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
@@ -38,6 +39,7 @@ import org.polypheny.db.util.ImmutableBitSet;
  * A collection of the columns explicitly stated in the query
  * for projection.
  */
+@Slf4j
 public class Projections {
 
     private static final List<String> aggregateFunctions = new ArrayList<>();
@@ -85,8 +87,8 @@ public class Projections {
 
 
     /**
-     * Create and adds a {@link Projection}.
-     * Also classified it into {@link Aggregation} or {@link Grouping}.
+     * Creates and adds a {@link Projection}.
+     * Also classifies it into {@link Aggregation} or {@link Grouping}.
      */
     public void add( ColumnIndex columnIndex, Map<String, Modifier> modifiers ) {
 
@@ -95,17 +97,50 @@ public class Projections {
         String aggregationFunction = getAggregationFunction( columnIndex, modifiers );
 
         if ( aggregationFunction == null ) {
+            log.debug( "Adding grouping for ColumnIndex '" + columnIndex.fullyQualifiedName + "'." );
             Grouping grouping = new Grouping( columnIndex, modifiers );
             groupings.add( grouping );
             projection = grouping;
         } else {
             Aggregation aggregation = new Aggregation( columnIndex, modifiers, aggregationFunction );
+            log.debug( "Adding aggregation for ColumnIndex '" + aggregation.getProjectionName() + "'." );
             aggregations.add( aggregation );
             projection = aggregation;
         }
 
         projections.add( projection );
 
+    }
+
+
+    /**
+     * Creates projection. Used when there are no Filters.
+     *
+     * @param tableScanOrdinalities Ordinalities of the columns after table scan.
+     * @param relBuilder {@link RelBuilder}.
+     * @param rexBuilder {@link RexBuilder}.
+     * @return {@link RelBuilder}.
+     */
+    public RelBuilder convert2RelForSingleProjection( Map<Long, Integer> tableScanOrdinalities,
+            RelBuilder relBuilder, RexBuilder rexBuilder ) {
+
+        setColumnOrdinalities();
+
+        List<RexNode> inputRefs = new ArrayList<>();
+        List<String> aliases = new ArrayList<>();
+        RelNode baseNode = relBuilder.peek();
+
+        for ( Projection projection : projections ) {
+            int ordinality = tableScanOrdinalities.get( projection.getColumnId() );
+            RexNode inputRef = projection.createRexNode( rexBuilder, baseNode, ordinality );
+            inputRefs.add( inputRef );
+            aliases.add( projection.getProjectionName() );
+        }
+
+        log.debug( "Generating projection." );
+        relBuilder = relBuilder.project( inputRefs, aliases, true );
+
+        return relBuilder;
     }
 
 
@@ -127,6 +162,7 @@ public class Projections {
 
         if ( !aggregations.isEmpty() ) {
 
+            log.debug( "Found aggregations. Creating AggregateCalls." );
             List<AggregateCall> aggregateCalls = new ArrayList<>();
 
             for ( Aggregation aggregation : aggregations ) {
@@ -138,6 +174,11 @@ public class Projections {
                 aggregateCalls.add( aggregateCall );
             }
 
+            if ( groupings.isEmpty() ) {
+                log.debug( "No groupings for current query." );
+            } else {
+                log.debug( "Found groupings. Creating groupings ordinal list." );
+            }
             List<Integer> groupByOrdinals = new ArrayList<>();
             for ( Grouping grouping : groupings ) {
                 groupByOrdinals.add(
@@ -146,6 +187,7 @@ public class Projections {
             }
 
             GroupKey groupKey = relBuilder.groupKey( ImmutableBitSet.of( groupByOrdinals ) );
+            log.debug( "Generating aggregates." );
             relBuilder = relBuilder.aggregate( groupKey, aggregateCalls );
         }
 
@@ -162,6 +204,7 @@ public class Projections {
             aliases.add( projection.getProjectionName() );
         }
 
+        log.debug( "Generating final projection." );
         relBuilder = relBuilder.project( inputRefs, aliases, true );
 
         return relBuilder;
@@ -181,6 +224,16 @@ public class Projections {
         for ( Aggregation aggregation : aggregations ) {
             projectedColumnOrdinalities.put( aggregation.getColumnId(), projectedColumnOrdinalities.size() );
         }
+    }
+
+
+    public boolean hasAggregations() {
+        return aggregations.size() >= 1;
+    }
+
+
+    public Map<Long, Integer> getProjectionColumnOrdinalities() {
+        return projectedColumnOrdinalities;
     }
 
 
@@ -278,6 +331,8 @@ public class Projections {
 
 
         public AggregateCall getAggregateCall( RelNode baseNode, int ordinality, int groupCount ) {
+
+            log.debug( "Creating AggregateCall for '" + getProjectionName() + "'." );
             List<Integer> inputFields = new ArrayList<>();
             inputFields.add( ordinality );
             return AggregateCall.create(

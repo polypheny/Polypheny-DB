@@ -17,6 +17,7 @@
 package org.polypheny.db.cql;
 
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
@@ -26,6 +27,7 @@ import org.polypheny.db.rex.RexNode;
 /**
  * Filter comparing two columns.
  */
+@Slf4j
 public class ColumnFilter implements Filter {
 
     private final ColumnIndex left;
@@ -41,8 +43,11 @@ public class ColumnFilter implements Filter {
 
 
     @Override
-    public RexNode convert2RexNode( RelNode baseNode, RexBuilder rexBuilder, Map<String, RelDataTypeField> typeField ) {
-        throw new RuntimeException( "Not Implemented." );
+    public RexNode convert2RexNode( RelNode baseNode, RexBuilder rexBuilder,
+            Map<String, RelDataTypeField> typeField ) {
+
+        log.error( "Column Filters have not been implemented." );
+        throw new RuntimeException( "Column Filters have not been implemented." );
     }
 
 

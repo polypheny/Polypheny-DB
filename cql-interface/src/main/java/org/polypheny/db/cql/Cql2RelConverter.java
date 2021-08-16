@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.cql.BooleanGroup.ColumnOpsBooleanOperator;
 import org.polypheny.db.cql.exception.UnexpectedTypeException;
 import org.polypheny.db.cql.utils.Tree;
@@ -49,6 +50,7 @@ import org.polypheny.db.util.Pair;
  * Packaging information and algorithm to convert a {@link CqlQuery}
  * to relational algebra ({@link RelNode}, {@link RelRoot}, {@link RexNode})
  */
+@Slf4j
 public class Cql2RelConverter {
 
     private final CqlQuery cqlQuery;
@@ -105,6 +107,7 @@ public class Cql2RelConverter {
      */
     private RelBuilder generateTableScan( RelBuilder relBuilder, RexBuilder rexBuilder ) {
 
+        log.debug( "Generating table scan." );
         Tree<Combiner, TableIndex> tableOperations = cqlQuery.queryRelation;
         AtomicReference<RelBuilder> relBuilderAtomicReference = new AtomicReference<>( relBuilder );
 
@@ -123,8 +126,9 @@ public class Cql2RelConverter {
                         );
                     }
                 } catch ( UnexpectedTypeException e ) {
-                    throw new RuntimeException( "This exception will never be thrown since checks have been made before"
-                            + " calling the getExternalNode and getInternalNode methods." );
+                    log.error( "Exception Unexpected.", e );
+                    throw new RuntimeException( "This exception will never be thrown since checks have been"
+                            + "made before calling the getExternalNode and getInternalNode methods." );
                 }
             }
             return true;
@@ -150,6 +154,7 @@ public class Cql2RelConverter {
      */
     private RelBuilder generateProjections( RelBuilder relBuilder, RexBuilder rexBuilder ) {
 
+        log.debug( "Generating initial projection." );
         Tree<Combiner, TableIndex> queryRelation = cqlQuery.queryRelation;
         RelNode baseNode = relBuilder.peek();
         List<RexNode> inputRefs = new ArrayList<>();
@@ -171,8 +176,9 @@ public class Cql2RelConverter {
                         tableScanColumnOrdinalities.put( columnId, ordinal );
                     }
                 } catch ( UnexpectedTypeException e ) {
-                    throw new RuntimeException( "This exception will never be thrown since checks have been made before"
-                            + " calling the getExternalNode method." );
+                    log.error( "Exception Unexpected.", e );
+                    throw new RuntimeException( "This exception will never be thrown since checks have been"
+                            + " made before calling the getExternalNode method." );
                 }
             }
 
@@ -193,6 +199,7 @@ public class Cql2RelConverter {
      */
     private RelBuilder generateFilters( RelBuilder relBuilder, RexBuilder rexBuilder ) {
 
+        log.debug( "Generating filters." );
         Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> filters = cqlQuery.filters;
         if ( filters == null ) {
             return relBuilder;
@@ -216,21 +223,42 @@ public class Cql2RelConverter {
                     } else {
                         BooleanGroup<ColumnOpsBooleanOperator> booleanGroup = treeNode.getInternalNode();
                         if ( booleanGroup.booleanOperator == ColumnOpsBooleanOperator.AND ) {
-                            rexNode = rexBuilder.makeCall( SqlStdOperatorTable.AND, secondToLastRexNode.get(), lastRexNode.get() );
+                            log.debug( "Found 'AND'." );
+                            rexNode = rexBuilder.makeCall(
+                                    SqlStdOperatorTable.AND,
+                                    secondToLastRexNode.get(),
+                                    lastRexNode.get()
+                            );
                         } else if ( booleanGroup.booleanOperator == ColumnOpsBooleanOperator.OR ) {
-                            rexNode = rexBuilder.makeCall( SqlStdOperatorTable.OR, secondToLastRexNode.get(), lastRexNode.get() );
+                            log.debug( "Found 'OR'." );
+                            rexNode = rexBuilder.makeCall(
+                                    SqlStdOperatorTable.OR,
+                                    secondToLastRexNode.get(),
+                                    lastRexNode.get()
+                            );
                         } else if ( booleanGroup.booleanOperator == ColumnOpsBooleanOperator.NOT ) {
-                            rexNode = rexBuilder.makeCall( SqlStdOperatorTable.NOT, lastRexNode.get() );
-                            rexNode = rexBuilder.makeCall( SqlStdOperatorTable.AND, secondToLastRexNode.get(), rexNode );
+                            log.debug( "Found 'NOT'." );
+                            rexNode = rexBuilder.makeCall(
+                                    SqlStdOperatorTable.NOT,
+                                    lastRexNode.get()
+                            );
+                            rexNode = rexBuilder.makeCall(
+                                    SqlStdOperatorTable.AND,
+                                    secondToLastRexNode.get(),
+                                    rexNode
+                            );
                         } else {
-                            throw new RuntimeException( "Not Implemented!" );
+//                            TODO: Implement PROX.
+                            log.error( "Found 'PROX'. 'PROX' boolean operator not implemented." );
+                            throw new RuntimeException( "'PROX' boolean operator not implemented." );
                         }
                     }
                     secondToLastRexNode.set( lastRexNode.get() );
                     lastRexNode.set( rexNode );
                 } catch ( UnexpectedTypeException e ) {
-                    throw new RuntimeException( "This exception will never be thrown since checks have been made before"
-                            + " calling the getExternalNode method." );
+                    log.error( "Exception Unexpected.", e );
+                    throw new RuntimeException( "This exception will never be thrown since checks have been"
+                            + " made before calling the getExternalNode method." );
                 }
             }
 
@@ -252,6 +280,7 @@ public class Cql2RelConverter {
      */
     private RelBuilder generateSort( RelBuilder relBuilder, RexBuilder rexBuilder ) {
 
+        log.debug( "Generating sort." );
         List<Pair<ColumnIndex, Map<String, Modifier>>> sortSpecifications = cqlQuery.sortSpecifications;
         List<RexNode> sortingNodes = new ArrayList<>();
         RelNode baseNode = relBuilder.peek();

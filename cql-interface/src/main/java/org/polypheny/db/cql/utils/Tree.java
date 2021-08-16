@@ -225,20 +225,21 @@ public class Tree<M, N> {
 
     /**
      * Denotes the type of the current node in the traversal.
-     *
+     * <br>
      * ROUTE_NODE is a node on the path to some other node. Whereas,
      * DESTINATION_NODE is a node we want to visit.
-     *
+     * <br>
      * For example,
+     * <pre>
      *                         (1)
      *                        /   \
      *                      (2)   (3)
-     *
+     * </pre>
      * In traversing the above tree, when the traversalType is
      * TraversalType.INORDER, we visit (1) first (in code) while
      * traversing to visit (2) (the actual first node in INORDER
      * traversal). This makes (1) a ROUTE_NODE and (2) a DESTINATION_NODE.
-     *
+     * <br>
      * This distinction allows us to perform more complex actions not only
      * at the DESTINATION_NODE, but also at the ROUTE_NODE.
      */
@@ -254,31 +255,33 @@ public class Tree<M, N> {
      * The word before underscore (_) is the direction from which
      * we reached the node and the word after underscore is the
      * direction we will be traversing to.
-     *
+     * <br>
      * For example,
+     * <pre>
      *                          (1)
      *                         /   \
      *                       (2)   (3)
      *                      /  \  /  \
      *                    (4) (5)(6) (7)
+     * </pre>
      *
      * In traversing the above tree, when the traversalType is
      * TraversalType.INORDER, the actual order of traversal is
      * (1)-(2)-(4)*-(2)*-(5)*-(2)-(1)*-(3)-(6)*-(3)*-(7)*-(3)-(1),
      * where the asterisk (*) marks the DESTINATION_NODE.
-     *
+     * <br>
      * When on node (2), on the path to (4)*, the direction is
      * UP_DOWN, since we came to node(2) from UP and, since it
      * has a left child, we move DOWN.
-     *
+     * <br>
      * When on node (4)*, the direction is UP_UP, since we came to
      * node (4)* from UP and, since it is a leaf node, we move UP
      * after (4)*.
-     *
+     * <br>
      * When on node (2)*, the direction is DOWN_DOWN, since we came
      * to node(2)* from DOWN (from node (4)*) and, since it has a
      * right child, we move DOWN.
-     *
+     * <br>
      * When on node (2), on the path to (1)*, the direction is DOWN_UP,
      * since we came to node (2) from DOWN (from node(5)*) and, since
      * it is not the root node, we move UP.

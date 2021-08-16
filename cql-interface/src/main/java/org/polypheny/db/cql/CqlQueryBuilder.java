@@ -22,8 +22,10 @@ import java.util.Map;
 import java.util.Stack;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.cql.BooleanGroup.ColumnOpsBooleanOperator;
 import org.polypheny.db.cql.BooleanGroup.TableOpsBooleanOperator;
+import org.polypheny.db.cql.exception.InvalidModifierException;
 import org.polypheny.db.cql.exception.UnknownIndexException;
 import org.polypheny.db.cql.utils.Tree;
 import org.polypheny.db.util.Pair;
@@ -31,8 +33,9 @@ import org.polypheny.db.util.Pair;
 
 /**
  * Packaging all the information and algorithm used by
- * {@link org.polypheny.cql.parser.CqlParser} to build {@link CqlQuery}.
+ * {@link org.polypheny.db.cql.parser.CqlParser} to build {@link CqlQuery}.
  */
+@Slf4j
 public class CqlQueryBuilder {
 
     private final String databaseName;
@@ -59,26 +62,34 @@ public class CqlQueryBuilder {
 
     /**
      * Build the {@link CqlQuery} object. To be called after
-     * the {@link org.polypheny.cql.parser.CqlParser} has parsed
+     * the {@link org.polypheny.db.cql.parser.CqlParser} has parsed
      * the full query.
      *
      * @return {@link CqlQuery}
-     * @throws Exception Thrown if the query specified no relation or filters.
+     * @throws Exception Thrown if the query specified no relation or filters
+     * OR if the filters stack has more than one filter trees.
      */
     public CqlQuery build() throws Exception {
+
+        log.debug( "Building CqlQuery." );
         if ( queryRelation == null && filters.size() == 0 ) {
-            throw new Exception( "Query relations and filters cannot be both empty." );
+            log.error( "Query relations and filters cannot both be empty." );
+            throw new Exception( "Query relations and filters cannot both be empty." );
         }
 
         if ( queryRelation == null ) {
             assert filters.size() == 1;
-
+            log.debug( "QueryRelation not specified." );
             generateDefaultQueryRelation();
         }
 
         Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> queryFilters = null;
         if ( filters.size() == 1 ) {
+            log.debug( "Found filters." );
             queryFilters = filters.pop();
+        } else if ( filters.size() > 1 ) {
+            log.error( "Invalid filters stack state. It should have exactly one or zero filter trees." );
+            throw new Exception( "Invalid filters stack state. It should have exactly one or zero filter trees." );
         }
 
         return new CqlQuery( queryRelation, queryFilters, tableIndexMapping,
@@ -92,6 +103,8 @@ public class CqlQueryBuilder {
      * and projections) used in the query.
      */
     private void generateDefaultQueryRelation() {
+
+        log.debug( "Generating Default Query Relation." );
         AtomicBoolean first = new AtomicBoolean( true );
         tableIndexMapping.forEach( ( tableName, tableIndex ) -> {
             if ( first.get() ) {
@@ -99,7 +112,13 @@ public class CqlQueryBuilder {
                 first.set( false );
             } else {
                 BooleanGroup<TableOpsBooleanOperator> innerJoin = new BooleanGroup<>( TableOpsBooleanOperator.AND );
-                combineRelationWith( tableIndex, innerJoin );
+                try {
+                    combineRelationWith( tableIndex, innerJoin );
+                } catch ( InvalidModifierException e ) {
+                    log.error( "Exception Unexpected.", e );
+                    throw new RuntimeException( "This exception will never be throws since the BooleanGroup used"
+                            + " has no modifiers." );
+                }
             }
         } );
     }
@@ -114,8 +133,7 @@ public class CqlQueryBuilder {
      * @throws UnknownIndexException Thrown if the {@link org.polypheny.db.catalog.Catalog}
      * does not contain the table as specified by the input parameter.
      */
-    public TableIndex addTableIndex( String fullyQualifiedTableName )
-            throws UnknownIndexException {
+    public TableIndex addTableIndex( String fullyQualifiedTableName ) throws UnknownIndexException {
 
         String[] split = fullyQualifiedTableName.split( "\\." );
 
@@ -155,8 +173,7 @@ public class CqlQueryBuilder {
      * @throws UnknownIndexException Thrown if the {@link org.polypheny.db.catalog.Catalog}
      * does not contain the column as specified by the input parameter.
      */
-    public ColumnIndex addColumnIndex( String fullyQualifiedColumnName )
-            throws UnknownIndexException {
+    public ColumnIndex addColumnIndex( String fullyQualifiedColumnName ) throws UnknownIndexException {
 
         String[] split = fullyQualifiedColumnName.split( "\\." );
 
@@ -196,7 +213,7 @@ public class CqlQueryBuilder {
      */
     public void addTable( TableIndex tableIndex ) {
         assert this.queryRelation == null;
-
+        log.debug( "Adding first TableIndex '" + tableIndex.fullyQualifiedName + "' for QueryRelation." );
         this.queryRelation = new Tree<>( tableIndex );
         this.lastTableIndex = tableIndex;
     }
@@ -209,10 +226,15 @@ public class CqlQueryBuilder {
      * @param tableIndex table to be combined.
      * @param booleanGroup {@link BooleanGroup<TableOpsBooleanOperator>} to
      * create {@link Combiner}.
+     * @throws InvalidModifierException Thrown if invalid modifier names are used.
      */
-    public void combineRelationWith( TableIndex tableIndex, BooleanGroup<TableOpsBooleanOperator> booleanGroup ) {
+    public void combineRelationWith( TableIndex tableIndex, BooleanGroup<TableOpsBooleanOperator> booleanGroup )
+            throws InvalidModifierException {
 
         assert this.queryRelation != null;
+
+        log.debug( "Creating combiner and combining QueryRelation with TableIndex '" + tableIndex.fullyQualifiedName
+                + "'." );
 
         Combiner combiner = Combiner.createCombiner( booleanGroup, this.lastTableIndex, tableIndex );
 
@@ -231,6 +253,7 @@ public class CqlQueryBuilder {
      * ({@link Filter}).
      */
     public void addNewFilter( Filter filter ) {
+        log.debug( "Adding filter '" + filter.toString() + "'." );
         Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> root = new Tree<>( filter );
         this.filters.push( root );
     }
@@ -241,6 +264,8 @@ public class CqlQueryBuilder {
      * {@link BooleanGroup<ColumnOpsBooleanOperator>}
      */
     public void mergeFilterSubtreesWith( BooleanGroup<ColumnOpsBooleanOperator> booleanGroup ) {
+
+        log.debug( "Merging filter subtrees with boolean group '" + booleanGroup.toString() + "'." );
         Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> right = this.filters.pop();
         Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> left = this.filters.pop();
 
@@ -258,6 +283,7 @@ public class CqlQueryBuilder {
      * Adds to the sort specification list.
      */
     public void addSortSpecification( ColumnIndex columnIndex, Map<String, Modifier> modifiers ) {
+        log.debug( "Adding sort specification for '" + columnIndex.fullyQualifiedName + "'." );
         this.sortSpecifications.add(
                 new Pair<>( columnIndex, modifiers )
         );

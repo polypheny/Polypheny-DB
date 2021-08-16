@@ -16,7 +16,7 @@
 
 package org.polypheny.db.cql.exception;
 
-public class UnexpectedTypeException extends Exception {
+public class UnexpectedTypeException extends RuntimeException {
 
     public UnexpectedTypeException() {
         super();

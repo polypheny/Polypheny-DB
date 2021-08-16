@@ -20,9 +20,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.polypheny.cql.BooleanGroup.TableOpsBooleanOperator;
-import org.polypheny.cql.exception.InvalidMethodInvocation;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.cql.BooleanGroup.TableOpsBooleanOperator;
+import org.polypheny.db.cql.exception.InvalidMethodInvocation;
+import org.polypheny.db.cql.exception.InvalidModifierException;
 import org.polypheny.db.rel.core.JoinRelType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.tools.RelBuilder;
@@ -31,6 +33,7 @@ import org.polypheny.db.tools.RelBuilder;
 /**
  * Packaging information and algorithm to combine two tables.
  */
+@Slf4j
 public class Combiner {
 
     private static final Map<String, Object> modifiersLookupTable = new HashMap<>();
@@ -52,7 +55,11 @@ public class Combiner {
 
 
     public static Combiner createCombiner( BooleanGroup<TableOpsBooleanOperator> booleanGroup,
-            TableIndex left, TableIndex right ) {
+            TableIndex left, TableIndex right )
+            throws InvalidModifierException {
+
+        log.debug( "Creating Combiner." );
+        log.debug( "Setting default values for modifiers." );
 
         Map<String, Object> modifiers = new HashMap<>( modifiersLookupTable );
         if ( booleanGroup.booleanOperator == TableOpsBooleanOperator.AND ) {
@@ -61,13 +68,22 @@ public class Combiner {
             modifiers.put( "on", new String[]{ "none" } );
         }
 
-        booleanGroup.modifiers.forEach( ( modifierName, modifier ) -> {
-            if ( modifierName.equalsIgnoreCase( "on" ) ) {
-                modifiers.put( "on", parseOnModifier( modifier.comparator, modifier.modifierValue.trim() ) );
-            } else if ( modifier.modifierName.equalsIgnoreCase( "null" ) ) {
-                modifiers.put( "null", parseNullModifier( modifier.comparator, modifier.modifierValue.trim() ) );
-            }
-        } );
+        try {
+            booleanGroup.modifiers.forEach( ( modifierName, modifier ) -> {
+                if ( modifierName.equalsIgnoreCase( "on" ) ) {
+                    log.debug( "Found 'on' modifier." );
+                    modifiers.put( "on", parseOnModifier( modifier.comparator, modifier.modifierValue.trim() ) );
+                } else if ( modifier.modifierName.equalsIgnoreCase( "null" ) ) {
+                    log.debug( "Found 'null' modifier." );
+                    modifiers.put( "null", parseNullModifier( modifier.comparator, modifier.modifierValue.trim() ) );
+                } else {
+                    log.error( "Invalid modifier for combining tables: " + modifierName );
+                    throw new RuntimeException( "Invalid modifier for combining tables: " + modifierName );
+                }
+            } );
+        } catch ( RuntimeException e ) {
+            throw new InvalidModifierException( e.getMessage() );
+        }
 
         CombinerType combinerType =
                 determineCombinerType( booleanGroup.booleanOperator, (String) modifiers.get( "null" ) );
@@ -79,6 +95,7 @@ public class Combiner {
 
     private static String[] parseOnModifier( Comparator comparator, String modifierValue ) {
 
+        log.debug( "Parsing 'on' modifier." );
         if ( modifierValue.equalsIgnoreCase( "all" ) ) {
             return new String[]{ "all" };
         } else if ( modifierValue.equalsIgnoreCase( "none" ) ) {
@@ -92,6 +109,7 @@ public class Combiner {
 
     private static String parseNullModifier( Comparator comparator, String modifierValue ) {
 
+        log.debug( "Parsing 'null' modifier." );
         if ( modifierValue.equalsIgnoreCase( "left" ) ) {
             return "left";
         } else if ( modifierValue.equalsIgnoreCase( "right" ) ) {
@@ -103,7 +121,10 @@ public class Combiner {
     }
 
 
-    private static CombinerType determineCombinerType( TableOpsBooleanOperator tableOpsBooleanOperator, String nullValue ) {
+    private static CombinerType determineCombinerType( TableOpsBooleanOperator tableOpsBooleanOperator,
+            String nullValue ) {
+
+        log.debug( "Determining Combiner Type." );
         if ( tableOpsBooleanOperator == TableOpsBooleanOperator.OR ) {
             if ( nullValue.equals( "both" ) ) {
                 return CombinerType.JOIN_FULL;
@@ -115,16 +136,20 @@ public class Combiner {
         } else {
             return CombinerType.JOIN_INNER;
         }
+
     }
 
 
-    private static String[] getColumnsToJoinOn( TableIndex left, TableIndex right, String[] columnStrs ) {
+    private static String[] getColumnsToJoinOn( TableIndex left, TableIndex right, String[] columnStrs )
+            throws InvalidModifierException {
 
         assert columnStrs.length > 0;
 
+        log.debug( "Getting Columns to Join '" + left.fullyQualifiedName + "' and '"
+                + right.fullyQualifiedName + "' On." );
         if ( columnStrs.length == 1 ) {
             if ( columnStrs[0].equals( "all" ) ) {
-                return getCommonColumns( left.catalogTable, right.catalogTable );
+                return getCommonColumns( left, right );
             } else if ( columnStrs[0].equals( "none" ) ) {
                 return new String[0];
             }
@@ -137,25 +162,30 @@ public class Combiner {
         if ( !leftCatalogTable.getColumnNames().containsAll( columnList ) ||
                 !rightCatalogTable.getColumnNames().containsAll( columnList ) ) {
 
-            throw new RuntimeException( "Cannot join tables '" + leftCatalogTable.name + "' and '" +
-                    rightCatalogTable.name + "' on columns " + columnList );
+            log.error( "Invalid Modifier Values. Cannot join tables '" +
+                    leftCatalogTable.name + "' and '" + rightCatalogTable.name + "' on columns " + columnList );
+            throw new InvalidModifierException( "Invalid Modifier Values. Cannot join tables '" +
+                    leftCatalogTable.name + "' and '" + rightCatalogTable.name + "' on columns " + columnList );
         }
 
         return columnStrs;
     }
 
 
-    private static String[] getCommonColumns( CatalogTable table1, CatalogTable table2 ) {
+    private static String[] getCommonColumns( TableIndex table1, TableIndex table2 ) {
         // TODO: Create a cache and check if in cache.
 
-        List<String> table1Columns = table1.getColumnNames();
-        List<String> table2Columns = table2.getColumnNames();
+        log.debug( "Getting Common Columns between '" + table1.fullyQualifiedName + "' and '"
+                + table2.fullyQualifiedName + "'." );
+        List<String> table1Columns = table1.catalogTable.getColumnNames();
+        List<String> table2Columns = table2.catalogTable.getColumnNames();
 
         return table1Columns.stream().filter( table2Columns::contains ).toArray( String[]::new );
     }
 
 
     public RelBuilder combine( RelBuilder relBuilder, RexBuilder rexBuilder ) {
+        log.debug( "Combining." );
         try {
             if ( combinerType.isJoinType() ) {
                 if ( joinOnColumns.length == 0 ) {
@@ -164,9 +194,12 @@ public class Combiner {
                     return relBuilder.join( combinerType.convertToJoinRelType(), joinOnColumns );
                 }
             } else {
-                return relBuilder;
+//                TODO: Implement SetOpsType Combiners. (Union, Intersection, etc.)
+                log.error( "Set Ops Type Combiners have not been implemented." );
+                throw new RuntimeException( "Not Implemented." );
             }
         } catch ( InvalidMethodInvocation e ) {
+            log.error( "Exception Unexpected.", e );
             throw new RuntimeException( "This exception would never be thrown since we have checked if the combiner"
                     + " isJoinType." );
         }
@@ -207,8 +240,10 @@ public class Combiner {
 
 
         public JoinRelType convertToJoinRelType() throws InvalidMethodInvocation {
+            log.debug( "Converting to JoinRelType." );
             if ( !isJoinType ) {
-                throw new InvalidMethodInvocation( "Invalid method call to convert to JoinRelType." );
+                log.error( "Cannot convert non-JoinType Combiner to JoinRelType." );
+                throw new InvalidMethodInvocation( "Cannot convert non-JoinType Combiner to JoinRelType." );
             }
             if ( this == JOIN_FULL ) {
                 return JoinRelType.FULL;

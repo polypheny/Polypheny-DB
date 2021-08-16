@@ -17,6 +17,7 @@
 package org.polypheny.db.cql;
 
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
@@ -27,6 +28,7 @@ import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 /**
  * Filter comparing a column with a value.
  */
+@Slf4j
 public class LiteralFilter implements Filter {
 
     private final ColumnIndex columnIndex;
@@ -42,7 +44,10 @@ public class LiteralFilter implements Filter {
 
 
     @Override
-    public RexNode convert2RexNode( RelNode baseNode, RexBuilder rexBuilder, Map<String, RelDataTypeField> filterMap ) {
+    public RexNode convert2RexNode( RelNode baseNode, RexBuilder rexBuilder,
+            Map<String, RelDataTypeField> filterMap ) {
+
+        log.debug( "Converting '" + this + "' to RexNode." );
         RelDataTypeField typeField = filterMap.get( columnIndex.fullyQualifiedName );
         RexNode lhs = rexBuilder.makeInputRef( baseNode, typeField.getIndex() );
         RexNode rhs = rexBuilder.makeLiteral( searchTerm );
@@ -51,7 +56,8 @@ public class LiteralFilter implements Filter {
             return rexBuilder.makeCall(
                     relation.comparator.toSqlStdOperatorTable( SqlStdOperatorTable.EQUALS ), lhs, rhs );
         } else {
-            throw new RuntimeException( "Not Implemented!" );
+            log.error( "Named Comparators have not been implemented." );
+            throw new RuntimeException( "Named Comparators have not been implemented." );
         }
     }
 

@@ -16,6 +16,7 @@
 
 package org.polypheny.db.cql;
 
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.cql.exception.UnknownIndexException;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -28,6 +29,7 @@ import org.polypheny.db.catalog.exceptions.UnknownTableException;
 /**
  * Packaging column information together.
  */
+@Slf4j
 public class ColumnIndex {
 
     public final CatalogColumn catalogColumn;
@@ -51,14 +53,17 @@ public class ColumnIndex {
             throws UnknownIndexException {
 
         try {
+            log.debug( "Creating ColumnIndex." );
             Catalog catalog = Catalog.getInstance();
             CatalogColumn column = catalog.getColumn( inDatabase, schemaName, tableName, columnName );
 
             return new ColumnIndex( column, schemaName, tableName, columnName );
 
         } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException | UnknownColumnException e ) {
+            log.error( "Cannot find a underlying column for the specified column name: "
+                    + schemaName + "." + tableName + "." + columnName + ".", e );
             throw new UnknownIndexException( "Cannot find a underlying column for the specified column name: "
-                    + schemaName + "." + tableName );
+                    + schemaName + "." + tableName + "." + columnName + "." );
         }
 
     }
