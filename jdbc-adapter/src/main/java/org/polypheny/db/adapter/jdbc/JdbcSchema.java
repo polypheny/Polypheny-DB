@@ -167,7 +167,7 @@ public class JdbcSchema implements Schema {
                 physicalSchemaName,
                 partitionPlacement.physicalTableName,
                 physicalColumnNames );
-        tableMap.put( catalogTable.name, table );
+        tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
         physicalToLogicalTableNameMap.put( partitionPlacement.physicalTableName, catalogTable.name );
         return table;
     }
