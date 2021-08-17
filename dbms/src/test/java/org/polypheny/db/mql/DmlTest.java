@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.MongoConnection;
+import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.mongoql.model.Result;
 
@@ -33,7 +34,7 @@ import org.polypheny.db.mongoql.model.Result;
  * Integration tests, which use the MongoQL-interface to observe
  * correctness of the MongoQL language and the document model
  */
-@Category(AdapterTestSuite.class)
+@Category({ AdapterTestSuite.class, CassandraExcluded.class })
 public class DmlTest extends MqlTestTemplate {
 
 
