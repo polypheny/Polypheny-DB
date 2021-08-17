@@ -138,7 +138,7 @@ public class JdbcPreparedStatementsTest {
                     preparedInsert.executeBatch();
                     connection.commit();
 
-                    PreparedStatement preparedSelect = connection.prepareStatement( "SELECT tinteger,tvarchar FROM pstest WHERE tinteger >= ?" );
+                    PreparedStatement preparedSelect = connection.prepareStatement( "SELECT tinteger,tvarchar FROM pstest WHERE tinteger >= ? ORDER BY tinteger" );
                     preparedSelect.setInt( 1, 1 );
                     TestHelper.checkResultSet(
                             preparedSelect.executeQuery(),
@@ -174,7 +174,7 @@ public class JdbcPreparedStatementsTest {
                     preparedInsert.executeBatch();
                     connection.commit();
 
-                    PreparedStatement preparedSelect = connection.prepareStatement( "SELECT tinteger,tvarchar FROM pstest" );
+                    PreparedStatement preparedSelect = connection.prepareStatement( "SELECT tinteger,tvarchar FROM pstest ORDER BY tinteger" );
                     TestHelper.checkResultSet(
                             preparedSelect.executeQuery(),
                             ImmutableList.of(

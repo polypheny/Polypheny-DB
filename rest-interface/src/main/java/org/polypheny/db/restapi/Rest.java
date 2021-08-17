@@ -97,7 +97,9 @@ public class Rest {
 
 
     String processGetResource( final ResourceGetRequest resourceGetRequest, final Request req, final Response res ) throws RestException {
-        log.debug( "Starting to process get resource request. Session ID: {}.", req.session().id() );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Starting to process get resource request. Session ID: {}.", req.session().id() );
+        }
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
         RelBuilder relBuilder = RelBuilder.create( statement );
@@ -124,7 +126,9 @@ public class Rest {
         // Sorts, limit, offset
         relBuilder = this.sort( relBuilder, rexBuilder, resourceGetRequest.sorting, resourceGetRequest.limit, resourceGetRequest.offset );
 
-        log.debug( "RelNodeBuilder: {}", relBuilder.toString() );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "RelNodeBuilder: {}", relBuilder.toString() );
+        }
         RelNode relNode = relBuilder.build();
         log.debug( "RelNode was built." );
 
@@ -326,7 +330,7 @@ public class Rest {
     @VisibleForTesting
     List<RexNode> filters( Statement statement, RelBuilder relBuilder, RexBuilder rexBuilder, Filters filters, Request req ) {
         if ( filters.literalFilters != null ) {
-            if ( req != null ) {
+            if ( req != null && log.isDebugEnabled() ) {
                 log.debug( "Starting to process filters. Session ID: {}.", req.session().id() );
             }
             List<RexNode> filterNodes = new ArrayList<>();
@@ -356,16 +360,16 @@ public class Rest {
                 }
             }
 
-            if ( req != null ) {
+            if ( req != null && log.isDebugEnabled() ) {
                 log.debug( "Finished processing filters. Session ID: {}.", req.session().id() );
             }
 //            relBuilder = relBuilder.filter( filterNodes );
-            if ( req != null ) {
+            if ( req != null && log.isDebugEnabled() ) {
                 log.debug( "Added filters to relation. Session ID: {}.", req.session().id() );
             }
             return filterNodes;
         } else {
-            if ( req != null ) {
+            if ( req != null && log.isDebugEnabled() ) {
                 log.debug( "No filters to add. Session ID: {}.", req.session().id() );
             }
             return null;
@@ -431,7 +435,7 @@ public class Rest {
         List<String> aliases = new ArrayList<>();
 
         for ( RequestColumn column : columns ) {
-            RexNode inputRef = rexBuilder.makeInputRef( baseNode, (int) column.getTableScanIndex() );
+            RexNode inputRef = rexBuilder.makeInputRef( baseNode, column.getTableScanIndex() );
             inputRefs.add( inputRef );
             aliases.add( column.getAlias() );
         }
@@ -448,7 +452,7 @@ public class Rest {
 
         for ( RequestColumn column : columns ) {
             if ( column.isExplicit() ) {
-                RexNode inputRef = rexBuilder.makeInputRef( baseNode, (int) column.getLogicalIndex() );
+                RexNode inputRef = rexBuilder.makeInputRef( baseNode, column.getLogicalIndex() );
                 inputRefs.add( inputRef );
                 aliases.add( column.getAlias() );
             }
@@ -487,7 +491,7 @@ public class Rest {
 
             List<Integer> groupByOrdinals = new ArrayList<>();
             for ( RequestColumn column : groupings ) {
-                groupByOrdinals.add( (int) column.getLogicalIndex() );
+                groupByOrdinals.add( column.getLogicalIndex() );
             }
 
             GroupKey groupKey = relBuilder.groupKey( ImmutableBitSet.of( groupByOrdinals ) );
@@ -520,7 +524,7 @@ public class Rest {
             List<RexNode> sortingNodes = new ArrayList<>();
             RelNode baseNodeForSorts = relBuilder.peek();
             for ( Pair<RequestColumn, Boolean> sort : sorts ) {
-                int inputField = (int) sort.left.getLogicalIndex();
+                int inputField = sort.left.getLogicalIndex();
                 RexNode inputRef = rexBuilder.makeInputRef( baseNodeForSorts, inputField );
                 RexNode sortingNode;
                 if ( sort.right ) {
@@ -561,9 +565,11 @@ public class Rest {
             Iterator<Object> iterator = iterable.iterator();
             restResult = new RestResult( relRoot.kind, iterator, signature.rowType, signature.columns );
             restResult.transform();
+            long executionTime = restResult.getExecutionTime();
             if ( !relRoot.kind.belongsTo( SqlKind.DML ) ) {
-                signature.getExecutionTimeMonitor().setExecutionTime( restResult.getExecutionTime() );
+                signature.getExecutionTimeMonitor().setExecutionTime( executionTime );
             }
+
             statement.getTransaction().commit();
         } catch ( Throwable e ) {
             log.error( "Error during execution of REST query", e );
@@ -574,7 +580,9 @@ public class Rest {
             }
             return null;
         }
-        return restResult.getResult( res );
+        String result = restResult.getResult( res );
+
+        return result;
     }
 
 }
