@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.Getter;
 import org.bson.BsonDocument;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
@@ -54,6 +55,7 @@ import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -89,6 +91,7 @@ public class MongoProject extends Project implements MongoRel {
 
         final MongoRules.RexToMongoTranslator translator = new MongoRules.RexToMongoTranslator( (JavaTypeFactory) getCluster().getTypeFactory(), MongoRules.mongoFieldNames( getInput().getRowType() ), implementor );
         final List<String> items = new ArrayList<>();
+        final List<String> excludes = new ArrayList<>();
         final List<String> unwinds = new ArrayList<>();
         // we us our specialized rowType to derive the mapped underlying column identifiers
         MongoRowType mongoRowType = null;
@@ -127,14 +130,22 @@ public class MongoProject extends Project implements MongoRel {
             if ( expr == null ) {
                 continue;
             }
-            // exclude projection cannot be handled this way so it needs fixing
-            if ( pair.left.isA( SqlKind.DOC_EXCLUDE ) ) {
-                items.add( expr );
+            // exclude projection cannot be handled this way, so it needs fixing
+            KindChecker visitor = new KindChecker( SqlKind.DOC_EXCLUDE );
+            pair.left.accept( visitor );
+            if ( visitor.containsKind ) {
+                items.add( name + ":1" );
+                excludes.add( expr );
                 continue;
             }
 
-            if ( pair.left.isA( SqlKind.DOC_UNWIND ) ) {
-                unwinds.add( MongoRules.maybeQuote( "$" + pair.right ) );
+            visitor = new KindChecker( SqlKind.DOC_UNWIND );
+            pair.left.accept( visitor );
+            if ( visitor.containsKind ) {
+                // $unwinds need to projected out else $unwind is not possible
+                items.add( name + ":" + expr );
+                unwinds.add( "\"$" + name + "\"" );
+                continue;
             }
 
             items.add( expr.equals( "'$" + name + "'" )
@@ -146,8 +157,8 @@ public class MongoProject extends Project implements MongoRel {
         if ( documents.size() != 0 ) {
             String functions = documents.toJson( JsonWriterSettings.builder().outputMode( JsonMode.RELAXED ).build() );
             mergedItems = Streams.concat(
-                    items.stream(),
-                    Stream.of( functions.substring( 1, functions.length() - 1 ) ) )
+                            items.stream(),
+                            Stream.of( functions.substring( 1, functions.length() - 1 ) ) )
                     .collect( Collectors.toList() );
         } else {
             mergedItems = items;
@@ -166,6 +177,39 @@ public class MongoProject extends Project implements MongoRel {
                 implementor.add( Util.toString( unwinds, "{", ",", "}" ), Util.toString( unwinds, "{$unwind:", ",", "}" ) );
             }
         }
+        if ( excludes.size() != 0 ) {
+            String excludeString = Util.toString(
+                    excludes,
+                    "{", ", ", "}" );
+            implementor.add( excludeString, "{$project: " + excludeString + "}" );
+        }
+    }
+
+
+    public static class KindChecker extends RexVisitorImpl<Void> {
+
+        private final SqlKind kind;
+        @Getter
+        boolean containsKind = false;
+
+
+        protected KindChecker( SqlKind kind ) {
+            super( true );
+            this.kind = kind;
+        }
+
+
+        @Override
+        public Void visitCall( RexCall call ) {
+            if ( call.isA( kind ) ) {
+                containsKind = true;
+                return null;
+            } else {
+                call.operands.forEach( node -> node.accept( this ) );
+                return null;
+            }
+        }
+
     }
 
 }

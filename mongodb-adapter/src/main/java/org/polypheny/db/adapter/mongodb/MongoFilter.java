@@ -45,6 +45,7 @@ import static org.polypheny.db.sql.SqlKind.LITERAL;
 import static org.polypheny.db.sql.SqlKind.OR;
 import static org.polypheny.db.sql.SqlKind.OTHER_FUNCTION;
 
+import com.google.common.collect.ImmutableList;
 import com.mongodb.client.gridfs.GridFSBucket;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -64,7 +65,7 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
-import org.polypheny.db.adapter.mongodb.util.MongoTypeUtil;
+import org.polypheny.db.mql.parser.BsonUtil;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -78,6 +79,7 @@ import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlItemOperator;
 import org.polypheny.db.util.JsonBuilder;
@@ -134,7 +136,6 @@ public class MongoFilter extends Filter implements MongoRel {
         private final GridFSBucket bucket;
         private final BsonDocument preProjections = new BsonDocument();
         private final Implementor implementor;
-        private boolean useTempFlag = false;
         private Map<String, List<BsonValue>> map = new HashMap<>();
 
 
@@ -290,16 +291,16 @@ public class MongoFilter extends Filter implements MongoRel {
         }
 
 
-        private Void translateOr( RexCall node ) {
+        private void translateOr( RexCall node ) {
             Map<String, List<BsonValue>> shallowCopy = new HashMap<>( this.map );
             this.map = new HashMap<>();
-
-            translateNode( node.operands.get( 0 ) );
+            for ( RexNode operand : node.operands ) {
+                translateNode( operand );
+            }
 
             mergeMaps( this.map, shallowCopy, "$or" );
             this.map = shallowCopy;
 
-            return null;
         }
 
 
@@ -350,7 +351,11 @@ public class MongoFilter extends Filter implements MongoRel {
                         for ( BsonValue value : entry.getValue() ) {
                             ands.add( new BsonDocument( entry.getKey(), value ) );
                         }
-                        ors.add( new BsonDocument( "$and", new BsonArray( ands ) ) );
+                        if ( ands.size() == 1 ) {
+                            ors.add( ands.get( 0 ) );
+                        } else {
+                            ors.add( new BsonDocument( "$and", new BsonArray( ands ) ) );
+                        }
                     } else {
                         ors.addAll( entry.getValue() );
                     }
@@ -378,9 +383,14 @@ public class MongoFilter extends Filter implements MongoRel {
         }
 
 
-        private Void translateElemMatch( RexCall node ) {
+        /**
+         * Translate a SqlKind.DOC_ELEM_MATCH condition into the Bson format "$elemMatch":[<query1>,<query2>,,,]
+         *
+         * @param node the untranslated DOC_ELEM_MATCH
+         */
+        private void translateElemMatch( RexCall node ) {
             if ( node.operands.size() != 2 ) {
-                return null;
+                return;
             }
             String key = getParamAsKey( node.operands.get( 0 ) );
 
@@ -392,10 +402,14 @@ public class MongoFilter extends Filter implements MongoRel {
             mergeMaps( this.map, shallowCopy, "$elemMatch" );
             this.map = shallowCopy;
 
-            return null;
         }
 
 
+        /**
+         * Translates a {@link SqlKind#DOC_TYPE_MATCH } to its {"$type": 3} form
+         *
+         * @param node the untranslated node
+         */
         private void translateTypeMatch( RexCall node ) {
             if ( node.operands.size() != 2
                     || !(node.operands.get( 1 ) instanceof RexCall)
@@ -413,6 +427,11 @@ public class MongoFilter extends Filter implements MongoRel {
         }
 
 
+        /**
+         * Translates a {@link SqlKind#EXISTS } to its {"$exists": true} form
+         *
+         * @param node the untranslated node
+         */
         private void translateRegex( RexCall node ) {
             if ( node.operands.size() != 6 ) {
                 return;
@@ -450,6 +469,11 @@ public class MongoFilter extends Filter implements MongoRel {
         }
 
 
+        /**
+         * Translates a {@link SqlKind#DOC_VALUE } to its {"$test": true} form
+         *
+         * @param call the untranslated node
+         */
         private String translateDocValue( RexCall call ) {
             RexInputRef parent = (RexInputRef) call.getOperands().get( 0 );
             RexCall names = (RexCall) call.operands.get( 1 );
@@ -484,6 +508,11 @@ public class MongoFilter extends Filter implements MongoRel {
         }
 
 
+        /**
+         * Translates a {@link SqlKind#LIKE } to its {"$regex": /$val/} form
+         *
+         * @param call the untranslated node
+         */
         private void translateLike( RexCall call ) {
             final RexNode left = call.operands.get( 0 );
             final RexNode right = call.operands.get( 1 );
@@ -496,7 +525,7 @@ public class MongoFilter extends Filter implements MongoRel {
 
                 case LITERAL:
                     attachCondition( null, getPhysicalName( (RexInputRef) left ),
-                            MongoTypeUtil.replaceLikeWithRegex( ((RexLiteral) right).getValueAs( String.class ) ) );
+                            BsonUtil.replaceLikeWithRegex( ((RexLiteral) right).getValueAs( String.class ) ) );
                     break;
 
                 default:
@@ -535,6 +564,13 @@ public class MongoFilter extends Filter implements MongoRel {
                 return;
             }
 
+            if ( left instanceof RexCall ) {
+                b = translateDocValue( op, (RexCall) left, right );
+                if ( b ) {
+                    return;
+                }
+            }
+
             throw new AssertionError( "cannot translate op " + op + " call " + call );
         }
 
@@ -556,6 +592,14 @@ public class MongoFilter extends Filter implements MongoRel {
         }
 
 
+        /**
+         * Translate the given parameters as parts of arrays
+         *
+         * @param op the operation, which matches left to right
+         * @param right the matching fields
+         * @param left the condition
+         * @return if the translation was successful
+         */
         private boolean translateArray( String op, RexNode right, RexNode left ) {
             if ( right instanceof RexCall && left instanceof RexInputRef ) {
                 // $9 ( index ) -> [el1, el2]
@@ -580,6 +624,15 @@ public class MongoFilter extends Filter implements MongoRel {
         }
 
 
+        /**
+         * Translates the RexCall into its appropriate form
+         *
+         * left:[right]
+         *
+         * @param left the corresponding field
+         * @param right the matching clause
+         * @return the condition in the form  e.g. left -> [{"$eq": 3}, {"$lt": 15}]
+         */
         private BsonArray translateCall( String left, RexCall right ) {
             BsonArray array = new BsonArray();
             array.add( 0, new BsonString( "$" + left ) );
@@ -588,23 +641,77 @@ public class MongoFilter extends Filter implements MongoRel {
         }
 
 
+        /**
+         * Translates the right side of an assignment
+         *
+         * @param right the matching side of a single the assignment
+         * @return a single document, which represents the condition
+         */
         private BsonDocument getArray( RexCall right ) {
             BsonArray array = new BsonArray( right.operands.stream().map( el -> {
                 if ( el.isA( INPUT_REF ) ) {
-                    return MongoTypeUtil.getAsBson( (RexLiteral) el, bucket );
+                    return BsonUtil.getAsBson( (RexLiteral) el, bucket );
                 } else if ( el.isA( DYNAMIC_PARAM ) ) {
                     return new BsonDynamic( (RexDynamicParam) el );
                 } else if ( el.isA( LITERAL ) ) {
-                    return MongoTypeUtil.getAsBson( (RexLiteral) el, bucket );
+                    return BsonUtil.getAsBson( (RexLiteral) el, bucket );
+                } else if ( el instanceof RexCall ) {
+                    return getOperation( ((RexCall) el).op, ((RexCall) el).operands );
                 } else {
                     throw new RuntimeException( "Input in array is not translatable." );
                 }
             } ).collect( Collectors.toList() ) );
-
+            if ( right.op.kind == CAST ) {
+                if ( array.size() == 1 ) {
+                    return (BsonDocument) array.get( 0 );
+                } else {
+                    return new BsonDocument( "$and", array );
+                }
+            }
             return new BsonDocument( getOp( right.op ), array );
         }
 
 
+        /**
+         * Translates the multiple conditions, which belong to the given operation
+         *
+         * @param op the operation e.g. SqlKind.EQUALS, which translates to "$eq"
+         * @param operands the fields, which have to match the given operation
+         * @return the operations as a single value
+         */
+        private BsonValue getOperation( SqlOperator op, ImmutableList<RexNode> operands ) {
+            String operator = getOp( op );
+
+            return new BsonDocument( operator, new BsonArray( operands.stream().map( this::getSingle ).collect( Collectors.toList() ) ) );
+
+        }
+
+
+        /**
+         * Translates a single assign value.
+         *
+         * @param node the node to translate
+         * @return the node in its BSON form
+         */
+        private BsonValue getSingle( RexNode node ) {
+            if ( node.isA( LITERAL ) ) {
+                return BsonUtil.getAsBson( (RexLiteral) node, bucket );
+            } else if ( node.isA( DYNAMIC_PARAM ) ) {
+                return new BsonDynamic( (RexDynamicParam) node );
+            } else if ( node instanceof RexCall && ((RexCall) node).op.kind == CAST ) {
+                return getSingle( ((RexCall) node).operands.get( 0 ) );
+            } else {
+                throw new RuntimeException( "operations need to consist of literals" );
+            }
+        }
+
+
+        /**
+         * Translate the operation to its BSON from
+         *
+         * @param op the operation to transform e.g. SqlKind.PLUS
+         * @return The operation translated
+         */
         private String getOp( SqlOperator op ) {
             switch ( op.kind ) {
                 case PLUS:
@@ -623,13 +730,21 @@ public class MongoFilter extends Filter implements MongoRel {
         }
 
 
+        /**
+         * Tries to translate the given left, right combination to a BSON  function form
+         *
+         * @param op the operation, which specifies how left matches right
+         * @param right the matching conditions
+         * @param left the matching filed
+         * @return if the translation was possible, with the given parameters
+         */
         private boolean translateFunction( String op, RexCall right, RexNode left ) {
             String randomName = getRandomName();
             this.preProjections.put( randomName, BsonFunctionHelper.getFunction( right, rowType, implementor ) );
 
             switch ( left.getKind() ) {
                 case LITERAL:
-                    attachCondition( op, randomName, MongoTypeUtil.getAsBson( (RexLiteral) left, bucket ) );
+                    attachCondition( op, randomName, BsonUtil.getAsBson( (RexLiteral) left, bucket ) );
                     return true;
                 case DYNAMIC_PARAM:
                     attachCondition( op, randomName, new BsonDynamic( (RexDynamicParam) left ) );
@@ -641,6 +756,11 @@ public class MongoFilter extends Filter implements MongoRel {
         }
 
 
+        /**
+         * Returns a random name, which grows with increasing pre-projections.
+         *
+         * @return the name
+         */
         private String getRandomName() {
             return "__temp" + preProjections.size();
         }
@@ -661,6 +781,14 @@ public class MongoFilter extends Filter implements MongoRel {
         }
 
 
+        /**
+         * Translate a condition, which includes a RexLiteral
+         *
+         * @param op the operation, which defines how the condition has to match the field
+         * @param left a general field, which is not yet identified
+         * @param right a field, which is a RexLiteral
+         * @return if the translation was possible
+         */
         private boolean translateLiteral( String op, RexNode left, RexLiteral right ) {
             switch ( left.getKind() ) {
                 case INPUT_REF:
@@ -688,6 +816,14 @@ public class MongoFilter extends Filter implements MongoRel {
         }
 
 
+        /**
+         * Translates a field, which contains a RexDynamicParam
+         *
+         * @param op the operation, which descirbes how the left field has to match the RexDynamicParam
+         * @param left a not yet identified condition
+         * @param right the RexDynamicParam
+         * @return if the translation was possible
+         */
         private boolean translateDynamic( String op, RexNode left, RexDynamicParam right ) {
             if ( left.getKind() == INPUT_REF ) {
                 attachCondition( op, getPhysicalName( (RexInputRef) left ), new BsonDynamic( right ) );
@@ -710,8 +846,17 @@ public class MongoFilter extends Filter implements MongoRel {
         }
 
 
+        /**
+         * Translates a DOC_QUERY_VALUE ( document model )
+         * to the correct BSON form
+         *
+         * @param op the operation, which specifies how the left has to match right
+         * @param left the unparsed DOC_QUERY_VALUE
+         * @param right the condition, which has to match the DOC_QUERY_VALUE
+         * @return if the translation was successful
+         */
         private boolean translateDocValue( String op, RexCall left, RexNode right ) {
-            BsonValue item = getItem( right );
+            BsonValue item = getItem( left, right );
             if ( item == null ) {
                 return false;
             }
@@ -737,13 +882,21 @@ public class MongoFilter extends Filter implements MongoRel {
         }
 
 
+        /**
+         * Tries to translate the given condition as a SqlKind.ITEM
+         *
+         * @param op the operation, which specifies how the left has to match right
+         * @param left the unparsed ITEM
+         * @param right the field to which the ITEM belongs
+         * @return if the translation was successful
+         */
         private boolean translateItem( String op, RexCall left, RexDynamicParam right ) {
             if ( left.op instanceof SqlItemOperator ) {
                 RexNode l = left.operands.get( 0 );
                 RexNode r = left.operands.get( 1 );
 
                 if ( l.isA( INPUT_REF ) ) {
-                    BsonValue item = getItem( r );
+                    BsonValue item = getItem( left, r );
                     if ( item == null ) {
                         return false;
                     }
@@ -764,12 +917,14 @@ public class MongoFilter extends Filter implements MongoRel {
 
 
         @Nullable
-        private BsonValue getItem( RexNode r ) {
+        private BsonValue getItem( RexCall l, RexNode r ) {
             BsonValue item;
             if ( r.isA( LITERAL ) ) {
-                item = MongoTypeUtil.getAsBson( (RexLiteral) r, bucket );
+                item = BsonUtil.getAsBson( (RexLiteral) r, bucket );
             } else if ( r.isA( DYNAMIC_PARAM ) ) {
                 item = new BsonDynamic( (RexDynamicParam) r );
+            } else if ( r instanceof RexCall ) {
+                item = getArray( (RexCall) r );
             } else {
                 return null;
             }
@@ -793,10 +948,17 @@ public class MongoFilter extends Filter implements MongoRel {
 
 
         private void translateOp2( String op, String name, RexLiteral right ) {
-            attachCondition( op, name, MongoTypeUtil.getAsBson( right, bucket ) );
+            attachCondition( op, name, BsonUtil.getAsBson( right, bucket ) );
         }
 
 
+        /**
+         * Attaches the provided condition to the map of conditions
+         *
+         * @param op the used operation
+         * @param name the key, which specifies the field
+         * @param right specifies the condition, which matches name
+         */
         private void attachCondition( String op, String name, BsonValue right ) {
             if ( op == null ) {
                 // E.g.: {deptno: 100}

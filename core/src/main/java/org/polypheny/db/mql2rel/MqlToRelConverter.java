@@ -743,7 +743,7 @@ public class MqlToRelConverter {
                     node.getRowType();
                     break;
                 case "$unset":
-                    node = combineProjection( value.asDocument().getDocument( "$unset" ), node, rowType, false, true );
+                    node = combineProjection( value.asDocument().get( "$unset" ), node, rowType, false, true );
                     break;
                 case "$project":
                     node = combineProjection( value.asDocument().getDocument( "$project" ), node, rowType, false, false );
@@ -879,6 +879,8 @@ public class MqlToRelConverter {
                     values.add( getIdentifier( field.getName(), node.getRowType() ) );
                 }
             }
+            names.add( firstKey );
+            values.add( call );
         } else {
             for ( RelDataTypeField field : node.getRowType().getFieldList() ) {
                 if ( !field.getName().equals( "_data" ) ) {
@@ -886,10 +888,9 @@ public class MqlToRelConverter {
                     values.add( getIdentifier( field.getName(), node.getRowType() ) );
                 }
             }
+            names.add( "_data" );
+            values.add( call );
         }
-
-        names.add( path );
-        values.add( call );
 
         return LogicalProject.create( node, values, names );
     }
@@ -1948,77 +1949,37 @@ public class MqlToRelConverter {
     }
 
 
-    private RelNode combineProjection( BsonDocument projection, RelNode node, RelDataType rowType, boolean isAddFields, boolean isUnset ) {
+    private RelNode combineProjection( BsonValue projectionValue, RelNode node, RelDataType rowType, boolean isAddFields, boolean isUnset ) {
         Map<String, RexNode> includes = new HashMap<>();
         List<String> excludes = new ArrayList<>();
         List<String> includesOrder = new ArrayList<>();
 
-        for ( Entry<String, BsonValue> entry : projection.entrySet() ) {
-            BsonValue value = entry.getValue();
-            if ( value.isNumber() && !isAddFields ) {
-                // we have a simple projection; [name]: 1 (include) or [name]:0 (exclude)
-                if ( value.asNumber().intValue() == 1 ) {
-                    includes.put( entry.getKey(), getIdentifier( entry.getKey(), rowType ) );
-                    includesOrder.add( entry.getKey() );
-                } else if ( value.asNumber().intValue() == 0 ) {
-                    excludes.add( entry.getKey() );
-                }
-
-            } else if ( value.isString() && value.asString().getValue().startsWith( "$" ) ) {
-                // we have a renaming; [new name]: $[old name] ( this counts as a inclusion projection
-                String oldName = value.asString().getValue().substring( 1 );
-
-                includes.put( entry.getKey(), getIdentifier( oldName, rowType ) );
-                includesOrder.add( entry.getKey() );
-            } else if ( value.isDocument() && value.asDocument().size() == 1 && value.asDocument().getFirstKey().startsWith( "$" ) ) {
-                String func = value.asDocument().getFirstKey();
-                RelDataTypeField field = getDefaultDataField( rowType );
-                if ( mathOperators.containsKey( func ) ) {
-                    includes.put( entry.getKey(), convertMath( func, entry.getKey(), value.asDocument().get( func ), rowType, false ) );
-                    includesOrder.add( entry.getKey() );
-                } else if ( func.equals( "$arrayElemAt" ) ) {
-                    includes.put( entry.getKey(), convertArrayAt( entry.getKey(), value.asDocument().get( func ), rowType, field ) );
-                    includesOrder.add( entry.getKey() );
-                } else if ( func.equals( "$slice" ) ) {
-                    includes.put( entry.getKey(), convertSlice( entry.getKey(), value.asDocument().get( func ), rowType, field ) );
-                    includesOrder.add( entry.getKey() );
-                } else if ( func.equals( "$literal" ) ) {
-                    if ( value.asDocument().get( func ).isInt32() && value.asDocument().get( func ).asInt32().getValue() == 0 ) {
-                        excludes.add( entry.getKey() );
-                    } else {
-                        includes.put( entry.getKey(), getIdentifier( entry.getKey(), rowType ) );
-                        includesOrder.add( entry.getKey() );
-                    }
-                }
-            } else if ( isAddFields && !value.isDocument() ) {
-                if ( value.isArray() ) {
-                    List<RexNode> nodes = new ArrayList<>();
-                    for ( BsonValue bsonValue : value.asArray() ) {
-                        nodes.add( convertLiteral( bsonValue ) );
-                    }
-                    includes.put( entry.getKey(), getArray( nodes, any ) );
-                } else {
-                    includes.put( entry.getKey(), convertLiteral( value ) );
-                }
-                includesOrder.add( entry.getKey() );
-            } else if ( isUnset && value.isArray() ) {
-                for ( BsonValue bsonValue : value.asArray() ) {
-                    if ( bsonValue.isString() ) {
-                        excludes.add( bsonValue.asString().getValue() );
-                    } else {
-                        throw new RuntimeException( "When using $unset with an array, it can only contain strings" );
-                    }
-                }
+        BsonDocument projection;
+        if ( projectionValue.isDocument() ) {
+            projection = projectionValue.asDocument();
+            translateProjection( rowType, isAddFields, isUnset, includes, excludes, includesOrder, projection );
+        } else if ( projectionValue.isArray() || projectionValue.isString() ) {
+            List<BsonValue> array;
+            if ( projectionValue.isArray() ) {
+                array = projectionValue.asArray();
+            } else if ( projectionValue.isString() ) {
+                array = new BsonArray( Collections.singletonList( projectionValue.asString() ) );
             } else {
-                String msg;
-                if ( !isAddFields ) {
-                    msg = "After a projection there needs to be either a number, a renaming, a literal or a function.";
-                } else {
-                    msg = "After a projection there needs to be either a renaming, a literal or a function.";
-                }
-                throw new RuntimeException( msg );
+                throw new RuntimeException( "$unset or $addFields needs a string or an array of strings" );
             }
 
+            for ( BsonValue value : array ) {
+                if ( isUnset ) {
+                    excludes.add( value.asString().getValue() );
+                } else {
+                    includes.put( value.asString().getValue(), getIdentifier( value.asString().getValue(), rowType ) );
+                    includesOrder.add( value.asString().getValue() );
+                }
+            }
+
+
+        } else {
+            throw new RuntimeException( "The provided projection was not translatable" );
         }
 
         if ( includes.size() != 0 && excludes.size() != 0 ) {
@@ -2112,6 +2073,77 @@ public class MqlToRelConverter {
             return LogicalProject.create( node, values, names );
         }
         return node;
+    }
+
+
+    private void translateProjection( RelDataType rowType, boolean isAddFields, boolean isUnset, Map<String, RexNode> includes, List<String> excludes, List<String> includesOrder, BsonDocument projection ) {
+        for ( Entry<String, BsonValue> entry : projection.entrySet() ) {
+            BsonValue value = entry.getValue();
+            if ( value.isNumber() && !isAddFields ) {
+                // we have a simple projection; [name]: 1 (include) or [name]:0 (exclude)
+                if ( value.asNumber().intValue() == 1 ) {
+                    includes.put( entry.getKey(), getIdentifier( entry.getKey(), rowType ) );
+                    includesOrder.add( entry.getKey() );
+                } else if ( value.asNumber().intValue() == 0 ) {
+                    excludes.add( entry.getKey() );
+                }
+
+            } else if ( value.isString() && value.asString().getValue().startsWith( "$" ) ) {
+                // we have a renaming; [new name]: $[old name] ( this counts as a inclusion projection
+                String oldName = value.asString().getValue().substring( 1 );
+
+                includes.put( entry.getKey(), getIdentifier( oldName, rowType ) );
+                includesOrder.add( entry.getKey() );
+            } else if ( value.isDocument() && value.asDocument().size() == 1 && value.asDocument().getFirstKey().startsWith( "$" ) ) {
+                String func = value.asDocument().getFirstKey();
+                RelDataTypeField field = getDefaultDataField( rowType );
+                if ( mathOperators.containsKey( func ) ) {
+                    includes.put( entry.getKey(), convertMath( func, entry.getKey(), value.asDocument().get( func ), rowType, false ) );
+                    includesOrder.add( entry.getKey() );
+                } else if ( func.equals( "$arrayElemAt" ) ) {
+                    includes.put( entry.getKey(), convertArrayAt( entry.getKey(), value.asDocument().get( func ), rowType, field ) );
+                    includesOrder.add( entry.getKey() );
+                } else if ( func.equals( "$slice" ) ) {
+                    includes.put( entry.getKey(), convertSlice( entry.getKey(), value.asDocument().get( func ), rowType, field ) );
+                    includesOrder.add( entry.getKey() );
+                } else if ( func.equals( "$literal" ) ) {
+                    if ( value.asDocument().get( func ).isInt32() && value.asDocument().get( func ).asInt32().getValue() == 0 ) {
+                        excludes.add( entry.getKey() );
+                    } else {
+                        includes.put( entry.getKey(), getIdentifier( entry.getKey(), rowType ) );
+                        includesOrder.add( entry.getKey() );
+                    }
+                }
+            } else if ( isAddFields && !value.isDocument() ) {
+                if ( value.isArray() ) {
+                    List<RexNode> nodes = new ArrayList<>();
+                    for ( BsonValue bsonValue : value.asArray() ) {
+                        nodes.add( convertLiteral( bsonValue ) );
+                    }
+                    includes.put( entry.getKey(), getArray( nodes, any ) );
+                } else {
+                    includes.put( entry.getKey(), convertLiteral( value ) );
+                }
+                includesOrder.add( entry.getKey() );
+            } else if ( isUnset && value.isArray() ) {
+                for ( BsonValue bsonValue : value.asArray() ) {
+                    if ( bsonValue.isString() ) {
+                        excludes.add( bsonValue.asString().getValue() );
+                    } else {
+                        throw new RuntimeException( "When using $unset with an array, it can only contain strings" );
+                    }
+                }
+            } else {
+                String msg;
+                if ( !isAddFields ) {
+                    msg = "After a projection there needs to be either a number, a renaming, a literal or a function.";
+                } else {
+                    msg = "After a projection there needs to be either a renaming, a literal or a function.";
+                }
+                throw new RuntimeException( msg );
+            }
+
+        }
     }
 
 

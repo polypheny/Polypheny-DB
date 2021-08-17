@@ -52,7 +52,6 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
-import org.polypheny.db.adapter.mongodb.util.MongoTypeUtil;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -66,6 +65,7 @@ import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.mql.parser.BsonUtil;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
@@ -125,6 +125,7 @@ public class MongoStore extends DataStore {
             trxLifetimeLimit = Adapter.MONGODB.getDefaultSettings().get( "trxLifetimeLimit" );
         }
         configs.put( "transactionLifetimeLimitSeconds", Integer.parseInt( trxLifetimeLimit ) );
+        configs.put( "cursorTimeoutMillis", 6 * 600000 );
         db.runCommand( configs );
     }
 
@@ -220,8 +221,6 @@ public class MongoStore extends DataStore {
     public void createTable( Context context, CatalogTable catalogTable ) {
         Catalog catalog = Catalog.getInstance();
         commitAll();
-        //ClientSession session = transactionProvider.startTransaction( context.getStatement().getTransaction().getXid() );
-        //context.getStatement().getTransaction().registerInvolvedAdapter( this );
         this.currentSchema.database.createCollection( getPhysicalTableName( catalogTable.id ) );
 
         for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ) ) {
@@ -240,7 +239,6 @@ public class MongoStore extends DataStore {
     public void dropTable( Context context, CatalogTable combinedTable ) {
         commitAll();
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
-        //transactionProvider.startTransaction();
         this.currentSchema.database.getCollection( getPhysicalTableName( combinedTable.id ) ).drop();
     }
 
@@ -384,7 +382,7 @@ public class MongoStore extends DataStore {
         BsonDocument filter = new BsonDocument();
         List<BsonDocument> updates = Collections.singletonList( new BsonDocument( "$set", new BsonDocument( name, new BsonDocument( "$convert", new BsonDocument()
                 .append( "input", new BsonString( "$" + name ) )
-                .append( "to", new BsonInt32( MongoTypeUtil.getTypeNumber( catalogColumn.type ) ) ) ) ) ) );
+                .append( "to", new BsonInt32( BsonUtil.getTypeNumber( catalogColumn.type ) ) ) ) ) ) );
 
         this.currentSchema.database.getCollection( columnPlacement.physicalTableName ).updateMany( filter, updates );
     }

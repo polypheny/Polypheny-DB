@@ -53,6 +53,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -61,6 +62,8 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.bson.BsonDocument;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.bson.json.JsonMode;
+import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
@@ -68,6 +71,7 @@ import org.polypheny.db.adapter.mongodb.MongoEnumerator.IterWrapper;
 import org.polypheny.db.adapter.mongodb.util.MongoDynamic;
 import org.polypheny.db.adapter.mongodb.util.MongoTypeUtil;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.mql.parser.BsonUtil;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
@@ -91,6 +95,7 @@ import org.polypheny.db.util.Util;
 /**
  * Table based on a MongoDB collection.
  */
+@Slf4j
 public class MongoTable extends AbstractQueryableTable implements TranslatableTable, ModifiableTable {
 
     @Getter
@@ -185,13 +190,13 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
      * "{$group: {_id: '$city', c: {$sum: 1}, p: {$sum: '$pop'}}}")
      * </code>
      *
-     * @param dataContext
-     * @param session
+     * @param dataContext the context, which specifies multiple parameters regarding data
+     * @param session the sessions to which the aggregation belongs
      * @param mongoDb MongoDB connection
      * @param fields List of fields to project; or null to return map
      * @param operations One or more JSON strings
-     * @param parameterValues
-     * @param filter
+     * @param parameterValues the values pre-ordered
+     * @param filter tje filter in a BsonDocument form
      * @return Enumerator of results
      */
     private Enumerable<Object> aggregate(
@@ -241,7 +246,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
         }
 
         final Function1<Document, Object> getter = MongoEnumerator.getter( fields, arrayFields );
-        //list.forEach( el -> System.out.println( el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ) );
+        list.forEach( el -> log.error( el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ) );
         return new AbstractEnumerable<Object>() {
             @Override
             public Enumerator<Object> enumerator() {
@@ -425,7 +430,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                         changes = inserts.size();
                     } else {
                         // direct
-                        List<Document> docs = operations.stream().map( BsonDocument::parse ).map( MongoTypeUtil::asDocument ).collect( Collectors.toList() );
+                        List<Document> docs = operations.stream().map( BsonDocument::parse ).map( BsonUtil::asDocument ).collect( Collectors.toList() );
                         mongoTable.getCollection().insertMany( session, docs );
                         changes = docs.size();
                     }

@@ -18,7 +18,9 @@ package org.polypheny.db.mql;
 
 
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -40,6 +42,16 @@ public class AggregateTest extends MqlTestTemplate {
             "{\"test\":\"val1\",\"key\":1}",
             "{\"test\":\"val2\",\"key\":5}",
             "{\"test\":\"val1\",\"key\":13}" );
+
+    private final List<String> DATA_2 = Arrays.asList(
+            "{\"test\":{\"key\":1}}",
+            "{\"test\":{\"key1\":5}}",
+            "{\"test\":{\"key\":13}}" );
+
+    private final List<String> DATA_3 = Arrays.asList(
+            "{\"val\":3,\"test\":[3,2]}",
+            "{\"val\":\"31\",\"test\":[\"test\",3,51]}",
+            "{\"test\":[13]}" );
 
 
     @Test
@@ -229,19 +241,167 @@ public class AggregateTest extends MqlTestTemplate {
 
     //$limit
 
+
+    @Test
+    public void limitTest() {
+        List<String[]> expected = ImmutableList.of(
+                new String[]{ "{\"test\":\"val1\",\"key\":1}" } );
+        insertMany( DATA_1 );
+
+        Result result = aggregate( $limit( 1 ) );
+
+        MongoConnection.checkUnorderedResultSet( result, expected, false );
+
+        result = aggregate( $limit( 2 ) );
+
+        expected = ImmutableList.of(
+                new String[]{ "{\"test\":\"val1\",\"key\":1}" },
+                new String[]{ "{\"test\":\"val2\",\"key\":5}" } );
+
+        MongoConnection.checkUnorderedResultSet( result, expected, false );
+    }
+
     //$replaceRoot
+
+
+    @Test
+    public void replaceRootTest() {
+        List<String[]> expected = ImmutableList.of(
+                new String[]{ "1" },
+                new String[]{ null },
+                new String[]{ "13" } );
+
+        insertMany( DATA_2 );
+
+        Result result = aggregate( $replaceRoot( "$test.key" ) );
+
+        MongoConnection.checkUnorderedResultSet( result, expected, false );
+    }
 
     //$replaceWith
 
+
+    @Test
+    public void replaceWithTest() {
+        List<String[]> expected = ImmutableList.of(
+                new String[]{ "1" },
+                new String[]{ null },
+                new String[]{ "13" } );
+
+        insertMany( DATA_2 );
+
+        Result result = aggregate( $replaceWith( "$test.key" ) );
+
+        MongoConnection.checkUnorderedResultSet( result, expected, false );
+    }
+
     //$set
+
+
+    @Test
+    public void setTest() {
+        List<String[]> expected = ImmutableList.of(
+                new String[]{ "_id", "{\"test\":1,\"testing\":\"entry\"}" },
+                new String[]{ "_id", "{\"test\":1.3,\"key\":{\"key\":\"val\"},\"testing\":\"entry\"}" },
+                new String[]{ "_id", "{\"test\":\"test\",\"key\":13,\"testing\":\"entry\"}" } );
+
+        insertMany( DATA_0 );
+
+        Result result = aggregate( $set( "{\"testing\": \"entry\"}" ) );
+
+        MongoConnection.checkUnorderedResultSet( result, expected, true );
+    }
 
     //$skip
 
+
+    @Test
+    public void skipTest() {
+        List<String[]> expected = ImmutableList.of(
+                new String[]{ "_id", "{\"test\":1.3,\"key\":{\"key\":\"val\"}}" },
+                new String[]{ "_id", "{\"test\":\"test\",\"key\":13}" } );
+
+        insertMany( DATA_0 );
+
+        Result result = aggregate( $skip( 1 ) );
+
+        MongoConnection.checkUnorderedResultSet( result, expected, true );
+
+        expected = ImmutableList.of(
+                new String[]{ "_id", "{\"test\":\"test\",\"key\":13}" } );
+
+        result = aggregate( $skip( 2 ) );
+
+        MongoConnection.checkUnorderedResultSet( result, expected, true );
+    }
+
     //$sort
+
+
+    @Test
+    public void sortTest() {
+        List<Object[]> expected = ImmutableList.of(
+                new String[]{ "_id", "{\"test\":\"val1\",\"key\":1}" },
+                new String[]{ "_id", "{\"test\":\"val2\",\"key\":5}" },
+                new String[]{ "_id", "{\"test\":\"val1\",\"key\":13}" } );
+
+        insertMany( DATA_1 );
+
+        Result result = aggregate( $sort( "{\"key\":1}" ) );
+
+        MongoConnection.checkResultSet( result, expected );
+
+        result = aggregate( $sort( "{\"key\":-1}" ) );
+        List<Object[]> reversed = new ArrayList<>( expected );
+        Collections.reverse( reversed );
+        MongoConnection.checkResultSet( result, reversed );
+    }
 
     //$unset
 
+
+    @Test
+    public void unsetTest() {
+        List<String[]> expected = ImmutableList.of(
+                new String[]{ "_id", "{\"test\":\"val1\"}" },
+                new String[]{ "_id", "{\"test\":\"val2\"}" },
+                new String[]{ "_id", "{\"test\":\"val1\"}" } );
+
+        insertMany( DATA_1 );
+
+        Result result = aggregate( $unset( "key" ) );
+
+        MongoConnection.checkUnorderedResultSet( result, expected, true );
+
+        expected = ImmutableList.of(
+                new String[]{ "_id", "{}" },
+                new String[]{ "_id", "{}" },
+                new String[]{ "_id", "{}" } );
+
+        result = aggregate( $unset( Arrays.asList( "\"key\"", "\"test\"" ) ) );
+
+        MongoConnection.checkUnorderedResultSet( result, expected, true );
+    }
+
     //$unwind
 
+
+    @Test
+    public void unwindTest() {
+        List<String[]> expected = ImmutableList.of(
+                new String[]{ "_id", "3" },
+                new String[]{ "_id", "2" },
+                new String[]{ "_id", "test" },
+                new String[]{ "_id", "3" },
+                new String[]{ "_id", "51" },
+                new String[]{ "_id", "13" } );
+
+        insertMany( DATA_3 );
+
+        Result result = aggregate( $project( "{\"test\":1}" ), $unwind( "$test" ) );
+
+        MongoConnection.checkUnorderedResultSet( result, expected, true );
+
+    }
 
 }

@@ -1168,7 +1168,8 @@ public class RexToLixTranslator {
         if ( nullable == null || nullable.isEmpty() ) {
             return this;
         }
-        return new RexToLixTranslator( program, typeFactory, root, inputGetter, list, nullable, builder, conformance, this, correlates, replace );
+        return new RexToLixTranslator( program, typeFactory, root, inputGetter, list, nullable, builder, conformance, this, correlates, replace )
+                .setUnwindContext( this.unwindContext );
     }
 
 

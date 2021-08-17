@@ -20,6 +20,9 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 
+/**
+ * Context, which holds the Expressions used for unwinding
+ */
 public class UnwindContext {
 
     @Getter

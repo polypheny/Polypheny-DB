@@ -54,11 +54,11 @@ import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.mongodb.MongoRel.Implementor;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
-import org.polypheny.db.adapter.mongodb.util.MongoTypeUtil;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.document.DocumentRules;
 import org.polypheny.db.mql.fun.MqlStdOperatorTable;
+import org.polypheny.db.mql.parser.BsonUtil;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -721,7 +721,7 @@ public class MongoRules {
                         if ( el instanceof RexLiteral ) {
                             doc.append(
                                     rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
-                                    MongoTypeUtil.getAsBson( (RexLiteral) el, bucket ) );
+                                    BsonUtil.getAsBson( (RexLiteral) el, bucket ) );
                         } else if ( el instanceof RexCall ) {
                             if ( ((RexCall) el).op.kind == SqlKind.PLUS ) {
                                 doc.append(
@@ -732,7 +732,7 @@ public class MongoRules {
                             } else {
                                 doc.append(
                                         rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
-                                        MongoTypeUtil.getBsonArray( (RexCall) el, bucket ) );
+                                        BsonUtil.getBsonArray( (RexCall) el, bucket ) );
                             }
                         } else if ( el instanceof RexDynamicParam ) {
                             doc.append(
@@ -851,7 +851,7 @@ public class MongoRules {
             assert keys.size() == call.operands.size();
             int pos = 0;
             for ( String key : keys ) {
-                doc.put( key, MongoTypeUtil.getAsBson( (RexLiteral) call.operands.get( pos ), this.bucket ) );
+                doc.put( key, BsonUtil.getAsBson( (RexLiteral) call.operands.get( pos ), this.bucket ) );
                 pos++;
             }
 
@@ -866,21 +866,21 @@ public class MongoRules {
             int pos = 0;
             for ( RexNode operand : call.operands ) {
                 if ( !(operand instanceof RexCall) ) {
-                    doc.append( "$set", new BsonDocument( keys.get( pos ), MongoTypeUtil.getAsBson( (RexLiteral) operand, this.bucket ) ) );
+                    doc.append( "$set", new BsonDocument( keys.get( pos ), BsonUtil.getAsBson( (RexLiteral) operand, this.bucket ) ) );
                 } else {
                     RexCall op = (RexCall) operand;
                     switch ( op.getKind() ) {
                         case PLUS:
-                            doc.append( "$inc", new BsonDocument( keys.get( pos ), MongoTypeUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), this.bucket ) ) );
+                            doc.append( "$inc", new BsonDocument( keys.get( pos ), BsonUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), this.bucket ) ) );
                             break;
                         case TIMES:
-                            doc.append( "$mul", new BsonDocument( keys.get( pos ), MongoTypeUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), this.bucket ) ) );
+                            doc.append( "$mul", new BsonDocument( keys.get( pos ), BsonUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), this.bucket ) ) );
                             break;
                         case MIN:
-                            doc.append( "$min", new BsonDocument( keys.get( pos ), MongoTypeUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), this.bucket ) ) );
+                            doc.append( "$min", new BsonDocument( keys.get( pos ), BsonUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), this.bucket ) ) );
                             break;
                         case MAX:
-                            doc.append( "$max", new BsonDocument( keys.get( pos ), MongoTypeUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), this.bucket ) ) );
+                            doc.append( "$max", new BsonDocument( keys.get( pos ), BsonUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), this.bucket ) ) );
                             break;
                     }
                 }
@@ -922,7 +922,7 @@ public class MongoRules {
                 } else if ( operand instanceof RexCall ) {
                     array.add( visitCall( implementor, (RexCall) operand, ((RexCall) operand).op.getKind(), type ) );
                 } else if ( operand.getKind() == SqlKind.LITERAL ) {
-                    array.add( MongoTypeUtil.getAsBson( ((RexLiteral) operand).getValueAs( MongoTypeUtil.getClassFromType( type ) ), type, implementor.mongoTable.getMongoSchema().getBucket() ) );
+                    array.add( BsonUtil.getAsBson( ((RexLiteral) operand).getValueAs( BsonUtil.getClassFromType( type ) ), type, implementor.mongoTable.getMongoSchema().getBucket() ) );
                 } else if ( operand.getKind() == SqlKind.DYNAMIC_PARAM ) {
                     array.add( new BsonDynamic( (RexDynamicParam) operand ) );
                 } else {
@@ -960,7 +960,7 @@ public class MongoRules {
                     doc.append( physicalMapping.get( pos ), new BsonDynamic( (RexDynamicParam) rexNode ) );
 
                 } else if ( rexNode instanceof RexLiteral ) {
-                    doc.append( getPhysicalName( input, catalogTable, pos ), MongoTypeUtil.getAsBson( (RexLiteral) rexNode, bucket ) );
+                    doc.append( getPhysicalName( input, catalogTable, pos ), BsonUtil.getAsBson( (RexLiteral) rexNode, bucket ) );
                 } else if ( rexNode instanceof RexCall ) {
                     PolyType type = table
                             .getTable()
@@ -1011,7 +1011,7 @@ public class MongoRules {
                 BsonArray array = new BsonArray();
                 array.addAll( el.operands.stream().map( operand -> {
                     if ( operand instanceof RexLiteral ) {
-                        return MongoTypeUtil.getAsBson( MongoTypeUtil.getMongoComparable( type, (RexLiteral) operand ), type, bucket );
+                        return BsonUtil.getAsBson( BsonUtil.getMongoComparable( type, (RexLiteral) operand ), type, bucket );
                     } else if ( operand instanceof RexCall ) {
                         return getBsonArray( (RexCall) operand, type, bucket );
                     }
@@ -1044,11 +1044,11 @@ public class MongoRules {
                     if ( columnNames.contains( name ) ) {
                         doc.append(
                                 MongoStore.getPhysicalColumnName( name, columnIds.get( columnNames.indexOf( name ) ) ),
-                                MongoTypeUtil.getAsBson( literal, bucket ) );
+                                BsonUtil.getAsBson( literal, bucket ) );
                     } else {
                         doc.append(
                                 rowType.getFieldNames().get( pos ),
-                                MongoTypeUtil.getAsBson( literal, bucket ) );
+                                BsonUtil.getAsBson( literal, bucket ) );
                     }
                     pos++;
                 }

@@ -95,12 +95,12 @@ public class MqlTestTemplate {
 
 
     protected String $replaceRoot( String doc ) {
-        return "{\"$replaceRoot\":" + doc + "}";
+        return "{\"$replaceRoot\":{\"newRoot\":\"" + doc + "\"}}";
     }
 
 
     protected String $replaceWith( String doc ) {
-        return "{\"$replaceWith\":" + doc + "}";
+        return "{\"$replaceWith\":\"" + doc + "\"}";
     }
 
 
@@ -109,23 +109,28 @@ public class MqlTestTemplate {
     }
 
 
-    protected String $skip( String doc ) {
-        return "{\"$skip\":" + doc + "}";
+    protected String $skip( int amount ) {
+        return "{\"$skip\":" + amount + "}";
     }
 
 
     protected String $sort( String doc ) {
-        return "{\"$skip\":" + doc + "}";
+        return "{\"$sort\":" + doc + "}";
     }
 
 
     protected String $unset( String doc ) {
-        return "{\"$unset\":" + doc + "}";
+        return "{\"$unset\":\"" + doc + "\"}";
+    }
+
+
+    protected String $unset( List<String> docs ) {
+        return "{\"$unset\":[" + String.join( ",", docs ) + "]}";
     }
 
 
     protected String $unwind( String path ) {
-        return "{\"$unwind\":" + path + "}";
+        return "{\"$unwind\":\"" + path + "\"}";
     }
 
 

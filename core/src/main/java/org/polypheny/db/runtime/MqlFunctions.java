@@ -17,14 +17,11 @@
 package org.polypheny.db.runtime;
 
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -39,8 +36,19 @@ import org.polypheny.db.document.DocumentTypeUtil;
 import org.polypheny.db.util.Pair;
 
 
+/**
+ * Repository class, which defines different functions used, when handling the document model
+ */
 public class MqlFunctions {
 
+    /**
+     * This method extracts the provided the filter from the input.
+     *
+     * @param input an arbitrary object, from which the value is extracted
+     * @param filters a filter, in the form key1.key2.key3 -> [key1, key2, key3]
+     * @return the extracted value or null if no value was matched
+     */
+    @SuppressWarnings("UnusedDeclaration")
     public static Object docQueryValue( Object input, List<String> filters ) {
         input = deserializeBsonIfNecessary( input );
         ArrayList<String> filtersCopy = new ArrayList<>( filters );
@@ -77,6 +85,15 @@ public class MqlFunctions {
     }
 
 
+    /**
+     * Adds a new field to an existing object
+     *
+     * @param input the document, to which the new field is added
+     * @param name the name of the added field
+     * @param object th field value, which is added
+     * @return the new object, with the value included
+     */
+    @SuppressWarnings("UnusedDeclaration")
     public static Object docAddFields( Object input, String name, Object object ) {
         if ( input instanceof String ) {
             BsonDocument document = BsonDocument.parse( (String) input );
@@ -89,8 +106,17 @@ public class MqlFunctions {
     }
 
 
+    /**
+     * Transformer methode, which outputs a JSON representation of the provided object
+     *
+     * @param input the untransformed object
+     * @return a transformed object as JSON string
+     */
+    @SuppressWarnings("UnusedDeclaration")
     public static Object docJsonize( Object input ) {
-        if ( input instanceof Map ) {
+        if ( input instanceof BsonDocument ) {
+            return ((BsonDocument) input).toJson();
+        } else if ( input instanceof Map ) {
             Gson gson = new Gson();
             return gson.toJson( input );
         } else if ( input instanceof List ) {
@@ -102,9 +128,18 @@ public class MqlFunctions {
     }
 
 
+    /**
+     * Tries to add the provided value to an array/list,
+     * if the object is not in such a form it fails
+     *
+     * @param input the object, which should be of list/array form
+     * @param value the object, which is added.
+     * @return a new list, which included the new value
+     */
+    @SuppressWarnings("UnusedDeclaration")
     public static Object docAddToSet( Object input, Object value ) {
         input = deserializeBsonIfNecessary( input );
-        value = deserializeBsonIfNecessary( input );
+        value = deserializeBsonIfNecessary( value );
 
         if ( input instanceof List ) {
             if ( ((List<Object>) input).contains( value ) ) {
@@ -118,16 +153,42 @@ public class MqlFunctions {
     }
 
 
+    /**
+     * Compares a specified entry in the document with the provided comparator
+     * and replaces it with the smaller value
+     *
+     * @param input the document/object, which entry is compared and replaced
+     * @param comparator the value, which is compared with
+     * @return a new document/object, which holds the minimal value
+     */
+    @SuppressWarnings("UnusedDeclaration")
     public static Object docUpdateMin( Object input, Object comparator ) {
         return docUpdateMinMax( input, comparator ) <= 0 ? input : comparator;
     }
 
 
+    /**
+     * Compares a specified entry in the document with the provided comparator
+     * and replaces it with the bigger value
+     *
+     * @param input the document/object, which entry is compared and replaced
+     * @param comparator the value, which is compared with
+     * @return a new document/object, which holds the maximal value
+     */
+    @SuppressWarnings("UnusedDeclaration")
     public static Object docUpdateMax( Object input, Object comparator ) {
         return docUpdateMinMax( input, comparator ) <= 0 ? comparator : input;
     }
 
 
+    /**
+     * Comparable method, which handles the comparing of two untyped elements
+     *
+     * @param input the original value
+     * @param comparator the new value
+     * @return number identifying, if comparator is bigger ( -1 ) or smaller ( 1 )
+     */
+    @SuppressWarnings("UnusedDeclaration")
     private static int docUpdateMinMax( Object input, Object comparator ) {
         if ( input instanceof Comparable && comparator instanceof Comparable ) {
             return ((Comparable) input).compareTo( comparator );
@@ -138,21 +199,100 @@ public class MqlFunctions {
     }
 
 
+    /**
+     * Update method, which deletes the provided name
+     *
+     * @param input the full object/document, from which the values are removed
+     * @param names the name in a list form key1.key2.key3 -> [key1,key2,key3]
+     * @return the object/document, without the filtered name
+     */
+    @SuppressWarnings("UnusedDeclaration")
     public static Object docUpdateRemove( Object input, List names ) {
-        return null;
+        // TODO enable as soon as pushing down of TableModify is possible
+        Map<String, ?> doc = (Map) deserializeBsonIfNecessary( input );
+        String name;
+        Iterator<String> iter = names.iterator();
+        while ( iter.hasNext() ) {
+            name = iter.next();
+            if ( doc.containsKey( name ) ) {
+                if ( !iter.hasNext() ) {
+                    doc.remove( name );
+                } else {
+                    if ( doc.get( name ) instanceof Map ) {
+                        doc = (Map<String, ?>) doc.get( name );
+                    } else {
+                        return input;
+                    }
+
+                }
+            }
+        }
+
+        return input;
     }
 
 
-    public static Object docUpdateReplace( Object input, List name, List values ) {
-        return null;
+    @SuppressWarnings("UnusedDeclaration")
+    public static Object docUpdateReplace( Object input, List names, List values ) {
+        // TODO enable as soon as pushing down of TableModify is possible
+        Map<String, Object> doc = (Map) deserializeBsonIfNecessary( input );
+        String name;
+        Iterator<String> iter = names.iterator();
+        while ( iter.hasNext() ) {
+            name = iter.next();
+            if ( doc.containsKey( name ) ) {
+                if ( !iter.hasNext() ) {
+                    doc.put( name, values );
+                } else {
+                    if ( doc.get( name ) instanceof Map ) {
+                        doc = (Map<String, Object>) doc.get( name );
+                    } else {
+                        return input;
+                    }
+
+                }
+            }
+        }
+
+        return input;
     }
 
 
-    public static Object docUpdateRename( Object input, List oldNames, List newNames ) {
-        return null;
+    @SuppressWarnings("UnusedDeclaration")
+    public static Object docUpdateRename( Object input, List names, List newNames ) {
+        // TODO enable as soon as pushing down of TableModify is possible
+        Map<String, Object> doc = (Map) deserializeBsonIfNecessary( input );
+        String name;
+        Iterator<String> iter = names.iterator();
+        while ( iter.hasNext() ) {
+            name = iter.next();
+            if ( doc.containsKey( name ) ) {
+                if ( !iter.hasNext() ) {
+                    Object obj = doc.get( name );
+                    doc.put( String.join( ".", newNames ), obj );
+                } else {
+                    if ( doc.get( name ) instanceof Map ) {
+                        doc = (Map<String, Object>) doc.get( name );
+                    } else {
+                        return input;
+                    }
+
+                }
+            }
+        }
+
+        return input;
     }
 
 
+    /**
+     * Scans the object/document and removes matching filters
+     *
+     * @param input the object/document, form which the filters are removed
+     * @param excluded multiple filters, group in collections [key1.key2.key3, key1.key2] -> [[key1, key2, key3],[key1, key2]]
+     * @return a filtered object/document
+     */
+    @SuppressWarnings("UnusedDeclaration")
     public static BsonValue docQueryExclude( Object input, List<List<String>> excluded ) {
         if ( !(input instanceof String) ) {
             return null;
@@ -169,6 +309,14 @@ public class MqlFunctions {
     }
 
 
+    /**
+     * Scans the object/document and removes matching filters
+     *
+     * @param input the object/document, form which the filters are removed
+     * @param excluded multiple filters, group in collections [key1.key2.key3, key1.key2] -> [[key1, key2, key3],[key1, key2]]
+     * @return a filtered object/document
+     */
+    @SuppressWarnings("UnusedDeclaration")
     public static BsonValue docQueryExclude( BsonValue input, List<List<String>> excluded ) {
         if ( !input.isDocument() ) {
             return input;
@@ -183,6 +331,14 @@ public class MqlFunctions {
     }
 
 
+    /**
+     * Tests if the provided object/document belongs to one of the provided types
+     *
+     * @param input the object/document, which is tested
+     * @param typeNumbers the types as numbers, which return true if matched
+     * @return if the object/type is of one of the provided types
+     */
+    @SuppressWarnings("UnusedDeclaration")
     public static boolean docTypeMatch( Object input, List<Integer> typeNumbers ) {
 
         if ( input == null ) {
@@ -197,6 +353,18 @@ public class MqlFunctions {
     }
 
 
+    /**
+     * Tests if the object/document matches the provided regex
+     *
+     * @param input the object/document
+     * @param regex the regex to match
+     * @param isInsensitive if the matching should be case-insensitive
+     * @param isMultiline if multiple lines should be considered
+     * @param doesIgnoreWhitespace if whitespace should be ignored
+     * @param allowsDot if dots for subfields are allowed
+     * @return if the provided object/document conforms to the regex
+     */
+    @SuppressWarnings("UnusedDeclaration")
     public static boolean docRegexMatch( Object input, String regex, boolean isInsensitive, boolean isMultiline, boolean doesIgnoreWhitespace, boolean allowsDot ) {
         if ( input instanceof String ) {
             int flags = 0;
@@ -219,12 +387,20 @@ public class MqlFunctions {
     }
 
 
+    @SuppressWarnings("UnusedDeclaration")
     public static boolean docJsonMatch( Object input, String json ) {
-        // use schema validator library TODO DL
+        // TODO use schema validator library
         throw new RuntimeException( "NOT IMPLEMENTED" );
     }
 
 
+    /**
+     * Retrieves and transforms an array from the provided object/document
+     *
+     * @param input the unparsed and typed array
+     * @return the array
+     */
+    @SuppressWarnings("UnusedDeclaration")
     public static List docGetArray( Object input ) {
         input = deserializeBsonIfNecessary( input );
         if ( input instanceof List ) {
@@ -234,8 +410,16 @@ public class MqlFunctions {
     }
 
 
+    /**
+     * Retrieves an element in the underlying array
+     *
+     * @param input the array to scan
+     * @param index the element, which is retrieved, negative starts form behind
+     * @return the element at the specified position, else null
+     */
+    @SuppressWarnings("UnusedDeclaration")
     private static Object docItemAny( List input, int index ) {
-        // mongo starts at 0 and allows to retrieve from behind with negative
+        // mongo starts at 0 and allows retrieving from behind with negative
         if ( input.size() > Math.abs( index ) ) {
             if ( index < 0 ) {
                 index = input.size() + index;
@@ -246,6 +430,14 @@ public class MqlFunctions {
     }
 
 
+    /**
+     * Retrieves an element in the underlying array
+     *
+     * @param input the array to scan
+     * @param index the element, which is retrieved, negative starts form behind
+     * @return the element at the specified position, else null
+     */
+    @SuppressWarnings("UnusedDeclaration")
     public static Object docItemAny( Object input, Object index ) {
         if ( index instanceof BigDecimal ) {
             return docItem( input, ((BigDecimal) index).intValue() );
@@ -254,6 +446,14 @@ public class MqlFunctions {
     }
 
 
+    /**
+     * Retrieves an element in the underlying array
+     *
+     * @param input the array to scan
+     * @param index the element, which is retrieved, negative starts form behind
+     * @return the element at the specified position, else null
+     */
+    @SuppressWarnings("UnusedDeclaration")
     public static Object docItem( Object input, int index ) {
         if ( input instanceof String ) {
             BsonDocument doc = BsonDocument.parse( (String) input );
@@ -268,11 +468,27 @@ public class MqlFunctions {
     }
 
 
+    /**
+     * Retrieves an element in the underlying array
+     *
+     * @param input the array to scan
+     * @param index the element, which is retrieved, negative starts form behind
+     * @return the element at the specified position, else null
+     */
+    @SuppressWarnings("UnusedDeclaration")
     public static Object docItem( BsonArray input, int index ) {
         return docItemAny( input, index );
     }
 
 
+    /**
+     * If the provided object/document is of type array and matches the specified size
+     *
+     * @param input the unparsed object/document
+     * @param size the size to compare
+     * @return if the size matches
+     */
+    @SuppressWarnings("UnusedDeclaration")
     public static boolean docSizeMatch( Object input, int size ) {
         if ( input instanceof List ) {
             return ((List<?>) input).size() == size;
@@ -281,6 +497,15 @@ public class MqlFunctions {
     }
 
 
+    /**
+     * Special equal operation, which conforms the MongoQl standard.
+     * As it is able to deal with null values and matches values compared to arrays correctly
+     *
+     * @param b0 the left element
+     * @param b1 the right element
+     * @return if the elements are equal
+     */
+    @SuppressWarnings("UnusedDeclaration")
     public static boolean docEq( Object b0, Object b1 ) {
         if ( b0 instanceof List && !(b1 instanceof List) ) {
             return ((List<?>) b0).contains( b1 );
@@ -297,6 +522,15 @@ public class MqlFunctions {
     }
 
 
+    /**
+     * Special greater operation, which conforms the MongoQl standard.
+     * As it is able to deal with null values and matches values compared to arrays correctly
+     *
+     * @param b0 the left element
+     * @param b1 the right element
+     * @return if the left element is smaller than the right
+     */
+    @SuppressWarnings("UnusedDeclaration")
     public static boolean docGt( Object b0, Object b1 ) {
         return compNullExecute(
                 b0,
@@ -305,6 +539,15 @@ public class MqlFunctions {
     }
 
 
+    /**
+     * Special greater than operation, which conforms the MongoQl standard.
+     * As it is able to deal with null values and matches values compared to arrays correctly
+     *
+     * @param b0 the left element
+     * @param b1 the right element
+     * @return if the left element is smaller equal than the right
+     */
+    @SuppressWarnings("UnusedDeclaration")
     public static boolean docGte( Object b0, Object b1 ) {
         return compNullExecute(
                 b0,
@@ -313,6 +556,15 @@ public class MqlFunctions {
     }
 
 
+    /**
+     * Special less than operation, which conforms the MongoQl standard.
+     * As it is able to deal with null values and matches values compared to arrays correctly
+     *
+     * @param b0 the left element
+     * @param b1 the right element
+     * @return if the left element is bigger than the right
+     */
+    @SuppressWarnings("UnusedDeclaration")
     public static boolean docLt( Object b0, Object b1 ) {
         return compNullExecute(
                 b0,
@@ -321,6 +573,15 @@ public class MqlFunctions {
     }
 
 
+    /**
+     * Special less than equal operation, which conforms the MongoQl standard.
+     * As it is able to deal with null values and matches values compared to arrays correctly
+     *
+     * @param b0 the left element
+     * @param b1 the right element
+     * @return if the left element is bigger equal than the right
+     */
+    @SuppressWarnings("UnusedDeclaration")
     public static boolean docLte( Object b0, Object b1 ) {
         return compNullExecute(
                 b0,
@@ -329,6 +590,15 @@ public class MqlFunctions {
     }
 
 
+    /**
+     * Helper function, which exectues different provided suppliers and compares the two elements
+     *
+     * @param b0 the left element
+     * @param b1 the right element
+     * @param predicate the predicate, which returns if the condition of left and right match
+     * @return if the provided elements fit the provided condition
+     */
+    @SuppressWarnings("UnusedDeclaration")
     private static boolean compNullExecute( Object b0, Object b1, Supplier<Boolean> predicate ) {
         if ( b0 == null || b1 == null ) {
             return false;
@@ -340,6 +610,16 @@ public class MqlFunctions {
     }
 
 
+    /**
+     * Extracts the specified range of elements from a provided array/list.
+     * If the provided object/document is not a list/array, null is returned
+     *
+     * @param input the object/document, which should have type array
+     * @param skip the elements to skip
+     * @param elements how many elements are returned
+     * @return the sliced elements
+     */
+    @SuppressWarnings("UnusedDeclaration")
     public static Object docSlice( Object input, int skip, int elements ) {
         if ( !(input instanceof List) ) {
             return null;
@@ -361,6 +641,12 @@ public class MqlFunctions {
     }
 
 
+    /**
+     * Removes the provided filter from the doc
+     *
+     * @param doc the document to scan
+     * @param excluded the element to exclude
+     */
     private static void excludeBson( BsonValue doc, List<List<String>> excluded ) {
         if ( doc.isDocument() ) {
             List<String> firsts = excluded.stream().map( e -> e.get( 0 ) ).collect( Collectors.toList() );
@@ -392,6 +678,12 @@ public class MqlFunctions {
     }
 
 
+    /**
+     * Transforms a provided element into it primitive form if it is not already
+     *
+     * @param obj the object to transform
+     * @return the object as primitive, map or list
+     */
     private static Object deserializeBsonIfNecessary( Object obj ) {
         if ( obj instanceof String ) {
             try {
@@ -407,6 +699,14 @@ public class MqlFunctions {
     }
 
 
+    /**
+     * Tests if a specified path exists in the provided object/document
+     *
+     * @param obj the object/document to check
+     * @param path the path, which is test in the form key1.key2.key3 -> [key1. key2, key3]
+     * @return if the path exists
+     */
+    @SuppressWarnings("UnusedDeclaration")
     public static boolean docExists( Object obj, List<String> path ) {
         obj = deserializeBsonIfNecessary( obj );
         if ( !(obj instanceof Map) ) {
@@ -433,6 +733,12 @@ public class MqlFunctions {
     }
 
 
+    /**
+     * Transforms a provided Bson object into a primitive from
+     *
+     * @param doc the document to transform
+     * @return the document as primitive
+     */
     private static Object transformBsonToPrimitive( BsonValue doc ) {
         if ( doc == null ) {
             return null;
