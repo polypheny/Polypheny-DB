@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.polypheny.db.document.DocumentTypeUtil;
+import org.polypheny.db.document.util.DocumentUtil;
 import org.polypheny.db.util.Pair;
 
 
@@ -97,7 +97,7 @@ public class MqlFunctions {
     public static Object docAddFields( Object input, String name, Object object ) {
         if ( input instanceof String ) {
             BsonDocument document = BsonDocument.parse( (String) input );
-            document.put( name, DocumentTypeUtil.getBson( object ) );
+            document.put( name, DocumentUtil.getBson( object ) );
 
             return document.toJson();
         }
@@ -346,7 +346,7 @@ public class MqlFunctions {
             return typeNumbers.contains( 10 );
         }
 
-        List<Pair<Class<? extends BsonValue>, Class<?>>> clazzPairs = typeNumbers.stream().map( DocumentTypeUtil::getBsonClass ).collect( Collectors.toList() );
+        List<Pair<Class<? extends BsonValue>, Class<?>>> clazzPairs = typeNumbers.stream().map( DocumentUtil::getBsonClass ).collect( Collectors.toList() );
 
         return Pair.right( clazzPairs ).stream().anyMatch( clazz -> clazz.isInstance( input ) );
 

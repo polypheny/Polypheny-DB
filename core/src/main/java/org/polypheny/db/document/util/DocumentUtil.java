@@ -14,16 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.document;
+package org.polypheny.db.document.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonBinary;
@@ -44,18 +41,15 @@ import org.bson.BsonTimestamp;
 import org.bson.BsonValue;
 import org.bson.types.Decimal128;
 import org.bson.types.ObjectId;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimestampString;
 
-public class DocumentTypeUtil {
+public class DocumentUtil {
 
 
     public static boolean validateJson( String json ) {
         try {
-            // maybe use same Json library for everything TODO DL
             final ObjectMapper mapper = new ObjectMapper();
             mapper.readTree( json );
             return true;
@@ -63,116 +57,6 @@ public class DocumentTypeUtil {
             return false;
         }
 
-    }
-
-
-    public static Object getMqlComparable( Object node ) {
-        if ( node instanceof Map ) {
-            Map<String, Object> entries = new HashMap<>();
-            for ( Entry<String, RexNode> entry : ((Map<String, RexNode>) node).entrySet() ) {
-                entries.put( entry.getKey(), getMqlComparable( entry.getValue() ) );
-            }
-            return entries;
-        } else if ( node instanceof RexLiteral ) {
-            RexLiteral literal = (RexLiteral) node;
-            switch ( literal.getTypeName() ) {
-
-                case BOOLEAN:
-                    return literal.getValueAs( Boolean.class );
-                case TINYINT:
-                case SMALLINT:
-                case INTEGER:
-                    return literal.getValueAs( Integer.class );
-                case BIGINT:
-                    return literal.getValueAs( Long.class );
-                case DECIMAL:
-                    return literal.getValueAs( BigDecimal.class );
-                case FLOAT:
-                case REAL:
-                    return literal.getValueAs( Float.class );
-                case DOUBLE:
-                    return literal.getValueAs( Double.class );
-                case DATE:
-                    break;
-                case TIME:
-                    break;
-                case TIME_WITH_LOCAL_TIME_ZONE:
-                    break;
-                case TIMESTAMP:
-                    break;
-                case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                    break;
-                case INTERVAL_YEAR:
-                    break;
-                case INTERVAL_YEAR_MONTH:
-                    break;
-                case INTERVAL_MONTH:
-                    break;
-                case INTERVAL_DAY:
-                    break;
-                case INTERVAL_DAY_HOUR:
-                    break;
-                case INTERVAL_DAY_MINUTE:
-                    break;
-                case INTERVAL_DAY_SECOND:
-                    break;
-                case INTERVAL_HOUR:
-                    break;
-                case INTERVAL_HOUR_MINUTE:
-                    break;
-                case INTERVAL_HOUR_SECOND:
-                    break;
-                case INTERVAL_MINUTE:
-                    break;
-                case INTERVAL_MINUTE_SECOND:
-                    break;
-                case INTERVAL_SECOND:
-                    break;
-                case CHAR:
-                case VARCHAR:
-                case BINARY:
-                case VARBINARY:
-                case JSON:
-                    return literal.getValueAs( String.class );
-                case NULL:
-                    break;
-                case ANY:
-                    break;
-                case SYMBOL:
-                    break;
-                case MULTISET:
-                    break;
-                case ARRAY:
-                    break;
-                case MAP:
-                    break;
-                case DISTINCT:
-                    break;
-                case STRUCTURED:
-                    break;
-                case ROW:
-                    break;
-                case OTHER:
-                    break;
-                case CURSOR:
-                    break;
-                case COLUMN_LIST:
-                    break;
-                case DYNAMIC_STAR:
-                    break;
-                case GEOMETRY:
-                    break;
-                case FILE:
-                    break;
-                case IMAGE:
-                    break;
-                case VIDEO:
-                    break;
-                case SOUND:
-                    break;
-            }
-        }
-        throw new RuntimeException( "This type cannot be translated yet." );
     }
 
 
@@ -281,7 +165,6 @@ public class DocumentTypeUtil {
 
 
     public static BsonValue getBson( Object object ) {
-        // TODO DL add missing casts
         if ( object instanceof String ) {
             return new BsonString( (String) object );
         } else if ( object instanceof Integer ) {
@@ -293,7 +176,7 @@ public class DocumentTypeUtil {
         } else if ( object instanceof Double ) {
             return new BsonDouble( (Double) object );
         } else if ( object instanceof List ) {
-            return new BsonArray( ((List<?>) object).stream().map( DocumentTypeUtil::getBson ).collect( Collectors.toList() ) );
+            return new BsonArray( ((List<?>) object).stream().map( DocumentUtil::getBson ).collect( Collectors.toList() ) );
         } else {
             throw new RuntimeException( "Type not considered" );
         }

@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.document;
+package org.polypheny.db.document.rules;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import org.polypheny.db.mql.fun.MqlFunctionOperator;
 import org.polypheny.db.rel.SingleRel;
-import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
@@ -29,6 +28,10 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlDocEqualExpressionOperator;
 import org.polypheny.db.sql.fun.SqlJsonValueFunction;
 
+/**
+ * Helper functions, which can be used to exclude document logics during planing from stores,
+ * which are not able to support it
+ */
 public class DocumentRules {
 
     public static boolean containsJson( SingleRel rel ) {
@@ -37,26 +40,6 @@ public class DocumentRules {
             node.accept( visitor );
             if ( visitor.containsJson() ) {
                 return true;
-            }
-        }
-        return false;
-    }
-
-
-    public static boolean jsonInModify( TableModify modify ) {
-        JsonVisitor visitor = new JsonVisitor();
-        for ( RexNode node : modify.getChildExps() ) {
-            node.accept( visitor );
-            if ( visitor.containsJson() ) {
-                return true;
-            }
-        }
-        if ( modify.getSourceExpressionList() != null ) {
-            for ( RexNode rexNode : modify.getSourceExpressionList() ) {
-                rexNode.accept( visitor );
-                if ( visitor.containsJson() ) {
-                    return true;
-                }
             }
         }
         return false;
@@ -75,6 +58,9 @@ public class DocumentRules {
     }
 
 
+    /**
+     * Visitor, which returns false if a JSON RexCall was traversed
+     */
     private static class JsonVisitor extends RexVisitorImpl<Void> {
 
         @Accessors(fluent = true)
@@ -99,6 +85,9 @@ public class DocumentRules {
     }
 
 
+    /**
+     * Visitor, which returns false if any RexCall, which handles the Document model was traversed
+     */
     private static class DocumentVisitor extends RexVisitorImpl<Void> {
 
         @Accessors(fluent = true)

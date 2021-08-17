@@ -68,7 +68,7 @@ import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.function.Functions;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.document.DocumentTypeUtil;
+import org.polypheny.db.document.util.DocumentUtil;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.prepare.Prepare;
@@ -4363,7 +4363,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
                 // similar approach to PostgreSql the main difference for a JSON
                 // field this validation compared to an normal text type
-                if ( value == null || !DocumentTypeUtil.validateJson( value ) ) {
+                if ( value == null || !DocumentUtil.validateJson( value ) ) {
                     throw newValidationError(
                             query,
                             RESOURCE.notValidJson( value, "false" ) );

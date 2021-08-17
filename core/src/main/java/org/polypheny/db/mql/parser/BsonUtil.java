@@ -28,7 +28,6 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -63,7 +62,7 @@ public class BsonUtil {
 
 
     static {
-        mappings.add( new Pair<>( "(?<=[a-zA-Z0-9)\"][ ]*)\\-", "\"$subtract\"" ) );
+        mappings.add( new Pair<>( "(?<=[a-zA-Z0-9)\"][ ]{0,10})\\-", "\"$subtract\"" ) );
         mappings.add( new Pair<>( "\\+", "\"$add\"" ) );
         mappings.add( new Pair<>( "\\*", "\"$multiply\"" ) );
         mappings.add( new Pair<>( "\\/", "\"$divide\"" ) );
@@ -74,13 +73,12 @@ public class BsonUtil {
 
 
     /**
-     * operations which include /*+_ cannot be parsed by the bsonDocument parser
-     * so they need to be replace by a equivalent bson compatible operation
+     * operations which include /*+_ cannot be parsed by the bsonDocument parser,
+     * so they need to be replaced by an equivalent bson compatible operation
      * 1-3*10 -> {$subtract: [1, {$multiply:[3,10]}]}
      *
      * @param bson the full bson string
      * @return the initial bson string with the exchanged calculation
-     *
      */
     public static String fixBson( String bson ) {
         bson = bson.replace( "/", "\\/" );
@@ -113,6 +111,15 @@ public class BsonUtil {
     }
 
 
+    /**
+     * Recursivly iterates over the operation mappings and replaces them in them with the equivalent BSON compatible format
+     *
+     * "{"key": 3*10-18}" -> "{"key": {"subtract":[18, {"multiply": [3, 10]}]}}"
+     *
+     * @param calculation the calculation up to this point
+     * @param depth how many operations of [+-/*] where already replaced
+     * @return a completely replaced representation
+     */
     private static String fixCalculation( String calculation, int depth ) {
         if ( depth > mappings.size() - 1 ) {
             return calculation;
@@ -130,6 +137,9 @@ public class BsonUtil {
     }
 
 
+    /**
+     * Cast the collection of document values to document
+     */
     public static List<BsonDocument> asDocumentCollection( List<BsonValue> values ) {
         return values.stream().map( BsonValue::asDocument ).collect( Collectors.toList() );
     }
@@ -596,9 +606,7 @@ public class BsonUtil {
      */
     public static Document asDocument( BsonDocument bson ) {
         Document doc = new Document();
-        for ( Entry<String, BsonValue> entry : bson.entrySet() ) {
-            doc.put( entry.getKey(), entry.getValue() );
-        }
+        doc.putAll( bson );
         return doc;
     }
 

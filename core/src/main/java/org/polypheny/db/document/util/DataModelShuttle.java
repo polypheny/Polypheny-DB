@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.document;
+package org.polypheny.db.document.util;
 
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.rel.RelNode;
@@ -23,6 +23,9 @@ import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rel.logical.LogicalDocuments;
 import org.polypheny.db.rel.logical.LogicalValues;
 
+/**
+ * Shuttle, which transforms a normal LogicalValues to LogicalValues
+ */
 public class DataModelShuttle extends RelShuttleImpl {
 
     @Override

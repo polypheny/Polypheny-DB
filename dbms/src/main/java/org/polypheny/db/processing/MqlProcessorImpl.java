@@ -144,7 +144,7 @@ public class MqlProcessorImpl implements MqlProcessor, ViewExpander {
         final RelOptCluster cluster = RelOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
 
         final MqlToRelConverter mqlToRelConverter = new MqlToRelConverter( this, statement.getTransaction().getCatalogReader(), cluster );
-        RelRoot logicalRoot = mqlToRelConverter.convert( mql, false, true, defaultDatabase );
+        RelRoot logicalRoot = mqlToRelConverter.convert( mql, defaultDatabase );
 
         if ( statement.getTransaction().isAnalyze() ) {
             InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();

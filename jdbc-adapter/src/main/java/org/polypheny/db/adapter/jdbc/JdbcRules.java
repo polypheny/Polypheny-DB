@@ -43,7 +43,7 @@ import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor;
 import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor.Result;
-import org.polypheny.db.document.DocumentRules;
+import org.polypheny.db.document.rules.DocumentRules;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;

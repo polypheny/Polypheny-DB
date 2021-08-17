@@ -40,7 +40,7 @@ import org.bson.BsonRegularExpression;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.document.DocumentTypeUtil;
+import org.polypheny.db.document.util.DocumentUtil;
 import org.polypheny.db.mql.Mql;
 import org.polypheny.db.mql.MqlAggregate;
 import org.polypheny.db.mql.MqlCollectionStatement;
@@ -94,7 +94,9 @@ import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimestampString;
 
-
+/**
+ * Converter class, which transforms a MongoQL command in its MqlNode form to an equal RelNode
+ */
 public class MqlToRelConverter {
 
     private final PolyphenyDbCatalogReader catalogReader;
@@ -111,13 +113,11 @@ public class MqlToRelConverter {
     private final RelDataType jsonType;
     private final RelDataType nullableJsonType;
 
-    private Map<String, SqlOperator> tempMappings;
-
 
     private static final HashMap<String, SqlOperator> singleMathOperators;
 
 
-    private static final HashMap<String, SqlOperator> mathComperators;
+    private static final HashMap<String, SqlOperator> mathComparators;
 
 
     static {
@@ -127,7 +127,7 @@ public class MqlToRelConverter {
         gates.put( "$nor", Arrays.asList( SqlStdOperatorTable.AND, SqlStdOperatorTable.NOT ) );
         gates.put( "$not", Collections.singletonList( SqlStdOperatorTable.NOT ) );
 
-        mathComperators = new HashMap<>();
+        mathComparators = new HashMap<>();
 
         mappings = new HashMap<>();
 
@@ -136,7 +136,7 @@ public class MqlToRelConverter {
         mappings.put( "$lte", MqlStdOperatorTable.DOC_LTE );
         mappings.put( "$gte", MqlStdOperatorTable.DOC_GTE );
 
-        mathComperators.putAll( mappings );
+        mathComparators.putAll( mappings );
 
         mappings.put( "$eq", MqlStdOperatorTable.DOC_EQ );
         mappings.put( "$ne", SqlStdOperatorTable.NOT_EQUALS );
@@ -160,7 +160,6 @@ public class MqlToRelConverter {
         singleMathOperators.put( "$acos", SqlStdOperatorTable.ACOS );
         //singleMathOperators.put( "$acosh", SqlStdOperatorTable.ACOSH );
         singleMathOperators.put( "$asin", SqlStdOperatorTable.ASIN );
-        //singleMathOperators.put( "$asin", SqlStdOperatorTable.ASIN );
         singleMathOperators.put( "$atan", SqlStdOperatorTable.ATAN );
         singleMathOperators.put( "$atan2", SqlStdOperatorTable.ATAN2 );
         //singleMathOperators.put( "$atanh", SqlStdOperatorTable.ATANH );
@@ -170,7 +169,7 @@ public class MqlToRelConverter {
         singleMathOperators.put( "$degreesToRadians", SqlStdOperatorTable.DEGREES );
         singleMathOperators.put( "$floor", SqlStdOperatorTable.FLOOR );
         singleMathOperators.put( "$ln", SqlStdOperatorTable.LN );
-        //singleMathOperators.put( "$log", SqlStdOperatorTable.LOG );
+        singleMathOperators.put( "$log", SqlStdOperatorTable.LN );
         singleMathOperators.put( "$log10", SqlStdOperatorTable.LOG10 );
         singleMathOperators.put( "$sin", SqlStdOperatorTable.SIN );
         //singleMathOperators.put( "$sinh", SqlStdOperatorTable.SINH );
@@ -213,7 +212,6 @@ public class MqlToRelConverter {
     private boolean elemMatchActive = false;
     private String defaultDatabase;
     private boolean notActive = false;
-    private boolean jsonized = false;
 
 
     public MqlToRelConverter( MqlProcessor mqlProcessor, PolyphenyDbCatalogReader catalogReader, RelOptCluster cluster ) {
@@ -225,7 +223,6 @@ public class MqlToRelConverter {
         this.jsonType = this.cluster.getTypeFactory().createPolyType( PolyType.JSON );
         this.nullableJsonType = this.cluster.getTypeFactory().createTypeWithNullability( jsonType, true );
 
-        this.tempMappings = mappings;
         resetDefaults();
     }
 
@@ -238,17 +235,23 @@ public class MqlToRelConverter {
     }
 
 
-    public RelRoot convert( MqlNode query, boolean b, boolean b1, String defaultDatabase ) {
+    public RelRoot convert( MqlNode query, String defaultDatabase ) {
         resetDefaults();
         this.defaultDatabase = defaultDatabase;
         if ( query instanceof MqlCollectionStatement ) {
-            return convert( (MqlCollectionStatement) query, b, b1 );
+            return convert( (MqlCollectionStatement) query );
         }
         throw new RuntimeException( "DML or DQL need a collection" );
     }
 
 
-    public RelRoot convert( MqlCollectionStatement query, boolean b, boolean b1 ) {
+    /**
+     * Converts the initial MongoQl by stepping through it iteratively
+     *
+     * @param query the query in MqlNode format
+     * @return the RelNode format of the initial query
+     */
+    public RelRoot convert( MqlCollectionStatement query ) {
         Mql.Type kind = query.getKind();
         RelOptTable table = getTable( query, defaultDatabase );
         if ( table == null ) {
@@ -294,6 +297,9 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Starts converting a db.collection.update();
+     */
     private RelNode convertUpdate( MqlUpdate query, RelOptTable table, RelNode node ) {
         if ( !query.getQuery().isEmpty() ) {
             node = convertQuery( query, table.getRowType(), node );
@@ -311,8 +317,12 @@ public class MqlToRelConverter {
     }
 
 
-    // this method is implemented like the reduced update pipeline,
-    // but in fact could be combined and therefore optimized a lot more
+    /**
+     * Translates a update document
+     *
+     * this method is implemented like the reduced update pipeline,
+     * but in fact could be combined and therefore optimized a lot more
+     */
     private RelNode translateUpdate( MqlUpdate query, RelDataType rowType, RelNode node, RelOptTable table ) {
         Map<String, RexNode> updates = new HashMap<>();
         Map<UpdateOperation, List<Pair<String, RexNode>>> mergedUpdates = new HashMap<>();
@@ -391,6 +401,9 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Update can contain REMOVE, RENAME, REPLACE parts and are combine into a single UPDATE RexCall in this method
+     */
     private void mergeUpdates( Map<UpdateOperation, List<Pair<String, RexNode>>> mergedUpdates, RelDataType rowType, Map<String, RexNode> updates, UpdateOperation updateOp ) {
         List<String> names = rowType.getFieldNames();
 
@@ -505,6 +518,10 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Starts translating db.collection.update({"$addToSet": 3})
+     * this operation adds a key to an array/list
+     */
     private Map<String, RexNode> translateAddToSet( BsonDocument doc, RelDataType rowType ) {
         Map<String, RexNode> updates = new HashMap<>();
         for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
@@ -518,6 +535,10 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Start translation of db.collection.update({$unset: "key"})
+     * this excludes the defined key from the document
+     */
     private Map<String, RexNode> translateUnset( BsonDocument doc, RelDataType rowType ) {
         Map<String, RexNode> updates = new HashMap<>();
         for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
@@ -527,13 +548,16 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Start translation of db.collection.update({$set: {"key":3}})
+     * this adds a field with key "key" and value to the document
+     */
     private Map<String, RexNode> translateSet( BsonDocument doc, RelDataType rowType ) {
         Map<String, RexNode> updates = new HashMap<>();
         for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
             if ( entry.getValue().isDocument() ) {
                 updates.put( entry.getKey(), translateDocument( entry.getValue().asDocument(), rowType, entry.getKey() ) );
             } else if ( entry.getValue().isArray() ) {
-                // todo this only handles normal or nested arrays with literals but not logic inside
                 updates.put( entry.getKey(), convertLiteral( entry.getValue() ) );
             } else {
                 updates.put( entry.getKey(), convertLiteral( entry.getValue() ) );
@@ -543,6 +567,10 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Start translation of db.collection.update({$rename: {"key": "newKey"}})
+     * renames the specified key, named "key" to "newKey"
+     */
     private Map<String, RexNode> translateRename( BsonDocument doc, RelDataType rowType ) {
         Map<String, RexNode> updates = new HashMap<>();
         for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
@@ -553,6 +581,10 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Start translation of db.collection.update({$min: {"key": 3}}) or db.collection.update({$max: {"key": 3}})
+     * this compares the key with the value and replaces it if it matches
+     */
     private Map<String, RexNode> translateMinMaxMul( BsonDocument doc, RelDataType rowType, SqlOperator operator ) {
         Map<String, RexNode> updates = new HashMap<>();
         for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
@@ -564,6 +596,10 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Start translation of db.collection.update({$inc: {"key": 3}})
+     * this increases the value of the given key with the provided amount
+     */
     private Map<String, RexNode> translateInc( BsonDocument doc, RelDataType rowType ) {
         Map<String, RexNode> updates = new HashMap<>();
         for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
@@ -575,6 +611,10 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Start translation of db.collection.update({$currentDate: {"key": {"$type": "timestamp"}}})
+     * this replaces the value of the given key, with the current date in timestamp or date format
+     */
     private Map<String, RexNode> translateCurrentDate( BsonDocument value, RelDataType rowType ) {
         Map<String, RexNode> updates = new HashMap<>();
         for ( Entry<String, BsonValue> entry : value.entrySet() ) {
@@ -595,6 +635,9 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Starts translating an update pipeline
+     */
     private RelNode convertReducedPipeline( MqlUpdate query, RelDataType rowType, RelNode node, RelOptTable table ) {
         Map<String, RexNode> updates = new HashMap<>();
         Map<UpdateOperation, List<Pair<String, RexNode>>> mergedUpdates = new HashMap<>();
@@ -638,6 +681,9 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Translates a delete operation from its MqlNode format to the RelNode form
+     */
     private RelNode convertDelete( MqlDelete query, RelOptTable table, RelNode node ) {
         if ( !query.getQuery().isEmpty() ) {
             node = convertQuery( query, table.getRowType(), node );
@@ -730,6 +776,14 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Starts converting of aggregation pipeline
+     *
+     * Example:
+     * db.collection.aggregate([
+     * {"$project": {"key":1}}
+     * ])
+     */
     private RelNode convertAggregate( MqlAggregate query, RelDataType rowType, RelNode node ) {
         this.excludedId = false;
 
@@ -1550,7 +1604,7 @@ public class MqlToRelConverter {
             default:
                 if ( parentKey != null ) {
                     RexNode id = getIdentifier( parentKey, rowType );
-                    if ( mathComperators.containsKey( key ) ) {
+                    if ( mathComparators.containsKey( key ) ) {
                         //id = cluster.getRexBuilder().makeCast( cluster.getTypeFactory().createPolyType( PolyType.BIGINT ), id );
                     }
                     nodes.add( id );
@@ -1716,15 +1770,15 @@ public class MqlToRelConverter {
             List<Integer> numbers = new ArrayList<>();
             for ( BsonValue bsonValue : value.asArray() ) {
                 if ( bsonValue.isString() || bsonValue.isNumber() ) {
-                    numbers.add( bsonValue.isNumber() ? bsonValue.asNumber().intValue() : DocumentTypeUtil.getTypeNumber( bsonValue.asString().getValue() ) );
+                    numbers.add( bsonValue.isNumber() ? bsonValue.asNumber().intValue() : DocumentUtil.getTypeNumber( bsonValue.asString().getValue() ) );
                 } else {
                     throw new RuntimeException( errorMsg );
                 }
             }
-            types = getIntArray( DocumentTypeUtil.removePlaceholderTypes( numbers ) );
+            types = getIntArray( DocumentUtil.removePlaceholderTypes( numbers ) );
         } else if ( value.isNumber() || value.isString() ) {
-            int typeNumber = value.isNumber() ? value.asNumber().intValue() : DocumentTypeUtil.getTypeNumber( value.asString().getValue() );
-            types = getIntArray( DocumentTypeUtil.removePlaceholderTypes( Collections.singletonList( typeNumber ) ) );
+            int typeNumber = value.isNumber() ? value.asNumber().intValue() : DocumentUtil.getTypeNumber( value.asString().getValue() );
+            types = getIntArray( DocumentUtil.removePlaceholderTypes( Collections.singletonList( typeNumber ) ) );
         } else {
             throw new RuntimeException( errorMsg );
         }

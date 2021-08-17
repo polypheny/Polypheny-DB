@@ -56,7 +56,7 @@ import org.polypheny.db.adapter.mongodb.MongoRel.Implementor;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.document.DocumentRules;
+import org.polypheny.db.document.rules.DocumentRules;
 import org.polypheny.db.mql.fun.MqlStdOperatorTable;
 import org.polypheny.db.mql.parser.BsonUtil;
 import org.polypheny.db.plan.Convention;

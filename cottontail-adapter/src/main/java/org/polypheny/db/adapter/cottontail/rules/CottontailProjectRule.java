@@ -25,7 +25,7 @@ import java.util.Set;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.CottontailToEnumerableConverter;
 import org.polypheny.db.adapter.cottontail.rel.CottontailProject;
-import org.polypheny.db.document.DocumentRules;
+import org.polypheny.db.document.rules.DocumentRules;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.RelTraitSet;
