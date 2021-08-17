@@ -45,8 +45,6 @@ import org.polypheny.db.util.background.BackgroundTaskManager;
 @Slf4j
 public class MonitoringQueueImpl implements MonitoringQueue {
 
-    // region private fields
-
     // Monitoring queue which will queue all the incoming jobs.
     private final Queue<MonitoringEvent> monitoringJobQueue = new ConcurrentLinkedQueue<>();
 
@@ -58,10 +56,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
     // Processed events since restart
     private long processedEvents;
-
-    // endregion
-
-    // region ctors
 
 
     /**
