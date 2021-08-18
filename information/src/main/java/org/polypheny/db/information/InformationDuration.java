@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,13 @@
 
 package org.polypheny.db.information;
 
-
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.UUID;
 import org.apache.commons.lang3.time.StopWatch;
+import org.polypheny.db.information.exception.InformationRuntimeException;
 
 
 public class InformationDuration extends Information {
@@ -59,6 +59,15 @@ public class InformationDuration extends Information {
 
     public Duration get( final String name ) {
         return this.children.get( name );
+    }
+
+
+    public long getNanoDuration( final String name ) throws InformationRuntimeException {
+        Duration child = this.get( name );
+        if ( child == null ) {
+            throw new InformationRuntimeException( "could no find duration: " + name );
+        }
+        return child.duration;
     }
 
 
@@ -203,6 +212,7 @@ public class InformationDuration extends Information {
                 return jsonObj;
             };
         }
+
     }
 
 }

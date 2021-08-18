@@ -100,7 +100,7 @@ public enum RuntimeConfig {
             "Time after which queries are aborted. 0 means infinite.",
             0,
             ConfigType.INTEGER,
-            "runtimExecutionGroup" ),
+            "runtimeExecutionGroup" ),
 
     DEFAULT_COLLATION( "runtime/defaultCollation",
             "Collation to use if no collation is specified",
@@ -146,7 +146,7 @@ public enum RuntimeConfig {
             "Use two-phase commit protocol for committing queries on data stores.",
             false,
             ConfigType.BOOLEAN,
-            "runtimExecutionGroup" ),
+            "runtimeExecutionGroup" ),
 
     DYNAMIC_QUERYING( "statistics/useDynamicQuerying",
             "Use statistics for query assistance.",
@@ -326,7 +326,19 @@ public enum RuntimeConfig {
             "Size (in Bytes) up to which media files are cached in-memory instead of creating a temporary file. Needs to be >= 0 and smaller than Integer.MAX_SIZE. Setting to zero disables caching of media files.",
             0,
             ConfigType.INTEGER,
-            "runtimExecutionGroup" ),
+            "runtimeExecutionGroup" ),
+
+    QUEUE_PROCESSING_INTERVAL( "runtime/queueProcessingInterval",
+            "Rate of passive tracking of statistics.",
+            BackgroundTask.TaskSchedulingType.EVERY_TEN_SECONDS,
+            ConfigType.ENUM,
+            "monitoringSettingsQueueGroup" ),
+
+    QUEUE_PROCESSING_ELEMENTS( "runtime/queueProcessingElements",
+            "Number of elements in workload queue to process per time.",
+            50,
+            ConfigType.INTEGER,
+            "monitoringSettingsQueueGroup" ),
 
     DEFAULT_SCHEMA_MODEL( "runtime/defaultSchemaModel",
             "Define default schema model, which is used when none is provided.",
@@ -384,10 +396,10 @@ public enum RuntimeConfig {
                 "runtimePage",
                 "Runtime Settings",
                 "Settings influencing the runtime behavior of the whole system." );
-        final WebUiGroup runtimExecutionGroup = new WebUiGroup( "runtimExecutionGroup", runtimePage.getId() );
-        runtimExecutionGroup.withTitle( "Query Execution" );
+        final WebUiGroup runtimeExecutionGroup = new WebUiGroup( "runtimeExecutionGroup", runtimePage.getId() );
+        runtimeExecutionGroup.withTitle( "Query Execution" );
         configManager.registerWebUiPage( runtimePage );
-        configManager.registerWebUiGroup( runtimExecutionGroup );
+        configManager.registerWebUiGroup( runtimeExecutionGroup );
 
         // Statistics and dynamic querying settings
         final WebUiPage queryStatisticsPage = new WebUiPage(
@@ -428,6 +440,16 @@ public enum RuntimeConfig {
         uiSettingsDataViewGroup.withTitle( "Data View" );
         configManager.registerWebUiPage( uiSettingsPage );
         configManager.registerWebUiGroup( uiSettingsDataViewGroup );
+
+        // Workload Monitoring specific setting
+        final WebUiPage monitoringSettingsPage = new WebUiPage(
+                "monitoringSettings",
+                "Workload Monitoring",
+                "Settings for workload monitoring." );
+        final WebUiGroup monitoringSettingsQueueGroup = new WebUiGroup( "monitoringSettingsQueueGroup", monitoringSettingsPage.getId() );
+        monitoringSettingsQueueGroup.withTitle( "Queue Processing" );
+        configManager.registerWebUiPage( monitoringSettingsPage );
+        configManager.registerWebUiGroup( monitoringSettingsQueueGroup );
     }
 
 
@@ -595,6 +617,11 @@ public enum RuntimeConfig {
 
     public void setDouble( final double value ) {
         configManager.getConfig( key ).setDouble( value );
+    }
+
+
+    public void setEnum( Enum value ) {
+        configManager.getConfig( key ).setEnum( value );
     }
 
 
