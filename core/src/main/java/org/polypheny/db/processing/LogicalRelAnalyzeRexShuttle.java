@@ -24,23 +24,15 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexPatternFieldRef;
 import org.polypheny.db.rex.RexShuttle;
-import org.polypheny.db.transaction.Statement;
 
 /**
- * Unified routing rex shuttle class to extract used columns in RelNode
+ * Universal routing rex shuttle class to extract used columns in RelNode.
  */
-public class LogicalRelQueryAnalyzeRexShuttle extends RexShuttle {
+public class LogicalRelAnalyzeRexShuttle extends RexShuttle {
 
 
     @Getter
     protected final HashSet<Integer> usedIds = new HashSet<>();
-    private final Statement statement;
-
-
-    public LogicalRelQueryAnalyzeRexShuttle( Statement statement ) {
-        super();
-        this.statement = statement;
-    }
 
 
     @Override

@@ -26,12 +26,29 @@ import org.polypheny.db.rel.type.RelDataType;
 
 public interface QueryProcessor extends ViewExpander {
 
-    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot , boolean withMonitoring);
+    /**
+     * @param logicalRoot relRoot of query.
+     * @param withMonitoring activates or deactivates the monitoring.
+     * @return prepared PolyphenyDbSignature
+     */
+    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, boolean withMonitoring );
 
-    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameters, boolean isRouted , boolean withMonitoring);
+    /**
+     * @param logicalRoot relRoot of query.
+     * @param isRouted indicated whether query already routed.
+     * @param withMonitoring activates or deactivates the monitoring.
+     * @return prepared PolyphenyDbSignature
+     */
+    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameters, boolean isRouted, boolean withMonitoring );
 
+    /**
+     * @return Gets the planner.
+     */
     RelOptPlanner getPlanner();
-
+ 
+    /**
+     * Resets caches Implementation, QueryPlan, RoutingPlan and Router caches.
+     */
     void resetCaches();
 
 }

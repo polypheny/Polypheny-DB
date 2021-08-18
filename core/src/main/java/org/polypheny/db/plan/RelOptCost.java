@@ -63,7 +63,7 @@ public interface RelOptCost {
     boolean isInfinite();
 
     /**
-     * @return the costs of the element.
+     * @return the approximated costs of the element.
      */
     double getCosts();
 

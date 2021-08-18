@@ -20,7 +20,6 @@ package org.polypheny.db.jdbc;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import lombok.Getter;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -29,7 +28,6 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.EnumerableDefaults;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
@@ -53,9 +51,6 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
     private final long maxRowCount;
     private final Bindable<T> bindable;
 
-    @JsonIgnore
-    @Getter
-    private final Optional<RelRoot> relRoot;
 
     @Getter
     private final ExecutionTimeMonitor executionTimeMonitor;
@@ -63,7 +58,6 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
 
     public PolyphenyDbSignature(
             String sql,
-            RelRoot optimalRoot,
             List<AvaticaParameter> parameterList,
             Map<String, Object> internalParameters,
             RelDataType rowType,
@@ -82,30 +76,6 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
         this.maxRowCount = maxRowCount;
         this.bindable = bindable;
         this.executionTimeMonitor = executionTimeMonitor;
-        this.relRoot = Optional.of( optimalRoot );
-    }
-
-    public PolyphenyDbSignature(
-            String sql,
-            List<AvaticaParameter> parameterList,
-            Map<String, Object> internalParameters,
-            RelDataType rowType,
-            List<ColumnMetaData> columns,
-            Meta.CursorFactory cursorFactory,
-            PolyphenyDbSchema rootSchema,
-            List<RelCollation> collationList,
-            long maxRowCount,
-            Bindable<T> bindable,
-            Meta.StatementType statementType,
-            ExecutionTimeMonitor executionTimeMonitor ) {
-        super( columns, sql, parameterList, internalParameters, cursorFactory, statementType );
-        this.rowType = rowType;
-        this.rootSchema = rootSchema;
-        this.collationList = collationList;
-        this.maxRowCount = maxRowCount;
-        this.bindable = bindable;
-        this.executionTimeMonitor = executionTimeMonitor;
-        this.relRoot = Optional.empty();
     }
 
 
@@ -122,4 +92,5 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
     public List<RelCollation> getCollationList() {
         return collationList;
     }
+
 }

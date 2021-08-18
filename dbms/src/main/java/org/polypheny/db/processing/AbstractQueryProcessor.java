@@ -182,7 +182,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     @Override
     public void executionTime( String reference, long nanoTime ) {
         val event = (StatementEvent) statement.getTransaction().getMonitoringEvent();
-        if ( reference.equals( event.getLogicalQueryInformation().getQueryId() ) ) {
+        if ( reference.equals( event.getLogicalQueryInformation().getQueryClass() ) ) {
             event.setExecutionTime( nanoTime );
         }
     }
@@ -280,10 +280,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         ExecutionTimeMonitor executionTimeMonitor = new ExecutionTimeMonitor();
-        executionTimeMonitor.subscribe( this, logicalQueryInformation.getQueryId() );
+        executionTimeMonitor.subscribe( this, logicalQueryInformation.getQueryClass() );
 
         if ( isRouted ) {
-            proposedRoutingPlans = Lists.newArrayList( new ProposedRoutingPlanImpl( logicalRoot, logicalQueryInformation.getQueryId() ) );
+            proposedRoutingPlans = Lists.newArrayList( new ProposedRoutingPlanImpl( logicalRoot, logicalQueryInformation.getQueryClass() ) );
         } else {
             if ( lock ) {
                 this.acquireLock( isAnalyze, logicalRoot );
@@ -329,7 +329,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             if ( RuntimeConfig.ROUTING_PLAN_CACHING.getBoolean() &&
                     !indexLookupRoot.kind.belongsTo( SqlKind.DML )
             ) {
-                val routingPlansCached = RoutingPlanCache.INSTANCE.getIfPresent( logicalQueryInformation.getQueryId() );
+                val routingPlansCached = RoutingPlanCache.INSTANCE.getIfPresent( logicalQueryInformation.getQueryClass() );
                 if ( !routingPlansCached.isEmpty() ) {
                     proposedRoutingPlans = routeCached( indexLookupRoot, routingPlansCached, statement, logicalQueryInformation, isAnalyze );
                 }
@@ -941,10 +941,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         if ( logicalRoot.rel instanceof LogicalTableModify ) {
             val routedDml = dmlRouter.routeDml( logicalRoot.rel, statement );
-            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryId() ) );
+            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryClass() ) );
         } else if ( logicalRoot.rel instanceof ConditionalExecute ) {
             val routedConditionalExecute = dmlRouter.handleConditionalExecute( logicalRoot.rel, statement, fallbackRouter, queryInformation );
-            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedConditionalExecute, logicalRoot, queryInformation.getQueryId() ) );
+            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedConditionalExecute, logicalRoot, queryInformation.getQueryClass() ) );
         } else {
             val proposedPlans = new ArrayList<ProposedRoutingPlan>();
             if ( statement.getTransaction().isAnalyze() ) {
@@ -956,7 +956,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
                 val plans =
                         builders.stream().map( builder ->
-                                new ProposedRoutingPlanImpl( builder, logicalRoot, queryInformation.getQueryId(), router.getClass() )
+                                new ProposedRoutingPlanImpl( builder, logicalRoot, queryInformation.getQueryClass(), router.getClass() )
                         ).collect( Collectors.toList() );
 
                 proposedPlans.addAll( plans );
@@ -990,7 +990,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getDuration().start( "Plan Selection" );
         }
 
-        val selectedCachedPlan = selectCachedPlan( routingPlansCached, queryInformation.getQueryId() );
+        val selectedCachedPlan = selectCachedPlan( routingPlansCached, queryInformation.getQueryClass() );
 
         if ( isAnalyze ) {
             statement.getDuration().stop( "Plan Selection" );
@@ -1007,7 +1007,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getDuration().start( "Create plan from cache" );
         }
 
-        val proposed = new ProposedRoutingPlanImpl( builder, logicalRoot, queryInformation.getQueryId(), selectedCachedPlan );
+        val proposed = new ProposedRoutingPlanImpl( builder, logicalRoot, queryInformation.getQueryClass(), selectedCachedPlan );
 
         if ( isAnalyze ) {
             statement.getDuration().stop( "Create plan from cache" );
@@ -1257,7 +1257,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private LogicalQueryInformation analyzeQueryAndPrepareMonitoring( Statement statement, RelRoot logicalRoot, boolean isAnalyze, boolean isSubquery ) {
-        val analyzeRelShuttle = new LogicalRelQueryAnalyzeShuttle( statement );
+        val analyzeRelShuttle = new LogicalRelAnalyzeShuttle( statement );
         logicalRoot.rel.accept( analyzeRelShuttle );
 
         List<String> partitionValues = analyzeRelShuttle.filterMap.values().stream().flatMap( Collection::stream ).collect( Collectors.toList() );
@@ -1399,7 +1399,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         List<RelOptCost> approximatedCosts;
         if ( RuntimeConfig.ROUTING_PLAN_CACHING.getBoolean() ) {
             approximatedCosts = optimalRels.stream().map( rel -> rel.computeSelfCost( getPlanner(), rel.getCluster().getMetadataQuery() ) ).collect( Collectors.toList() );
-            this.cacheRouterPlans( proposedRoutingPlans, approximatedCosts, queryInformation.getQueryId() );
+            this.cacheRouterPlans( proposedRoutingPlans, approximatedCosts, queryInformation.getQueryClass() );
         }
 
         if ( signatures.size() == 1 ) {
@@ -1413,7 +1413,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         val planPair = routingPlanSelector.selectPlanBasedOnCosts(
                 proposedRoutingPlans,
                 approximatedCosts,
-                queryInformation.getQueryId(),
+                queryInformation.getQueryClass(),
                 signatures,
                 statement );
 

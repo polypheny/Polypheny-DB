@@ -70,7 +70,7 @@ public class InformationDuration extends Information {
         return child.duration;
     }
 
-    public long getDuration( final String name ) throws InformationRuntimeException {
+    public long getDurationOrZero( final String name ) throws InformationRuntimeException {
         Duration child = this.get( name );
         if ( child == null ) {
             return 0;

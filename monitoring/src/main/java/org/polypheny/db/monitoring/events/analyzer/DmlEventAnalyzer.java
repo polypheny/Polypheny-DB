@@ -21,8 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.monitoring.events.DmlEvent;
 import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
 
 
 @Slf4j
@@ -38,7 +36,7 @@ public class DmlEventAnalyzer {
                 .isSubQuery( dmlEvent.isSubQuery() )
                 .recordedTimestamp( dmlEvent.getRecordedTimestamp() )
                 .accessedPartitions( dmlEvent.getAccessedPartitions() )
-                .queryId( dmlEvent.getLogicalQueryInformation().getQueryId() )
+                .queryId( dmlEvent.getLogicalQueryInformation().getQueryClass() )
                 .monitoringType( "DML" )
                 .physicalQueryId( dmlEvent.getPhysicalQueryId() )
                 .build();
@@ -63,11 +61,14 @@ public class DmlEventAnalyzer {
         getDurationInfo( metric, "Planning & Optimization", duration );
         getDurationInfo( metric, "Implementation", duration );
         getDurationInfo( metric, "Locking", duration );
+        getDurationInfo( metric, "Analyze", duration );
+        getDurationInfo( metric, "Plan Selection", duration );
+        getDurationInfo( metric, "Parameter validation", duration );
     }
 
 
     private static void getDurationInfo( DmlDataPoint dmlMetric, String durationName, InformationDuration duration ) {
-        long time = duration.getNanoDuration( durationName );
+        long time = duration.getDurationOrZero( durationName );
         dmlMetric.getDataElements().put( durationName, time );
     }
 

@@ -19,14 +19,48 @@ package org.polypheny.db.routing;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * This is the result of the analyze step in the query pipeline.
+ * The class contains logical information about a query.
+ */
 public interface LogicalQueryInformation {
 
-    Map<Long, List<Long>> getAccessedPartitions();
+    /**
+     * @return a map with tableId as key and a list of partitionIds as value.
+     */
+    Map<Long, List<Long>> getAccessedPartitions(); // tableId  -> partitionIds
+
+    /**
+     * @return a map with columnId as key and tableId as value.
+     */
     Map<Long, Long> getAvailableColumnsWithTable(); // columnId -> tableId
+
+    /**
+     * @return a map with columnIds as key and column full names as values.
+     */
+    Map<Long, String> getUsedColumns(); // column id -> schemaName.tableName.ColumnName
+
+    /**
+     * @param tableId
+     * @return a list of all columnIds.
+     */
     List<Long> getAllColumnsPerTable(Long tableId);
+
+    /**
+     * @param tableId
+     * @return a list of all used columnIds in the query.
+     */
     List<Long> getUsedColumnsPerTable(Long tableId);
-    Map<Long, String> getUsedColumns();
-    String getQueryId();
+
+
+    /**
+     * @return gets the query class.
+     */
+    String getQueryClass();
+
+    /**
+     * @return Gets a list of all accessed tables.
+     */
     List<String> getTables();
 
 }

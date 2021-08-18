@@ -36,7 +36,7 @@ public class QueryEventAnalyzer {
                 .recordedTimestamp( queryEvent.getRecordedTimestamp() )
                 .relCompareString( queryEvent.getRelCompareString() )
                 .accessedPartitions( queryEvent.getAccessedPartitions() )
-                .queryId( queryEvent.getLogicalQueryInformation().getQueryId() )
+                .queryId( queryEvent.getLogicalQueryInformation().getQueryClass() )
                 .monitoringType( "SELECT" )
                 .physicalQueryId( queryEvent.getPhysicalQueryId() )
                 .build();
@@ -69,7 +69,7 @@ public class QueryEventAnalyzer {
 
 
     private static void getDurationInfo( QueryDataPointImpl queryMetric, String durationName, InformationDuration duration ) {
-        long time = duration.getDuration( durationName );
+        long time = duration.getDurationOrZero( durationName );
         queryMetric.getDataElements().put( durationName, time );
     }
 

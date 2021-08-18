@@ -48,54 +48,54 @@ import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.transaction.Statement;
 
 /**
- * Unified routing rel shuttle class to extract used columns from RelNode.
+ * Universal routing rel shuttle class to extract partition and column information from RelNode.
  */
-public class LogicalRelQueryAnalyzeShuttle extends RelShuttleImpl {
+public class LogicalRelAnalyzeShuttle extends RelShuttleImpl {
 
-    protected final LogicalRelQueryAnalyzeRexShuttle rexShuttle;
+    protected final LogicalRelAnalyzeRexShuttle rexShuttle;
     @Getter
     protected final Map<Integer, List<String>> filterMap = new HashMap<>(); // logical filterId -> List partitionsValue
-    private final Statement statement;
-
     @Getter
     protected final HashSet<String> hashBasis = new HashSet<>();
-
     @Getter
     protected final LinkedHashMap<Long, String> availableColumns = new LinkedHashMap<>(); // column id -> schemaName.tableName.ColumnName
     protected final HashMap<Long, Long> availableColumnsWithTable = new HashMap<>(); // columnId -> tableId
-
     @Getter
     protected final List<String> tables = new ArrayList<>();
+    private final Statement statement;
+
+
+    public LogicalRelAnalyzeShuttle( Statement statement ) {
+        this.statement = statement;
+        this.rexShuttle = new LogicalRelAnalyzeRexShuttle();
+    }
+
 
     public Map<Long, String> getUsedColumns() {
-        if(this.availableColumns.isEmpty()){
+        if ( this.availableColumns.isEmpty() ) {
             return Collections.emptyMap();
         }
 
-        val availableColumnNames = new ArrayList<String>(this.availableColumns.values());
-        val availableColumnKeys = new ArrayList<Long>(this.availableColumns.keySet());
+        val availableColumnNames = new ArrayList<>( this.availableColumns.values() );
+        val availableColumnKeys = new ArrayList<>( this.availableColumns.keySet() );
 
-        if(this.rexShuttle.usedIds.isEmpty()){
+        if ( this.rexShuttle.usedIds.isEmpty() ) {
             return this.availableColumns;
         }
 
-        val usedColumns = this.rexShuttle.usedIds.stream()
+        return this.rexShuttle.usedIds.stream()
                 .collect( Collectors.toMap(
                         index -> availableColumnKeys.get( index ),
                         index -> availableColumnNames.get( index ) ) );
-        return usedColumns;
     }
 
-    public String getQueryName(){
+
+    public String getQueryName() {
         return this.hashBasis.toString();
     }
 
-    public LogicalRelQueryAnalyzeShuttle( Statement s ) {
-        this.statement = s;
-        rexShuttle = new LogicalRelQueryAnalyzeRexShuttle( this.statement );
-    }
-
     // region public overrides
+
 
     @Override
     public RelNode visit( LogicalAggregate aggregate ) {
@@ -115,10 +115,11 @@ public class LogicalRelQueryAnalyzeShuttle extends RelShuttleImpl {
     public RelNode visit( TableScan scan ) {
         hashBasis.add( "TableScan#" + scan.getTable().getQualifiedName() );
         // get available columns for every table scan
-        this.getAvailableColumns(scan);
+        this.getAvailableColumns( scan );
 
         return super.visit( scan );
     }
+
 
     @Override
     public RelNode visit( LogicalFilter filter ) {
@@ -126,7 +127,7 @@ public class LogicalRelQueryAnalyzeShuttle extends RelShuttleImpl {
         super.visit( filter );
         filter.accept( this.rexShuttle );
 
-        getPartitioningInfo(filter);
+        getPartitioningInfo( filter );
 
         return filter;
     }
@@ -140,15 +141,17 @@ public class LogicalRelQueryAnalyzeShuttle extends RelShuttleImpl {
         return project;
     }
 
+
     @Override
     public RelNode visit( LogicalCorrelate correlate ) {
         hashBasis.add( "LogicalCorrelate" );
         return visitChildren( correlate );
     }
 
+
     @Override
     public RelNode visit( LogicalJoin join ) {
-        if(join.getLeft() instanceof LogicalTableScan && join.getRight() instanceof  LogicalTableScan ){
+        if ( join.getLeft() instanceof LogicalTableScan && join.getRight() instanceof LogicalTableScan ) {
             hashBasis.add( "LogicalJoin#" + join.getLeft().getTable().getQualifiedName() + "#" + join.getRight().getTable().getQualifiedName() );
         }
 
@@ -207,10 +210,11 @@ public class LogicalRelQueryAnalyzeShuttle extends RelShuttleImpl {
 
     // region private helpers
 
+
     private void getAvailableColumns( TableScan scan ) {
         this.tables.addAll( scan.getTable().getQualifiedName() );
         val table = ((RelOptTableImpl) scan.getTable()).getTable();
-        LogicalTable logicalTable = ( table instanceof LogicalTable ) ? (LogicalTable) table : null;
+        LogicalTable logicalTable = (table instanceof LogicalTable) ? (LogicalTable) table : null;
         if ( logicalTable != null ) {
             val ids = logicalTable.getColumnIds();
             val names = logicalTable.getLogicalColumnNames();
@@ -227,16 +231,15 @@ public class LogicalRelQueryAnalyzeShuttle extends RelShuttleImpl {
     private void getPartitioningInfo( LogicalFilter filter ) {
         //
         RelOptTableImpl table = (RelOptTableImpl) filter.getInput().getTable();
-        if(table == null){
+        if ( table == null ) {
             return;
         }
 
         LogicalTable logicalTable = ((LogicalTable) table.getTable());
-        if(logicalTable == null){
+        if ( logicalTable == null ) {
             return;
         }
 
-        // if ( table.getTable() instanceof LogicalTable )
         CatalogTable catalogTable = Catalog.getInstance().getTable( logicalTable.getTableId() );
 
         // only if table is partitioned
@@ -250,7 +253,6 @@ public class LogicalRelQueryAnalyzeShuttle extends RelShuttleImpl {
                             .map( Object::toString )
                             .collect( Collectors.toList() ) );
                 }
-                //filterMap.remove( filter.getId() );
             }
         }
     }

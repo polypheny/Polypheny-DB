@@ -39,6 +39,9 @@ import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalUnion;
 import org.polypheny.db.rel.logical.LogicalValues;
 
+/**
+ * RelShuttle for creating a deep copy for rel.
+ */
 public class RelDeepCopyShuttle extends RelShuttleImpl {
 
     private RelTraitSet copy( final RelTraitSet other ) {

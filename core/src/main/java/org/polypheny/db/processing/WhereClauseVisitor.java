@@ -27,6 +27,9 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.transaction.Statement;
 
+/**
+ * Where clause visitor which identifies partitions.
+ */
 public class WhereClauseVisitor extends RexShuttle {
 
     private final Statement statement;

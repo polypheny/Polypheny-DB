@@ -92,7 +92,7 @@ public class LogicalQueryInformationImpl implements LogicalQueryInformation {
 
 
     @Override
-    public String getQueryId() {
+    public String getQueryClass() {
         return this.queryId;
     }
 

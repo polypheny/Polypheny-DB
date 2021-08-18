@@ -20,6 +20,9 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.tools.RoutedRelBuilder;
 import org.polypheny.db.transaction.Statement;
 
+/**
+ * Interface for routing dml queries.
+ */
 public interface DmlRouter {
 
     RoutedRelBuilder routeDml( RelNode node, Statement statement );
