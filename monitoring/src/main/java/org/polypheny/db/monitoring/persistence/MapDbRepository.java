@@ -94,38 +94,33 @@ public class MapDbRepository implements MonitoringRepository {
     @Override
     public <T extends MonitoringDataPoint> List<T> getDataPointsBefore( @NonNull Class<T> dataPointClass, @NonNull Timestamp timestamp ) {
         val table = this.data.get( dataPointClass );
-        if ( table == null ) {
-            return Collections.emptyList();
+        if ( table != null ) {
+            return table.values()
+                    .stream()
+                    .map( monitoringPersistentData -> (T) monitoringPersistentData )
+                    .sorted( Comparator.comparing( MonitoringDataPoint::timestamp ).reversed() )
+                    .filter( elem -> elem.timestamp().before( timestamp ) )
+                    .collect( Collectors.toList() );
         }
 
-        return table.values()
-                .stream()
-                .map( monitoringPersistentData -> (T) monitoringPersistentData )
-                .sorted( Comparator.comparing( MonitoringDataPoint::timestamp ).reversed() )
-                .filter( elem -> elem.timestamp().before( timestamp ) )
-                .limit( 100 )
-                .collect( Collectors.toList() );
-
+        return Collections.emptyList();
     }
 
 
     @Override
     public <T extends MonitoringDataPoint> List<T> getDataPointsAfter( @NonNull Class<T> dataPointClass, @NonNull Timestamp timestamp ) {
         val table = this.data.get( dataPointClass );
-        if ( table == null ) {
-            return Collections.emptyList();
+        if ( table != null ) {
+            return table.values()
+                    .stream()
+                    .map( monitoringPersistentData -> (T) monitoringPersistentData )
+                    .sorted( Comparator.comparing( MonitoringDataPoint::timestamp ).reversed() )
+                    .filter( elem -> elem.timestamp().after( timestamp ) )
+                    .collect( Collectors.toList() );
         }
 
-        return table.values()
-                .stream()
-                .map( monitoringPersistentData -> (T) monitoringPersistentData )
-                .sorted( Comparator.comparing( MonitoringDataPoint::timestamp ).reversed() )
-                .filter( elem -> elem.timestamp().after( timestamp ) )
-                .limit( 100 )
-                .collect( Collectors.toList() );
-
+        return Collections.emptyList();
     }
-
 
     @Override
     public QueryPostCosts getQueryPostCosts( @NonNull String physicalQueryClass ) {

@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.events.QueryEvent;
-import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
+import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
@@ -36,26 +36,26 @@ class MonitoringQueueImplIntegrationTest {
 
     @Test
     public void queuedEventsAreProcessed() {
-        // arrange
-        // set background task timer
+        //  -- Arrange --
+        // Set background task timer
         RuntimeConfig.QUEUE_PROCESSING_INTERVAL.setEnum( TaskSchedulingType.EVERY_SECOND );
 
-        // initialize mock repository
+        // Initialize mock repository
         TestMapDbRepository repo = new TestMapDbRepository();
         repo.initialize(); // will delete the file
 
-        // mock ui service, not really needed for testing
+        // Mock ui service, not really needed for testing
         MonitoringServiceUi uiService = Mockito.mock( MonitoringServiceUi.class );
 
-        // create monitoring service with dependencies
+        // Create monitoring service with dependencies
         MonitoringQueueImpl queueWriteService = new MonitoringQueueImpl( repo );
 
-        // initialize the monitoringService
+        // Initialize the monitoringService
         val sut = new MonitoringServiceImpl( queueWriteService, repo, uiService );
 
         Assertions.assertNotNull( sut );
 
-        // act
+        // -- Act --
         val events = createQueryEvent( 15 );
         events.forEach( sut::monitorEvent );
 
@@ -65,18 +65,9 @@ class MonitoringQueueImplIntegrationTest {
             e.printStackTrace();
         }
 
-        // assert
-
-        val result = sut.getAllDataPoints( QueryDataPointImpl.class );
+        // -- Assert --
+        val result = sut.getAllDataPoints( QueryDataPoint.class );
         Assertions.assertEquals( 15, result.size() );
-
-        // cleanup
-        try {
-            queueWriteService.finalize();
-        } catch ( Throwable throwable ) {
-            throwable.printStackTrace();
-        }
-
     }
 
 
@@ -89,7 +80,7 @@ class MonitoringQueueImplIntegrationTest {
             event.setSignature( null );
             event.setStatement( Mockito.mock( Statement.class ) );
             event.setDescription( UUID.randomUUID().toString() );
-            event.setExecutionTime( (long) Math.random() * 1000L );
+            event.setExecutionTime( (long) (Math.random() * 1000L) );
             event.setFieldNames( Lists.newArrayList( "T1", "T2", "T3" ) );
             event.setRowCount( 15 );
             event.setAnalyze( true );

@@ -19,6 +19,10 @@ package org.polypheny.db.monitoring.events;
 
 import java.util.Collections;
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
+import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.rel.RelRoot;
 import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
@@ -34,8 +38,11 @@ import org.polypheny.db.transaction.Statement;
 @Getter
 public abstract class StatementEvent extends BaseEvent {
 
+    protected RelRoot routed;
     protected PolyphenyDbSignature signature;
     protected Statement statement;
+    protected List<List<Object>> rows;
+    protected String description;
     protected List<String> fieldNames;
     protected long executionTime;
     protected int rowCount;

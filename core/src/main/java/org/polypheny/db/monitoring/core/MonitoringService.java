@@ -18,9 +18,9 @@ package org.polypheny.db.monitoring.core;
 
 import java.sql.Timestamp;
 import java.util.List;
-import lombok.NonNull;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
+import lombok.NonNull;
 import org.polypheny.db.monitoring.events.QueryPostCosts;
 
 
@@ -31,34 +31,39 @@ import org.polypheny.db.monitoring.events.QueryPostCosts;
 public interface MonitoringService {
 
     /**
-     * monitor event which will be queued immediately and get processed by a registered queue worker.
+     * Monitor event which will be queued immediately and get processed by a registered queue worker.
+     * <T> The type parameter for the event, which will implement MonitoringEventData
      *
      * @param eventData The event data object.
-     * @param <T> The type parameter for the event, which will implement MonitoringEventData
      */
     <T extends MonitoringEvent> void monitorEvent( T eventData );
 
     /**
      * Get all data for given monitoring persistent type.
      *
-     * @param dataPointClass
-     * @param <T>
-     * @return
+     * @param dataPointClass DatapointClass of interest
+     * @return Returns List of all data points from teh specified dataPointClass
      */
     <T extends MonitoringDataPoint> List<T> getAllDataPoints( Class<T> dataPointClass );
 
     /**
      * Get data before specified timestamp for given monitoring persistent type.
      *
-     * @param dataPointClass
-     * @param <T>
-     * @return
+     * @param dataPointClass Data point class of interest to look for
+     * @param timestamp Youngest timestamp t return data points from
+     * @return Returns List of all data points from the specified dataPointClass
      */
     <T extends MonitoringDataPoint> List<T> getDataPointsBefore( Class<T> dataPointClass, Timestamp timestamp );
 
     /**
      * Get data after specified timestamp for given monitoring persistent type.
      *
+     * @param dataPointClass Data point class of interest to look for
+     * @param timestamp Oldest timestamp t return data points from
+     * @return Returns List of all data points from teh specified dataPointClass
+     */
+    <T extends MonitoringDataPoint> List<T> getDataPointsAfter( Class<T> dataPointClass, Timestamp timestamp );
+
      * @param dataPointClass
      * @param <T>
      * @return

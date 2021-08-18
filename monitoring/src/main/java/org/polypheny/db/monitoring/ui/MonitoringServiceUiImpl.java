@@ -20,6 +20,12 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -59,7 +65,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
     @Override
     public void initializeInformationPage() {
-        //Initialize Information Page
+        // Initialize Information Page
         informationPage = new InformationPage( "Workload Monitoring" );
         informationPage.fullWidth();
         InformationManager im = InformationManager.getInstance();
@@ -102,9 +108,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
 
     private <T extends MonitoringDataPoint> void updateMetricInformationTable( InformationTable table, Class<T> metricClass ) {
-        var elements = this.repo.getAllDataPoints( metricClass );
-        elements.sort( Comparator.comparing( MonitoringDataPoint::timestamp ).reversed() );
-        elements = elements.stream().limit( 100 ).collect( Collectors.toList());
+        List<T> elements = this.repo.getAllDataPoints( metricClass );
         table.reset();
 
         Field[] fields = metricClass.getDeclaredFields();
@@ -114,8 +118,8 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
             for ( Field field : fields ) {
                 // TODO: get declared fields and fine corresponding Lombok getter to execute
-                // Therefore, nothing need to be done for serialVersionID
-                // and neither do we need to hacky set the setAccessible flag for the fields
+                //  Therefore, nothing need to be done for serialVersionID
+                //  and neither do we need to hacky set the setAccessible flag for the fields
                 if ( field.getName().equals( "serialVersionUID" ) ) {
                     continue;
                 }
@@ -133,6 +137,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
                     else{
                         row.add( "-" );
                     }
+                    row.add( value.toString() );
                 } catch ( IllegalAccessException e ) {
                     e.printStackTrace();
                 }

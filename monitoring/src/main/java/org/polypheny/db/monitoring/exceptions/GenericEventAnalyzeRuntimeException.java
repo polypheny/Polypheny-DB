@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.ui;
+package org.polypheny.db.monitoring.exceptions;
 
 /**
- * UI abstraction service for monitoring.
+ * Generic Event Analyzer Exception
  */
-public interface MonitoringServiceUi {
+public class GenericEventAnalyzeRuntimeException extends RuntimeException {
 
-    void initializeInformationPage();
+    public GenericEventAnalyzeRuntimeException( String message ) {
+        super( message );
+    }
 
 }

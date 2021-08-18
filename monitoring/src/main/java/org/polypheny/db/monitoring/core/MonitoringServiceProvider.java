@@ -23,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
  * Provider for the MonitoringService singleton instance.
  */
 @Slf4j
-public class MonitoringServiceProvider  {
+public class MonitoringServiceProvider {
 
     private static MonitoringService INSTANCE = null;
 

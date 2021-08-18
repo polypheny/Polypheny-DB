@@ -80,10 +80,14 @@ public class TransactionImpl implements Transaction, Comparable {
 
     @Getter
     private final boolean analyze;
+
     private final List<Statement> statements = new ArrayList<>();
+
     private final List<String> changedTables = new ArrayList<>();
+
     @Getter
     private final List<Adapter> involvedAdapters = new CopyOnWriteArrayList<>();
+
     private final Set<Lock> lockList = new HashSet<>();
     private MonitoringEvent monitoringEvent;
 
@@ -276,6 +280,7 @@ public class TransactionImpl implements Transaction, Comparable {
     }
 
     // For locking
+
 
     Set<Lock> getLocks() {
         return lockList;

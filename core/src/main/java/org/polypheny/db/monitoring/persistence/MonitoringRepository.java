@@ -18,6 +18,7 @@ package org.polypheny.db.monitoring.persistence;
 
 import java.sql.Timestamp;
 import java.util.List;
+import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import lombok.NonNull;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.QueryPostCosts;
@@ -36,6 +37,7 @@ public interface MonitoringRepository {
     /**
      * Persist given monitoring metric.
      *
+     * @param dataPoint to be persisted in repository backend
      * @param dataPoint
      */
     void persistDataPoint( MonitoringDataPoint dataPoint );
@@ -43,6 +45,8 @@ public interface MonitoringRepository {
     /**
      * Get all data for given monitoring persistent type.
      *
+     * @param dataPointClass DatapointClass of interest
+     * @return Returns List of all datapoints from teh specified dataPointClass
      * @param dataPointClass
      * @param <T>
      * @return
@@ -52,6 +56,9 @@ public interface MonitoringRepository {
     /**
      * Get data before specified timestamp for given monitoring persistent type.
      *
+     * @param dataPointClass datapointclass of interest to look for
+     * @param timestamp youngest timestamp t return datapoints from
+     * @return Returns List of all datapoints from the specified dataPointClass
      * @param dataPointClass
      * @param <T>
      * @return
@@ -74,5 +81,11 @@ public interface MonitoringRepository {
     void updateQueryPostCosts(@NonNull String physicalQueryClass , long executionTime);
 
     void resetQueryPostCosts();
+
+     * @param dataPointClass datapointclass of interest to look for
+     * @param timestamp oldest timestamp t return datapoints from
+     * @return Returns List of all datapoints from teh specified dataPointClass
+     */
+    <T extends MonitoringDataPoint> List<T> getDataPointsAfter( Class<T> dataPointClass, Timestamp timestamp );
 
 }

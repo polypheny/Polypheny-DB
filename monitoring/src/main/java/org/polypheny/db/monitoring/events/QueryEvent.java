@@ -22,6 +22,9 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.monitoring.events.analyzer.QueryEventAnalyzer;
+import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
+import org.polypheny.db.monitoring.exceptions.GenericEventAnalyzeRuntimeException;
 import lombok.val;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.analyzer.QueryEventAnalyzer;
@@ -51,8 +54,7 @@ public class QueryEvent extends StatementEvent {
             }
             return Arrays.asList( queryDataPoint );
         } catch ( Exception e ) {
-            log.error( "Could not analyze query event:" );
-            return Collections.emptyList();
+            throw new GenericEventAnalyzeRuntimeException( "Could not analyze query event:" );
         }
     }
 

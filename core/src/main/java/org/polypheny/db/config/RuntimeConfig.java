@@ -330,12 +330,11 @@ public enum RuntimeConfig {
             ConfigType.INSTANCE_LIST,
             "dockerGroup" ),
 
-
     FILE_HANDLE_CACHE_SIZE( "runtime/fileHandleCacheSize",
             "Size (in Bytes) up to which media files are cached in-memory instead of creating a temporary file. Needs to be >= 0 and smaller than Integer.MAX_SIZE. Setting to zero disables caching of media files.",
             0,
             ConfigType.INTEGER,
-            "runtimeExecutionGroup" ),
+            "runtimExecutionGroup" );
 
 
     QUEUE_PROCESSING_INTERVAL( "runtime/queueProcessingInterval",
@@ -373,8 +372,6 @@ public enum RuntimeConfig {
         queryPlanCachingGroup.withTitle( "Query Plan Caching" );
         final WebUiGroup implementationCachingGroup = new WebUiGroup( "implementationCachingGroup", processingPage.getId() );
         implementationCachingGroup.withTitle( "Implementation Caching" );
-        final WebUiGroup routingPlanCachingGroup = new WebUiGroup( "routingPlanCachingGroup", processingPage.getId() );
-        routingPlanCachingGroup.withTitle( "Routing Caching" );
         final WebUiGroup queryParameterizationGroup = new WebUiGroup( "queryParameterizationGroup", processingPage.getId() );
         queryParameterizationGroup.withTitle( "Query Parameterization" );
         final WebUiGroup constraintEnforcementGroup = new WebUiGroup( "constraintEnforcementGroup", processingPage.getId() );
@@ -389,7 +386,6 @@ public enum RuntimeConfig {
         configManager.registerWebUiGroup( queryPlanCachingGroup );
         configManager.registerWebUiGroup( implementationCachingGroup );
         configManager.registerWebUiGroup( queryParameterizationGroup );
-        configManager.registerWebUiGroup( routingPlanCachingGroup );
         configManager.registerWebUiGroup( constraintEnforcementGroup );
         configManager.registerWebUiGroup( polystoreIndexGroup );
         configManager.registerWebUiGroup( validationGroup );
@@ -464,11 +460,6 @@ public enum RuntimeConfig {
         configManager.registerWebUiPage( partitionSettingsPage );
         configManager.registerWebUiGroup( temperaturePartitionProcessingSettingsGroup );
     }
-
-
-    private final String key;
-    private final String description;
-    private final ConfigManager configManager = ConfigManager.getInstance();
 
 
     RuntimeConfig( final String key, final String description, final Object defaultValue, final ConfigType configType ) {
@@ -581,18 +572,8 @@ public enum RuntimeConfig {
     }
 
 
-    public void setBoolean( final boolean value ) {
-        configManager.getConfig( key ).setBoolean( value );
-    }
-
-
     public BigDecimal getDecimal() {
         return configManager.getConfig( key ).getDecimal();
-    }
-
-
-    public void setDecimal( final BigDecimal value ) {
-        configManager.getConfig( key ).setDecimal( value );
     }
 
 
@@ -601,18 +582,8 @@ public enum RuntimeConfig {
     }
 
 
-    public void setDouble( final double value ) {
-        configManager.getConfig( key ).setDouble( value );
-    }
-
-
     public Enum getEnum() {
         return configManager.getConfig( key ).getEnum();
-    }
-
-
-    public void setEnum( Enum value ) {
-        configManager.getConfig( key ).setEnum( value );
     }
 
 
@@ -621,30 +592,13 @@ public enum RuntimeConfig {
     }
 
 
-    public void setInteger( final int value ) {
-        configManager.getConfig( key ).setInt( value );
-    }
-
-    // TODO: Add methods for array and table
-
-
     public long getLong() {
         return configManager.getConfig( key ).getLong();
     }
 
 
-    public void setLong( final long value ) {
-        configManager.getConfig( key ).setLong( value );
-    }
-
-
     public String getString() {
         return configManager.getConfig( key ).getString();
-    }
-
-
-    public void setString( final String value ) {
-        configManager.getConfig( key ).setString( value );
     }
 
 
@@ -655,6 +609,43 @@ public enum RuntimeConfig {
 
     public <T> List<T> getList( Class<T> type ) {
         return configManager.getConfig( key ).getList( type );
+    }
+
+    // TODO: Add methods for array and table
+
+
+    public void setBoolean( final boolean value ) {
+        configManager.getConfig( key ).setBoolean( value );
+    }
+
+
+    public void setDecimal( final BigDecimal value ) {
+        configManager.getConfig( key ).setDecimal( value );
+    }
+
+
+    public void setDouble( final double value ) {
+        configManager.getConfig( key ).setDouble( value );
+    }
+
+
+    public void setEnum( Enum value ) {
+        configManager.getConfig( key ).setEnum( value );
+    }
+
+
+    public void setInteger( final int value ) {
+        configManager.getConfig( key ).setInt( value );
+    }
+
+
+    public void setLong( final long value ) {
+        configManager.getConfig( key ).setLong( value );
+    }
+
+
+    public void setString( final String value ) {
+        configManager.getConfig( key ).setString( value );
     }
 
 

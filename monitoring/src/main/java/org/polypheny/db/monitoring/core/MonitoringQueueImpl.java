@@ -46,11 +46,7 @@ import org.polypheny.db.util.background.BackgroundTaskManager;
 @Slf4j
 public class MonitoringQueueImpl implements MonitoringQueue {
 
-    // region private fields
-
-    /**
-     * Monitoring queue which will queue all the incoming jobs.
-     */
+    // Monitoring queue which will queue all the incoming jobs.
     private final Queue<MonitoringEvent> monitoringJobQueue = new ConcurrentLinkedQueue<>();
 
     private final Set<UUID> queueIds = Sets.newConcurrentHashSet();
@@ -75,8 +71,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
      * @param startBackGroundTask Indicates whether the background task for consuming the queue will be started.
      */
     public MonitoringQueueImpl( boolean startBackGroundTask, @NonNull MonitoringRepository repository ) {
-        log.info( "write queue service" );
-
         this.repository = repository;
 
         if ( startBackGroundTask ) {
@@ -92,14 +86,8 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         this( true, repository );
     }
 
-    // endregion
 
-    // region public methods
-
-
-    @Override
-    protected void finalize() throws Throwable {
-        super.finalize();
+    public void terminateQueue() {
         if ( backgroundTaskId != null ) {
             BackgroundTaskManager.INSTANCE.removeBackgroundTask( backgroundTaskId );
         }
@@ -147,10 +135,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         return processedEvents;
     }
 
-    // endregion
-
-    // region private helper methods
-
 
     private void startBackgroundTask() {
         if ( backgroundTaskId == null ) {
@@ -177,7 +161,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
                 if ( log.isDebugEnabled() ) {
                     log.debug( "get new monitoring job {}", event.get().getId().toString() );
                 }
-                queueIds.remove( event.get().getId() );
 
                 // returns list of metrics which was produced by this particular event
                 val dataPoints = event.get().analyze();
@@ -191,6 +174,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
                 }
 
                 countEvents++;
+                queueIds.remove( event.get().getId() );
             }
             processedEvents += countEvents;
         } finally {
@@ -206,5 +190,4 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         return Optional.empty();
     }
 
-    // endregion
 }

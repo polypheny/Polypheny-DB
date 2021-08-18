@@ -20,7 +20,13 @@ import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.monitoring.events.QueryEvent;
+<<<<<<< HEAD
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
+=======
+import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelRoot;
+>>>>>>> master
 
 
 @Slf4j
@@ -53,20 +59,16 @@ public class QueryEventAnalyzer {
 
 
     private static void processDurationInfo( QueryEvent queryEvent, QueryDataPointImpl metric ) {
-        try {
-            InformationDuration duration = new Gson().fromJson( queryEvent.getDurations(), InformationDuration.class );
-            getDurationInfo( metric, "Plan Caching", duration );
-            getDurationInfo( metric, "Index Lookup Rewrite", duration );
-            getDurationInfo( metric, "Constraint Enforcement", duration );
-            getDurationInfo( metric, "Implementation Caching", duration );
-            getDurationInfo( metric, "Index Update", duration );
-            getDurationInfo( metric, "Routing", duration );
-            getDurationInfo( metric, "Planning & Optimization", duration );
-            getDurationInfo( metric, "Implementation", duration );
-            getDurationInfo( metric, "Locking", duration );
-        } catch ( Exception e ) {
-            log.debug( "could not deserialize of get duration info" );
-        }
+        InformationDuration duration = new Gson().fromJson( queryEvent.getDurations(), InformationDuration.class );
+        getDurationInfo( metric, "Plan Caching", duration );
+        getDurationInfo( metric, "Index Lookup Rewrite", duration );
+        getDurationInfo( metric, "Constraint Enforcement", duration );
+        getDurationInfo( metric, "Implementation Caching", duration );
+        getDurationInfo( metric, "Index Update", duration );
+        getDurationInfo( metric, "Routing", duration );
+        getDurationInfo( metric, "Planning & Optimization", duration );
+        getDurationInfo( metric, "Implementation", duration );
+        getDurationInfo( metric, "Locking", duration );
     }
 
 
