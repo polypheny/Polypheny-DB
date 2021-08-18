@@ -16,32 +16,19 @@
 
 package org.polypheny.db.monitoring.ui;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.stream.Collectors;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-import lombok.var;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.monitoring.core.MonitoringQueue;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
-import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
@@ -75,25 +62,6 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
         //initializeQueueInformationTable();
     }
 
-
-    @Override
-    public <T extends MonitoringDataPoint> void registerDataPointForUi( @NonNull Class<T> metricClass ) {
-        String className = metricClass.getName();
-        val informationGroup = new InformationGroup( informationPage, className );
-
-        // TODO: see todo below
-        val fieldAsString = Arrays.stream( metricClass.getDeclaredFields() )
-                .map( Field::getName )
-                .filter( str -> !str.equals( "serialVersionUID" ) )
-                .collect( Collectors.toList() );
-        val informationTable = new InformationTable( informationGroup, fieldAsString );
-
-        informationGroup.setRefreshFunction( () -> this.updateMetricInformationTable( informationTable, metricClass ) );
-
-        addInformationGroupTUi( informationGroup, Arrays.asList( informationTable ) );
-    }
-
-
     /**
      * Universal method to add arbitrary new information Groups to UI.
      */
@@ -105,48 +73,6 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
             im.registerInformation( informationTable );
         }
     }
-
-
-    private <T extends MonitoringDataPoint> void updateMetricInformationTable( InformationTable table, Class<T> metricClass ) {
-        List<T> elements = this.repo.getAllDataPoints( metricClass );
-        table.reset();
-
-        Field[] fields = metricClass.getDeclaredFields();
-        Method[] methods = metricClass.getMethods();
-        for ( T element : elements ) {
-            List<String> row = new LinkedList<>();
-
-            for ( Field field : fields ) {
-                // TODO: get declared fields and fine corresponding Lombok getter to execute
-                //  Therefore, nothing need to be done for serialVersionID
-                //  and neither do we need to hacky set the setAccessible flag for the fields
-                if ( field.getName().equals( "serialVersionUID" ) ) {
-                    continue;
-                }
-
-                try {
-                    field.setAccessible( true );
-                    val value = field.get( element );
-                    if(value != null){
-                        try{
-                            row.add( value.toString() );
-                        }catch ( Exception e ){
-                            row.add( "-" );
-                        }
-                    }
-                    else{
-                        row.add( "-" );
-                    }
-                    row.add( value.toString() );
-                } catch ( IllegalAccessException e ) {
-                    e.printStackTrace();
-                }
-            }
-
-            table.addRow( row );
-        }
-    }
-
 
     private void initializeWorkloadInformationTable() {
         val informationGroup = new InformationGroup( informationPage, "Workload Overview" );

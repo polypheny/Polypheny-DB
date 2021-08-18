@@ -20,14 +20,7 @@ import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.monitoring.events.QueryEvent;
-<<<<<<< HEAD
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
-=======
-import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
->>>>>>> master
-
 
 @Slf4j
 public class QueryEventAnalyzer {
@@ -69,16 +62,15 @@ public class QueryEventAnalyzer {
         getDurationInfo( metric, "Planning & Optimization", duration );
         getDurationInfo( metric, "Implementation", duration );
         getDurationInfo( metric, "Locking", duration );
+        getDurationInfo( metric, "Analyze", duration );
+        getDurationInfo( metric, "Plan Selection", duration );
+        getDurationInfo( metric, "Parameter validation", duration );
     }
 
 
     private static void getDurationInfo( QueryDataPointImpl queryMetric, String durationName, InformationDuration duration ) {
-        try {
-            long time = duration.getDuration( durationName );
-            queryMetric.getDataElements().put( durationName, time );
-        } catch ( Exception e ) {
-            log.debug( "could no find duration: {}", durationName );
-        }
+        long time = duration.getDuration( durationName );
+        queryMetric.getDataElements().put( durationName, time );
     }
 
 }

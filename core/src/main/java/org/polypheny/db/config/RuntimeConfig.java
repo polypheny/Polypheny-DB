@@ -334,11 +334,10 @@ public enum RuntimeConfig {
             "Size (in Bytes) up to which media files are cached in-memory instead of creating a temporary file. Needs to be >= 0 and smaller than Integer.MAX_SIZE. Setting to zero disables caching of media files.",
             0,
             ConfigType.INTEGER,
-            "runtimExecutionGroup" );
-
+            "runtimeExecutionGroup" ),
 
     QUEUE_PROCESSING_INTERVAL( "runtime/queueProcessingInterval",
-            "Time interval in seconds, how often the monitoring queues is processed and analyzed and data points are created . Restart is required",
+            "Rate of passive tracking of statistics.",
             BackgroundTask.TaskSchedulingType.EVERY_TEN_SECONDS,
             ConfigType.ENUM,
             "monitoringSettingsQueueGroup" ),
@@ -354,6 +353,11 @@ public enum RuntimeConfig {
             BackgroundTask.TaskSchedulingType.EVERY_TEN_SECONDS,
             ConfigType.ENUM,
             "temperaturePartitionProcessingSettingsGroup");
+
+    private final String key;
+    private final String description;
+
+    private final ConfigManager configManager = ConfigManager.getInstance();
 
 
     static {

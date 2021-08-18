@@ -18,7 +18,6 @@ package org.polypheny.db.monitoring.persistence;
 
 import java.sql.Timestamp;
 import java.util.List;
-import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import lombok.NonNull;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.QueryPostCosts;
@@ -38,7 +37,6 @@ public interface MonitoringRepository {
      * Persist given monitoring metric.
      *
      * @param dataPoint to be persisted in repository backend
-     * @param dataPoint
      */
     void persistDataPoint( MonitoringDataPoint dataPoint );
 
@@ -47,9 +45,6 @@ public interface MonitoringRepository {
      *
      * @param dataPointClass DatapointClass of interest
      * @return Returns List of all datapoints from teh specified dataPointClass
-     * @param dataPointClass
-     * @param <T>
-     * @return
      */
     <T extends MonitoringDataPoint> List<T> getAllDataPoints( Class<T> dataPointClass );
 
@@ -59,33 +54,39 @@ public interface MonitoringRepository {
      * @param dataPointClass datapointclass of interest to look for
      * @param timestamp youngest timestamp t return datapoints from
      * @return Returns List of all datapoints from the specified dataPointClass
-     * @param dataPointClass
-     * @param <T>
-     * @return
      */
     <T extends MonitoringDataPoint> List<T> getDataPointsBefore( Class<T> dataPointClass, Timestamp timestamp );
 
     /**
      * Get data after specified timestamp for given monitoring persistent type.
      *
-     * @param dataPointClass
-     * @param <T>
-     * @return
-     */
-    <T extends MonitoringDataPoint> List<T> getDataPointsAfter( Class<T> dataPointClass, Timestamp timestamp );
-
-    QueryPostCosts getQueryPostCosts( @NonNull String physicalQueryClass );
-
-    List<QueryPostCosts> getAllQueryPostCosts( );
-
-    void updateQueryPostCosts(@NonNull String physicalQueryClass , long executionTime);
-
-    void resetQueryPostCosts();
-
      * @param dataPointClass datapointclass of interest to look for
      * @param timestamp oldest timestamp t return datapoints from
      * @return Returns List of all datapoints from teh specified dataPointClass
      */
     <T extends MonitoringDataPoint> List<T> getDataPointsAfter( Class<T> dataPointClass, Timestamp timestamp );
+
+    /**
+     * @param physicalQueryClass the physical query class string to identify aggregated post costs.
+     * @return The aggregated query post costs.
+     */
+    QueryPostCosts getQueryPostCosts( @NonNull String physicalQueryClass );
+
+    /**
+     * @return All query post costs for printing in ui.
+     */
+    List<QueryPostCosts> getAllQueryPostCosts( );
+
+    /**
+     * @param physicalQueryClass the physical query class string to identify aggregated post costs.
+     * @param executionTime the measured execution time.
+     */
+    void updateQueryPostCosts(@NonNull String physicalQueryClass , long executionTime);
+
+    /**
+     * Removes all aggregates post costs from cache.
+     */
+    void resetQueryPostCosts();
+
 
 }

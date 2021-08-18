@@ -70,6 +70,14 @@ public class InformationDuration extends Information {
         return child.duration;
     }
 
+    public long getDuration( final String name ) throws InformationRuntimeException {
+        Duration child = this.get( name );
+        if ( child == null ) {
+            return 0;
+        }
+        return child.duration;
+    }
+
 
     public Duration addNanoDuration( final String name, final long nanoDuration ) {
         Duration d = new Duration( name, nanoDuration );
