@@ -39,6 +39,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.materializedView.MaterializedManager;
+import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
@@ -80,15 +81,12 @@ public class TransactionImpl implements Transaction, Comparable {
 
     @Getter
     private final boolean analyze;
-
     private final List<Statement> statements = new ArrayList<>();
-
     private final List<String> changedTables = new ArrayList<>();
-
     @Getter
     private final List<Adapter> involvedAdapters = new CopyOnWriteArrayList<>();
-
     private final Set<Lock> lockList = new HashSet<>();
+    private MonitoringEvent monitoringEvent;
 
 
     TransactionImpl(
@@ -267,6 +265,18 @@ public class TransactionImpl implements Transaction, Comparable {
         }
         Transaction that = (Transaction) o;
         return xid.equals( that.getXid() );
+    }
+
+
+    @Override
+    public MonitoringEvent getMonitoringEvent() {
+        return this.monitoringEvent;
+    }
+
+
+    @Override
+    public void setMonitoringEvent( MonitoringEvent event ) {
+        this.monitoringEvent = event;
     }
 
     // For locking
