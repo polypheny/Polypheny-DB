@@ -33,7 +33,7 @@ public class MqlDropDatabase extends MqlNode implements MqlExecutableStatement {
         CatalogSchema schema = catalog.getUser( context.getCurrentUserId() ).getDefaultSchema();
 
         try {
-            DdlManager.getInstance().dropSchema( schema.databaseId, schema.name, true, statement );
+            DdlManager.getInstance().dropSchema( schema.databaseId, database, true, statement );
         } catch ( SchemaNotExistException | DdlOnSourceException e ) {
             throw new RuntimeException( e );
         }

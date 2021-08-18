@@ -83,6 +83,7 @@ import org.polypheny.db.ddl.exception.IndexPreventsRemovalException;
 import org.polypheny.db.ddl.exception.LastPlacementException;
 import org.polypheny.db.ddl.exception.MissingColumnPlacementException;
 import org.polypheny.db.ddl.exception.NotNullAndDefaultValueException;
+import org.polypheny.db.ddl.exception.NotViewException;
 import org.polypheny.db.ddl.exception.PartitionNamesNotUniqueException;
 import org.polypheny.db.ddl.exception.PlacementAlreadyExistsException;
 import org.polypheny.db.ddl.exception.PlacementIsPrimaryException;
@@ -122,15 +123,8 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private void checkIfTableType( TableType tableType ) throws DdlOnSourceException {
-        if ( tableType != TableType.TABLE ) {
-            throw new DdlOnSourceException();
-        }
-    }
-
-
-    private void checkIfViewType( TableType tableType ) throws DdlOnSourceException {
-        if ( tableType != TableType.VIEW ) {
+    private void checkIfDdlPossible( TableType tableType ) throws DdlOnSourceException {
+        if ( tableType == TableType.SOURCE ) {
             throw new DdlOnSourceException();
         }
     }
@@ -364,7 +358,7 @@ public class DdlManagerImpl extends DdlManager {
         CatalogColumn afterColumn = afterColumnName == null ? null : getCatalogColumn( catalogTable.id, afterColumnName );
 
         // Make sure that the table is of table type SOURCE
-        checkIfTableType( catalogTable.tableType );
+        checkIfDdlPossible( catalogTable.tableType );
 
         // Make sure there is only one adapter
         if ( catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).size() != 1 ) {
@@ -739,7 +733,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void addPrimaryKey( CatalogTable catalogTable, List<String> columnNames, Statement statement ) throws DdlOnSourceException {
         // Make sure that this is a table of type TABLE (and not SOURCE)
-        checkIfTableType( catalogTable.tableType );
+        checkIfDdlPossible( catalogTable.tableType );
 
         try {
             CatalogPrimaryKey oldPk = catalog.getPrimaryKey( catalogTable.primaryKey );
@@ -781,7 +775,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void addUniqueConstraint( CatalogTable catalogTable, List<String> columnNames, String constraintName ) throws DdlOnSourceException {
         // Make sure that this is a table of type TABLE (and not SOURCE)
-        checkIfTableType( catalogTable.tableType );
+        checkIfDdlPossible( catalogTable.tableType );
 
         try {
             List<Long> columnIds = new LinkedList<>();
@@ -860,7 +854,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void dropConstraint( CatalogTable catalogTable, String constraintName ) throws DdlOnSourceException {
         // Make sure that this is a table of type TABLE (and not SOURCE)
-        checkIfTableType( catalogTable.tableType );
+        checkIfDdlPossible( catalogTable.tableType );
 
         try {
             CatalogConstraint constraint = catalog.getConstraint( catalogTable.id, constraintName );
@@ -874,7 +868,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void dropForeignKey( CatalogTable catalogTable, String foreignKeyName ) throws DdlOnSourceException {
         // Make sure that this is a table of type TABLE (and not SOURCE)
-        checkIfTableType( catalogTable.tableType );
+        checkIfDdlPossible( catalogTable.tableType );
 
         try {
             CatalogForeignKey foreignKey = catalog.getForeignKey( catalogTable.id, foreignKeyName );
@@ -888,7 +882,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void dropIndex( CatalogTable catalogTable, String indexName, Statement statement ) throws DdlOnSourceException {
         // Make sure that this is a table of type TABLE (and not SOURCE)
-        checkIfTableType( catalogTable.tableType );
+        checkIfDdlPossible( catalogTable.tableType );
 
         try {
             CatalogIndex index = catalog.getIndex( catalogTable.id, indexName );
@@ -954,7 +948,7 @@ public class DdlManagerImpl extends DdlManager {
     public void dropPrimaryKey( CatalogTable catalogTable ) throws DdlOnSourceException {
         try {
             // Make sure that this is a table of type TABLE (and not SOURCE)
-            checkIfTableType( catalogTable.tableType );
+            checkIfDdlPossible( catalogTable.tableType );
             catalog.deletePrimaryKey( catalogTable.id );
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
@@ -965,7 +959,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void setColumnType( CatalogTable catalogTable, String columnName, ColumnTypeInformation type, Statement statement ) throws DdlOnSourceException, ColumnNotExistsException, GenericCatalogException {
         // Make sure that this is a table of type TABLE (and not SOURCE)
-        checkIfTableType( catalogTable.tableType );
+        checkIfDdlPossible( catalogTable.tableType );
 
         // check if model permits operation
         checkModelLogic( catalogTable, columnName );
@@ -998,7 +992,7 @@ public class DdlManagerImpl extends DdlManager {
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
 
         // Make sure that this is a table of type TABLE (and not SOURCE)
-        checkIfTableType( catalogTable.tableType );
+        checkIfDdlPossible( catalogTable.tableType );
 
         // check if model permits operation
         checkModelLogic( catalogTable, columnName );
@@ -1069,7 +1063,7 @@ public class DdlManagerImpl extends DdlManager {
         checkModelLogic( catalogTable, columnName );
 
         // Make sure that this is a table of type TABLE (and not SOURCE)
-        checkIfTableType( catalogTable.tableType );
+        checkIfDdlPossible( catalogTable.tableType );
 
         catalog.setCollation( catalogColumn.id, collation );
 
@@ -1744,7 +1738,9 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void dropView( CatalogTable catalogView, Statement statement ) throws DdlOnSourceException {
         // Make sure that this is a table of type VIEW
-        checkIfViewType( catalogView.tableType );
+        if ( catalogView.tableType != TableType.VIEW ) {
+            throw new NotViewException();
+        }
 
         // Check if views are dependent from this view
         checkViewDependencies( catalogView );
@@ -1767,7 +1763,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void dropTable( CatalogTable catalogTable, Statement statement ) throws DdlOnSourceException {
         // Make sure that this is a table of type TABLE (and not SOURCE)
-        checkIfTableType( catalogTable.tableType );
+        checkIfDdlPossible( catalogTable.tableType );
 
         // Check if views dependent on this table
         checkViewDependencies( catalogTable );

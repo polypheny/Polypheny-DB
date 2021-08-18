@@ -20,10 +20,8 @@ import lombok.Getter;
 import org.bson.BsonDocument;
 import org.polypheny.db.mql.Mql.Type;
 
-public class MqlFindOneAndDelete extends MqlCollectionStatement implements MqlQueryStatement {
+public class MqlFindOneAndDelete extends MqlDelete implements MqlQueryStatement {
 
-    @Getter
-    private final BsonDocument query;
     @Getter
     private final BsonDocument sort;
     @Getter
@@ -31,8 +29,7 @@ public class MqlFindOneAndDelete extends MqlCollectionStatement implements MqlQu
 
 
     public MqlFindOneAndDelete( String collection, BsonDocument query, BsonDocument options ) {
-        super( collection );
-        this.query = query;
+        super( collection, query, options, true );
         this.sort = getDocumentOrNull( options, "sort" );
         this.collation = getDocumentOrNull( options, "collation" );
     }

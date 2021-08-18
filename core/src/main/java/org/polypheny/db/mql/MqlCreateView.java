@@ -37,9 +37,7 @@ public class MqlCreateView extends MqlNode implements MqlExecutableStatement {
         long schemaId;
 
         try {
-
-            schemaId = catalog.getSchema( context.getDatabaseId(), context.getDefaultDocumentSchemaName() ).id;
-
+            schemaId = catalog.getSchema( context.getDatabaseId(), database ).id;
         } catch ( UnknownSchemaException e ) {
             throw new RuntimeException( "Poly schema was not found." );
         }
@@ -47,7 +45,7 @@ public class MqlCreateView extends MqlNode implements MqlExecutableStatement {
 
         MqlNode mqlNode = statement.getTransaction().getMqlProcessor().parse( "db." + source + ".aggregate(" + json.substring( 8, json.length() - 1 ) + ")" );
 
-        RelRoot relRoot = statement.getTransaction().getMqlProcessor().translate( statement, mqlNode, context.getDefaultDocumentSchemaName() );
+        RelRoot relRoot = statement.getTransaction().getMqlProcessor().translate( statement, mqlNode, database );
         PlacementType placementType = PlacementType.AUTOMATIC;
 
         RelNode relNode = relRoot.rel;

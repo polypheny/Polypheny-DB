@@ -25,6 +25,7 @@ import org.polypheny.db.mql.MqlCreateView;
 import org.polypheny.db.mql.MqlDelete;
 import org.polypheny.db.mql.MqlDrop;
 import org.polypheny.db.mql.MqlFind;
+import org.polypheny.db.mql.MqlRenameCollection;
 import org.polypheny.db.mql.MqlFindAndModify;
 import org.polypheny.db.mql.MqlFindOneAndDelete;
 import org.polypheny.db.mql.MqlFindOneAndReplace;
@@ -117,15 +118,20 @@ private static Metadata metadata;
 
 PARSER_END(${parser.class})
 
-SKIP : {
-" "
-| "\t"
-| "\r"
+<DEFAULT> SKIP : { " "
+                 | "\t"
+                 | "\n"
+                 | "\r"
+                 | "\f"
 }
 
 TOKEN : /* IDENTIFIERS */ // for nested documents check out Document_Splits()
 {
 < USE_DB: "use db" >
+|
+< BOOL: "true" | "false" >
+|
+< COMMA: "," >
 |
 < USE: "use " >
 |
@@ -133,7 +139,7 @@ TOKEN : /* IDENTIFIERS */ // for nested documents check out Document_Splits()
 |
 < DROP: "drop(" >
 |
-< DROP_DATABASE: "dropDatabase" >
+< DROP_DATABASE: "dropDatabase(" >
 |
 < SAVE: "save" >
 |
@@ -179,19 +185,21 @@ TOKEN : /* IDENTIFIERS */ // for nested documents check out Document_Splits()
 |
 < CREATE_COLLECTION : "createCollection(" >
 |
+< RENAME_COLLECTION : "renameCollection(" >
+|
 < GET_COLLECTION : "getCollection(" >
 |
 < AGGREGATE : "aggregate" >
 |
 < COUNT : "count" >
 |
-< COUNT_DOC : "countDocument" >
+< COUNT_DOC : "countDocuments" >
 |
 < ESTIMATECOUNT : "estimatedDocumentCount" >
 |
-< DOCUMENT: "{" (<LETTER>|<DIGIT>|<SYMBOL>|<EOL>)* "}" >
+< DOCUMENT: "{" (<LETTER>|<DIGIT>|<SYMBOL>)* "}" >
 |
-< COMMANDS:  "(" (~[])+ ")" >
+< COMMANDS: "(" (~[])+ ")">
 |
 < ARRAY: "[" (<LETTER>|<DIGIT>|<SYMBOL>)* "]" >
 |
@@ -205,11 +213,7 @@ TOKEN : /* IDENTIFIERS */ // for nested documents check out Document_Splits()
 |
 < #DIGIT: ["0"-"9"] >
 |
-< EOL: "\n" >
-|
 < EOB: ")" >
-|
-< COMMA: "," >
 |
 < DOT: "." >
 }
@@ -380,7 +384,7 @@ MqlNode Input() :
 }
 {
     /** only one statement for now **/
-    n = Statement() (<EOL> | <EOF>)
+    n = Statement() <EOF>
     {return n;}
 }
 
@@ -412,8 +416,8 @@ MqlNode Db_Statement():
 }
 {
     (
-        <CREATE_COLLECTION> name = Literal() ")"
-        {n = new MqlCreateCollection(name);}
+        <CREATE_COLLECTION> name = Literal() [<COMMA> doc = Document()  ]")"
+        {n = new MqlCreateCollection(name, doc);}
         (Details(n))* (Primary(n))*
 
     |
@@ -457,6 +461,8 @@ MqlNode Collection_Statement(String collection):
     |
         n = Replace_Statement(collection)
     |
+        n = Rename_Statement(collection)
+    |
         n = Drop_Statement(collection)
     |
         n = Delete_Statement(collection)
@@ -491,6 +497,18 @@ MqlNode Delete_Statement(String collection):
             throw new RuntimeException( "The used operation needs a least one empty document." );
         }
 
+    }
+}
+
+MqlNode Rename_Statement(String collection):
+{
+    String newName;
+    boolean dropTarget = false;
+}
+{
+    < RENAME_COLLECTION > newName = Literal() [<COMMA> dropTarget=Bool() ] ")"
+    {
+        return new MqlRenameCollection(collection, newName, dropTarget);
     }
 }
 
@@ -724,11 +742,18 @@ MqlNode Insert_Statement(String collection):
 BsonDocument Document():
 {
     Token t;
+    String text;
 }
 {
-    t=<COMMANDS>
+    (
+        t=<DOCUMENT>
+        {text = t.image;}
+        |
+        t=<COMMANDS>
+        {text = t.image.substring(1, t.image.length() - 1 );}
+    )
     {
-        return BsonDocument.parse( BsonUtil.fixBson( t.image.substring(1, t.image.length() - 1 ) ));
+        return BsonDocument.parse( BsonUtil.fixBson( text ));
     }
 }
 
@@ -739,6 +764,17 @@ List<BsonDocument> Document_Splits():
 {
     values = Bson_Splits()
     { return BsonUtil.asDocumentCollection(values);}
+}
+
+boolean Bool():
+{
+    Token t;
+}
+{
+    t=< BOOL >
+    {
+        return Boolean.parseBoolean(t.image);
+    }
 }
 
 // due to the LL approach of JavaCC we have to parse Documents besides oneanother ourself

@@ -22,8 +22,24 @@ import java.util.List;
 
 public class Mql {
 
-    static List<Type> DDL = Arrays.asList( Type.CREATE_COLLECTION, Type.CREATE_VIEW, Type.DROP, Type.USE_DATABASE, Type.DROP_DATABASE );
-    static List<Type> DML = Arrays.asList( Type.SELECT, Type.FIND, Type.UPDATE, Type.INSERT, Type.DELETE, Type.EXPLAIN );
+    static List<Type> DDL = Arrays.asList(
+            Type.CREATE_COLLECTION,
+            Type.CREATE_VIEW,
+            Type.DROP,
+            Type.USE_DATABASE,
+            Type.DROP_DATABASE,
+            Type.RENAME_COLLECTION );
+    static List<Type> DML = Arrays.asList(
+            Type.SELECT,
+            Type.FIND,
+            Type.UPDATE,
+            Type.INSERT,
+            Type.DELETE,
+            Type.EXPLAIN,
+            Type.FIND_DELETE,
+            Type.FIND_UPDATE,
+            Type.FIND_MODIFY,
+            Type.FIND_REPLACE );
     static List<Type> DCL = Collections.emptyList();
     static List<Type> TCL = Arrays.asList( Type.COMMIT, Type.ROLLBACK, Type.SET_TRANSACTION );
 
@@ -63,6 +79,7 @@ public class Mql {
         INSERT,
         REMOVE,
         REPLACE,
+        RENAME_COLLECTION,
         SAVE,
         SELECT,
         SHOW,

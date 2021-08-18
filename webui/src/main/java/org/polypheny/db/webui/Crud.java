@@ -418,7 +418,7 @@ public class Crud implements InformationObserver {
                     } else if ( table.tableType == TableType.VIEW ) {
                         icon = "icon-eye";
                     }
-                    if ( schema.schemaType == SchemaType.DOCUMENT ) {
+                    if ( table.tableType != TableType.VIEW && schema.schemaType == SchemaType.DOCUMENT ) {
                         icon = "cui-description";
                     }
 

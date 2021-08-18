@@ -4344,7 +4344,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             }
             if ( targetType.getPolyType() == PolyType.JSON ) {
                 String value = null;
+                boolean needsCheck = false;
                 if ( query instanceof SqlInsert && ((SqlInsert) query).getSource() instanceof SqlBasicCall ) {
+                    needsCheck = true;
                     SqlBasicCall source = (SqlBasicCall) ((SqlInsert) query).getSource();
                     if ( source.getOperator().kind == SqlKind.VALUES
                             && source.operands[0] instanceof SqlBasicCall
@@ -4362,8 +4364,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 }
 
                 // similar approach to PostgreSql the main difference for a JSON
-                // field this validation compared to an normal text type
-                if ( value == null || !DocumentUtil.validateJson( value ) ) {
+                // field this validation compared to a normal text type
+                if ( needsCheck && (value == null || !DocumentUtil.validateJson( value )) ) {
                     throw newValidationError(
                             query,
                             RESOURCE.notValidJson( value, "false" ) );

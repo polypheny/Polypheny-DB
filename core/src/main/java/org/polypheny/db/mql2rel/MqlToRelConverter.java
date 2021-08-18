@@ -281,6 +281,7 @@ public class MqlToRelConverter {
             case INSERT:
                 return RelRoot.of( convertInsert( (MqlInsert) query, table ), SqlKind.INSERT );
             case DELETE:
+            case FIND_DELETE:
                 return RelRoot.of( convertDelete( (MqlDelete) query, table, node ), SqlKind.DELETE );
             case UPDATE:
                 return RelRoot.of( convertUpdate( (MqlUpdate) query, table, node ), SqlKind.UPDATE );
@@ -780,9 +781,12 @@ public class MqlToRelConverter {
      * Starts converting of aggregation pipeline
      *
      * Example:
+     * <pre>
      * db.collection.aggregate([
-     * {"$project": {"key":1}}
+     *      {"$project": {"key":1}}, // -> {@link #combineProjection(BsonValue, RelNode, RelDataType, boolean, boolean)}
+     *      {"$match": {"key.subkey": "test"}} // -> {@link #combineFilter(BsonDocument, RelNode, RelDataType)}
      * ])
+     * </pre>
      */
     private RelNode convertAggregate( MqlAggregate query, RelDataType rowType, RelNode node ) {
         this.excludedId = false;
@@ -840,7 +844,6 @@ public class MqlToRelConverter {
             }
         }
 
-        //List<RelDataTypeField> fields = node.getRowType().getFieldList().stream().filter( f -> !f.getName().equals( "_id" ) ).collect( Collectors.toList() );
         RelNode finalNode = node;
         node = LogicalProject.create( node,
                 node.getRowType().getFieldList()

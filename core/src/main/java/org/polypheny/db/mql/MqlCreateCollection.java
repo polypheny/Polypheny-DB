@@ -3,6 +3,7 @@ package org.polypheny.db.mql;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.bson.BsonDocument;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
@@ -18,11 +19,13 @@ import org.polypheny.db.transaction.Statement;
 
 public class MqlCreateCollection extends MqlNode implements MqlExecutableStatement {
 
+    private final BsonDocument options;
     String name;
 
 
-    public MqlCreateCollection( String name ) {
+    public MqlCreateCollection( String name, BsonDocument options ) {
         this.name = name;
+        this.options = options;
     }
 
 
@@ -55,9 +58,10 @@ public class MqlCreateCollection extends MqlNode implements MqlExecutableStateme
         PlacementType placementType = PlacementType.AUTOMATIC;
 
         try {
-            //ColumnTypeInformation type = new ColumnTypeInformation( PolyType.VARCHAR, null, 12, null, null, null, false );
-            //ColumnInformation information = new ColumnInformation( "_id", type, Collation.CASE_INSENSITIVE, null, 0 );
-            List<DataStore> dataStores = stores.stream().map( store -> (DataStore) adapterManager.getAdapter( store ) ).collect( Collectors.toList() );
+            List<DataStore> dataStores = stores
+                    .stream()
+                    .map( store -> (DataStore) adapterManager.getAdapter( store ) )
+                    .collect( Collectors.toList() );
             DdlManager.getInstance().createTable(
                     schemaId,
                     name,
@@ -68,7 +72,7 @@ public class MqlCreateCollection extends MqlNode implements MqlExecutableStateme
                     placementType,
                     statement );
         } catch ( TableAlreadyExistsException | ColumnNotExistsException | UnknownPartitionTypeException e ) {
-            throw new RuntimeException( "not impl yet." );
+            throw new RuntimeException( "The generation of the collection was not possible, due to: " + e.getMessage() );
         }
     }
 
