@@ -1150,8 +1150,10 @@ public abstract class AbstractRouter implements Router {
             }
         }
 
-        builder.union( true, placements.size() );
-
+        //Union is only needed if there are more than one partition to be selected
+        if ( placements.size() > 1 ) {
+            builder.union( true, placements.size() );
+        }
 
         RelNode node = builder.build();
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {

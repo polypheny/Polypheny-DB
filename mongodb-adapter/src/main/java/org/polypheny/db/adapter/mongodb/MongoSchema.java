@@ -128,7 +128,7 @@ public class MongoSchema extends AbstractSchema {
         }
         MongoTable table = new MongoTable( catalogTable, this, RelDataTypeImpl.proto( fieldInfo.build() ), transactionProvider, storeId, partitionPlacement );
 
-        tableMap.put( catalogTable.name, table );
+        tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
         return table;
     }
 

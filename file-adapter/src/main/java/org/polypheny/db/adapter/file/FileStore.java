@@ -128,7 +128,7 @@ public class FileStore extends DataStore {
 
     @Override
     public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
-        return currentSchema.createFileTable( catalogTable, columnPlacementsOnStore );
+        return currentSchema.createFileTable( catalogTable, columnPlacementsOnStore, partitionPlacement );
     }
 
 
