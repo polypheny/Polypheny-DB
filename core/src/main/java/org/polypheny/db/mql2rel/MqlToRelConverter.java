@@ -40,7 +40,6 @@ import org.bson.BsonRegularExpression;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.document.util.DocumentUtil;
 import org.polypheny.db.mql.Mql;
 import org.polypheny.db.mql.MqlAggregate;
@@ -77,7 +76,6 @@ import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalViewTableScan;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
@@ -297,7 +295,7 @@ public class MqlToRelConverter {
             default:
                 throw new IllegalStateException( "Unexpected value: " + kind );
         }
-        if ( table.getTable().getSchemaType() == SchemaType.DOCUMENT ) {
+        if ( table.getTable() == null || table.getTable().getSchemaType() == SchemaType.DOCUMENT ) {
             root.usesDocumentModel = true;
         }
         return root;
@@ -1091,7 +1089,7 @@ public class MqlToRelConverter {
                 aggNames.add( entry.getKey() );
                 names.add( entry.getKey() );
                 RelDataType nullableDouble = cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( PolyType.DOUBLE ), true );
-                // when using aggregations mongoql automatically casts to doubles
+                // when using aggregations MongoQl automatically casts to doubles
                 nodes.add( cluster.getRexBuilder().makeAbstractCast( nullableDouble,
                         convertExpression( doc.get( doc.getFirstKey() ), rowType ) ) );
             }
@@ -1136,7 +1134,7 @@ public class MqlToRelConverter {
                             Collections.singletonList( rowType.getFieldNames().indexOf( name ) ),
                             -1,
                             RelCollations.EMPTY,
-                            // when using aggregations mongoql automatically casts to doubles
+                            // when using aggregations MongoQl automatically casts to doubles
                             cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( PolyType.DOUBLE ), true ),
                             name ) );
             pos++;
@@ -1618,9 +1616,6 @@ public class MqlToRelConverter {
             default:
                 if ( parentKey != null ) {
                     RexNode id = getIdentifier( parentKey, rowType );
-                    if ( mathComparators.containsKey( key ) ) {
-                        //id = cluster.getRexBuilder().makeCast( cluster.getTypeFactory().createPolyType( PolyType.BIGINT ), id );
-                    }
                     nodes.add( id );
                 }
                 nodes.add( convertLiteral( bsonValue ) );
@@ -1809,18 +1804,7 @@ public class MqlToRelConverter {
     }
 
 
-    private RexNode translateJsonExists( int index, RelDataType rowType, String key ) {
-        RelDataTypeFactory factory = cluster.getTypeFactory();
-        RelDataType type = factory.createPolyType( PolyType.ANY );
-        RelDataType anyType = factory.createTypeWithNullability( type, true );
 
-        RexCall common = getJsonCommonApi( index, rowType, key, anyType );
-
-        return new RexCall(
-                factory.createPolyType( PolyType.BOOLEAN ),
-                SqlStdOperatorTable.JSON_EXISTS,
-                Collections.singletonList( common ) );
-    }
 
 
     private RexNode translateJsonValue( int index, RelDataType rowType, String key, boolean useAccess ) {
@@ -1846,30 +1830,6 @@ public class MqlToRelConverter {
     private RexNode translateJsonQuery( int index, RelDataType rowType, String key, List<String> excludes ) {
         RexCall filter = getNestedArray( excludes.stream().map( e -> Arrays.asList( e.split( "\\." ) ) ).collect( Collectors.toList() ) );
         return new RexCall( any, MqlStdOperatorTable.DOC_QUERY_EXCLUDE, Arrays.asList( RexInputRef.of( index, rowType ), filter ) );
-    }
-
-
-    private RexCall getJsonCommonApi( int index, RelDataType rowType, String key, RelDataType anyType ) {
-        return getJsonCommonApi( index, rowType, key, anyType, new ArrayList<>() );
-    }
-
-
-    private RexCall getJsonCommonApi( int index, RelDataType rowType, String key, RelDataType anyType, List<String> excludes ) {
-        RexCall ref;
-        if ( excludes.size() > 0 ) {
-            RexCall excludesCall = getStringArray( excludes );
-            ref = new RexCall(
-                    anyType,
-                    SqlStdOperatorTable.JSON_VALUE_EXPRESSION_EXCLUDED,
-                    Arrays.asList( RexInputRef.of( index, rowType ), excludesCall ) );
-        } else {
-            ref = new RexCall(
-                    anyType,
-                    SqlStdOperatorTable.JSON_VALUE_EXPRESSION,
-                    Collections.singletonList( RexInputRef.of( index, rowType ) ) );
-        }
-        String jsonFilter = RuntimeConfig.JSON_MODE.getString() + (key == null ? " $" : " $." + key);
-        return new RexCall( anyType, SqlStdOperatorTable.JSON_API_COMMON_SYNTAX, Arrays.asList( ref, convertLiteral( new BsonString( jsonFilter ) ) ) );
     }
 
 
@@ -1957,14 +1917,12 @@ public class MqlToRelConverter {
         }
 
         return getFixedCall( operands, op, PolyType.BOOLEAN );
-        /*if ( operands.size() == 1 ) {
-            return operands.get( 0 );
-        }
-
-        return new RexCall( type, op, operands );*/
     }
 
 
+    /**
+     * Helper method, which returns a PolyType for a BsonValue
+     */
     private PolyType getPolyType( BsonValue bsonValue ) {
         switch ( bsonValue.getBsonType() ) {
 
@@ -2017,6 +1975,16 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Starts translation of an aggregation stage <code>$project</code> or a projection in a <code>db.collection.find({},{projection})</code>
+     *
+     * @param projectionValue initial unparsed BSON, which defines the projection
+     * @param node the node to which the proejction is applied
+     * @param rowType the rowType, which is used at the moment
+     * @param isAddFields if the projection is a <code>$addFields</code>, which is basically only inclusive projections
+     * @param isUnset if the projection is a <code>$unset</code>, which is exclusive projection
+     * @return the projected node
+     */
     private RelNode combineProjection( BsonValue projectionValue, RelNode node, RelDataType rowType, boolean isAddFields, boolean isUnset ) {
         Map<String, RexNode> includes = new HashMap<>();
         List<String> excludes = new ArrayList<>();
@@ -2144,6 +2112,17 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Finalizes a projection translations
+     *
+     * @param rowType the rowType, which is used at the moment
+     * @param isAddFields if the projection is a <code>$addFields</code>, which is basically only inclusive projections
+     * @param isUnset if the projection is a <code>$unset</code>, which is exclusive projection
+     * @param includes which fields are includes, as in <code>"field":1</code>
+     * @param excludes which fields are includes, as in <code>"field":0</code>
+     * @param includesOrder order collection to assure same projection order on retrieval
+     * @param projection document, which defines the structure of the projection
+     */
     private void translateProjection( RelDataType rowType, boolean isAddFields, boolean isUnset, Map<String, RexNode> includes, List<String> excludes, List<String> includesOrder, BsonDocument projection ) {
         for ( Entry<String, BsonValue> entry : projection.entrySet() ) {
             BsonValue value = entry.getValue();
@@ -2215,17 +2194,9 @@ public class MqlToRelConverter {
     }
 
 
-    private RelDataTypeField getTypeFieldOrDefault( RelDataType rowType, String name ) {
-        RelDataTypeField field;
-        if ( rowType.getFieldNames().contains( name ) ) {
-            field = rowType.getField( name, false, false );
-        } else {
-            field = getDefaultDataField( rowType );
-        }
-        return field;
-    }
-
-
+    /**
+     * Defines one of the possible doc update operations
+     */
     enum UpdateOperation {
         RENAME( MqlStdOperatorTable.DOC_UPDATE_RENAME ),
         REPLACE( MqlStdOperatorTable.DOC_UPDATE_REPLACE ),
