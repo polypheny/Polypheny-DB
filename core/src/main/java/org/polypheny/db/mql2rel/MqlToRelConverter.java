@@ -39,6 +39,7 @@ import org.bson.BsonNumber;
 import org.bson.BsonRegularExpression;
 import org.bson.BsonString;
 import org.bson.BsonValue;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.document.util.DocumentUtil;
 import org.polypheny.db.mql.Mql;
@@ -268,28 +269,38 @@ public class MqlToRelConverter {
 
         this.builder = new RexBuilder( cluster.getTypeFactory() );
 
+        RelRoot root;
+
         switch ( kind ) {
             case FIND:
                 RelNode find = convertFind( (MqlFind) query, table.getRowType(), node );
-                return RelRoot.of( find, find.getRowType(), SqlKind.SELECT );
+                root = RelRoot.of( find, find.getRowType(), SqlKind.SELECT );
+                break;
             case COUNT:
                 RelNode count = convertCount( (MqlCount) query, table.getRowType(), node );
-                return RelRoot.of( count, count.getRowType(), SqlKind.SELECT );
+                root = RelRoot.of( count, count.getRowType(), SqlKind.SELECT );
+                break;
             case AGGREGATE:
-                return RelRoot.of( convertAggregate( (MqlAggregate) query, table.getRowType(), node ), SqlKind.SELECT );
+                root = RelRoot.of( convertAggregate( (MqlAggregate) query, table.getRowType(), node ), SqlKind.SELECT );
+                break;
             /// dmls
             case INSERT:
-                return RelRoot.of( convertInsert( (MqlInsert) query, table ), SqlKind.INSERT );
+                root = RelRoot.of( convertInsert( (MqlInsert) query, table ), SqlKind.INSERT );
+                break;
             case DELETE:
             case FIND_DELETE:
-                return RelRoot.of( convertDelete( (MqlDelete) query, table, node ), SqlKind.DELETE );
+                root = RelRoot.of( convertDelete( (MqlDelete) query, table, node ), SqlKind.DELETE );
+                break;
             case UPDATE:
-                return RelRoot.of( convertUpdate( (MqlUpdate) query, table, node ), SqlKind.UPDATE );
-
+                root = RelRoot.of( convertUpdate( (MqlUpdate) query, table, node ), SqlKind.UPDATE );
+                break;
             default:
                 throw new IllegalStateException( "Unexpected value: " + kind );
         }
-
+        if ( table.getTable().getSchemaType() == SchemaType.DOCUMENT ) {
+            root.usesDocumentModel = true;
+        }
+        return root;
     }
 
 
@@ -319,7 +330,7 @@ public class MqlToRelConverter {
 
 
     /**
-     * Translates a update document
+     * Translates an update document
      *
      * this method is implemented like the reduced update pipeline,
      * but in fact could be combined and therefore optimized a lot more

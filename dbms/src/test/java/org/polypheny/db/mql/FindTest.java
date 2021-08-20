@@ -77,6 +77,28 @@ public class FindTest extends MqlTestTemplate {
 
 
     @Test
+    public void filterSwitchTest() {
+        String expected = "{\"test\":\"test\",\"key\":13}";
+
+        insertMany( DATA_0 );
+
+        Result result = find( "{\"test\":15}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        ImmutableList.of() ) );
+
+        result = find( "{\"test\":\"test\"}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        ImmutableList.of( new Object[]{ "id_", expected } ) ) );
+    }
+
+
+    @Test
     public void projectSingleNumbersTest() {
         List<String> expected = Arrays.asList( "1", "2", "3" );
         List<String> data = Arrays.asList( "{\"test\":1}", "{\"test\":2,\"test2\":13}", "{\"test\":3}" );

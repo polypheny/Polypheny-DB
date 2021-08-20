@@ -276,8 +276,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
         //
         // Parameterize
+        // the combination of parameterize and caching does not play well, when using a more dynamic data model (document)
+        // after parameterization values, which are used to compare are transformed to dynamic parameters,
+        // these dynamic parameters are the same later for caching and wrong nodes are retrieved
+        // as operation like "key" = "test" and "key" = 3 are possible
         RelRoot parameterizedRoot = null;
-        if ( statement.getDataContext().getParameterValues().size() == 0 && (RuntimeConfig.PARAMETERIZE_DML.getBoolean() || !routedRoot.kind.belongsTo( SqlKind.DML )) ) {
+        if ( statement.getDataContext().getParameterValues().size() == 0 && !logicalRoot.usesDocumentModel && (RuntimeConfig.PARAMETERIZE_DML.getBoolean() || !routedRoot.kind.belongsTo( SqlKind.DML )) ) {
             Pair<RelRoot, RelDataType> parameterized = parameterize( routedRoot, parameterRowType );
             parameterizedRoot = parameterized.left;
             parameterRowType = parameterized.right;
