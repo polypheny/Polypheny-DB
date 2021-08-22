@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.file;
 
 
 import com.google.gson.Gson;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
@@ -88,6 +89,8 @@ public class Value {
             if ( literal instanceof Long ) {
                 // this is a fix, else linq4j will submit an integer that is too long
                 literalExpression = Expressions.constant( literal, Long.class );
+            } else if ( literal instanceof BigDecimal ) {
+                literalExpression = Expressions.constant( literal.toString() );
             } else {
                 literalExpression = Expressions.constant( literal );
             }

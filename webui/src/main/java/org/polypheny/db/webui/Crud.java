@@ -231,8 +231,8 @@ public class Crud implements InformationObserver {
     private final String databaseName;
     private final String userName;
     private final StatisticsManager<?> statisticsManager = StatisticsManager.getInstance();
-    private boolean isActiveTracking = false;
     private final Catalog catalog = Catalog.getInstance();
+    private boolean isActiveTracking = false;
 
 
     /**
@@ -528,7 +528,7 @@ public class Crud implements InformationObserver {
         Transaction transaction = getTransaction();
         Result result;
         StringBuilder query = new StringBuilder();
-        if ( request.action.equalsIgnoreCase( "drop" ) && request.tableType.equals( "VIEW" ) ) {
+        if ( request.tableType != null && request.action.equalsIgnoreCase( "drop" ) && request.tableType.equals( "VIEW" ) ) {
             query.append( "DROP VIEW " );
         } else if ( request.action.equalsIgnoreCase( "drop" ) ) {
             query.append( "DROP TABLE " );
@@ -727,6 +727,7 @@ public class Crud implements InformationObserver {
      */
     ArrayList<Result> anyQuery( final QueryRequest request, final Session session ) {
         Transaction transaction = getTransaction( request.analyze );
+
         if ( request.analyze ) {
             transaction.getQueryAnalyzer().setSession( session );
         }
@@ -837,6 +838,7 @@ public class Crud implements InformationObserver {
                     temp = System.nanoTime();
                     int numOfRows = executeSqlUpdate( transaction, query );
                     executionTime += System.nanoTime() - temp;
+
                     result = new Result( numOfRows ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
                     results.add( result );
                     if ( autoCommit ) {
@@ -3454,6 +3456,7 @@ public class Crud implements InformationObserver {
         List<List<Object>> rows;
         Iterator<Object> iterator = null;
         boolean hasMoreRows = false;
+
         try {
             signature = processQuery( statement, sqlSelect );
             final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
@@ -3752,6 +3755,7 @@ public class Crud implements InformationObserver {
 
     private int executeSqlUpdate( final Statement statement, final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
         PolyphenyDbSignature<?> signature;
+
         try {
             signature = processQuery( statement, sqlUpdate );
         } catch ( Throwable t ) {
@@ -3803,6 +3807,7 @@ public class Crud implements InformationObserver {
                     throw new QueryExecutionException( e.getMessage(), e );
                 }
             }
+
             return rowsChanged;
         } else {
             throw new QueryExecutionException( "Unknown statement type: " + signature.statementType );

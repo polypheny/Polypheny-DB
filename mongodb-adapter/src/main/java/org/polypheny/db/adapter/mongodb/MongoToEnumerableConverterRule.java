@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,14 +57,21 @@ public class MongoToEnumerableConverterRule extends ConverterRule {
      * @param relBuilderFactory Builder for relational expressions
      */
     public MongoToEnumerableConverterRule( RelBuilderFactory relBuilderFactory ) {
-        super( RelNode.class, (Predicate<RelNode>) r -> true, MongoRel.CONVENTION, EnumerableConvention.INSTANCE, relBuilderFactory, "MongoToEnumerableConverterRule" );
+        super(
+                RelNode.class,
+                (Predicate<RelNode>) r -> true,
+                MongoRel.CONVENTION,
+                EnumerableConvention.INSTANCE,
+                relBuilderFactory,
+                "MongoToEnumerableConverterRule" );
     }
 
 
     @Override
     public RelNode convert( RelNode rel ) {
-        RelTraitSet newTraitSet = rel.getTraitSet().replace( getOutConvention() );
+        RelTraitSet newTraitSet = rel.getTraitSet().replace( getOutTrait() );
         return new MongoToEnumerableConverter( rel.getCluster(), newTraitSet, rel );
     }
+
 }
 

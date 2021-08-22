@@ -41,11 +41,15 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.excluded.CassandraExcluded;
 
 @SuppressWarnings("SqlDialectInspection")
 @Slf4j
+@Category(AdapterTestSuite.class)
 public class RestTest {
 
     @BeforeClass
@@ -172,6 +176,7 @@ public class RestTest {
 
 
     @Test
+    @Category({ CassandraExcluded.class })
     public void testOperations() {
         // Insert
         HttpRequest<?> request = buildRestInsert( "test.resttest", ImmutableList.of( getTestRow() ) );
@@ -182,7 +187,15 @@ public class RestTest {
         // Update
         Map<String, String> where = new LinkedHashMap<>();
         where.put( "test.resttest.tsmallint", "=" + 45 );
-        request = buildRestUpdate( "test.resttest", getTestRow(), where );
+        request = buildRestUpdate( "test.resttest", getTestRow( 1 ), where );
+        Assert.assertEquals(
+                "{\"result\":[{\"ROWCOUNT\":1}],\"size\":1}",
+                executeRest( request ).getBody() );
+
+        // Update
+        Map<String, String> where2 = new LinkedHashMap<>();
+        where.put( "test.resttest.tsmallint", "=" + 46 );
+        request = buildRestUpdate( "test.resttest", getTestRow( 0 ), where2 );
         Assert.assertEquals(
                 "{\"result\":[{\"ROWCOUNT\":1}],\"size\":1}",
                 executeRest( request ).getBody() );
@@ -219,10 +232,15 @@ public class RestTest {
 
 
     private JsonObject getTestRow() {
+        return getTestRow( 0 );
+    }
+
+
+    private JsonObject getTestRow( int change ) {
         JsonObject row = new JsonObject();
         row.add(
                 "test.resttest.tbigint",
-                new JsonPrimitive( 1234L ) );
+                new JsonPrimitive( 1234L + change ) );
         row.add(
                 "test.resttest.tboolean",
                 new JsonPrimitive( true ) );
@@ -243,7 +261,7 @@ public class RestTest {
                 new JsonPrimitive( 0.3333 ) );
         row.add(
                 "test.resttest.tsmallint",
-                new JsonPrimitive( 45 ) );
+                new JsonPrimitive( 45 + change ) );
         row.add(
                 "test.resttest.ttime",
                 new JsonPrimitive( LocalTime.of( 12, 5, 5 ).format( DateTimeFormatter.ISO_LOCAL_TIME ) ) );

@@ -30,6 +30,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
+import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.information.InformationGraph;
 import org.polypheny.db.information.InformationGraph.GraphData;
@@ -71,22 +72,12 @@ public class FileStore extends DataStore {
 
     public FileStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );
+        FileSystemManager fileManager = FileSystemManager.getInstance();
+        File adapterRoot = fileManager.registerNewFolder( "data/file-store" );
 
-        File adapterRoot = FileSystemManager.getInstance().registerNewFolder( "data/file-store" );
-        rootDir = new File( adapterRoot, "store" + getAdapterId() );
+        rootDir = fileManager.registerNewFolder( adapterRoot, "store" + getAdapterId() );
 
-        if ( !rootDir.exists() ) {
-            if ( !rootDir.mkdirs() ) {
-                throw new RuntimeException( "Could not create root directory" );
-            }
-        }
-        // Subfolder for the write ahead log
-        this.WAL = new File( rootDir, "WAL" );
-        if ( !WAL.exists() ) {
-            if ( !WAL.mkdirs() ) {
-                throw new RuntimeException( "Could not create WAL folder" );
-            }
-        }
+        WAL = fileManager.registerNewFolder( rootDir, "WAL" );
 
         trxRecovery();
         setInformationPage();
@@ -188,6 +179,20 @@ public class FileStore extends DataStore {
         if ( !newColumnFolder.mkdir() ) {
             throw new RuntimeException( "Could not create column folder " + newColumnFolder.getName() );
         }
+
+        // Add default values
+        if ( catalogColumn.defaultValue != null ) {
+            try {
+                CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
+                File primaryKeyDir = new File( rootDir, getPhysicalColumnName( primaryKey.columnIds.get( 0 ) ) );
+                for ( File entry : primaryKeyDir.listFiles() ) {
+                    FileModifier.write( new File( newColumnFolder, entry.getName() ), catalogColumn.defaultValue.value );
+                }
+            } catch ( IOException e ) {
+                throw new RuntimeException( "Caught exception while inserting default values", e );
+            }
+        }
+
         catalog.updateColumnPlacementPhysicalNames(
                 getAdapterId(),
                 catalogColumn.id,
