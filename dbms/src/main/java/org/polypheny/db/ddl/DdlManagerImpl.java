@@ -108,7 +108,7 @@ import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalViewTableScan;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.routing.RouterManager;
+import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.LogicalTable;
@@ -491,7 +491,7 @@ public class DdlManagerImpl extends DdlManager {
         CatalogColumn addedColumn = catalog.getColumn( columnId );
 
         // Ask router on which stores this column shall be placed
-        List<DataStore> stores = RouterManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewColumn( addedColumn );
+        List<DataStore> stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewColumn( addedColumn );
 
         // Add column on underlying data stores and insert default value
         for ( DataStore store : stores ) {
@@ -1585,7 +1585,7 @@ public class DdlManagerImpl extends DdlManager {
 
             if ( stores == null ) {
                 // Ask router on which store(s) the table should be placed
-                stores = RouterManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable();
+                stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable();
             }
 
             long tableId = catalog.addTable(

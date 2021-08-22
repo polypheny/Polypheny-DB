@@ -28,12 +28,15 @@ import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.routing.RouterManager;
 import org.polypheny.db.routing.RouterPlanSelectionStrategy;
+import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.routing.RoutingPlan;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Pair;
 
+/**
+ * Class which is responsible for cost calculation and plan selection.
+ */
 @Slf4j
 public class RoutingPlanSelector {
 
@@ -52,8 +55,8 @@ public class RoutingPlanSelector {
         // 0 = only consider pre costs
         // 1 = only consider post costs
         // [0,1] = get normalized pre and post costs and multiply by ratio
-        val ratioPre = 1 - RouterManager.PRE_COST_POST_COST_RATIO.getDouble();
-        val ratioPost = RouterManager.PRE_COST_POST_COST_RATIO.getDouble();
+        val ratioPre = 1 - RoutingManager.PRE_COST_POST_COST_RATIO.getDouble();
+        val ratioPost = RoutingManager.PRE_COST_POST_COST_RATIO.getDouble();
         val n = routingPlans.size();
 
         // calc pre-costs or set them to 0 for all entries.
@@ -82,11 +85,12 @@ public class RoutingPlanSelector {
                 .boxed()
                 .collect( Collectors.toList() );
 
-        if ( RouterManager.PLAN_SELECTION_STRATEGY.getEnum() == RouterPlanSelectionStrategy.BEST ) {
+        // get plan in regard to the active strategy
+        if ( RoutingManager.PLAN_SELECTION_STRATEGY.getEnum() == RouterPlanSelectionStrategy.BEST ) {
             val bestResult = this.selectBestPlan( routingPlans, signatures, effectiveCosts );
             result = bestResult;
-        } else if ( RouterManager.PLAN_SELECTION_STRATEGY.getEnum() == RouterPlanSelectionStrategy.PROBABILITY ) {
-            val percentageResult = this.selectPlanFromPercentage( routingPlans, signatures, effectiveCosts );
+        } else if ( RoutingManager.PLAN_SELECTION_STRATEGY.getEnum() == RouterPlanSelectionStrategy.PROBABILITY ) {
+            val percentageResult = this.selectPlanFromProbability( routingPlans, signatures, effectiveCosts );
             result = percentageResult.left;
             percentageCosts = Optional.of( percentageResult.right );
         }
@@ -96,45 +100,45 @@ public class RoutingPlanSelector {
         }
 
         if ( statement.getTransaction().isAnalyze() ) {
-            RouterManager.getInstance().getDebugUiPrinter().printDebugOutput( approximatedCosts, preCosts, postCosts, icarusCosts, routingPlans, result.right, effectiveCosts, percentageCosts, statement );
+            RoutingManager.getInstance().getDebugUiPrinter().printDebugOutput( approximatedCosts, preCosts, postCosts, icarusCosts, routingPlans, result.right, effectiveCosts, percentageCosts, statement );
         }
 
         return result;
     }
 
 
-    private Pair<Pair<Optional<PolyphenyDbSignature>, RoutingPlan>, List<Double>> selectPlanFromPercentage( List<? extends RoutingPlan> routingPlans, Optional<List<PolyphenyDbSignature>> signatures, List<Double> effectiveCosts ) {
+    private Pair<Pair<Optional<PolyphenyDbSignature>, RoutingPlan>, List<Double>> selectPlanFromProbability( List<? extends RoutingPlan> routingPlans, Optional<List<PolyphenyDbSignature>> signatures, List<Double> effectiveCosts ) {
         // check for list all 0
         if ( effectiveCosts.stream().allMatch( value -> value <= RelOptUtil.EPSILON ) ) {
             effectiveCosts = Collections.nCopies( effectiveCosts.size(), 1.0 );
         }
 
-        // get percentages
-        val percentage = calculatePercentage( effectiveCosts );
+        // get probabilities
+        val probabilities = calculateProbabilities( effectiveCosts );
 
-        val inversePercentage = calculateInversePercentage( percentage );
+        val inverseProbabilities = calculateInverseProbabilities( probabilities );
 
         // select plan based on percentages
         double p = 0.0;
         // could be not 1 due to rounding errors
-        val totalWeights = inversePercentage.stream().mapToDouble( Double::doubleValue ).sum();
+        val totalWeights = inverseProbabilities.stream().mapToDouble( Double::doubleValue ).sum();
         double random = (Math.random() * totalWeights);
 
         // iterate over percentages and get plan
-        for ( int i = 0; i < inversePercentage.size(); i++ ) {
-            val weight = inversePercentage.get( i );
+        for ( int i = 0; i < inverseProbabilities.size(); i++ ) {
+            val weight = inverseProbabilities.get( i );
             p += weight;
             if ( p >= random ) {
                 return new Pair(
                         new Pair( signatures.isPresent() ? Optional.of( signatures.get().get( 0 ) ) : Optional.empty(), routingPlans.get( i ) )
-                        , inversePercentage );
+                        , inverseProbabilities );
             }
         }
 
         log.error( "should never happen from percentages" );
         return new Pair(
                 new Pair( signatures.isPresent() ? Optional.of( signatures.get().get( 0 ) ) : Optional.empty(), routingPlans.get( 0 ) )
-                , inversePercentage );
+                , inverseProbabilities );
     }
 
 
@@ -158,14 +162,14 @@ public class RoutingPlanSelector {
 
     private Pair<List<Double>, List<Double>> calcIcarusPostCosts( List<? extends RoutingPlan> proposedRoutingPlans, String queryId ) {
         val postCosts = proposedRoutingPlans.stream()
-                .map( plan -> MonitoringServiceProvider.getInstance().getQueryPostCosts( plan.getPhysicalQueryId() ).getExecutionTime() )
+                .map( plan -> MonitoringServiceProvider.getInstance().getQueryPostCosts( plan.getPhysicalQueryClass() ).getExecutionTime() )
                 .collect( Collectors.toList() );
 
         // check null values in icarus special case
-        val checkNullValues = RouterManager.PRE_COST_POST_COST_RATIO.getDouble() >= 1;
+        val checkNullValues = RoutingManager.PRE_COST_POST_COST_RATIO.getDouble() >= 1;
         val icarusCosts = postCosts.stream().map( value -> {
             // fallback for pure icarus routing, when no time is available.
-            if ( checkNullValues && value == 0  ) {
+            if ( checkNullValues && value == 0 ) {
                 return 1.0;
             } else {
                 return (double) value;
@@ -173,49 +177,46 @@ public class RoutingPlanSelector {
         } ).collect( Collectors.toList() );
 
         // normalize values
-        val normalized = calculatePercentage( icarusCosts );
+        val normalized = calculateProbabilities( icarusCosts );
         return new Pair<>( normalized, icarusCosts );
     }
 
 
-    private List<Double> calculatePercentage( List<Double> input ) {
+    private List<Double> calculateProbabilities( List<Double> input ) {
         // check all zero
         if ( input.stream().allMatch( value -> value <= RelOptUtil.EPSILON ) ) {
             return input;
         }
 
-        // calc percentages
+        // calc probabilities
         double hundredPercent = input.stream().mapToDouble( Double::doubleValue ).sum();
-
-        val percentage = input.stream().map( cost -> cost / hundredPercent ).collect( Collectors.toList() );
-
-        return percentage;
-
+        return input.stream().map( cost -> cost / hundredPercent ).collect( Collectors.toList() );
     }
 
 
-    private List<Double> calculateInversePercentage( List<Double> percentage ) {
-        // invert percentages
-        val inversePercentagePart = percentage.stream()
+    private List<Double> calculateInverseProbabilities( List<Double> percentage ) {
+        // invert probabilities
+        val inverseProbabilityPart = percentage.stream()
                 .map( value -> 1.0 / value )
                 .map( value -> Double.isInfinite( value ) ? 0.0 : value ).collect( Collectors.toList() );
 
-        val totalInversePercentage = inversePercentagePart.stream().mapToDouble( Double::doubleValue ).sum();
+        val totalInverseProbability = inverseProbabilityPart.stream().mapToDouble( Double::doubleValue ).sum();
 
         // normalize again
-        val inversePercentage = inversePercentagePart.stream().map( value -> (value / totalInversePercentage) * 100.0 ).collect( Collectors.toList() );
-
-        return inversePercentage;
+        return inverseProbabilityPart.stream().map( value -> (value / totalInverseProbability) * 100.0 ).collect( Collectors.toList() );
     }
 
 
     private List<Double> normalizeApproximatedCosts( List<RelOptCost> approximatedCosts ) {
         val costs = approximatedCosts.stream().map( RelOptCost::getCosts ).collect( Collectors.toList() );
-        return calculatePercentage( costs );
+        return calculateProbabilities( costs );
     }
 
 
-    private List<Double> normalizeCots( List<Double> costs ) {
+    /**
+     * Not used so far, could be added as normalization strategy.
+     */
+    private List<Double> normalizeMinMax( List<Double> costs ) {
         // check all zero
         if ( costs.stream().allMatch( value -> value <= RelOptUtil.EPSILON ) ) {
             return costs;
@@ -228,6 +229,5 @@ public class RoutingPlanSelector {
         val usedMin = Math.abs( min.get() - max.get() ) <= RelOptUtil.EPSILON ? Optional.of( 0.0 ) : min;
         return costs.stream().map( c -> (c - usedMin.get()) / (max.get() - usedMin.get()) ).collect( Collectors.toList() );
     }
-
 
 }

@@ -25,8 +25,14 @@ import org.polypheny.db.transaction.Statement;
  */
 public interface DmlRouter {
 
+    /**
+     * routes dml queries and returns a rel builder.
+     */
     RoutedRelBuilder routeDml( RelNode node, Statement statement );
 
-    RelNode handleConditionalExecute( RelNode node, Statement statement, Router router, LogicalQueryInformation queryInformation );
+    /**
+     * routes conditional executes and directly returns a rel node.
+     */
+    RelNode handleConditionalExecute( RelNode node, Statement statement, LogicalQueryInformation queryInformation );
 
 }

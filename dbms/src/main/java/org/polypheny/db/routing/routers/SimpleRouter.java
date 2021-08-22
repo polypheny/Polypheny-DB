@@ -18,6 +18,7 @@ package org.polypheny.db.routing.routers;
 
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -84,6 +85,23 @@ public class SimpleRouter extends AbstractDqlRouter {
         builders.get( 0 ).push( super.buildJoinedTableScan( statement, cluster, placementDistribution ) );
 
         return builders;
+    }
+
+
+    /**
+     * @param node
+     * @param builder
+     * @param statement
+     * @param cluster
+     * @param queryInformation
+     * @return
+     */
+    public RoutedRelBuilder routeFirst( RelNode node, RoutedRelBuilder builder, Statement statement, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
+        val result = this.buildSelect( node, Lists.newArrayList( builder ), statement, cluster, queryInformation );
+        if ( result.size() > 1 ) {
+            log.error( "Single build select with multiple results " );
+        }
+        return result.get( 0 );
     }
 
 

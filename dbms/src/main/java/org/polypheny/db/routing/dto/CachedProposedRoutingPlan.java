@@ -22,36 +22,38 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.routing.ProposedRoutingPlan;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.routing.RoutingPlan;
 import org.polypheny.db.util.Pair;
 
+/**
+ * Cached version of the routing plan.
+ */
 @Getter
 @Setter
-@Slf4j
 public class CachedProposedRoutingPlan implements RoutingPlan {
-    protected String queryId;
-    protected String physicalQueryId;
+
+    public Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions; // partitionId, list<CatalogPlacementIds>
+    protected String queryClass;
+    protected String physicalQueryClass;
     protected RelOptCost preCosts;
     protected Optional<Class<? extends Router>> router;
-    public Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions; // partitionId, list<CatalogPlacementIds>
 
 
-    public CachedProposedRoutingPlan( ProposedRoutingPlan routingPlan, RelOptCost approximatedCosts){
-        this.queryId = routingPlan.getQueryId();
+    public CachedProposedRoutingPlan( ProposedRoutingPlan routingPlan, RelOptCost approximatedCosts ) {
+        this.queryClass = routingPlan.getQueryClass();
         this.preCosts = approximatedCosts;
         this.router = routingPlan.getRouter();
         this.physicalPlacementsOfPartitions = ImmutableMap.copyOf( routingPlan.getPhysicalPlacementsOfPartitions().get() );
-        this.physicalQueryId = routingPlan.getPhysicalQueryId();
+        this.physicalQueryClass = routingPlan.getPhysicalQueryClass();
     }
 
 
     @Override
     public Optional<Map<Long, List<Pair<Integer, Long>>>> getOptionalPhysicalPlacementsOfPartitions() {
-        return Optional.empty();
+        return Optional.of( this.physicalPlacementsOfPartitions );
     }
 
 }

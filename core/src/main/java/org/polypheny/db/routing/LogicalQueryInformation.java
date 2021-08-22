@@ -44,13 +44,13 @@ public interface LogicalQueryInformation {
      * @param tableId
      * @return a list of all columnIds.
      */
-    List<Long> getAllColumnsPerTable(Long tableId);
+    List<Long> getAllColumnsPerTable( Long tableId );
 
     /**
      * @param tableId
      * @return a list of all used columnIds in the query.
      */
-    List<Long> getUsedColumnsPerTable(Long tableId);
+    List<Long> getUsedColumnsPerTable( Long tableId );
 
 
     /**

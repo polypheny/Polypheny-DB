@@ -35,6 +35,9 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Pair;
 
+/**
+ * Extension of RelBuilder for routed plans with some more information.
+ */
 public class RoutedRelBuilder extends RelBuilder {
 
     @Getter
@@ -78,12 +81,6 @@ public class RoutedRelBuilder extends RelBuilder {
 
     public RoutedRelBuilder push( RelNode node ) {
         super.push( node );
-        return this;
-    }
-
-
-    public RoutedRelBuilder addPhysicalInfo( Long partitionId, List<Pair<Integer, Long>> physicalInfos ) { // list<adapterId - colId>
-        physicalPlacementsOfPartitions.put( partitionId, physicalInfos );
         return this;
     }
 

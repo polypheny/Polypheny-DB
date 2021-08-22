@@ -94,16 +94,6 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
 
     @Override
-    public RoutedRelBuilder buildSelect( RelNode node, RoutedRelBuilder builder, Statement statement, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
-        val result = this.buildSelect( node, Lists.newArrayList( builder ), statement, cluster, queryInformation );
-        if ( result.size() > 1 ) {
-            log.error( "Single build select with multiple results " );
-        }
-        return result.get( 0 );
-    }
-
-
-    @Override
     public void resetCaches() {
         joinedTableScanCache.invalidateAll();
     }

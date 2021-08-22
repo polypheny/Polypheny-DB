@@ -61,7 +61,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.routing.DmlRouter;
 import org.polypheny.db.routing.LogicalQueryInformation;
-import org.polypheny.db.routing.Router;
+import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.PolySchemaBuilder;
@@ -74,7 +74,9 @@ import org.polypheny.db.transaction.Statement;
 @Slf4j
 public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
-    // Default implementation: Execute DML on all placements
+    /**
+     * Default implementation: Execute DML on all placements
+     */
     @Override
     public RoutedRelBuilder routeDml( RelNode node, Statement statement ) {
         RelOptCluster cluster = node.getCluster();
@@ -451,8 +453,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                         PolySchemaBuilder.buildAdapterSchemaName(
                                                                 pkPlacement.adapterUniqueName,
                                                                 catalogTable.getSchemaName(),
-                                                                pkPlacement.physicalSchemaName),
-                                                        t.getLogicalTableName()  + "_" + tempPartitionId );
+                                                                pkPlacement.physicalSchemaName ),
+                                                        t.getLogicalTableName() + "_" + tempPartitionId );
                                                 RelOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
                                                 ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
@@ -541,7 +543,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                     PolySchemaBuilder.buildAdapterSchemaName(
                                             pkPlacement.adapterUniqueName,
                                             catalogTable.getSchemaName(),
-                                            pkPlacement.physicalSchemaName),
+                                            pkPlacement.physicalSchemaName ),
                                     t.getLogicalTableName() + "_" + partitionId );
                             RelOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
                             ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
@@ -612,13 +614,13 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
-    public RelNode handleConditionalExecute( RelNode node, Statement statement, Router router, LogicalQueryInformation queryInformation ) {
+    public RelNode handleConditionalExecute( RelNode node, Statement statement, LogicalQueryInformation queryInformation ) {
         LogicalConditionalExecute lce = (LogicalConditionalExecute) node;
         RoutedRelBuilder builder = RoutedRelBuilder.create( statement, node.getCluster() );
-        builder = router.buildSelect( lce.getLeft(), builder, statement, node.getCluster(), queryInformation );
+        builder = RoutingManager.getInstance().getFallbackRouter().routeFirst( lce.getLeft(), builder, statement, node.getCluster(), queryInformation );
         RelNode action;
         if ( lce.getRight() instanceof LogicalConditionalExecute ) {
-            action = handleConditionalExecute( lce.getRight(), statement, router, queryInformation );
+            action = handleConditionalExecute( lce.getRight(), statement, queryInformation );
         } else if ( lce.getRight() instanceof TableModify ) {
             action = routeDml( lce.getRight(), statement ).build();
         } else {

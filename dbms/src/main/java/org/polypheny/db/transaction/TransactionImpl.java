@@ -89,6 +89,7 @@ public class TransactionImpl implements Transaction, Comparable {
     private final List<Adapter> involvedAdapters = new CopyOnWriteArrayList<>();
 
     private final Set<Lock> lockList = new HashSet<>();
+
     private MonitoringEvent monitoringEvent;
 
 

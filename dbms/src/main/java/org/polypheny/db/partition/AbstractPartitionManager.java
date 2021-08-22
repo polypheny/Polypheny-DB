@@ -113,31 +113,24 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
     @Override
     public Map<Integer, Map<Long, List<CatalogColumnPlacement>>> getAllPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
-
         Map<Integer, Map<Long, List<CatalogColumnPlacement>>> adapterPlacements = new HashMap<>(); // adapterId -> partitionId ; placements
-
         if ( partitionIds != null ) {
-            for ( long partitionId : partitionIds ) {
 
+            for ( long partitionId : partitionIds ) {
                 val adapters = catalog.getAdaptersByPartitionGroup( catalogTable.id, partitionId );
 
                 for ( val adapter : adapters ) {
-
                     if ( !adapterPlacements.containsKey( adapter.id ) ) {
                         adapterPlacements.put( adapter.id, new HashMap<>() );
                     }
 
                     val placements = catalog.getColumnPlacementsOnAdapterPerTable( adapter.id, catalogTable.id );
-
                     adapterPlacements.get( adapter.id ).put( partitionId, placements );
-
                 }
             }
         }
 
         return adapterPlacements;
-
-
     }
 
 }

@@ -35,8 +35,6 @@ import org.polypheny.db.processing.DataContextImpl;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.processing.QueryProviderImpl;
 import org.polypheny.db.processing.VolcanoQueryProcessor;
-import org.polypheny.db.routing.RouterManager;
-import org.polypheny.db.routing.Router;
 import org.polypheny.db.util.FileInputHandle;
 
 public class StatementImpl implements Statement {
@@ -48,13 +46,10 @@ public class StatementImpl implements Statement {
 
     @Getter
     private final TransactionImpl transaction;
-
+    private final List<FileInputHandle> fileInputHandles = new ArrayList<>();
     private QueryProcessor queryProcessor;
-
     private DataContext dataContext = null;
     private ContextImpl prepareContext = null;
-    private final List<FileInputHandle> fileInputHandles = new ArrayList<>();
-
     private InformationDuration duration;
 
 
@@ -124,13 +119,6 @@ public class StatementImpl implements Statement {
         }
         return duration;
     }
-
-
-    @Override
-    public List<Router> getRouters() {
-        return RouterManager.getInstance().getRouters();
-    }
-
 
 
     @Override

@@ -36,6 +36,9 @@ import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.tools.RoutedRelBuilder;
 import org.polypheny.db.transaction.Statement;
 
+/**
+ * Routing of cached plan. Nothing needs to be found, everything included in the routed plan.
+ */
 @Slf4j
 public class CachedPlanRouter extends BaseRouter {
 
@@ -43,11 +46,8 @@ public class CachedPlanRouter extends BaseRouter {
 
 
     public RoutedRelBuilder routeCached( RelRoot logicalRoot, CachedProposedRoutingPlan routingPlanCached, Statement statement ) {
-
         var builder = RoutedRelBuilder.create( statement, logicalRoot.rel.getCluster() );
-        builder = buildCachedSelect( logicalRoot.rel, builder, statement, logicalRoot.rel.getCluster(), routingPlanCached );
-
-        return builder;
+        return buildCachedSelect( logicalRoot.rel, builder, statement, logicalRoot.rel.getCluster(), routingPlanCached );
     }
 
 
@@ -79,7 +79,6 @@ public class CachedPlanRouter extends BaseRouter {
         } else {
             return super.handleGeneric( node, builder );
         }
-
     }
 
 }

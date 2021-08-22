@@ -36,6 +36,9 @@ import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.ExtraPolyTypes;
 import org.polypheny.db.util.Util;
 
+/**
+ * Some extracted helper function from AbstractQueryProcessor.
+ */
 public class QueryProcessorHelpers {
 
     public static RelDataType makeStruct( RelDataTypeFactory typeFactory, RelDataType type ) {
@@ -54,13 +57,6 @@ public class QueryProcessorHelpers {
     }
 
 
-    public static int getScale( RelDataType type ) {
-        return type.getScale() == RelDataType.SCALE_NOT_SPECIFIED
-                ? 0
-                : type.getScale();
-    }
-
-
     public static int getPrecision( RelDataType type ) {
         return type.getPrecision() == RelDataType.PRECISION_NOT_SPECIFIED
                 ? 0
@@ -71,6 +67,7 @@ public class QueryProcessorHelpers {
     public static int getTypeOrdinal( RelDataType type ) {
         return type.getPolyType().getJdbcOrdinal();
     }
+
 
     public static StatementType getStatementType( PreparedResult preparedResult ) {
         if ( preparedResult.isDml() ) {
@@ -143,7 +140,7 @@ public class QueryProcessorHelpers {
     }
 
 
-    public  static ColumnMetaData metaData(
+    public static ColumnMetaData metaData(
             JavaTypeFactory typeFactory,
             int ordinal,
             String fieldName,
@@ -176,4 +173,5 @@ public class QueryProcessorHelpers {
 //                avaticaType.columnClassName() );
                 (fieldType instanceof ArrayType) ? "java.util.List" : avaticaType.columnClassName() );
     }
+
 }

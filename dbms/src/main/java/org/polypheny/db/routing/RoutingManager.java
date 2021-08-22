@@ -39,12 +39,12 @@ import org.polypheny.db.routing.routers.CachedPlanRouter;
 import org.polypheny.db.routing.routers.DmlRouterImpl;
 import org.polypheny.db.routing.routers.SimpleRouter;
 import org.polypheny.db.routing.routers.SimpleRouter.SimpleRouterFactory;
-import org.polypheny.db.routing.strategies.RoutingPlanSelector;
-import org.polypheny.db.routing.strategies.CreateSinglePlacementStrategy;
 import org.polypheny.db.routing.strategies.CreatePlacementStrategy;
+import org.polypheny.db.routing.strategies.CreateSinglePlacementStrategy;
+import org.polypheny.db.routing.strategies.RoutingPlanSelector;
 
 @Slf4j
-public class RouterManager {
+public class RoutingManager {
 
     public static final ConfigDouble PRE_COST_POST_COST_RATIO = new ConfigDouble(
             "routing/preCostPostCostRatio",
@@ -62,7 +62,8 @@ public class RouterManager {
             RouterPlanSelectionStrategy.class, RouterPlanSelectionStrategy.BEST );
 
 
-    private static final RouterManager INSTANCE = new RouterManager();
+    private static final RoutingManager INSTANCE = new RoutingManager();
+
     @Getter
     final RoutingDebugUiPrinter debugUiPrinter = new RoutingDebugUiPrinter();
     @Getter
@@ -79,13 +80,16 @@ public class RouterManager {
     private WebUiPage routingPage;
 
 
-    public RouterManager() {
-        this.initializeConfigUi();
+    public RoutingManager() { }
+
+
+    public static RoutingManager getInstance() {
+        return INSTANCE;
     }
 
 
-    public static RouterManager getInstance() {
-        return INSTANCE;
+    public static void initialize() {
+        INSTANCE.initializeConfigUi();
     }
 
 
@@ -93,8 +97,7 @@ public class RouterManager {
         return routerFactories.stream().map( RouterFactory::createInstance ).collect( Collectors.toList() );
     }
 
-
-    private void initializeConfigUi() {
+    public void initializeConfigUi() {
         final ConfigManager configManager = ConfigManager.getInstance();
         routingPage = new WebUiPage(
                 "routingPage",

@@ -34,14 +34,16 @@ import org.polypheny.db.sql.SqlExplainFormat;
 import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.transaction.Statement;
 
+/**
+ * Adds debug information from routing to the ui.
+ */
 public class RoutingDebugUiPrinter {
 
     public void printDebugOutputSingleResult( ProposedRoutingPlan proposedRoutingPlan, RelNode optimalRelNode, Statement statement ) {
-
         // print stuff in reverse order
-        this.printExecutedPhysicalPlan( optimalRelNode , statement);
+        this.printExecutedPhysicalPlan( optimalRelNode, statement );
 
-        val page = this.printBaseOutput( "Routing Cached or single", 0 , statement);
+        val page = this.printBaseOutput( "Routing Cached or single", 0, statement );
 
         InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
         val plan = (ProposedRoutingPlan) proposedRoutingPlan;
@@ -73,26 +75,27 @@ public class RoutingDebugUiPrinter {
 
     }
 
+
     public InformationPage printBaseOutput( String titel, Integer numberOfPlans, Statement statement ) {
-        // initialize information for query analyzer
         InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
         var page = new InformationPage( titel );
         page.fullWidth();
         queryAnalyzer.addPage( page );
 
-        val ratioPre = 1 - RouterManager.PRE_COST_POST_COST_RATIO.getDouble();
-        val ratioPost = RouterManager.PRE_COST_POST_COST_RATIO.getDouble();
+        val ratioPre = 1 - RoutingManager.PRE_COST_POST_COST_RATIO.getDouble();
+        val ratioPost = RoutingManager.PRE_COST_POST_COST_RATIO.getDouble();
 
         InformationGroup overview = new InformationGroup( page, "Stats overview" );
         queryAnalyzer.addGroup( overview );
         InformationTable overviewTable = new InformationTable( overview, ImmutableList.of( "# of Plans", "Pre Cost factor", "Post cost factor", "Selection Strategy" ) );
-        overviewTable.addRow( numberOfPlans == 0 ? "-" : numberOfPlans, ratioPre, ratioPost, RouterManager.PLAN_SELECTION_STRATEGY.getEnum() );
+        overviewTable.addRow( numberOfPlans == 0 ? "-" : numberOfPlans, ratioPre, ratioPost, RoutingManager.PLAN_SELECTION_STRATEGY.getEnum() );
 
         queryAnalyzer.registerInformation( overviewTable );
 
         return page;
 
     }
+
 
     public void printDebugOutput(
             List<RelOptCost> approximatedCosts,
@@ -103,9 +106,9 @@ public class RoutingDebugUiPrinter {
             RoutingPlan selectedPlan,
             List<Double> effectiveCosts,
             Optional<List<Double>> percentageCosts,
-            Statement statement) {
+            Statement statement ) {
 
-        val page = this.printBaseOutput( "Routing", routingPlans.size() , statement);
+        val page = this.printBaseOutput( "Routing", routingPlans.size(), statement );
         InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
 
         val isIcarus = icarusCosts.isPresent();
@@ -119,7 +122,7 @@ public class RoutingDebugUiPrinter {
         for ( int i = 0; i < routingPlans.size(); i++ ) {
             val routingPlan = routingPlans.get( i );
             table.addRow(
-                    routingPlan.getPhysicalQueryId(),
+                    routingPlan.getPhysicalQueryClass(),
                     routingPlan.getRouter().isPresent() ? routingPlan.getRouter().get() : "",
                     approximatedCosts.get( i ),
                     isIcarus ? icarusCosts.get().get( i ) : "-",
@@ -134,8 +137,8 @@ public class RoutingDebugUiPrinter {
         queryAnalyzer.addGroup( selected );
         InformationTable selectedTable = new InformationTable( selected, ImmutableList.of( "QueryId", "Physical QueryId", "Router", "Partitioning - Placements" ) );
         selectedTable.addRow(
-                selectedPlan.getQueryId(),
-                selectedPlan.getPhysicalQueryId(),
+                selectedPlan.getQueryClass(),
+                selectedPlan.getPhysicalQueryClass(),
                 selectedPlan.getRouter(),
                 selectedPlan.getOptionalPhysicalPlacementsOfPartitions() );
 
@@ -170,7 +173,6 @@ public class RoutingDebugUiPrinter {
 
         queryAnalyzer.registerInformation( table, selectedTable );
     }
-
 
 
 }

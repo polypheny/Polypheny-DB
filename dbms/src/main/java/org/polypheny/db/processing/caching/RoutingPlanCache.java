@@ -39,10 +39,12 @@ import org.polypheny.db.information.InformationText;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.routing.dto.CachedProposedRoutingPlan;
 
+/**
+ * Routing plan cache.
+ */
 public class RoutingPlanCache {
 
     public static final RoutingPlanCache INSTANCE = new RoutingPlanCache();
-
     private final Cache<String, List<CachedProposedRoutingPlan>> planCache;
 
     private final AtomicLong hitsCounter = new AtomicLong(); // Number of requests for which the cache contained the value
@@ -175,8 +177,6 @@ public class RoutingPlanCache {
         invalidatePostCostsTextAction.setOrder( 2 );
         im.registerInformation( invalidatePostCostsTextAction );
 
-
-
         val debugPostCostTable = new InformationTable( invalidatePostCosts,
                 Arrays.asList( "QueryClass", "time", "Samples" ) );
 
@@ -184,17 +184,13 @@ public class RoutingPlanCache {
             val postCosts = MonitoringServiceProvider.getInstance().getAllQueryPostCosts();
             debugPostCostTable.reset();
 
-            for( val postCost : postCosts){
+            for ( val postCost : postCosts ) {
                 debugPostCostTable.addRow( postCost.getPhysicalQueryClass(), postCost.getExecutionTime(), postCost.getNumberOfSamples() );
             }
         } );
-        //debugPostCostTable.setRefreshFunction( () -> this.updateWorkloadInformationTable( informationTable ) );
+
         debugPostCostTable.setOrder( 2 );
         im.registerInformation( debugPostCostTable );
-
-
-
-
     }
 
 

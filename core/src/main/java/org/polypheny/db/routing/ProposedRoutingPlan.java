@@ -23,28 +23,71 @@ import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.util.Pair;
 
-public interface ProposedRoutingPlan extends RoutingPlan{
+public interface ProposedRoutingPlan extends RoutingPlan {
 
 
+    /**
+     * @return the relRoot of the proposed routing plan.
+     */
     RelRoot getRoutedRoot();
-    void setRoutedRoot(RelRoot relRoot);
 
-    String getQueryId();
-    void setQueryId(String queryId);
+    /**
+     * Sets the routed relRoot
+     *
+     * @param relRoot the routed rel root.
+     */
+    void setRoutedRoot( RelRoot relRoot );
 
-    Optional<String> getOptionalPhysicalQueryId();
-    void setOptionalPhysicalQueryId( Optional<String> physicalQueryId);
+    /**
+     * @return the query class.
+     */
+    String getQueryClass();
 
+    /**
+     * @param queryClass the query class string.
+     */
+    void setQueryClass( String queryClass );
+
+    /**
+     * @return gets the physical query class as Optional.
+     */
+    Optional<String> getOptionalPhysicalQueryClass();
+
+    /**
+     * @param physicalQueryClass the physical queryClass
+     */
+    void setOptionalPhysicalQueryId( Optional<String> physicalQueryClass );
+
+    /**
+     * @return gets the router class which proposed the plan.
+     */
     Optional<Class<? extends Router>> getRouter();
-    void setRouter(Optional<Class<? extends Router>> routerClass);
 
-    Optional<Map<Long, List<Pair<Integer, Long>>>>  getPhysicalPlacementsOfPartitions(); // partitionId, list<CatalogPlacementIds>
-    void setPhysicalPlacementsOfPartitions(Optional<Map<Long, List<Pair<Integer, Long>>>> physicalPartitionPlacement);
+    /**
+     * @param routerClass the router which proposed this plan.
+     */
+    void setRouter( Optional<Class<? extends Router>> routerClass );
 
+    /**
+     * @return the physical placements of the necessary partitions: partitionId, list<CatalogPlacementIds>
+     */
+    Optional<Map<Long, List<Pair<Integer, Long>>>> getPhysicalPlacementsOfPartitions(); // partitionId, list<CatalogPlacementIds>
+
+    /**
+     * @return Optional pre costs.
+     */
     Optional<RelOptCost> getPreCosts();
-    void setPreCosts(Optional<RelOptCost> preCosts);
 
-    boolean isCachable();
+    /**
+     * Sets the pre costs.
+     *
+     * @param preCosts the approximated rel costs.
+     */
+    void setPreCosts( Optional<RelOptCost> preCosts );
 
-    //CachedProposedRoutingPlan convert( RelOptCost approximatedCosts );
+    /**
+     * @return true if routing plan is cacheable. Currenty, dml and ddls will not be cached.
+     */
+    boolean isCacheable();
+
 }

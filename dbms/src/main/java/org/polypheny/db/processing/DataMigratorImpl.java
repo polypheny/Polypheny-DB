@@ -38,7 +38,6 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
-import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.ViewExpanders;
@@ -51,7 +50,7 @@ import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.routing.RouterManager;
+import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.sql.SqlKind;
@@ -285,7 +284,7 @@ public class DataMigratorImpl implements DataMigrator {
         Map<Long, List<CatalogColumnPlacement>> distributionPlacements = new HashMap<>();
         distributionPlacements.put( partitionId, placements );
 
-        RelNode node = RouterManager.getInstance().getFallbackRouter().buildJoinedTableScan( statement, cluster, distributionPlacements );
+        RelNode node = RoutingManager.getInstance().getFallbackRouter().buildJoinedTableScan( statement, cluster, distributionPlacements );
         return RelRoot.of( node, SqlKind.SELECT );
     }
 

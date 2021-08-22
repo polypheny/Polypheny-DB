@@ -44,11 +44,13 @@ public class IcarusRouter extends FullPlacementQueryRouter {
         return Collections.emptyList();
     }
 
+
     @Override
     protected List<RoutedRelBuilder> handleVerticalPartitioningOrReplication( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
         // same as no partitioning
         return handleNonePartitioning( node, catalogTable, statement, builders, cluster, queryInformation );
     }
+
 
     @Override
     protected List<RoutedRelBuilder> handleNonePartitioning( RelNode node, CatalogTable catalogTable, Statement statement, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
@@ -62,13 +64,13 @@ public class IcarusRouter extends FullPlacementQueryRouter {
         }
 
         // initial case with empty single builder
-        if ( builders.size() == 1  && builders.get( 0 ).getPhysicalPlacementsOfPartitions().isEmpty()) {
+        if ( builders.size() == 1 && builders.get( 0 ).getPhysicalPlacementsOfPartitions().isEmpty() ) {
             for ( val currentPlacement : placements ) {
 
                 val currentPlacementDistribution = new HashMap<Long, List<CatalogColumnPlacement>>();
                 currentPlacementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ), currentPlacement );
 
-                val newBuilder = RoutedRelBuilder.createCopy( statement, cluster, builders.get( 0 ));
+                val newBuilder = RoutedRelBuilder.createCopy( statement, cluster, builders.get( 0 ) );
                 newBuilder.addPhysicalInfo( currentPlacementDistribution );
                 newBuilder.push( super.buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) );
                 newBuilders.add( newBuilder );

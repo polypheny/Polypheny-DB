@@ -77,8 +77,8 @@ public abstract class BaseRouter {
             String physicalSchemaName,
             long partitionId ) {
         return builder.scan( ImmutableList.of(
-                PolySchemaBuilder.buildAdapterSchemaName( storeUniqueName, logicalSchemaName, physicalSchemaName),
-                logicalTableName + "_" + partitionId) );
+                PolySchemaBuilder.buildAdapterSchemaName( storeUniqueName, logicalSchemaName, physicalSchemaName ),
+                logicalTableName + "_" + partitionId ) );
     }
 
 
@@ -157,7 +157,7 @@ public abstract class BaseRouter {
                 ArrayList<RexNode> rexNodes = new ArrayList<>();
                 List<CatalogColumn> placementList = currentPlacements.stream()
                         .map( col -> catalog.getColumn( col.columnId ) )
-                        .sorted( Comparator.comparingInt( col -> col.position) )
+                        .sorted( Comparator.comparingInt( col -> col.position ) )
                         .collect( Collectors.toList() );
                 for ( CatalogColumn catalogColumn : placementList ) {
                     rexNodes.add( builder.field( catalogColumn.name ) );
@@ -229,7 +229,7 @@ public abstract class BaseRouter {
                 ArrayList<RexNode> rexNodes = new ArrayList<>();
                 List<CatalogColumn> placementList = currentPlacements.stream()
                         .map( col -> catalog.getColumn( col.columnId ) )
-                        .sorted( Comparator.comparingInt( col -> col.position) )
+                        .sorted( Comparator.comparingInt( col -> col.position ) )
                         .collect( Collectors.toList() );
                 for ( CatalogColumn catalogColumn : placementList ) {
                     rexNodes.add( builder.field( catalogColumn.name ) );

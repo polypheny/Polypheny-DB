@@ -49,6 +49,7 @@ import org.polypheny.db.partition.FrequencyMapImpl;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.PartitionManagerFactoryImpl;
 import org.polypheny.db.processing.AuthenticatorImpl;
+import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.statistic.StatisticQueryProcessor;
 import org.polypheny.db.statistic.StatisticsManager;
 import org.polypheny.db.transaction.PUID;
@@ -88,7 +89,6 @@ public class PolyphenyDb {
     // required for unit tests to determine when the system is ready to process queries
     @Getter
     private volatile boolean isReady = false;
-
 
     public static void main( final String[] args ) {
         try {
@@ -256,6 +256,9 @@ public class PolyphenyDb {
         } catch ( InterruptedException e ) {
             log.warn( "Interrupted on join()", e );
         }
+
+        // initialize Routing
+        RoutingManager.initialize();
 
         // Create internal query interfaces
         final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );

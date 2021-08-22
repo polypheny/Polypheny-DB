@@ -17,18 +17,24 @@
 package org.polypheny.db.routing;
 
 import java.util.List;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.tools.RoutedRelBuilder;
 import org.polypheny.db.transaction.Statement;
 
+
 public interface Router {
 
+    /**
+     * @param relRoot the relRoot which will be routed.
+     * @param statement the corresponding statement.
+     * @param queryInformation different query information resulting from analyze step.
+     * @return Proposes multiple routed rel nodes as a List of  relBuilders.
+     */
     List<RoutedRelBuilder> route( RelRoot relRoot, Statement statement, LogicalQueryInformation queryInformation );
 
-    RoutedRelBuilder buildSelect( RelNode node, RoutedRelBuilder builder, Statement statement, RelOptCluster cluster, LogicalQueryInformation queryInformation );
-
+    /**
+     * Resets the routing caches, if some are used.
+     */
     void resetCaches();
 }
 

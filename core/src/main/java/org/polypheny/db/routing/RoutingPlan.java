@@ -21,10 +21,13 @@ import java.util.Map;
 import java.util.Optional;
 import org.polypheny.db.util.Pair;
 
+/**
+ * Common interface for cached and non-cached routing plans.
+ */
 public interface RoutingPlan {
 
-    String getQueryId();
-    String getPhysicalQueryId();
+    String getQueryClass();
+    String getPhysicalQueryClass();
     Optional<Class<? extends Router>> getRouter();
     Optional<Map<Long, List<Pair<Integer, Long>>>>  getOptionalPhysicalPlacementsOfPartitions(); // partitionId, list<CatalogPlacementIds>
 }

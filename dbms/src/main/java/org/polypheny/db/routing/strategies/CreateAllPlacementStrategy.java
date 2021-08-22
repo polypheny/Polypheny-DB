@@ -24,6 +24,9 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 
+/**
+ * Adds new columns and tables on all stores.
+ */
 public class CreateAllPlacementStrategy implements CreatePlacementStrategy {
 
     @Override

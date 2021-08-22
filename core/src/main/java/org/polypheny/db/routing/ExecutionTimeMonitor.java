@@ -18,7 +18,6 @@ package org.polypheny.db.routing;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 public class ExecutionTimeMonitor {
 
@@ -34,10 +33,6 @@ public class ExecutionTimeMonitor {
 
     public void subscribe( ExecutionTimeObserver observer, String queryClassString ) {
         observers.put( observer, queryClassString );
-    }
-
-    public void subscribe( ExecutionTimeObserver observer, UUID monitoringId ) {
-        observers.put( observer, monitoringId.toString() );
     }
 
     public interface ExecutionTimeObserver {

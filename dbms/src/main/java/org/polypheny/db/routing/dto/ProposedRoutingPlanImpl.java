@@ -32,79 +32,77 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.tools.RoutedRelBuilder;
 import org.polypheny.db.util.Pair;
 
+/**
+ * Some information are not available during instantiation and therefore will be added later on.
+ * These values are all marked as Optional<>.
+ */
 @Setter
 @Getter
 public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
 
     protected RelRoot routedRoot;
-    protected String queryId;
-    protected Optional<String> physicalQueryId = Optional.empty();
+    protected String queryClass;
+    protected Optional<String> physicalQueryClass = Optional.empty();
     protected Optional<Class<? extends Router>> router = Optional.empty();
     protected Optional<Map<Long, List<Pair<Integer, Long>>>> physicalPlacementsOfPartitions = Optional.empty(); // partitionId, list<CatalogPlacementIds>
     protected Optional<RelOptCost> preCosts = Optional.empty();
 
 
-    public ProposedRoutingPlanImpl( RoutedRelBuilder routedRelBuilder, RelRoot logicalRoot, String queryId ) {
+    public ProposedRoutingPlanImpl( RoutedRelBuilder routedRelBuilder, RelRoot logicalRoot, String queryClass ) {
         this.physicalPlacementsOfPartitions = Optional.of( routedRelBuilder.getPhysicalPlacementsOfPartitions() );
-        this.queryId = queryId;
-        this.physicalQueryId = Optional.of( queryId + this.physicalPlacementsOfPartitions.get() );
+        this.queryClass = queryClass;
+        this.physicalQueryClass = Optional.of( queryClass + this.physicalPlacementsOfPartitions.get() );
         val rel = routedRelBuilder.build();
         this.routedRoot = new RelRoot( rel, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
     }
 
 
-    public ProposedRoutingPlanImpl( RoutedRelBuilder routedRelBuilder, RelRoot logicalRoot, String queryId, Class<? extends Router> routerClass ) {
+    public ProposedRoutingPlanImpl( RoutedRelBuilder routedRelBuilder, RelRoot logicalRoot, String queryClass, Class<? extends Router> routerClass ) {
         this.physicalPlacementsOfPartitions = Optional.of( routedRelBuilder.getPhysicalPlacementsOfPartitions() );
-        this.queryId = queryId;
-        this.physicalQueryId = Optional.of( queryId + this.physicalPlacementsOfPartitions.get() );
+        this.queryClass = queryClass;
+        this.physicalQueryClass = Optional.of( queryClass + this.physicalPlacementsOfPartitions.get() );
         this.router = Optional.of( routerClass );
         val rel = routedRelBuilder.build();
         this.routedRoot = new RelRoot( rel, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
     }
 
 
-    public ProposedRoutingPlanImpl( RoutedRelBuilder routedRelBuilder, RelRoot logicalRoot, String queryId, CachedProposedRoutingPlan cachedPlan ) {
+    public ProposedRoutingPlanImpl( RoutedRelBuilder routedRelBuilder, RelRoot logicalRoot, String queryClass, CachedProposedRoutingPlan cachedPlan ) {
         this.physicalPlacementsOfPartitions = Optional.of( cachedPlan.getPhysicalPlacementsOfPartitions() );
-        this.queryId = queryId;
-        this.physicalQueryId = Optional.of( queryId + this.physicalPlacementsOfPartitions.get() );
+        this.queryClass = queryClass;
+        this.physicalQueryClass = Optional.of( queryClass + this.physicalPlacementsOfPartitions.get() );
         this.router = cachedPlan.getRouter();
         val rel = routedRelBuilder.build();
         this.routedRoot = new RelRoot( rel, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
     }
 
 
-    public ProposedRoutingPlanImpl( RelNode routedConditional, RelRoot logicalRoot, String queryId ) {
-        this.queryId = queryId;
+    public ProposedRoutingPlanImpl( RelNode routedConditional, RelRoot logicalRoot, String queryClass ) {
+        this.queryClass = queryClass;
         this.routedRoot = new RelRoot( routedConditional, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
     }
 
 
-    public ProposedRoutingPlanImpl( RelRoot routedRoot, String queryId ) {
-        this.queryId = queryId;
+    public ProposedRoutingPlanImpl( RelRoot routedRoot, String queryClass ) {
+        this.queryClass = queryClass;
         this.routedRoot = routedRoot;
     }
 
 
-    public CachedProposedRoutingPlan convert( ProposedRoutingPlan routingPlan, RelOptCost approximatedCosts ) {
-        return new CachedProposedRoutingPlan( routingPlan, approximatedCosts );
+    @Override
+    public Optional<String> getOptionalPhysicalQueryClass() {
+        return physicalQueryClass;
     }
 
 
     @Override
-    public Optional<String> getOptionalPhysicalQueryId() {
-        return physicalQueryId;
+    public void setOptionalPhysicalQueryId( Optional<String> physicalQueryClass ) {
+        this.physicalQueryClass = physicalQueryClass;
     }
 
 
-    @Override
-    public void setOptionalPhysicalQueryId( Optional<String> physicalQueryId ) {
-        this.physicalQueryId = physicalQueryId;
-    }
-
-
-    @Override
-    public String getPhysicalQueryId() {
-        return physicalQueryId.isPresent() ? physicalQueryId.get() : "";
+    public String getPhysicalQueryClass() {
+        return physicalQueryClass.isPresent() ? physicalQueryClass.get() : "";
     }
 
 
@@ -115,11 +113,17 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
 
 
     @Override
-    public boolean isCachable() {
-        return this.physicalPlacementsOfPartitions.isPresent() && this.getOptionalPhysicalQueryId().isPresent() && !this.routedRoot.kind.belongsTo( SqlKind.DML );
+    public boolean isCacheable() {
+        return this.physicalPlacementsOfPartitions.isPresent() && this.getOptionalPhysicalQueryClass().isPresent() && !this.routedRoot.kind.belongsTo( SqlKind.DML );
     }
 
 
+    /**
+     * Two proposed routing plans are considered equals, when the physicalPlacements are the same.
+     *
+     * @param obj other proposedRoutingPlan
+     * @return true if physicalPlacements are equal.
+     */
     @Override
     public boolean equals( Object obj ) {
         val other = (ProposedRoutingPlanImpl) obj;
@@ -151,9 +155,15 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
     }
 
 
+    /**
+     * Two proposed routing plans are considered equals, when the physicalPlacements are the same.
+     * The same is valid for their hashCode.
+     *
+     * @return hashCode of the proposedRoutingPlan
+     */
     @Override
     public int hashCode() {
-        if ( this.physicalPlacementsOfPartitions.isPresent() && !this.physicalPlacementsOfPartitions.get().isEmpty()) {
+        if ( this.physicalPlacementsOfPartitions.isPresent() && !this.physicalPlacementsOfPartitions.get().isEmpty() ) {
             val value = this.physicalPlacementsOfPartitions.get().values()
                     .stream().flatMap( Collection::stream )
                     .map( elem -> elem.right.hashCode() * elem.left.hashCode() )
