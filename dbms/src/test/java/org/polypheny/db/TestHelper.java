@@ -24,8 +24,11 @@ import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -129,66 +132,82 @@ public class TestHelper {
     }
 
 
+    public static void checkResultSet( ResultSet resultSet, List<Object[]> expected, boolean ignoreOrderOfResultRows ) throws SQLException {
+        checkResultSet( resultSet, expected, ignoreOrderOfResultRows, false );
+    }
+
+
     // isConvertingDecimals should only(!) be set to true if a decimal value is the result of a type conversion (e.g., when change the type of column to decimal)
-    public static void checkResultSet( ResultSet resultSet, List<Object[]> expected, boolean isConvertingDecimals ) throws SQLException {
+    public static void checkResultSet( ResultSet resultSet, List<Object[]> expected, boolean ignoreOrderOfResultRows, boolean isConvertingDecimals ) throws SQLException {
+        List<Object[]> received = convertResultSetToList( resultSet );
+        if ( ignoreOrderOfResultRows ) {
+            expected = orderResultList( expected );
+            received = orderResultList( received );
+        }
+        ResultSetMetaData rsmd = resultSet.getMetaData();
         int i = 0;
-        while ( resultSet.next() ) {
+        for ( Object[] row : received ) {
             Assert.assertTrue( "Result set has more rows than expected", i < expected.size() );
             Object[] expectedRow = expected.get( i++ );
-            Assert.assertEquals( "Wrong number of columns", expectedRow.length, resultSet.getMetaData().getColumnCount() );
+            Assert.assertEquals( "Wrong number of columns", expectedRow.length, rsmd.getColumnCount() );
             int j = 0;
             while ( j < expectedRow.length ) {
                 if ( expectedRow.length >= j + 1 ) {
-                    int columnType = resultSet.getMetaData().getColumnType( j + 1 );
-                    if ( resultSet.getMetaData().getColumnType( j + 1 ) == Types.BINARY ) {
+                    int columnType = rsmd.getColumnType( j + 1 );
+                    if ( columnType == Types.BINARY ) {
                         if ( expectedRow[j] == null ) {
-                            Assert.assertNull( "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "': ", resultSet.getBytes( j + 1 ) );
+                            Assert.assertNull( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': ", row[j] );
                         } else {
-                            Assert.assertEquals( "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "'",
+                            Assert.assertEquals( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
                                     new String( (byte[]) expectedRow[j] ),
-                                    new String( resultSet.getBytes( j + 1 ) ) );
+                                    new String( (byte[]) row[j] ) );
                         }
                     } else if ( columnType != Types.ARRAY ) {
                         if ( expectedRow[j] != null ) {
-                            if ( columnType == Types.FLOAT ) {
-                                float diff = Math.abs( (float) expectedRow[j] - resultSet.getFloat( j + 1 ) );
+                            if ( columnType == Types.FLOAT || columnType == Types.REAL ) {
+                                float diff = Math.abs( (float) expectedRow[j] - (float) row[j] );
                                 Assert.assertTrue(
-                                        "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "': The difference between the expected float and the received float exceeds the epsilon. Difference: " + (diff - EPSILON),
+                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected float and the received float exceeds the epsilon. Difference: " + (diff - EPSILON),
                                         diff < EPSILON );
                             } else if ( columnType == Types.DOUBLE ) {
-                                double diff = Math.abs( (double) expectedRow[j] - resultSet.getDouble( j + 1 ) );
+                                double diff = Math.abs( (double) expectedRow[j] - (double) row[j] );
                                 Assert.assertTrue(
-                                        "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "': The difference between the expected double and the received double exceeds the epsilon. Difference: " + (diff - EPSILON),
+                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected double and the received double exceeds the epsilon. Difference: " + (diff - EPSILON),
                                         diff < EPSILON );
                             } else if ( columnType == Types.DECIMAL ) { // Decimals are exact // but not for calculations?
                                 BigDecimal expectedResult = (BigDecimal) expectedRow[j];
-                                BigDecimal result = resultSet.getBigDecimal( j + 1 );
-                                double diff = Math.abs( expectedResult.doubleValue() - result.doubleValue() );
+                                double diff = Math.abs( expectedResult.doubleValue() - ((BigDecimal) row[j]).doubleValue() );
                                 if ( isConvertingDecimals ) {
                                     Assert.assertTrue(
-                                            "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "': The difference between the expected decimal and the received decimal exceeds the epsilon. Difference: " + (diff - EPSILON),
+                                            "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected decimal and the received decimal exceeds the epsilon. Difference: " + (diff - EPSILON),
                                             diff < EPSILON );
                                 } else {
-                                    Assert.assertEquals( "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "'", 0, expectedResult.doubleValue() - result.doubleValue(), 0.0 );
+                                    Assert.assertEquals( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'", 0, expectedResult.doubleValue() - ((BigDecimal) row[j]).doubleValue(), 0.0 );
                                 }
+                            } else {
+                                Assert.assertEquals(
+                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
+                                        expectedRow[j],
+                                        row[j]
+                                );
                             }
                         } else {
                             Assert.assertEquals(
-                                    "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "'",
+                                    "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
                                     expectedRow[j],
-                                    resultSet.getObject( j + 1 )
+                                    row[j]
                             );
                         }
 
                     } else {
-                        List resultList = SqlFunctions.deepArrayToList( resultSet.getArray( j + 1 ) );
+                        List resultList = (List) row[j];
                         Object[] expectedArray = (Object[]) expectedRow[j];
                         if ( expectedArray == null ) {
-                            Assert.assertNull( "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "': ", resultList );
+                            Assert.assertNull( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': ", resultList );
                         } else {
                             for ( int k = 0; k < expectedArray.length; k++ ) {
                                 Assert.assertEquals(
-                                        "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "' at position: " + k + 1,
+                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "' at position: " + k + 1,
                                         expectedArray[k],
                                         resultList.get( k ) );
                             }
@@ -201,6 +220,52 @@ public class TestHelper {
             }
         }
         Assert.assertEquals( "Wrong number of rows in the result set", expected.size(), i );
+    }
+
+
+    private static List<Object[]> convertResultSetToList( ResultSet resultSet ) throws SQLException {
+        ResultSetMetaData md = resultSet.getMetaData();
+        int columns = md.getColumnCount();
+        List<Object[]> list = new ArrayList<>();
+        while ( resultSet.next() ) {
+            Object[] row = new Object[columns];
+            for ( int i = 1; i <= columns; ++i ) {
+                int columnType = resultSet.getMetaData().getColumnType( i );
+                if ( columnType == Types.BINARY ) {
+                    row[i - 1] = resultSet.getBytes( i );
+                } else if ( columnType != Types.ARRAY ) {
+                    if ( resultSet.getObject( i ) != null ) {
+                        if ( columnType == Types.FLOAT || columnType == Types.REAL ) {
+                            row[i - 1] = resultSet.getFloat( i );
+                        } else if ( columnType == Types.DOUBLE ) {
+                            row[i - 1] = resultSet.getDouble( i );
+                        } else if ( columnType == Types.DECIMAL ) {
+                            row[i - 1] = resultSet.getBigDecimal( i );
+                        } else {
+                            row[i - 1] = resultSet.getObject( i );
+                        }
+                    } else {
+                        row[i - 1] = resultSet.getObject( i );
+                    }
+                } else {
+                    row[i - 1] = SqlFunctions.deepArrayToList( resultSet.getArray( i ) );
+                }
+            }
+            list.add( row );
+        }
+        return list;
+    }
+
+
+    private static List<Object[]> orderResultList( List<Object[]> result ) {
+        List<Object[]> list = new ArrayList<>( result );
+        list.sort( ( lhs, rhs ) -> {
+            String lhsStr = Arrays.toString( lhs );
+            String rhsStr = Arrays.toString( rhs );
+            // -1 - less than, 1 - greater than, 0 - equal, all inversed for descending
+            return lhsStr.compareTo( rhsStr );
+        } );
+        return list;
     }
 
 
