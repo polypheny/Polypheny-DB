@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.blockchain;
 
-import org.polypheny.db.type.PolyType;
 import org.web3j.protocol.core.methods.response.EthBlock;
 
 import java.math.BigInteger;
@@ -27,21 +26,22 @@ public enum BlockchainMapper {
     TRANSACTION;
 
     static BlockchainMapper getMapper(String tableName) {
-        if(tableName.equals("block")){
+        if (tableName.equals("block")) {
             return BLOCK;
         }
         return TRANSACTION;
     }
 
-    static String safeToString(Object x){
+    static String safeToString(Object x) {
         if (x == null)
             return null;
         return x.toString();
     }
-    public String[] map(Object obj){
+
+    public String[] map(Object obj) {
         String[] str = null;
 
-        if(this == BLOCK){
+        if (this == BLOCK) {
 
             EthBlock.Block blk = (EthBlock.Block) obj;
             str = new String[]{
@@ -92,9 +92,9 @@ public enum BlockchainMapper {
     }
 
     public BlockReader makeReader(String clientUrl, int blocks, Predicate<BigInteger> blockNumberPredicate) {
-        if (this == BLOCK){
-            return new BlockReader(clientUrl,blocks,blockNumberPredicate);
+        if (this == BLOCK) {
+            return new BlockReader(clientUrl, blocks, blockNumberPredicate);
         }
-        return new TransactionReader(clientUrl,blocks,blockNumberPredicate);
+        return new TransactionReader(clientUrl, blocks, blockNumberPredicate);
     }
 }

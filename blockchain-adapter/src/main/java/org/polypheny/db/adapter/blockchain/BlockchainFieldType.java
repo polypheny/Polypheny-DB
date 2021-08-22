@@ -45,49 +45,48 @@ import java.util.Map;
 
 /**
  * Type of a field in a CSV file.
- *
+ * <p>
  * Usually, and unless specified explicitly in the header row, a field is of type {@link #STRING}. But specifying the field type in the header row makes it easier to write SQL.
  */
 enum BlockchainFieldType {
-    STRING( String.class, "string" ),
-    BOOLEAN( Primitive.BOOLEAN ),
-    BYTE( Primitive.BYTE ),
-    CHAR( Primitive.CHAR ),
-    SHORT( Primitive.SHORT ),
-    INT( Primitive.INT ),
-    LONG( Primitive.LONG ),
-    FLOAT( Primitive.FLOAT ),
-    DOUBLE( Primitive.DOUBLE ),
-    DATE( java.sql.Date.class, "date" ),
-    TIME( java.sql.Time.class, "time" ),
-    TIMESTAMP( java.sql.Timestamp.class, "timestamp" );
+    STRING(String.class, "string"),
+    BOOLEAN(Primitive.BOOLEAN),
+    BYTE(Primitive.BYTE),
+    CHAR(Primitive.CHAR),
+    SHORT(Primitive.SHORT),
+    INT(Primitive.INT),
+    LONG(Primitive.LONG),
+    FLOAT(Primitive.FLOAT),
+    DOUBLE(Primitive.DOUBLE),
+    DATE(java.sql.Date.class, "date"),
+    TIME(java.sql.Time.class, "time"),
+    TIMESTAMP(java.sql.Timestamp.class, "timestamp");
+
+    private static final Map<String, BlockchainFieldType> MAP = new HashMap<>();
+
+    static {
+        for (BlockchainFieldType value : values()) {
+            MAP.put(value.simpleName, value);
+        }
+    }
 
     private final Class clazz;
     private final String simpleName;
 
-    private static final Map<String, BlockchainFieldType> MAP = new HashMap<>();
 
-
-    static {
-        for ( BlockchainFieldType value : values() ) {
-            MAP.put( value.simpleName, value );
-        }
+    BlockchainFieldType(Primitive primitive) {
+        this(primitive.boxClass, primitive.primitiveClass.getSimpleName());
     }
 
 
-    BlockchainFieldType(Primitive primitive ) {
-        this( primitive.boxClass, primitive.primitiveClass.getSimpleName() );
-    }
-
-
-    BlockchainFieldType(Class clazz, String simpleName ) {
+    BlockchainFieldType(Class clazz, String simpleName) {
         this.clazz = clazz;
         this.simpleName = simpleName;
     }
 
 
-    public static BlockchainFieldType getBlockchainFieldType( PolyType type ) {
-        switch ( type ) {
+    public static BlockchainFieldType getBlockchainFieldType(PolyType type) {
+        switch (type) {
             case BOOLEAN:
                 return BlockchainFieldType.BOOLEAN;
             case VARBINARY:
@@ -109,19 +108,17 @@ enum BlockchainFieldType {
             case TIMESTAMP:
                 return BlockchainFieldType.TIMESTAMP;
             default:
-                throw new RuntimeException( "Unsupported datatype: " + type.name() );
+                throw new RuntimeException("Unsupported datatype: " + type.name());
         }
     }
 
-
-    public RelDataType toType( JavaTypeFactory typeFactory ) {
-        RelDataType javaType = typeFactory.createJavaType( clazz );
-        RelDataType sqlType = typeFactory.createPolyType( javaType.getPolyType() );
-        return typeFactory.createTypeWithNullability( sqlType, true );
+    public static BlockchainFieldType of(String typeString) {
+        return MAP.get(typeString);
     }
 
-
-    public static BlockchainFieldType of( String typeString ) {
-        return MAP.get( typeString );
+    public RelDataType toType(JavaTypeFactory typeFactory) {
+        RelDataType javaType = typeFactory.createJavaType(clazz);
+        RelDataType sqlType = typeFactory.createPolyType(javaType.getPolyType());
+        return typeFactory.createTypeWithNullability(sqlType, true);
     }
 }

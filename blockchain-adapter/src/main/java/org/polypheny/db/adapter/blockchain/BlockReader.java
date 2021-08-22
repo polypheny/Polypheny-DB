@@ -47,8 +47,8 @@ import java.util.function.Predicate;
 class BlockReader implements Closeable {
 
     protected final Web3j web3j;
-    protected int blockReads;
     protected final Predicate<BigInteger> blockNumberPredicate;
+    protected int blockReads;
     protected BigInteger currentBlock;
 
 
@@ -57,19 +57,18 @@ class BlockReader implements Closeable {
         this.blockReads = blocks;
         this.blockNumberPredicate = blockNumberPredicate;
         try {
-            this.currentBlock  = web3j.ethBlockNumber().send().getBlockNumber();;
+            this.currentBlock = web3j.ethBlockNumber().send().getBlockNumber();
         } catch (IOException e) {
-            throw new RuntimeException("Unable to connect to server: "+clientUrl);
+            throw new RuntimeException("Unable to connect to server: " + clientUrl);
         }
     }
 
 
-
     public String[] readNext() throws IOException {
-        if(this.blockReads <= 0)
+        if (this.blockReads <= 0)
             return null;
         EthBlock.Block block = null;
-        while(this.currentBlock.compareTo(BigInteger.ZERO) == 1 && block == null){
+        while (this.currentBlock.compareTo(BigInteger.ZERO) == 1 && block == null) {
             if (blockNumberPredicate.test(this.currentBlock)) {
                 block = web3j.ethGetBlockByNumber(DefaultBlockParameter.valueOf(this.currentBlock), false).send().getBlock();
                 blockReads--;

@@ -34,36 +34,25 @@
 package org.polypheny.db.test;
 
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.isA;
-import static org.junit.Assert.assertThat;
-
 import com.google.common.collect.Ordering;
-import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
-import java.util.function.Consumer;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.sql2rel.SqlToRelConverter;
 import org.polypheny.db.util.Sources;
 import org.polypheny.db.util.Util;
+
+import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.sql.*;
+import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.function.Consumer;
+
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.assertThat;
 
 
 /**
@@ -75,56 +64,56 @@ public class CsvTest {
     /**
      * Quotes a string for Java or JSON.
      */
-    private static String escapeString( String s ) {
-        return escapeString( new StringBuilder(), s ).toString();
+    private static String escapeString(String s) {
+        return escapeString(new StringBuilder(), s).toString();
     }
 
 
     /**
      * Quotes a string for Java or JSON, into a builder.
      */
-    private static StringBuilder escapeString( StringBuilder buf, String s ) {
-        buf.append( '"' );
+    private static StringBuilder escapeString(StringBuilder buf, String s) {
+        buf.append('"');
         int n = s.length();
         char lastChar = 0;
-        for ( int i = 0; i < n; ++i ) {
-            char c = s.charAt( i );
-            switch ( c ) {
+        for (int i = 0; i < n; ++i) {
+            char c = s.charAt(i);
+            switch (c) {
                 case '\\':
-                    buf.append( "\\\\" );
+                    buf.append("\\\\");
                     break;
                 case '"':
-                    buf.append( "\\\"" );
+                    buf.append("\\\"");
                     break;
                 case '\n':
-                    buf.append( "\\n" );
+                    buf.append("\\n");
                     break;
                 case '\r':
-                    if ( lastChar != '\n' ) {
-                        buf.append( "\\r" );
+                    if (lastChar != '\n') {
+                        buf.append("\\r");
                     }
                     break;
                 default:
-                    buf.append( c );
+                    buf.append(c);
                     break;
             }
             lastChar = c;
         }
-        return buf.append( '"' );
+        return buf.append('"');
     }
 
 
     /**
      * Returns a function that checks the contents of a result set against an expected string.
      */
-    private static Consumer<ResultSet> expect( final String... expected ) {
+    private static Consumer<ResultSet> expect(final String... expected) {
         return resultSet -> {
             try {
                 final List<String> lines = new ArrayList<>();
-                CsvTest.collect( lines, resultSet );
-                Assert.assertEquals( Arrays.asList( expected ), lines );
-            } catch ( SQLException e ) {
-                throw new RuntimeException( e );
+                CsvTest.collect(lines, resultSet);
+                Assert.assertEquals(Arrays.asList(expected), lines);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
         };
     }
@@ -133,51 +122,51 @@ public class CsvTest {
     /**
      * Returns a function that checks the contents of a result set against an expected string.
      */
-    private static Consumer<ResultSet> expectUnordered( String... expected ) {
-        final List<String> expectedLines = Ordering.natural().immutableSortedCopy( Arrays.asList( expected ) );
+    private static Consumer<ResultSet> expectUnordered(String... expected) {
+        final List<String> expectedLines = Ordering.natural().immutableSortedCopy(Arrays.asList(expected));
         return resultSet -> {
             try {
                 final List<String> lines = new ArrayList<>();
-                CsvTest.collect( lines, resultSet );
-                Collections.sort( lines );
-                Assert.assertEquals( expectedLines, lines );
-            } catch ( SQLException e ) {
-                throw new RuntimeException( e );
+                CsvTest.collect(lines, resultSet);
+                Collections.sort(lines);
+                Assert.assertEquals(expectedLines, lines);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
         };
     }
 
 
-    private static void collect( List<String> result, ResultSet resultSet ) throws SQLException {
+    private static void collect(List<String> result, ResultSet resultSet) throws SQLException {
         final StringBuilder buf = new StringBuilder();
-        while ( resultSet.next() ) {
-            buf.setLength( 0 );
+        while (resultSet.next()) {
+            buf.setLength(0);
             int n = resultSet.getMetaData().getColumnCount();
             String sep = "";
-            for ( int i = 1; i <= n; i++ ) {
-                buf.append( sep )
-                        .append( resultSet.getMetaData().getColumnLabel( i ) )
-                        .append( "=" )
-                        .append( resultSet.getString( i ) );
+            for (int i = 1; i <= n; i++) {
+                buf.append(sep)
+                        .append(resultSet.getMetaData().getColumnLabel(i))
+                        .append("=")
+                        .append(resultSet.getString(i));
                 sep = "; ";
             }
-            result.add( Util.toLinux( buf.toString() ) );
+            result.add(Util.toLinux(buf.toString()));
         }
     }
 
 
-    private void close( Connection connection, Statement statement ) {
-        if ( statement != null ) {
+    private void close(Connection connection, Statement statement) {
+        if (statement != null) {
             try {
                 statement.close();
-            } catch ( SQLException e ) {
+            } catch (SQLException e) {
                 // ignore
             }
         }
-        if ( connection != null ) {
+        if (connection != null) {
             try {
                 connection.close();
-            } catch ( SQLException e ) {
+            } catch (SQLException e) {
                 // ignore
             }
         }
@@ -191,7 +180,7 @@ public class CsvTest {
     @Test
     public void testVanityDriver() throws SQLException {
         Properties info = new Properties();
-        Connection connection = DriverManager.getConnection( "jdbc:csv:", info );
+        Connection connection = DriverManager.getConnection("jdbc:csv:", info);
         connection.close();
     }
 
@@ -202,7 +191,7 @@ public class CsvTest {
     @Ignore
     @Test
     public void testVanityDriverArgsInUrl() throws SQLException {
-        Connection connection = DriverManager.getConnection( "jdbc:csv:" + "directory='foo'" );
+        Connection connection = DriverManager.getConnection("jdbc:csv:" + "directory='foo'");
         connection.close();
     }
 
@@ -213,7 +202,7 @@ public class CsvTest {
     @Test
     public void testBadDirectory() throws SQLException {
         Properties info = new Properties();
-        info.put( "model",
+        info.put("model",
                 "inline:"
                         + "{\n"
                         + "  version: '1.0',\n"
@@ -227,11 +216,11 @@ public class CsvTest {
                         + "       }\n"
                         + "     }\n"
                         + "   ]\n"
-                        + "}" );
+                        + "}");
 
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
+        Connection connection = DriverManager.getConnection("jdbc:polyphenydbembedded:", info);
         // must print "directory ... not found" to stdout, but not fail
-        ResultSet tables = connection.getMetaData().getTables( null, null, null, null );
+        ResultSet tables = connection.getMetaData().getTables(null, null, null, null);
         tables.next();
         tables.close();
         connection.close();
@@ -243,19 +232,19 @@ public class CsvTest {
      */
     @Test
     public void testSelect() {
-        sql( "model", "select * from EMPS" ).ok();
+        sql("model", "select * from EMPS").ok();
     }
 
 
     @Test
     public void testSelectSingleProjectGz() {
-        sql( "smart", "select name from EMPS" ).ok();
+        sql("smart", "select name from EMPS").ok();
     }
 
 
     @Test
     public void testSelectSingleProject() {
-        sql( "smart", "select name from DEPTS" ).ok();
+        sql("smart", "select name from DEPTS").ok();
     }
 
 
@@ -266,22 +255,22 @@ public class CsvTest {
     public void testSelectLongMultiplyInteger() {
         final String sql = "select empno * 3 as e3\n" + "from long_emps where empno = 100";
 
-        sql( "bug", sql ).checking( resultSet -> {
+        sql("bug", sql).checking(resultSet -> {
             try {
-                assertThat( resultSet.next(), is( true ) );
-                Long o = (Long) resultSet.getObject( 1 );
-                assertThat( o, is( 300L ) );
-                assertThat( resultSet.next(), is( false ) );
-            } catch ( SQLException e ) {
-                throw new RuntimeException( e );
+                assertThat(resultSet.next(), is(true));
+                Long o = (Long) resultSet.getObject(1);
+                assertThat(o, is(300L));
+                assertThat(resultSet.next(), is(false));
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
-        } ).ok();
+        }).ok();
     }
 
 
     @Test
     public void testCustomTable() {
-        sql( "model-with-custom-table", "select * from CUSTOM_TABLE.EMPS" ).ok();
+        sql("model-with-custom-table", "select * from CUSTOM_TABLE.EMPS").ok();
     }
 
 
@@ -290,7 +279,7 @@ public class CsvTest {
         // rule does not fire, because we're using 'dumb' tables in simple model
         final String sql = "explain plan for select * from EMPS";
         final String expected = "PLAN=EnumerableInterpreter\n  BindableTableScan(table=[[SALES, EMPS]])\n";
-        sql( "model", sql ).returns( expected ).ok();
+        sql("model", sql).returns(expected).ok();
     }
 
 
@@ -298,18 +287,18 @@ public class CsvTest {
     public void testPushDownProject() {
         final String sql = "explain plan for select * from EMPS";
         final String expected = "PLAN=CsvTableScan(table=[[SALES, EMPS]], fields=[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]])\n";
-        sql( "smart", sql ).returns( expected ).ok();
+        sql("smart", sql).returns(expected).ok();
     }
 
 
     @Test
     public void testPushDownProject2() {
-        sql( "smart", "explain plan for select name, empno from EMPS" )
-                .returns( "PLAN=CsvTableScan(table=[[SALES, EMPS]], fields=[[1, 0]])\n" )
+        sql("smart", "explain plan for select name, empno from EMPS")
+                .returns("PLAN=CsvTableScan(table=[[SALES, EMPS]], fields=[[1, 0]])\n")
                 .ok();
         // make sure that it works...
-        sql( "smart", "select name, empno from EMPS" )
-                .returns( "NAME=Fred; EMPNO=100", "NAME=Eric; EMPNO=110", "NAME=John; EMPNO=110", "NAME=Wilma; EMPNO=120", "NAME=Alice; EMPNO=130" )
+        sql("smart", "select name, empno from EMPS")
+                .returns("NAME=Fred; EMPNO=100", "NAME=Eric; EMPNO=110", "NAME=John; EMPNO=110", "NAME=Wilma; EMPNO=120", "NAME=Alice; EMPNO=130")
                 .ok();
     }
 
@@ -318,7 +307,7 @@ public class CsvTest {
     public void testPushDownProjectAggregate() {
         final String sql = "explain plan for\n" + "select gender, count(*) from EMPS group by gender";
         final String expected = "PLAN=" + "EnumerableAggregate(group=[{0}], EXPR$1=[COUNT()])\n" + "  CsvTableScan(table=[[SALES, EMPS]], fields=[[3]])\n";
-        sql( "smart", sql ).returns( expected ).ok();
+        sql("smart", sql).returns(expected).ok();
     }
 
 
@@ -329,7 +318,7 @@ public class CsvTest {
                 + "  EnumerableCalc(expr#0..1=[{inputs}], expr#2=['F':VARCHAR], "
                 + "expr#3=[=($t1, $t2)], proj#0..1=[{exprs}], $condition=[$t3])\n"
                 + "    CsvTableScan(table=[[SALES, EMPS]], fields=[[0, 3]])\n";
-        sql( "smart", sql ).returns( expected ).ok();
+        sql("smart", sql).returns(expected).ok();
     }
 
 
@@ -346,19 +335,19 @@ public class CsvTest {
                 + "EnumerableAggregate(group=[{1}], EXPR$1=[MAX($2)])\n"
                 + "  EnumerableAggregate(group=[{0, 1}], QTY=[COUNT()])\n"
                 + "    CsvTableScan(table=[[SALES, EMPS]], fields=[[1, 3]])\n";
-        sql( "smart", sql ).returns( expected ).ok();
+        sql("smart", sql).returns(expected).ok();
     }
 
 
     @Test
     public void testFilterableSelect() {
-        sql( "filterable-model", "select name from EMPS" ).ok();
+        sql("filterable-model", "select name from EMPS").ok();
     }
 
 
     @Test
     public void testFilterableSelectStar() {
-        sql( "filterable-model", "select * from EMPS" ).ok();
+        sql("filterable-model", "select * from EMPS").ok();
     }
 
 
@@ -368,7 +357,7 @@ public class CsvTest {
     @Test
     public void testFilterableWhere() {
         final String sql = "select empno, gender, name from EMPS where name = 'John'";
-        sql( "filterable-model", sql ).returns( "EMPNO=110; GENDER=M; NAME=John" ).ok();
+        sql("filterable-model", sql).returns("EMPNO=110; GENDER=M; NAME=John").ok();
     }
 
 
@@ -378,7 +367,7 @@ public class CsvTest {
     @Test
     public void testFilterableWhere2() {
         final String sql = "select empno, gender, name from EMPS\n" + " where gender = 'F' and empno > 125";
-        sql( "filterable-model", sql ).returns( "EMPNO=130; GENDER=F; NAME=Alice" ).ok();
+        sql("filterable-model", sql).returns("EMPNO=130; GENDER=F; NAME=Alice").ok();
     }
 
 
@@ -388,51 +377,51 @@ public class CsvTest {
                 + " _MAP['title'] as title,\n"
                 + " CHAR_LENGTH(CAST(_MAP['title'] AS VARCHAR(30))) as len\n"
                 + " from \"archers\"\n";
-        sql( "bug", sql )
-                .returns( "ID=19990101; TITLE=Tractor trouble.; LEN=16", "ID=19990103; TITLE=Charlie's surprise.; LEN=19" )
+        sql("bug", sql)
+                .returns("ID=19990101; TITLE=Tractor trouble.; LEN=16", "ID=19990103; TITLE=Charlie's surprise.; LEN=19")
                 .ok();
     }
 
 
-    private Fluent sql( String model, String sql ) {
-        return new Fluent( model, sql, this::output );
+    private Fluent sql(String model, String sql) {
+        return new Fluent(model, sql, this::output);
     }
 
 
-    private void checkSql( String sql, String model, Consumer<ResultSet> fn ) throws SQLException {
+    private void checkSql(String sql, String model, Consumer<ResultSet> fn) throws SQLException {
         Connection connection = null;
         Statement statement = null;
         try {
             Properties info = new Properties();
-            info.put( "model", jsonPath( model ) );
-            connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
+            info.put("model", jsonPath(model));
+            connection = DriverManager.getConnection("jdbc:polyphenydbembedded:", info);
             statement = connection.createStatement();
-            final ResultSet resultSet = statement.executeQuery( sql );
-            fn.accept( resultSet );
+            final ResultSet resultSet = statement.executeQuery(sql);
+            fn.accept(resultSet);
         } finally {
-            close( connection, statement );
+            close(connection, statement);
         }
     }
 
 
-    private String jsonPath( String model ) {
-        return resourcePath( model + ".json" );
+    private String jsonPath(String model) {
+        return resourcePath(model + ".json");
     }
 
 
-    private String resourcePath( String path ) {
-        return Sources.of( CsvTest.class.getResource( "/" + path ) ).file().getAbsolutePath();
+    private String resourcePath(String path) {
+        return Sources.of(CsvTest.class.getResource("/" + path)).file().getAbsolutePath();
     }
 
 
-    private void output( ResultSet resultSet, PrintStream out ) throws SQLException {
+    private void output(ResultSet resultSet, PrintStream out) throws SQLException {
         final ResultSetMetaData metaData = resultSet.getMetaData();
         final int columnCount = metaData.getColumnCount();
-        while ( resultSet.next() ) {
-            for ( int i = 1; ; i++ ) {
-                out.print( resultSet.getString( i ) );
-                if ( i < columnCount ) {
-                    out.print( ", " );
+        while (resultSet.next()) {
+            for (int i = 1; ; i++) {
+                out.print(resultSet.getString(i));
+                if (i < columnCount) {
+                    out.print(", ");
                 } else {
                     out.println();
                     break;
@@ -445,20 +434,20 @@ public class CsvTest {
     @Test
     public void testJoinOnString() {
         final String sql = "select * from emps\n" + "join depts on emps.name = depts.name";
-        sql( "smart", sql ).ok();
+        sql("smart", sql).ok();
     }
 
 
     @Test
     public void testWackyColumns() {
         final String sql = "select * from wacky_column_names where false";
-        sql( "bug", sql ).returns().ok();
+        sql("bug", sql).returns().ok();
 
         final String sql2 = "select \"joined at\", \"naME\"\n"
                 + "from wacky_column_names\n"
                 + "where \"2gender\" = 'F'";
-        sql( "bug", sql2 )
-                .returns( "joined at=2005-09-07; naME=Wilma", "joined at=2007-01-01; naME=Alice" )
+        sql("bug", sql2)
+                .returns("joined at=2005-09-07; naME=Wilma", "joined at=2007-01-01; naME=Alice")
                 .ok();
     }
 
@@ -471,23 +460,23 @@ public class CsvTest {
         final String sql = "select count(*) as c,\n"
                 + "  {fn timestampadd(SQL_TSI_DAY, 1, JOINEDAT) } as t\n"
                 + "from EMPS group by {fn timestampadd(SQL_TSI_DAY, 1, JOINEDAT ) } ";
-        sql( "model", sql )
-                .returnsUnordered( "C=1; T=1996-08-04",
+        sql("model", sql)
+                .returnsUnordered("C=1; T=1996-08-04",
                         "C=1; T=2002-05-04",
                         "C=1; T=2005-09-08",
                         "C=1; T=2007-01-02",
-                        "C=1; T=2001-01-02" )
+                        "C=1; T=2001-01-02")
                 .ok();
 
         final String sql2 = "select count(*) as c,\n"
                 + "  {fn timestampadd(SQL_TSI_MONTH, 1, JOINEDAT) } as t\n"
                 + "from EMPS group by {fn timestampadd(SQL_TSI_MONTH, 1, JOINEDAT ) } ";
-        sql( "model", sql2 )
-                .returnsUnordered( "C=1; T=2002-06-03",
+        sql("model", sql2)
+                .returnsUnordered("C=1; T=2002-06-03",
                         "C=1; T=2005-10-07",
                         "C=1; T=2007-02-01",
                         "C=1; T=2001-02-01",
-                        "C=1; T=1996-09-03" )
+                        "C=1; T=1996-09-03")
                 .ok();
     }
 
@@ -497,13 +486,13 @@ public class CsvTest {
         final String sql = "select count(*) as c1 from EMPS group by NAME\n"
                 + "union\n"
                 + "select count(*) as c1 from EMPS group by NAME";
-        sql( "model", sql ).ok();
+        sql("model", sql).ok();
     }
 
 
     @Test
     public void testBoolean() {
-        sql( "smart", "select empno, slacker from emps where slacker" ).returns( "EMPNO=100; SLACKER=true" ).ok();
+        sql("smart", "select empno, slacker from emps where slacker").returns("EMPNO=100; SLACKER=true").ok();
     }
 
 
@@ -513,7 +502,7 @@ public class CsvTest {
                 + " FROM emps AS e"
                 + " JOIN depts AS d ON e.deptno = d.deptno"
                 + " GROUP BY d.name";
-        sql( "smart", sql ).returns( "NAME=Sales; CNT=1", "NAME=Marketing; CNT=2" ).ok();
+        sql("smart", sql).returns("NAME=Sales; CNT=1", "NAME=Marketing; CNT=2").ok();
     }
 
 
@@ -527,9 +516,9 @@ public class CsvTest {
                 + "FROM emps AS e\n"
                 + "WHERE cast(e.empno as bigint) in ";
         final int threshold = SqlToRelConverter.DEFAULT_IN_SUB_QUERY_THRESHOLD;
-        sql( "smart", sql + range( 130, threshold - 5 ) ).returns( "NAME=Alice" ).ok();
-        sql( "smart", sql + range( 130, threshold ) ).returns( "NAME=Alice" ).ok();
-        sql( "smart", sql + range( 130, threshold + 1000 ) ).returns( "NAME=Alice" ).ok();
+        sql("smart", sql + range(130, threshold - 5)).returns("NAME=Alice").ok();
+        sql("smart", sql + range(130, threshold)).returns("NAME=Alice").ok();
+        sql("smart", sql + range(130, threshold + 1000)).returns("NAME=Alice").ok();
     }
 
 
@@ -541,53 +530,53 @@ public class CsvTest {
         final String sql = "SELECT e.name\n"
                 + "FROM emps AS e\n"
                 + "WHERE e.empno in "
-                + range( 130, SqlToRelConverter.DEFAULT_IN_SUB_QUERY_THRESHOLD );
-        sql( "smart", sql ).returns( "NAME=Alice" ).ok();
+                + range(130, SqlToRelConverter.DEFAULT_IN_SUB_QUERY_THRESHOLD);
+        sql("smart", sql).returns("NAME=Alice").ok();
     }
 
 
-    private String range( int first, int count ) {
+    private String range(int first, int count) {
         final StringBuilder sb = new StringBuilder();
-        for ( int i = 0; i < count; i++ ) {
-            sb.append( i == 0 ? "(" : ", " ).append( first + i );
+        for (int i = 0; i < count; i++) {
+            sb.append(i == 0 ? "(" : ", ").append(first + i);
         }
-        return sb.append( ')' ).toString();
+        return sb.append(')').toString();
     }
 
 
     @Test
     public void testDateType() throws SQLException {
         Properties info = new Properties();
-        info.put( "model", jsonPath( "bug" ) );
+        info.put("model", jsonPath("bug"));
 
-        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info ) ) {
-            ResultSet res = connection.getMetaData().getColumns( null, null, "DATE", "JOINEDAT" );
+        try (Connection connection = DriverManager.getConnection("jdbc:polyphenydbembedded:", info)) {
+            ResultSet res = connection.getMetaData().getColumns(null, null, "DATE", "JOINEDAT");
             res.next();
-            Assert.assertEquals( res.getInt( "DATA_TYPE" ), java.sql.Types.DATE );
+            Assert.assertEquals(res.getInt("DATA_TYPE"), java.sql.Types.DATE);
 
-            res = connection.getMetaData().getColumns( null, null, "DATE", "JOINTIME" );
+            res = connection.getMetaData().getColumns(null, null, "DATE", "JOINTIME");
             res.next();
-            Assert.assertEquals( res.getInt( "DATA_TYPE" ), java.sql.Types.TIME );
+            Assert.assertEquals(res.getInt("DATA_TYPE"), java.sql.Types.TIME);
 
-            res = connection.getMetaData().getColumns( null, null, "DATE", "JOINTIMES" );
+            res = connection.getMetaData().getColumns(null, null, "DATE", "JOINTIMES");
             res.next();
-            Assert.assertEquals( res.getInt( "DATA_TYPE" ), java.sql.Types.TIMESTAMP );
+            Assert.assertEquals(res.getInt("DATA_TYPE"), java.sql.Types.TIMESTAMP);
 
             Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery( "select \"JOINEDAT\", \"JOINTIME\", \"JOINTIMES\" from \"DATE\" where EMPNO = 100" );
+            ResultSet resultSet = statement.executeQuery("select \"JOINEDAT\", \"JOINTIME\", \"JOINTIMES\" from \"DATE\" where EMPNO = 100");
             resultSet.next();
 
             // date
-            Assert.assertEquals( java.sql.Date.class, resultSet.getDate( 1 ).getClass() );
-            Assert.assertEquals( java.sql.Date.valueOf( "1996-08-03" ), resultSet.getDate( 1 ) );
+            Assert.assertEquals(java.sql.Date.class, resultSet.getDate(1).getClass());
+            Assert.assertEquals(java.sql.Date.valueOf("1996-08-03"), resultSet.getDate(1));
 
             // time
-            Assert.assertEquals( java.sql.Time.class, resultSet.getTime( 2 ).getClass() );
-            Assert.assertEquals( java.sql.Time.valueOf( "00:01:02" ), resultSet.getTime( 2 ) );
+            Assert.assertEquals(java.sql.Time.class, resultSet.getTime(2).getClass());
+            Assert.assertEquals(java.sql.Time.valueOf("00:01:02"), resultSet.getTime(2));
 
             // timestamp
-            Assert.assertEquals( java.sql.Timestamp.class, resultSet.getTimestamp( 3 ).getClass() );
-            Assert.assertEquals( java.sql.Timestamp.valueOf( "1996-08-03 00:01:02" ), resultSet.getTimestamp( 3 ) );
+            Assert.assertEquals(java.sql.Timestamp.class, resultSet.getTimestamp(3).getClass());
+            Assert.assertEquals(java.sql.Timestamp.valueOf("1996-08-03 00:01:02"), resultSet.getTimestamp(3));
 
         }
     }
@@ -599,34 +588,34 @@ public class CsvTest {
     @Test
     public void testDateType2() throws SQLException {
         Properties info = new Properties();
-        info.put( "model", jsonPath( "bug" ) );
+        info.put("model", jsonPath("bug"));
 
-        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info ) ) {
+        try (Connection connection = DriverManager.getConnection("jdbc:polyphenydbembedded:", info)) {
             Statement statement = connection.createStatement();
             final String sql = "select * from \"DATE\"\n" + "where EMPNO >= 140 and EMPNO < 200";
-            ResultSet resultSet = statement.executeQuery( sql );
+            ResultSet resultSet = statement.executeQuery(sql);
             int n = 0;
-            while ( resultSet.next() ) {
+            while (resultSet.next()) {
                 ++n;
-                final int empId = resultSet.getInt( 1 );
-                final String date = resultSet.getString( 2 );
-                final String time = resultSet.getString( 3 );
-                final String timestamp = resultSet.getString( 4 );
-                assertThat( date, is( "2015-12-31" ) );
-                switch ( empId ) {
+                final int empId = resultSet.getInt(1);
+                final String date = resultSet.getString(2);
+                final String time = resultSet.getString(3);
+                final String timestamp = resultSet.getString(4);
+                assertThat(date, is("2015-12-31"));
+                switch (empId) {
                     case 140:
-                        assertThat( time, is( "07:15:56" ) );
-                        assertThat( timestamp, is( "2015-12-31 07:15:56" ) );
+                        assertThat(time, is("07:15:56"));
+                        assertThat(timestamp, is("2015-12-31 07:15:56"));
                         break;
                     case 150:
-                        assertThat( time, is( "13:31:21" ) );
-                        assertThat( timestamp, is( "2015-12-31 13:31:21" ) );
+                        assertThat(time, is("13:31:21"));
+                        assertThat(timestamp, is("2015-12-31 13:31:21"));
                         break;
                     default:
                         throw new AssertionError();
                 }
             }
-            assertThat( n, is( 2 ) );
+            assertThat(n, is(2));
             resultSet.close();
             statement.close();
         }
@@ -639,19 +628,19 @@ public class CsvTest {
     @Test
     public void testTimestampGroupBy() throws SQLException {
         Properties info = new Properties();
-        info.put( "model", jsonPath( "bug" ) );
+        info.put("model", jsonPath("bug"));
         // Use LIMIT to ensure that results are deterministic without ORDER BY
         final String sql = "select \"EMPNO\", \"JOINTIMES\"\n" + "from (select * from \"DATE\" limit 1)\n" + "group by \"EMPNO\",\"JOINTIMES\"";
         try (
-                Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
+                Connection connection = DriverManager.getConnection("jdbc:polyphenydbembedded:", info);
                 Statement statement = connection.createStatement();
-                ResultSet resultSet = statement.executeQuery( sql )
+                ResultSet resultSet = statement.executeQuery(sql)
         ) {
-            assertThat( resultSet.next(), is( true ) );
-            final Timestamp timestamp = resultSet.getTimestamp( 2 );
-            Assert.assertThat( timestamp, isA( java.sql.Timestamp.class ) );
+            assertThat(resultSet.next(), is(true));
+            final Timestamp timestamp = resultSet.getTimestamp(2);
+            Assert.assertThat(timestamp, isA(java.sql.Timestamp.class));
             // Note: This logic is time zone specific, but the same time zone is used in the CSV adapter and this test, so they should cancel out.
-            Assert.assertThat( timestamp, is( java.sql.Timestamp.valueOf( "1996-08-03 00:01:02.0" ) ) );
+            Assert.assertThat(timestamp, is(java.sql.Timestamp.valueOf("1996-08-03 00:01:02.0")));
         }
     }
 
@@ -662,16 +651,16 @@ public class CsvTest {
     @Test
     public void testTimestampOrderBy() throws SQLException {
         Properties info = new Properties();
-        info.put( "model", jsonPath( "bug" ) );
+        info.put("model", jsonPath("bug"));
         final String sql = "select \"EMPNO\",\"JOINTIMES\" from \"DATE\"\n" + "order by \"JOINTIMES\"";
         try (
-                Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
+                Connection connection = DriverManager.getConnection("jdbc:polyphenydbembedded:", info);
                 Statement statement = connection.createStatement();
-                ResultSet resultSet = statement.executeQuery( sql )
+                ResultSet resultSet = statement.executeQuery(sql)
         ) {
-            assertThat( resultSet.next(), is( true ) );
-            final Timestamp timestamp = resultSet.getTimestamp( 2 );
-            Assert.assertThat( timestamp, is( java.sql.Timestamp.valueOf( "1996-08-03 00:01:02" ) ) );
+            assertThat(resultSet.next(), is(true));
+            final Timestamp timestamp = resultSet.getTimestamp(2);
+            Assert.assertThat(timestamp, is(java.sql.Timestamp.valueOf("1996-08-03 00:01:02")));
         }
     }
 
@@ -682,16 +671,16 @@ public class CsvTest {
     @Test
     public void testTimestampGroupByAndOrderBy() throws SQLException {
         Properties info = new Properties();
-        info.put( "model", jsonPath( "bug" ) );
+        info.put("model", jsonPath("bug"));
         final String sql = "select \"EMPNO\", \"JOINTIMES\" from \"DATE\"\n" + "group by \"EMPNO\",\"JOINTIMES\" order by \"JOINTIMES\"";
         try (
-                Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
+                Connection connection = DriverManager.getConnection("jdbc:polyphenydbembedded:", info);
                 Statement statement = connection.createStatement();
-                ResultSet resultSet = statement.executeQuery( sql )
+                ResultSet resultSet = statement.executeQuery(sql)
         ) {
-            assertThat( resultSet.next(), is( true ) );
-            final Timestamp timestamp = resultSet.getTimestamp( 2 );
-            Assert.assertThat( timestamp, is( java.sql.Timestamp.valueOf( "1996-08-03 00:01:02" ) ) );
+            assertThat(resultSet.next(), is(true));
+            final Timestamp timestamp = resultSet.getTimestamp(2);
+            Assert.assertThat(timestamp, is(java.sql.Timestamp.valueOf("1996-08-03 00:01:02")));
         }
     }
 
@@ -702,22 +691,22 @@ public class CsvTest {
     @Test
     public void testFilterOnNullableTimestamp() throws Exception {
         Properties info = new Properties();
-        info.put( "model", jsonPath( "bug" ) );
+        info.put("model", jsonPath("bug"));
 
-        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info ) ) {
+        try (Connection connection = DriverManager.getConnection("jdbc:polyphenydbembedded:", info)) {
             final Statement statement = connection.createStatement();
 
             // date
             final String sql1 = "select JOINEDAT from \"DATE\"\n" + "where JOINEDAT < {d '2000-01-01'}\n" + "or JOINEDAT >= {d '2017-01-01'}";
-            final ResultSet joinedAt = statement.executeQuery( sql1 );
-            assertThat( joinedAt.next(), is( true ) );
-            assertThat( joinedAt.getDate( 1 ), is( java.sql.Date.valueOf( "1996-08-03" ) ) );
+            final ResultSet joinedAt = statement.executeQuery(sql1);
+            assertThat(joinedAt.next(), is(true));
+            assertThat(joinedAt.getDate(1), is(java.sql.Date.valueOf("1996-08-03")));
 
             // time
             final String sql2 = "select JOINTIME from \"DATE\"\n" + "where JOINTIME >= {t '07:00:00'}\n" + "and JOINTIME < {t '08:00:00'}";
-            final ResultSet joinTime = statement.executeQuery( sql2 );
-            assertThat( joinTime.next(), is( true ) );
-            assertThat( joinTime.getTime( 1 ), is( java.sql.Time.valueOf( "07:15:56" ) ) );
+            final ResultSet joinTime = statement.executeQuery(sql2);
+            assertThat(joinTime.next(), is(true));
+            assertThat(joinTime.getTime(1), is(java.sql.Time.valueOf("07:15:56")));
 
             // timestamp
             final String sql3 = "select JOINTIMES,\n"
@@ -727,15 +716,15 @@ public class CsvTest {
                     + "and JOINTIMES < {ts '2006-01-01 00:00:00'})\n"
                     + "or (JOINTIMES >= {ts '2003-01-01 00:00:00'}\n"
                     + "and JOINTIMES < {ts '2007-01-01 00:00:00'})";
-            final ResultSet joinTimes = statement.executeQuery( sql3 );
-            assertThat( joinTimes.next(), is( true ) );
-            assertThat( joinTimes.getTimestamp( 1 ), is( java.sql.Timestamp.valueOf( "2005-09-07 00:00:00" ) ) );
-            assertThat( joinTimes.getTimestamp( 2 ), is( java.sql.Timestamp.valueOf( "2005-09-08 00:00:00" ) ) );
+            final ResultSet joinTimes = statement.executeQuery(sql3);
+            assertThat(joinTimes.next(), is(true));
+            assertThat(joinTimes.getTimestamp(1), is(java.sql.Timestamp.valueOf("2005-09-07 00:00:00")));
+            assertThat(joinTimes.getTimestamp(2), is(java.sql.Timestamp.valueOf("2005-09-08 00:00:00")));
 
             final String sql4 = "select JOINTIMES, extract(year from JOINTIMES)\n" + "from \"DATE\"";
-            final ResultSet joinTimes2 = statement.executeQuery( sql4 );
-            assertThat( joinTimes2.next(), is( true ) );
-            assertThat( joinTimes2.getTimestamp( 1 ), is( java.sql.Timestamp.valueOf( "1996-08-03 00:01:02" ) ) );
+            final ResultSet joinTimes2 = statement.executeQuery(sql4);
+            assertThat(joinTimes2.next(), is(true));
+            assertThat(joinTimes2.getTimestamp(1), is(java.sql.Timestamp.valueOf("1996-08-03 00:01:02")));
         }
     }
 
@@ -746,23 +735,23 @@ public class CsvTest {
     @Test
     public void testFilterOnNullableTimestamp2() throws Exception {
         Properties info = new Properties();
-        info.put( "model", jsonPath( "bug" ) );
+        info.put("model", jsonPath("bug"));
 
-        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info ) ) {
+        try (Connection connection = DriverManager.getConnection("jdbc:polyphenydbembedded:", info)) {
             final Statement statement = connection.createStatement();
             final String sql1 = "select extract(year from JOINTIMES)\n" + "from \"DATE\"\n" + "where extract(year from JOINTIMES) in (2006, 2007)";
-            final ResultSet joinTimes = statement.executeQuery( sql1 );
-            assertThat( joinTimes.next(), is( true ) );
-            assertThat( joinTimes.getInt( 1 ), is( 2007 ) );
+            final ResultSet joinTimes = statement.executeQuery(sql1);
+            assertThat(joinTimes.next(), is(true));
+            assertThat(joinTimes.getInt(1), is(2007));
 
             final String sql2 = "select extract(year from JOINTIMES),\n" + "  count(0) from \"DATE\"\n" + "where extract(year from JOINTIMES) between 2007 and 2016\n" + "group by extract(year from JOINTIMES)";
-            final ResultSet joinTimes2 = statement.executeQuery( sql2 );
-            assertThat( joinTimes2.next(), is( true ) );
-            assertThat( joinTimes2.getInt( 1 ), is( 2007 ) );
-            assertThat( joinTimes2.getLong( 2 ), is( 1L ) );
-            assertThat( joinTimes2.next(), is( true ) );
-            assertThat( joinTimes2.getInt( 1 ), is( 2015 ) );
-            assertThat( joinTimes2.getLong( 2 ), is( 2L ) );
+            final ResultSet joinTimes2 = statement.executeQuery(sql2);
+            assertThat(joinTimes2.next(), is(true));
+            assertThat(joinTimes2.getInt(1), is(2007));
+            assertThat(joinTimes2.getLong(2), is(1L));
+            assertThat(joinTimes2.next(), is(true));
+            assertThat(joinTimes2.getInt(1), is(2015));
+            assertThat(joinTimes2.getLong(2), is(2L));
         }
     }
 
@@ -773,31 +762,31 @@ public class CsvTest {
     @Test
     public void testNonNullFilterOnDateType() throws SQLException {
         Properties info = new Properties();
-        info.put( "model", jsonPath( "bug" ) );
+        info.put("model", jsonPath("bug"));
 
-        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info ) ) {
+        try (Connection connection = DriverManager.getConnection("jdbc:polyphenydbembedded:", info)) {
             final Statement statement = connection.createStatement();
 
             // date
             final String sql1 = "select JOINEDAT from \"DATE\"\n" + "where JOINEDAT is not null";
-            final ResultSet joinedAt = statement.executeQuery( sql1 );
-            assertThat( joinedAt.next(), is( true ) );
-            assertThat( joinedAt.getDate( 1 ).getClass(), equalTo( java.sql.Date.class ) );
-            assertThat( joinedAt.getDate( 1 ), is( java.sql.Date.valueOf( "1996-08-03" ) ) );
+            final ResultSet joinedAt = statement.executeQuery(sql1);
+            assertThat(joinedAt.next(), is(true));
+            assertThat(joinedAt.getDate(1).getClass(), equalTo(java.sql.Date.class));
+            assertThat(joinedAt.getDate(1), is(java.sql.Date.valueOf("1996-08-03")));
 
             // time
             final String sql2 = "select JOINTIME from \"DATE\"\n" + "where JOINTIME is not null";
-            final ResultSet joinTime = statement.executeQuery( sql2 );
-            assertThat( joinTime.next(), is( true ) );
-            assertThat( joinTime.getTime( 1 ).getClass(), equalTo( java.sql.Time.class ) );
-            assertThat( joinTime.getTime( 1 ), is( java.sql.Time.valueOf( "00:01:02" ) ) );
+            final ResultSet joinTime = statement.executeQuery(sql2);
+            assertThat(joinTime.next(), is(true));
+            assertThat(joinTime.getTime(1).getClass(), equalTo(java.sql.Time.class));
+            assertThat(joinTime.getTime(1), is(java.sql.Time.valueOf("00:01:02")));
 
             // timestamp
             final String sql3 = "select JOINTIMES from \"DATE\"\n" + "where JOINTIMES is not null";
-            final ResultSet joinTimes = statement.executeQuery( sql3 );
-            assertThat( joinTimes.next(), is( true ) );
-            assertThat( joinTimes.getTimestamp( 1 ).getClass(), equalTo( java.sql.Timestamp.class ) );
-            assertThat( joinTimes.getTimestamp( 1 ), is( java.sql.Timestamp.valueOf( "1996-08-03 00:01:02" ) ) );
+            final ResultSet joinTimes = statement.executeQuery(sql3);
+            assertThat(joinTimes.next(), is(true));
+            assertThat(joinTimes.getTimestamp(1).getClass(), equalTo(java.sql.Timestamp.class));
+            assertThat(joinTimes.getTimestamp(1), is(java.sql.Timestamp.valueOf("1996-08-03 00:01:02")));
         }
     }
 
@@ -808,31 +797,31 @@ public class CsvTest {
     @Test
     public void testGreaterThanFilterOnDateType() throws SQLException {
         Properties info = new Properties();
-        info.put( "model", jsonPath( "bug" ) );
+        info.put("model", jsonPath("bug"));
 
-        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info ) ) {
+        try (Connection connection = DriverManager.getConnection("jdbc:polyphenydbembedded:", info)) {
             final Statement statement = connection.createStatement();
 
             // date
             final String sql1 = "select JOINEDAT from \"DATE\"\n" + "where JOINEDAT > {d '1990-01-01'}";
-            final ResultSet joinedAt = statement.executeQuery( sql1 );
-            assertThat( joinedAt.next(), is( true ) );
-            assertThat( joinedAt.getDate( 1 ).getClass(), equalTo( java.sql.Date.class ) );
-            assertThat( joinedAt.getDate( 1 ), is( java.sql.Date.valueOf( "1996-08-03" ) ) );
+            final ResultSet joinedAt = statement.executeQuery(sql1);
+            assertThat(joinedAt.next(), is(true));
+            assertThat(joinedAt.getDate(1).getClass(), equalTo(java.sql.Date.class));
+            assertThat(joinedAt.getDate(1), is(java.sql.Date.valueOf("1996-08-03")));
 
             // time
             final String sql2 = "select JOINTIME from \"DATE\"\n" + "where JOINTIME > {t '00:00:00'}";
-            final ResultSet joinTime = statement.executeQuery( sql2 );
-            assertThat( joinTime.next(), is( true ) );
-            assertThat( joinTime.getTime( 1 ).getClass(), equalTo( java.sql.Time.class ) );
-            assertThat( joinTime.getTime( 1 ), is( java.sql.Time.valueOf( "00:01:02" ) ) );
+            final ResultSet joinTime = statement.executeQuery(sql2);
+            assertThat(joinTime.next(), is(true));
+            assertThat(joinTime.getTime(1).getClass(), equalTo(java.sql.Time.class));
+            assertThat(joinTime.getTime(1), is(java.sql.Time.valueOf("00:01:02")));
 
             // timestamp
             final String sql3 = "select JOINTIMES from \"DATE\"\n" + "where JOINTIMES > {ts '1990-01-01 00:00:00'}";
-            final ResultSet joinTimes = statement.executeQuery( sql3 );
-            assertThat( joinTimes.next(), is( true ) );
-            assertThat( joinTimes.getTimestamp( 1 ).getClass(), equalTo( java.sql.Timestamp.class ) );
-            assertThat( joinTimes.getTimestamp( 1 ), is( java.sql.Timestamp.valueOf( "1996-08-03 00:01:02" ) ) );
+            final ResultSet joinTimes = statement.executeQuery(sql3);
+            assertThat(joinTimes.next(), is(true));
+            assertThat(joinTimes.getTimestamp(1).getClass(), equalTo(java.sql.Timestamp.class));
+            assertThat(joinTimes.getTimestamp(1), is(java.sql.Timestamp.valueOf("1996-08-03 00:01:02")));
         }
     }
 
@@ -840,9 +829,9 @@ public class CsvTest {
     /**
      * Creates a command that appends a line to the CSV file.
      */
-    private Callable<Void> writeLine( final PrintWriter pw, final String line ) {
+    private Callable<Void> writeLine(final PrintWriter pw, final String line) {
         return () -> {
-            pw.println( line );
+            pw.println(line);
             pw.flush();
             return null;
         };
@@ -852,9 +841,9 @@ public class CsvTest {
     /**
      * Creates a command that sleeps.
      */
-    private Callable<Void> sleep( final long millis ) {
+    private Callable<Void> sleep(final long millis) {
         return () -> {
-            Thread.sleep( millis );
+            Thread.sleep(millis);
             return null;
         };
     }
@@ -863,7 +852,7 @@ public class CsvTest {
     /**
      * Creates a command that cancels a statement.
      */
-    private Callable<Void> cancel( final Statement statement ) {
+    private Callable<Void> cancel(final Statement statement) {
         return () -> {
             statement.cancel();
             return null;
@@ -871,11 +860,11 @@ public class CsvTest {
     }
 
 
-    private Void output( ResultSet resultSet ) {
+    private Void output(ResultSet resultSet) {
         try {
-            output( resultSet, System.out );
-        } catch ( SQLException e ) {
-            throw new RuntimeException( e );
+            output(resultSet, System.out);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
         return null;
     }
@@ -891,7 +880,7 @@ public class CsvTest {
         /**
          * Queue of commands.
          */
-        final BlockingQueue<Callable<E>> queue = new ArrayBlockingQueue<>( 5 );
+        final BlockingQueue<Callable<E>> queue = new ArrayBlockingQueue<>(5);
         /**
          * The poison pill command.
          */
@@ -909,14 +898,14 @@ public class CsvTest {
         @Override
         public void run() {
             try {
-                for ( ; ; ) {
+                for (; ; ) {
                     final Callable<E> c = queue.take();
-                    if ( c == end ) {
+                    if (c == end) {
                         return;
                     }
                     this.v = c.call();
                 }
-            } catch ( Exception e ) {
+            } catch (Exception e) {
                 this.e = e;
             }
         }
@@ -925,8 +914,8 @@ public class CsvTest {
         @Override
         public void close() {
             try {
-                queue.put( end );
-            } catch ( InterruptedException e ) {
+                queue.put(end);
+            } catch (InterruptedException e) {
                 // ignore
             }
         }
@@ -943,7 +932,7 @@ public class CsvTest {
         private final Consumer<ResultSet> expect;
 
 
-        Fluent( String model, String sql, Consumer<ResultSet> expect ) {
+        Fluent(String model, String sql, Consumer<ResultSet> expect) {
             this.model = model;
             this.sql = sql;
             this.expect = expect;
@@ -955,10 +944,10 @@ public class CsvTest {
          */
         Fluent ok() {
             try {
-                checkSql( sql, model, expect );
+                checkSql(sql, model, expect);
                 return this;
-            } catch ( SQLException e ) {
-                throw new RuntimeException( e );
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
         }
 
@@ -966,16 +955,16 @@ public class CsvTest {
         /**
          * Assigns a function to call to test whether output is correct.
          */
-        Fluent checking( Consumer<ResultSet> expect ) {
-            return new Fluent( model, sql, expect );
+        Fluent checking(Consumer<ResultSet> expect) {
+            return new Fluent(model, sql, expect);
         }
 
 
         /**
          * Sets the rows that are expected to be returned from the SQL query.
          */
-        Fluent returns( String... expectedLines ) {
-            return checking( expect( expectedLines ) );
+        Fluent returns(String... expectedLines) {
+            return checking(expect(expectedLines));
         }
 
 
@@ -983,8 +972,8 @@ public class CsvTest {
          * Sets the rows that are expected to be returned from the SQL query,
          * in no particular order.
          */
-        Fluent returnsUnordered( String... expectedLines ) {
-            return checking( expectUnordered( expectedLines ) );
+        Fluent returnsUnordered(String... expectedLines) {
+            return checking(expectUnordered(expectedLines));
         }
     }
 }

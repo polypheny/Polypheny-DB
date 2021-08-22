@@ -53,6 +53,17 @@ import java.util.function.Predicate;
  * @param <E> Row type
  */
 class BlockchainEnumerator<E> implements Enumerator<E> {
+    private static final FastDateFormat TIME_FORMAT_DATE;
+    private static final FastDateFormat TIME_FORMAT_TIME;
+    private static final FastDateFormat TIME_FORMAT_TIMESTAMP;
+
+    static {
+        final TimeZone gmt = TimeZone.getTimeZone("GMT");
+        TIME_FORMAT_DATE = FastDateFormat.getInstance("yyyy-MM-dd", gmt);
+        TIME_FORMAT_TIME = FastDateFormat.getInstance("HH:mm:ss", gmt);
+        TIME_FORMAT_TIMESTAMP = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss", gmt);
+    }
+
     private final String clientUrl;
     private final BlockReader reader;
     private final String[] filterValues;
@@ -61,35 +72,35 @@ class BlockchainEnumerator<E> implements Enumerator<E> {
     private final int blocks;
     private E current;
 
-    private static final FastDateFormat TIME_FORMAT_DATE;
-    private static final FastDateFormat TIME_FORMAT_TIME;
-    private static final FastDateFormat TIME_FORMAT_TIMESTAMP;
 
-    static {
-        final TimeZone gmt = TimeZone.getTimeZone( "GMT" );
-        TIME_FORMAT_DATE = FastDateFormat.getInstance( "yyyy-MM-dd", gmt );
-        TIME_FORMAT_TIME = FastDateFormat.getInstance( "HH:mm:ss", gmt );
-        TIME_FORMAT_TIMESTAMP = FastDateFormat.getInstance( "yyyy-MM-dd HH:mm:ss", gmt );
-    }
-
-
-        BlockchainEnumerator(String clientUrl, int blocks, AtomicBoolean cancelFlag, boolean stream, String[] filterValues, BlockchainMapper mapper, Predicate<BigInteger> blockNumberPredicate, RowConverter<E> rowConverter ) {
+    BlockchainEnumerator(String clientUrl, int blocks, AtomicBoolean cancelFlag, boolean stream, String[] filterValues, BlockchainMapper mapper, Predicate<BigInteger> blockNumberPredicate, RowConverter<E> rowConverter) {
         this.clientUrl = clientUrl;
         this.cancelFlag = cancelFlag;
         this.rowConverter = rowConverter;
         this.filterValues = filterValues;
-        this.reader = mapper.makeReader(clientUrl,blocks,blockNumberPredicate);
+        this.reader = mapper.makeReader(clientUrl, blocks, blockNumberPredicate);
         this.blocks = blocks;
     }
 
 
     static RowConverter<?> converter(List<BlockchainFieldType> fieldTypes, int[] fields) {
-        if ( fields.length == 1 ) {
+        if (fields.length == 1) {
             final int field = fields[0];
-            return new SingleColumnRowConverter( fieldTypes.get( field ), field );
+            return new SingleColumnRowConverter(fieldTypes.get(field), field);
         } else {
-            return new ArrayRowConverter( fieldTypes, fields );
+            return new ArrayRowConverter(fieldTypes, fields);
         }
+    }
+
+    /**
+     * Returns an array of integers {0, ..., n - 1}.
+     */
+    static int[] identityList(int n) {
+        int[] integers = new int[n];
+        for (int i = 0; i < n; i++) {
+            integers[i] = i;
+        }
+        return integers;
     }
 
     @Override
@@ -97,65 +108,49 @@ class BlockchainEnumerator<E> implements Enumerator<E> {
         return current;
     }
 
-
     @Override
     public boolean moveNext() {
         try {
             outer:
-            for ( ; ; ) {
-                if ( cancelFlag.get() ) {
+            for (; ; ) {
+                if (cancelFlag.get()) {
                     return false;
                 }
                 final String[] strings = reader.readNext();
-                if ( strings == null ) {
+                if (strings == null) {
                     return false;
                 }
-                if ( filterValues != null ) {
-                    for ( int i = 0; i < strings.length; i++ ) {
+                if (filterValues != null) {
+                    for (int i = 0; i < strings.length; i++) {
                         String filterValue = filterValues[i];
-                        if ( filterValue != null ) {
-                            if ( !filterValue.equals( strings[i] ) ) {
+                        if (filterValue != null) {
+                            if (!filterValue.equals(strings[i])) {
                                 continue outer;
                             }
                         }
                     }
                 }
-                current = rowConverter.convertRow( strings );
+                current = rowConverter.convertRow(strings);
                 return true;
             }
-        } catch ( IOException e ) {
-            throw new RuntimeException( e );
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
-
 
     @Override
     public void reset() {
         throw new UnsupportedOperationException();
     }
 
-
     @Override
     public void close() {
         try {
             reader.close();
-        } catch ( IOException e ) {
-            throw new RuntimeException( "Error closing Blockchain reader", e );
+        } catch (IOException e) {
+            throw new RuntimeException("Error closing Blockchain reader", e);
         }
     }
-
-
-    /**
-     * Returns an array of integers {0, ..., n - 1}.
-     */
-    static int[] identityList( int n ) {
-        int[] integers = new int[n];
-        for ( int i = 0; i < n; i++ ) {
-            integers[i] = i;
-        }
-        return integers;
-    }
-
 
     /**
      * Row converter.
@@ -164,78 +159,78 @@ class BlockchainEnumerator<E> implements Enumerator<E> {
      */
     abstract static class RowConverter<E> {
 
-        abstract E convertRow( String[] rows );
+        abstract E convertRow(String[] rows);
 
 
-        protected Object convert( BlockchainFieldType fieldType, String string ) {
-            if ( fieldType == null ) {
+        protected Object convert(BlockchainFieldType fieldType, String string) {
+            if (fieldType == null) {
                 return string;
             }
-            switch ( fieldType ) {
+            switch (fieldType) {
                 case BOOLEAN:
-                    if ( string.length() == 0 ) {
+                    if (string.length() == 0) {
                         return null;
                     }
-                    return Boolean.parseBoolean( string );
+                    return Boolean.parseBoolean(string);
                 case BYTE:
-                    if ( string.length() == 0 ) {
+                    if (string.length() == 0) {
                         return null;
                     }
-                    return Byte.parseByte( string );
+                    return Byte.parseByte(string);
                 case SHORT:
-                    if ( string.length() == 0 ) {
+                    if (string.length() == 0) {
                         return null;
                     }
-                    return Short.parseShort( string );
+                    return Short.parseShort(string);
                 case INT:
-                    if ( string.length() == 0 ) {
+                    if (string.length() == 0) {
                         return null;
                     }
-                    return Integer.parseInt( string );
+                    return Integer.parseInt(string);
                 case LONG:
-                    if ( string.length() == 0 ) {
+                    if (string.length() == 0) {
                         return null;
                     }
 
                     return new BigInteger(string);
                 case FLOAT:
-                    if ( string.length() == 0 ) {
+                    if (string.length() == 0) {
                         return null;
                     }
-                    return Float.parseFloat( string );
+                    return Float.parseFloat(string);
                 case DOUBLE:
-                    if ( string.length() == 0 ) {
+                    if (string.length() == 0) {
                         return null;
                     }
-                    return Double.parseDouble( string );
+                    return Double.parseDouble(string);
                 case DATE:
-                    if ( string.length() == 0 ) {
+                    if (string.length() == 0) {
                         return null;
                     }
                     try {
-                        Date date = TIME_FORMAT_DATE.parse( string );
+                        Date date = TIME_FORMAT_DATE.parse(string);
                         return (int) (date.getTime() / DateTimeUtils.MILLIS_PER_DAY);
-                    } catch ( ParseException e ) {
+                    } catch (ParseException e) {
                         return null;
                     }
                 case TIME:
-                    if ( string.length() == 0 ) {
+                    if (string.length() == 0) {
                         return null;
                     }
                     try {
-                        Date date = TIME_FORMAT_TIME.parse( string );
+                        Date date = TIME_FORMAT_TIME.parse(string);
                         return (int) date.getTime();
-                    } catch ( ParseException e ) {
+                    } catch (ParseException e) {
                         return null;
                     }
                 case TIMESTAMP:
-                    if ( string.length() == 0 ) {
+                    if (string.length() == 0) {
                         return null;
                     }
                     try {
                         Date date = new Date(Long.parseLong(string) * 1000);
                         return date.getTime();
-                    } catch ( Exception e ) {
+                    } catch (Exception e) {
                         return null;
                     }
                 case STRING:
@@ -257,46 +252,46 @@ class BlockchainEnumerator<E> implements Enumerator<E> {
         private final boolean stream;
 
 
-        ArrayRowConverter( List<BlockchainFieldType> fieldTypes, int[] fields ) {
-            this.fieldTypes = fieldTypes.toArray( new BlockchainFieldType[0] );
+        ArrayRowConverter(List<BlockchainFieldType> fieldTypes, int[] fields) {
+            this.fieldTypes = fieldTypes.toArray(new BlockchainFieldType[0]);
             this.fields = fields;
             this.stream = false;
         }
 
 
-        ArrayRowConverter( List<BlockchainFieldType> fieldTypes, int[] fields, boolean stream ) {
-            this.fieldTypes = fieldTypes.toArray( new BlockchainFieldType[0] );
+        ArrayRowConverter(List<BlockchainFieldType> fieldTypes, int[] fields, boolean stream) {
+            this.fieldTypes = fieldTypes.toArray(new BlockchainFieldType[0]);
             this.fields = fields;
             this.stream = stream;
         }
 
 
         @Override
-        public Object[] convertRow( String[] strings ) {
-            if ( stream ) {
-                return convertStreamRow( strings );
+        public Object[] convertRow(String[] strings) {
+            if (stream) {
+                return convertStreamRow(strings);
             } else {
-                return convertNormalRow( strings );
+                return convertNormalRow(strings);
             }
         }
 
 
-        public Object[] convertNormalRow( String[] strings ) {
+        public Object[] convertNormalRow(String[] strings) {
             final Object[] objects = new Object[fields.length];
-            for ( int i = 0; i < fields.length; i++ ) {
+            for (int i = 0; i < fields.length; i++) {
                 int field = fields[i];
-                objects[i] = convert( fieldTypes[i], strings[field] );
+                objects[i] = convert(fieldTypes[i], strings[field]);
             }
             return objects;
         }
 
 
-        public Object[] convertStreamRow( String[] strings ) {
+        public Object[] convertStreamRow(String[] strings) {
             final Object[] objects = new Object[fields.length];
             objects[0] = System.currentTimeMillis();
-            for ( int i = 0; i < fields.length; i++ ) {
+            for (int i = 0; i < fields.length; i++) {
                 int field = fields[i];
-                objects[i] = convert( fieldTypes[i], strings[field] );
+                objects[i] = convert(fieldTypes[i], strings[field]);
             }
             return objects;
         }
@@ -312,15 +307,15 @@ class BlockchainEnumerator<E> implements Enumerator<E> {
         private final int fieldIndex;
 
 
-        private SingleColumnRowConverter( BlockchainFieldType fieldType, int fieldIndex ) {
+        private SingleColumnRowConverter(BlockchainFieldType fieldType, int fieldIndex) {
             this.fieldType = fieldType;
             this.fieldIndex = fieldIndex;
         }
 
 
         @Override
-        public Object convertRow( String[] strings ) {
-            return convert( fieldType, strings[fieldIndex] );
+        public Object convertRow(String[] strings) {
+            return convert(fieldType, strings[fieldIndex]);
         }
     }
 }

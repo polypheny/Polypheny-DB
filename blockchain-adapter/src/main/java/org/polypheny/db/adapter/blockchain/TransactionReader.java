@@ -38,10 +38,10 @@ public class TransactionReader extends BlockReader {
     @Override
     public String[] readNext() throws IOException {
         System.out.println("Reading");
-        if(this.blockReads <= 0)
+        if (this.blockReads <= 0)
             return null;
 
-        while(this.currentBlock.compareTo(BigInteger.ZERO) == 1 && (transactionsList == null || transactionsList.size() == 0)){
+        while (this.currentBlock.compareTo(BigInteger.ZERO) == 1 && (transactionsList == null || transactionsList.size() == 0)) {
             if (blockNumberPredicate.test(this.currentBlock)) {
                 transactionsList = web3j.ethGetBlockByNumber(DefaultBlockParameter.valueOf(currentBlock), true).send().getBlock().getTransactions();
                 transactionIndex = 0;
@@ -52,7 +52,7 @@ public class TransactionReader extends BlockReader {
 
         String[] res = BlockchainMapper.TRANSACTION.map(transactionsList.get(transactionIndex++).get());
 
-        if(transactionIndex >= transactionsList.size()){
+        if (transactionIndex >= transactionsList.size()) {
             transactionsList = null;
         }
 
