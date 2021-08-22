@@ -153,7 +153,7 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
 
     @Override
     public int hashCode() {
-        if ( this.physicalPlacementsOfPartitions.isPresent() ) {
+        if ( this.physicalPlacementsOfPartitions.isPresent() && !this.physicalPlacementsOfPartitions.get().isEmpty()) {
             val value = this.physicalPlacementsOfPartitions.get().values()
                     .stream().flatMap( Collection::stream )
                     .map( elem -> elem.right.hashCode() * elem.left.hashCode() )
