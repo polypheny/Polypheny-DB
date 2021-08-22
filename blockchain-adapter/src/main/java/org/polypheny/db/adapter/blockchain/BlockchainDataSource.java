@@ -9,16 +9,17 @@ import java.util.List;
 import java.util.Map;
 
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
+import org.polypheny.db.adapter.Adapter.AdapterSettingBoolean;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
@@ -38,17 +39,19 @@ import org.web3j.protocol.http.HttpService;
         usedModes = DeployMode.EMBEDDED)
 @AdapterSettingString(name = "ClientUrl", description = "The URL of the ethereum JSONRPC client",defaultValue = "https://mainnet.infura.io/v3/4d06589e97064040b5da99cf4051ef04", position = 1)
 @AdapterSettingInteger(name = "Blocks", description = "The number of Blocks to fetch when processing a query",defaultValue = 10, position = 2)
+@AdapterSettingBoolean(name = "ExperimentalFiltering", description = "Experimentally filter Past Block",defaultValue = false,position = 3)
 public class BlockchainDataSource extends DataSource {
 
     private String clientURL;
     private int blocks;
+    private boolean experimentalFiltering;
     private BlockchainSchema currentSchema;
 
     public BlockchainDataSource(final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );
-
         setClientURL( settings );
         this.blocks = Integer.parseInt(settings.get("Blocks"));
+        this.experimentalFiltering = Boolean.parseBoolean(settings.get("ExperimentalFiltering"));
         registerInformationPage( uniqueName );
         enableInformationPage();
     }
@@ -69,13 +72,13 @@ public class BlockchainDataSource extends DataSource {
 
     @Override
     public void createNewSchema( SchemaPlus rootSchema, String name ) {
-        currentSchema = new BlockchainSchema(this.clientURL,this.blocks);
+        currentSchema = new BlockchainSchema(this.clientURL,this.blocks,this.experimentalFiltering);
     }
 
 
     @Override
     public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore ) {
-        return currentSchema.   createBlockchainTable(catalogTable,columnPlacementsOnStore,this);
+        return currentSchema.createBlockchainTable(catalogTable,columnPlacementsOnStore,this);
     }
 
 
@@ -87,7 +90,7 @@ public class BlockchainDataSource extends DataSource {
 
     @Override
     public void truncate( Context context, CatalogTable table ) {
-        throw new RuntimeException( "CSV adapter does not support truncate" );
+        throw new RuntimeException( "Blockchain adapter does not support truncate" );
     }
 
 
@@ -117,7 +120,7 @@ public class BlockchainDataSource extends DataSource {
                     dimension,
                     cardinality,
                     false,
-                    "ethereum",
+                    "public",
                     "block",
                     blockCol,
                     position,
@@ -138,7 +141,7 @@ public class BlockchainDataSource extends DataSource {
                     dimension,
                     cardinality,
                     false,
-                    "ethereum",
+                    "public",
                     "transaction",
                     transactCol,
                     position,
@@ -185,8 +188,8 @@ public class BlockchainDataSource extends DataSource {
 
     protected void registerInformationPage( String uniqueName ) {
         InformationManager im = InformationManager.getInstance();
-        /*informationPage = new InformationPage( uniqueName, "CSV Data Source" ).setLabel( "Sources" );
-        im.addPage( informationPage );*/
+        InformationPage informationPage = new InformationPage( uniqueName, "Blockchain Data Source" ).setLabel( "Sources" );
+        im.addPage( informationPage );
 
         for ( Map.Entry<String, List<ExportedColumn>> entry : getExportedColumns().entrySet() ) {
             InformationGroup group = new InformationGroup( informationPage, entry.getValue().get( 0 ).physicalSchemaName );

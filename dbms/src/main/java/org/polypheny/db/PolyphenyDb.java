@@ -86,7 +86,6 @@ public class PolyphenyDb {
                 log.debug( "PolyphenyDb.main( {} )", java.util.Arrays.toString( args ) );
             }
             final SingleCommand<PolyphenyDb> parser = SingleCommand.singleCommand( PolyphenyDb.class );
-            System.out.println(parser.getCommandMetadata());
             final PolyphenyDb polyphenyDb = parser.parse( args );
 
             polyphenyDb.runPolyphenyDb();
@@ -182,7 +181,6 @@ public class PolyphenyDb {
         } catch ( Exception e ) {
             log.error( "Unable to retrieve java runtime information." );
         }
-        System.out.println("Done");
         try {
             new HostInformation();
         } catch ( Exception e ) {

@@ -20,6 +20,7 @@ import org.polypheny.db.type.PolyType;
 import org.web3j.protocol.core.methods.response.EthBlock;
 
 import java.math.BigInteger;
+import java.util.function.Predicate;
 
 public enum BlockchainMapper {
     BLOCK,
@@ -90,10 +91,10 @@ public enum BlockchainMapper {
         return str;
     }
 
-    public BlockReader makeReader(String clientUrl, int blocks) {
+    public BlockReader makeReader(String clientUrl, int blocks, Predicate<BigInteger> blockNumberPredicate) {
         if (this == BLOCK){
-            return new BlockReader(clientUrl,blocks);
+            return new BlockReader(clientUrl,blocks,blockNumberPredicate);
         }
-        return new TransactionReader(clientUrl,blocks);
+        return new TransactionReader(clientUrl,blocks,blockNumberPredicate);
     }
 }

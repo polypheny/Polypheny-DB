@@ -22,26 +22,32 @@ import org.web3j.protocol.core.methods.response.EthBlock;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.function.Predicate;
 
 public class TransactionReader extends BlockReader {
 
     private List<EthBlock.TransactionResult> transactionsList;
     private int transactionIndex;
 
-    TransactionReader(String clientUrl,int blocks) {
-        super(clientUrl, blocks);
+    TransactionReader(String clientUrl, int blocks, Predicate<BigInteger> blockNumberPrecate) {
+        super(clientUrl, blocks, blockNumberPrecate);
         transactionIndex = -1;
     }
 
 
     @Override
     public String[] readNext() throws IOException {
-        if(this.currentBlock.compareTo(this.lastBlock) == -1)
-                    return null;
-        while(transactionsList == null || transactionsList.size() == 0) {
-            transactionsList = web3j.ethGetBlockByNumber(DefaultBlockParameter.valueOf(currentBlock), true).send().getBlock().getTransactions();
-            currentBlock = currentBlock.subtract(BigInteger.ONE);
-            transactionIndex = 0;
+        System.out.println("Reading");
+        if(this.blockReads <= 0)
+            return null;
+
+        while(this.currentBlock.compareTo(BigInteger.ZERO) == 1 && (transactionsList == null || transactionsList.size() == 0)){
+            if (blockNumberPredicate.test(this.currentBlock)) {
+                transactionsList = web3j.ethGetBlockByNumber(DefaultBlockParameter.valueOf(currentBlock), true).send().getBlock().getTransactions();
+                transactionIndex = 0;
+                blockReads--;
+            }
+            this.currentBlock = this.currentBlock.subtract(BigInteger.ONE);
         }
 
         String[] res = BlockchainMapper.TRANSACTION.map(transactionsList.get(transactionIndex++).get());

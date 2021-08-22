@@ -42,31 +42,22 @@ import org.web3j.protocol.http.HttpService;
 import java.io.Closeable;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.function.Predicate;
 
 class BlockReader implements Closeable {
 
     protected final Web3j web3j;
-    protected final BigInteger latestBlock;
-    protected final BigInteger lastBlock;
+    protected int blockReads;
+    protected final Predicate<BigInteger> blockNumberPredicate;
     protected BigInteger currentBlock;
 
-    /**
-     * The default line to start reading.
-     */
-    public static final int DEFAULT_SKIP_LINES = 0;
 
-    /**
-     * The default file monitor delay.
-     */
-    public static final long DEFAULT_MONITOR_DELAY = 2000;
-
-
-    BlockReader(String clientUrl, int blocks) {
+    BlockReader(String clientUrl, int blocks, Predicate<BigInteger> blockNumberPredicate) {
         this.web3j = Web3j.build(new HttpService(clientUrl));
+        this.blockReads = blocks;
+        this.blockNumberPredicate = blockNumberPredicate;
         try {
-            this.latestBlock = web3j.ethBlockNumber().send().getBlockNumber();
-            this.lastBlock = this.latestBlock.subtract(BigInteger.valueOf(blocks));
-            this.currentBlock  = latestBlock;
+            this.currentBlock  = web3j.ethBlockNumber().send().getBlockNumber();;
         } catch (IOException e) {
             throw new RuntimeException("Unable to connect to server: "+clientUrl);
         }
@@ -75,12 +66,17 @@ class BlockReader implements Closeable {
 
 
     public String[] readNext() throws IOException {
-        if(this.currentBlock.compareTo(this.lastBlock) == -1)
+        if(this.blockReads <= 0)
             return null;
-        EthBlock.Block block = web3j.ethGetBlockByNumber(DefaultBlockParameter.valueOf(this.currentBlock),false).send().getBlock();
-
-        this.currentBlock = this.currentBlock.subtract(BigInteger.ONE);
-        return BlockchainMapper.BLOCK.map(block);
+        EthBlock.Block block = null;
+        while(this.currentBlock.compareTo(BigInteger.ZERO) == 1 && block == null){
+            if (blockNumberPredicate.test(this.currentBlock)) {
+                block = web3j.ethGetBlockByNumber(DefaultBlockParameter.valueOf(this.currentBlock), false).send().getBlock();
+                blockReads--;
+            }
+            this.currentBlock = this.currentBlock.subtract(BigInteger.ONE);
+        }
+        return block == null ? null : BlockchainMapper.BLOCK.map(block);
     }
 
 

@@ -44,10 +44,11 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 
 
 /**
- * Enumerator that reads from a CSV file.
+ * Enumerator that reads from a Blockchain.
  *
  * @param <E> Row type
  */
@@ -64,12 +65,6 @@ class BlockchainEnumerator<E> implements Enumerator<E> {
     private static final FastDateFormat TIME_FORMAT_TIME;
     private static final FastDateFormat TIME_FORMAT_TIMESTAMP;
 
-    /**
-     * Name of the column that is implicitly created in a CSV stream table to hold the data arrival time.
-     */
-    private static final String ROWTIME_COLUMN_NAME = "ROWTIME";
-
-
     static {
         final TimeZone gmt = TimeZone.getTimeZone( "GMT" );
         TIME_FORMAT_DATE = FastDateFormat.getInstance( "yyyy-MM-dd", gmt );
@@ -78,17 +73,17 @@ class BlockchainEnumerator<E> implements Enumerator<E> {
     }
 
 
-        BlockchainEnumerator(String clientUrl,int blocks, AtomicBoolean cancelFlag, boolean stream, String[] filterValues,BlockchainMapper mapper,RowConverter<E> rowConverter ) {
+        BlockchainEnumerator(String clientUrl, int blocks, AtomicBoolean cancelFlag, boolean stream, String[] filterValues, BlockchainMapper mapper, Predicate<BigInteger> blockNumberPredicate, RowConverter<E> rowConverter ) {
         this.clientUrl = clientUrl;
         this.cancelFlag = cancelFlag;
         this.rowConverter = rowConverter;
         this.filterValues = filterValues;
-        this.reader = mapper.makeReader(clientUrl,blocks);
+        this.reader = mapper.makeReader(clientUrl,blocks,blockNumberPredicate);
         this.blocks = blocks;
     }
 
 
-    private static RowConverter<?> converter( List<BlockchainFieldType> fieldTypes, int[] fields ) {
+    static RowConverter<?> converter(List<BlockchainFieldType> fieldTypes, int[] fields) {
         if ( fields.length == 1 ) {
             final int field = fields[0];
             return new SingleColumnRowConverter( fieldTypes.get( field ), field );

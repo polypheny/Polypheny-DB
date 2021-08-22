@@ -38,11 +38,13 @@ import java.util.*;
 public class BlockchainSchema extends AbstractSchema {
     private final String clientUrl;
     private final int blocks;
+    private final boolean experimentalFiltering;
     private Map<String, BlockchainTable> tableMap = new HashMap<>();
 
-    public BlockchainSchema(String clientUrl,int blocks) {
+    public BlockchainSchema(String clientUrl,int blocks,boolean experimentalFiltering) {
         this.clientUrl = clientUrl;
         this.blocks  = blocks;
+        this.experimentalFiltering = experimentalFiltering;
     }
 
 
@@ -62,7 +64,7 @@ public class BlockchainSchema extends AbstractSchema {
 
         int[] fields = fieldIds.stream().mapToInt( i -> i ).toArray();
         BlockchainMapper mapper = catalogTable.name.equals("block")  ? BlockchainMapper.BLOCK: BlockchainMapper.TRANSACTION;
-        BlockchainTable table = new BlockchainTable(clientUrl,blocks, RelDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields,mapper, blockchainDataSource);
+        BlockchainTable table = new BlockchainTable(clientUrl,blocks,experimentalFiltering, RelDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields,mapper, blockchainDataSource);
         tableMap.put( catalogTable.name, table );
         return table;
     }
