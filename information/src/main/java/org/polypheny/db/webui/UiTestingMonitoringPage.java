@@ -20,19 +20,46 @@ import org.polypheny.db.information.*;
 
 public class UiTestingMonitoringPage {
 
-    private static InformationPage p = new InformationPage( "page1", "MonitoringTestPage", "Test Page 1" );
-    private static InformationGroup g = new InformationGroup( p, "Group 1.1" );
+    private static InformationPage p = new InformationPage("page1", "MonitoringTestPage", "Test Page 1");
+    private static InformationGroup g = new InformationGroup(p, "Group 1");
+    private static InformationGroup g2 = new InformationGroup(p, "Group 2");
 
     static {
         InformationManager im = InformationManager.getInstance();
 
-        im.addPage( p );
-        im.addGroup( g );
+        im.addPage(p);
+        im.addGroup(g);
+        im.addGroup(g2);
 
-        Information i1 = new InformationProgress( g, "progval", 30 );
-        Information i2 = new InformationHtml( g, "<b>bold</b>" );
+        Information i1 = new InformationHtml(g, "<b>BOLD HTML TEXT HERE</b>");
+        final String[] test = {"", ""};
+        Information i2 = new InformationAction(g, "THIS IS A BUTTON", (params) -> {
+            test[0] = "a";
+            test[1] = params.get("param1");
+            return "done";
+        });
 
-        im.registerInformation( i1, i2 );
+        String[] labels = {"Jan", "Feb", "März", "April", "Mail", "Juni"};
+        Integer[] graphData1 = {5, 2, 7, 3, 2, 1};
+        Integer[] graphData2 = {7, 8, 2, 2, 7, 3};
+
+        InformationGraph.GraphData[] graphData = {new InformationGraph.GraphData<>("data1", graphData1), new InformationGraph.GraphData<>("data2", graphData2)};
+        Information i3 = new InformationGraph(g, InformationGraph.GraphType.LINE, labels, graphData);
+
+        InformationGraph.GraphData[] graphDatatoo = {new InformationGraph.GraphData<>("data1", graphData1)};
+        Information i4 = new InformationGraph(g2, InformationGraph.GraphType.PIE, labels, graphDatatoo);
+
+        Information i5 = new InformationGraph(g2, InformationGraph.GraphType.RADAR, labels, graphDatatoo);
+
+        Information i6 = new InformationGraph(g, InformationGraph.GraphType.DOUGHNUT, labels, graphDatatoo);
+
+        Information i7 = new InformationProgress(g2, "progval", 30);
+
+        Information i8 = new InformationText(g2, "This is Text!!");
+        Information i9 = new InformationQueryPlan(g2, "THIS IS QUERY PLAN");
+
+
+        im.registerInformation(i1, i2, i3, i4, i5, i6, i7, i8, i9);
     }
 
 }

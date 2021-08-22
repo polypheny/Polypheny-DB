@@ -16,92 +16,97 @@
 
 package org.polypheny.db.webui;
 
+import com.google.common.collect.ImmutableList;
 import org.polypheny.db.config.*;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
+
 public class UiTestingConfigPage {
+
+
+    private static class TestClass {
+
+        int a;
+
+    }
+
+
+    private enum testEnum {FOO, BAR, FOO_BAR}
+
+    private static class FooImplementation extends TestClass {
+
+        int b;
+
+    }
+
+    private static class BarImplementation extends TestClass {
+
+        int c;
+
+    }
+
+
+    private static class FooBarImplementation extends TestClass {
+
+        int d;
+
+    }
 
     static {
         ConfigManager cm = ConfigManager.getInstance();
 
-        WebUiPage p1 = new WebUiPage( "uiconfigtest", "UiConfigTestPage", "Configuration Description" );
+        WebUiPage p1 = new WebUiPage("uiconfigtest", "UiConfigTestPage", "Configuration Description");
 
-        WebUiGroup g1 = new WebUiGroup( "g1", p1.getId() ).withTitle( "Language Options" ).withDescription( "Select Language Options" );
-        WebUiGroup g2 = new WebUiGroup( "g2", p1.getId() ).withTitle( "Miscellaneous" ).withDescription( "Miscellaneous options" );
-        WebUiGroup g3 = new WebUiGroup( "g3", p1.getId() ).withTitle( "Resource Limits" ).withDescription( "Set the resource limits" );
-        WebUiGroup g4 = new WebUiGroup( "g4", p1.getId() ).withTitle( "Error handling and logging" ).withDescription( "Settings for the error handling and logging" );
-        WebUiGroup g5 = new WebUiGroup( "g5", p1.getId() ).withTitle( "Data handling" );
-        WebUiGroup g6 = new WebUiGroup( "g6", p1.getId() ).withTitle( "Paths and Directories" );
-        WebUiGroup g7 = new WebUiGroup( "g7", p1.getId() ).withTitle( "File uploads" );
-        WebUiGroup g8 = new WebUiGroup( "g8", p1.getId() ).withTitle( "Fopen wrappers" );
+        WebUiGroup g1 = new WebUiGroup("g1", p1.getId(), 1).withTitle("Config").withDescription("Select Config Options");
+        WebUiGroup g2 = new WebUiGroup("g2", p1.getId()).withTitle("Config Too").withDescription("Select Config Options");
 
-        cm.registerWebUiPage( p1 );
-        cm.registerWebUiGroup( g1 );
-        cm.registerWebUiGroup( g2 );
-        cm.registerWebUiGroup( g3 );
-        cm.registerWebUiGroup( g4 );
-        cm.registerWebUiGroup( g5 );
-        cm.registerWebUiGroup( g6 );
-        cm.registerWebUiGroup( g7 );
-        cm.registerWebUiGroup( g8 );
 
-        Config c1 = new ConfigBoolean( "engine", true ).withUi( "g1" );
-        Config c2 = new ConfigBoolean( "short_open_tag", false ).withUi( "g1" );
-        Config c3 = new ConfigInteger( "precision", 14 ).withUi( "g1" );
-        Config c4 = new ConfigInteger( "output_buffering", 4096 ).withUi( "g1" ).withWebUiValidation( WebUiValidator.REQUIRED );
-        Config c5 = new ConfigBoolean( "zlib.output_compression", false ).withUi( "g1" );
-        Config c6 = new ConfigBoolean( "implicit_flush", false ).withUi( "g1" );
-        Config c7 = new ConfigInteger( "serialize_precision", -1 ).withUi( "g1" );
-        Config c8 = new ConfigBoolean( "zend.enable_gc", true ).withUi( "g1" );
-        cm.registerConfigs( c1, c2, c3, c4, c5, c6, c7, c8 );
+        cm.registerWebUiPage(p1);
+        cm.registerWebUiGroup(g1);
+        cm.registerWebUiGroup(g2);
 
-        Config c9 = new ConfigBoolean( "expose_php", true ).withUi( "g2", 1 );
-        cm.registerConfig( c9 );
+
+        Config c1 = new ConfigBoolean("Boolean True Test", true).withUi("g1");
+        Config c2 = new ConfigBoolean("Boolean False Test", false).withUi("g1");
+        Config c3 = new ConfigInteger("Integer Test", 11).withUi("g1");
+        Config c4 = new ConfigInteger("Negative Integer Test", -1).withUi("g1");
+        Config c5 = new ConfigClazz("clazz Test", TestClass.class, FooImplementation.class).withUi("g1");
+
+        List<Class> l = new ArrayList<>();
+        l.add(FooImplementation.class);
+        l.add(BarImplementation.class);
 
 
 
-        Config c10 = new ConfigInteger( "max_execution_time", 30 ).withUi( "g3" );
-        Config c11 = new ConfigInteger( "max_input_time", 60 ).withUi( "g3" );
-        Config c12 = new ConfigString( "memory_limit", "128M" ).withUi( "g3" );
-        cm.registerConfigs( c10, c11, c12 );
+        Config c6 = new ConfigEnumList( "enumList", "Test description", testEnum.class, ImmutableList.of( testEnum.BAR ) ).withUi("g1");
+        Config c7 = new ConfigClazzList("clazzList Test", TestClass.class, l).withUi("g2");
+        Config c8 = new ConfigDecimal("Decimal Test", BigDecimal.valueOf(43.43431)).withUi("g2");
+        Config c9 = new ConfigDouble("Double Test", Double.valueOf(2.2)).withUi("g2");
+        Config c10 = new ConfigEnum("Enum Test", "Test description", testEnum.class, testEnum.FOO_BAR).withUi("g2");
+        List<Integer> list = new ArrayList<Integer>();
+        list.add(1);
+        list.add(2);
+        list.add(3);
 
-        Config c13 = new ConfigString( "error_reporting", "E_ALL" ).withUi( "g4" );
-        Config c14 = new ConfigBoolean( "display_errors", false ).withUi( "g4" );
-        Config c15 = new ConfigBoolean( "display_startup_errors", false ).withUi( "g4" );
-        Config c16 = new ConfigBoolean( "log_errors", true ).withUi( "g4" );
-        Config c17 = new ConfigInteger( "log_errors_max_len", 1024 ).withUi( "g4" );
-        Config c18 = new ConfigBoolean( "ignore_repeated_errors", false ).withUi( "g4" );
-        Config c19 = new ConfigBoolean( "ignore_repeated_source", false ).withUi( "g4" );
-        Config c20 = new ConfigBoolean( "report_memleaks", true ).withUi( "g4" );
-        Config c21 = new ConfigBoolean( "html_errors", true ).withUi( "g4" );
-        Config c22 = new ConfigString( "error_log", "/Applications/error.log" ).withUi( "g4" );
-        cm.registerConfigs( c13, c14, c15, c16, c17, c18, c19, c20, c21, c22 );
+        Config c11 = new ConfigLong("Long", 12312L).withUi("g2");
 
-        Config c23 = new ConfigString( "request_order", "GP" ).withUi( "g5" );
-        Config c24 = new ConfigBoolean( "register_argc_argv", true ).withUi( "g5" );
-        Config c25 = new ConfigBoolean( "auto_globals_jit", true ).withUi( "g5" );
-        Config c26 = new ConfigString( "post_max_size", "8M" ).withUi( "g5" );
-        Config c27 = new ConfigString( "default_mimetype", "text/html" ).withUi( "g5" );
-        Config c28 = new ConfigString( "default_charset", "UTF-8" ).withUi( "g5" );
-        cm.registerConfigs( c23, c24, c25, c26, c27, c28 );
+        // Config c45 = new ConfigList("List",list,TestClass.class);
 
-        Config c29 = new ConfigString( "include_path", ".:/Applications" ).withUi( "g6" );
-        Config c30 = new ConfigString( "extension_dir", "/extensions" ).withUi( "g6" );
-        Config c31 = new ConfigBoolean( "enable_dl", true ).withUi( "g6" );
-        cm.registerConfigs( c29, c30, c31 );
+//        int[] array = { 1, 2, 3, 4, 5 };
+//        Config c40 = new ConfigArray( "array", array ).withUi("g1");
 
-        Config c32 = new ConfigBoolean( "file_uploads", true ).withUi( "g7" );
-        Config c33 = new ConfigString( "upload_tmp_dir", "/directory" ).withUi( "g7" );
-        Config c34 = new ConfigString( "upload_max_filesize", "32M" ).withUi( "g7" );
-        Config c35 = new ConfigInteger( "max_file_uploads", 20 ).withUi( "g7" ).withJavaValidation( a -> (int) a > 0 );
-        cm.registerConfigs( c32, c33, c34, c35 );
 
-        Config c36 = new ConfigBoolean( "allow_url_fopen", true ).withUi( "g8" );
-        Config c37 = new ConfigBoolean( "allow_url_include", false ).withUi( "g8" );
-        Config c38 = new ConfigInteger( "default_socket_timeout", 60 ).withUi( "g8" );
-        cm.registerConfigs( c36, c37, c38 );
+//        int[][] table = new int[][]{
+//                { 1, 2, 3 },
+//                { 4, 5, 6 }
+//        };
+//        Config c41 = new ConfigTable( "table", table ).withUi("g1");
+        cm.registerConfigs(c1, c2, c3, c4, c5, c6, c7, c8, c9, c10,c11);
 
     }
-
 
 
 }
