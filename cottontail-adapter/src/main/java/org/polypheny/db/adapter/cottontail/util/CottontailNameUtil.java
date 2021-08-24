@@ -17,16 +17,13 @@
 package org.polypheny.db.adapter.cottontail.util;
 
 
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 
 
 public class CottontailNameUtil {
 
-    private final static Pattern idRevPattern = Pattern.compile( "^(col|tab|sch)([0-9]+)(?>r([0-9]+))?$" );
+    private final static Pattern idRevPattern = Pattern.compile( "^(col|tab|sch)([0-9]+)(_part)([0-9]+)(?>r([0-9]+))?$" );
 
 
     public static String createPhysicalTableName( long tableId, long partitionId ) {
@@ -46,15 +43,17 @@ public class CottontailNameUtil {
     public static String incrementNameRevision( String name ) {
         Matcher m = idRevPattern.matcher( name );
         long id;
+        long partId;
         long rev;
         String type;
         if ( m.find() ) {
             type = m.group( 1 );
             id = Long.parseLong( m.group( 2 ) );
-            if ( m.group( 3 ) == null ) {
+            partId = Long.parseLong( m.group( 4 ) );
+            if ( m.group( 5 ) == null ) {
                 rev = 0L;
             } else {
-                rev = Long.parseLong( m.group( 3 ) );
+                rev = Long.parseLong( m.group( 5 ) );
             }
         } else {
             throw new IllegalArgumentException( "Not a physical name!" );
@@ -62,7 +61,7 @@ public class CottontailNameUtil {
 
         rev += 1L;
 
-        return type + id + "r" + rev;
+        return type + id + "_part" + partId + "r" + rev;
     }
 
 }
