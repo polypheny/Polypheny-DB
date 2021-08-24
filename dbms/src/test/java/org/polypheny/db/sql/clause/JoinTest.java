@@ -18,12 +18,10 @@ package org.polypheny.db.sql.clause;
 
 
 import com.google.common.collect.ImmutableList;
-
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
-
 import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -34,9 +32,9 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
 
-@SuppressWarnings({"SqlDialectInspection", "SqlNoDataSourceInspection"})
+@SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-@Category({AdapterTestSuite.class})
+@Category({ AdapterTestSuite.class })
 public class JoinTest {
 
 
@@ -50,13 +48,13 @@ public class JoinTest {
 
 
     private static void addTestData() throws SQLException {
-        try (JdbcConnection jdbcConnection = new JdbcConnection(false)) {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
-            try (Statement statement = connection.createStatement()) {
-                statement.executeUpdate("CREATE TABLE TableA(ID VARCHAR(255) NOT NULL, NAME VARCHAR(255), AMOUNT INTEGER, PRIMARY KEY (ID))");
-                statement.executeUpdate("INSERT INTO TableA VALUES ('Ab', 'Name1', 10000.00)");
-                statement.executeUpdate("INSERT INTO TableA VALUES ('Bc', 'Name2',  5000.00)");
-                statement.executeUpdate("INSERT INTO TableA VALUES ('Cd', 'Name3',  7000.00)");
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE TableA(ID VARCHAR(255) NOT NULL, NAME VARCHAR(255), AMOUNT INTEGER, PRIMARY KEY (ID))" );
+                statement.executeUpdate( "INSERT INTO TableA VALUES ('Ab', 'Name1', 10000.00)" );
+                statement.executeUpdate( "INSERT INTO TableA VALUES ('Bc', 'Name2',  5000.00)" );
+                statement.executeUpdate( "INSERT INTO TableA VALUES ('Cd', 'Name3',  7000.00)" );
 
                 connection.commit();
             }
@@ -66,10 +64,10 @@ public class JoinTest {
 
     @AfterClass
     public static void stop() throws SQLException {
-        try (JdbcConnection jdbcConnection = new JdbcConnection(true)) {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
-            try (Statement statement = connection.createStatement()) {
-                statement.executeUpdate("DROP TABLE TableA");
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "DROP TABLE TableA" );
             }
             connection.commit();
         }
@@ -80,118 +78,96 @@ public class JoinTest {
 
     @Test
     public void naturalJoinTests() throws SQLException {
-        try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
-
-            try (Statement statement = connection.createStatement()) {
-
+            try ( Statement statement = connection.createStatement() ) {
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{"Name1", "Ab", 10000},
-                        new Object[]{"Name2", "Bc", 5000},
-                        new Object[]{"Name3", "Cd", 7000}
+                        new Object[]{ "Name1", "Ab", 10000 },
+                        new Object[]{ "Name2", "Bc", 5000 },
+                        new Object[]{ "Name3", "Cd", 7000 }
                 );
-
                 TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT * FROM (SELECT id, name FROM TableA) AS S NATURAL JOIN (SELECT name, Amount  FROM TableA) AS T"), expectedResult, true);
-
+                        statement.executeQuery( "SELECT * FROM (SELECT id, name FROM TableA) AS S NATURAL JOIN (SELECT name, Amount  FROM TableA) AS T" ),
+                        expectedResult,
+                        true );
             }
-
         }
-
     }
 
 
     @Test
     public void innerJoinTest() throws SQLException {
-        try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
-
-            try (Statement statement = connection.createStatement()) {
-
+            try ( Statement statement = connection.createStatement() ) {
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{"Ab", "Name1", "Name1", 10000},
-                        new Object[]{"Bc", "Name2", "Name2", 5000},
-                        new Object[]{"Cd", "Name3", "Name3", 7000}
+                        new Object[]{ "Ab", "Name1", "Name1", 10000 },
+                        new Object[]{ "Bc", "Name2", "Name2", 5000 },
+                        new Object[]{ "Cd", "Name3", "Name3", 7000 }
                 );
-
                 TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT * FROM (SELECT id, name FROM TableA) AS S INNER JOIN (SELECT name, Amount  FROM TableA) AS T ON S.name = T.name"), expectedResult, true);
-
+                        statement.executeQuery( "SELECT * FROM (SELECT id, name FROM TableA) AS S INNER JOIN (SELECT name, Amount  FROM TableA) AS T ON S.name = T.name" ),
+                        expectedResult,
+                        true );
             }
-
         }
-
     }
 
 
     @Test
     public void leftJoinTest() throws SQLException {
-        try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
-
-            try (Statement statement = connection.createStatement()) {
-
+            try ( Statement statement = connection.createStatement() ) {
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{"Ab", "Name1", "Name1", 10000},
-                        new Object[]{"Bc", "Name2", "Name2", 5000},
-                        new Object[]{"Cd", "Name3", "Name3", 7000}
+                        new Object[]{ "Ab", "Name1", "Name1", 10000 },
+                        new Object[]{ "Bc", "Name2", "Name2", 5000 },
+                        new Object[]{ "Cd", "Name3", "Name3", 7000 }
                 );
-
                 TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT * FROM (SELECT id, name FROM TableA) AS S LEFT JOIN (SELECT name, Amount  FROM TableA) AS T ON S.name = T.name"), expectedResult, true);
-
+                        statement.executeQuery( "SELECT * FROM (SELECT id, name FROM TableA) AS S LEFT JOIN (SELECT name, Amount  FROM TableA) AS T ON S.name = T.name" ),
+                        expectedResult,
+                        true );
             }
-
         }
-
     }
 
 
     @Test
     public void rightJoinTest() throws SQLException {
-        try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
-
-            try (Statement statement = connection.createStatement()) {
-
+            try ( Statement statement = connection.createStatement() ) {
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{"Ab", "Name1", "Name1", 10000},
-                        new Object[]{"Bc", "Name2", "Name2", 5000},
-                        new Object[]{"Cd", "Name3", "Name3", 7000}
+                        new Object[]{ "Ab", "Name1", "Name1", 10000 },
+                        new Object[]{ "Bc", "Name2", "Name2", 5000 },
+                        new Object[]{ "Cd", "Name3", "Name3", 7000 }
                 );
-
                 TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT * FROM (SELECT id, name FROM TableA) AS S RIGHT JOIN (SELECT name, Amount  FROM TableA) AS T ON S.name = T.name"), expectedResult, true);
-
+                        statement.executeQuery( "SELECT * FROM (SELECT id, name FROM TableA) AS S RIGHT JOIN (SELECT name, Amount  FROM TableA) AS T ON S.name = T.name" ),
+                        expectedResult,
+                        true );
             }
-
         }
-
     }
 
 
     @Test
     public void fullJoinTest() throws SQLException {
-        try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
-
-            try (Statement statement = connection.createStatement()) {
-
+            try ( Statement statement = connection.createStatement() ) {
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{"Ab", "Name1", "Name1", 10000},
-                        new Object[]{"Bc", "Name2", "Name2", 5000},
-                        new Object[]{"Cd", "Name3", "Name3", 7000}
+                        new Object[]{ "Ab", "Name1", "Name1", 10000 },
+                        new Object[]{ "Bc", "Name2", "Name2", 5000 },
+                        new Object[]{ "Cd", "Name3", "Name3", 7000 }
                 );
-
                 TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT * FROM (SELECT id, name FROM TableA) AS S FULL JOIN (SELECT name, Amount  FROM TableA) AS T ON S.name = T.name"), expectedResult, true);
-
+                        statement.executeQuery( "SELECT * FROM (SELECT id, name FROM TableA) AS S FULL JOIN (SELECT name, Amount  FROM TableA) AS T ON S.name = T.name" ),
+                        expectedResult,
+                        true );
             }
-
         }
-
     }
 
-
 }
-

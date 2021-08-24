@@ -18,13 +18,11 @@ package org.polypheny.db.sql.fun;
 
 
 import com.google.common.collect.ImmutableList;
-
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
-
 import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -33,11 +31,10 @@ import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.excluded.CassandraExcluded;
 
-@SuppressWarnings({"SqlDialectInspection", "SqlNoDataSourceInspection"})
+@SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-@Category({AdapterTestSuite.class})
+@Category({ AdapterTestSuite.class })
 public class PowerAbsModFunctionTest {
 
 
@@ -49,24 +46,23 @@ public class PowerAbsModFunctionTest {
 
 
     private static void addTestData() throws SQLException {
-        try (JdbcConnection jdbcConnection = new JdbcConnection(false)) {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
-            try (Statement statement = connection.createStatement()) {
-                statement.executeUpdate("CREATE TABLE TableDecimal( ID INTEGER NOT NULL,Data DECIMAL(2,1), PRIMARY KEY (ID) )");
-                statement.executeUpdate("INSERT INTO TableDecimal VALUES (0, -2.0)");
-                statement.executeUpdate("INSERT INTO TableDecimal VALUES (1, 3.0)");
-                statement.executeUpdate("INSERT INTO TableDecimal VALUES (2, 4.0)");
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE TableDecimal( ID INTEGER NOT NULL,Data DECIMAL(2,1), PRIMARY KEY (ID) )" );
+                statement.executeUpdate( "INSERT INTO TableDecimal VALUES (0, -2.0)" );
+                statement.executeUpdate( "INSERT INTO TableDecimal VALUES (1, 3.0)" );
+                statement.executeUpdate( "INSERT INTO TableDecimal VALUES (2, 4.0)" );
 
-                statement.executeUpdate("CREATE TABLE TableDouble( ID INTEGER NOT NULL, Data DOUBLE , PRIMARY KEY (ID) )");
-                statement.executeUpdate("INSERT INTO TableDouble VALUES (0, 2.0)");
-                statement.executeUpdate("INSERT INTO TableDouble VALUES (1, -3.0)");
-                statement.executeUpdate("INSERT INTO TableDouble VALUES (2, 4.0)");
+                statement.executeUpdate( "CREATE TABLE TableDouble( ID INTEGER NOT NULL, Data DOUBLE , PRIMARY KEY (ID) )" );
+                statement.executeUpdate( "INSERT INTO TableDouble VALUES (0, 2.0)" );
+                statement.executeUpdate( "INSERT INTO TableDouble VALUES (1, -3.0)" );
+                statement.executeUpdate( "INSERT INTO TableDouble VALUES (2, 4.0)" );
 
-                statement.executeUpdate("CREATE TABLE TableInteger( ID INTEGER NOT NULL, Data INTEGER, PRIMARY KEY (ID) )");
-                statement.executeUpdate("INSERT INTO TableInteger VALUES (0, 2)");
-                statement.executeUpdate("INSERT INTO TableInteger VALUES (1, 3)");
-                statement.executeUpdate("INSERT INTO TableInteger VALUES (2, -4)");
-
+                statement.executeUpdate( "CREATE TABLE TableInteger( ID INTEGER NOT NULL, Data INTEGER, PRIMARY KEY (ID) )" );
+                statement.executeUpdate( "INSERT INTO TableInteger VALUES (0, 2)" );
+                statement.executeUpdate( "INSERT INTO TableInteger VALUES (1, 3)" );
+                statement.executeUpdate( "INSERT INTO TableInteger VALUES (2, -4)" );
 
                 connection.commit();
             }
@@ -76,12 +72,12 @@ public class PowerAbsModFunctionTest {
 
     @AfterClass
     public static void stop() throws SQLException {
-        try (JdbcConnection jdbcConnection = new JdbcConnection(true)) {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            try (Statement statement = connection.createStatement()) {
-                statement.executeUpdate("DROP TABLE TableDecimal");
-                statement.executeUpdate("DROP TABLE TableDouble");
-                statement.executeUpdate("DROP TABLE TableInteger");
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "DROP TABLE TableDecimal" );
+                statement.executeUpdate( "DROP TABLE TableDouble" );
+                statement.executeUpdate( "DROP TABLE TableInteger" );
             }
             connection.commit();
         }
@@ -92,167 +88,143 @@ public class PowerAbsModFunctionTest {
 
     @Test
     public void powerTest() throws SQLException {
-        try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
-
-            try (Statement statement = connection.createStatement()) {
-
-                //For Decimal
+            try ( Statement statement = connection.createStatement() ) {
+                // For Decimal
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{0, 4.0},
-                        new Object[]{1, 9.0},
-                        new Object[]{2, 16.0}
+                        new Object[]{ 0, 4.0 },
+                        new Object[]{ 1, 9.0 },
+                        new Object[]{ 2, 16.0 }
                 );
-
                 TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT ID, Power(Data,2) FROM TableDecimal"),
-                        expectedResult,true
+                        statement.executeQuery( "SELECT ID, Power(Data,2) FROM TableDecimal" ),
+                        expectedResult,
+                        true
                 );
 
-                //For Double
+                // For Double
                 expectedResult = ImmutableList.of(
-                        new Object[]{0, 4.0},
-                        new Object[]{1, 9.0},
-                        new Object[]{2, 16.0}
+                        new Object[]{ 0, 4.0 },
+                        new Object[]{ 1, 9.0 },
+                        new Object[]{ 2, 16.0 }
                 );
-
                 TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT ID, Power(Data,2) FROM TableDouble"),
-                        expectedResult,true
+                        statement.executeQuery( "SELECT ID, Power(Data,2) FROM TableDouble" ),
+                        expectedResult,
+                        true
                 );
 
-                //For Integer
+                // For Integer
                 expectedResult = ImmutableList.of(
-                        new Object[]{0, 4.0},
-                        new Object[]{1, 9.0},
-                        new Object[]{2, 16.0}
+                        new Object[]{ 0, 4.0 },
+                        new Object[]{ 1, 9.0 },
+                        new Object[]{ 2, 16.0 }
 
                 );
-
                 TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT ID, Power(Data,2) FROM TableInteger"),
-                        expectedResult,true
+                        statement.executeQuery( "SELECT ID, Power(Data,2) FROM TableInteger" ),
+                        expectedResult,
+                        true
                 );
-
             }
         }
-
     }
 
 
     @Test
     public void absTest() throws SQLException {
-        try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                BigDecimal a = BigDecimal.valueOf( 2.0 );
+                BigDecimal b = BigDecimal.valueOf( 3.0 );
+                BigDecimal c = BigDecimal.valueOf( 4.0 );
 
-            try (Statement statement = connection.createStatement()) {
-
-
-                BigDecimal a = BigDecimal.valueOf(2.0);
-                BigDecimal b = BigDecimal.valueOf(3.0);
-                BigDecimal c = BigDecimal.valueOf(4.0);
-
-                //For Decimal
+                // For Decimal
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{0, a},
-                        new Object[]{1, b},
-                        new Object[]{2, c}
+                        new Object[]{ 0, a },
+                        new Object[]{ 1, b },
+                        new Object[]{ 2, c }
                 );
-
-
                 TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT ID, Abs(Data) FROM TableDecimal"),
-                        expectedResult,true
+                        statement.executeQuery( "SELECT ID, Abs(Data) FROM TableDecimal" ),
+                        expectedResult,
+                        true
                 );
 
-                //For Double
+                // For Double
                 expectedResult = ImmutableList.of(
-                        new Object[]{0, 2.0},
-                        new Object[]{1, 3.0},
-                        new Object[]{2, 4.0}
+                        new Object[]{ 0, 2.0 },
+                        new Object[]{ 1, 3.0 },
+                        new Object[]{ 2, 4.0 }
                 );
-
                 TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT ID, Abs(Data) FROM TableDouble"),
-                        expectedResult,true
+                        statement.executeQuery( "SELECT ID, Abs(Data) FROM TableDouble" ),
+                        expectedResult,
+                        true
                 );
 
-
-                //For Integer
+                // For Integer
                 expectedResult = ImmutableList.of(
-                        new Object[]{0, 2},
-                        new Object[]{1, 3},
-                        new Object[]{2, 4}
+                        new Object[]{ 0, 2 },
+                        new Object[]{ 1, 3 },
+                        new Object[]{ 2, 4 }
 
                 );
-
                 TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT ID, Abs(Data) FROM TableInteger"),
-                        expectedResult,true
+                        statement.executeQuery( "SELECT ID, Abs(Data) FROM TableInteger" ),
+                        expectedResult,
+                        true
                 );
-
-
             }
         }
-
     }
 
 
     @Test
     public void modTest() throws SQLException {
-        try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
-
-            try (Statement statement = connection.createStatement()) {
-
-
-                //For Decimal
+            try ( Statement statement = connection.createStatement() ) {
+                // For Decimal
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{0, 0},
-                        new Object[]{1, 1},
-                        new Object[]{2, 0}
+                        new Object[]{ 0, 0 },
+                        new Object[]{ 1, 1 },
+                        new Object[]{ 2, 0 }
                 );
-
                 TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT ID, Mod(Data,2) FROM TableDecimal"),
-                        expectedResult,true
+                        statement.executeQuery( "SELECT ID, Mod(Data,2) FROM TableDecimal" ),
+                        expectedResult,
+                        true
                 );
 
-//MOD DOES NOT WOK ON DOUBLE AS THEY ARE NOT EXACT
-                //For Double
-//                expectedResult = ImmutableList.of(
-//                        new Object[]{ 0, 1.0},
-//                        new Object[]{ 1, 1.0},
-//                        new Object[]{ 2, 2.0}
-//                );
-//
-//                TestHelper.checkResultSet(
-//                        statement.executeQuery( "SELECT ID, Mod(Data,2) FROM TableDouble"),
-//                        expectedResult
-//                );
-
-
-                //For Integer
+                // For Double
                 expectedResult = ImmutableList.of(
-                        new Object[]{0, 0},
-                        new Object[]{1, 1},
-                        new Object[]{2, 0}
-
+                        new Object[]{ 0, 1.0 },
+                        new Object[]{ 1, 1.0 },
+                        new Object[]{ 2, 2.0 }
                 );
-
                 TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT ID, Mod(Data,2) FROM TableInteger"),
-                        expectedResult,true
+                        statement.executeQuery( "SELECT ID, Mod(Data,2) FROM TableDouble" ),
+                        expectedResult,
+                        true,
+                        true
                 );
 
-
+                // For Integer
+                expectedResult = ImmutableList.of(
+                        new Object[]{ 0, 0 },
+                        new Object[]{ 1, 1 },
+                        new Object[]{ 2, 0 }
+                );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ID, Mod(Data,2) FROM TableInteger" ),
+                        expectedResult,
+                        true
+                );
             }
         }
-
     }
 
 }
-
-
-
-

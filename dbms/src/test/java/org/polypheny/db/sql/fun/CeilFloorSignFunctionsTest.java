@@ -33,9 +33,9 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
 
-@SuppressWarnings({"SqlDialectInspection", "SqlNoDataSourceInspection"})
+@SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-@Category({AdapterTestSuite.class})
+@Category({ AdapterTestSuite.class })
 public class CeilFloorSignFunctionsTest {
 
 
@@ -49,24 +49,23 @@ public class CeilFloorSignFunctionsTest {
 
 
     private static void addTestData() throws SQLException {
-        try (JdbcConnection jdbcConnection = new JdbcConnection(false)) {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
-            try (Statement statement = connection.createStatement()) {
-                statement.executeUpdate("CREATE TABLE TableDecimal( ID INTEGER NOT NULL,Data DECIMAL(2,1), PRIMARY KEY (ID) )");
-                statement.executeUpdate("INSERT INTO TableDecimal VALUES (0, -2.1)");
-                statement.executeUpdate("INSERT INTO TableDecimal VALUES (1, 3.0)");
-                statement.executeUpdate("INSERT INTO TableDecimal VALUES (2, 4.1)");
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE TableDecimal( ID INTEGER NOT NULL,Data DECIMAL(2,1), PRIMARY KEY (ID) )" );
+                statement.executeUpdate( "INSERT INTO TableDecimal VALUES (0, -2.1)" );
+                statement.executeUpdate( "INSERT INTO TableDecimal VALUES (1, 3.0)" );
+                statement.executeUpdate( "INSERT INTO TableDecimal VALUES (2, 4.1)" );
 
-                statement.executeUpdate("CREATE TABLE TableDouble( ID INTEGER NOT NULL, Data DOUBLE , PRIMARY KEY (ID) )");
-                statement.executeUpdate("INSERT INTO TableDouble VALUES (0, 2.1)");
-                statement.executeUpdate("INSERT INTO TableDouble VALUES (1, -3.0)");
-                statement.executeUpdate("INSERT INTO TableDouble VALUES (2, 4.1)");
+                statement.executeUpdate( "CREATE TABLE TableDouble( ID INTEGER NOT NULL, Data DOUBLE , PRIMARY KEY (ID) )" );
+                statement.executeUpdate( "INSERT INTO TableDouble VALUES (0, 2.1)" );
+                statement.executeUpdate( "INSERT INTO TableDouble VALUES (1, -3.0)" );
+                statement.executeUpdate( "INSERT INTO TableDouble VALUES (2, 4.1)" );
 
-                statement.executeUpdate("CREATE TABLE TableInteger( ID INTEGER NOT NULL, Data INTEGER, PRIMARY KEY (ID) )");
-                statement.executeUpdate("INSERT INTO TableInteger VALUES (0, 2)");
-                statement.executeUpdate("INSERT INTO TableInteger VALUES (1, 3)");
-                statement.executeUpdate("INSERT INTO TableInteger VALUES (2, -4)");
-
+                statement.executeUpdate( "CREATE TABLE TableInteger( ID INTEGER NOT NULL, Data INTEGER, PRIMARY KEY (ID) )" );
+                statement.executeUpdate( "INSERT INTO TableInteger VALUES (0, 2)" );
+                statement.executeUpdate( "INSERT INTO TableInteger VALUES (1, 3)" );
+                statement.executeUpdate( "INSERT INTO TableInteger VALUES (2, -4)" );
 
                 connection.commit();
             }
@@ -76,12 +75,12 @@ public class CeilFloorSignFunctionsTest {
 
     @AfterClass
     public static void stop() throws SQLException {
-        try (JdbcConnection jdbcConnection = new JdbcConnection(true)) {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            try (Statement statement = connection.createStatement()) {
-                statement.executeUpdate("DROP TABLE TableDecimal");
-                statement.executeUpdate("DROP TABLE TableDouble");
-                statement.executeUpdate("DROP TABLE TableInteger");
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "DROP TABLE TableDecimal" );
+                statement.executeUpdate( "DROP TABLE TableDouble" );
+                statement.executeUpdate( "DROP TABLE TableInteger" );
             }
 
             connection.commit();
@@ -93,173 +92,151 @@ public class CeilFloorSignFunctionsTest {
 
     @Test
     public void ceilTest() throws SQLException {
-        try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                BigDecimal a = BigDecimal.valueOf( -2 );
+                BigDecimal b = BigDecimal.valueOf( 3 );
+                BigDecimal c = BigDecimal.valueOf( 5 );
 
-            try (Statement statement = connection.createStatement()) {
-
-                BigDecimal a = BigDecimal.valueOf(-2);
-                BigDecimal b = BigDecimal.valueOf(3);
-                BigDecimal c = BigDecimal.valueOf(5);
-
-                //For Decimal
+                // For Decimal
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{0, a},
-                        new Object[]{1, b},
-                        new Object[]{2, c}
+                        new Object[]{ 0, a },
+                        new Object[]{ 1, b },
+                        new Object[]{ 2, c }
                 );
-
                 TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT ID, CEIL(Data) FROM TableDecimal"),
-                        expectedResult, true
+                        statement.executeQuery( "SELECT ID, CEIL(Data) FROM TableDecimal" ),
+                        expectedResult,
+                        true
                 );
 
-                //For Double
+                // For Double
                 expectedResult = ImmutableList.of(
-                        new Object[]{0, 3.0},
-                        new Object[]{1, -3.0},
-                        new Object[]{2, 5.0}
+                        new Object[]{ 0, 3.0 },
+                        new Object[]{ 1, -3.0 },
+                        new Object[]{ 2, 5.0 }
                 );
-
                 TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT ID, CEIL(Data) FROM TableDouble"),
-                        expectedResult, true
+                        statement.executeQuery( "SELECT ID, CEIL(Data) FROM TableDouble" ),
+                        expectedResult,
+                        true
                 );
 
-
-                //For Integer
+                // For Integer
                 expectedResult = ImmutableList.of(
-                        new Object[]{0, 2},
-                        new Object[]{1, 3},
-                        new Object[]{2, -4}
+                        new Object[]{ 0, 2 },
+                        new Object[]{ 1, 3 },
+                        new Object[]{ 2, -4 }
 
                 );
-
                 TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT ID,CEIL(Data) FROM TableInteger"),
-                        expectedResult, true
+                        statement.executeQuery( "SELECT ID,CEIL(Data) FROM TableInteger" ),
+                        expectedResult,
+                        true
                 );
-
-
             }
         }
-
     }
 
 
     @Test
     public void floorTest() throws SQLException {
-        try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                BigDecimal a = BigDecimal.valueOf( -3 );
+                BigDecimal b = BigDecimal.valueOf( 3 );
+                BigDecimal c = BigDecimal.valueOf( 4 );
 
-            try (Statement statement = connection.createStatement()) {
-
-                BigDecimal a = BigDecimal.valueOf(-3);
-                BigDecimal b = BigDecimal.valueOf(3);
-                BigDecimal c = BigDecimal.valueOf(4);
-
-                //For Decimal
+                // For Decimal
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{0, a},
-                        new Object[]{1, b},
-                        new Object[]{2, c}
+                        new Object[]{ 0, a },
+                        new Object[]{ 1, b },
+                        new Object[]{ 2, c }
                 );
-
                 TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT ID, FLOOR(Data) FROM TableDecimal"),
-                        expectedResult, true
+                        statement.executeQuery( "SELECT ID, FLOOR(Data) FROM TableDecimal" ),
+                        expectedResult,
+                        true
                 );
 
-
-                //For Double
+                // For Double
                 expectedResult = ImmutableList.of(
-                        new Object[]{0, 2.0},
-                        new Object[]{1, -3.0},
-                        new Object[]{2, 4.0}
+                        new Object[]{ 0, 2.0 },
+                        new Object[]{ 1, -3.0 },
+                        new Object[]{ 2, 4.0 }
                 );
-
                 TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT ID, FLOOR(Data) FROM TableDouble"),
-                        expectedResult, true
+                        statement.executeQuery( "SELECT ID, FLOOR(Data) FROM TableDouble" ),
+                        expectedResult,
+                        true
                 );
 
-
-                //For Integer
+                // For Integer
                 expectedResult = ImmutableList.of(
-                        new Object[]{0, 2},
-                        new Object[]{1, 3},
-                        new Object[]{2, -4}
+                        new Object[]{ 0, 2 },
+                        new Object[]{ 1, 3 },
+                        new Object[]{ 2, -4 }
 
                 );
-
                 TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT ID,FLOOR(Data) FROM TableInteger"),
-                        expectedResult, true
+                        statement.executeQuery( "SELECT ID,FLOOR(Data) FROM TableInteger" ),
+                        expectedResult,
+                        true
                 );
-
-
             }
-
         }
-
     }
 
 
     @Test
     public void signTest() throws SQLException {
-        try (TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection(true)) {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                BigDecimal a = BigDecimal.valueOf( -1.0 );
+                BigDecimal b = BigDecimal.valueOf( 1.0 );
+                BigDecimal c = BigDecimal.valueOf( 1.0 );
 
-            try (Statement statement = connection.createStatement()) {
-
-                BigDecimal a = BigDecimal.valueOf(-1.0);
-                BigDecimal b = BigDecimal.valueOf(1.0);
-                BigDecimal c = BigDecimal.valueOf(1.0);
-
-                //For Decimal
+                // For Decimal
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{0, a},
-                        new Object[]{1, b},
-                        new Object[]{2, c}
+                        new Object[]{ 0, a },
+                        new Object[]{ 1, b },
+                        new Object[]{ 2, c }
                 );
-
                 TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT ID, SIGN(Data) FROM TableDecimal"),
-                        expectedResult, true
+                        statement.executeQuery( "SELECT ID, SIGN(Data) FROM TableDecimal" ),
+                        expectedResult,
+                        true
                 );
 
-
-                //For Double
+                // For Double
                 expectedResult = ImmutableList.of(
-                        new Object[]{0, 1.0},
-                        new Object[]{1, -1.0},
-                        new Object[]{2, 1.0}
+                        new Object[]{ 0, 1.0 },
+                        new Object[]{ 1, -1.0 },
+                        new Object[]{ 2, 1.0 }
                 );
-
                 TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT ID, SIGN(Data) FROM TableDouble"),
-                        expectedResult, true
+                        statement.executeQuery( "SELECT ID, SIGN(Data) FROM TableDouble" ),
+                        expectedResult,
+                        true
                 );
 
-
-                //For Integer
+                // For Integer
                 expectedResult = ImmutableList.of(
-                        new Object[]{0, 1},
-                        new Object[]{1, 1},
-                        new Object[]{2, -1}
+                        new Object[]{ 0, 1 },
+                        new Object[]{ 1, 1 },
+                        new Object[]{ 2, -1 }
 
                 );
-
                 TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT ID,SIGN(Data) FROM TableInteger"),
-                        expectedResult, true
+                        statement.executeQuery( "SELECT ID,SIGN(Data) FROM TableInteger" ),
+                        expectedResult,
+                        true
                 );
-
-
             }
-
         }
-
     }
 
 }
