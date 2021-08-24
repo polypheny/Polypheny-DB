@@ -48,6 +48,7 @@ import javax.sql.DataSource;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.DataContext;
@@ -157,6 +158,12 @@ public class JdbcSchema implements Schema {
             logicalColumnNames.add( catalogColumn.name );
             physicalColumnNames.add( placement.physicalColumnName );
         }
+
+        //TODO @vogti @hennlo validate if still necessary. Currently needed to ignore select * and force to project the relevant fields explicitly instead of *
+        fieldInfo.add( "_dummy", "_dummy", PolyType.BIGINT ).nullable( true );
+        logicalColumnNames.add( "_dummy" );
+        physicalColumnNames.add( "_dummy" );
+
         JdbcTable table = new JdbcTable(
                 this,
                 catalogTable.getSchemaName(),
