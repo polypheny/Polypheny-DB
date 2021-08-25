@@ -53,7 +53,11 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.TransactionManagerImpl;
 import org.polypheny.db.util.FileSystemManager;
-import org.polypheny.db.webui.*;
+import org.polypheny.db.webui.ConfigServer;
+import org.polypheny.db.webui.HttpServer;
+import org.polypheny.db.webui.InformationServer;
+import org.polypheny.db.webui.UiTestingConfigPage;
+import org.polypheny.db.webui.UiTestingMonitoringPage;
 
 
 @Command(name = "polypheny-db", description = "Polypheny-DB command line hook.")
@@ -265,11 +269,11 @@ public class PolyphenyDb {
         ExploreManager explore = ExploreManager.getInstance();
         explore.setExploreQueryProcessor( exploreQueryProcessor );
 
-        if(testMode) {
+        // Add config and monitoring test page for UI testing
+        if ( testMode ) {
             new UiTestingConfigPage();
             new UiTestingMonitoringPage();
         }
-
 
         log.info( "****************************************************************************************************" );
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );
