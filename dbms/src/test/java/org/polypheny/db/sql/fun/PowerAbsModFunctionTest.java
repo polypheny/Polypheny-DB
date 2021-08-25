@@ -40,6 +40,8 @@ public class PowerAbsModFunctionTest {
 
     @BeforeClass
     public static void start() throws SQLException {
+        // Ensures that Polypheny-DB is running
+        //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
         addTestData();
     }
@@ -64,6 +66,11 @@ public class PowerAbsModFunctionTest {
                 statement.executeUpdate( "INSERT INTO TableInteger VALUES (1, 3)" );
                 statement.executeUpdate( "INSERT INTO TableInteger VALUES (2, -4)" );
 
+                statement.executeUpdate( "CREATE TABLE TableTinyint( ID INTEGER NOT NULL, Data TINYINT, PRIMARY KEY (ID) )" );
+                statement.executeUpdate( "INSERT INTO TableTinyint VALUES (0, 2)" );
+                statement.executeUpdate( "INSERT INTO TableTinyint VALUES (1, 3)" );
+                statement.executeUpdate( "INSERT INTO TableTinyint VALUES (2, -4)" );
+
                 connection.commit();
             }
         }
@@ -78,6 +85,7 @@ public class PowerAbsModFunctionTest {
                 statement.executeUpdate( "DROP TABLE TableDecimal" );
                 statement.executeUpdate( "DROP TABLE TableDouble" );
                 statement.executeUpdate( "DROP TABLE TableInteger" );
+                statement.executeUpdate( "DROP TABLE TableTinyint" );
             }
             connection.commit();
         }
@@ -199,16 +207,15 @@ public class PowerAbsModFunctionTest {
                         true
                 );
 
-                // For Double
+                // For TINYINT
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 0, 1.0 },
-                        new Object[]{ 1, 1.0 },
-                        new Object[]{ 2, 2.0 }
+                        new Object[]{ 0, 0 },
+                        new Object[]{ 1, 1 },
+                        new Object[]{ 2, 0 }
                 );
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT ID, Mod(Data,2) FROM TableDouble" ),
+                        statement.executeQuery( "SELECT ID, Mod(Data,2) FROM TableTinyint" ),
                         expectedResult,
-                        true,
                         true
                 );
 

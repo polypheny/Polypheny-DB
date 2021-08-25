@@ -409,12 +409,12 @@ public class TrigonometricFunctionsTest {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                // PI() NOT WORKING
+                // PI
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{ 3.1415926535897931 }
+                        new Object[]{ 2.1415926535897931 }
                 );
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT PI() - 1" ),
+                        statement.executeQuery( "SELECT PI - 1" ),
                         expectedResult
                 );
 

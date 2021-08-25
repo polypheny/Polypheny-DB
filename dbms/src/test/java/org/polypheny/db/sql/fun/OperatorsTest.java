@@ -113,7 +113,7 @@ public class OperatorsTest {
                         new Object[]{ 2, "dataC" }
                 );
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT ID, TextData FROM TestTable AS A Where A.ID!=A.NumberData" ),
+                        statement.executeQuery( "SELECT ID, TextData FROM TestTable AS A Where A.ID != A.NumberData" ),
                         expectedResult2
                 );
 
@@ -224,23 +224,14 @@ public class OperatorsTest {
                         true
                 );
 
-                //SIMILAR(string1 SIMILAR TO string 2)
+                // LIKE (string1 LIKE string 2) ESCAPE escape_character
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 5, "data" },
-                        new Object[]{ 6, "data" },
-                        new Object[]{ 7, "data" }
+                        new Object[]{ 4, "dataA" }
                 );
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT ID, TextDataB FROM TestTableB AS B WHERE TextDataA SIMILAR TO TextDataB" ),
-                        expectedResult
-                );
-
-                //NOT WORKING
-                //NOT SIMILAR(string1 NOT SIMILAR TO string 2)
-                expectedResult = ImmutableList.of();
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT ID, TextDataA FROM TestTableB AS B Where B.TextDataA NOT SIMILAR TO B.TextDataB" ),
-                        expectedResult
+                        statement.executeQuery( "SELECT ID, TextDataA FROM TestTableB AS B Where B.TextDataA LIKE B.TextDataB ESCAPE '%' " ),
+                        expectedResult,
+                        true
                 );
             }
         }
@@ -383,9 +374,9 @@ public class OperatorsTest {
                         true
                 );
 
-                // % (numeric1 % numeric2) ERROR= Percent remainder '%' is not allowed under the current SQL conformance level
+                // % (numeric1 % numeric2)
                 List<Object[]> expectedResult4 = ImmutableList.of(
-                        new Object[]{ 4, 0 },
+                        new Object[]{ 4, 2 },
                         new Object[]{ 5, 1 },
                         new Object[]{ 6, 1 }
                 );

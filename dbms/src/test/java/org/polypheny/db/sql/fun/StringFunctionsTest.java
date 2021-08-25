@@ -94,7 +94,7 @@ public class StringFunctionsTest {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                //String Concatenate ||
+                // String Concatenate ||
                 List<Object[]> expectedResult = ImmutableList.of(
                         new Object[]{ 1, "FirstFourth" },
                         new Object[]{ 2, "SecondFifth" },
@@ -188,14 +188,14 @@ public class StringFunctionsTest {
                         true );
 
                 // POSITION(string1 IN string2 FROM integer) Returns the position of the first occurrence of string1 in string2 starting at a given point (not standard SQL)
-                expectedResult = ImmutableList.of(
+                /*expectedResult = ImmutableList.of(
                         new Object[]{ 1, 2 },
                         new Object[]{ 2, 2 },
                         new Object[]{ 3, 1 }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT S.id ,POSITION('th' IN S.DataA||T.DataB FROM 9) FROM TableA AS S NATURAL JOIN TableB AS T" ),
-                        expectedResult );
+                        expectedResult );*/
             }
         }
     }
