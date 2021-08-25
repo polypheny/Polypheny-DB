@@ -16,6 +16,7 @@ configurations {
 
 dependencies {
     implementation project(":core")
+    implementation project(":monitoring")
     implementation project(":statistic")
     implementation project(":explore-by-example")
 
