@@ -19,7 +19,6 @@ package org.polypheny.db.routing;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import lombok.val;
 import lombok.var;
 import org.polypheny.db.information.InformationGroup;
@@ -117,7 +116,7 @@ public class RoutingDebugUiPrinter {
         queryAnalyzer.addGroup( group );
         InformationTable table = new InformationTable(
                 group,
-                ImmutableList.of( "Physical Query Id", "router", "Approx. Costs", "Icarus Costs", "Norm. approx Costs", "Norm. Icarus Costs", "Total Costs", "Adapter Info", "Percentage" ) );
+                ImmutableList.of( "Physical QueryClass", "router", "Pre. Costs", "Post Costs", "Norm. pre Costs", "Norm. post Costs", "Total Costs", "Adapter Info", "Percentage" ) );
 
         for ( int i = 0; i < routingPlans.size(); i++ ) {
             val routingPlan = routingPlans.get( i );
@@ -130,12 +129,12 @@ public class RoutingDebugUiPrinter {
                     isIcarus ? postCosts.get( i ) : "-",
                     effectiveCosts.get( i ),
                     routingPlan.getOptionalPhysicalPlacementsOfPartitions(),
-                    percentageCosts.isPresent() ? percentageCosts.get().get( i ) : "-" ); //.isPresent() ? routingPlan.getOptionalPhysicalPlacementsOfPartitions().get(): "-"
+                    percentageCosts.isPresent() ? percentageCosts.get().get( i ) : "-" );
         }
 
         InformationGroup selected = new InformationGroup( page, "Selected Plan" );
         queryAnalyzer.addGroup( selected );
-        InformationTable selectedTable = new InformationTable( selected, ImmutableList.of( "QueryId", "Physical QueryId", "Router", "Partitioning - Placements" ) );
+        InformationTable selectedTable = new InformationTable( selected, ImmutableList.of( "QueryClass", "Physical QueryClass", "Router", "Partitioning - Placements" ) );
         selectedTable.addRow(
                 selectedPlan.getQueryClass(),
                 selectedPlan.getPhysicalQueryClass(),
@@ -155,7 +154,7 @@ public class RoutingDebugUiPrinter {
 
         }
 
-        val plans = routingPlans.stream().map( elem -> elem instanceof ProposedRoutingPlan ? (ProposedRoutingPlan) elem : null ).collect( Collectors.toList() );
+        /*val plans = routingPlans.stream().map( elem -> elem instanceof ProposedRoutingPlan ? (ProposedRoutingPlan) elem : null ).collect( Collectors.toList() );
         for ( int i = 0; i < plans.size(); i++ ) {
             val proposedPlan = plans.get( i );
             if ( proposedPlan != null ) {
@@ -169,7 +168,7 @@ public class RoutingDebugUiPrinter {
                     queryAnalyzer.registerInformation( informationQueryPlan );
                 }
             }
-        }
+        }*/
 
         queryAnalyzer.registerInformation( table, selectedTable );
     }

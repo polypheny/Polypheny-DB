@@ -80,7 +80,9 @@ public class RoutingManager {
     private WebUiPage routingPage;
 
 
-    public RoutingManager() { }
+    public RoutingManager() {
+        this.initializeConfigUi();
+    }
 
 
     public static RoutingManager getInstance() {
@@ -88,14 +90,10 @@ public class RoutingManager {
     }
 
 
-    public static void initialize() {
-        INSTANCE.initializeConfigUi();
-    }
-
-
     public List<Router> getRouters() {
         return routerFactories.stream().map( RouterFactory::createInstance ).collect( Collectors.toList() );
     }
+
 
     public void initializeConfigUi() {
         final ConfigManager configManager = ConfigManager.getInstance();
@@ -117,7 +115,6 @@ public class RoutingManager {
             public void onConfigChange( Config c ) {
                 ConfigClazz configClazz = (ConfigClazz) c;
                 if ( tablePlacementStrategy.getClass() != configClazz.getClazz() ) {
-                    log.warn( "Change router implementation: " + configClazz.getClazz() );
                     setCreatePlacementStrategy( configClazz );
                 }
             }

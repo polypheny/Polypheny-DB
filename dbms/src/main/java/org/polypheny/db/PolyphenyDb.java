@@ -49,7 +49,6 @@ import org.polypheny.db.partition.FrequencyMapImpl;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.PartitionManagerFactoryImpl;
 import org.polypheny.db.processing.AuthenticatorImpl;
-import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.statistic.StatisticQueryProcessor;
 import org.polypheny.db.statistic.StatisticsManager;
 import org.polypheny.db.transaction.PUID;
@@ -258,7 +257,7 @@ public class PolyphenyDb {
         }
 
         // initialize Routing
-        RoutingManager.initialize();
+        // RoutingManager.initialize();
 
         // Create internal query interfaces
         final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );

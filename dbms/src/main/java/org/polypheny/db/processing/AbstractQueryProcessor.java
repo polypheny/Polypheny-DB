@@ -60,10 +60,6 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
@@ -1084,7 +1080,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         if ( log.isTraceEnabled() ) {
             log.trace( "Physical query plan: [{}]", RelOptUtil.dumpPlan( "-- Physical Plan", root.rel, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
-        if ( statement.getTransaction().isAnalyze() ) {
+        /*if ( statement.getTransaction().isAnalyze() ) {
             InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
             InformationPage page = new InformationPage( "Physical Query Plan" ).setLabel( "plans" );
             page.fullWidth();
@@ -1095,7 +1091,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     group,
                     RelOptUtil.dumpPlan( "Physical Query Plan", root.rel, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
             queryAnalyzer.registerInformation( informationQueryPlan );
-        }
+        }*/
 
         final RelDataType jdbcType = QueryProcessorHelpers.makeStruct( root.rel.getCluster().getTypeFactory(), root.validatedRowType );
         List<List<String>> fieldOrigins = Collections.nCopies( jdbcType.getFieldCount(), null );
