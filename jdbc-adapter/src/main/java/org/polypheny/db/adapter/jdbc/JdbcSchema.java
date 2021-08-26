@@ -159,11 +159,6 @@ public class JdbcSchema implements Schema {
             physicalColumnNames.add( placement.physicalColumnName );
         }
 
-        //TODO @vogti @hennlo validate if still necessary. Currently needed to ignore select * and force to project the relevant fields explicitly instead of *
-        fieldInfo.add( "_dummy", "_dummy", PolyType.BIGINT ).nullable( true );
-        logicalColumnNames.add( "_dummy" );
-        physicalColumnNames.add( "_dummy" );
-
         JdbcTable table = new JdbcTable(
                 this,
                 catalogTable.getSchemaName(),
