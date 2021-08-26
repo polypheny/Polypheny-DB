@@ -27,7 +27,6 @@ import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
@@ -142,12 +141,18 @@ public class FileStore extends DataStore {
     public void createTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
 
-        if (partitionIds.size() != 1){
-            throw new RuntimeException("Files can't be partitioned but number of specified partitions where: " + partitionIds.size());
+        if ( partitionIds.size() != 1 ) {
+            throw new RuntimeException( "Files can't be partitioned but number of specified partitions where: " + partitionIds.size() );
         }
 
-        catalog.addPartitionPlacement( getAdapterId(),catalogTable.id,partitionIds.get( 0 ), PlacementType.AUTOMATIC, currentSchema.getSchemaName(), getPhysicalTableName( catalogTable.id ) );
+        for ( long partitionId : partitionIds ) {
+            catalog.updatePartitionPlacementPhysicalNames(
+                    getAdapterId(),
+                    partitionId,
+                    currentSchema.getSchemaName(),
+                    getPhysicalTableName( catalogTable.id, partitionId ) );
 
+        }
         for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ) ) {
             catalog.updateColumnPlacementPhysicalNames(
                     getAdapterId(),
@@ -434,8 +439,12 @@ public class FileStore extends DataStore {
     }
 
 
-    protected static String getPhysicalTableName( long tableId ) {
-        return "tab" + tableId;
+    protected static String getPhysicalTableName( long tableId, long partitionId ) {
+        String physicalTableName = "tab" + tableId;
+        if ( partitionId >= 0 ) {
+            physicalTableName += "_part" + partitionId;
+        }
+        return physicalTableName;
     }
 
 

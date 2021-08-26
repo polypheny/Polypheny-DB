@@ -30,7 +30,6 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.file.FileStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
@@ -167,7 +166,8 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
                         List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementByTable( adapter.getAdapterId(), tableId );
 
-                        if ( adapter instanceof FileStore  ) {
+                        if ( false ) {
+                            //if ( adapter instanceof FileStore  ) {
 
                             Table table = adapter.createTableSchema(
                                     catalogTable,

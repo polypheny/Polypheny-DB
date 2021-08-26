@@ -1129,8 +1129,8 @@ public abstract class AbstractRouter implements Router {
                         for ( int i = 0; i < pkColumnIds.size(); i++ ) {
                             joinConditions.add( builder.call(
                                     SqlStdOperatorTable.EQUALS,
-                                    builder.field( 2, ccp.getLogicalTableName(), queue.removeFirst() ),
-                                    builder.field( 2, ccp.getLogicalTableName(), queue.removeFirst() ) ) );
+                                    builder.field( 2, ccp.getLogicalTableName() + "_" + partitionId, queue.removeFirst() ),
+                                    builder.field( 2, ccp.getLogicalTableName() + "_" + partitionId, queue.removeFirst() ) ) );
                         }
                         builder.join( JoinRelType.INNER, joinConditions );
 
