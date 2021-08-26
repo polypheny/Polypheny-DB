@@ -66,7 +66,7 @@ public class DayTimeFunctionsTest {
                 statement.executeUpdate( "INSERT INTO TimeTestTable VALUES (3,TIME '23:59:59')" );
 
                 statement.executeUpdate( "CREATE TABLE TimeStampTestTable(ID INTEGER NOT NULL, TimeStampData TIMESTAMP,TimeStampDataToo TIMESTAMP,  PRIMARY KEY (ID))" );
-                statement.executeUpdate( "INSERT INTO TimeStampTestTable VALUES (1,TIMESTAMP '2000-01-01 12:30:35',TIMESTAMP '2002-03-03 23:59:59')" );
+                statement.executeUpdate( "INSERT INTO TimeStampTestTable VALUES (1,TIMESTAMP '2000-01-05 12:30:35',TIMESTAMP '2002-03-03 23:59:59')" );
                 statement.executeUpdate( "INSERT INTO TimeStampTestTable VALUES (2,TIMESTAMP '2001-02-02 06:34:59',TIMESTAMP '2001-02-02 06:34:59')" );
                 statement.executeUpdate( "INSERT INTO TimeStampTestTable VALUES (3,TIMESTAMP '2002-03-03 23:59:59',TIMESTAMP '2000-01-01 12:30:35')" );
 
@@ -249,11 +249,8 @@ public class DayTimeFunctionsTest {
                         expectedResult,
                         true
                 );
-
             }
-
         }
-
     }
 
 
@@ -264,13 +261,14 @@ public class DayTimeFunctionsTest {
             try ( Statement statement = connection.createStatement() ) {
                 // Select IS working
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Timestamp.valueOf( "2000-01-01 12:30:35" ) },
+                        new Object[]{ 1, Timestamp.valueOf( "2000-01-05 12:30:35" ) },
                         new Object[]{ 2, Timestamp.valueOf( "2001-02-02 06:34:59" ) },
                         new Object[]{ 3, Timestamp.valueOf( "2002-03-03 23:59:59" ) }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, TimeStampData FROM TimeStampTestTable" ),
-                        expectedResult, true
+                        expectedResult,
+                        true
                 );
 
                 // EXTRACT(timeUnit FROM timestamp) Extracts and returns the value of a specified timestamp field from a timestamp value expression.
@@ -281,7 +279,115 @@ public class DayTimeFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, EXTRACT(Year FROM TimeStampData) FROM TimeStampTestTable" ),
-                        expectedResult, true
+                        expectedResult,
+                        true
+                );
+
+                // QUARTER(date) Equivalent to  EXTRACT(MONTH FROM date)
+                expectedResult = ImmutableList.of(
+                        new Object[]{ 1, Long.valueOf( 1 ) },
+                        new Object[]{ 2, Long.valueOf( 1 ) },
+                        new Object[]{ 3, Long.valueOf( 1 ) }
+                );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, QUARTER(TimeStampData) FROM TimeStampTestTable" ),
+                        expectedResult,
+                        true
+                );
+
+                // MONTH(date) Equivalent to EXTRACT(MONTH FROM date)
+                expectedResult = ImmutableList.of(
+                        new Object[]{ 1, Long.valueOf( 1 ) },
+                        new Object[]{ 2, Long.valueOf( 2 ) },
+                        new Object[]{ 3, Long.valueOf( 3 ) }
+                );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, MONTH(TimeStampData) FROM TimeStampTestTable" ),
+                        expectedResult,
+                        true
+                );
+
+                // WEEK(date) Equivalent to EXTRACT(WEEK FROM date)
+                expectedResult = ImmutableList.of(
+                        new Object[]{ 1, Long.valueOf( 1 ) },
+                        new Object[]{ 2, Long.valueOf( 5 ) },
+                        new Object[]{ 3, Long.valueOf( 9 ) }
+                );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, WEEK(TimeStampData) FROM TimeStampTestTable" ),
+                        expectedResult,
+                        true
+                );
+
+                // DAYOFYEAR(date) Equivalent to EXTRACT(DOY FROM date)
+                List<Object[]> expectedResult1 = ImmutableList.of(
+                        new Object[]{ Long.valueOf( 5 ) },
+                        new Object[]{ Long.valueOf( 33 ) },
+                        new Object[]{ Long.valueOf( 62 ) }
+                );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT DAYOFYEAR(TimeStampData) FROM TimeStampTestTable" ),
+                        expectedResult1
+                );
+
+                // DAYOFMONTH(date) Equivalent to EXTRACT(DAY FROM date)
+                expectedResult = ImmutableList.of(
+                        new Object[]{ 1, Long.valueOf( 5 ) },
+                        new Object[]{ 2, Long.valueOf( 2 ) },
+                        new Object[]{ 3, Long.valueOf( 3 ) }
+                );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id,DAYOFMONTH(TimeStampData) FROM TimeStampTestTable" ),
+                        expectedResult,
+                        true
+                );
+
+                // DAYOFWEEK(date) Equivalent to EXTRACT(DOW FROM date)
+                expectedResult = ImmutableList.of(
+                        new Object[]{ 1, Long.valueOf( 4 ) },
+                        new Object[]{ 2, Long.valueOf( 6 ) },
+                        new Object[]{ 3, Long.valueOf( 1 ) }
+                );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id,DAYOFWEEK(TimeStampData) FROM TimeStampTestTable" ),
+                        expectedResult,
+                        true
+                );
+
+                // HOUR() Equivalent to EXTRACT(HOUR FROM date)
+                expectedResult = ImmutableList.of(
+                        new Object[]{ 1, Long.valueOf( 12 ) },
+                        new Object[]{ 2, Long.valueOf( 6 ) },
+                        new Object[]{ 3, Long.valueOf( 23 ) }
+                );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, HOUR(TimeStampData) FROM TimeStampTestTable" ),
+                        expectedResult,
+                        true
+                );
+
+                // MINUTE() Equivalent to EXTRACT(HOUR FROM date)
+                expectedResult = ImmutableList.of(
+                        new Object[]{ 1, Long.valueOf( 30 ) },
+                        new Object[]{ 2, Long.valueOf( 34 ) },
+                        new Object[]{ 3, Long.valueOf( 59 ) }
+                );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, MINUTE(TimeStampData) FROM TimeStampTestTable" ),
+                        expectedResult,
+                        true
+                );
+
+                // SECOND() Equivalent to EXTRACT(HOUR FROM date)
+                expectedResult = ImmutableList.of(
+                        new Object[]{ 1, Long.valueOf( 35 ) },
+                        new Object[]{ 2, Long.valueOf( 59 ) },
+                        new Object[]{ 3, Long.valueOf( 59 ) }
+                );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, SECOND(TimeStampData) FROM TimeStampTestTable" ),
+                        expectedResult,
+                        true
                 );
 
                 // FLOOR(timestamp TO timeUnit) Rounds timestamp down to timeUnit
@@ -298,7 +404,7 @@ public class DayTimeFunctionsTest {
 
                 // TIMESTAMPADD(timeUnit, integer, timestamp) Returns timestamp with an interval of (signed) integer timeUnits added.
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Timestamp.valueOf( "2005-01-01 12:30:35" ) },
+                        new Object[]{ 1, Timestamp.valueOf( "2005-01-05 12:30:35" ) },
                         new Object[]{ 2, Timestamp.valueOf( "2006-02-02 06:34:59" ) },
                         new Object[]{ 3, Timestamp.valueOf( "2007-03-03 23:59:59" ) }
                 );
