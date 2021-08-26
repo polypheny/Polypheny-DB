@@ -202,7 +202,7 @@ public class DayTimeFunctionsTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                // Select iS working
+                // Select is working
                 List<Object[]> expectedResult = ImmutableList.of(
                         new Object[]{ 1, Time.valueOf( "12:30:35" ) },
                         new Object[]{ 2, Time.valueOf( "6:34:59" ) },

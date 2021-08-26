@@ -125,20 +125,8 @@ public class SelectTest {
                         true
                 );*/
 
-                // NOT IN
-                List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{ 12, "Name1" },
-                        new Object[]{ 15, "Name2" },
-                        new Object[]{ 99, "Name3" }
-                );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT TableA.id, TableA.name FROM  TableA WHERE TableA.age NOT IN (SELECT age FROM TableB WHERE TableB.name = 'Name3')" ),
-                        expectedResult,
-                        true
-                );
-
                 //NOT IN (SUB-QUERY)
-                expectedResult = ImmutableList.of(
+                List<Object[]> expectedResult = ImmutableList.of(
                         new Object[]{ 12, "Name1" },
                         new Object[]{ 15, "Name2" },
                         new Object[]{ 99, "Name3" }
