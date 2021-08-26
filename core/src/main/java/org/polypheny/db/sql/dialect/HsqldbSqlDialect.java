@@ -207,5 +207,34 @@ public class HsqldbSqlDialect extends SqlDialect {
         }
     }
 
+
+    @Override
+    public String timeUnitName( TimeUnitRange unit ) {
+        switch ( unit ) {
+            case YEAR:
+                return "YEAR";
+            case MONTH:
+                return "MONTH";
+            case DAY:
+                return "DAY";
+            case HOUR:
+                return "HOUR";
+            case MINUTE:
+                return "MINUTE";
+            case SECOND:
+                return "SECOND";
+            case WEEK:
+                return "WEEK_OF_YEAR";
+            case DOW:
+                return "DAY_OF_WEEK";
+            case QUARTER:
+                return "QUARTER";
+            case DOY:
+                return "DAY_OF_YEAR";
+            default:
+                throw new AssertionError( "could not convert time unit to HSQLDB equivalent: " + unit );
+        }
+    }
+
 }
 

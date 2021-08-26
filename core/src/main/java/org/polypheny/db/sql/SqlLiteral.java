@@ -685,7 +685,10 @@ public class SqlLiteral extends SqlNode {
                 throw Util.unexpected( typeName );
 
             case SYMBOL:
-                if ( value instanceof Enum ) {
+                if ( value instanceof TimeUnitRange ) {
+                    String s = writer.getDialect().timeUnitName( (TimeUnitRange) value );
+                    writer.keyword( s );
+                } else if ( value instanceof Enum ) {
                     Enum enumVal = (Enum) value;
                     writer.keyword( enumVal.toString() );
                 } else {
