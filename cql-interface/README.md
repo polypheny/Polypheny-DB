@@ -34,6 +34,12 @@ column names like `public.emps.emp` and table names like `public.emps`.
 
 ### Syntax
 
+Polypheny's CQL Implementation consists of four major parts: Filters, Relations, Sort Specifications and Projections.
+The format of each of these is discussed later. The basic syntax of a query consisting of these four parts is shown
+below. The parser is case-insensitive when it comes to keywords (such as modifiers, boolean operators or comparison
+operators) but is case-sensitive when it comes to names and literals (such column names, table names or literal 
+values in filters). 
+
 ```
 CQL Query:
     (
@@ -85,10 +91,6 @@ ComparisonOp:
 
 NamedComparator:
     String containing only alphabets.
-
-Combiner:
-    ( AND | OR )
-    Modifiers
 
 Table:
     SchemaName.TableName
