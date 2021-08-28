@@ -134,6 +134,27 @@ output.
 
 Example queries:
 
+Consider a schema "public" with tables "employee" and "dept" defined as follows:
+
+```
+CREATE TABLE public.dept(
+deptno TINYINT NOT NULL,
+deptname VARCHAR(30) NOT NULL,
+PRIMARY KEY (deptno) );
+
+CREATE TABLE public.employee(
+empno INTEGER NOT NULL,
+empname VARCHAR(20) NOT NULL,
+salary REAL NOT NULL,
+deptno TINYINT NOT NULL,
+married BOOLEAN NOT NULL,
+dob DATE NOT NULL,
+joining_date DATE NOT NULL,
+PRIMARY KEY (empno) );
+```
+
+Then the following CQL queries can be executed on the schema.
+
 - Find employee named "Loki":
 `public.employee.empname == "Loki"`
 
@@ -141,7 +162,7 @@ Example queries:
 `public.dept.deptname == "HR" and public.employee.married == TRUE`
 
 - Find all employees from the HR or IT department:
-`public.dept.deptname == "HR" and public.dept.deptname == "IT" relation public.employee and public.dept`
+`public.dept.deptname == "HR" or public.dept.deptname == "IT" relation public.employee and public.dept`
 
 - Find all employees from all departments except HR:
 `public.employee.empno >= 1 NOT public.dept.deptname == "HR"`
