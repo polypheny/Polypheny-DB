@@ -37,14 +37,70 @@ column names like `public.emps.emp` and table names like `public.emps`.
 ```
 CQL Query:
     (
-        [ Filters ]
+        Filters
     |
-        [ relation Relation ]
+        relation Relation
     |
-        [ Filters relation Relation ]
+        Filters relation Relation
     )
-    [ sortby Sort Specification ]
-    [ project Projection ]    
+    [ sortby SortSpecification ]
+    [ project Projection ]
+
+Filters:
+    ( Filters ) | Filter BooleanOp Filter | Filter
+
+Relation:
+    Table Combiner Relation | Table
+
+SortSpecification:
+    Column Modifiers
+
+Projection:
+    Column Modifiers
+
+Filter:
+    Column ComparisonOp ( Column | Literal value with or without double quotes )
+
+BooleanOp:
+    (AND | OR | NOT | PROX)
+    Modifiers
+
+Combiner:
+    (AND | OR)
+    Modifiers
+
+Column:
+    SchemaName.TableName.ColumnName
+
+Modifiers:
+    ( Modifier )*
+
+Modifier:
+    / ModifierName
+    [ ComparisonOp ModifierValue ]
+
+ComparisonOp:
+    (= | == | <> | < | > | <= | >= | NamedComparator)
+    Modifiers
+
+NamedComparator:
+    String containing only alphabets.
+
+Combiner:
+    ( AND | OR )
+    Modifiers
+
+Table:
+    SchemaName.TableName
+
+SchemaName, TableName, ColumnName:
+    String containing only alphabets or underscores (_).
+
+ModifierName:
+    String without double quotes, white spaces, escaped double quote, parenthesis, =, <, > or /.
+
+ModifierValue:
+    String value with or without double quotes.
 ```
 
 - `Filters`: Filters are used to do comparisons on a column in the `Relation`. They are similar to SQL's WHERE clause.
