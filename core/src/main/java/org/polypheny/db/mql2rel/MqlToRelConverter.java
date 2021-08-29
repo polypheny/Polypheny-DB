@@ -752,24 +752,11 @@ public class MqlToRelConverter {
     }
 
 
-    private Object convertSingleEntry( Entry<String, BsonValue> entry ) {
-        if ( entry.getValue().isDocument() ) {
-            Map<String, Object> entries = new HashMap<>();
-            for ( Entry<String, BsonValue> docEntry : entry.getValue().asDocument().entrySet() ) {
-                entries.put( docEntry.getKey(), convertSingleEntry( docEntry ) );
-            }
-            return entries;
-        } else if ( entry.getValue().isArray() ) {
-            //handle
-            return new ArrayList<>();
-        } else {
-            RelDataType type = getRelDataType( entry.getValue() );
-            Pair<Comparable, PolyType> valuePair = RexLiteral.convertType( getComparable( entry.getValue() ), type );
-            return new RexLiteral( valuePair.left, type, valuePair.right );
-        }
-    }
-
-
+    /**
+     * Returns a RelDataType for the given BsonValue
+     *
+     * @param value the untransformed BSON
+     */
     private RelDataType getRelDataType( BsonValue value ) {
         PolyType polyType = getPolyType( value );
         switch ( polyType ) {
@@ -870,6 +857,14 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Translates the $replaceRoot or $replaceWith stage of the aggregation pipeline
+     *
+     * @param value the untranslated operation as BSON format
+     * @param node the node, to which the operation is applied
+     * @param isWith if the operation is a $replaceWith
+     * @return the document with the replaced root
+     */
     private RelNode combineReplaceRoot( BsonValue value, RelNode node, boolean isWith ) {
         BsonValue newRoot = value;
         if ( !isWith ) {
@@ -910,6 +905,15 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Transforms the $unwind stage in the aggregation pipeline
+     * this operation unfolds a specified array into multiple records
+     *
+     * {"test","key",[3,1,"te"]} -> {"test","key",3},{"test","key",1},{"test","key","te"}
+     *
+     * </code>
+     * @param value the unparsed $unwind operation
+     */
     private RelNode combineUnwind( BsonValue value, RelNode node ) {
         if ( !value.isString() && !value.isDocument() ) {
             throw new RuntimeException( "$unwind pipeline stage needs either a document or a string describing the path." );
