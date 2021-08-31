@@ -28,9 +28,10 @@ import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.excluded.CassandraExcluded;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
-@Category({ AdapterTestSuite.class })
+@Category({ AdapterTestSuite.class, CassandraExcluded.class })
 public class SqlLimitOffsetFetchTest {
 
     @BeforeClass
@@ -332,6 +333,12 @@ public class SqlLimitOffsetFetchTest {
             }
         }
     }
+
+    // TODO:
+    //  INSERT with LIMIT, OFFSET, FETCH (?)
+    //  UPDATE with LIMIT, OFFSET, FETCH (?)  --> Add to doc if this is working
+    //  DELETE with LIMIT, OFFSET, FETCH (?)  --> Add to doc if this is working
+    //  INNER SELECTS with LIMIT, OFFSET, FETCH
 
 }
 
