@@ -127,6 +127,10 @@ public class PostgresqlStore extends AbstractJdbcStore {
         PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.CONNECTION ), PUID.randomPUID( Type.CONNECTION ) );
         try {
             ConnectionHandler ch = connectionFactory.getOrCreateConnectionHandler( xid );
+            ch.executeUpdate( "DROP FUNCTION IF EXISTS ROUND(float,int)" );
+            ch.executeUpdate( "DROP FUNCTION IF EXISTS MIN(boolean)" );
+            ch.executeUpdate( "DROP FUNCTION IF EXISTS MAX(boolean)" );
+            ch.executeUpdate( "DROP FUNCTION IF EXISTS DOW_SUNDAY(timestamp)" );
             ch.executeUpdate( "CREATE FUNCTION ROUND(float,int) RETURNS NUMERIC AS $$ SELECT ROUND($1::numeric,$2); $$ language SQL IMMUTABLE;" );
             ch.executeUpdate( "CREATE FUNCTION MIN(boolean) RETURNS INT AS $$ SELECT MIN($1::int); $$ language SQL IMMUTABLE;" );
             ch.executeUpdate( "CREATE FUNCTION MAX(boolean) RETURNS INT AS $$ SELECT MAX($1::int); $$ language SQL IMMUTABLE;" );
