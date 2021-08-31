@@ -182,9 +182,20 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         }
         stopWatch.start();
 
+        ExecutionTimeMonitor executionTimeMonitor = new ExecutionTimeMonitor();
+
+        if ( isAnalyze ) {
+            statement.getDuration().start( "View: Check if View included" );
+        }
+
         //check if the relRoot includes a View
         if ( logicalRoot.rel.hasView() ) {
             logicalRoot = logicalRoot.tryExpandView();
+        }
+
+        if ( isAnalyze ) {
+            statement.getDuration().stop( "View: Check if View included" );
+            statement.getDuration().start( "Materialized View: Update table changes" );
         }
 
         //Update which tables where changed
@@ -192,7 +203,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         logicalRoot.rel.accept( visitor );
         MaterializedManager.getInstance().addTables( statement.getTransaction(), visitor.getNames() );
 
-        ExecutionTimeMonitor executionTimeMonitor = new ExecutionTimeMonitor();
+        if ( isAnalyze ) {
+            statement.getDuration().stop( "Materialized View: Update table changes" );
+        }
 
         final Convention resultConvention =
                 ENABLE_BINDABLE

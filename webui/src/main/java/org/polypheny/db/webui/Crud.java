@@ -100,6 +100,7 @@ import org.polypheny.db.adapter.Adapter.AbstractAdapterSettingDirectory;
 import org.polypheny.db.adapter.Adapter.AdapterSettingDeserializer;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.AdapterManager.AdapterInformation;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.adapter.DataStore;
@@ -3466,10 +3467,33 @@ public class Crud implements InformationObserver {
         List<List<Object>> rows;
         Iterator<Object> iterator = null;
         boolean hasMoreRows = false;
+        boolean isAnalyze = statement.getTransaction().isAnalyze();
 
         try {
+            if ( isAnalyze ) {
+                statement.getDuration().start( "Process Query" );
+            }
+
             signature = processQuery( statement, sqlSelect );
-            final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
+
+            if ( isAnalyze ) {
+                statement.getDuration().stop( "Process Query" );
+                statement.getDuration().start( "Get DataContext" );
+            }
+
+            DataContext dataContext = statement.getDataContext();
+
+            if ( isAnalyze ) {
+                statement.getDuration().stop( "Get DataContext" );
+                statement.getDuration().start( "Create Enumerable" );
+            }
+
+            final Enumerable enumerable = signature.enumerable( dataContext );
+
+            if ( isAnalyze ) {
+                statement.getDuration().stop( "Create Enumerable" );
+            }
+
             //noinspection unchecked
             iterator = enumerable.iterator();
             StopWatch stopWatch = new StopWatch();
