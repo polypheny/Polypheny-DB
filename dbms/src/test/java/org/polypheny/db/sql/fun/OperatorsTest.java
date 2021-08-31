@@ -99,7 +99,6 @@ public class OperatorsTest {
                 expectedResult = ImmutableList.of(
                         new Object[]{ 1, "dataB" },
                         new Object[]{ 2, "dataC" }
-
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ID, TextData FROM TestTable AS A Where A.ID<>A.NumberData" ),
@@ -121,7 +120,6 @@ public class OperatorsTest {
                 expectedResult = ImmutableList.of(
                         new Object[]{ 0, "dataA" },
                         new Object[]{ 2, "dataC" }
-
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ID, TextData FROM TestTable AS A Where A.ID >= A.NumberData" ),
@@ -133,7 +131,6 @@ public class OperatorsTest {
                 expectedResult = ImmutableList.of(
                         new Object[]{ 0, "dataA" },
                         new Object[]{ 1, "dataB" }
-
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ID, TextData FROM TestTable AS A Where A.ID <= A.NumberData" ),
@@ -179,7 +176,8 @@ public class OperatorsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ID, TextData FROM TestTable AS A Where A.NumberData IS NOT DISTINCT FROM ID" ),
-                        expectedResult, true
+                        expectedResult,
+                        true
                 );
 
                 // BETWEEN (BETWEEN VALUE1 AND VALUE2)
@@ -400,17 +398,18 @@ public class OperatorsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "Select Rand(5)" ),
-                        expectedResult, true
+                        expectedResult,
+                        true
                 );
 
                 // RAND_INTEGER([seed, ] numeric)
                 expectedResult = ImmutableList.of(
                         new Object[]{ 2 }
-
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT RAND_INTEGER(5,5)" ),
-                        expectedResult, true
+                        expectedResult,
+                        true
                 );
             }
         }
