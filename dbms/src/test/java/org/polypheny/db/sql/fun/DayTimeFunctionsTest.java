@@ -167,7 +167,8 @@ public class DayTimeFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT DAYOFYEAR(DateData) FROM DateTestTable" ),
-                        expectedResult1
+                        expectedResult1,
+                        true
                 );
 
                 // DAYOFMONTH(date) Equivalent to EXTRACT(DAY FROM date)
@@ -328,7 +329,8 @@ public class DayTimeFunctionsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT DAYOFYEAR(TimeStampData) FROM TimeStampTestTable" ),
-                        expectedResult1
+                        expectedResult1,
+                        true
                 );
 
                 // DAYOFMONTH(date) Equivalent to EXTRACT(DAY FROM date)

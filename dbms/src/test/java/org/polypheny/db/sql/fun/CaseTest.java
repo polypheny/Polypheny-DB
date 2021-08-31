@@ -29,6 +29,7 @@ import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.excluded.CassandraExcluded;
+import org.polypheny.db.excluded.FileExcluded;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -80,6 +81,7 @@ public class CaseTest {
 
 
     @Test
+    @Category(FileExcluded.class)
     public void simpleCaseTest() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -103,6 +105,7 @@ public class CaseTest {
 
 
     @Test
+    @Category(FileExcluded.class)
     public void searchedCaseTest() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -126,6 +129,7 @@ public class CaseTest {
 
 
     @Test
+    @Category(FileExcluded.class)
     public void nullIf() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -149,6 +153,7 @@ public class CaseTest {
 
 
     @Test
+    @Category(FileExcluded.class)
     public void coalesceTest() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
