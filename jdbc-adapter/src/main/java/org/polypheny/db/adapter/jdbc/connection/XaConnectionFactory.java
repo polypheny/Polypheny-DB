@@ -184,10 +184,9 @@ public class XaConnectionFactory implements ConnectionFactory {
         public void commit() throws ConnectionHandlerException {
             try {
                 xaResource.commit( xid, false );
+                close();
             } catch ( XAException e ) {
                 throw new ConnectionHandlerException( "Error while committing transaction on database!", e );
-            } finally {
-                close();
             }
         }
 

@@ -162,10 +162,9 @@ public class TransactionalConnectionFactory implements ConnectionFactory {
         public void commit() throws ConnectionHandlerException {
             try {
                 connection.commit();
+                close();
             } catch ( SQLException e ) {
                 throw new ConnectionHandlerException( "Error while committing transaction", e );
-            } finally {
-                close();
             }
         }
 
