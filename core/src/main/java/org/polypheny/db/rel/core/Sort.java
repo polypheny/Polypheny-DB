@@ -202,9 +202,10 @@ public abstract class Sort extends SingleRel {
     public String relCompareString() {
         return this.getClass().getSimpleName() + "$" +
                 input.relCompareString() + "$" +
+                fieldExps.stream().map( RexNode::toString ).collect( Collectors.joining( "$" ) ) + "$" +
                 (collation != null ? collation.getFieldCollations().stream().map( RelFieldCollation::getDirection ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
-                (offset != null ? offset.hashCode() : "") + "$" +
-                (fetch != null ? fetch.hashCode() : "") + "&";
+                (offset != null ? offset.toString() : "") + "$" +
+                (fetch != null ? fetch.toString() : "") + "&";
     }
 }
 
