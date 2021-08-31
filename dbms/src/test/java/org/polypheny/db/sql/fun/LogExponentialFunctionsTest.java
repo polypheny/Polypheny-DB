@@ -31,6 +31,7 @@ import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
+import org.polypheny.db.excluded.MongodbExcluded;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
@@ -114,6 +115,7 @@ public class LogExponentialFunctionsTest {
 
 
     @Test
+    @Category(MongodbExcluded.class)
     public void logTest() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -190,6 +192,7 @@ public class LogExponentialFunctionsTest {
 
 
     @Test
+    @Category(MongodbExcluded.class)
     public void exponentialTest() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -235,6 +238,7 @@ public class LogExponentialFunctionsTest {
 
 
     @Test
+    @Category(MongodbExcluded.class)
     public void sqrtTest() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

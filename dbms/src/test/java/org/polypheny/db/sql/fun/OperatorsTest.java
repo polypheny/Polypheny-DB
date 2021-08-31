@@ -31,6 +31,7 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
+import org.polypheny.db.excluded.MongodbExcluded;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -83,7 +84,7 @@ public class OperatorsTest {
 
 
     @Test
-    @Category(FileExcluded.class)
+    @Category({ FileExcluded.class, MongodbExcluded.class })
     public void comparisonOperatorsTest() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -240,7 +241,7 @@ public class OperatorsTest {
 
 
     @Test
-    @Category(FileExcluded.class)
+    @Category({ FileExcluded.class, MongodbExcluded.class })
     public void logicalOperators() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -324,7 +325,7 @@ public class OperatorsTest {
 
 
     @Test
-    @Category(FileExcluded.class)
+    @Category({ FileExcluded.class, MongodbExcluded.class })
     public void arithmeticOperators() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

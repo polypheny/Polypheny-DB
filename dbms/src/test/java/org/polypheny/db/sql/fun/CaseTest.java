@@ -29,7 +29,9 @@ import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.excluded.CassandraExcluded;
+import org.polypheny.db.excluded.CottontailExcluded;
 import org.polypheny.db.excluded.FileExcluded;
+import org.polypheny.db.excluded.MongodbExcluded;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -153,7 +155,7 @@ public class CaseTest {
 
 
     @Test
-    @Category(FileExcluded.class)
+    @Category({ FileExcluded.class, MongodbExcluded.class, CottontailExcluded.class })
     public void coalesceTest() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
