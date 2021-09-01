@@ -31,6 +31,7 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
+import org.polypheny.db.excluded.MonetdbExcluded;
 import org.polypheny.db.excluded.MongodbExcluded;
 
 
@@ -84,7 +85,7 @@ public class OperatorsTest {
 
 
     @Test
-    @Category({ FileExcluded.class, MongodbExcluded.class })
+    @Category({ FileExcluded.class, MongodbExcluded.class, MonetdbExcluded.class })
     public void comparisonOperatorsTest() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
