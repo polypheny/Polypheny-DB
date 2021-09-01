@@ -98,10 +98,10 @@ public class CqlTestHelper {
         insertIntoTestTable( 44444L, true, Date.valueOf( "2000-1-19" ),
                 0.4444, 0.4444, 4, 44.4444, 4444,
                 44, "en" );
-        insertIntoTestTable( 55555L, true,  Date.valueOf( "1990-1-11" ),
+        insertIntoTestTable( 55555L, true, Date.valueOf( "1990-1-11" ),
                 0.5555, 0.5555, 5, 55.5555, 5555,
                 55, "y-" );
-        insertIntoTestTable( 66666L, true,  Date.valueOf( "2000-10-14" ),
+        insertIntoTestTable( 66666L, true, Date.valueOf( "2000-10-14" ),
                 0.6666, 0.6666, 6, 66.6666, 6666,
                 66, "DB" );
 
@@ -178,7 +178,7 @@ public class CqlTestHelper {
 
 
     private static void insertIntoDept( int deptno, String deptname ) {
-        String query = String.format( "INSERT INTO test.dept (deptno, deptname) VALUES (ROW(%d, '%s'))", 
+        String query = String.format( "INSERT INTO test.dept (deptno, deptname) VALUES (ROW(%d, '%s'))",
                 deptno, deptname );
         executeInsertion( query );
     }

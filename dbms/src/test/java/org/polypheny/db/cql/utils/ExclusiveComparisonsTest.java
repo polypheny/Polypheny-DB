@@ -45,7 +45,7 @@ public class ExclusiveComparisonsTest {
             false
     };
 
-    private final boolean[] allTrue = new boolean[] {
+    private final boolean[] allTrue = new boolean[]{
             true,
             true,
             true,
