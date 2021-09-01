@@ -32,12 +32,10 @@ public class QueryEvent extends StatementEvent {
     private String eventType = "QUERY EVENT";
 
 
-
     @Override
     public <T extends MonitoringDataPoint> List<Class<T>> getMetrics() {
         return Arrays.asList( (Class<T>) QueryDataPoint.class );
     }
-
 
 
     @Override

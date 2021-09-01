@@ -19,11 +19,9 @@ package org.polypheny.db.sql.ddl.altertable;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
-import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -69,7 +67,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
             int numPartitions,
             List<SqlIdentifier> partitionNamesList,
             List<List<SqlNode>> partitionQualifierList,
-            RawPartitionInformation rawPartitionInformation) {
+            RawPartitionInformation rawPartitionInformation ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.partitionType = Objects.requireNonNull( partitionType );
@@ -122,9 +120,9 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
                         numPartitionGroups,
                         numPartitions,
                         partitionQualifierList,
-                        rawPartitionInformation),
+                        rawPartitionInformation ),
                         null,
-                        statement);
+                        statement );
 
             } else {
                 throw new RuntimeException( "Table '" + catalogTable.name + "' is already partitioned" );

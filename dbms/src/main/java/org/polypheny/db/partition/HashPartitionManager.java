@@ -51,29 +51,25 @@ public class HashPartitionManager extends AbstractPartitionManager {
 
         Catalog catalog = Catalog.getInstance();
 
-
-
         //Get designated HASH partition based on number of internal partitions
         int partitionIndex = (int) (hashValue % catalogTable.partitionProperty.partitionIds.size());
 
         // Finally decide on which partition to put it
-        return catalogTable.partitionProperty.partitionIds.get( partitionIndex ) ;
+        return catalogTable.partitionProperty.partitionIds.get( partitionIndex );
     }
-
 
 
     @Override
     public Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
         Catalog catalog = Catalog.getInstance();
 
-        Map <Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
+        Map<Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
 
         if ( partitionIds != null ) {
-            for ( long  partitionId : partitionIds ) {
+            for ( long partitionId : partitionIds ) {
 
                 CatalogPartition catalogPartition = catalog.getPartition( partitionId );
                 List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();
-
 
                 for ( long columnId : catalogTable.columnIds ) {
                     List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartitionGroup( catalogTable.id, catalogPartition.partitionGroupId, columnId );
@@ -81,7 +77,7 @@ public class HashPartitionManager extends AbstractPartitionManager {
                         //get first column placement which contains partition
                         relevantCcps.add( ccps.get( 0 ) );
                         if ( log.isDebugEnabled() ) {
-                            log.debug( "{} {} with part. {}", ccps.get( 0 ).adapterUniqueName, ccps.get( 0 ).getLogicalColumnName(), partitionId  );
+                            log.debug( "{} {} with part. {}", ccps.get( 0 ).adapterUniqueName, ccps.get( 0 ).getLogicalColumnName(), partitionId );
                         }
                     }
                 }

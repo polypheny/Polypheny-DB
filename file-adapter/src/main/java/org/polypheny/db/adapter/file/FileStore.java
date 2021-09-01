@@ -174,7 +174,7 @@ public class FileStore extends DataStore {
     public void dropTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         //todo check if it is on this store?
-        catalog.deletePartitionPlacement( getAdapterId(),partitionIds.get( 0 ));
+        catalog.deletePartitionPlacement( getAdapterId(), partitionIds.get( 0 ) );
         for ( Long colId : catalogTable.columnIds ) {
             File f = getColumnFolder( colId );
             try {

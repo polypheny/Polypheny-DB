@@ -67,7 +67,6 @@ import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.DMLEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
@@ -222,15 +221,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             log.debug( "Preparing statement  ..." );
         }
 
-        if(statement.getTransaction().getMonitoringData() == null){
-            if ( logicalRoot.kind.belongsTo( SqlKind.DML )) {
+        if ( statement.getTransaction().getMonitoringData() == null ) {
+            if ( logicalRoot.kind.belongsTo( SqlKind.DML ) ) {
                 statement.getTransaction().setMonitoringData( new DMLEvent() );
-            }
-            else if ( logicalRoot.kind.belongsTo( SqlKind.QUERY )) {
-                    statement.getTransaction().setMonitoringData( new QueryEvent() );
+            } else if ( logicalRoot.kind.belongsTo( SqlKind.QUERY ) ) {
+                statement.getTransaction().setMonitoringData( new QueryEvent() );
             }
         }
-
 
         stopWatch.start();
 
@@ -350,14 +347,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                     statement.getDuration().stop( "Implementation Caching" );
                 }
 
-
                 //TODO @Cedric this produces an error causing several checks to fail. Please investigate
                 //needed for row results
 
                 //final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
                 //Iterator<Object> iterator = enumerable.iterator();
-
-
 
                 if ( statement.getTransaction().getMonitoringData() != null ) {
                     StatementEvent eventData = statement.getTransaction().getMonitoringData();
@@ -442,13 +436,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             log.debug( "Preparing statement ... done. [{}]", stopWatch );
         }
 
-
         //TODO @Cedric this produces an error causing severall checks to fail. Please investigate
         //needed for row results
         //final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
         //Iterator<Object> iterator = enumerable.iterator();
-
-
 
         TransactionImpl transaction = (TransactionImpl) statement.getTransaction();
         if ( transaction.getMonitoringData() != null ) {

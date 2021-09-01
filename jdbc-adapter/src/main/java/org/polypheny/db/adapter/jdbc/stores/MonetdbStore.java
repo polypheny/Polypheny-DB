@@ -96,7 +96,6 @@ public class MonetdbStore extends AbstractJdbcStore {
     }
 
 
-
     @Override
     protected ConnectionFactory deployRemote() {
         host = settings.get( "host" );
@@ -214,7 +213,7 @@ public class MonetdbStore extends AbstractJdbcStore {
                     .append( dialect.quoteIdentifier( tmpColName ) );
             executeUpdate( builder, context );
         }
-            Catalog.getInstance().updateColumnPlacementPhysicalPosition( getAdapterId(), catalogColumn.id );
+        Catalog.getInstance().updateColumnPlacementPhysicalPosition( getAdapterId(), catalogColumn.id );
 
     }
 

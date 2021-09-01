@@ -16,7 +16,6 @@
 
 package org.polypheny.db.partition;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -36,15 +35,15 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
 
     @Override
-    public  boolean probePartitionGroupDistributionChange( CatalogTable catalogTable, int storeId, long columnId, int threshold ){
+    public boolean probePartitionGroupDistributionChange( CatalogTable catalogTable, int storeId, long columnId, int threshold ) {
         Catalog catalog = Catalog.getInstance();
 
         //Check for the specified columnId if we still have a ColumnPlacement for every partitionGroup
         for ( Long partitionGroupId : catalogTable.partitionProperty.partitionGroupIds ) {
             List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartitionGroup( catalogTable.id, partitionGroupId, columnId );
-            if ( ccps.size() <= threshold ){
+            if ( ccps.size() <= threshold ) {
                 for ( CatalogColumnPlacement placement : ccps ) {
-                    if ( placement.adapterId == storeId ){
+                    if ( placement.adapterId == storeId ) {
                         return false;
                     }
                 }
@@ -52,6 +51,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
         }
         return true;
     }
+
 
     @Override
     public abstract Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds );
@@ -69,10 +69,11 @@ public abstract class AbstractPartitionManager implements PartitionManager {
         return true;
     }
 
+
     //Returns 1 for most PartitionFunctions since they have a 1:1 relation between Groups and Internal Partitions
     //In that case the input of numberOfPartitions is ommitted
     @Override
-    public int getNumberOfPartitionsPerGroup( int numberOfPartitions){
+    public int getNumberOfPartitionsPerGroup( int numberOfPartitions ) {
         return 1;
     }
 

@@ -61,7 +61,6 @@ import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.ddl.exception.PartitionGroupNamesNotUniqueException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.partition.raw.RawPartitionInformation;
-import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
 import org.polypheny.db.sql.SqlCreate;
 import org.polypheny.db.sql.SqlExecutableStatement;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -117,7 +116,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             int numPartitions,
             List<SqlIdentifier> partitionNamesList,
             List<List<SqlNode>> partitionQualifierList,
-            RawPartitionInformation rawPartitionInfo) {
+            RawPartitionInformation rawPartitionInfo ) {
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
         this.columnList = columnList; // May be null
@@ -239,10 +238,6 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                     placementType,
                     statement );
 
-
-
-
-
             if ( partitionType != null ) {
                 DdlManager.getInstance().addPartitioning( PartitionInformation.fromSqlLists(
                         getCatalogTable( context, new SqlIdentifier( tableName, SqlParserPos.ZERO ) ),
@@ -252,9 +247,9 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                         numPartitionGroups,
                         numPartitions,
                         partitionQualifierList,
-                        rawPartitionInfo),
+                        rawPartitionInfo ),
                         stores,
-                        statement);
+                        statement );
             }
 
         } catch ( TableAlreadyExistsException e ) {

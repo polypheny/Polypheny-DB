@@ -2159,12 +2159,12 @@ public class Crud implements InformationObserver {
 
                 //Used specifically for Temp-Partitoning since number of selected partitions remains 2 but chunks change
                 //enables user to used selected "number of partitions" beeing used as default value for "number of interal data chunks"
-                if ( request.method.equals( PartitionType.TEMPERATURE ) ){
+                if ( request.method.equals( PartitionType.TEMPERATURE ) ) {
 
-                    if ( type.equals( FieldType.STRING ) && currentColumn.getDefaultValue().equals( "-04071993" ))
-                    defaultValue = String.valueOf( request.numPartitions );
+                    if ( type.equals( FieldType.STRING ) && currentColumn.getDefaultValue().equals( "-04071993" ) ) {
+                        defaultValue = String.valueOf( request.numPartitions );
+                    }
                 }
-
 
                 constructedRow.add( new PartitionFunctionColumn( type, defaultValue )
                         .setModifiable( currentColumn.isModifiable() )
@@ -2200,8 +2200,6 @@ public class Crud implements InformationObserver {
         PartitionFunctionInfo functionInfo = partitionManager.getPartitionFunctionInfo();
 
         JsonObject infoJson = gson.toJsonTree( partitionManager.getPartitionFunctionInfo() ).getAsJsonObject();
-
-
 
         List<List<PartitionFunctionColumn>> rows = new ArrayList<>();
 
@@ -3490,7 +3488,6 @@ public class Crud implements InformationObserver {
             hasMoreRows = iterator.hasNext();
             stopWatch.stop();
 
-
             long executionTime = stopWatch.getNanoTime();
             signature.getExecutionTimeMonitor().setExecutionTime( executionTime );
 
@@ -3573,10 +3570,8 @@ public class Crud implements InformationObserver {
 
             ArrayList<String[]> data = computeResultData( rows, header, statement.getTransaction() );
 
-
             statement.getTransaction().getMonitoringData().setRowCount( data.size() );
             MonitoringServiceProvider.getInstance().monitorEvent( statement.getTransaction().getMonitoringData() );
-
 
             if ( tableType != null ) {
                 return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
@@ -3837,7 +3832,6 @@ public class Crud implements InformationObserver {
                     throw new QueryExecutionException( e.getMessage(), e );
                 }
             }
-
 
             StatementEvent ev = statement.getTransaction().getMonitoringData();
             ev.setRowCount( rowsChanged );

@@ -52,10 +52,9 @@ public class RangePartitionManager extends AbstractPartitionManager {
         long selectedPartitionId = -1;
 
         //Process all accumulated CatalogPartitions
-        for ( CatalogPartition catalogPartition : catalog.getPartitionsByTable(catalogTable.id) ) {
+        for ( CatalogPartition catalogPartition : catalog.getPartitionsByTable( catalogTable.id ) ) {
 
-
-            if ( unboundPartitionId == -1 && catalogPartition.isUnbound ){
+            if ( unboundPartitionId == -1 && catalogPartition.isUnbound ) {
                 unboundPartitionId = catalogPartition.id;
                 break;
             }
@@ -83,19 +82,17 @@ public class RangePartitionManager extends AbstractPartitionManager {
     }
 
 
-
     @Override
     public Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
         Catalog catalog = Catalog.getInstance();
 
-        Map <Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
+        Map<Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
 
         if ( partitionIds != null ) {
-            for ( long  partitionId : partitionIds ) {
+            for ( long partitionId : partitionIds ) {
 
                 CatalogPartition catalogPartition = catalog.getPartition( partitionId );
                 List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();
-
 
                 for ( long columnId : catalogTable.columnIds ) {
                     List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartitionGroup( catalogTable.id, catalogPartition.partitionGroupId, columnId );
@@ -103,7 +100,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
                         //get first column placement which contains partition
                         relevantCcps.add( ccps.get( 0 ) );
                         if ( log.isDebugEnabled() ) {
-                            log.debug( "{} {} with part. {}", ccps.get( 0 ).adapterUniqueName, ccps.get( 0 ).getLogicalColumnName(), partitionId  );
+                            log.debug( "{} {} with part. {}", ccps.get( 0 ).adapterUniqueName, ccps.get( 0 ).getLogicalColumnName(), partitionId );
                         }
                     }
                 }

@@ -37,7 +37,6 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManagerImpl;
-import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.exploreByExample.ExploreManager;
 import org.polypheny.db.exploreByExample.ExploreQueryProcessor;
 import org.polypheny.db.iface.Authenticator;
@@ -246,7 +245,7 @@ public class PolyphenyDb {
 
         //Intialize PartitionMangerFactory
         PartitionManagerFactory.setAndGetInstance( new PartitionManagerFactoryImpl() );
-        FrequencyMap.setAndGetInstance( new FrequencyMapImpl(catalog) );
+        FrequencyMap.setAndGetInstance( new FrequencyMapImpl( catalog ) );
 
         // Start Polypheny UI
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator );
@@ -275,7 +274,6 @@ public class PolyphenyDb {
         ExploreManager explore = ExploreManager.getInstance();
         explore.setExploreQueryProcessor( exploreQueryProcessor );
 
-
         // Todo remove this testing
        /* InternalSubscriber internalSubscriber = new InternalSubscriber();
         DummySubscriber dummySubscriber = new DummySubscriber();
@@ -286,9 +284,7 @@ public class PolyphenyDb {
 
         MonitoringService monitoringService = MonitoringServiceProvider.getInstance();
 
-
         //
-
 
         log.info( "****************************************************************************************************" );
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );

@@ -31,15 +31,16 @@ import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.transaction.Statement;
 
 class MonitoringQueueImplIntegrationTest {
+
     @Test
-    public void monitoringImplWithBackgroundTask(){
+    public void monitoringImplWithBackgroundTask() {
         val monitoringService = MonitoringServiceProvider.getInstance();
         Assertions.assertNotNull( monitoringService );
 
         //RuntimeConfig.QUEUE_PROCESSING_INTERVAL = TaskSchedulingType.EVERY_SECOND.getMillis() ;
 
         val events = createQueryEvent( 15 );
-        events.forEach( event -> monitoringService.monitorEvent( event ));
+        events.forEach( event -> monitoringService.monitorEvent( event ) );
 
         try {
             Thread.sleep( 5000L );
@@ -47,25 +48,25 @@ class MonitoringQueueImplIntegrationTest {
             e.printStackTrace();
         }
 
-        val result = monitoringService.getAllDataPoints( QueryDataPoint.class);
+        val result = monitoringService.getAllDataPoints( QueryDataPoint.class );
 
     }
 
 
-    private List<QueryEvent> createQueryEvent(int number){
+    private List<QueryEvent> createQueryEvent( int number ) {
         val result = new ArrayList<QueryEvent>();
 
-        for(int i = 0; i <number; i++ ){
+        for ( int i = 0; i < number; i++ ) {
             val event = new QueryEvent();
             event.setRouted( Mockito.mock( RelRoot.class ) );
             event.setSignature( Mockito.mock( PolyphenyDbSignature.class ) );
             event.setStatement( Mockito.mock( Statement.class ) );
             event.setDescription( UUID.randomUUID().toString() );
-            event.setExecutionTime( (long)Math.random() * 1000L );
-            event.setFieldNames( Lists.newArrayList("T1", "T2", "T3") );
+            event.setExecutionTime( (long) Math.random() * 1000L );
+            event.setFieldNames( Lists.newArrayList( "T1", "T2", "T3" ) );
             event.setRowCount( 15 );
             event.setAnalyze( true );
-            event.setSubQuery(false);
+            event.setSubQuery( false );
 
             result.add( event );
         }

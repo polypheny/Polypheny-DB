@@ -258,7 +258,7 @@ public class StatisticQueryProcessor {
                     log.error( "Exception while closing result iterator", e );
                 }
             }
-             throw new QueryExecutionException( t );
+            throw new QueryExecutionException( t );
         }
 
         try {

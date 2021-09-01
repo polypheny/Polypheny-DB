@@ -333,7 +333,7 @@ public enum RuntimeConfig {
             "Time interval in seconds, how often the monitoring queues is processed and analyzed and data points are created . Restart is required",
             BackgroundTask.TaskSchedulingType.EVERY_TEN_SECONDS,
             ConfigType.ENUM,
-            "monitoringSettingsQueueGroup"),
+            "monitoringSettingsQueueGroup" ),
 
     QUEUE_PROCESSING_ELEMENTS( "runtime/queueProcessingElements",
             "Number of elements in workload queue to process per time.",
@@ -345,11 +345,7 @@ public enum RuntimeConfig {
             "Time interval in seconds, how often the access frequency of all TEMPERATURE-partitioned tables is analyzed and redistributed",
             BackgroundTask.TaskSchedulingType.EVERY_TEN_SECONDS,
             ConfigType.ENUM,
-            "temperaturePartitionProcessingSettingsGroup");
-
-
-
-
+            "temperaturePartitionProcessingSettingsGroup" );
 
 
     private final String key;
@@ -441,7 +437,6 @@ public enum RuntimeConfig {
         uiSettingsDataViewGroup.withTitle( "Data View" );
         configManager.registerWebUiPage( uiSettingsPage );
         configManager.registerWebUiGroup( uiSettingsDataViewGroup );
-
 
         // Workload Monitoring specific setting
         final WebUiPage monitoringSettingsPage = new WebUiPage(

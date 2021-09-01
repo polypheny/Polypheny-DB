@@ -39,7 +39,6 @@ public class DMLEvent extends StatementEvent {
     }
 
 
-
     @Override
     public List<MonitoringDataPoint> analyze() {
         return Arrays.asList( DMLEventAnalyzer.analyze( this ) );

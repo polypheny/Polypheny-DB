@@ -591,6 +591,7 @@ public class IcarusRouter extends AbstractRouter {
             sortedEntries.addAll( map.entrySet() );
             return sortedEntries;
         }
+
     }
 
 
@@ -600,6 +601,7 @@ public class IcarusRouter extends AbstractRouter {
         private final String queryClassString;
         private final int adapterId;
         private final long nanoTime;
+
     }
 
 
@@ -751,5 +753,7 @@ public class IcarusRouter extends AbstractRouter {
             hashBasis.add( "other#" + other.getClass().getSimpleName() );
             return visitChildren( other );
         }
+
     }
+
 }

@@ -55,7 +55,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlSetOption;
 import org.polypheny.db.sql.dialect.AnsiSqlDialect;
 import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
-
 import org.polypheny.db.sql.parser.impl.SqlParserImpl;
 import org.polypheny.db.sql.pretty.SqlPrettyWriter;
 import org.polypheny.db.sql.utils.SqlValidatorTestCase;

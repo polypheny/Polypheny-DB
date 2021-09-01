@@ -34,7 +34,7 @@ public class RawTemperaturePartitionInformation extends RawPartitionInformation 
     public SqlIdentifier intervalUnit; // minutes | hours | days
 
     public List<SqlIdentifier> partitionNamesList;
-    public List< List<SqlNode>> partitionQualifierList;
+    public List<List<SqlNode>> partitionQualifierList;
 
     private SqlNode hotAccessPercentageIn;
     private SqlNode hotAccessPercentageOut;

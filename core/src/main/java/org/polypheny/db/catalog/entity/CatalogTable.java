@@ -67,7 +67,7 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
             @NonNull final String ownerName,
             @NonNull final TableType type,
             final Long primaryKey,
-            @NonNull final ImmutableMap<Integer,ImmutableList<Long>> placementsByAdapter,
+            @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             boolean modifiable,
             PartitionProperty partitionProperty ) {
         this.id = id;
@@ -179,6 +179,7 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
         }
     }
 
+
     public CatalogTable(
             final long id,
             @NonNull final String name,
@@ -217,6 +218,7 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
             throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
         }
     }
+
 
     @SneakyThrows
     public String getDatabaseName() {

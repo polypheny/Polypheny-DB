@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,8 @@ public class DataContextImpl implements DataContext {
     private final Map<Long, RelDataType> parameterTypes; // ParameterIndex -> Data Type
     private List<Map<Long, Object>> parameterValues; // List of ( ParameterIndex -> Value )
 
-    private Map<Long, RelDataType> backupParameterTypes = new HashMap<>();; // ParameterIndex -> Data Type
+    private Map<Long, RelDataType> backupParameterTypes = new HashMap<>();
+    ; // ParameterIndex -> Data Type
     private List<Map<Long, Object>> backupParameterValues = new ArrayList<>(); // List of ( ParameterIndex -> Value )
 
 
@@ -160,7 +161,10 @@ public class DataContextImpl implements DataContext {
 
 
     @Override
-    public boolean wasBackuped(){ return wasBackuped; }
+    public boolean wasBackuped() {
+        return wasBackuped;
+    }
+
 
     @Override
     public void backupParameterValues() {
@@ -168,14 +172,15 @@ public class DataContextImpl implements DataContext {
         wasBackuped = true;
 
         backupParameterTypes.putAll( parameterTypes );
-        backupParameterValues = parameterValues.stream().collect( Collectors.toList());
+        backupParameterValues = parameterValues.stream().collect( Collectors.toList() );
     }
+
 
     @Override
     public void restoreParameterValues() {
 
         parameterTypes.putAll( backupParameterTypes );
-        parameterValues = backupParameterValues.stream().collect( Collectors.toList());
+        parameterValues = backupParameterValues.stream().collect( Collectors.toList() );
 
     }
 

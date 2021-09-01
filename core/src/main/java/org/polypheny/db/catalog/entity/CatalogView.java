@@ -177,7 +177,7 @@ public class CatalogView extends CatalogTable {
                 relCollation,
                 underlyingTables,
                 fieldList,
-                partitionProperty);
+                partitionProperty );
     }
 
 

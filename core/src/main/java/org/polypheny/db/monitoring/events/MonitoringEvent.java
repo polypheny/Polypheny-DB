@@ -19,7 +19,6 @@ package org.polypheny.db.monitoring.events;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.UUID;
-import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 
 
 /**

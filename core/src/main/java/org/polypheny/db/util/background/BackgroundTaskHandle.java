@@ -108,6 +108,7 @@ class BackgroundTaskHandle implements Runnable {
             }
             return sum / (double) window.size();
         }
+
     }
 
 }

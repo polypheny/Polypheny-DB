@@ -36,7 +36,7 @@ public interface PartitionManager {
 
     boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, CatalogColumn partitionColumn );
 
-    int getNumberOfPartitionsPerGroup( int numberOfPartitions);
+    int getNumberOfPartitionsPerGroup( int numberOfPartitions );
 
     boolean requiresUnboundPartitionGroup();
 

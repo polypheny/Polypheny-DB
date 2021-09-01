@@ -227,9 +227,8 @@ public class CottontailStore extends DataStore {
         /* Begin or continue Cottontail DB transaction. */
         final TransactionId txId = this.wrapper.beginOrContinue( context.getStatement().getTransaction() );
 
-
-        if (partitionIds.size() != 1){
-            throw new RuntimeException("CottontailDB Store can't be partitioned but number of specified partitions where: " + partitionIds.size());
+        if ( partitionIds.size() != 1 ) {
+            throw new RuntimeException( "CottontailDB Store can't be partitioned but number of specified partitions where: " + partitionIds.size() );
         }
 
 
@@ -300,7 +299,7 @@ public class CottontailStore extends DataStore {
         final TransactionId txId = this.wrapper.beginOrContinue( context.getStatement().getTransaction() );
 
         List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-        partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id )) );
+        partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
 
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
             /* Prepare DROP TABLE message. */
@@ -401,7 +400,6 @@ public class CottontailStore extends DataStore {
                     CottontailNameUtil.createPhysicalColumnName( placement.columnId ),
                     true );
         }
-
 
 
     }

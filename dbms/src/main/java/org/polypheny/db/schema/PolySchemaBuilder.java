@@ -135,7 +135,6 @@ public class PolySchemaBuilder implements PropertyChangeListener {
             s.polyphenyDbSchema().setSchema( new LogicalSchema( catalogSchema.name, tableMap ) );
         }
 
-
         // Build adapter schema (physical schema)
         List<CatalogAdapter> adapters = Catalog.getInstance().getAdapters();
         for ( CatalogSchema catalogSchema : catalog.getSchemas( catalogDatabase.id, null ) ) {
@@ -147,7 +146,6 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                     tableIdsPerSchema.get( placement.physicalSchemaName ).add( placement.tableId );
                 }
 
-
                 for ( String physicalSchemaName : tableIdsPerSchema.keySet() ) {
                     Set<Long> tableIds = tableIdsPerSchema.get( physicalSchemaName );
 
@@ -156,7 +154,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
                     HashMap<String, SchemaPlus> schemaNames = new HashMap<>();
 
-                    final String schemaName = buildAdapterSchemaName( catalogAdapter.uniqueName, catalogSchema.name, physicalSchemaName);
+                    final String schemaName = buildAdapterSchemaName( catalogAdapter.uniqueName, catalogSchema.name, physicalSchemaName );
 
                     adapter.createNewSchema( rootSchema, schemaName );
                     SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentSchema(), schemaName ).plus();
@@ -181,7 +179,6 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                         } else {
 
                             for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-
 
                                 Table table = adapter.createTableSchema(
                                         catalogTable,

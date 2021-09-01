@@ -93,7 +93,7 @@ public class CsvSource extends DataSource {
 
     @Override
     public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
-        return currentSchema.createCsvTable( catalogTable, columnPlacementsOnStore, this, partitionPlacement);
+        return currentSchema.createCsvTable( catalogTable, columnPlacementsOnStore, this, partitionPlacement );
     }
 
 

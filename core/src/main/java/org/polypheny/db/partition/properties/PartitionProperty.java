@@ -19,10 +19,8 @@ package org.polypheny.db.partition.properties;
 
 import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 
 

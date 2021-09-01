@@ -16,7 +16,6 @@
 
 package org.polypheny.db.catalog.entity;
 
-import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
 import java.util.List;
 import lombok.EqualsAndHashCode;

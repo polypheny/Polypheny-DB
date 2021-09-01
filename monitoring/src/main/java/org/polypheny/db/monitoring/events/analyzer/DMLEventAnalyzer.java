@@ -22,13 +22,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.monitoring.events.DMLEvent;
 import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
-import org.polypheny.db.monitoring.events.DMLEvent;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 
 @Slf4j
 public class DMLEventAnalyzer {
     // TODO: Bis jetzt sind die Klassen mehr oder weniger identisch. Ist das einfach vorbereitet für später oder wie?
+
 
     public static DMLDataPoint analyze( DMLEvent dmlEvent ) {
         DMLDataPoint metric = DMLDataPoint
@@ -40,7 +40,7 @@ public class DMLEventAnalyzer {
                 .executionTime( dmlEvent.getExecutionTime() )
                 .rowCount( dmlEvent.getRowCount() )
                 .isSubQuery( dmlEvent.isSubQuery() )
-                .recordedTimestamp( dmlEvent.getRecordedTimestamp()  )
+                .recordedTimestamp( dmlEvent.getRecordedTimestamp() )
                 .accessedPartitions( dmlEvent.getAccessedPartitions() )
                 .build();
 

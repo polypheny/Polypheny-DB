@@ -31,7 +31,7 @@ import org.polypheny.db.transaction.Statement;
  */
 @Setter
 @Getter
-public abstract class StatementEvent extends BaseEvent{
+public abstract class StatementEvent extends BaseEvent {
 
     protected String monitoringType;
     protected RelRoot routed;
@@ -48,8 +48,6 @@ public abstract class StatementEvent extends BaseEvent{
     protected List<Long> accessedPartitions;
 
 
-
-
     @Override
     public abstract <T extends MonitoringDataPoint> List<Class<T>> getMetrics();
 
@@ -62,4 +60,5 @@ public abstract class StatementEvent extends BaseEvent{
 
     @Override
     public abstract List<MonitoringDataPoint> analyze();
+
 }

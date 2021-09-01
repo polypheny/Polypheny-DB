@@ -48,7 +48,6 @@ import javax.sql.DataSource;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.DataContext;

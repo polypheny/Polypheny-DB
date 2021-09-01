@@ -24,6 +24,7 @@ public abstract class FrequencyMap {
 
     public static FrequencyMap INSTANCE = null;
 
+
     public static FrequencyMap setAndGetInstance( FrequencyMap frequencyMap ) {
         if ( INSTANCE != null ) {
             throw new RuntimeException( "Overwriting the FrequencyMap, when already set is not permitted." );
@@ -31,6 +32,7 @@ public abstract class FrequencyMap {
         INSTANCE = frequencyMap;
         return INSTANCE;
     }
+
 
     public abstract void initialize();
 
