@@ -1481,6 +1481,8 @@ public class DdlManagerImpl extends DdlManager {
                 }
             }
 
+            checkDocumentModel( schemaId, columns, constraints );
+
             boolean foundPk = false;
             for ( ConstraintInformation constraintInformation : constraints ) {
                 if ( constraintInformation.type == ConstraintType.PRIMARY ) {
@@ -1507,40 +1509,6 @@ public class DdlManagerImpl extends DdlManager {
                     TableType.TABLE,
                     true );
 
-            if ( catalog.getSchema( schemaId ).schemaType == SchemaType.DOCUMENT ) {
-                List<String> names = columns.stream().map( c -> c.name ).collect( Collectors.toList() );
-
-                if ( names.contains( "_id" ) ) {
-                    int index = names.indexOf( "_id" );
-                    columns.remove( index );
-                    constraints.remove( index );
-                    names.remove( "_id" );
-                }
-
-                // add _id column if necessary
-                if ( !names.contains( "_id" ) ) {
-                    ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.VARCHAR, PolyType.VARCHAR, 24, null, null, null, false );
-                    columns.add( new ColumnInformation( "_id", typeInformation, Collation.CASE_INSENSITIVE, null, 0 ) );
-
-                }
-
-                // add constraint for _id as primary if necessary
-                if ( constraints.stream().noneMatch( c -> c.type.getId() == 2 ) ) {
-                    constraints.add( new ConstraintInformation( "primary", ConstraintType.PRIMARY, Collections.singletonList( "_id" ) ) );
-                }
-
-                if ( names.contains( "_data" ) ) {
-                    columns.remove( names.indexOf( "_data" ) );
-                    names.remove( "_data" );
-                }
-
-                // add _id column if necessary
-                if ( !names.contains( "_data" ) ) {
-                    ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.JSON, PolyType.JSON, 1024, null, null, null, false );
-                    columns.add( new ColumnInformation( "_data", typeInformation, Collation.CASE_INSENSITIVE, null, 1 ) );
-                }
-            }
-
             for ( ColumnInformation column : columns ) {
                 addColumn( column.name, column.typeInformation, column.collation, column.defaultValue, tableId, column.position, stores, placementType );
             }
@@ -1556,6 +1524,43 @@ public class DdlManagerImpl extends DdlManager {
 
         } catch ( GenericCatalogException | UnknownColumnException | UnknownCollationException e ) {
             throw new RuntimeException( e );
+        }
+    }
+
+
+    private void checkDocumentModel( long schemaId, List<ColumnInformation> columns, List<ConstraintInformation> constraints ) {
+        if ( catalog.getSchema( schemaId ).schemaType == SchemaType.DOCUMENT ) {
+            List<String> names = columns.stream().map( c -> c.name ).collect( Collectors.toList() );
+
+            if ( names.contains( "_id" ) ) {
+                int index = names.indexOf( "_id" );
+                columns.remove( index );
+                constraints.remove( index );
+                names.remove( "_id" );
+            }
+
+            // add _id column if necessary
+            if ( !names.contains( "_id" ) ) {
+                ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.VARCHAR, PolyType.VARCHAR, 24, null, null, null, false );
+                columns.add( new ColumnInformation( "_id", typeInformation, Collation.CASE_INSENSITIVE, null, 0 ) );
+
+            }
+
+            // add constraint for _id as primary if necessary
+            if ( constraints.stream().noneMatch( c -> c.type.getId() == 2 ) ) {
+                constraints.add( new ConstraintInformation( "primary", ConstraintType.PRIMARY, Collections.singletonList( "_id" ) ) );
+            }
+
+            if ( names.contains( "_data" ) ) {
+                columns.remove( names.indexOf( "_data" ) );
+                names.remove( "_data" );
+            }
+
+            // add _id column if necessary
+            if ( !names.contains( "_data" ) ) {
+                ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.JSON, PolyType.JSON, 1024, null, null, null, false );
+                columns.add( new ColumnInformation( "_data", typeInformation, Collation.CASE_INSENSITIVE, null, 1 ) );
+            }
         }
     }
 

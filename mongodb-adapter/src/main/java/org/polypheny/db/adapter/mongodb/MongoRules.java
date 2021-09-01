@@ -72,6 +72,7 @@ import org.polypheny.db.rel.AbstractRelNode;
 import org.polypheny.db.rel.InvalidRelException;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.SingleRel;
 import org.polypheny.db.rel.convert.ConverterRule;
 import org.polypheny.db.rel.core.Documents;
 import org.polypheny.db.rel.core.RelFactories;
@@ -246,6 +247,18 @@ public class MongoRules {
             MONGO_OPERATORS.put( SqlStdOperatorTable.GREATER_THAN_OR_EQUAL, "$gte" );
             MONGO_OPERATORS.put( SqlStdOperatorTable.LESS_THAN, "$lt" );
             MONGO_OPERATORS.put( SqlStdOperatorTable.LESS_THAN_OR_EQUAL, "$lte" );
+
+            MONGO_OPERATORS.put( SqlStdOperatorTable.FLOOR, "$floor" );
+            MONGO_OPERATORS.put( SqlStdOperatorTable.CEIL, "$ceil" );
+            MONGO_OPERATORS.put( SqlStdOperatorTable.EXP, "$exp" );
+            MONGO_OPERATORS.put( SqlStdOperatorTable.LN, "$ln" );
+            MONGO_OPERATORS.put( SqlStdOperatorTable.LOG10, "$log10" );
+            MONGO_OPERATORS.put( SqlStdOperatorTable.ABS, "$abs" );
+            MONGO_OPERATORS.put( SqlStdOperatorTable.CHAR_LENGTH, "$strLenCP" );
+            MONGO_OPERATORS.put( SqlStdOperatorTable.SUBSTRING, "$substr" );
+            MONGO_OPERATORS.put( SqlStdOperatorTable.ROUND, "$round" );
+
+            MONGO_OPERATORS.put( SqlStdOperatorTable.POWER, "$pow" );
         }
 
 
@@ -339,6 +352,34 @@ public class MongoRules {
             }
             if ( call.op.getName().equals( MqlStdOperatorTable.DOC_JSONIZE.getName() ) ) {
                 return call.operands.get( 0 ).accept( this );
+            }
+
+            if ( call.op == SqlStdOperatorTable.SIGN ) {
+                // x < 0, -1
+                // x == 0, 0
+                // x > 0, 1
+                StringBuilder sb = new StringBuilder();
+                String oper = call.operands.get( 0 ).accept( this );
+                sb.append( "{\"$switch\":\n"
+                        + "            {\n"
+                        + "              \"branches\": [\n"
+                        + "                {\n"
+                        + "                  \"case\": { \"$lt\" : [ " );
+                sb.append( oper );
+                sb.append( ", 0 ] },\n"
+                        + "                  \"then\": -1.0"
+                        + "                },\n"
+                        + "                {\n"
+                        + "                  \"case\": { \"$gt\" : [ " );
+                sb.append( oper );
+                sb.append( ", 0 ] },\n"
+                        + "                  \"then\": 1.0"
+                        + "                },\n"
+                        + "              ],\n"
+                        + "              \"default\": 0.0"
+                        + "            }}" );
+
+                return sb.toString();
             }
 
             throw new IllegalArgumentException( "Translation of " + call + " is not supported by MongoProject" );
@@ -512,7 +553,8 @@ public class MongoRules {
 
         private MongoProjectRule() {
             super( LogicalProject.class,
-                    project -> MongoConvention.mapsDocuments || !DocumentRules.containsDocument( project ),
+                    project -> (MongoConvention.mapsDocuments || !DocumentRules.containsDocument( project ))
+                            && !containsIncompatible( project ),
                     Convention.NONE,
                     MongoRel.CONVENTION,
                     "MongoProjectRule" );
@@ -529,6 +571,41 @@ public class MongoRules {
                     convert( project.getInput(), out ),
                     project.getProjects(),
                     project.getRowType() );
+        }
+
+    }
+
+
+    private static boolean containsIncompatible( SingleRel rel ) {
+        MongoExcludeVisitor visitor = new MongoExcludeVisitor();
+        for ( RexNode node : rel.getChildExps() ) {
+            node.accept( visitor );
+            if ( visitor.isContainsIncompatible() ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    public static class MongoExcludeVisitor extends RexVisitorImpl<Void> {
+
+        @Getter
+        private boolean containsIncompatible = false;
+
+
+        protected MongoExcludeVisitor() {
+            super( true );
+        }
+
+
+        @Override
+        public Void visitCall( RexCall call ) {
+            SqlOperator operator = call.getOperator();
+            if ( operator == SqlStdOperatorTable.COALESCE ) {
+                containsIncompatible = true;
+            }
+            return super.visitCall( call );
         }
 
     }
