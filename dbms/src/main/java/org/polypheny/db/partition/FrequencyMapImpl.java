@@ -45,7 +45,7 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
-import org.polypheny.db.monitoring.events.metrics.DMLDataPoint;
+import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.processing.DataMigrator;
@@ -407,7 +407,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                 for ( QueryDataPoint queryDataPoint : MonitoringServiceProvider.getInstance().getDataPointsAfter( QueryDataPoint.class, queryStart ) ) {
                     queryDataPoint.getAccessedPartitions().forEach( p -> incrementPartitionAccess( p, tempPartitionIds ) );
                 }
-                for ( DMLDataPoint dmlDataPoint : MonitoringServiceProvider.getInstance().getDataPointsAfter( DMLDataPoint.class, queryStart ) ) {
+                for ( DmlDataPoint dmlDataPoint : MonitoringServiceProvider.getInstance().getDataPointsAfter( DmlDataPoint.class, queryStart ) ) {
                     dmlDataPoint.getAccessedPartitions().forEach( p -> incrementPartitionAccess( p, tempPartitionIds ) );
                 }
 
@@ -421,8 +421,8 @@ public class FrequencyMapImpl extends FrequencyMap {
                 break;
 
             case WRITE:
-                List<DMLDataPoint> writeAccesses = MonitoringServiceProvider.getInstance().getDataPointsAfter( DMLDataPoint.class, queryStart );
-                for ( DMLDataPoint dmlDataPoint : writeAccesses ) {
+                List<DmlDataPoint> writeAccesses = MonitoringServiceProvider.getInstance().getDataPointsAfter( DmlDataPoint.class, queryStart );
+                for ( DmlDataPoint dmlDataPoint : writeAccesses ) {
                     dmlDataPoint.getAccessedPartitions().forEach( p -> incrementPartitionAccess( p, tempPartitionIds ) );
                 }
         }

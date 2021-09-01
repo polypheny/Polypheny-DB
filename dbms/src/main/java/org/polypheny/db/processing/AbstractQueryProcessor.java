@@ -67,7 +67,7 @@ import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.monitoring.events.DMLEvent;
+import org.polypheny.db.monitoring.events.DmlEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.plan.Convention;
@@ -223,7 +223,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
         if ( statement.getTransaction().getMonitoringData() == null ) {
             if ( logicalRoot.kind.belongsTo( SqlKind.DML ) ) {
-                statement.getTransaction().setMonitoringData( new DMLEvent() );
+                statement.getTransaction().setMonitoringData( new DmlEvent() );
             } else if ( logicalRoot.kind.belongsTo( SqlKind.QUERY ) ) {
                 statement.getTransaction().setMonitoringData( new QueryEvent() );
             }

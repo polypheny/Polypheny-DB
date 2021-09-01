@@ -24,6 +24,7 @@ import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 
+
 class MonitoringQueueImplTest {
 
     @Test

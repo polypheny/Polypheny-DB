@@ -151,7 +151,7 @@ import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
-import org.polypheny.db.monitoring.events.DMLEvent;
+import org.polypheny.db.monitoring.events.DmlEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.partition.PartitionFunctionInfo;
@@ -3780,7 +3780,7 @@ public class Crud implements InformationObserver {
     private int executeSqlUpdate( final Statement statement, final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
         PolyphenyDbSignature<?> signature;
 
-        statement.getTransaction().setMonitoringData( new DMLEvent() );
+        statement.getTransaction().setMonitoringData( new DmlEvent() );
         try {
             signature = processQuery( statement, sqlUpdate );
         } catch ( Throwable t ) {

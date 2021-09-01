@@ -37,7 +37,7 @@ import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @AllArgsConstructor(access = AccessLevel.MODULE)
-public class DMLDataPoint implements MonitoringDataPoint, Serializable {
+public class DmlDataPoint implements MonitoringDataPoint, Serializable {
 
     private static final long serialVersionUID = 2312903042511293177L;
 
@@ -66,6 +66,3 @@ public class DMLDataPoint implements MonitoringDataPoint, Serializable {
     }
 
 }
-
-
-

@@ -34,7 +34,7 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
-import org.polypheny.db.monitoring.events.DMLEvent;
+import org.polypheny.db.monitoring.events.DmlEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -154,7 +154,7 @@ public class Rest {
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
-        statement.getTransaction().setMonitoringData( new DMLEvent() );
+        statement.getTransaction().setMonitoringData( new DmlEvent() );
 
         PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
         PreparingTable table = catalogReader.getTable( Arrays.asList( resourcePatchRequest.tables.get( 0 ).getSchemaName(), resourcePatchRequest.tables.get( 0 ).name ) );
@@ -215,7 +215,7 @@ public class Rest {
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
-        statement.getTransaction().setMonitoringData( new DMLEvent() );
+        statement.getTransaction().setMonitoringData( new DmlEvent() );
 
         PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
         PreparingTable table = catalogReader.getTable( Arrays.asList( resourceDeleteRequest.tables.get( 0 ).getSchemaName(), resourceDeleteRequest.tables.get( 0 ).name ) );
@@ -270,7 +270,7 @@ public class Rest {
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
-        statement.getTransaction().setMonitoringData( new DMLEvent() );
+        statement.getTransaction().setMonitoringData( new DmlEvent() );
 
         PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
         PreparingTable table = catalogReader.getTable( Arrays.asList( insertValueRequest.tables.get( 0 ).getSchemaName(), insertValueRequest.tables.get( 0 ).name ) );
