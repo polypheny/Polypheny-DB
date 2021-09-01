@@ -3803,7 +3803,6 @@ public class Crud implements InformationObserver {
             Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
             logicalRoot = sqlProcessor.translate( statement, validated.left );
             signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
-
         }
         return signature;
     }

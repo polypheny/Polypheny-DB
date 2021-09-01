@@ -37,21 +37,16 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
 
 
-public class CottontailSort extends Sort implements CottontailRel {
+public class CottontailLimit extends Sort implements CottontailRel {
 
-    public CottontailSort( RelOptCluster cluster, RelTraitSet traits, RelNode child, RelCollation collation, RexNode offset, RexNode fetch ) {
+    public CottontailLimit( RelOptCluster cluster, RelTraitSet traits, RelNode child, RelCollation collation, RexNode offset, RexNode fetch ) {
         super( cluster, traits, child, collation, offset, fetch );
-    }
-
-
-    public CottontailSort( RelOptCluster cluster, RelTraitSet traits, RelNode child, RelCollation collation ) {
-        super( cluster, traits, child, collation );
     }
 
 
     @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
-        final double rowCount = mq.getRowCount( this );
+        final double rowCount = mq.getRowCount( this ) + 0.01;
         return planner.getCostFactory().makeCost( rowCount, 0, 0 );
     }
 
@@ -59,15 +54,12 @@ public class CottontailSort extends Sort implements CottontailRel {
     @Override
     public void implement( CottontailImplementContext context ) {
         context.visitChild( 0, getInput() );
-        if ( this.offset != null || this.fetch != null ) {
+        if ( this.fetch != null ) {
+            context.limitBuilder = numberBuilderBuilder( this.fetch );
+        }
 
-            if ( this.fetch != null ) {
-                context.limitBuilder = numberBuilderBuilder( this.fetch );
-            }
-
-            if ( this.offset != null ) {
-                context.offsetBuilder = numberBuilderBuilder( this.offset );
-            }
+        if ( this.offset != null ) {
+            context.offsetBuilder = numberBuilderBuilder( this.offset );
         }
     }
 
@@ -93,7 +85,7 @@ public class CottontailSort extends Sort implements CottontailRel {
 
     @Override
     public Sort copy( RelTraitSet traitSet, RelNode newInput, RelCollation newCollation, RexNode offset, RexNode fetch ) {
-        return new CottontailSort( getCluster(), traitSet, newInput, newCollation, offset, fetch );
+        return new CottontailLimit( getCluster(), traitSet, newInput, newCollation, offset, fetch );
     }
 
 }

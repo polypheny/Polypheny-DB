@@ -26,6 +26,9 @@ import org.apache.calcite.avatica.util.Quoting;
  * and whether they are matched case-sensitively.
  */
 public enum Lex {
+
+    POLYPHENY( Quoting.DOUBLE_QUOTE, Casing.TO_UPPER, Casing.UNCHANGED, false ),
+
     /**
      * Lexical policy similar to Oracle. The case of identifiers enclosed in double-quotes is preserved; unquoted identifiers are converted to upper-case;
      * after which, identifiers are matched case-sensitively.

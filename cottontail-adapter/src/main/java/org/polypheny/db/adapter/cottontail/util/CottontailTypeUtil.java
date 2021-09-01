@@ -299,38 +299,31 @@ public class CottontailTypeUtil {
                 if ( value instanceof Boolean ) {
                     return builder.setBooleanData( (Boolean) value ).build();
                 }
-
                 break;
             }
-            case INTEGER: {
+            case INTEGER:
+            case SMALLINT:
+            case TINYINT: {
+                if ( value instanceof Byte ) {
+                    return builder.setIntData( ((Byte) value).intValue() ).build();
+                }
+                if ( value instanceof Short ) {
+                    return builder.setIntData( ((Short) value).intValue() ).build();
+                }
                 if ( value instanceof Integer ) {
                     return builder.setIntData( (Integer) value ).build();
-                } else if ( value instanceof Long ) {
+                }
+                if ( value instanceof Long ) {
                     return builder.setIntData( ((Long) value).intValue() ).build();
                 }
                 break;
             }
             case BIGINT: {
+                if ( value instanceof Integer ) {
+                    return builder.setLongData( ((Integer) value).longValue() ).build();
+                }
                 if ( value instanceof Long ) {
                     return builder.setLongData( (Long) value ).build();
-                }
-                break;
-            }
-            case TINYINT: {
-                if ( value instanceof Byte ) {
-                    return builder.setIntData( ((Byte) value).intValue() ).build();
-                }
-                if ( value instanceof Long ) {
-                    return builder.setIntData( ((Long) value).intValue() ).build();
-                }
-                break;
-            }
-            case SMALLINT: {
-                if ( value instanceof Short ) {
-                    return builder.setIntData( ((Short) value).intValue() ).build();
-                }
-                if ( value instanceof Long ) {
-                    return builder.setIntData( ((Long) value).intValue() ).build();
                 }
                 break;
             }

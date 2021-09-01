@@ -83,11 +83,8 @@ public class SqlParser {
     /**
      * Creates a <code>SqlParser</code> to parse the given string using Polypheny-DB's parser implementation.
      *
-     * The default lexical policy is similar to Oracle.
-     *
      * @param s An SQL statement or expression to parse.
      * @return A parser
-     * @see Lex#ORACLE
      */
     public static SqlParser create( String s ) {
         return create( s, configBuilder().build() );
@@ -246,12 +243,12 @@ public class SqlParser {
      */
     public static class ConfigBuilder {
 
-        private Casing quotedCasing = Lex.ORACLE.quotedCasing;
-        private Casing unquotedCasing = Lex.ORACLE.unquotedCasing;
-        private Quoting quoting = Lex.ORACLE.quoting;
+        private Casing quotedCasing = Lex.POLYPHENY.quotedCasing;
+        private Casing unquotedCasing = Lex.POLYPHENY.unquotedCasing;
+        private Quoting quoting = Lex.POLYPHENY.quoting;
         private int identifierMaxLength = DEFAULT_IDENTIFIER_MAX_LENGTH;
-        private boolean caseSensitive = Lex.ORACLE.caseSensitive;
-        private SqlConformance conformance = SqlConformanceEnum.DEFAULT;
+        private boolean caseSensitive = Lex.POLYPHENY.caseSensitive;
+        private SqlConformance conformance = SqlConformanceEnum.LENIENT;
         private SqlParserImplFactory parserFactory = SqlParserImpl.FACTORY;
 
 
