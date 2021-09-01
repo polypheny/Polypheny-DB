@@ -382,6 +382,10 @@ public class MongoRules {
                 return sb.toString();
             }
 
+            if ( call.op == SqlStdOperatorTable.IS_NOT_NULL ) {
+                return call.operands.get( 0 ).accept( this );
+            }
+
             throw new IllegalArgumentException( "Translation of " + call + " is not supported by MongoProject" );
         }
 
@@ -602,7 +606,7 @@ public class MongoRules {
         @Override
         public Void visitCall( RexCall call ) {
             SqlOperator operator = call.getOperator();
-            if ( operator == SqlStdOperatorTable.COALESCE ) {
+            if ( operator == SqlStdOperatorTable.COALESCE || operator == SqlStdOperatorTable.EXTRACT ) {
                 containsIncompatible = true;
             }
             return super.visitCall( call );

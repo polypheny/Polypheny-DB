@@ -60,6 +60,7 @@ import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
+import org.bson.BsonNull;
 import org.bson.BsonRegularExpression;
 import org.bson.BsonString;
 import org.bson.BsonValue;
@@ -261,6 +262,12 @@ public class MongoFilter extends Filter implements MongoRel {
                 case GREATER_THAN_OR_EQUAL:
                     translateBinary( "$gte", "$lte", (RexCall) node );
                     return;
+                case IS_NOT_NULL:
+                    translateIsNull( (RexCall) node, true );
+                    return;
+                case IS_NULL:
+                    translateIsNull( (RexCall) node, false );
+                    return;
                 case LIKE:
                     translateLike( (RexCall) node );
                     return;
@@ -275,6 +282,9 @@ public class MongoFilter extends Filter implements MongoRel {
                     return;
                 case DOC_ELEM_MATCH:
                     translateElemMatch( (RexCall) node );
+                    return;
+                case IS_NOT_TRUE:
+                    translateIsTrue( (RexCall) node, true );
                     return;
                 case NOT:
                     translateNot( (RexCall) node );
@@ -534,6 +544,38 @@ public class MongoFilter extends Filter implements MongoRel {
         }
 
 
+        private void translateIsNull( RexCall node, boolean isInverted ) {
+            final RexNode single = node.operands.get( 0 );
+            if ( single.getKind() == INPUT_REF ) {
+                String name = getParamAsKey( single );
+                String op = isInverted ? "$ne" : "$eq";
+                attachCondition( null, name, new BsonDocument( op, new BsonNull() ) );
+                return;
+            }
+
+            throw new RuntimeException( "translation of " + node + " is not possible with MongoFilter" );
+        }
+
+
+        private void translateIsTrue( RexCall node, boolean isInverted ) {
+            final RexNode single = node.operands.get( 0 );
+            if ( single instanceof RexCall ) {
+                if ( single.isA( INPUT_REF ) ) {
+                    attachCondition( "$eq", getParamAsKey( single ), new BsonBoolean( !isInverted ) );
+                } else {
+                    if ( isInverted ) {
+                        translateNot( (RexCall) single );
+                    } else {
+                        translateOr( (RexCall) single );
+                    }
+                }
+                return;
+            }
+
+            throw new RuntimeException( "translation of " + node + " is not possible with MongoFilter" );
+        }
+
+
         /**
          * Translates a call to a binary operator, reversing arguments if necessary.
          */
@@ -576,15 +618,16 @@ public class MongoFilter extends Filter implements MongoRel {
 
 
         private boolean translateExpr( String op, RexNode left, RexNode right ) {
-            if ( op == null ) {
-                return false;
-            }
 
             if ( left.isA( INPUT_REF ) && right.isA( INPUT_REF ) ) {
-                BsonValue l = new BsonString( getPhysicalName( (RexInputRef) left ) );
-                BsonValue r = new BsonString( getPhysicalName( (RexInputRef) right ) );
+                BsonValue l = new BsonString( "$" + getPhysicalName( (RexInputRef) left ) );
+                BsonValue r = new BsonString( "$" + getPhysicalName( (RexInputRef) right ) );
+                if ( op == null ) {
+                    attachCondition( null, "$expr", new BsonDocument( "$eq", new BsonArray( Arrays.asList( l, r ) ) ) );
+                } else {
+                    attachCondition( null, "$expr", new BsonDocument( op, new BsonArray( Arrays.asList( l, r ) ) ) );
+                }
 
-                attachCondition( null, "$expr", new BsonDocument( op, new BsonArray( Arrays.asList( l, r ) ) ) );
                 return true;
             }
 
@@ -819,7 +862,7 @@ public class MongoFilter extends Filter implements MongoRel {
         /**
          * Translates a field, which contains a RexDynamicParam
          *
-         * @param op the operation, which descirbes how the left field has to match the RexDynamicParam
+         * @param op the operation, which describes how the left field has to match the RexDynamicParam
          * @param left a not yet identified condition
          * @param right the RexDynamicParam
          * @return if the translation was possible
