@@ -31,6 +31,7 @@ import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
+import org.polypheny.db.excluded.MonetdbExcluded;
 import org.polypheny.db.excluded.MongodbExcluded;
 
 
@@ -352,6 +353,7 @@ public class TrigonometricFunctionsTest {
 
 
     @Test
+    @Category(MonetdbExcluded.class)
     public void arctangent() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

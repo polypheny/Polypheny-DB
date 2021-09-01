@@ -32,6 +32,7 @@ import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
+import org.polypheny.db.excluded.MongodbExcluded;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -111,6 +112,7 @@ public class StringFunctionsTest {
 
 
     @Test
+    @Category(MongodbExcluded.class)
     public void stringLength() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -225,6 +227,7 @@ public class StringFunctionsTest {
 
 
     @Test
+    @Category(MongodbExcluded.class)
     public void stringOverlay() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -256,6 +259,7 @@ public class StringFunctionsTest {
 
 
     @Test
+    @Category(MongodbExcluded.class)
     public void subString() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

@@ -132,7 +132,7 @@ public class CaseTest {
 
     @Test
     @Category(FileExcluded.class)
-    public void nullIf() throws SQLException {
+    public void nullIfTest() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {

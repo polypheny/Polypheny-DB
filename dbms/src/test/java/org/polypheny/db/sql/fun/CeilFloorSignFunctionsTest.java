@@ -32,6 +32,7 @@ import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
+import org.polypheny.db.excluded.MongodbExcluded;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -92,6 +93,7 @@ public class CeilFloorSignFunctionsTest {
 
 
     @Test
+    @Category(MongodbExcluded.class)
     public void ceilTest() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -142,6 +144,7 @@ public class CeilFloorSignFunctionsTest {
 
 
     @Test
+    @Category(MongodbExcluded.class)
     public void floorTest() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -192,6 +195,7 @@ public class CeilFloorSignFunctionsTest {
 
 
     @Test
+    @Category(MongodbExcluded.class)
     public void signTest() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
