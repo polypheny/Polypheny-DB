@@ -130,6 +130,7 @@ public class MongoProject extends Project implements MongoRel {
             if ( expr == null ) {
                 continue;
             }
+
             // exclude projection cannot be handled this way, so it needs fixing
             KindChecker visitor = new KindChecker( SqlKind.DOC_EXCLUDE );
             pair.left.accept( visitor );

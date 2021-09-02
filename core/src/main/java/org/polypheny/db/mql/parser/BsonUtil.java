@@ -308,8 +308,10 @@ public class BsonUtil {
     private static BsonValue handleDouble( Object obj ) {
         if ( obj instanceof Double ) {
             return new BsonDouble( (Double) obj );
-        } else {
+        } else if ( obj instanceof BigDecimal ) {
             return new BsonDouble( ((BigDecimal) obj).doubleValue() );
+        } else {
+            return new BsonDouble( (Integer) obj );
         }
     }
 

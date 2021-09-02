@@ -34,6 +34,8 @@
 package org.polypheny.db.adapter.mongodb;
 
 
+import static org.polypheny.db.sql.fun.SqlStdOperatorTable.SUBSTRING;
+
 import com.google.common.collect.ImmutableList;
 import com.mongodb.client.gridfs.GridFSBucket;
 import java.util.AbstractList;
@@ -97,6 +99,8 @@ import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.fun.SqlDatetimePlusOperator;
+import org.polypheny.db.sql.fun.SqlDatetimeSubtractionOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.type.PolyType;
@@ -255,8 +259,15 @@ public class MongoRules {
             MONGO_OPERATORS.put( SqlStdOperatorTable.LOG10, "$log10" );
             MONGO_OPERATORS.put( SqlStdOperatorTable.ABS, "$abs" );
             MONGO_OPERATORS.put( SqlStdOperatorTable.CHAR_LENGTH, "$strLenCP" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.SUBSTRING, "$substr" );
+            MONGO_OPERATORS.put( SUBSTRING, "$substrCP" );
             MONGO_OPERATORS.put( SqlStdOperatorTable.ROUND, "$round" );
+            MONGO_OPERATORS.put( SqlStdOperatorTable.ACOS, "$acos" );
+            MONGO_OPERATORS.put( SqlStdOperatorTable.TAN, "$tan" );
+            MONGO_OPERATORS.put( SqlStdOperatorTable.COS, "$cos" );
+            MONGO_OPERATORS.put( SqlStdOperatorTable.ASIN, "$asin" );
+            MONGO_OPERATORS.put( SqlStdOperatorTable.SIN, "$sin" );
+            MONGO_OPERATORS.put( SqlStdOperatorTable.ATAN, "$atan" );
+            MONGO_OPERATORS.put( SqlStdOperatorTable.ATAN2, "$atan2" );
 
             MONGO_OPERATORS.put( SqlStdOperatorTable.POWER, "$pow" );
         }
@@ -307,6 +318,15 @@ public class MongoRules {
             }
             String stdOperator = MONGO_OPERATORS.get( call.getOperator() );
             if ( stdOperator != null ) {
+                if ( call.getOperator() == SUBSTRING ) {
+                    String first = strings.get( 1 );
+                    first = "{\"$subtract\":[" + first + ", 1]}";
+                    strings.remove( 1 );
+                    strings.add( first );
+                    if ( call.getOperands().size() == 2 ) {
+                        strings.add( " { \"$strLenCP\":" + strings.get( 0 ) + "}" );
+                    }
+                }
                 return "{" + stdOperator + ": [" + Util.commaList( strings ) + "]}";
             }
             if ( call.getOperator() == SqlStdOperatorTable.ITEM ) {
@@ -606,7 +626,13 @@ public class MongoRules {
         @Override
         public Void visitCall( RexCall call ) {
             SqlOperator operator = call.getOperator();
-            if ( operator == SqlStdOperatorTable.COALESCE || operator == SqlStdOperatorTable.EXTRACT ) {
+            if ( operator == SqlStdOperatorTable.COALESCE
+                    || operator == SqlStdOperatorTable.EXTRACT
+                    || operator == SqlStdOperatorTable.OVERLAY
+                    || operator == SqlStdOperatorTable.COT
+                    || operator == SqlStdOperatorTable.FLOOR
+                    || operator instanceof SqlDatetimeSubtractionOperator
+                    || operator instanceof SqlDatetimePlusOperator ) {
                 containsIncompatible = true;
             }
             return super.visitCall( call );
