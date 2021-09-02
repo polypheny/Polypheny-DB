@@ -612,6 +612,12 @@ public class MongoRules {
     }
 
 
+    /**
+     * This visitor is used to exclude different function for MongoProject and MongoFilters,
+     * some of them are not supported or would need to use the Javascript engine extensively,
+     * which for one have similar performance to a JavaScript implementation but don't need
+     * maintenance
+     */
     public static class MongoExcludeVisitor extends RexVisitorImpl<Void> {
 
         @Getter
@@ -631,6 +637,7 @@ public class MongoRules {
                     || operator == SqlStdOperatorTable.OVERLAY
                     || operator == SqlStdOperatorTable.COT
                     || operator == SqlStdOperatorTable.FLOOR
+                    || (operator == SqlStdOperatorTable.CAST && call.operands.get( 0 ).getType().getPolyType() == PolyType.DATE)
                     || operator instanceof SqlDatetimeSubtractionOperator
                     || operator instanceof SqlDatetimePlusOperator ) {
                 containsIncompatible = true;
