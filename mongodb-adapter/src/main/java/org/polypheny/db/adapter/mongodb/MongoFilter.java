@@ -318,7 +318,11 @@ public class MongoFilter extends Filter implements MongoRel {
             Map<String, List<BsonValue>> shallowCopy = new HashMap<>( this.map );
             this.map = new HashMap<>();
 
-            translateNode( node.operands.get( 0 ) );
+            if ( node.operands.size() == 1 ) {
+                translateNode( node.operands.get( 0 ) );
+            } else {
+                translateMatch2( node );
+            }
 
             mergeMaps( this.map, shallowCopy, "$not" );
             this.map = shallowCopy;
@@ -339,16 +343,17 @@ public class MongoFilter extends Filter implements MongoRel {
 
         private void mergeMaps( Map<String, List<BsonValue>> newValueMap, Map<String, List<BsonValue>> finalValueMap, String op ) {
             if ( !op.equals( "$or" ) ) {
-                newValueMap
+                /*newValueMap
                         .replaceAll( ( k, v ) -> v.stream().map( e -> new BsonDocument( "$not", e ) )
-                                .collect( Collectors.toList() ) );
+                                .collect( Collectors.toList() ) );*/
 
                 for ( Entry<String, List<BsonValue>> values : newValueMap.entrySet() ) {
+                    BsonValue entry = asCondition( values.getValue() );
                     if ( finalValueMap.containsKey( values.getKey() ) ) {
-                        finalValueMap.get( values.getKey() ).add( new BsonDocument( op, asCondition( values.getValue() ) ) );
+                        finalValueMap.get( values.getKey() ).add( new BsonDocument( op, entry ) );
                     } else {
                         List<BsonValue> bsons = new ArrayList<>();
-                        bsons.add( new BsonDocument( op, asCondition( values.getValue() ) ) );
+                        bsons.add( new BsonDocument( op, entry ) );
                         finalValueMap.put( values.getKey(), bsons );
                     }
                 }
@@ -1003,6 +1008,11 @@ public class MongoFilter extends Filter implements MongoRel {
          * @param right specifies the condition, which matches name
          */
         private void attachCondition( String op, String name, BsonValue right ) {
+            // right is a "single" statement, which needs an "$eq" for complex statements
+            if ( op == null && ((!right.isDocument() && !right.isArray()) || right instanceof BsonDynamic) ) {
+                op = "$eq";
+            }
+
             if ( op == null ) {
                 // E.g.: {deptno: 100}
                 if ( map.containsKey( name ) ) {
@@ -1018,6 +1028,7 @@ public class MongoFilter extends Filter implements MongoRel {
                     map.put( name, new ArrayList<>( Collections.singletonList( new BsonDocument( op, right ) ) ) );
                 }
             }
+
         }
 
     }
