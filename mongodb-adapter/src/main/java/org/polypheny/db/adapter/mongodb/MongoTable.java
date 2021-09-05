@@ -246,7 +246,10 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
         }
 
         final Function1<Document, Object> getter = MongoEnumerator.getter( fields, arrayFields );
-        list.forEach( el -> log.error( el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ) );
+
+        if ( log.isDebugEnabled() ) {
+            log.debug( list.stream().map( el -> el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ).collect( Collectors.joining( ",\n" ) ) );
+        }
         return new AbstractEnumerable<Object>() {
             @Override
             public Enumerator<Object> enumerator() {

@@ -230,7 +230,7 @@ public class MongoRules {
         private final JavaTypeFactory typeFactory;
         private final List<String> inFields;
 
-        private static final Map<SqlOperator, String> MONGO_OPERATORS = new HashMap<>();
+        static final Map<SqlOperator, String> MONGO_OPERATORS = new HashMap<>();
 
 
         static {
@@ -366,6 +366,12 @@ public class MongoRules {
                 sb.append( finish );
                 return sb.toString();
             }
+            if ( call.op == SqlStdOperatorTable.UNARY_MINUS ) {
+                if ( strings.size() == 1 ) {
+                    return "{\"$multiply\":[" + strings.get( 0 ) + ",-1]}";
+                }
+            }
+
             String special = handleSpecialCases( call );
             if ( special != null ) {
                 return special;
