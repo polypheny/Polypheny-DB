@@ -455,7 +455,7 @@ public abstract class DdlManager {
      * @param relRoot the relNode which was built form the Select part of the view
      * @param statement the used Statement
      */
-    public abstract void createMaterializedView( String viewName, long schemaId, RelRoot relRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException, ColumnNotExistsException, ColumnAlreadyExistsException;
+    public abstract void createMaterializedView( String viewName, long schemaId, RelRoot relRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException, ColumnNotExistsException, ColumnAlreadyExistsException;
 
 
     /**

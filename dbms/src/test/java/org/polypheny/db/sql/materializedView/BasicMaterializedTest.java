@@ -142,6 +142,37 @@ public class BasicMaterializedTest {
 
 
     @Test
+    public void testIfNotExists() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
+                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
+
+                try {
+                    statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS MANUAL" );
+                    statement.executeUpdate( "CREATE MATERIALIZED VIEW IF NOT EXISTS viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS MANUAL" );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2, 1 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
+                            )
+                    );
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
+                    statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
+                    dropTables( statement );
+                }
+            }
+        }
+    }
+
+
+    @Test
     public void renameColumnTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -327,7 +358,7 @@ public class BasicMaterializedTest {
 
 
     @Test
-    public void testMultipleViews() throws SQLException {
+    public void testMultipleMaterializedViews() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -362,7 +393,7 @@ public class BasicMaterializedTest {
 
 
     @Test
-    public void testViewFromView() throws SQLException {
+    public void testMaterializedFromMaterialized() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -666,6 +697,98 @@ public class BasicMaterializedTest {
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS MANUAL " );
+                try {
+
+                    statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
+                    connection.commit();
+                    statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
+                    connection.commit();
+
+                    waiter.await( 1, TimeUnit.SECONDS );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            ImmutableList.of()
+                    );
+
+                    statement.executeUpdate( "ALTER MATERIALIZED VIEW viewTestEmp FRESHNESS MANUAL" );
+
+                    waiter.await( 1, TimeUnit.SECONDS );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2, 1 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
+                            )
+                    );
+
+
+                } catch ( InterruptedException e ) {
+                    e.printStackTrace();
+                } finally {
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
+                    statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
+                    dropTables( statement );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testFreshnessManualInterval() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
+                statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 10 \"min\"" );
+                try {
+
+                    statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
+                    connection.commit();
+                    statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
+                    connection.commit();
+
+                    waiter.await( 1, TimeUnit.SECONDS );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            ImmutableList.of()
+                    );
+
+                    statement.executeUpdate( "ALTER MATERIALIZED VIEW viewTestEmp FRESHNESS MANUAL" );
+
+                    waiter.await( 1, TimeUnit.SECONDS );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2, 1 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
+                            )
+                    );
+
+
+                } catch ( InterruptedException e ) {
+                    e.printStackTrace();
+                } finally {
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
+                    statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
+                    dropTables( statement );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testFreshnessManualUpdate() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
+                statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS UPDATE 5" );
                 try {
 
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
@@ -1059,5 +1182,59 @@ public class BasicMaterializedTest {
         }
     }
 
+
+    @Test
+    public void testMaterializedViewFromView() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
+                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
+                statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
+                statement.executeUpdate( VIEWTESTDEPTABLE_DATA_SQL );
+
+                try {
+                    statement.executeUpdate( "CREATE VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
+                    statement.executeUpdate( "CREATE VIEW viewTestEmpDep AS SELECT viewTestEmpTable.firstName, viewTestDepTable.depName FROM viewTestEmpTable INNER JOIN viewTestDepTable ON viewTestEmpTable.depId = viewTestDepTable.depId" );
+                    statement.executeUpdate( "CREATE MATERIALIZED VIEW materializedFromView AS SELECT * FROM viewTestEmp FRESHNESS MANUAL" );
+                    statement.executeUpdate( "CREATE MATERIALIZED VIEW materializedFromComplexView AS SELECT * FROM viewTestEmpDep FRESHNESS MANUAL" );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM materializedFromView ORDER BY empid" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2, 1 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
+                            )
+                    );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT materializedFromView.firstName FROM materializedFromView ORDER BY materializedFromView.firstName" ),
+                            ImmutableList.of(
+                                    new Object[]{ "Elsa" },
+                                    new Object[]{ "Ernst" },
+                                    new Object[]{ "Max" }
+                            )
+                    );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM materializedFromComplexView" ),
+                            ImmutableList.of(
+                                    new Object[]{ "Max", "IT", 0 },
+                                    new Object[]{ "Ernst", "Sales", 1 },
+                                    new Object[]{ "Elsa", "HR", 2 }
+                            ),
+                            true
+                    );
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW materializedFromView" );
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW materializedFromComplexView" );
+                    statement.executeUpdate( "DROP VIEW viewTestEmp" );
+                    statement.executeUpdate( "Drop VIEW viewTestEmpDep" );
+                    statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
+                    statement.executeUpdate( "DROP TABLE viewTestDepTable" );
+                }
+            }
+        }
+    }
 
 }

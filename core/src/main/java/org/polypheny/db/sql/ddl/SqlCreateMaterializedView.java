@@ -187,7 +187,8 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
                     columns,
                     materializedCriteria,
                     query.toString().replaceAll( "`", "\"" ),
-                    QueryLanguage.SQL );
+                    QueryLanguage.SQL,
+                    ifNotExists );
         } catch ( TableAlreadyExistsException e ) {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( viewName ) );
         } catch ( GenericCatalogException | UnknownColumnException e ) {

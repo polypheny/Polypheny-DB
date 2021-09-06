@@ -1349,7 +1349,7 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        prepareView( relNode );
+        //prepareView( relNode );
         RelDataType fieldList = relNode.getRowType();
 
         List<ColumnInformation> columns = getColumnInformation( projectedColumns, fieldList );
@@ -1387,9 +1387,15 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createMaterializedView( String viewName, long schemaId, RelRoot relRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException, ColumnNotExistsException, ColumnAlreadyExistsException {
+    public void createMaterializedView( String viewName, long schemaId, RelRoot relRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists ) throws TableAlreadyExistsException, GenericCatalogException, ColumnNotExistsException, ColumnAlreadyExistsException {
+        // Check if there is already a table with this name
         if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
-            throw new TableAlreadyExistsException();
+            if ( ifNotExists ) {
+                // It is ok that there is already a table with this name because "IF NOT EXISTS" was specified
+                return;
+            } else {
+                throw new TableAlreadyExistsException();
+            }
         }
 
         if ( stores == null ) {

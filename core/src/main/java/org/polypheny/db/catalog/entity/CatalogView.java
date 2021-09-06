@@ -18,7 +18,6 @@ package org.polypheny.db.catalog.entity;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
@@ -26,13 +25,10 @@ import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.AbstractRelNode;
 import org.polypheny.db.rel.BiRel;
 import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelCollationTraitDef;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.SingleRel;
 import org.polypheny.db.rel.logical.LogicalViewTableScan;
@@ -193,7 +189,7 @@ public class CatalogView extends CatalogTable {
     public void prepareView( RelNode viewLogicalRoot, RelOptCluster relOptCluster, RelCollation relCollation ) {
         if ( viewLogicalRoot instanceof AbstractRelNode ) {
             ((AbstractRelNode) viewLogicalRoot).setCluster( relOptCluster );
-
+/*
             List<RelCollation> relCollationList = new ArrayList<>();
             relCollationList.add( relCollation );
             RelTraitSet traitSetTest =
@@ -207,6 +203,8 @@ public class CatalogView extends CatalogTable {
                                     } );
 
             ((AbstractRelNode) viewLogicalRoot).setTraitSet( traitSetTest );
+
+ */
         }
         if ( viewLogicalRoot instanceof BiRel ) {
             prepareView( ((BiRel) viewLogicalRoot).getLeft(), relOptCluster, relCollation );
