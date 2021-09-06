@@ -74,6 +74,7 @@ import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalSort;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
+import org.polypheny.db.rel.logical.LogicalValues;
 import org.polypheny.db.rel.logical.LogicalViewTableScan;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
@@ -211,6 +212,7 @@ public class MqlToRelConverter {
     private boolean elemMatchActive = false;
     private String defaultDatabase;
     private boolean notActive = false;
+    private boolean usesDocumentModel;
 
 
     public MqlToRelConverter( MqlProcessor mqlProcessor, PolyphenyDbCatalogReader catalogReader, RelOptCluster cluster ) {
@@ -226,6 +228,9 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * This class is reused and has to reset these values each time this happens
+     */
     private void resetDefaults() {
         excludedId = false;
         _dataExists = true;
@@ -265,6 +270,10 @@ public class MqlToRelConverter {
             node = LogicalTableScan.create( cluster, table );
         }
 
+        if ( table.getTable() == null || table.getTable().getSchemaType() == SchemaType.DOCUMENT ) {
+            this.usesDocumentModel = true;
+        }
+
         this.builder = new RexBuilder( cluster.getTypeFactory() );
 
         RelRoot root;
@@ -295,7 +304,7 @@ public class MqlToRelConverter {
             default:
                 throw new IllegalStateException( "Unexpected value: " + kind );
         }
-        if ( table.getTable() == null || table.getTable().getSchemaType() == SchemaType.DOCUMENT ) {
+        if ( usesDocumentModel ) {
             root.usesDocumentModel = true;
         }
         return root;
@@ -477,6 +486,16 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Updates contain RENAME, REMOVE, REPLACE parts and are merged into a single DOC_UPDATE in this method
+     *
+     * @param key the left associated parent key
+     * @param mergedUpdates collection, which combines all performed update steps according to the operation
+     * @param rowType the default rowtype at this point
+     * @param node the transformed operation up to this step e.g. {@link org.polypheny.db.rel.core.TableScan} or {@link LogicalAggregate}
+     * @param table the active table
+     * @return the unified UPDATE RelNode
+     */
     private RelNode finalizeUpdates( String key, Map<UpdateOperation, List<Pair<String, RexNode>>> mergedUpdates, RelDataType rowType, RelNode node, RelOptTable table ) {
         RexNode id = getIdentifier( key, rowType );
         // replace
@@ -676,8 +695,6 @@ public class MqlToRelConverter {
                     updates.putAll( translateUnset( doc, rowType ) );
                     updateOp = UpdateOperation.REMOVE;
                     break;
-                /*case "replaceRoot":
-                case "replaceWith":*/ // TODO DL
                 default:
                     throw new RuntimeException( "The used statement is not supported in the update aggregation pipeline" );
             }
@@ -713,11 +730,19 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Method transforms an insert into the appropriate {@link org.polypheny.db.rel.logical.LogicalValues}
+     * when working with the relational model or the {@link LogicalDocuments} when handling a document model
+     *
+     * @param query the insert statement as Mql object
+     * @param table the table/collection into which the values are inserted
+     * @return the modifyrelnode
+     */
     private LogicalTableModify convertInsert( MqlInsert query, RelOptTable table ) {
         LogicalTableModify modify = LogicalTableModify.create(
                 table,
                 catalogReader,
-                convertMultipleValues( query.getValues() ),
+                convertMultipleValues( query.getValues(), table.getRowType() ),
                 Operation.INSERT,
                 null,
                 null,
@@ -747,8 +772,22 @@ public class MqlToRelConverter {
     }
 
 
-    private RelNode convertMultipleValues( BsonArray array ) {
-        return LogicalDocuments.create( cluster, ImmutableList.copyOf( array.asArray() ) );
+    /**
+     * To correctly represent the values according to the used model they have to be inserted into their {@link org.polypheny.db.rel.core.Values}
+     * representation
+     *
+     * @param array the values, which are inserted
+     * @param rowType row definition, which is used to determine fixed columns
+     * @return the {@link org.polypheny.db.rel.core.Values} representation of the values
+     */
+    private RelNode convertMultipleValues( BsonArray array, RelDataType rowType ) {
+        LogicalDocuments docs = (LogicalDocuments) LogicalDocuments.create( cluster, ImmutableList.copyOf( array.asArray() ) );
+        if ( usesDocumentModel ) {
+            return docs;
+        } else {
+            return LogicalValues.create( cluster, rowType, docs.getTuples() );
+        }
+
     }
 
 
@@ -807,7 +846,7 @@ public class MqlToRelConverter {
                     node = combineProjection( value.asDocument().getDocument( ((BsonDocument) value).getFirstKey() ), node, rowType, true, false );
                     break;
                 case "$count":
-                    node = combineCount( value.asDocument().get( "$count" ), node, rowType );
+                    node = combineCount( value.asDocument().get( "$count" ), node );
                     break;
                 case "$group":
                     node = combineGroup( value.asDocument().get( "$group" ), node, rowType );
@@ -912,6 +951,7 @@ public class MqlToRelConverter {
      * {"test","key",[3,1,"te"]} -> {"test","key",3},{"test","key",1},{"test","key","te"}
      *
      * </code>
+     *
      * @param value the unparsed $unwind operation
      */
     private RelNode combineUnwind( BsonValue value, RelNode node ) {
@@ -966,6 +1006,16 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Translates a $skip stage of the aggregation pipeline
+     * <pre>
+     *     { $skip: <positive 64-bit integer> }
+     * </pre>
+     *
+     * @param value the untransformed BSON value
+     * @param node the node up to this point
+     * @return the provided node with the applied skip stage
+     */
     private RelNode combineSkip( BsonValue value, RelNode node ) {
         if ( !value.isNumber() || value.asNumber().intValue() < 0 ) {
             throw new RuntimeException( "$skip pipeline stage needs a positive number after" );
@@ -975,6 +1025,16 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Translates a $skip stage of the aggregation pipeline
+     * <pre>
+     *     { $limit: <positive 64-bit integer> }
+     * </pre>
+     *
+     * @param value the untransformed BSON value
+     * @param node the node up to this point
+     * @return the provided node with the applied limit stage
+     */
     private RelNode combineLimit( BsonValue value, RelNode node ) {
         if ( !value.isNumber() || value.asNumber().intValue() < 0 ) {
             throw new RuntimeException( "$limit pipeline stage needs a positive number after" );
@@ -984,6 +1044,17 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Translates a $sort stage of the aggregation pipeline
+     * <pre>
+     *     { $sort: { <field1>: <sort order>, <field2>: <sort order> ... } }
+     * </pre>
+     *
+     * @param value the untransformed BSON value
+     * @param node the node up to this point
+     * @param rowType the rowType of the relnode, which is sorted
+     * @return the provided node with the applied sort stage
+     */
     private RelNode combineSort( BsonValue value, RelNode node, RelDataType rowType ) {
         if ( !value.isDocument() ) {
             throw new RuntimeException( "$sort pipeline stage needs a document after" );
@@ -1057,6 +1128,24 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Translates a $group stage of the aggregation pipeline
+     * <pre>
+     * {
+     *   $group:
+     *     {
+     *       _id: <expression>, // Group By Expression
+     *       <field1>: { <accumulator1> : <expression1> },
+     *       ...
+     *     }
+     *  }
+     * </pre>
+     *
+     * @param value the untransformed BSON value
+     * @param node the node up to this point
+     * @param rowType the rowType of the relnode, which is grouped
+     * @return the provided node with the applied group stage
+     */
     private RelNode combineGroup( BsonValue value, RelNode node, RelDataType rowType ) {
         if ( !value.isDocument() || !value.asDocument().containsKey( "_id" ) ) {
             throw new RuntimeException( "$group pipeline stage needs a document after, which defines a _id" );
@@ -1111,7 +1200,7 @@ public class MqlToRelConverter {
             if ( mathOperators.containsKey( doc.getFirstKey() ) ) {
                 return convertMath( doc.getFirstKey(), null, doc.get( doc.getFirstKey() ), rowType, false );
             } else {
-                return convertSingleMath( doc.getFirstKey(), null, doc.get( doc.getFirstKey() ), rowType, false );
+                return convertSingleMath( doc.getFirstKey(), doc.get( doc.getFirstKey() ), rowType );
             }
 
         } else if ( value.isString() ) {
@@ -1166,7 +1255,17 @@ public class MqlToRelConverter {
     }
 
 
-    private RelNode combineCount( BsonValue value, RelNode node, RelDataType rowType ) {
+    /**
+     * Translates a $count stage of the aggregation pipeline
+     * <pre>
+     *     { $count: <string> }
+     * </pre>
+     *
+     * @param value the untransformed BSON value
+     * @param node the node up to this point
+     * @return the provided node with the applied $count stage
+     */
+    private RelNode combineCount( BsonValue value, RelNode node ) {
         if ( !value.isString() ) {
             throw new RuntimeException( "$count pipeline stage needs only a string" );
         }
@@ -1291,7 +1390,7 @@ public class MqlToRelConverter {
                     return convertGate( key, parentKey, bsonValue, rowType );
 
                 } else if ( singleMathOperators.containsKey( key ) ) {
-                    return convertSingleMath( key, parentKey, bsonValue, rowType, false );
+                    return convertSingleMath( key, bsonValue, rowType );
 
                 } else if ( mathOperators.containsKey( key ) ) {
 
@@ -1331,10 +1430,8 @@ public class MqlToRelConverter {
 
                     return translateLogical( key, parentKey, bsonValue, rowType );
                 }
-            } else {
+            }  // handle others
 
-                // handle others
-            }
         }
 
         return getFixedCall( operands, SqlStdOperatorTable.AND, PolyType.BOOLEAN );
@@ -1346,12 +1443,22 @@ public class MqlToRelConverter {
     }
 
 
-    private RelDataTypeField getDefaultIdField( RelDataType rowType ) {
-        return rowType.getField( "_id", false, false );
-    }
-
-
-    private RexNode convertSlice( String key, BsonValue value, RelDataType rowType, RelDataTypeField field ) {
+    /**
+     * Converts a $slice projection
+     * <pre>
+     *     { $slice: [ <array>, <n> ] }
+     * </pre>
+     * or
+     * <pre>
+     *     { $slice: [ <array>, <position>, <n> ] }
+     * </pre>
+     *
+     * @param key the key of the parent document
+     * @param value the BSON object, which holds the $slice information
+     * @param rowType the row information onto which the projection is applied
+     * @return the applied node
+     */
+    private RexNode convertSlice( String key, BsonValue value, RelDataType rowType ) {
         BsonNumber skip = new BsonInt32( 0 );
         BsonNumber elements;
         RexNode id = getIdentifier( key, rowType );
@@ -1368,7 +1475,18 @@ public class MqlToRelConverter {
     }
 
 
-    private RexNode convertArrayAt( String key, BsonValue value, RelDataType rowType, RelDataTypeField field ) {
+    /**
+     * Converts a $arrayElemAt projection
+     * <pre>
+     *     { $arrayElemAt: [ <array>, <idx> ] }
+     * </pre>
+     *
+     * @param key the key of the parent document
+     * @param value the BSON object, which holds the $arrayElemAt information
+     * @param rowType the row information onto which the projection is applied
+     * @return the applied node
+     */
+    private RexNode convertArrayAt( String key, BsonValue value, RelDataType rowType ) {
         String msg = "$arrayElemAt has following structure { $arrayElemAt: [ <array>, <idx> ] }";
         if ( value.isArray() ) {
             List<RexNode> nodes = convertArray( key, (BsonArray) value, true, rowType, msg );
@@ -1406,7 +1524,7 @@ public class MqlToRelConverter {
     }
 
 
-    private RexNode convertSingleMath( String key, String parentKey, BsonValue value, RelDataType rowType, boolean isExpr ) {
+    private RexNode convertSingleMath( String key, BsonValue value, RelDataType rowType ) {
         SqlOperator op = singleMathOperators.get( key );
         if ( value.isArray() ) {
             throw new RuntimeException( "The " + key + " operator needs either a single expression or a document." );
@@ -1532,7 +1650,13 @@ public class MqlToRelConverter {
             } else {
                 return attachRef( parentKey, rowType );
             }
-        } else if ( rowNames.contains( parentKey.split( "\\." )[0] ) ) {
+        }
+        // as it is possible to query relational schema with mql we have to block this step when this happens
+        if ( !usesDocumentModel ) {
+            throw new RuntimeException( "The used identifier is not part of the table." );
+        }
+
+        if ( rowNames.contains( parentKey.split( "\\." )[0] ) ) {
             String[] keys = parentKey.split( "\\." );
             // we fix sub-documents in elemMatch queries by only passing the sub-key
             // that the replacing then only uses the array element and searches the sub-key there
@@ -1629,6 +1753,19 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Translates a $regex filter field
+     * <pre>
+     *      { <field>: { $regex: /pattern/, $options: '<options>' } }
+     *      { <field>: { $regex: 'pattern', $options: '<options>' } }
+     *      { <field>: { $regex: /pattern/<options> } }
+     * </pre>
+     *
+     * @param bsonDocument the regex information as BSON document
+     * @param parentKey the key of the parent document
+     * @param rowType the rowType of the node which is filtered by regex
+     * @return the filtered node
+     */
     private RexNode convertRegex( BsonDocument bsonDocument, String parentKey, RelDataType rowType ) {
         String options = "";
         if ( bsonDocument.size() == 2 && bsonDocument.containsKey( "$regex" ) && bsonDocument.containsKey( "$options" ) ) {
@@ -1666,6 +1803,18 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Converts an $exists field according to the provided information
+     *
+     * <pre>
+     *     { field: { $exists: <boolean> } }
+     * </pre>
+     *
+     * @param value the information of the $exists field
+     * @param parentKey the name of the parent key
+     * @param rowType the row information of the filtered node
+     * @return a node with the applied filter
+     */
     private RexNode convertExists( BsonValue value, String parentKey, RelDataType rowType ) {
         if ( value.isBoolean() ) {
             List<String> keys = Arrays.asList( parentKey.split( "\\." ) );
@@ -1720,6 +1869,16 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Converts a $jsonSchema filter field
+     * <pre>
+     *     { $jsonSchema: <JSON Schema object> }
+     * </pre>
+     *
+     * @param bsonValue the information of the $jsonSchema in BSON format
+     * @param rowType the row information of the filtered node
+     * @return a node with the applied filter
+     */
     private RexNode convertJsonSchema( BsonValue bsonValue, RelDataType rowType ) {
         if ( bsonValue.isDocument() ) {
             return new RexCall( nullableAny, MqlStdOperatorTable.DOC_JSON_MATCH, Collections.singletonList( RexInputRef.of( getIndexOfParentField( "_data", rowType ), rowType ) ) );
@@ -1729,6 +1888,17 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Converts a $size filter field
+     * <pre>
+     *     { $size: <expression> }
+     * </pre>
+     *
+     * @param bsonValue the information of the $size in BSON format
+     * @param parentKey the name of the parent key
+     * @param rowType the row information of the filtered node
+     * @return a node with the applied filter
+     */
     private RexNode convertSize( BsonValue bsonValue, String parentKey, RelDataType rowType ) {
         if ( bsonValue.isNumber() ) {
             RexNode id = getIdentifier( parentKey, rowType );
@@ -1806,9 +1976,6 @@ public class MqlToRelConverter {
     private RexNode negate( RexNode node ) {
         return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), SqlStdOperatorTable.NOT, Collections.singletonList( node ) );
     }
-
-
-
 
 
     private RexNode translateJsonValue( int index, RelDataType rowType, String key, boolean useAccess ) {
@@ -2152,10 +2319,10 @@ public class MqlToRelConverter {
                     includes.put( entry.getKey(), convertMath( func, entry.getKey(), value.asDocument().get( func ), rowType, false ) );
                     includesOrder.add( entry.getKey() );
                 } else if ( func.equals( "$arrayElemAt" ) ) {
-                    includes.put( entry.getKey(), convertArrayAt( entry.getKey(), value.asDocument().get( func ), rowType, field ) );
+                    includes.put( entry.getKey(), convertArrayAt( entry.getKey(), value.asDocument().get( func ), rowType ) );
                     includesOrder.add( entry.getKey() );
                 } else if ( func.equals( "$slice" ) ) {
-                    includes.put( entry.getKey(), convertSlice( entry.getKey(), value.asDocument().get( func ), rowType, field ) );
+                    includes.put( entry.getKey(), convertSlice( entry.getKey(), value.asDocument().get( func ), rowType ) );
                     includesOrder.add( entry.getKey() );
                 } else if ( func.equals( "$literal" ) ) {
                     if ( value.asDocument().get( func ).isInt32() && value.asDocument().get( func ).asInt32().getValue() == 0 ) {
