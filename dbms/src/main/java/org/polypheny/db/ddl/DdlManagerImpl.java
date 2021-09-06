@@ -1468,7 +1468,7 @@ public class DdlManagerImpl extends DdlManager {
             }
 
         }
-        renameColumn( catalog.getTable( tableId ), "primaryKey", "matId_" + tableId, statement );
+        renameColumn( catalog.getTable( tableId ), "primaryKey", "_matId_" + tableId, statement );
         catalog.addPrimaryKey( tableId, columnIds );
 
         CatalogMaterialized catalogMaterialized = (CatalogMaterialized) catalog.getTable( tableId );
