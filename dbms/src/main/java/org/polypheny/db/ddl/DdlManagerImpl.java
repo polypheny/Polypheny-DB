@@ -1607,6 +1607,20 @@ public class DdlManagerImpl extends DdlManager {
                 }
             }
 
+            boolean foundPk = false;
+            for ( ConstraintInformation constraintInformation : constraints ) {
+                if ( constraintInformation.type == ConstraintType.PRIMARY ) {
+                    if ( foundPk ) {
+                        throw new RuntimeException( "More than one primary key has been provided!" );
+                    } else {
+                        foundPk = true;
+                    }
+                }
+            }
+            if ( !foundPk ) {
+                throw new RuntimeException( "No primary key has been provided!" );
+            }
+
             if ( stores == null ) {
                 // Ask router on which store(s) the table should be placed
                 stores = statement.getRouter().createTable( schemaId, statement );

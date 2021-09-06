@@ -42,13 +42,18 @@ import org.polypheny.db.rel.type.RelDataTypeSystemImpl;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlDialect;
+import org.polypheny.db.sql.SqlFunction;
+import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.fun.SqlFloorFunction;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.inference.ReturnTypes;
 
 
 /**
@@ -210,6 +215,27 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
                 SqlCall call2 = SqlFloorFunction.replaceTimeUnitOperand( call, timeUnit.name(), timeUnitNode.getParserPosition() );
                 SqlFloorFunction.unparseDatetimeFunction( writer, call2, "DATE_TRUNC", false );
+                break;
+
+            case EXTRACT:
+                if ( call.getOperandList().get( 0 ) instanceof SqlLiteral && ((SqlLiteral) call.getOperandList().get( 0 )).getValue() instanceof TimeUnitRange ) {
+                    TimeUnitRange unitRange = (TimeUnitRange) ((SqlLiteral) call.getOperandList().get( 0 )).getValue();
+                    if ( unitRange == TimeUnitRange.DOW ) {
+                        SqlFunction func = new SqlFunction(
+                                "DOW_SUNDAY",
+                                SqlKind.OTHER_FUNCTION,
+                                ReturnTypes.INTEGER,
+                                null,
+                                null,
+                                SqlFunctionCategory.USER_DEFINED_FUNCTION );
+                        SqlCall call1 = call.getOperator().createCall( call.getParserPosition(), call.getOperandList().get( 1 ) );
+                        SqlUtil.unparseFunctionSyntax( func, writer, call1 );
+                    } else {
+                        super.unparseCall( writer, call, leftPrec, rightPrec );
+                    }
+                } else {
+                    super.unparseCall( writer, call, leftPrec, rightPrec );
+                }
                 break;
 
             default:

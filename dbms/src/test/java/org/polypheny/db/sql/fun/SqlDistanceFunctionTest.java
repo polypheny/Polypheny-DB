@@ -121,6 +121,21 @@ public class SqlDistanceFunctionTest {
                         statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L2SQUARED') as dist FROM knnbigtest" ),
                         expectedResult
                 );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L2SQUARED') as dist FROM knninttest ORDER BY dist LIMIT 5" ),
+                        expectedResult
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L2SQUARED') as dist FROM knndoubletest ORDER BY dist LIMIT 5" ),
+                        expectedResult
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L2SQUARED') as dist FROM knnbigtest ORDER BY dist LIMIT 5" ),
+                        expectedResult
+                );
             }
         }
     }
