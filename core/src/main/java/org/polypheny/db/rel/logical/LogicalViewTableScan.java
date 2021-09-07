@@ -97,6 +97,8 @@ public class LogicalViewTableScan extends TableScan {
             return relNode;
         } else if ( relNode instanceof LogicalSort && relNode.getRowType().getFieldNames().equals( this.getRowType().getFieldNames() ) ) {
             return relNode;
+        } else if ( relNode instanceof LogicalAggregate && relNode.getRowType().getFieldNames().equals( this.getRowType().getFieldNames() ) ) {
+            return relNode;
         } else {
             return LogicalProject.create( relNode, exprs, this.getRowType().getFieldNames() );
         }
