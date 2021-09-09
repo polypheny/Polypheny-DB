@@ -1807,7 +1807,7 @@ public class MqlToRelConverter {
      * Converts an $exists field according to the provided information
      *
      * <pre>
-     *     { field: { $exists: <boolean> } }
+     * { field: { $exists: <boolean> } }
      * </pre>
      *
      * @param value the information of the $exists field
@@ -1910,6 +1910,17 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Converts a $elemMatch field, this only returns if the fields is an array and a value matches the provided queries
+     * <pre>
+     *     { <field>: { $elemMatch: { <query1>, <query2>, ... } } }
+     * </pre>
+     *
+     * @param bsonValue the information of the $elemMatch in BSON format
+     * @param parentKey the name of the parent key
+     * @param rowType the row information of the filtered node
+     * @return a node with the applied filter
+     */
     private RexNode convertElemMatch( BsonValue bsonValue, String parentKey, RelDataType rowType ) {
         if ( !bsonValue.isDocument() ) {
             throw new RuntimeException( "After $elemMatch there needs to follow a document" );
@@ -1927,6 +1938,17 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Converts an $all field, this only returns if the fields is an array and all fields matches the provided queries
+     * <pre>
+     *     { <field>: { $all: [ <value1> , <value2> ... ] } }
+     * </pre>
+     *
+     * @param bsonValue the information of the $all in BSON format
+     * @param parentKey the name of the parent key
+     * @param rowType the row information of the filtered node
+     * @return a node with the applied filter
+     */
     private RexNode convertAll( BsonValue bsonValue, String parentKey, RelDataType rowType ) {
         RelDataType type = cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), true );
         if ( bsonValue.isArray() ) {
@@ -1946,6 +1968,21 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Converts an $type field, this only the field if it matches the provided type
+     * <pre>
+     *     { field: { $type: <BSON type> } }
+     * </pre>
+     * or
+     * <pre>
+     *     { field: { $type: [ <BSON type1> , <BSON type2>, ... ] } }
+     * </pre>
+     *
+     * @param value the information of the $type in BSON format
+     * @param parentKey the name of the parent key
+     * @param rowType the row information of the filtered node
+     * @return a node with the applied filter
+     */
     private RexNode convertType( BsonValue value, String parentKey, RelDataType rowType ) {
         String errorMsg = "$type needs either a array of type names or numbers or a single number";
         RexCall types;
@@ -1973,11 +2010,38 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Inverts the provided node by wrapping it in a NOT
+     *
+     * @param node the node, which is wrapped
+     * @return the wrapped node
+     */
     private RexNode negate( RexNode node ) {
         return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), SqlStdOperatorTable.NOT, Collections.singletonList( node ) );
     }
 
 
+    /**
+     * Specifies where an underlying field is located in a document.
+     * <pre>
+     *  {
+     *      key1: val1,
+     *      key2: {
+     *          key22: "test"
+     *      }
+     *  }
+     * </pre>
+     * on retrieval of key22:
+     * <pre>
+     *     DOC_QUERY_VALUE(["key2", "key22"])
+     * </pre>
+     *
+     * @param index positions of the column in which the parent document is stored
+     * @param rowType the row information of the collection/table
+     * @param key the key in the form "key2.key22"
+     * @param useAccess if access or input operations should be used
+     * @return the node, which defines the retrieval of the underlying key
+     */
     private RexNode translateJsonValue( int index, RelDataType rowType, String key, boolean useAccess ) {
         RexCall filter;
         List<String> names = Arrays.asList( key.split( "\\." ) );
@@ -1998,7 +2062,7 @@ public class MqlToRelConverter {
     }
 
 
-    private RexNode translateJsonQuery( int index, RelDataType rowType, String key, List<String> excludes ) {
+    private RexNode translateJsonQuery( int index, RelDataType rowType, List<String> excludes ) {
         RexCall filter = getNestedArray( excludes.stream().map( e -> Arrays.asList( e.split( "\\." ) ) ).collect( Collectors.toList() ) );
         return new RexCall( any, MqlStdOperatorTable.DOC_QUERY_EXCLUDE, Arrays.asList( RexInputRef.of( index, rowType ), filter ) );
     }
@@ -2064,6 +2128,15 @@ public class MqlToRelConverter {
     }
 
 
+    /**
+     * Converts an $in or $nin operation, by transforming it to an OR with all values
+     *
+     * @param bsonValue the value, which specifies the $in operation
+     * @param op if the operation is an $in or $nin operation
+     * @param key the field, which values have to be present in
+     * @param rowType the row information of the collection/table
+     * @return the transformed $in operation
+     */
     private RexNode convertIn( BsonValue bsonValue, SqlOperator op, String key, RelDataType rowType ) {
         RelDataType type = cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), true );
 
@@ -2199,7 +2272,7 @@ public class MqlToRelConverter {
                 // exclusion projections only work for the underlying _data field
                 RelDataTypeField defaultDataField = getDefaultDataField( rowType );
 
-                List<RexNode> values = new ArrayList<>( Collections.singletonList( translateJsonQuery( defaultDataField.getIndex(), rowType, null, excludes ) ) );
+                List<RexNode> values = new ArrayList<>( Collections.singletonList( translateJsonQuery( defaultDataField.getIndex(), rowType, excludes ) ) );
                 List<String> names = new ArrayList<>( Collections.singletonList( defaultDataField.getName() ) );
 
                 // we only need to do this if it is the second time
