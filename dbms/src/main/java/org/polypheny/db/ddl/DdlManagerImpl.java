@@ -1336,7 +1336,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createView( String viewName, long schemaId, RelNode relNode, RelCollation relCollation, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language ) throws TableAlreadyExistsException {
+    public void createView( String viewName, long schemaId, RelNode relNode, RelCollation relCollation, boolean replace, Statement statement, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language ) throws TableAlreadyExistsException {
         if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
             if ( replace ) {
                 try {
@@ -1370,7 +1370,7 @@ public class DdlManagerImpl extends DdlManager {
         );
 
         for ( ColumnInformation column : columns ) {
-            long columnId = catalog.addColumn(
+            catalog.addColumn(
                     column.name,
                     tableId,
                     column.position,

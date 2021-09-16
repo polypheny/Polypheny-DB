@@ -72,9 +72,8 @@ public class LogicalViewTableScan extends TableScan {
 
         long idLogical = ((LogicalTable) ((RelOptTableImpl) relOptTable).getTable()).getTableId();
         CatalogTable catalogTable = catalog.getTable( idLogical );
-        RelCollation relCollation = ((CatalogView) catalogTable).getRelCollation();
 
-        return new LogicalViewTableScan( cluster, traitSet, relOptTable, ((CatalogView) catalogTable).prepareView( cluster, relCollation ), relCollation );
+        return new LogicalViewTableScan( cluster, traitSet, relOptTable, ((CatalogView) catalogTable).prepareView( cluster ), ((CatalogView) catalogTable).getRelCollation() );
     }
 
 

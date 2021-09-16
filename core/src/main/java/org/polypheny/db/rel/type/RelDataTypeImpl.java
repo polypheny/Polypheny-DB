@@ -360,7 +360,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
      */
     public static RelProtoDataType proto( final RelDataType protoType ) {
         assert protoType != null;
-        return (RelProtoDataType & Serializable) typeFactory -> typeFactory.copyType( protoType );
+        return typeFactory -> typeFactory.copyType( protoType );
     }
 
 
@@ -375,7 +375,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
      */
     public static RelProtoDataType proto( final PolyType typeName, final boolean nullable ) {
         assert typeName != null;
-        return (RelProtoDataType & Serializable) typeFactory -> {
+        return typeFactory -> {
             final RelDataType type = typeFactory.createPolyType( typeName );
             return typeFactory.createTypeWithNullability( type, nullable );
         };
@@ -394,7 +394,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
      */
     public static RelProtoDataType proto( final PolyType typeName, final int precision, final boolean nullable ) {
         assert typeName != null;
-        return (RelProtoDataType & Serializable) typeFactory -> {
+        return typeFactory -> {
             final RelDataType type = typeFactory.createPolyType( typeName, precision );
             return typeFactory.createTypeWithNullability( type, nullable );
         };
@@ -413,7 +413,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
      * @return Proto data type
      */
     public static RelProtoDataType proto( final PolyType typeName, final int precision, final int scale, final boolean nullable ) {
-        return (RelProtoDataType & Serializable) typeFactory -> {
+        return typeFactory -> {
             final RelDataType type = typeFactory.createPolyType( typeName, precision, scale );
             return typeFactory.createTypeWithNullability( type, nullable );
         };

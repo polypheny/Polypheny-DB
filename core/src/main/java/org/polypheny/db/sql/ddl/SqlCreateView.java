@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.Objects;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogView.QueryLanguage;
@@ -130,8 +129,7 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaNotFound( name.toString() ) );
         }
 
-        List<DataStore> store = null;
-        PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
+        PlacementType placementType = PlacementType.AUTOMATIC;
 
         SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
         RelRoot relRoot = sqlProcessor.translate(
@@ -155,7 +153,6 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
                     relCollation,
                     replace,
                     statement,
-                    store,
                     placementType,
                     columns,
                     query.toString().replaceAll( "`", "\"" ),

@@ -2807,7 +2807,6 @@ public class Crud implements InformationObserver {
                         root.collation,
                         replace,
                         statement,
-                        store,
                         placementType,
                         columns,
                         gson.toJson( request.topNode ),

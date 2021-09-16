@@ -176,9 +176,9 @@ public class CatalogView extends CatalogTable {
     }
 
 
-    public RelNode prepareView( RelOptCluster cluster, RelCollation relCollation ) {
+    public RelNode prepareView( RelOptCluster cluster ) {
         RelNode viewLogicalRoot = getDefinition();
-        prepareView( viewLogicalRoot, cluster, relCollation );
+        prepareView( viewLogicalRoot, cluster );
         if ( viewLogicalRoot.hasView() ) {
             viewLogicalRoot.tryExpandView( viewLogicalRoot );
         }
@@ -186,34 +186,18 @@ public class CatalogView extends CatalogTable {
     }
 
 
-    public void prepareView( RelNode viewLogicalRoot, RelOptCluster relOptCluster, RelCollation relCollation ) {
+    public void prepareView( RelNode viewLogicalRoot, RelOptCluster relOptCluster ) {
         if ( viewLogicalRoot instanceof AbstractRelNode ) {
             ((AbstractRelNode) viewLogicalRoot).setCluster( relOptCluster );
-/*
-            List<RelCollation> relCollationList = new ArrayList<>();
-            relCollationList.add( relCollation );
-            RelTraitSet traitSetTest =
-                    relOptCluster.traitSetOf( Convention.NONE )
-                            .replaceIfs( RelCollationTraitDef.INSTANCE,
-                                    () -> {
-                                        if ( relCollation != null ) {
-                                            return relCollationList;
-                                        }
-                                        return ImmutableList.of();
-                                    } );
-
-            ((AbstractRelNode) viewLogicalRoot).setTraitSet( traitSetTest );
-
- */
         }
         if ( viewLogicalRoot instanceof BiRel ) {
-            prepareView( ((BiRel) viewLogicalRoot).getLeft(), relOptCluster, relCollation );
-            prepareView( ((BiRel) viewLogicalRoot).getRight(), relOptCluster, relCollation );
+            prepareView( ((BiRel) viewLogicalRoot).getLeft(), relOptCluster );
+            prepareView( ((BiRel) viewLogicalRoot).getRight(), relOptCluster );
         } else if ( viewLogicalRoot instanceof SingleRel ) {
-            prepareView( ((SingleRel) viewLogicalRoot).getInput(), relOptCluster, relCollation );
+            prepareView( ((SingleRel) viewLogicalRoot).getInput(), relOptCluster );
         }
         if ( viewLogicalRoot instanceof LogicalViewTableScan ) {
-            prepareView( ((LogicalViewTableScan) viewLogicalRoot).getRelNode(), relOptCluster, relCollation );
+            prepareView( ((LogicalViewTableScan) viewLogicalRoot).getRelNode(), relOptCluster );
         }
     }
 

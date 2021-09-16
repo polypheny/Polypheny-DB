@@ -18,7 +18,6 @@ package org.polypheny.db.schema;
 
 
 import com.google.common.collect.ImmutableList;
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import java.util.NavigableMap;
@@ -111,7 +110,7 @@ public interface PolyphenyDbSchema {
      *
      * The members of a schema must have unique names.
      */
-    abstract class Entry implements Serializable {
+    abstract class Entry {
 
         public final PolyphenyDbSchema schema;
         public final String name;
