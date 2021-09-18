@@ -68,6 +68,7 @@ import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.materializedView.MaterializedManager;
+import org.polypheny.db.materializedView.MaterializedManager.OrderedMaterializedVisitor;
 import org.polypheny.db.materializedView.MaterializedManager.TableUpdateVisitor;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptUtil;
@@ -167,11 +168,17 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
     @Override
     public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted ) {
-        return prepareQuery( logicalRoot, parameterRowType, isRouted, false );
+        return prepareQuery( logicalRoot, parameterRowType, isRouted, false, false );
     }
 
 
-    protected PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery ) {
+    @Override
+    public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isCreateMaterialized ) {
+        return prepareQuery( logicalRoot, parameterRowType, isRouted, false, isCreateMaterialized );
+    }
+
+
+    protected PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery, boolean isCreateMaterialized ) {
         boolean isAnalyze = statement.getTransaction().isAnalyze() && !isSubquery;
         boolean lock = !isSubquery;
 
@@ -193,12 +200,17 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             logicalRoot = logicalRoot.tryExpandView();
         }
 
+        if ( isCreateMaterialized ) {
+            OrderedMaterializedVisitor materializedVisitor = new OrderedMaterializedVisitor();
+            logicalRoot.rel.accept( materializedVisitor );
+        }
+
         if ( isAnalyze ) {
             statement.getDuration().stop( "View: Check if View included" );
             statement.getDuration().start( "Materialized View: Update table changes" );
         }
 
-        //Update which tables where changed
+        //Update which tables where changed used for Materialized Views
         TableUpdateVisitor visitor = new TableUpdateVisitor();
         logicalRoot.rel.accept( visitor );
         MaterializedManager.getInstance().addTables( statement.getTransaction(), visitor.getNames() );

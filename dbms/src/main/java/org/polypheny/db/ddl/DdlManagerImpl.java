@@ -1387,7 +1387,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createMaterializedView( String viewName, long schemaId, RelRoot relRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists ) throws TableAlreadyExistsException, GenericCatalogException, ColumnNotExistsException, ColumnAlreadyExistsException {
+    public void createMaterializedView( String viewName, long schemaId, RelRoot relRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) throws TableAlreadyExistsException, GenericCatalogException, ColumnNotExistsException, ColumnAlreadyExistsException {
         // Check if there is already a table with this name
         if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
             if ( ifNotExists ) {
@@ -1421,7 +1421,8 @@ public class DdlManagerImpl extends DdlManager {
                 fieldList,
                 materializedCriteria,
                 query,
-                language
+                language,
+                ordered
         );
 
         Map<Integer, List<CatalogColumn>> addedColumns = new HashMap<>();

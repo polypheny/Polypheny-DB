@@ -21,15 +21,38 @@ import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogMaterialized;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.prepare.RelOptTableImpl;
+import org.polypheny.db.rel.BiRel;
+import org.polypheny.db.rel.RelCollations;
+import org.polypheny.db.rel.RelFieldCollation;
+import org.polypheny.db.rel.RelFieldCollation.Direction;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.RelShuttleImpl;
+import org.polypheny.db.rel.SingleRel;
+import org.polypheny.db.rel.core.TableFunctionScan;
 import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rel.core.TableModify.Operation;
+import org.polypheny.db.rel.core.TableScan;
+import org.polypheny.db.rel.logical.LogicalAggregate;
+import org.polypheny.db.rel.logical.LogicalConditionalExecute;
+import org.polypheny.db.rel.logical.LogicalCorrelate;
+import org.polypheny.db.rel.logical.LogicalExchange;
+import org.polypheny.db.rel.logical.LogicalFilter;
+import org.polypheny.db.rel.logical.LogicalIntersect;
+import org.polypheny.db.rel.logical.LogicalJoin;
+import org.polypheny.db.rel.logical.LogicalMatch;
+import org.polypheny.db.rel.logical.LogicalMinus;
+import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rel.logical.LogicalSort;
 import org.polypheny.db.rel.logical.LogicalTableModify;
+import org.polypheny.db.rel.logical.LogicalTableScan;
+import org.polypheny.db.rel.logical.LogicalUnion;
+import org.polypheny.db.rel.logical.LogicalValues;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
@@ -93,6 +116,178 @@ public abstract class MaterializedManager {
             }
             return super.visit( other );
 
+        }
+
+    }
+
+
+    public static class OrderedMaterializedVisitor extends RelShuttleImpl {
+
+        int depth = 0;
+
+
+        @Override
+        public RelNode visit( LogicalAggregate aggregate ) {
+            handleNodeType( aggregate );
+            depth++;
+            return aggregate;
+        }
+
+
+        @Override
+        public RelNode visit( LogicalMatch match ) {
+            handleNodeType( match );
+            depth++;
+            return match;
+        }
+
+
+        @Override
+        public RelNode visit( TableScan scan ) {
+            if ( depth == 0 ) {
+                return checkNode( scan );
+            }
+            handleNodeType( scan );
+            depth++;
+            return scan;
+        }
+
+
+        @Override
+        public RelNode visit( TableFunctionScan scan ) {
+            handleNodeType( scan );
+            depth++;
+            return scan;
+        }
+
+
+        @Override
+        public RelNode visit( LogicalValues values ) {
+            handleNodeType( values );
+            depth++;
+            return values;
+        }
+
+
+        @Override
+        public RelNode visit( LogicalFilter filter ) {
+            handleNodeType( filter );
+            depth++;
+            return filter;
+        }
+
+
+        @Override
+        public RelNode visit( LogicalProject project ) {
+            handleNodeType( project );
+            depth++;
+            return project;
+        }
+
+
+        @Override
+        public RelNode visit( LogicalJoin join ) {
+            handleNodeType( join );
+            depth++;
+            return join;
+        }
+
+
+        @Override
+        public RelNode visit( LogicalCorrelate correlate ) {
+            handleNodeType( correlate );
+            depth++;
+            return correlate;
+        }
+
+
+        @Override
+        public RelNode visit( LogicalUnion union ) {
+            handleNodeType( union );
+            depth++;
+            return union;
+        }
+
+
+        @Override
+        public RelNode visit( LogicalIntersect intersect ) {
+            handleNodeType( intersect );
+            depth++;
+            return intersect;
+        }
+
+
+        @Override
+        public RelNode visit( LogicalMinus minus ) {
+            handleNodeType( minus );
+            depth++;
+            return minus;
+        }
+
+
+        @Override
+        public RelNode visit( LogicalSort sort ) {
+            handleNodeType( sort );
+            depth++;
+            return sort;
+        }
+
+
+        @Override
+        public RelNode visit( LogicalExchange exchange ) {
+            handleNodeType( exchange );
+            depth++;
+            return exchange;
+        }
+
+
+        @Override
+        public RelNode visit( LogicalConditionalExecute lce ) {
+            handleNodeType( lce );
+            depth++;
+            return lce;
+        }
+
+
+        @Override
+        public RelNode visit( RelNode other ) {
+
+            handleNodeType( other );
+            depth++;
+            return other;
+        }
+
+
+        private void handleNodeType( RelNode other ) {
+            if ( other instanceof SingleRel ) {
+                other.replaceInput( 0, checkNode( ((SingleRel) other).getInput() ) );
+            } else if ( other instanceof BiRel ) {
+                other.replaceInput( 0, checkNode( other.getInput( 0 ) ) );
+                other.replaceInput( 1, checkNode( other.getInput( 1 ) ) );
+            }
+        }
+
+
+        private RelNode checkNode( RelNode other ) {
+            if ( other instanceof LogicalTableScan ) {
+
+                if ( other.getTable() instanceof RelOptTableImpl ) {
+                    if ( ((RelOptTableImpl) other.getTable()).getTable() instanceof LogicalTable ) {
+                        long tableId = ((LogicalTable) ((RelOptTableImpl) other.getTable()).getTable()).getTableId();
+
+                        CatalogTable catalogtable = Catalog.getInstance().getTable( tableId );
+                        int positionPrimary = other.getRowType().getFieldList().size() - 1;
+                        if ( catalogtable.isMaterialized() && ((CatalogMaterialized) catalogtable).isOrdered() ) {
+                            RelFieldCollation relFieldCollation = new RelFieldCollation( positionPrimary, Direction.ASCENDING );
+                            RelCollations.of( relFieldCollation );
+
+                            return LogicalSort.create( other, RelCollations.of( relFieldCollation ), null, null );
+                        }
+                    }
+
+                }
+            }
+            return other;
         }
 
     }

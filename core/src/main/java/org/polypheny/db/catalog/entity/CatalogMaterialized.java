@@ -47,6 +47,9 @@ public class CatalogMaterialized extends CatalogView {
     @Getter
     private final MaterializedCriteria materializedCriteria;
 
+    @Getter
+    private final boolean ordered;
+
 
     public CatalogMaterialized(
             long id,
@@ -64,7 +67,8 @@ public class CatalogMaterialized extends CatalogView {
             RelCollation relCollation,
             Map<Long, List<Long>> underlyingTables,
             QueryLanguage language,
-            MaterializedCriteria materializedCriteria
+            MaterializedCriteria materializedCriteria,
+            boolean ordered
     ) {
         super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, query, primaryKey, placementsByAdapter, modifiable, relCollation, underlyingTables, language );
         this.query = query;
@@ -72,6 +76,7 @@ public class CatalogMaterialized extends CatalogView {
         this.underlyingTables = underlyingTables;
         this.language = language;
         this.materializedCriteria = materializedCriteria;
+        this.ordered = ordered;
     }
 
 
@@ -97,7 +102,8 @@ public class CatalogMaterialized extends CatalogView {
             ImmutableList<Long> connectedViews,
             Map<Long, List<Long>> underlyingTables,
             QueryLanguage language,
-            MaterializedCriteria materializedCriteria
+            MaterializedCriteria materializedCriteria,
+            boolean ordered
     ) {
         super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, query, primaryKey, placementsByAdapter, modifiable, numPartitions, partitionType, partitionIds, partitionColumnId, isPartitioned, relCollation, connectedViews, underlyingTables, language );
         this.query = query;
@@ -105,6 +111,7 @@ public class CatalogMaterialized extends CatalogView {
         this.underlyingTables = underlyingTables;
         this.language = language;
         this.materializedCriteria = materializedCriteria;
+        this.ordered = ordered;
     }
 
 
@@ -126,7 +133,8 @@ public class CatalogMaterialized extends CatalogView {
                 relCollation,
                 underlyingTables,
                 language,
-                materializedCriteria );
+                materializedCriteria,
+                ordered );
     }
 
 
@@ -154,7 +162,8 @@ public class CatalogMaterialized extends CatalogView {
                 newConnectedViews,
                 underlyingTables,
                 language,
-                materializedCriteria );
+                materializedCriteria,
+                ordered );
     }
 
 
@@ -182,7 +191,8 @@ public class CatalogMaterialized extends CatalogView {
                 connectedViews,
                 underlyingTables,
                 language,
-                materializedCriteria );
+                materializedCriteria,
+                ordered );
     }
 
 

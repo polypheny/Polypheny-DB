@@ -1422,7 +1422,7 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language ) {
+    public long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) {
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( schemaId );
         CatalogUser owner = getUser( ownerId );
@@ -1444,7 +1444,8 @@ public class CatalogImpl extends Catalog {
                     relCollation,
                     ImmutableMap.copyOf( underlyingTables ),
                     language,
-                    materializedCriteria
+                    materializedCriteria,
+                    ordered
             );
             addConnectedViews( underlyingTables, materializedViewTable.id );
             updateTableLogistics( name, schemaId, id, schema, materializedViewTable );
@@ -1649,7 +1650,8 @@ public class CatalogImpl extends Catalog {
                     old.connectedViews,
                     ((CatalogMaterialized) old).getUnderlyingTables(),
                     ((CatalogMaterialized) old).getLanguage(),
-                    ((CatalogMaterialized) old).getMaterializedCriteria() );
+                    ((CatalogMaterialized) old).getMaterializedCriteria(),
+                    ((CatalogMaterialized) old).isOrdered() );
         } else {
             table = new CatalogTable( old.id,
                     old.name,
@@ -1753,7 +1755,8 @@ public class CatalogImpl extends Catalog {
                             old.connectedViews,
                             ((CatalogMaterialized) old).getUnderlyingTables(),
                             ((CatalogMaterialized) old).getLanguage(),
-                            ((CatalogMaterialized) old).getMaterializedCriteria()
+                            ((CatalogMaterialized) old).getMaterializedCriteria(),
+                            ((CatalogMaterialized) old).isOrdered()
                     );
                 } else {
                     table = new CatalogTable(
@@ -1821,7 +1824,8 @@ public class CatalogImpl extends Catalog {
                             old.connectedViews,
                             ((CatalogMaterialized) old).getUnderlyingTables(),
                             ((CatalogMaterialized) old).getLanguage(),
-                            ((CatalogMaterialized) old).getMaterializedCriteria()
+                            ((CatalogMaterialized) old).getMaterializedCriteria(),
+                            ((CatalogMaterialized) old).isOrdered()
                     );
                 } else {
                     table = new CatalogTable(

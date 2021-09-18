@@ -103,4 +103,24 @@ public class LogicalViewTableScan extends TableScan {
         }
     }
 
+
+
+/*
+    public static class ExpandView extends RelShuttleImpl {
+
+        @Override
+        public RelNode visit (RelNode other){
+
+            if ( other instanceof LogicalViewTableScan ){
+
+
+            }
+            return super.visit( other );
+
+        }
+
+    }
+
+ */
+
 }

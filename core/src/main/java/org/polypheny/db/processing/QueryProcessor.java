@@ -30,6 +30,8 @@ public interface QueryProcessor extends ViewExpander {
 
     PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameters, boolean isRouted );
 
+    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameters, boolean isRouted, boolean isCreateMaterialized );
+
     RelOptPlanner getPlanner();
 
     void resetCaches();

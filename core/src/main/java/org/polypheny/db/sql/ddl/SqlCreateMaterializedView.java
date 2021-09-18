@@ -16,6 +16,7 @@
 
 package org.polypheny.db.sql.ddl;
 
+import static org.polypheny.db.sql.SqlKind.ORDER;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.ArrayList;
@@ -175,6 +176,8 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
             materializedCriteria = new MaterializedCriteria();
         }
 
+        boolean ordered = query.getKind().belongsTo( ORDER );
+
         try {
             DdlManager.getInstance().createMaterializedView(
                     viewName,
@@ -188,7 +191,8 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
                     materializedCriteria,
                     query.toString().replaceAll( "`", "\"" ),
                     QueryLanguage.SQL,
-                    ifNotExists );
+                    ifNotExists,
+                    ordered );
         } catch ( TableAlreadyExistsException e ) {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( viewName ) );
         } catch ( GenericCatalogException | UnknownColumnException e ) {
