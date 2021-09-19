@@ -45,7 +45,6 @@ import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.core.Correlate;
 import org.polypheny.db.rel.core.CorrelationId;
-import org.polypheny.db.rel.logical.LogicalViewTableScan;
 import org.polypheny.db.rel.metadata.Metadata;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
@@ -337,35 +336,6 @@ public interface RelNode extends RelOptNode, Cloneable {
             isCacheable &= child.isImplementationCacheable();
         }
         return isCacheable;
-    }
-
-    /**
-     * To check if a RelNode includes a ViewTableScan
-     */
-    default boolean hasView() {
-        return false;
-    }
-
-    /**
-     * expands node
-     * if a part of RelNode is a LogicalViewTableScan it is replaced
-     * else recursively hands call down if view in deeper level
-     */
-    default void tryExpandView( RelNode input ) {
-        if ( input instanceof LogicalViewTableScan ) {
-            input = ((LogicalViewTableScan) input).expandViewNode();
-        } else {
-            input.tryExpandView( input );
-        }
-    }
-
-    default RelNode tryParentExpandView( RelNode input ) {
-        if ( input instanceof LogicalViewTableScan ) {
-            return ((LogicalViewTableScan) input).expandViewNode();
-        } else {
-            input.tryExpandView( input );
-            return input;
-        }
     }
 
     /**

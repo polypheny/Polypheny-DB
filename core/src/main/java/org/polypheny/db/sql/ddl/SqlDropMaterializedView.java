@@ -22,7 +22,6 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.jdbc.Context;
-import org.polypheny.db.materializedView.MaterializedManager;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlKind;
@@ -31,6 +30,7 @@ import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.view.MaterializedManager;
 
 public class SqlDropMaterializedView extends SqlDropObject {
 

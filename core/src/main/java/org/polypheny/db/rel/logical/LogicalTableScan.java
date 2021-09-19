@@ -80,13 +80,6 @@ public final class LogicalTableScan extends TableScan {
         super( cluster, traitSet, table );
     }
 
-
-    @Override
-    public void tryExpandView( RelNode input ) {
-        // do nothing
-    }
-
-
     /**
      * Creates a LogicalTableScan by parsing serialized output.
      */

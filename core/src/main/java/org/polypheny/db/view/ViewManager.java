@@ -14,15 +14,11 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.materializedView;
+package org.polypheny.db.view;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import lombok.Getter;
-import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogMaterialized;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.prepare.RelOptTableImpl;
@@ -31,12 +27,10 @@ import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelFieldCollation;
 import org.polypheny.db.rel.RelFieldCollation.Direction;
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.SingleRel;
+import org.polypheny.db.rel.core.Project;
 import org.polypheny.db.rel.core.TableFunctionScan;
-import org.polypheny.db.rel.core.TableModify;
-import org.polypheny.db.rel.core.TableModify.Operation;
 import org.polypheny.db.rel.core.TableScan;
 import org.polypheny.db.rel.logical.LogicalAggregate;
 import org.polypheny.db.rel.logical.LogicalConditionalExecute;
@@ -49,81 +43,59 @@ import org.polypheny.db.rel.logical.LogicalMatch;
 import org.polypheny.db.rel.logical.LogicalMinus;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalSort;
-import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalUnion;
 import org.polypheny.db.rel.logical.LogicalValues;
+import org.polypheny.db.rel.logical.LogicalViewTableScan;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.LogicalTable;
-import org.polypheny.db.transaction.PolyXid;
-import org.polypheny.db.transaction.Transaction;
 
-public abstract class MaterializedManager {
+public class ViewManager {
 
-    public static MaterializedManager INSTANCE = null;
+    private static LogicalSort orderMaterialzed( RelNode other ) {
+        int positionPrimary = other.getRowType().getFieldList().size() - 1;
+        RelFieldCollation relFieldCollation = new RelFieldCollation( positionPrimary, Direction.ASCENDING );
+        RelCollations.of( relFieldCollation );
 
-
-    public static MaterializedManager setAndGetInstance( MaterializedManager transaction ) {
-        if ( INSTANCE != null ) {
-            throw new RuntimeException( "Overwriting the MaterializedViewManager, when already set is not permitted." );
-        }
-        INSTANCE = transaction;
-        return INSTANCE;
+        return LogicalSort.create( other, RelCollations.of( relFieldCollation ), null, null );
     }
 
 
-    public static MaterializedManager getInstance() {
-        if ( INSTANCE == null ) {
-            throw new RuntimeException( "MaterializedViewManager was not set correctly on Polypheny-DB start-up" );
+    public static RelNode expandViewNode( RelNode other ) {
+
+        RexBuilder rexBuilder = other.getCluster().getRexBuilder();
+        final List<RexNode> exprs = new ArrayList<>();
+        final RelDataType rowType = other.getRowType();
+        final int fieldCount = rowType.getFieldCount();
+        for ( int i = 0; i < fieldCount; i++ ) {
+            exprs.add( rexBuilder.makeInputRef( other, i ) );
         }
-        return INSTANCE;
+
+        RelNode relNode = ((LogicalViewTableScan) other).getRelNode();
+
+        if ( relNode instanceof Project && relNode.getRowType().getFieldNames().equals( other.getRowType().getFieldNames() ) ) {
+            return relNode;
+        } else if ( relNode instanceof LogicalSort && relNode.getRowType().getFieldNames().equals( other.getRowType().getFieldNames() ) ) {
+            return relNode;
+        } else if ( relNode instanceof LogicalAggregate && relNode.getRowType().getFieldNames().equals( other.getRowType().getFieldNames() ) ) {
+            return relNode;
+        } else {
+            return LogicalProject.create( relNode, exprs, other.getRowType().getFieldNames() );
+        }
     }
 
 
-    public abstract void deleteMaterializedViewFromInfo( Long tableId );
-
-    public abstract void addData( Transaction transaction, List<DataStore> stores, Map<Integer, List<CatalogColumn>> addedColumns, RelRoot relRoot, CatalogMaterialized materializedView );
-
-    public abstract void addTables( Transaction transaction, List<String> names );
-
-    public abstract void updateData( Transaction transaction, Long viewId );
-
-    public abstract void updateCommitedXid( PolyXid xid );
-
-
-    public static class TableUpdateVisitor extends RelShuttleImpl {
-
-        @Getter
-        List<String> names = new ArrayList<>();
-
-
-        @Override
-        public RelNode visit( RelNode other ) {
-
-            if ( other instanceof LogicalTableModify ) {
-                if ( ((TableModify) other).getOperation() != Operation.MERGE ) {
-                    if ( (((RelOptTableImpl) other.getTable()).getTable() instanceof LogicalTable) ) {
-                        List<String> qualifiedName = other.getTable().getQualifiedName();
-                        if ( qualifiedName.size() < 2 ) {
-                            names.add( ((LogicalTable) ((RelOptTableImpl) other.getTable()).getTable()).getLogicalSchemaName() );
-                            names.add( ((LogicalTable) ((RelOptTableImpl) other.getTable()).getTable()).getLogicalTableName() );
-                        } else {
-                            names.addAll( qualifiedName );
-                        }
-
-                    }
-                }
-
-            }
-            return super.visit( other );
-
-        }
-
-    }
-
-
-    public static class OrderedMaterializedVisitor extends RelShuttleImpl {
+    public static class ViewVisitor extends RelShuttleImpl {
 
         int depth = 0;
+        boolean doesSubstituteOrderBy;
+
+
+        public ViewVisitor( boolean doesSubstituteOrderBy ) {
+            this.doesSubstituteOrderBy = doesSubstituteOrderBy;
+        }
 
 
         @Override
@@ -269,24 +241,25 @@ public abstract class MaterializedManager {
 
 
         private RelNode checkNode( RelNode other ) {
-            if ( other instanceof LogicalTableScan ) {
+
+            if ( other instanceof LogicalViewTableScan ) {
+                return expandViewNode( other );
+            } else if ( doesSubstituteOrderBy && other instanceof LogicalTableScan ) {
 
                 if ( other.getTable() instanceof RelOptTableImpl ) {
                     if ( ((RelOptTableImpl) other.getTable()).getTable() instanceof LogicalTable ) {
                         long tableId = ((LogicalTable) ((RelOptTableImpl) other.getTable()).getTable()).getTableId();
 
                         CatalogTable catalogtable = Catalog.getInstance().getTable( tableId );
-                        int positionPrimary = other.getRowType().getFieldList().size() - 1;
-                        if ( catalogtable.isMaterialized() && ((CatalogMaterialized) catalogtable).isOrdered() ) {
-                            RelFieldCollation relFieldCollation = new RelFieldCollation( positionPrimary, Direction.ASCENDING );
-                            RelCollations.of( relFieldCollation );
 
-                            return LogicalSort.create( other, RelCollations.of( relFieldCollation ), null, null );
+                        if ( catalogtable.isMaterialized() && ((CatalogMaterialized) catalogtable).isOrdered() ) {
+                            return orderMaterialzed( other );
                         }
                     }
 
                 }
             }
+            handleNodeType( other );
             return other;
         }
 

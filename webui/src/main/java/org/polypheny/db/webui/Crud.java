@@ -100,7 +100,6 @@ import org.polypheny.db.adapter.Adapter.AbstractAdapterSettingDirectory;
 import org.polypheny.db.adapter.Adapter.AdapterSettingDeserializer;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.AdapterManager.AdapterInformation;
-import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.adapter.DataStore;
@@ -3477,17 +3476,10 @@ public class Crud implements InformationObserver {
 
             if ( isAnalyze ) {
                 statement.getDuration().stop( "Process Query" );
-                statement.getDuration().start( "Get DataContext" );
-            }
-
-            DataContext dataContext = statement.getDataContext();
-
-            if ( isAnalyze ) {
-                statement.getDuration().stop( "Get DataContext" );
                 statement.getDuration().start( "Create Enumerable" );
             }
 
-            final Enumerable enumerable = signature.enumerable( dataContext );
+            final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
 
             if ( isAnalyze ) {
                 statement.getDuration().stop( "Create Enumerable" );

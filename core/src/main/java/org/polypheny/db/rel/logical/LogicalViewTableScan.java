@@ -17,8 +17,6 @@
 package org.polypheny.db.rel.logical;
 
 import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
-import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -31,11 +29,7 @@ import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollationTraitDef;
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Project;
 import org.polypheny.db.rel.core.TableScan;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.Table;
 
@@ -75,52 +69,5 @@ public class LogicalViewTableScan extends TableScan {
 
         return new LogicalViewTableScan( cluster, traitSet, relOptTable, ((CatalogView) catalogTable).prepareView( cluster ), ((CatalogView) catalogTable).getRelCollation() );
     }
-
-
-    @Override
-    public boolean hasView() {
-        return true;
-    }
-
-
-    public RelNode expandViewNode() {
-        RexBuilder rexBuilder = this.getCluster().getRexBuilder();
-        final List<RexNode> exprs = new ArrayList<>();
-        final RelDataType rowType = this.getRowType();
-        final int fieldCount = rowType.getFieldCount();
-        for ( int i = 0; i < fieldCount; i++ ) {
-            exprs.add( rexBuilder.makeInputRef( this, i ) );
-        }
-
-        if ( relNode instanceof Project && relNode.getRowType().getFieldNames().equals( this.getRowType().getFieldNames() ) ) {
-            return relNode;
-        } else if ( relNode instanceof LogicalSort && relNode.getRowType().getFieldNames().equals( this.getRowType().getFieldNames() ) ) {
-            return relNode;
-        } else if ( relNode instanceof LogicalAggregate && relNode.getRowType().getFieldNames().equals( this.getRowType().getFieldNames() ) ) {
-            return relNode;
-        } else {
-            return LogicalProject.create( relNode, exprs, this.getRowType().getFieldNames() );
-        }
-    }
-
-
-
-/*
-    public static class ExpandView extends RelShuttleImpl {
-
-        @Override
-        public RelNode visit (RelNode other){
-
-            if ( other instanceof LogicalViewTableScan ){
-
-
-            }
-            return super.visit( other );
-
-        }
-
-    }
-
- */
 
 }

@@ -114,12 +114,6 @@ public class RelRoot {
         this.collation = Objects.requireNonNull( collation );
     }
 
-
-    public RelRoot tryExpandView() {
-        return new RelRoot( rel.tryParentExpandView( rel ), validatedRowType, kind, fields, collation );
-    }
-
-
     /**
      * Creates a simple RelRoot.
      */

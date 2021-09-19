@@ -32,6 +32,7 @@ import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.SingleRel;
 import org.polypheny.db.rel.logical.LogicalViewTableScan;
+import org.polypheny.db.view.ViewManager.ViewVisitor;
 
 public class CatalogView extends CatalogTable {
 
@@ -179,9 +180,10 @@ public class CatalogView extends CatalogTable {
     public RelNode prepareView( RelOptCluster cluster ) {
         RelNode viewLogicalRoot = getDefinition();
         prepareView( viewLogicalRoot, cluster );
-        if ( viewLogicalRoot.hasView() ) {
-            viewLogicalRoot.tryExpandView( viewLogicalRoot );
-        }
+
+        ViewVisitor materializedVisitor = new ViewVisitor( false );
+        viewLogicalRoot.accept( materializedVisitor );
+
         return viewLogicalRoot;
     }
 
@@ -201,14 +203,6 @@ public class CatalogView extends CatalogTable {
         }
     }
 
-
-    /*
-        public RelDataType getFieldList() {
-            return Catalog.getInstance().getRelTypeInfo().get( id );
-        }
-
-
-     */
     public RelNode getDefinition() {
         return Catalog.getInstance().getNodeInfo().get( id );
     }

@@ -67,9 +67,6 @@ import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.materializedView.MaterializedManager;
-import org.polypheny.db.materializedView.MaterializedManager.OrderedMaterializedVisitor;
-import org.polypheny.db.materializedView.MaterializedManager.TableUpdateVisitor;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.RelTraitSet;
@@ -138,6 +135,9 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.view.MaterializedManager;
+import org.polypheny.db.view.MaterializedManager.TableUpdateVisitor;
+import org.polypheny.db.view.ViewManager.ViewVisitor;
 
 
 @Slf4j
@@ -168,17 +168,17 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
     @Override
     public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted ) {
-        return prepareQuery( logicalRoot, parameterRowType, isRouted, false, false );
+        return prepareQuery( logicalRoot, parameterRowType, isRouted, false, true );
     }
 
 
     @Override
-    public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isCreateMaterialized ) {
-        return prepareQuery( logicalRoot, parameterRowType, isRouted, false, isCreateMaterialized );
+    public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean doesSubstituteOrderBy ) {
+        return prepareQuery( logicalRoot, parameterRowType, isRouted, false, doesSubstituteOrderBy );
     }
 
 
-    protected PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery, boolean isCreateMaterialized ) {
+    protected PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery, boolean doesSubstituteOrderBy ) {
         boolean isAnalyze = statement.getTransaction().isAnalyze() && !isSubquery;
         boolean lock = !isSubquery;
 
@@ -195,15 +195,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             statement.getDuration().start( "View: Check if View included" );
         }
 
-        //check if the relRoot includes a View
-        if ( logicalRoot.rel.hasView() ) {
-            logicalRoot = logicalRoot.tryExpandView();
-        }
-
-        if ( isCreateMaterialized ) {
-            OrderedMaterializedVisitor materializedVisitor = new OrderedMaterializedVisitor();
-            logicalRoot.rel.accept( materializedVisitor );
-        }
+        /*
+        check if the relRoot includes Views or Materialized Views and replaces what necessary
+        View: replace LogicalViewTableScan with underlying information
+        Materialized View: add order by if Materialized View includes Order by */
+        ViewVisitor materializedVisitor = new ViewVisitor( doesSubstituteOrderBy );
+        logicalRoot.rel.accept( materializedVisitor );
 
         if ( isAnalyze ) {
             statement.getDuration().stop( "View: Check if View included" );

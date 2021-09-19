@@ -91,12 +91,10 @@ import org.polypheny.db.ddl.exception.PlacementIsPrimaryException;
 import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
-import org.polypheny.db.materializedView.MaterializedManager;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.processing.DataMigrator;
-import org.polypheny.db.rel.AbstractRelNode;
 import org.polypheny.db.rel.BiRel;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelNode;
@@ -114,6 +112,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.view.MaterializedManager;
 
 
 public class DdlManagerImpl extends DdlManager {
@@ -1403,7 +1402,7 @@ public class DdlManagerImpl extends DdlManager {
             stores = statement.getRouter().createTable( schemaId, statement );
         }
 
-        prepareView( relRoot.rel );
+        //prepareView( relRoot.rel );
         RelDataType fieldList = relRoot.rel.getRowType();
 
         List<ColumnInformation> columns = getColumnInformation( projectedColumns, fieldList, true );
@@ -1548,6 +1547,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    /*
     private void prepareView( RelNode viewNode ) {
         if ( viewNode instanceof AbstractRelNode ) {
             ((AbstractRelNode) viewNode).setCluster( null );
@@ -1559,7 +1559,7 @@ public class DdlManagerImpl extends DdlManager {
             prepareView( ((SingleRel) viewNode).getInput() );
         }
     }
-
+*/
 
     private Map<Long, List<Long>> findUnderlyingTablesOfView( RelNode relNode, Map<Long, List<Long>> underlyingTables, RelDataType fieldList ) {
         if ( relNode instanceof LogicalTableScan ) {

@@ -377,6 +377,36 @@ public class ViewTest {
 
 
     @Test
+    public void simpleSelectViews() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
+                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
+
+                try {
+                    statement.executeUpdate( "CREATE VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3 }
+                            ),
+                            true
+                    );
+
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP VIEW viewTestEmp" );
+                    statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
+                }
+            }
+        }
+    }
+
+
+    @Test
     public void testViewFromView() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

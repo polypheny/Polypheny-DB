@@ -38,7 +38,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.logical.LogicalViewTableScan;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
 
@@ -105,26 +104,6 @@ public abstract class SingleRel extends AbstractRelNode {
     @Override
     protected RelDataType deriveRowType() {
         return input.getRowType();
-    }
-
-
-    @Override
-    public boolean hasView() {
-        return input.hasView();
-    }
-
-
-    /**
-     * Replaces LogicalVieTableScan within RelNode if its view
-     * else recursively hands call down if view in deeper level
-     */
-    @Override
-    public void tryExpandView( RelNode node ) {
-        if ( input instanceof LogicalViewTableScan ) {
-            input = ((LogicalViewTableScan) input).expandViewNode();
-        } else {
-            input.tryExpandView( this );
-        }
     }
 
 }

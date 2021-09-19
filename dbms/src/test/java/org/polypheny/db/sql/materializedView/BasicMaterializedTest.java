@@ -1182,7 +1182,7 @@ public class BasicMaterializedTest {
         }
     }
 
-
+/*
     @Test
     public void testMaterializedViewFromView() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -1236,5 +1236,7 @@ public class BasicMaterializedTest {
             }
         }
     }
+
+ */
 
 }

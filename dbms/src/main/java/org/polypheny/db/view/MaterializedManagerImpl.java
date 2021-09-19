@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.materializedView;
+package org.polypheny.db.view;
 
 import com.google.common.collect.ImmutableList;
 import java.sql.Timestamp;
