@@ -55,11 +55,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.FileSystemManager;
 import org.vitrivr.cottontail.CottontailKt;
-import org.vitrivr.cottontail.config.CacheConfig;
-import org.vitrivr.cottontail.config.Config;
-import org.vitrivr.cottontail.config.ExecutionConfig;
-import org.vitrivr.cottontail.config.MapDBConfig;
-import org.vitrivr.cottontail.config.ServerConfig;
+import org.vitrivr.cottontail.config.*;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnDefinition;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnName;
@@ -154,12 +150,7 @@ public class CottontailStore extends DataStore {
 
         }
 
-        ManagedChannel channel = NettyChannelBuilder
-                .forAddress( this.dbHostname, this.dbPort )
-                .usePlaintext()
-                .maxInboundMetadataSize( CottontailWrapper.MAX_MESSAGE_SIZE )
-                .maxInboundMessageSize( CottontailWrapper.MAX_MESSAGE_SIZE )
-                .build();
+        final ManagedChannel channel = NettyChannelBuilder.forAddress( this.dbHostname, this.dbPort ).usePlaintext().build();
         this.wrapper = new CottontailWrapper( channel, this );
 
         this.wrapper.checkedCreateSchemaBlocking(
@@ -340,7 +331,7 @@ public class CottontailStore extends DataStore {
         CottontailGrpc.Literal defaultData = CottontailTypeUtil.toData( defaultValue, actualDefaultType, null );
 
         final QueryMessage query = QueryMessage.newBuilder().setTxId( txId ).setQuery( Query.newBuilder().setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( tableEntity ) ) ) ).build();
-        final Iterator<QueryResponseMessage> queryResponse = this.wrapper.query( query );
+        final Iterator<QueryResponseMessage> queryResponse = this.wrapper.queryRaw( query );
         queryResponse.forEachRemaining( responseMessage -> {
             for ( Tuple tuple : responseMessage.getTuplesList() ) {
                 final InsertMessage.Builder insert = InsertMessage.newBuilder().setTxId( txId ).setFrom(
@@ -408,7 +399,7 @@ public class CottontailStore extends DataStore {
         }
 
         final Query query = Query.newBuilder().setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( tableEntity ) ) ).build();
-        final Iterator<QueryResponseMessage> queryResponse = this.wrapper.query( QueryMessage.newBuilder().setTxId( txId ).setQuery( query ).build() );
+        final Iterator<QueryResponseMessage> queryResponse = this.wrapper.queryRaw( QueryMessage.newBuilder().setTxId( txId ).setQuery( query ).build() );
         queryResponse.forEachRemaining( responseMessage -> {
             int droppedIndex = 0;
             for ( ColumnName c : responseMessage.getColumnsList() ) {
@@ -558,8 +549,7 @@ public class CottontailStore extends DataStore {
         }
 
         final Query query = Query.newBuilder().setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( tableEntity ).build() ) ).build();
-        final Iterator<QueryResponseMessage> queryResponse = this.wrapper.query( QueryMessage.newBuilder().setTxId( txId ).setQuery( query ).build() );
-
+        final Iterator<QueryResponseMessage> queryResponse = this.wrapper.queryRaw( QueryMessage.newBuilder().setTxId( txId ).setQuery( query ).build() );
         final From from = From.newBuilder().setScan( Scan.newBuilder().setEntity( newTableEntity ).build() ).build();
         queryResponse.forEachRemaining( response -> {
             for ( Tuple tuple : response.getTuplesList() ) {
@@ -623,5 +613,4 @@ public class CottontailStore extends DataStore {
     protected void reloadSettings( List<String> updatedSettings ) {
 
     }
-
 }

@@ -1,8 +1,9 @@
 
 group "org.polypheny"
 
-version = versionMajor + "." + versionMinor + versionQualifier
+apply plugin: "kotlin"
 
+version = versionMajor + "." + versionMinor + versionQualifier
 
 dependencies {
     implementation project(":core")

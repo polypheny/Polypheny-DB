@@ -16,19 +16,20 @@
 
 package org.polypheny.db.adapter.cottontail;
 
-
 import com.google.protobuf.Empty;
 import io.grpc.ManagedChannel;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.BatchedQueryMessage;
+import org.vitrivr.cottontail.client.SimpleClient;
+import org.vitrivr.cottontail.client.iterators.TupleIterator;
+import org.vitrivr.cottontail.grpc.*;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.BatchInsertMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnName;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.CreateEntityMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.CreateIndexMessage;
@@ -46,13 +47,8 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryResponseMessage.Tuple;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.TransactionId;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.TruncateEntityMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.UpdateMessage;
-import org.vitrivr.cottontail.grpc.DDLGrpc;
 import org.vitrivr.cottontail.grpc.DDLGrpc.DDLBlockingStub;
-import org.vitrivr.cottontail.grpc.DMLGrpc;
 import org.vitrivr.cottontail.grpc.DMLGrpc.DMLBlockingStub;
-import org.vitrivr.cottontail.grpc.DQLGrpc;
-import org.vitrivr.cottontail.grpc.DQLGrpc.DQLBlockingStub;
-import org.vitrivr.cottontail.grpc.TXNGrpc;
 import org.vitrivr.cottontail.grpc.TXNGrpc.TXNBlockingStub;
 
 /**
@@ -64,9 +60,17 @@ import org.vitrivr.cottontail.grpc.TXNGrpc.TXNBlockingStub;
 @Slf4j
 public class CottontailWrapper implements AutoCloseable {
 
-    private final ManagedChannel channel;
-    public static final int MAX_MESSAGE_SIZE = 150_000_000;
     private static final long MAX_QUERY_CALL_TIMEOUT = 300_000; // TODO expose to config
+
+    /**
+     * The {@link ManagedChannel} used by this {@link CottontailWrapper}.
+     */
+    private final ManagedChannel channel;
+
+    /**
+     * The {@link SimpleClient} used by this {@link CottontailWrapper}.
+     */
+    private final SimpleClient client;
 
     /**
      * A map of all the {@link PolyXid} and the Cottontail DB {@link TransactionId} of all ongoing transactions.
@@ -88,6 +92,7 @@ public class CottontailWrapper implements AutoCloseable {
     public CottontailWrapper( ManagedChannel channel, CottontailStore store ) {
         this.channel = channel;
         this.store = store;
+        this.client = new SimpleClient(this.channel);
     }
 
 
@@ -287,9 +292,8 @@ public class CottontailWrapper implements AutoCloseable {
 
 
     public boolean insert( InsertMessage message ) {
-        final DMLBlockingStub stub = DMLGrpc.newBlockingStub( this.channel );
         try {
-            stub.insert( message );
+            this.client.insert( message );
             return true;
         } catch ( StatusRuntimeException e ) {
             log.error( "Caught exception", e );
@@ -298,12 +302,9 @@ public class CottontailWrapper implements AutoCloseable {
     }
 
 
-    public boolean insert( List<InsertMessage> messages ) {
-        final DMLBlockingStub stub = DMLGrpc.newBlockingStub( this.channel );
+    public boolean insert( BatchInsertMessage message ) {
         try {
-            for ( InsertMessage m : messages ) {
-                stub.insert( m );
-            }
+            this.client.insert( message );
             return true;
         } catch ( StatusRuntimeException e ) {
             log.error( "Caught exception", e );
@@ -311,9 +312,13 @@ public class CottontailWrapper implements AutoCloseable {
         }
     }
 
-
-    public Iterator<QueryResponseMessage> query( QueryMessage query ) {
-        final DQLBlockingStub stub = DQLGrpc.newBlockingStub( this.channel ).withDeadlineAfter( MAX_QUERY_CALL_TIMEOUT, TimeUnit.MILLISECONDS );
+    /**
+     * Issues a query described by a {@link QueryMessage} using the plain {@link DQLGrpc.DQLBlockingStub}.
+     * @param query
+     * @return
+     */
+    public Iterator<QueryResponseMessage> queryRaw( QueryMessage query ) {
+        final DQLGrpc.DQLBlockingStub stub = DQLGrpc.newBlockingStub( this.channel ).withDeadlineAfter( MAX_QUERY_CALL_TIMEOUT, TimeUnit.MILLISECONDS );
         try {
             return stub.query( query );
         } catch ( StatusRuntimeException e ) {
@@ -328,11 +333,9 @@ public class CottontailWrapper implements AutoCloseable {
         }
     }
 
-
-    public Iterator<QueryResponseMessage> batchedQuery( BatchedQueryMessage query ) {
-        final DQLBlockingStub stub = DQLGrpc.newBlockingStub( this.channel ).withDeadlineAfter( MAX_QUERY_CALL_TIMEOUT, TimeUnit.MILLISECONDS );
+    public TupleIterator query(QueryMessage query ) {
         try {
-            return stub.batchQuery( query );
+            return this.client.query( query );
         } catch ( StatusRuntimeException e ) {
             if ( e.getStatus().getCode() == Status.INVALID_ARGUMENT.getCode() ) {
                 log.debug( "Query failed due to user error: {}", e.getMessage() );
@@ -341,10 +344,24 @@ public class CottontailWrapper implements AutoCloseable {
             } else {
                 log.error( "Caught exception", e );
             }
-            throw new RuntimeException( e );
+            throw e;
         }
     }
 
+    public TupleIterator batchedQuery(CottontailGrpc.BatchedQueryMessage query ) {
+        try {
+            return this.client.batchedQuery( query );
+        } catch ( StatusRuntimeException e ) {
+            if ( e.getStatus().getCode() == Status.INVALID_ARGUMENT.getCode() ) {
+                log.debug( "Batched query failed due to user error: {}", e.getMessage() );
+            } else if ( e.getStatus() == Status.DEADLINE_EXCEEDED ) {
+                log.error( "Batched query has timed out (timeout = {}ms).", MAX_QUERY_CALL_TIMEOUT );
+            } else {
+                log.error( "Caught exception", e );
+            }
+            throw e;
+        }
+    }
 
     @Override
     public void close() {

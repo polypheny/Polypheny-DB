@@ -88,9 +88,15 @@ public class CottontailTypeUtil {
     public static final Method COTTONTAIL_KNN_BUILDER_METHOD = Types.lookupMethod(
             Linq4JFixer.class,
             "generateKnn",
-            Object.class, Object.class, Object.class, Object.class, Object.class );
+            Object.class, Object.class, Object.class );
 
 
+    /**
+     * Maps the given map of attributes and (optional) aliases to a {@link Projection.Builder}.
+     *
+     * @param map Map of projection clauses.
+     * @return {@link Projection.Builder}
+     */
     public static Projection.Builder mapToProjection( Map<String, String> map ) {
         final Projection.Builder proj = Projection.newBuilder();
         for ( Entry<String, String> p : map.entrySet() ) {
@@ -99,7 +105,7 @@ public class CottontailTypeUtil {
             if ( p.getValue() != null && !p.getValue().isEmpty() ) {
                 e.setAlias( ColumnName.newBuilder().setName( p.getValue() ) );
             }
-            proj.addColumns( e );
+            proj.addElements( e );
         }
         return proj;
     }
@@ -264,11 +270,17 @@ public class CottontailTypeUtil {
         return Expressions.call( COTTONTAIL_SIMPLE_CONSTANT_TO_DATA_METHOD, constantExpression, Expressions.constant( innerType ), Expressions.constant( null ) );
     }
 
-
+    /**
+     *
+     * @param value
+     * @param actualType
+     * @param parameterComponentType
+     * @return
+     */
     public static CottontailGrpc.Literal toData( Object value, PolyType actualType, PolyType parameterComponentType ) {
         final CottontailGrpc.Literal.Builder builder = Literal.newBuilder();
         if ( value == null ) {
-            return builder.setNullData( Null.newBuilder().build() ).build();
+            return builder.build();
         }
 
         log.trace( "Attempting to data value: {}, type: {}", value.getClass().getCanonicalName(), actualType );
@@ -297,31 +309,38 @@ public class CottontailTypeUtil {
                 if ( value instanceof Boolean ) {
                     return builder.setBooleanData( (Boolean) value ).build();
                 }
+
                 break;
             }
-            case INTEGER:
-            case SMALLINT:
+            case INTEGER: {
+                if ( value instanceof Integer ) {
+                    return builder.setIntData( (Integer) value ).build();
+                } else if ( value instanceof Long ) {
+                    return builder.setIntData( ((Long) value).intValue() ).build();
+                }
+                break;
+            }
+            case BIGINT: {
+                if ( value instanceof Long ) {
+                    return builder.setLongData( (Long) value ).build();
+                }
+                break;
+            }
             case TINYINT: {
                 if ( value instanceof Byte ) {
                     return builder.setIntData( ((Byte) value).intValue() ).build();
-                }
-                if ( value instanceof Short ) {
-                    return builder.setIntData( ((Short) value).intValue() ).build();
-                }
-                if ( value instanceof Integer ) {
-                    return builder.setIntData( (Integer) value ).build();
                 }
                 if ( value instanceof Long ) {
                     return builder.setIntData( ((Long) value).intValue() ).build();
                 }
                 break;
             }
-            case BIGINT: {
-                if ( value instanceof Integer ) {
-                    return builder.setLongData( ((Integer) value).longValue() ).build();
+            case SMALLINT: {
+                if ( value instanceof Short ) {
+                    return builder.setIntData( ((Short) value).intValue() ).build();
                 }
                 if ( value instanceof Long ) {
-                    return builder.setLongData( (Long) value ).build();
+                    return builder.setIntData( ((Long) value).intValue() ).build();
                 }
                 break;
             }
@@ -573,35 +592,19 @@ public class CottontailTypeUtil {
         BlockBuilder inner = new BlockBuilder();
         ParameterExpression dynamicParameterMap_ = Expressions.parameter( Modifier.FINAL, Map.class, inner.newName( "dynamicParameters" ) );
 
-        Expression targetColumn = knnCallTargetColumn( knnCall.getOperands().get( 0 ), physicalColumnNames, dynamicParameterMap_ );
+        final Expression probingArgument = knnCallTargetColumn( knnCall.getOperands().get( 0 ), physicalColumnNames, dynamicParameterMap_ );
 
-        Expression targetVector = knnCallVector( knnCall.getOperands().get( 1 ), dynamicParameterMap_, knnCall.getOperands().get( 0 ).getType().getComponentType().getPolyType() );
+        final Expression queryArgument = knnCallVector( knnCall.getOperands().get( 1 ), dynamicParameterMap_, knnCall.getOperands().get( 0 ).getType().getComponentType().getPolyType() );
 
-        Expression distance = knnCallDistance( knnCall.getOperands().get( 2 ), dynamicParameterMap_ );
+        final Expression distance = knnCallDistance( knnCall.getOperands().get( 2 ), dynamicParameterMap_ );
 
-        Expression weightsVector;
-        Expression optimisationFactor;
-
-        if ( knnCall.getOperands().size() == 4 ) {
-            weightsVector = knnCallVector( knnCall.getOperands().get( 3 ), dynamicParameterMap_, knnCall.getOperands().get( 0 ).getType().getComponentType().getPolyType() );
-        } else {
-            weightsVector = Expressions.constant( null );
-        }
-
-        optimisationFactor = knnCallOptimisationFactor( limitNode, dynamicParameterMap_ );
+        //optimisationFactor = knnCallOptimisationFactor( limitNode, dynamicParameterMap_ ); // TODO: WTH is a optimisation factor?
 
         return Expressions.lambda(
                 Expressions.block(
                         Expressions.return_(
                                 null,
-                                Expressions.call(
-                                        COTTONTAIL_KNN_BUILDER_METHOD,
-                                        targetColumn,
-                                        optimisationFactor,
-                                        distance,
-                                        targetVector,
-                                        weightsVector
-                                ) ) ),
+                                Expressions.call(COTTONTAIL_KNN_BUILDER_METHOD, probingArgument, queryArgument, distance) ) ),
                 dynamicParameterMap_ );
     }
 

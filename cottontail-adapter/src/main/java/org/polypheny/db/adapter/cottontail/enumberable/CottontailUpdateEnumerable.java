@@ -17,13 +17,6 @@
 package org.polypheny.db.adapter.cottontail.enumberable;
 
 
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -33,12 +26,12 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.CottontailWrapper;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnName;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Literal;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.TransactionId;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.UpdateMessage;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.*;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.UpdateMessage.UpdateElement;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
+
+import java.lang.reflect.Method;
+import java.util.*;
+import java.util.Map.Entry;
 
 
 @Slf4j
@@ -112,7 +105,7 @@ public class CottontailUpdateEnumerable<T> extends AbstractEnumerable<T> {
             for ( Entry<String, Literal> e : tupleBuilder.apply( parameterValues ).entrySet() ) {
                 builder.addUpdates( UpdateElement.newBuilder()
                         .setColumn( ColumnName.newBuilder().setName( e.getKey() ) )
-                        .setValue( e.getValue() )
+                        .setValue( Expression.newBuilder().setLiteral( e.getValue() ) )
                         .build() );
             }
         } catch ( RuntimeException e ) {

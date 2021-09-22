@@ -17,192 +17,116 @@
 package org.polypheny.db.adapter.cottontail.util;
 
 
+import org.apache.calcite.avatica.util.ByteString;
+import org.vitrivr.cottontail.client.language.basics.Distances;
+import org.vitrivr.cottontail.grpc.CottontailGrpc;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.*;
+
+import javax.naming.ldap.LdapContext;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.apache.calcite.avatica.util.ByteString;
-import org.vitrivr.cottontail.grpc.CottontailGrpc;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanOperand;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanPredicate;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnName;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.ComparisonOperator;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.CompoundBooleanPredicate;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.ConnectionOperator;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Knn;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Knn.Distance;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.KnnHint;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.KnnHint.NoIndexKnnHint;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Literal;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Literals;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Vector;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
 
 
 public class Linq4JFixer {
 
 
     public static Object getBooleanData( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
-        }
         return ((CottontailGrpc.Literal) data).getBooleanData();
     }
 
 
     public static Object getIntData( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
-        }
         return ((CottontailGrpc.Literal) data).getIntData();
     }
 
 
     public static Object getLongData( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
-        }
         return ((CottontailGrpc.Literal) data).getLongData();
     }
 
 
     public static Object getTinyIntData( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
-        }
         return Integer.valueOf( ((CottontailGrpc.Literal) data).getIntData() ).byteValue();
     }
 
 
     public static Object getSmallIntData( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
-        }
         return Integer.valueOf( ((CottontailGrpc.Literal) data).getIntData() ).shortValue();
     }
 
 
     public static Object getFloatData( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
-        }
         return ((CottontailGrpc.Literal) data).getFloatData();
     }
 
 
     public static Object getDoubleData( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
-        }
         return ((CottontailGrpc.Literal) data).getDoubleData();
     }
 
 
     public static String getStringData( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
-        }
         return ((CottontailGrpc.Literal) data).getStringData();
     }
 
 
     public static Object getDecimalData( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
-        }
         return new BigDecimal( ((CottontailGrpc.Literal) data).getStringData() );
     }
 
 
     public static Object getBinaryData( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
-        }
         return ByteString.parseBase64( ((CottontailGrpc.Literal) data).getStringData() );
     }
 
 
     public static Object getTimeData( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
-        }
         return ((CottontailGrpc.Literal) data).getIntData();
     }
 
 
     public static Object getDateData( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
-        }
         return ((CottontailGrpc.Literal) data).getIntData();
     }
 
 
     public static Object getTimestampData( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
-        }
         return ((CottontailGrpc.Literal) data).getDateData().getUtcTimestamp();
     }
 
-
-    public static Object getNullData( Object data ) {
-        return ((CottontailGrpc.Literal) data).getNullData();
-    }
-
-
     public static Object getBoolVector( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
-        }
         return ((CottontailGrpc.Literal) data).getVectorData().getBoolVector().getVectorList();
     }
 
 
     public static Object getTinyIntVector( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
-        }
         return ((CottontailGrpc.Literal) data).getVectorData().getIntVector().getVectorList().stream().map( Integer::byteValue ).collect( Collectors.toList() );
     }
 
 
     public static Object getSmallIntVector( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
-        }
         return ((CottontailGrpc.Literal) data).getVectorData().getIntVector().getVectorList().stream().map( Integer::shortValue ).collect( Collectors.toList() );
     }
 
 
     public static Object getIntVector( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
-        }
         return ((CottontailGrpc.Literal) data).getVectorData().getIntVector().getVectorList();
     }
 
 
     public static Object getFloatVector( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
-        }
         return ((CottontailGrpc.Literal) data).getVectorData().getFloatVector().getVectorList();
     }
 
 
     public static Object getDoubleVector( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
-        }
         return ((CottontailGrpc.Literal) data).getVectorData().getDoubleVector().getVectorList();
     }
 
 
     public static Object getLongVector( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
-        }
         return ((CottontailGrpc.Literal) data).getVectorData().getLongVector().getVectorList();
     }
 
@@ -244,7 +168,7 @@ public class Linq4JFixer {
         return AtomicBooleanPredicate.newBuilder().setNot( not )
                 .setLeft( ColumnName.newBuilder().setName( attribute ).build() )
                 .setOp( operator )
-                .setRight( AtomicBooleanOperand.newBuilder().setLiterals( Literals.newBuilder().addLiteral( data ).build() ).build() )
+                .setRight( AtomicBooleanOperand.newBuilder().setExpressions( Expressions.newBuilder().addExpression(Expression.newBuilder().setLiteral(data) ) ) )
                 .build();
     }
 
@@ -262,57 +186,50 @@ public class Linq4JFixer {
     }
 
 
-    public static Knn generateKnn(
-            Object column,
-            Object k,
-            Object distance,
-            Object target,
-            Object weights ) {
-        Knn.Builder knnBuilder = Knn.newBuilder();
-
-        knnBuilder.setAttribute( ColumnName.newBuilder().setName( (String) column ) );
-
-        if ( k != null ) {
-            knnBuilder.setK( (Integer) k );
-        } else {
-            // Cottontail requires a k to be set for these queries.
-            // Setting Integer.MAX_VALUE will cause an out of memory with cottontail
-            // 2050000000 still works, 2100000000 doesn't work
-            // I will just decide that 1000000 is a reasonable default value!
-            knnBuilder.setK( 1000000 );
-        }
-
-        if ( target != null ) {
-            knnBuilder.setQuery( (Vector) target );
-        }
-
-        if ( weights != null ) {
-            knnBuilder.setWeight( (Vector) weights );
-        }
-
-        knnBuilder.setDistance( getDistance( (String) distance ) );
-
-        knnBuilder.setHint( KnnHint.newBuilder().setNoIndexHint( NoIndexKnnHint.newBuilder() ) );
-
-        return knnBuilder.build();
+    /**
+     * Generates and returns the kNN query function for the give arguments.
+     *
+     * @param p The column name of the probing argument
+     * @param q The query vector.
+     * @param distance The name of the distance to execute.
+     * @return The resulting {@link Function} expression.
+     */
+    public static Function generateKnn(Object p, Object q, Object distance) {
+        return Function.newBuilder()
+                .setName( getDistance ( (String) distance ) )
+                .addArguments( Expression.newBuilder().setColumn( ColumnName.newBuilder().setName( (String) p ) ) )
+                .addArguments( Expression.newBuilder().setLiteral( Literal.newBuilder().setVectorData( (Vector) q ) ) )
+                .build();
     }
 
-
-    public static Knn.Distance getDistance( String norm ) {
-        switch ( norm ) {
+    /**
+     * Maps the given name to a {@link FunctionName} object.
+     *
+     * @param norm The name of the distance to execute.
+     * @return The corresponding {@link FunctionName}
+     */
+    public static FunctionName getDistance(String norm ) {
+        final String value;
+        switch ( norm.toUpperCase() ) {
             case "L1":
-                return Distance.L1;
+                value = Distances.L1.getFunctionName();
+                break;
             case "L2":
-                return Distance.L2;
+                value =  Distances.L2.getFunctionName();
+                break;
             case "L2SQUARED":
-                return Distance.L2SQUARED;
+                value =  Distances.L2SQUARED.getFunctionName();
+                break;
             case "CHISQUARED":
-                return Distance.CHISQUARED;
+                value =  Distances.CHISQUARED.getFunctionName();
+                break;
             case "COSINE":
-                return Distance.COSINE;
+                value =  Distances.COSINE.getFunctionName();
+                break;
             default:
                 throw new IllegalArgumentException( "Unknown norm: " + norm );
         }
+        return FunctionName.newBuilder().setName( value ).build();
     }
 
 

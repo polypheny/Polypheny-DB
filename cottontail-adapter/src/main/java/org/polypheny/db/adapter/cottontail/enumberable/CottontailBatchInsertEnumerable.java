@@ -13,25 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.polypheny.db.adapter.cottontail.enumberable;
 
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.cottontail.CottontailWrapper;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.InsertMessage;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.BatchInsertMessage;
 
-import java.util.List;
-
-
-public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
-    private final List<InsertMessage> inserts;
+public class CottontailBatchInsertEnumerable<T> extends AbstractEnumerable<T> {
+    private final BatchInsertMessage inserts;
     private final CottontailWrapper wrapper;
-    private final boolean fromPrepared;
 
-    public CottontailInsertEnumerable( List<InsertMessage> inserts, CottontailWrapper wrapper, boolean fromPrepared ) {
+    public CottontailBatchInsertEnumerable( BatchInsertMessage inserts, CottontailWrapper wrapper ) {
         this.inserts = inserts;
         this.wrapper = wrapper;
-        this.fromPrepared = fromPrepared;
     }
 
     @Override
@@ -42,13 +38,12 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
     private class CottontailInsertResultEnumerator<T> implements Enumerator<T> {
         private boolean wasSuccessful;
         private boolean executed;
-        private int checkCount = 0;
 
         @SuppressWarnings("unchecked")
         @Override
         public T current() {
             if ( this.wasSuccessful ) {
-                return (T) Integer.valueOf( CottontailInsertEnumerable.this.inserts.size() );
+                return (T) Integer.valueOf( CottontailBatchInsertEnumerable.this.inserts.getInsertsCount() );
             } else {
                 return (T) Integer.valueOf( -1 );
             }
@@ -57,19 +52,11 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
         @Override
         public boolean moveNext() {
             if ( !this.executed ) {
-                this.wasSuccessful = CottontailInsertEnumerable.this.wrapper.insert( CottontailInsertEnumerable.this.inserts.get(this.checkCount++) );
+                this.wasSuccessful = CottontailBatchInsertEnumerable.this.wrapper.insert( CottontailBatchInsertEnumerable.this.inserts );
                 this.executed = true;
                 return this.wasSuccessful;
             } else {
-                if ( !CottontailInsertEnumerable.this.fromPrepared ) {
-                    return false;
-                }
-                if ( this.checkCount < CottontailInsertEnumerable.this.inserts.size() ) {
-                    this.checkCount += 1;
-                    return true;
-                } else {
-                    return false;
-                }
+                return false;
             }
         }
 

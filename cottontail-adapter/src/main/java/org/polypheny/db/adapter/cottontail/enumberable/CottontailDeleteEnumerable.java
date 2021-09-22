@@ -17,12 +17,6 @@
 package org.polypheny.db.adapter.cottontail.enumberable;
 
 
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.function.Function1;
@@ -33,6 +27,9 @@ import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.DeleteMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.TransactionId;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
+
+import java.lang.reflect.Method;
+import java.util.*;
 
 
 public class CottontailDeleteEnumerable<T> extends AbstractEnumerable<T> {

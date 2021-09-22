@@ -198,9 +198,7 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
 
             final Query query = Query.newBuilder().setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( cottontailTable.entity ) ).build() ).build();
             final QueryMessage queryMessage = QueryMessage.newBuilder().setTxId( txId ).setQuery( query ).build();
-            final Enumerable enumerable = new CottontailQueryEnumerable<>(
-                    cottontailTable.cottontailSchema.getWrapper().query( queryMessage ),
-                    new CottontailQueryEnumerable.RowTypeParser( cottontailTable.getRowType( typeFactory ), cottontailTable.physicalColumnNames ) );
+            final Enumerable enumerable = new CottontailQueryEnumerable<>( cottontailTable.cottontailSchema.getWrapper().query( queryMessage ) );
             return enumerable.enumerator();
         }
 
