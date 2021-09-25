@@ -16,39 +16,42 @@
 
 package org.polypheny.db.adapter.blockchain;
 
-import org.web3j.protocol.core.methods.response.EthBlock;
-
 import java.math.BigInteger;
 import java.util.function.Predicate;
+import org.web3j.protocol.core.methods.response.EthBlock;
 
 public enum BlockchainMapper {
     BLOCK,
     TRANSACTION;
 
-    static BlockchainMapper getMapper(String tableName) {
-        if (tableName.equals("block")) {
+
+    static BlockchainMapper getMapper( String tableName ) {
+        if ( tableName.equals( "block" ) ) {
             return BLOCK;
         }
         return TRANSACTION;
     }
 
-    static String safeToString(Object x) {
-        if (x == null)
+
+    static String safeToString( Object x ) {
+        if ( x == null ) {
             return null;
+        }
         return x.toString();
     }
 
-    public String[] map(Object obj) {
+
+    public String[] map( Object obj ) {
         String[] str = null;
 
-        if (this == BLOCK) {
+        if ( this == BLOCK ) {
 
             EthBlock.Block blk = (EthBlock.Block) obj;
             str = new String[]{
-                    safeToString(blk.getNumber()),
+                    safeToString( blk.getNumber() ),
                     blk.getHash(),
                     blk.getParentHash(),
-                    safeToString(blk.getNonce()),
+                    safeToString( blk.getNonce() ),
                     blk.getSha3Uncles(),
                     blk.getLogsBloom(),
                     blk.getTransactionsRoot(),
@@ -57,27 +60,27 @@ public enum BlockchainMapper {
                     blk.getAuthor(),
                     blk.getMiner(),
                     blk.getMixHash(),
-                    safeToString(blk.getDifficulty()),
-                    safeToString(blk.getTotalDifficulty()),
+                    safeToString( blk.getDifficulty() ),
+                    safeToString( blk.getTotalDifficulty() ),
                     blk.getExtraData(),
-                    safeToString(blk.getSize()),
-                    safeToString(blk.getGasLimit()),
-                    safeToString(blk.getGasUsed()),
-                    safeToString(blk.getTimestamp()),
+                    safeToString( blk.getSize() ),
+                    safeToString( blk.getGasLimit() ),
+                    safeToString( blk.getGasUsed() ),
+                    safeToString( blk.getTimestamp() ),
             };
         } else {
             EthBlock.TransactionObject tnx = (EthBlock.TransactionObject) obj;
             str = new String[]{
                     tnx.getHash(),
-                    safeToString(tnx.getNonce()),
+                    safeToString( tnx.getNonce() ),
                     tnx.getBlockHash(),
-                    safeToString(tnx.getBlockNumber()),
-                    safeToString(tnx.getTransactionIndex()),
+                    safeToString( tnx.getBlockNumber() ),
+                    safeToString( tnx.getTransactionIndex() ),
                     tnx.getFrom(),
                     tnx.getTo(),
-                    safeToString(tnx.getValue()),
-                    safeToString(tnx.getGasPrice()),
-                    safeToString(tnx.getGas()),
+                    safeToString( tnx.getValue() ),
+                    safeToString( tnx.getGasPrice() ),
+                    safeToString( tnx.getGas() ),
                     tnx.getInput(),
                     tnx.getCreates(),
                     tnx.getPublicKey(),
@@ -87,14 +90,14 @@ public enum BlockchainMapper {
             };
         }
 
-
         return str;
     }
 
-    public BlockReader makeReader(String clientUrl, int blocks, Predicate<BigInteger> blockNumberPredicate) {
-        if (this == BLOCK) {
-            return new BlockReader(clientUrl, blocks, blockNumberPredicate);
+
+    public BlockReader makeReader( String clientUrl, int blocks, Predicate<BigInteger> blockNumberPredicate ) {
+        if ( this == BLOCK ) {
+            return new BlockReader( clientUrl, blocks, blockNumberPredicate );
         }
-        return new TransactionReader(clientUrl, blocks, blockNumberPredicate);
+        return new TransactionReader( clientUrl, blocks, blockNumberPredicate );
     }
 }

@@ -79,7 +79,7 @@ public class HostInformation {
         hardwareInformation.addRow( "Firmware Version", hal.getComputerSystem().getFirmware().getVersion() );
         hardwareInformation.addRow( "Manufacturer", hal.getComputerSystem().getManufacturer() );
         hardwareInformation.addRow( "Model", hal.getComputerSystem().getModel() );
-//        hardwareInformation.addRow( "Serial Number", hal.getComputerSystem().getSerialNumber() );
+        hardwareInformation.addRow( "Serial Number", hal.getComputerSystem().getSerialNumber() );
         im.registerInformation( hardwareInformation );
 
         //

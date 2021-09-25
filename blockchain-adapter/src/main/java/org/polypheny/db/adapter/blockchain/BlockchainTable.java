@@ -16,6 +16,11 @@
 
 package org.polypheny.db.adapter.blockchain;
 
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -29,13 +34,8 @@ import org.polypheny.db.schema.FilterableTable;
 import org.polypheny.db.schema.impl.AbstractTable;
 import org.polypheny.db.util.Pair;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Predicate;
-
 public class BlockchainTable extends AbstractTable implements FilterableTable {
+
     protected final String clientUrl;
     protected final RelProtoDataType protoRowType;
     protected final int[] fields;
@@ -45,7 +45,8 @@ public class BlockchainTable extends AbstractTable implements FilterableTable {
     private final boolean experimentalFiltering;
     protected List<BlockchainFieldType> fieldTypes;
 
-    public BlockchainTable(String clientUrl, int blocks, boolean experimentalFiltering, RelProtoDataType protoRowType, List<BlockchainFieldType> fieldTypes, int[] fields, BlockchainMapper mapper, BlockchainDataSource blockchainDataSource) {
+
+    public BlockchainTable( String clientUrl, int blocks, boolean experimentalFiltering, RelProtoDataType protoRowType, List<BlockchainFieldType> fieldTypes, int[] fields, BlockchainMapper mapper, BlockchainDataSource blockchainDataSource ) {
         this.clientUrl = clientUrl;
         this.protoRowType = protoRowType;
         this.fieldTypes = fieldTypes;
@@ -56,46 +57,50 @@ public class BlockchainTable extends AbstractTable implements FilterableTable {
         this.experimentalFiltering = experimentalFiltering;
     }
 
+
     @Override
-    public RelDataType getRowType(RelDataTypeFactory typeFactory) {
+    public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
         final List<RelDataType> types = new ArrayList<>();
         final List<String> names = new ArrayList<>();
-        for (RelDataTypeField field : this.protoRowType.apply(typeFactory).getFieldList()) {
-            types.add(field.getType());
-            names.add(field.getName());
+        for ( RelDataTypeField field : this.protoRowType.apply( typeFactory ).getFieldList() ) {
+            types.add( field.getType() );
+            names.add( field.getName() );
         }
-        return typeFactory.createStructType(Pair.zip(names, types));
+        return typeFactory.createStructType( Pair.zip( names, types ) );
     }
+
 
     public String toString() {
         return "BlockchainTable";
     }
 
+
     @Override
-    public Enumerable scan(DataContext dataContext, List<RexNode> filters) {
-        dataContext.getStatement().getTransaction().registerInvolvedAdapter(blockchainDataSource);
+    public Enumerable scan( DataContext dataContext, List<RexNode> filters ) {
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter( blockchainDataSource );
         Predicate<BigInteger> blockNumberPredicate = BlockchainPredicateFactory.ALWAYS_TRUE;
-        if (experimentalFiltering) {
-            if (!filters.isEmpty()) {
-                blockNumberPredicate = BlockchainPredicateFactory.makePredicate(dataContext, filters, mapper);
+        if ( experimentalFiltering ) {
+            if ( !filters.isEmpty() ) {
+                blockNumberPredicate = BlockchainPredicateFactory.makePredicate( dataContext, filters, mapper );
             }
         }
-        final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get(dataContext);
+        final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
         final Predicate<BigInteger> finalBlockNumberPredicate = blockNumberPredicate;
 
-        if (fields.length == 1) {
+        if ( fields.length == 1 ) {
             return new AbstractEnumerable<Object>() {
                 @Override
                 public Enumerator<Object> enumerator() {
-                    return new BlockchainEnumerator<>(clientUrl, blocks, cancelFlag, true, null, mapper, finalBlockNumberPredicate, (BlockchainEnumerator.RowConverter<Object>) BlockchainEnumerator.converter(fieldTypes, fields));
+                    return new BlockchainEnumerator<>( clientUrl, blocks, cancelFlag, true, null, mapper, finalBlockNumberPredicate, (BlockchainEnumerator.RowConverter<Object>) BlockchainEnumerator.converter( fieldTypes, fields ) );
                 }
             };
         }
         return new AbstractEnumerable<Object[]>() {
             @Override
             public Enumerator<Object[]> enumerator() {
-                return new BlockchainEnumerator<>(clientUrl, blocks, cancelFlag, true, null, mapper, finalBlockNumberPredicate, (BlockchainEnumerator.RowConverter<Object[]>) BlockchainEnumerator.converter(fieldTypes, fields));
+                return new BlockchainEnumerator<>( clientUrl, blocks, cancelFlag, true, null, mapper, finalBlockNumberPredicate, (BlockchainEnumerator.RowConverter<Object[]>) BlockchainEnumerator.converter( fieldTypes, fields ) );
             }
         };
     }
+
 }
