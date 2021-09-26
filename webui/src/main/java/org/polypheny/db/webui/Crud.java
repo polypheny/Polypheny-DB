@@ -3469,20 +3469,20 @@ public class Crud implements InformationObserver {
 
         try {
             if ( isAnalyze ) {
-                statement.getDuration().start( "Process Query" );
+                statement.getExecutionDuration().start( "Plan Query" );
             }
 
             signature = processQuery( statement, sqlSelect );
 
             if ( isAnalyze ) {
-                statement.getDuration().stop( "Process Query" );
-                statement.getDuration().start( "Create Enumerable" );
+                statement.getExecutionDuration().stop( "Plan Query" );
+                statement.getExecutionDuration().start( "Execute Query" );
             }
 
             final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
 
             if ( isAnalyze ) {
-                statement.getDuration().stop( "Create Enumerable" );
+                statement.getExecutionDuration().stop( "Execute Query" );
             }
 
             //noinspection unchecked

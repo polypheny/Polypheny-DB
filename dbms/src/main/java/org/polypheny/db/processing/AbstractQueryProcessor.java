@@ -192,7 +192,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         ExecutionTimeMonitor executionTimeMonitor = new ExecutionTimeMonitor();
 
         if ( isAnalyze ) {
-            statement.getDuration().start( "View: Check if View included" );
+            statement.getProcessingDuration().start( "Prepare Views" );
         }
 
         /*
@@ -202,18 +202,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         ViewVisitor materializedVisitor = new ViewVisitor( doesSubstituteOrderBy );
         logicalRoot.rel.accept( materializedVisitor );
 
-        if ( isAnalyze ) {
-            statement.getDuration().stop( "View: Check if View included" );
-            statement.getDuration().start( "Materialized View: Update table changes" );
-        }
-
         //Update which tables where changed used for Materialized Views
         TableUpdateVisitor visitor = new TableUpdateVisitor();
         logicalRoot.rel.accept( visitor );
         MaterializedManager.getInstance().addTables( statement.getTransaction(), visitor.getNames() );
 
         if ( isAnalyze ) {
-            statement.getDuration().stop( "Materialized View: Update table changes" );
+            statement.getProcessingDuration().stop( "Prepare Views" );
         }
 
         final Convention resultConvention =
@@ -226,7 +221,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             if ( lock ) {
                 // Locking
                 if ( isAnalyze ) {
-                    statement.getDuration().start( "Locking" );
+                    statement.getProcessingDuration().start( "Locking" );
                 }
                 try {
                     // Get a shared global schema lock (only DDLs acquire a exclusive global schema lock)
@@ -248,8 +243,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
             // Index Update
             if ( isAnalyze ) {
-                statement.getDuration().stop( "Locking" );
-                statement.getDuration().start( "Index Update" );
+                statement.getProcessingDuration().stop( "Locking" );
+                statement.getProcessingDuration().start( "Index Update" );
             }
             RelRoot indexUpdateRoot = logicalRoot;
             if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() ) {
@@ -259,8 +254,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
             // Constraint Enforcement Rewrite
             if ( isAnalyze ) {
-                statement.getDuration().stop( "Index Update" );
-                statement.getDuration().start( "Constraint Enforcement" );
+                statement.getProcessingDuration().stop( "Index Update" );
+                statement.getProcessingDuration().start( "Constraint Enforcement" );
             }
             RelRoot constraintsRoot = indexUpdateRoot;
             if ( RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() || RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
@@ -270,8 +265,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
             // Index Lookup Rewrite
             if ( isAnalyze ) {
-                statement.getDuration().stop( "Constraint Enforcement" );
-                statement.getDuration().start( "Index Lookup Rewrite" );
+                statement.getProcessingDuration().stop( "Constraint Enforcement" );
+                statement.getProcessingDuration().start( "Index Lookup Rewrite" );
             }
             RelRoot indexLookupRoot = constraintsRoot;
             if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() && RuntimeConfig.POLYSTORE_INDEXES_SIMPLIFY.getBoolean() ) {
@@ -279,8 +274,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             }
 
             if ( isAnalyze ) {
-                statement.getDuration().stop( "Index Lookup Rewrite" );
-                statement.getDuration().start( "Routing" );
+                statement.getProcessingDuration().stop( "Index Lookup Rewrite" );
+                statement.getProcessingDuration().start( "Routing" );
             }
             routedRoot = route( indexLookupRoot, statement, executionTimeMonitor );
 
@@ -291,7 +286,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                     true );
             routedRoot = routedRoot.withRel( typeFlattener.rewrite( routedRoot.rel ) );
             if ( isAnalyze ) {
-                statement.getDuration().stop( "Routing" );
+                statement.getProcessingDuration().stop( "Routing" );
             }
         } else {
             routedRoot = logicalRoot;
@@ -316,14 +311,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         //
         // Implementation Caching
         if ( isAnalyze ) {
-            statement.getDuration().start( "Implementation Caching" );
+            statement.getProcessingDuration().start( "Implementation Caching" );
         }
         if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
             PreparedResult preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.rel );
             if ( preparedResult != null ) {
                 PolyphenyDbSignature signature = createSignature( preparedResult, routedRoot, resultConvention, executionTimeMonitor );
                 if ( isAnalyze ) {
-                    statement.getDuration().stop( "Implementation Caching" );
+                    statement.getProcessingDuration().stop( "Implementation Caching" );
                 }
                 return signature;
             }
@@ -332,8 +327,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         //
         // Plan Caching
         if ( isAnalyze ) {
-            statement.getDuration().stop( "Implementation Caching" );
-            statement.getDuration().start( "Plan Caching" );
+            statement.getProcessingDuration().stop( "Implementation Caching" );
+            statement.getProcessingDuration().start( "Plan Caching" );
         }
         RelNode optimalNode;
         if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
@@ -346,8 +341,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         //
         // Planning & Optimization
         if ( isAnalyze ) {
-            statement.getDuration().stop( "Plan Caching" );
-            statement.getDuration().start( "Planning & Optimization" );
+            statement.getProcessingDuration().stop( "Plan Caching" );
+            statement.getProcessingDuration().start( "Planning & Optimization" );
         }
 
         if ( optimalNode == null ) {
@@ -370,8 +365,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         //
         // Implementation
         if ( isAnalyze ) {
-            statement.getDuration().stop( "Planning & Optimization" );
-            statement.getDuration().start( "Implementation" );
+            statement.getProcessingDuration().stop( "Planning & Optimization" );
+            statement.getProcessingDuration().start( "Implementation" );
         }
 
         PreparedResult preparedResult = implement( optimalRoot, parameterRowType );
@@ -388,7 +383,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         PolyphenyDbSignature signature = createSignature( preparedResult, optimalRoot, resultConvention, executionTimeMonitor );
 
         if ( isAnalyze ) {
-            statement.getDuration().stop( "Implementation" );
+            statement.getProcessingDuration().stop( "Implementation" );
         }
 
         stopWatch.stop();

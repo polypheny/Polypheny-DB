@@ -55,13 +55,15 @@ public class StatementImpl implements Statement {
     private ContextImpl prepareContext = null;
     private final List<FileInputHandle> fileInputHandles = new ArrayList<>();
 
-    private InformationDuration duration;
+    private InformationDuration processingDuration = null;
+    private InformationDuration executionDuration = null;
+    private InformationGroup group = null;
+    private InformationPage executionTimePage;
 
 
     StatementImpl( TransactionImpl transaction ) {
         this.id = STATEMENT_COUNTER.getAndIncrement();
         this.transaction = transaction;
-        this.duration = null;
     }
 
 
@@ -112,16 +114,33 @@ public class StatementImpl implements Statement {
 
 
     @Override
-    public InformationDuration getDuration() {
-        if ( duration == null ) {
-            InformationManager im = transaction.getQueryAnalyzer();
-            InformationPage executionTimePage = new InformationPage( "Execution time", "Query execution time" );
-            im.addPage( executionTimePage );
-            InformationGroup group = new InformationGroup( executionTimePage, "Processing" );
-            im.addGroup( group );
-            duration = new InformationDuration( group );
-            im.registerInformation( duration );
+    public InformationDuration getProcessingDuration() {
+        if ( processingDuration == null ) {
+            processingDuration = initDuration( "Plan Query" );
         }
+        return processingDuration;
+    }
+
+
+    @Override
+    public InformationDuration getExecutionDuration() {
+        if ( executionDuration == null ) {
+            executionDuration = initDuration( "Plan & Execute Query" );
+        }
+        return executionDuration;
+    }
+
+
+    private InformationDuration initDuration( String title ) {
+        InformationManager im = transaction.getQueryAnalyzer();
+        if ( this.executionTimePage == null ) {
+            executionTimePage = new InformationPage( "Execution time", "Query execution time" );
+            im.addPage( executionTimePage );
+        }
+        InformationGroup group = new InformationGroup( executionTimePage, title );
+        im.addGroup( group );
+        InformationDuration duration = new InformationDuration( group );
+        im.registerInformation( duration );
         return duration;
     }
 
