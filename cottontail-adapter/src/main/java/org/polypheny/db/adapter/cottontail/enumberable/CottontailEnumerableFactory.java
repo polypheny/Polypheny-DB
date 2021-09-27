@@ -23,6 +23,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.CottontailWrapper;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.vitrivr.cottontail.client.iterators.TupleIterator;
+import org.vitrivr.cottontail.client.language.basics.Constants;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.*;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.BatchInsertMessage.Insert;
@@ -229,7 +230,7 @@ public class CottontailEnumerableFactory {
         /* Build INSERT messages and create enumerable. */
         final CottontailGrpc.From from_ = CottontailTypeUtil.fromFromTableAndSchema( from, schema );
         if ( dataContext.getParameterValues().size() == 0 ) {
-            final List<InsertMessage> insertMessages = new ArrayList<>();
+            final List<InsertMessage> insertMessages = new LinkedList<>();
             final InsertMessage.Builder insert = InsertMessage.newBuilder().setFrom( from_ ).setTxId( txId );
             final Map<String, Literal> values = tupleBuilder.apply( new HashMap<>() );
             for ( Entry<String, Literal> e : values.entrySet() ) {
@@ -238,19 +239,44 @@ public class CottontailEnumerableFactory {
             insertMessages.add( insert.build() );
             return new CottontailInsertEnumerable<>( insertMessages, wrapper, true );
         } else {
-            final BatchInsertMessage.Builder builder = BatchInsertMessage.newBuilder().setFrom( from_ ).setTxId( txId );
+            final List<BatchInsertMessage> insertMessages = new LinkedList<>();
+            BatchInsertMessage.Builder builder = BatchInsertMessage.newBuilder().setFrom( from_ ).setTxId( txId );
+
+            /* Add columns to BatchInsertMessage */
             final List<Map<Long,Object>> parameterValues = dataContext.getParameterValues();
             for (Entry<String, Literal> e: tupleBuilder.apply( parameterValues.get(0) ).entrySet()) {
-                builder.addColumns(  ColumnName.newBuilder().setName( e.getKey() ) );
+                final ColumnName name = ColumnName.newBuilder().setName( e.getKey() ).build();
+                builder.addColumns( name );
             }
+
+            /* Start to track message size. */
+            final int basicSize = builder.clone().build().getSerializedSize();
+            int messageSize = basicSize;
+
+            /* Add values to BatchInsertMessage. */
             for ( Map<Long, Object> row : parameterValues ) {
-                final Insert.Builder insert = Insert.newBuilder();
+                final Insert.Builder insertBuilder = Insert.newBuilder();
                 for ( Entry<String, Literal> e : tupleBuilder.apply( row ).entrySet() ) {
-                    insert.addValues( e.getValue()  );
+                    insertBuilder.addValues( e.getValue()  );
                 }
+                final Insert insert = insertBuilder.build();
+
+                /* Check if maximum message size is exceeded. If so, build and add BatchInsertMessage to list. */
+                if (messageSize + insert.getSerializedSize() >= Constants.MAX_PAGE_SIZE_BYTES) {
+                    insertMessages.add(builder.build());
+                    builder = builder.clone().clearInserts();
+                    messageSize = basicSize;
+                }
+                messageSize += insert.getSerializedSize();
                 builder.addInserts( insert );
             }
-            return new CottontailBatchInsertEnumerable<>( builder.build(), wrapper );
+
+            /* Add file message. */
+            if (builder.getInsertsCount() > 0) {
+                insertMessages.add(builder.build());
+            }
+
+            return new CottontailBatchInsertEnumerable<>( insertMessages, wrapper );
         }
     }
 }
