@@ -22,7 +22,6 @@ import org.vitrivr.cottontail.client.language.basics.Distances;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.*;
 
-import javax.naming.ldap.LdapContext;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
