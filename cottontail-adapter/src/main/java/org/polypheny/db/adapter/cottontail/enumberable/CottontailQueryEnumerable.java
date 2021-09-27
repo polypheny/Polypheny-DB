@@ -16,6 +16,7 @@
 
 package org.polypheny.db.adapter.cottontail.enumberable;
 
+import com.google.common.collect.Lists;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.vitrivr.cottontail.client.iterators.Tuple;
@@ -61,7 +62,8 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
             final Object[] returnValue = new Object[this.columns.size()];
             for ( int i = 0; i < returnValue.length; i++ ) {
                 String columnName = this.columns.get( i );
-                returnValue[i] = this.tuple.get( columnName );
+                returnValue[i] = convert( this.tuple.get( columnName ) ) ;
+
             }
             return ( (T) returnValue );
         }
@@ -90,6 +92,28 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
                 this.tupleIterator.close();
             } catch (Exception e) {
                 e.printStackTrace();
+            }
+        }
+
+        /**
+         * Internal conversion method that mainly converts arrays to lists.
+         *
+         * @param object The object to convert.
+         * @return Converted object.
+         */
+        private Object convert(Object object) {
+            if (object instanceof double[]) {
+                return Lists.newArrayList((double[])object);
+            } else if (object instanceof float[]) {
+                return Lists.newArrayList((float[])object);
+            } else if (object instanceof long[]) {
+                return Lists.newArrayList((long[])object);
+            } else if (object instanceof int[]) {
+                return Lists.newArrayList((int[])object);
+            } else if (object instanceof boolean[]) {
+                return Lists.newArrayList((boolean[])object);
+            } else  {
+                return object;
             }
         }
     }
