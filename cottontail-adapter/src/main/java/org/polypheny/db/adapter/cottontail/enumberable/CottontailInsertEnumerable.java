@@ -26,12 +26,10 @@ import java.util.List;
 public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
     private final List<InsertMessage> inserts;
     private final CottontailWrapper wrapper;
-    private final boolean fromPrepared;
 
-    public CottontailInsertEnumerable( List<InsertMessage> inserts, CottontailWrapper wrapper, boolean fromPrepared ) {
+    public CottontailInsertEnumerable( List<InsertMessage> inserts, CottontailWrapper wrapper ) {
         this.inserts = inserts;
         this.wrapper = wrapper;
-        this.fromPrepared = fromPrepared;
     }
 
     @Override
@@ -41,7 +39,6 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
 
     private class CottontailInsertResultEnumerator<T> implements Enumerator<T> {
         private boolean wasSuccessful;
-        private boolean executed;
         private int checkCount = 0;
 
         @SuppressWarnings("unchecked")
@@ -56,25 +53,18 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
 
         @Override
         public boolean moveNext() {
-            if ( !this.executed ) {
+            if ( this.checkCount < CottontailInsertEnumerable.this.inserts.size() ) {
                 this.wasSuccessful = CottontailInsertEnumerable.this.wrapper.insert( CottontailInsertEnumerable.this.inserts.get(this.checkCount++) );
-                this.executed = true;
-                return this.wasSuccessful;
+                return true;
             } else {
-                if ( !CottontailInsertEnumerable.this.fromPrepared ) {
-                    return false;
-                }
-                if ( this.checkCount < CottontailInsertEnumerable.this.inserts.size() ) {
-                    this.checkCount += 1;
-                    return true;
-                } else {
-                    return false;
-                }
+                return false;
             }
         }
 
         @Override
-        public void reset() {}
+        public void reset() {
+            this.checkCount = 0;
+        }
 
         @Override
         public void close() {}

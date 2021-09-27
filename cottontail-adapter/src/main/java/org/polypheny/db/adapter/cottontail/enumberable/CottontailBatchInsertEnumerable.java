@@ -38,7 +38,6 @@ public class CottontailBatchInsertEnumerable<T> extends AbstractEnumerable<T> {
 
     private class CottontailInsertResultEnumerator<T> implements Enumerator<T> {
         private boolean wasSuccessful;
-        private boolean executed;
         private int checkCount = 0;
 
         @SuppressWarnings("unchecked")
@@ -53,22 +52,18 @@ public class CottontailBatchInsertEnumerable<T> extends AbstractEnumerable<T> {
 
         @Override
         public boolean moveNext() {
-            if ( !this.executed ) {
+            if ( this.checkCount < CottontailBatchInsertEnumerable.this.inserts.size() ) {
                 this.wasSuccessful = CottontailBatchInsertEnumerable.this.wrapper.insert( CottontailBatchInsertEnumerable.this.inserts.get(this.checkCount++) );
-                this.executed = true;
-                return this.wasSuccessful;
+                return true;
             } else {
-                if ( this.checkCount < CottontailBatchInsertEnumerable.this.inserts.size() ) {
-                    this.checkCount += 1;
-                    return true;
-                } else {
-                    return false;
-                }
+                return false;
             }
         }
 
         @Override
-        public void reset() {}
+        public void reset() {
+            this.checkCount = 0;
+        }
 
         @Override
         public void close() {}
