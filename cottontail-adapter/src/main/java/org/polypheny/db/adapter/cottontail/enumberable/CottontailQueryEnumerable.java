@@ -16,13 +16,12 @@
 
 package org.polypheny.db.adapter.cottontail.enumberable;
 
-import com.google.common.collect.Lists;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.vitrivr.cottontail.client.iterators.Tuple;
 import org.vitrivr.cottontail.client.iterators.TupleIterator;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -36,7 +35,7 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
 
     @Override
     public Enumerator<T> enumerator() {
-        return new CottontailQueryResultEnumerator( this.tupleIterator );
+        return new CottontailQueryResultEnumerator<>( this.tupleIterator );
     }
 
 
@@ -45,24 +44,19 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
         /** The current {@link TupleIterator} backing this {@link CottontailQueryEnumerable}. */
         private final TupleIterator tupleIterator;
 
-        /** The current names of the columns returned by this {@link CottontailQueryResultEnumerator}. */
-        private final List<String> columns;
-
         /** The current {@link Tuple} this {@link CottontailQueryEnumerable} is pointing to. */
         private Tuple tuple = null;
 
         CottontailQueryResultEnumerator( TupleIterator tupleIterator ) {
             this.tupleIterator = tupleIterator;
-            this.columns = new LinkedList<>(tupleIterator.getColumns());
         }
 
 
         @Override
         public T current() {
-            final Object[] returnValue = new Object[this.columns.size()];
-            for ( int i = 0; i < returnValue.length; i++ ) {
-                String columnName = this.columns.get( i );
-                returnValue[i] = convert( this.tuple.get( columnName ) ) ;
+            final Object[] returnValue = new Object[this.tupleIterator.getNumberOfColumns()];
+            for ( int i = 0; i < this.tupleIterator.getNumberOfColumns(); i++ ) {
+                returnValue[i] = convert( this.tuple.get( i ) ) ;
 
             }
             return ( (T) returnValue );
@@ -103,15 +97,35 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
          */
         private Object convert(Object object) {
             if (object instanceof double[]) {
-                return Lists.newArrayList((double[])object);
+                final List<Double> list = new ArrayList<>(((double[]) object).length);
+                for (double v : ((double[]) object)) {
+                    list.add(v);
+                }
+                return list;
             } else if (object instanceof float[]) {
-                return Lists.newArrayList((float[])object);
+                final List<Float> list = new ArrayList<>(((float[]) object).length);
+                for (float v : ((float[]) object)) {
+                    list.add(v);
+                }
+                return list;
             } else if (object instanceof long[]) {
-                return Lists.newArrayList((long[])object);
+                final List<Long> list = new ArrayList<>(((long[]) object).length);
+                for (long v : ((long[]) object)) {
+                    list.add(v);
+                }
+                return list;
             } else if (object instanceof int[]) {
-                return Lists.newArrayList((int[])object);
+                final List<Integer> list = new ArrayList<>(((int[]) object).length);
+                for (int v : ((int[]) object)) {
+                    list.add(v);
+                }
+                return list;
             } else if (object instanceof boolean[]) {
-                return Lists.newArrayList((boolean[])object);
+                final List<Boolean> list = new ArrayList<>(((boolean[]) object).length);
+                for (boolean v : ((boolean[]) object)) {
+                    list.add(v);
+                }
+                return list;
             } else  {
                 return object;
             }
