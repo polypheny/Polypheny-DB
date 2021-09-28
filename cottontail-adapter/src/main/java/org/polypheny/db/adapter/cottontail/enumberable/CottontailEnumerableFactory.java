@@ -41,7 +41,7 @@ public class CottontailEnumerableFactory {
     public static final Method CREATE_QUERY_METHOD = Types.lookupMethod(
             CottontailEnumerableFactory.class,
             "query",
-            String.class, String.class, Map.class, Function1.class, Function1.class, Function1.class, Function1.class, DataContext.class, CottontailWrapper.class );
+            String.class, String.class, Map.class, Map.class, Function1.class, Function1.class, Function1.class, DataContext.class, CottontailWrapper.class );
 
     /**
      * Method signature for INSERT of values.
@@ -65,7 +65,6 @@ public class CottontailEnumerableFactory {
      * @param schema
      * @param projection
      * @param whereBuilder
-     * @param knnFunctionBuilder
      * @param limitBuilder
      * @param offsetBuilder
      * @param dataContext
@@ -75,11 +74,11 @@ public class CottontailEnumerableFactory {
     public static CottontailQueryEnumerable<Object> query(
             String from,
             String schema,
-            Map<String, String> projection,
-            Function1<Map<Long, Object>, Where> whereBuilder,
-            Function1<Map<Long, Object>, Function> knnFunctionBuilder,
+            Map<Object, String> projection,
+            Map<String, String> orderBy,
             Function1<Map<Long, Object>, Integer> limitBuilder,
             Function1<Map<Long, Object>, Integer> offsetBuilder,
+            Function1<Map<Long, Object>, Where> whereBuilder,
             DataContext dataContext,
             CottontailWrapper wrapper
     ) {
@@ -107,7 +106,7 @@ public class CottontailEnumerableFactory {
                 offset = offsetBuilder.apply( parameterValues );
             }
 
-            final Query query = buildSingleQuery( from, schema, projection, whereBuilder, knnFunctionBuilder, limit, offset, parameterValues );
+            final Query query = buildSingleQuery( from, schema, projection, orderBy, limit, offset, whereBuilder, parameterValues );
             queryResponseIterator = wrapper.query( QueryMessage.newBuilder().setTxId( txId ).setQuery( query ).build() );
         } else {
             BatchedQueryMessage.Builder batchedQueryMessageBuilder = BatchedQueryMessage.newBuilder().setTxId( txId );
@@ -123,7 +122,7 @@ public class CottontailEnumerableFactory {
                     offset = offsetBuilder.apply( parameterValues );
                 }
 
-                final Query query = buildSingleQuery( from, schema, projection, whereBuilder, knnFunctionBuilder, limit, offset, parameterValues );
+                final Query query = buildSingleQuery( from, schema, projection, orderBy, limit, offset, whereBuilder, parameterValues );
                 batchedQueryMessageBuilder.addQuery( query );
             }
 
@@ -140,7 +139,6 @@ public class CottontailEnumerableFactory {
      * @param schema
      * @param projection
      * @param whereBuilder
-     * @param knnFunctionBuilder
      * @param limit
      * @param offset
      * @param parameterValues
@@ -149,10 +147,11 @@ public class CottontailEnumerableFactory {
     private static Query buildSingleQuery(
             String from,
             String schema,
-            Map<String, String> projection,
+            Map<Object, String> projection,
+            Map<String, String> order,
+            Integer limit,
+            Integer offset,
             Function1<Map<Long, Object>, Where> whereBuilder,
-            Function1<Map<Long, Object>, Function> knnFunctionBuilder,
-            Integer limit, Integer offset,
             Map<Long, Object> parameterValues
     ) {
         Query.Builder queryBuilder = Query.newBuilder();
@@ -167,27 +166,39 @@ public class CottontailEnumerableFactory {
             queryBuilder.setSkip( offset );
         }
 
-        /*Parse and translate projection. */
-        final Projection.Builder projBuilder = Projection.newBuilder();
-        if ( projection != null ) {
-            for ( Entry<String, String> p : projection.entrySet() ) {
-                projBuilder.addElements( ProjectionElement.newBuilder()
-                        .setColumn( ColumnName.newBuilder().setName( p.getKey() ) )
-                        .setAlias( ColumnName.newBuilder().setName( p.getValue() ) )
-                );
+        /* Parse and translate projection clause (if available). */
+        if ( projection != null && !projection.isEmpty() ) {
+            final Projection.Builder projBuilder = queryBuilder.getProjectionBuilder();
+            for ( Entry<Object, String> p : projection.entrySet() ) {
+                final Object key = p.getKey();
+                final String value = p.getValue();
+                if (key instanceof String) {
+                    final ProjectionElement.Builder ele = projBuilder.addElementsBuilder().setColumn( ColumnName.newBuilder().setName( (String) key ) );
+                    if (value != null) {
+                        ele.setAlias( ColumnName.newBuilder().setName( value ) );
+                    }
+                } else if (key instanceof Function1) {
+                    /* Not exactly beautiful i know ;-) */
+                    projBuilder.addElements(((Function1<Map<Long, Object>, ProjectionElement>) key).apply(parameterValues));
+                }
             }
         }
 
-        /* Add NNS function to projection (if available). */
-        if ( knnFunctionBuilder != null ) {
-            projBuilder.addElements( ProjectionElement.newBuilder().setFunction ( knnFunctionBuilder.apply( parameterValues ) ) );
-        }
-        queryBuilder.setProjection( projBuilder );
-
-        /* Add WHERE clause to projection. */
+        /* Add WHERE clause to query. */
         if ( whereBuilder != null ) {
             queryBuilder.setWhere( whereBuilder.apply( parameterValues ) );
         }
+
+        /* Add ORDER BY to query. */
+        if (order != null && !order.isEmpty()) {
+            final Order.Builder orderBuilder = queryBuilder.getOrderBuilder();
+            for ( Entry<String, String> p : order.entrySet() ) {
+                orderBuilder.addComponentsBuilder()
+                        .setColumn( ColumnName.newBuilder().setName( p.getKey() ).build() )
+                        .setDirection( Order.Direction.valueOf( p.getValue() ) );
+            }
+        }
+
         return queryBuilder.build();
     }
 
@@ -213,7 +224,7 @@ public class CottontailEnumerableFactory {
             insertMessages.add( message.build() );
         }
 
-        return new CottontailInsertEnumerable<>( insertMessages, wrapper, false );
+        return new CottontailInsertEnumerable<>( insertMessages, wrapper );
     }
 
     @SuppressWarnings("unused") // Used via reflection
@@ -237,7 +248,7 @@ public class CottontailEnumerableFactory {
                 insert.addElements( InsertElement.newBuilder().setColumn( ColumnName.newBuilder().setName( e.getKey() ) ).setValue( e.getValue() ) );
             }
             insertMessages.add( insert.build() );
-            return new CottontailInsertEnumerable<>( insertMessages, wrapper, true );
+            return new CottontailInsertEnumerable<>( insertMessages, wrapper );
         } else {
             final List<BatchInsertMessage> insertMessages = new LinkedList<>();
             BatchInsertMessage.Builder builder = BatchInsertMessage.newBuilder().setFrom( from_ ).setTxId( txId );

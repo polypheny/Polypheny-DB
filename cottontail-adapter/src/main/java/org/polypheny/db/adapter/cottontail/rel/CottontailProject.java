@@ -18,11 +18,8 @@ package org.polypheny.db.adapter.cottontail.rel;
 
 
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import lombok.Getter;
+import java.util.*;
+
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -52,27 +49,12 @@ import org.polypheny.db.util.Pair;
 
 public class CottontailProject extends Project implements CottontailRel {
 
-    private final boolean arrayValueProject;
-    @Getter
-    private String knnColumnName = null;
-    @Getter
-    private int knnColumnIndex = -1;
-
+    private final boolean arrayProject;
 
     public CottontailProject( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, List<? extends RexNode> projects, RelDataType rowType, boolean arrayValueProject ) {
         super( cluster, traitSet, input, projects, rowType );
-        this.arrayValueProject = arrayValueProject;
-
-        List<Pair<RexNode, String>> namedProjects = getNamedProjects();
-        for ( int i = 0; i < namedProjects.size(); i++ ) {
-            Pair<RexNode, String> pair = namedProjects.get( i );
-            if ( pair.left instanceof RexCall && (((RexCall) pair.left).getOperator() instanceof SqlDistanceFunction) ) {
-                knnColumnName = pair.right;
-                knnColumnIndex = i;
-            }
-        }
+        this.arrayProject = arrayValueProject;
     }
-
 
     @Override
     public boolean isImplementationCacheable() {
@@ -82,7 +64,7 @@ public class CottontailProject extends Project implements CottontailRel {
 
     @Override
     public Project copy( RelTraitSet traitSet, RelNode input, List<RexNode> projects, RelDataType rowType ) {
-        return new CottontailProject( getCluster(), traitSet, input, projects, rowType, this.arrayValueProject );
+        return new CottontailProject( getCluster(), traitSet, input, projects, rowType, this.arrayProject );
     }
 
 
@@ -91,141 +73,80 @@ public class CottontailProject extends Project implements CottontailRel {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.6 );
     }
 
-
+    /**
+     *
+     * @param context
+     */
     @Override
     public void implement( CottontailImplementContext context ) {
         BlockBuilder builder = context.blockBuilder;
+        context.visitChild( 0, getInput() );
 
-        if ( this.arrayValueProject ) {
-            final List<String> physicalColumnNames = new ArrayList<>();
-            final List<PolyType> columnTypes = new ArrayList<>();
-            for ( RelDataTypeField field : context.cottontailTable.getRowType( getCluster().getTypeFactory() ).getFieldList() ) {
-                physicalColumnNames.add( context.cottontailTable.getPhysicalColumnName( field.getName() ) );
-                if ( field.getType().getComponentType() != null ) {
-                    columnTypes.add( field.getType().getComponentType().getPolyType() );
-                } else {
-                    columnTypes.add( field.getType().getPolyType() );
-                }
-            }
-//            BlockBuilder inner = new BlockBuilder();
-
-            /*ParameterExpression dynamicParameterMap_ = Expressions.parameter( Modifier.FINAL, Map.class, inner.newName( "dynamicParameters" ) );
-
-            ParameterExpression valuesMap_ = Expressions.variable( Map.class, inner.newName( "valuesMap" ) );
-            NewExpression valuesMapCreator_ = Expressions.new_( HashMap.class );
-            inner.add( Expressions.declare( Modifier.FINAL, valuesMap_, valuesMapCreator_ ) );
-
-            List<Pair<RexNode, String>> namedProjects = getNamedProjects();
-
-            for ( int i = 0; i < namedProjects.size(); i++ ) {
-                Pair<RexNode, String> pair = namedProjects.get( i );
-                final String originalName = physicalColumnNames.get( i );
-
-                Expression source_;
-                if ( pair.left instanceof RexLiteral ) {
-                    source_ = CottontailTypeUtil.rexLiteralToDataExpression( (RexLiteral) pair.left );
-                } else if ( pair.left instanceof RexDynamicParam ) {
-                    source_ = CottontailTypeUtil.rexDynamicParamToDataExpression( (RexDynamicParam) pair.left, dynamicParameterMap_ );
-                } else if ( (pair.left instanceof RexCall) && (((RexCall) pair.left).getOperator() instanceof SqlArrayValueConstructor) ) {
-                    source_ = CottontailTypeUtil.rexArrayConstructorToExpression( (RexCall) pair.left );
-                } else if ( pair.left instanceof RexInputRef ) {
-
-                } else {
-                    throw new RuntimeException( "unable to convert expression." );
-                }
-
-                inner.add( Expressions.statement(
-                        Expressions.call( valuesMap_,
-                                BuiltInMethod.MAP_PUT.method,
-                                Expressions.constant( originalName ),
-                                source_ ) ) );
-            }
-
-            inner.add( Expressions.return_( null, valuesMap_ ) );
-
-            context.preparedValuesMapBuilder = Expressions.lambda( inner.toBlock(), dynamicParameterMap_ );*/
-            context.preparedValuesMapBuilder = makeProjectValueBuilder( context.blockBuilder, getNamedProjects(), physicalColumnNames, columnTypes );
-            context.projectionMap = makeProjectionBuilder( context.blockBuilder, getNamedProjects(), physicalColumnNames );
-        } else {
-            context.visitChild( 0, getInput() );
-
-            final List<String> physicalColumnNames = new ArrayList<>();
-            for ( RelDataTypeField field : context.cottontailTable.getRowType( getCluster().getTypeFactory() ).getFieldList() ) {
-                physicalColumnNames.add( context.cottontailTable.getPhysicalColumnName( field.getName() ) );
-            }
-
-//            context.visitChild( 0, getInput() );
-            /*final List<String> physicalColumnNames = new ArrayList<>();
-            for ( RelDataTypeField field : context.cottontailTable.getRowType( getCluster().getTypeFactory() ).getFieldList() ) {
-                physicalColumnNames.add( context.cottontailTable.getPhysicalColumnName( field.getName() ) );
-            }*/
-
-            /*final ParameterExpression projectionMap_ = Expressions.variable( Map.class, builder.newName( "projectionMap" ) );
-            final NewExpression projectionMapCreator = Expressions.new_( HashMap.class );
-            builder.add( Expressions.declare( Modifier.FINAL, projectionMap_, projectionMapCreator ) );
-
-
-            for ( Pair<RexNode, String> pair : getNamedProjects() ) {
-                if ( pair.left instanceof RexInputRef ) {
-                    final String name = pair.right;
-                    final String physicalName = physicalColumnNames.get( ((RexInputRef) pair.left).getIndex() );
-
-                    builder.add( Expressions.statement(
-                            Expressions.call( projectionMap_,
-                                    BuiltInMethod.MAP_PUT.method,
-                                    Expressions.constant( physicalName ),
-                                    Expressions.constant( name.toLowerCase() ) ) ) );
-                } else if ( pair.left instanceof RexCall ) {
-                    // KNN Function pushdown
-                    Expression knnBuilder = CottontailTypeUtil.knnCallToFunctionExpression( (RexCall) pair.left, physicalColumnNames );
-                    context.knnBuilder = knnBuilder;
-
-                    final String name = pair.right;
-                    builder.add( Expressions.statement(
-                            Expressions.call( projectionMap_,
-                                    BuiltInMethod.MAP_PUT.method,
-                                    Expressions.constant( "distance" ),
-                                    Expressions.constant( name.toLowerCase() ) ) ) );
-                }
-            }*/
-
-            context.blockBuilder = builder;
-            context.projectionMap = makeProjectionBuilder( context.blockBuilder, getNamedProjects(), physicalColumnNames );
+        final List<String> physicalColumnNames = new ArrayList<>();
+        final List<PolyType> columnTypes = new ArrayList<>();
+        for ( RelDataTypeField field : context.cottontailTable.getRowType( getCluster().getTypeFactory() ).getFieldList() ) {
+            physicalColumnNames.add( context.cottontailTable.getPhysicalColumnName( field.getName() ) );
+            columnTypes.add( field.getType().getPolyType() );
         }
+
+        if ( this.arrayProject ) {
+            context.preparedValuesMapBuilder = CottontailProject.makeProjectValueBuilder( context.blockBuilder, getNamedProjects(), physicalColumnNames, columnTypes );
+        } else {
+            context.blockBuilder = builder;
+        }
+        context.projectionMap = makeProjectionAndKnnBuilder( context.blockBuilder, getNamedProjects(), physicalColumnNames );
     }
 
 
-    public static ParameterExpression makeProjectionBuilder( BlockBuilder builder, List<Pair<RexNode, String>> namedProjects, List<String> physicalColumnNames ) {
+    /**
+     *
+     * @param builder
+     * @param namedProjects
+     * @param physicalColumnNames
+     * @return
+     */
+    public static ParameterExpression makeProjectionAndKnnBuilder( BlockBuilder builder, List<Pair<RexNode, String>> namedProjects, List<String> physicalColumnNames ) {
         final ParameterExpression projectionMap_ = Expressions.variable( Map.class, builder.newName( "projectionMap" ) );
-        final NewExpression projectionMapCreator = Expressions.new_( HashMap.class );
+        final NewExpression projectionMapCreator = Expressions.new_( LinkedHashMap.class );
         builder.add( Expressions.declare( Modifier.FINAL, projectionMap_, projectionMapCreator ) );
 
-        Expression knnBuilder = null;
-
         for ( Pair<RexNode, String> pair : namedProjects ) {
+            final String name = pair.right.toLowerCase();
             if ( pair.left instanceof RexInputRef ) {
-                final String name = pair.right;
                 final String physicalName = physicalColumnNames.get( ((RexInputRef) pair.left).getIndex() );
-
                 builder.add( Expressions.statement(
                         Expressions.call( projectionMap_,
                                 BuiltInMethod.MAP_PUT.method,
                                 Expressions.constant( physicalName ),
-                                Expressions.constant( name.toLowerCase() ) ) ) );
+                                Expressions.constant( name ) ) ) );
+            } else if ( pair.left instanceof RexCall && (((RexCall) pair.left).getOperator() instanceof SqlDistanceFunction) ) {
+                final Expression knnBuilder = CottontailTypeUtil.knnCallToFunctionExpression( (RexCall) pair.left, physicalColumnNames, name );
+                builder.add( Expressions.statement(
+                        Expressions.call( projectionMap_,
+                                BuiltInMethod.MAP_PUT.method,
+                                knnBuilder,
+                                Expressions.constant( name ) ) ) );
             }
         }
 
         return projectionMap_;
     }
 
-
+    /**
+     *
+     * @param builder
+     * @param namedProjects
+     * @param physicalColumnNames
+     * @param columnTypes
+     * @return
+     */
     public static Expression makeProjectValueBuilder( BlockBuilder builder, List<Pair<RexNode, String>> namedProjects, List<String> physicalColumnNames, List<PolyType> columnTypes ) {
         BlockBuilder inner = new BlockBuilder();
 
         ParameterExpression dynamicParameterMap_ = Expressions.parameter( Modifier.FINAL, Map.class, inner.newName( "dynamicParameters" ) );
 
         ParameterExpression valuesMap_ = Expressions.variable( Map.class, inner.newName( "valuesMap" ) );
-        NewExpression valuesMapCreator_ = Expressions.new_( HashMap.class );
+        NewExpression valuesMapCreator_ = Expressions.new_( LinkedHashMap.class );
         inner.add( Expressions.declare( Modifier.FINAL, valuesMap_, valuesMapCreator_ ) );
 
         for ( int i = 0; i < namedProjects.size(); i++ ) {
@@ -240,9 +161,7 @@ public class CottontailProject extends Project implements CottontailRel {
             } else if ( (pair.left instanceof RexCall) && (((RexCall) pair.left).getOperator() instanceof SqlArrayValueConstructor) ) {
                 source_ = CottontailTypeUtil.rexArrayConstructorToExpression( (RexCall) pair.left, columnTypes.get( i ) );
             } else {
-                // Skip this item!
                 continue;
-//                throw new RuntimeException( "unable to convert expression." );
             }
 
             inner.add( Expressions.statement(

@@ -191,14 +191,20 @@ public class Linq4JFixer {
      * @param p The column name of the probing argument
      * @param q The query vector.
      * @param distance The name of the distance to execute.
+     * @param alias The alias to use for the resulting column.
      * @return The resulting {@link Function} expression.
      */
-    public static Function generateKnn(Object p, Object q, Object distance) {
-        return Function.newBuilder()
-                .setName( getDistance ( (String) distance ) )
-                .addArguments( Expression.newBuilder().setColumn( ColumnName.newBuilder().setName( (String) p ) ) )
-                .addArguments( Expression.newBuilder().setLiteral( Literal.newBuilder().setVectorData( (Vector) q ) ) )
-                .build();
+    public static Projection.ProjectionElement generateKnn(String p, Vector q, Object distance, String alias) {
+        final Projection.ProjectionElement.Builder builder = Projection.ProjectionElement.newBuilder();
+        builder.setFunction(Function.newBuilder()
+                        .setName( getDistance ( (String) distance ) )
+                        .addArguments( Expression.newBuilder().setColumn( ColumnName.newBuilder().setName( p ) ) )
+                        .addArguments( Expression.newBuilder().setLiteral( Literal.newBuilder().setVectorData( q ) ) ) );
+        if (alias != null) {
+            builder.setAlias ( ColumnName.newBuilder().setName( alias ).build() );
+        }
+
+        return builder.build();
     }
 
     /**

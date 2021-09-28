@@ -27,22 +27,18 @@ import org.polypheny.db.tools.RelBuilderFactory;
 
 
 public class CottontailRules {
-
     public static List<RelOptRule> rules( CottontailConvention out ) {
         return rules( out, RelFactories.LOGICAL_BUILDER );
     }
 
-
     public static List<RelOptRule> rules( CottontailConvention out, RelBuilderFactory relBuilderFactory ) {
         return ImmutableList.of(
-                new CottontailToEnumerableConverterRule( out, relBuilderFactory ),
-                new CottontailValuesRule( out, relBuilderFactory ),
-                new CottontailTableModificationRule( out, relBuilderFactory ),
-                new CottontailProjectRule( out, relBuilderFactory ),
-                new CottontailFilterRule( out, relBuilderFactory ),
-                new CottontailSortAndProjectRule( out, relBuilderFactory ),
-                new CottontailLimitRule( out, relBuilderFactory )
+            new CottontailToEnumerableConverterRule( out, relBuilderFactory ),
+            new CottontailValuesRule( out, relBuilderFactory ),
+            new CottontailTableModificationRule( out, relBuilderFactory ),
+            new CottontailProjectRule( out, relBuilderFactory ),
+            new CottontailFilterRule( out, relBuilderFactory ),
+            new CottontailSortRule( out, relBuilderFactory )
         );
     }
-
 }

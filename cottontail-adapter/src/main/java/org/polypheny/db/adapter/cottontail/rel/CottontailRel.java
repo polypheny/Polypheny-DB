@@ -42,12 +42,12 @@ public interface CottontailRel extends RelNode {
 
         public ParameterExpression projectionMap;
 
-
-        public Expression knnBuilder;
+        public ParameterExpression sortMap;
 
         public QueryType queryType;
 
         public String schemaName;
+
         public String tableName;
 
         public RelOptTable table;

@@ -29,12 +29,7 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ByteString;
-import org.apache.calcite.linq4j.tree.BlockBuilder;
-import org.apache.calcite.linq4j.tree.ConstantExpression;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.linq4j.tree.ParameterExpression;
-import org.apache.calcite.linq4j.tree.Types;
+import org.apache.calcite.linq4j.tree.*;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
@@ -80,34 +75,27 @@ public class CottontailTypeUtil {
             "toData",
             Object.class, PolyType.class, PolyType.class );
 
-    public static final Method COTTONTAIL_SIMPLE_LIST_TO_VECTOR_METHOD = Types.lookupMethod(
-            CottontailTypeUtil.class,
-            "toVectorData",
-            Object.class );
-
     public static final Method COTTONTAIL_KNN_BUILDER_METHOD = Types.lookupMethod(
             Linq4JFixer.class,
             "generateKnn",
-            Object.class, Object.class, Object.class );
+            String.class, Vector.class, String.class, String.class );
 
 
     /**
      * Maps the given map of attributes and (optional) aliases to a {@link Projection.Builder}.
      *
      * @param map Map of projection clauses.
-     * @return {@link Projection.Builder}
+     * @param proj The {@link Projection.Builder} to append to.
      */
-    public static Projection.Builder mapToProjection( Map<String, String> map ) {
-        final Projection.Builder proj = Projection.newBuilder();
-        for ( Entry<String, String> p : map.entrySet() ) {
-            final ProjectionElement.Builder e = ProjectionElement.newBuilder();
+    public static void mapToProjection( Map<String, Object> map,  Projection.Builder proj ) {
+        for ( Entry<String, Object> p : map.entrySet() ) {
+            final ProjectionElement.Builder e = proj.addElementsBuilder();
             e.setColumn( ColumnName.newBuilder().setName( p.getKey() ) );
-            if ( p.getValue() != null && !p.getValue().isEmpty() ) {
-                e.setAlias( ColumnName.newBuilder().setName( p.getValue() ) );
+            if ( p.getValue() != null ) {
+                e.setAlias( ColumnName.newBuilder().setName( (String) p.getValue() ) );
             }
             proj.addElements( e );
         }
-        return proj;
     }
 
 
@@ -445,20 +433,50 @@ public class CottontailTypeUtil {
         throw new RuntimeException( "Cottontail data type error: Type not handled." );
     }
 
-
-    public static Vector toVectorCallData( Object vectorObject ) {
+    /**
+     * Converts the provided vectorObject to a {@link Vector} respecting the provided {@link PolyType}
+     * of the destination format. Used for NNS.
+     *
+     * @param vectorObject The vectorObject that should be converted.
+     * @param dstElementType The {@link PolyType} of the destination element.
+     * @return {@link Vector}
+     */
+    public static Vector toVectorCallData( Object vectorObject, PolyType dstElementType ) {
         Vector vector = toVectorData( vectorObject );
         if ( vector != null ) {
             return vector;
         } else {
-            final Vector.Builder vectorBuilder = Vector.newBuilder();
             final Object firstItem = ((List) vectorObject).get( 0 );
-            if ( firstItem instanceof BigDecimal ) {
-                return vectorBuilder.setDoubleVector(
-                        DoubleVector.newBuilder().addAllVector( ((List<BigDecimal>) vectorObject).stream().map( BigDecimal::doubleValue ).collect( Collectors.toList() ) ).build() ).build();
-            } else {
+            if ( !(firstItem instanceof Number) ) {
                 throw new RuntimeException( "Unsupported type: " + firstItem.getClass().getName() );
             }
+            final Vector.Builder builder = Vector.newBuilder();
+            switch (dstElementType) {
+                case INTEGER:
+                    for (Number o : (List<Number>) vectorObject) {
+                        builder.getIntVectorBuilder().addVector(o.intValue());
+                    }
+                    break;
+                case BIGINT:
+                    for (Number o : (List<Number>) vectorObject) {
+                        builder.getLongVectorBuilder().addVector(o.longValue());
+                    }
+                    break;
+                case DECIMAL:
+                case DOUBLE:
+                    for (Number o : (List<Number>) vectorObject) {
+                        builder.getDoubleVectorBuilder().addVector(o.doubleValue());
+                    }
+                case FLOAT:
+                case REAL:
+                    for (Number o : (List<Number>) vectorObject) {
+                        builder.getFloatVectorBuilder().addVector(o.floatValue());
+                    }
+                    break;
+                default:
+                    throw new RuntimeException( "Unsupported type: " + dstElementType.getName() );
+            }
+            return builder.build();
         }
     }
 
@@ -587,7 +605,7 @@ public class CottontailTypeUtil {
     }
 
 
-    public static Expression knnCallToFunctionExpression( RexCall knnCall, List<String> physicalColumnNames, RexNode limitNode ) {
+    public static Expression knnCallToFunctionExpression( RexCall knnCall, List<String> physicalColumnNames, String name ) {
 
         BlockBuilder inner = new BlockBuilder();
         ParameterExpression dynamicParameterMap_ = Expressions.parameter( Modifier.FINAL, Map.class, inner.newName( "dynamicParameters" ) );
@@ -598,13 +616,11 @@ public class CottontailTypeUtil {
 
         final Expression distance = knnCallDistance( knnCall.getOperands().get( 2 ), dynamicParameterMap_ );
 
-        //optimisationFactor = knnCallOptimisationFactor( limitNode, dynamicParameterMap_ ); // TODO: WTH is a optimisation factor?
-
         return Expressions.lambda(
                 Expressions.block(
                         Expressions.return_(
                                 null,
-                                Expressions.call(COTTONTAIL_KNN_BUILDER_METHOD, probingArgument, queryArgument, distance) ) ),
+                                Expressions.call(COTTONTAIL_KNN_BUILDER_METHOD, probingArgument, queryArgument, distance, Expressions.constant( name ) ) ) ),
                 dynamicParameterMap_ );
     }
 
@@ -624,20 +640,16 @@ public class CottontailTypeUtil {
 
     private static Expression knnCallVector( RexNode node, ParameterExpression dynamicParamMap, PolyType actualType ) {
         if ( (node instanceof RexCall) && (((RexCall) node).getOperator() instanceof SqlArrayValueConstructor) ) {
-//            List<Object> arrayList = arrayCallToList( ((RexCall) node).getOperands(), node.getType().getComponentType().getPolyType() );
-            Expression arrayList = arrayListToExpression( ((RexCall) node).getOperands(), actualType );
-            return Expressions.call( CottontailTypeUtil.class, "toVectorCallData", arrayList );
+            final Expression arrayList = arrayListToExpression( ((RexCall) node).getOperands(), actualType );
+            return Expressions.call( CottontailTypeUtil.class, "toVectorCallData", arrayList, Expressions.constant(actualType) );
         } else if ( node instanceof RexDynamicParam ) {
             RexDynamicParam dynamicParam = (RexDynamicParam) node;
-            return Expressions.call(
-                    CottontailTypeUtil.class,
-                    "toVectorCallData",
-                    Expressions.call( dynamicParamMap, BuiltInMethod.MAP_GET.method, Expressions.constant( dynamicParam.getIndex() ) ) );
+            final MethodCallExpression listExpression = Expressions.call( dynamicParamMap, BuiltInMethod.MAP_GET.method, Expressions.constant( dynamicParam.getIndex() ) );
+            return Expressions.call(CottontailTypeUtil.class,"toVectorCallData", listExpression, Expressions.constant(actualType) );
         }
 
         throw new RuntimeException( "argument is neither an array call nor a dynamic parameter" );
     }
-
 
     private static Expression knnCallDistance( RexNode node, ParameterExpression dynamicParamMap ) {
         if ( node instanceof RexLiteral ) {
@@ -650,21 +662,6 @@ public class CottontailTypeUtil {
 
         throw new RuntimeException( "argument is neither an array call nor a dynamic parameter" );
     }
-
-
-    private static Expression knnCallOptimisationFactor( RexNode node, ParameterExpression dynamicParamMap ) {
-        if ( node instanceof RexLiteral ) {
-            return Expressions.constant( ((RexLiteral) node).getValueAs( Integer.class ) );
-        } else if ( node instanceof RexDynamicParam ) {
-            RexDynamicParam dynamicParam = (RexDynamicParam) node;
-            return Expressions.call( dynamicParamMap, BuiltInMethod.MAP_GET.method,
-                    Expressions.constant( dynamicParam.getIndex() ) );
-        }
-
-        throw new RuntimeException( "argument is neither an int nor a dynamic parameter" );
-
-    }
-
 
     public static Object defaultValueParser( CatalogDefaultValue catalogDefaultValue, PolyType actualType ) {
         if ( actualType == PolyType.ARRAY ) {

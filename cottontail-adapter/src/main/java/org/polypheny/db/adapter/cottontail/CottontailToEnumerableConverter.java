@@ -157,10 +157,10 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                                 Expressions.constant( cottontailContext.tableName ),
                                 Expressions.constant( cottontailContext.schemaName ),
                                 expressionOrNullExpression( cottontailContext.projectionMap ), // PROJECTION
-                                expressionOrNullExpression( cottontailContext.filterBuilder ), // WHERE
-                                expressionOrNullExpression( cottontailContext.knnBuilder ), // NNS
+                                expressionOrNullExpression( cottontailContext.sortMap ), // ORDER BY
                                 expressionOrNullExpression( cottontailContext.limitBuilder ), // LIMIT
                                 expressionOrNullExpression( cottontailContext.offsetBuilder ), // OFFSET
+                                expressionOrNullExpression( cottontailContext.filterBuilder ), // WHERE
                                 DataContext.ROOT,
                                 Expressions.call( Schemas.unwrap( convention.expression, CottontailSchema.class ), "getWrapper" )
                         ) );
