@@ -605,26 +605,32 @@ public class CottontailTypeUtil {
     }
 
 
-    public static Expression knnCallToFunctionExpression( RexCall knnCall, List<String> physicalColumnNames, String name ) {
-
+    /**
+     * Converts the given {@link RexCall} to an {@link Expression} for the distance function invocation.
+     *
+     * @param knnCall {@link RexCall} to convert.
+     * @param physicalColumnNames
+     * @param alias The alias used to name the resulting field.
+     * @return {@link Expression}
+     */
+    public static Expression knnCallToFunctionExpression( RexCall knnCall, List<String> physicalColumnNames, String alias ) {
         BlockBuilder inner = new BlockBuilder();
         ParameterExpression dynamicParameterMap_ = Expressions.parameter( Modifier.FINAL, Map.class, inner.newName( "dynamicParameters" ) );
-
         final Expression probingArgument = knnCallTargetColumn( knnCall.getOperands().get( 0 ), physicalColumnNames, dynamicParameterMap_ );
-
         final Expression queryArgument = knnCallVector( knnCall.getOperands().get( 1 ), dynamicParameterMap_, knnCall.getOperands().get( 0 ).getType().getComponentType().getPolyType() );
-
         final Expression distance = knnCallDistance( knnCall.getOperands().get( 2 ), dynamicParameterMap_ );
-
-        return Expressions.lambda(
-                Expressions.block(
-                        Expressions.return_(
-                                null,
-                                Expressions.call(COTTONTAIL_KNN_BUILDER_METHOD, probingArgument, queryArgument, distance, Expressions.constant( name ) ) ) ),
-                dynamicParameterMap_ );
+        return Expressions.lambda(Expressions.block(Expressions.return_(null, Expressions.call(COTTONTAIL_KNN_BUILDER_METHOD, probingArgument, queryArgument, distance, Expressions.constant( alias ) ) ) ), dynamicParameterMap_ );
     }
 
 
+    /**
+     * Converts the given {@link RexNode} to an {@link Expression} for the target column for a distance function invocation.
+     *
+     * @param node {@link RexNode} to convert
+     * @param physicalColumnNames
+     * @param dynamicParamMap
+     * @return {@link Expression}
+     */
     private static Expression knnCallTargetColumn( RexNode node, List<String> physicalColumnNames, ParameterExpression dynamicParamMap ) {
         if ( node instanceof RexInputRef ) {
             RexInputRef inputRef = (RexInputRef) node;
@@ -634,10 +640,17 @@ public class CottontailTypeUtil {
             return Expressions.call( dynamicParamMap, BuiltInMethod.MAP_GET.method, Expressions.constant( dynamicParam.getIndex() ) );
         }
 
-        throw new RuntimeException( "first argument is neither an input ref nor a dynamic parameter" );
+        throw new RuntimeException( "First argument is neither an input ref nor a dynamic parameter" );
     }
 
-
+    /**
+     * Converts the given {@link RexNode} to an {@link Expression} for the query vector for a distance function invocation.
+     *
+     * @param node {@link RexNode} to convert
+     * @param dynamicParamMap
+     * @param actualType The {@link PolyType} of the array elements. Required for proper conversion!
+     * @return {@link Expression}
+     */
     private static Expression knnCallVector( RexNode node, ParameterExpression dynamicParamMap, PolyType actualType ) {
         if ( (node instanceof RexCall) && (((RexCall) node).getOperator() instanceof SqlArrayValueConstructor) ) {
             final Expression arrayList = arrayListToExpression( ((RexCall) node).getOperands(), actualType );
@@ -648,9 +661,16 @@ public class CottontailTypeUtil {
             return Expressions.call(CottontailTypeUtil.class,"toVectorCallData", listExpression, Expressions.constant(actualType) );
         }
 
-        throw new RuntimeException( "argument is neither an array call nor a dynamic parameter" );
+        throw new RuntimeException( "Argument is neither an array call nor a dynamic parameter" );
     }
 
+    /**
+     * Converts the given {@link RexNode} to an {@link Expression} for the name of the distance function.
+     *
+     * @param node {@link RexNode} to convert
+     * @param dynamicParamMap
+     * @return {@link Expression}
+     */
     private static Expression knnCallDistance( RexNode node, ParameterExpression dynamicParamMap ) {
         if ( node instanceof RexLiteral ) {
             return Expressions.constant( ((RexLiteral) node).getValue2() );
@@ -660,7 +680,7 @@ public class CottontailTypeUtil {
                     Expressions.constant( dynamicParam.getIndex() ) );
         }
 
-        throw new RuntimeException( "argument is neither an array call nor a dynamic parameter" );
+        throw new RuntimeException( "Argument is neither an array call nor a dynamic parameter" );
     }
 
     public static Object defaultValueParser( CatalogDefaultValue catalogDefaultValue, PolyType actualType ) {

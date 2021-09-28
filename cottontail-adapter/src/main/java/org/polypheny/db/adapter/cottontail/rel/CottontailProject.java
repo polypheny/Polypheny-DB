@@ -46,7 +46,14 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 
-
+/**
+ * A {@link CottontailRel} that implements PROJECTION clauses and pushes them down to Cottontail DB.
+ *
+ * This implementation interprets distance functions and maps them to Cottontail DB function calls.
+ *
+ * @author Ralph Gasser
+ * @version 1.0.0
+ */
 public class CottontailProject extends Project implements CottontailRel {
 
     private final boolean arrayProject;
@@ -73,10 +80,6 @@ public class CottontailProject extends Project implements CottontailRel {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.6 );
     }
 
-    /**
-     *
-     * @param context
-     */
     @Override
     public void implement( CottontailImplementContext context ) {
         BlockBuilder builder = context.blockBuilder;
@@ -99,34 +102,28 @@ public class CottontailProject extends Project implements CottontailRel {
 
 
     /**
+     * Constructs a {@link ParameterExpression} that generates a map containing the projected fields and field aliases.
      *
-     * @param builder
-     * @param namedProjects
-     * @param physicalColumnNames
-     * @return
+     * @param builder The {@link BlockBuilder} instance.
+     * @param namedProjects List of projection to alias mappings.
+     * @param  physicalColumnNames List of physical column names in the underlying store.
+     * @return {@link ParameterExpression}
      */
     public static ParameterExpression makeProjectionAndKnnBuilder( BlockBuilder builder, List<Pair<RexNode, String>> namedProjects, List<String> physicalColumnNames ) {
         final ParameterExpression projectionMap_ = Expressions.variable( Map.class, builder.newName( "projectionMap" ) );
         final NewExpression projectionMapCreator = Expressions.new_( LinkedHashMap.class );
         builder.add( Expressions.declare( Modifier.FINAL, projectionMap_, projectionMapCreator ) );
-
         for ( Pair<RexNode, String> pair : namedProjects ) {
             final String name = pair.right.toLowerCase();
+            final Expression exp;
             if ( pair.left instanceof RexInputRef ) {
-                final String physicalName = physicalColumnNames.get( ((RexInputRef) pair.left).getIndex() );
-                builder.add( Expressions.statement(
-                        Expressions.call( projectionMap_,
-                                BuiltInMethod.MAP_PUT.method,
-                                Expressions.constant( physicalName ),
-                                Expressions.constant( name ) ) ) );
+                exp = Expressions.constant( physicalColumnNames.get( ((RexInputRef) pair.left).getIndex() ) );
             } else if ( pair.left instanceof RexCall && (((RexCall) pair.left).getOperator() instanceof SqlDistanceFunction) ) {
-                final Expression knnBuilder = CottontailTypeUtil.knnCallToFunctionExpression( (RexCall) pair.left, physicalColumnNames, name );
-                builder.add( Expressions.statement(
-                        Expressions.call( projectionMap_,
-                                BuiltInMethod.MAP_PUT.method,
-                                knnBuilder,
-                                Expressions.constant( name ) ) ) );
+                exp = CottontailTypeUtil.knnCallToFunctionExpression( (RexCall) pair.left, physicalColumnNames, name ); /* Map to function. */
+            } else {
+                throw new IllegalArgumentException("Given entry " + pair.left.toString() + " cannot be mapped to projection element.");
             }
+            builder.add( Expressions.statement(Expressions.call( projectionMap_, BuiltInMethod.MAP_PUT.method, exp, Expressions.constant( name ) ) ) );
         }
 
         return projectionMap_;

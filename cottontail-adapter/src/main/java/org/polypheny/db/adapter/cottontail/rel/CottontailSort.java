@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A {@link CottontailRel} that implementy ORDER BY clauses and pushes them down to Cottontail DB.
+ * A {@link CottontailRel} that implements ORDER BY clauses and pushes them down to Cottontail DB.
  *
  * @author Ralph Gasser
  * @version 1.0.0
@@ -63,7 +63,7 @@ public class CottontailSort extends Sort implements CottontailRel {
         if ( this.offset != null ) {
             context.offsetBuilder = numberBuilderBuilder( this.offset );
         }
-        if ( this.collation != null ) {
+        if ( this.collation != null && this.collation.getFieldCollations().size() > 0 ) {
             context.sortMap = sortMapBuilder( this.collation, context.blockBuilder, getRowType().getFieldNames() );
         }
     }
