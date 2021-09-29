@@ -82,9 +82,7 @@ public class CottontailProject extends Project implements CottontailRel {
 
     @Override
     public void implement( CottontailImplementContext context ) {
-        BlockBuilder builder = context.blockBuilder;
-        context.visitChild( 0, getInput() );
-
+        final BlockBuilder builder = context.blockBuilder;
         final List<String> physicalColumnNames = new ArrayList<>();
         final List<PolyType> columnTypes = new ArrayList<>();
         for ( RelDataTypeField field : context.cottontailTable.getRowType( getCluster().getTypeFactory() ).getFieldList() ) {
@@ -95,6 +93,7 @@ public class CottontailProject extends Project implements CottontailRel {
         if ( this.arrayProject ) {
             context.preparedValuesMapBuilder = CottontailProject.makeProjectValueBuilder( context.blockBuilder, getNamedProjects(), physicalColumnNames, columnTypes );
         } else {
+            context.visitChild( 0, getInput() );
             context.blockBuilder = builder;
         }
         context.projectionMap = makeProjectionAndKnnBuilder( context.blockBuilder, getNamedProjects(), physicalColumnNames );
@@ -121,7 +120,7 @@ public class CottontailProject extends Project implements CottontailRel {
             } else if ( pair.left instanceof RexCall && (((RexCall) pair.left).getOperator() instanceof SqlDistanceFunction) ) {
                 exp = CottontailTypeUtil.knnCallToFunctionExpression( (RexCall) pair.left, physicalColumnNames, name ); /* Map to function. */
             } else {
-                throw new IllegalArgumentException("Given entry " + pair.left.toString() + " cannot be mapped to projection element.");
+                continue;
             }
             builder.add( Expressions.statement(Expressions.call( projectionMap_, BuiltInMethod.MAP_PUT.method, exp, Expressions.constant( name ) ) ) );
         }
