@@ -85,6 +85,9 @@ public class CottontailProject extends Project implements CottontailRel {
         final BlockBuilder builder = context.blockBuilder;
         final List<String> physicalColumnNames = new ArrayList<>();
         final List<PolyType> columnTypes = new ArrayList<>();
+
+        context.visitChild( 0, getInput() );
+
         for ( RelDataTypeField field : context.cottontailTable.getRowType( getCluster().getTypeFactory() ).getFieldList() ) {
             physicalColumnNames.add( context.cottontailTable.getPhysicalColumnName( field.getName() ) );
             columnTypes.add( field.getType().getPolyType() );
@@ -93,7 +96,6 @@ public class CottontailProject extends Project implements CottontailRel {
         if ( this.arrayProject ) {
             context.preparedValuesMapBuilder = CottontailProject.makeProjectValueBuilder( context.blockBuilder, getNamedProjects(), physicalColumnNames, columnTypes );
         } else {
-            context.visitChild( 0, getInput() );
             context.blockBuilder = builder;
         }
         context.projectionMap = makeProjectionAndKnnBuilder( context.blockBuilder, getNamedProjects(), physicalColumnNames );
