@@ -29,6 +29,7 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlKind;
 
+
 public class FilterTest extends RelBuildTestHelper {
 
     private final RelNode baseNode;

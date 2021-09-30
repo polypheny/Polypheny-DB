@@ -38,14 +38,13 @@ public class Combiner {
 
     private static final Map<String, Object> modifiersLookupTable = new HashMap<>();
 
+    public final CombinerType combinerType;
+    public final String[] joinOnColumns;
+
 
     static {
         modifiersLookupTable.put( "null", "both" );
     }
-
-
-    public final CombinerType combinerType;
-    public final String[] joinOnColumns;
 
 
     public Combiner( CombinerType combinerType, String[] joinOnColumns ) {
@@ -55,7 +54,6 @@ public class Combiner {
 
 
     public static Combiner createCombiner( BooleanGroup<TableOpsBooleanOperator> booleanGroup, TableIndex left, TableIndex right ) throws InvalidModifierException {
-
         log.debug( "Creating Combiner." );
         log.debug( "Setting default values for modifiers." );
 
@@ -83,8 +81,7 @@ public class Combiner {
             throw new InvalidModifierException( e.getMessage() );
         }
 
-        CombinerType combinerType =
-                determineCombinerType( booleanGroup.booleanOperator, (String) modifiers.get( "null" ) );
+        CombinerType combinerType = determineCombinerType( booleanGroup.booleanOperator, (String) modifiers.get( "null" ) );
         String[] joinOnColumns = getColumnsToJoinOn( left, right, (String[]) modifiers.get( "on" ) );
 
         return new Combiner( combinerType, joinOnColumns );
@@ -134,8 +131,9 @@ public class Combiner {
     private static String[] getColumnsToJoinOn( TableIndex left, TableIndex right, String[] columnStrs ) throws InvalidModifierException {
         assert columnStrs.length > 0;
 
-        log.debug( "Getting Columns to Join '" + left.fullyQualifiedName + "' and '"
-                + right.fullyQualifiedName + "' On." );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Getting Columns to Join '{}' and '{}' On.", left.fullyQualifiedName, right.fullyQualifiedName );
+        }
         if ( columnStrs.length == 1 ) {
             if ( columnStrs[0].equals( "all" ) ) {
                 return getCommonColumns( left, right );
@@ -148,11 +146,9 @@ public class Combiner {
         CatalogTable rightCatalogTable = right.catalogTable;
         List<String> columnList = Arrays.asList( columnStrs );
 
-        if ( !leftCatalogTable.getColumnNames().containsAll( columnList ) ||
-                !rightCatalogTable.getColumnNames().containsAll( columnList ) ) {
-
-            log.error( "Invalid Modifier Values. Cannot join tables '" +
-                    leftCatalogTable.name + "' and '" + rightCatalogTable.name + "' on columns " + columnList );
+        if ( !leftCatalogTable.getColumnNames().containsAll( columnList ) || !rightCatalogTable.getColumnNames().containsAll( columnList ) ) {
+            log.error( "Invalid Modifier Values. Cannot join tables '{}' and '{}' on columns {}",
+                    leftCatalogTable.name, rightCatalogTable.name, columnList );
             throw new InvalidModifierException( "Invalid Modifier Values. Cannot join tables '" +
                     leftCatalogTable.name + "' and '" + rightCatalogTable.name + "' on columns " + columnList );
         }

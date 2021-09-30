@@ -38,7 +38,8 @@ public class CqlQuery {
 
     public CqlQuery( final Tree<Combiner, TableIndex> queryRelation,
             final Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> filters,
-            final Map<String, TableIndex> tableIndexMapping, final Map<String, ColumnIndex> columnIndexMapping,
+            final Map<String, TableIndex> tableIndexMapping,
+            final Map<String, ColumnIndex> columnIndexMapping,
             final List<Pair<ColumnIndex, Map<String, Modifier>>> sortSpecifications,
             final Projections projections ) {
         this.queryRelation = queryRelation;

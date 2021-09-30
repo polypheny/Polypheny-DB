@@ -19,6 +19,7 @@ package org.polypheny.db.cql.utils;
 import org.junit.Assert;
 import org.junit.Test;
 
+
 public class ExclusiveComparisonsTest {
 
     private final boolean[] exclusivelyTrue = new boolean[]{

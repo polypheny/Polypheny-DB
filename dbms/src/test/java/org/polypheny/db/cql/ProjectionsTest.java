@@ -28,6 +28,7 @@ import org.polypheny.db.cql.exception.UnknownIndexException;
 import org.polypheny.db.cql.testhelpers.RelBuildTestHelper;
 import org.polypheny.db.rel.RelNode;
 
+
 public class ProjectionsTest extends RelBuildTestHelper {
 
     private final Projections projections;

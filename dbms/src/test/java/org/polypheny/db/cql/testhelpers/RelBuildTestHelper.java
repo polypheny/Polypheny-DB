@@ -34,6 +34,7 @@ import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 
+
 public class RelBuildTestHelper extends CqlTestHelper {
 
     protected final TestHelper instance;

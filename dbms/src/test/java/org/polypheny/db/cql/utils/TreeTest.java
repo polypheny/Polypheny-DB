@@ -23,6 +23,7 @@ import org.polypheny.db.cql.exception.UnexpectedTypeException;
 import org.polypheny.db.cql.utils.Tree.NodeType;
 import org.polypheny.db.cql.utils.Tree.TraversalType;
 
+
 public class TreeTest {
 
     private final Tree<Integer, Integer> tree;

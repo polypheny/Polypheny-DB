@@ -27,6 +27,7 @@ import org.junit.BeforeClass;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
+
 @SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
 @Slf4j
 public class CqlTestHelper {
