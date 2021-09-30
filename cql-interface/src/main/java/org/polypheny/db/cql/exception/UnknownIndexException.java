@@ -18,7 +18,6 @@ package org.polypheny.db.cql.exception;
 
 public class UnknownIndexException extends Exception {
 
-
     public UnknownIndexException() {
         super();
     }

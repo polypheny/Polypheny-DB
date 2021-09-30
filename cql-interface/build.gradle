@@ -6,16 +6,24 @@ configurations {
     javacc
 }
 
+
 buildscript {
     dependencies {
         classpath group: "gradle.plugin.ca.coglinc2", name: "javacc-gradle-plugin", version: javacc_plugin_version
     }
 }
 
+
 dependencies {
     implementation project(":core")
+
     javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
+
+    // --- Test Compile ---
+    testImplementation project(path: ":core", configuration: "tests")
+    testImplementation group: "junit", name: "junit", version: junit_version
 }
+
 
 sourceSets {
     main {
@@ -23,12 +31,20 @@ sourceSets {
             srcDirs = ["src/main/java", "build/generated-sources"]
             outputDir = file(project.buildDir.absolutePath + "/classes")
         }
+        resources {
+            srcDirs = ["src/main/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
     }
     test {
         java {
             srcDirs = ["src/test/java"]
             outputDir = file(project.buildDir.absolutePath + "/test-classes")
         }
+        resources {
+            srcDirs = ["src/test/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
     }
 }
 
@@ -42,4 +58,34 @@ task generateParser(type: CompileJavaccTask) {
 
 compileJava {
     dependsOn("generateParser")
+}
+
+
+/**
+ * JavaDoc
+ */
+javadoc {
+    if(JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption("html5", true)
+    }
+    // suppress most of the warnings
+    options.addStringOption("Xdoclint:none", "-quiet")
+    // Include private fields in JavaDoc
+    options.memberLevel = JavadocMemberLevel.PRIVATE
+}
+
+
+/**
+ * JARs
+ */
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
+        attributes "Version": "$project.version"
+    }
+}
+java {
+    withJavadocJar()
+    withSourcesJar()
 }

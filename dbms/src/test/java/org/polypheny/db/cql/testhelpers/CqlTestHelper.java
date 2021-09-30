@@ -27,7 +27,7 @@ import org.junit.BeforeClass;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
-
+@SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
 @Slf4j
 public class CqlTestHelper {
 
@@ -162,7 +162,6 @@ public class CqlTestHelper {
                 Date.valueOf( "1967-11-30" ), Date.valueOf( "1990-1-1" ) );
         insertIntoEmployee( 24, "Vader", 3000, 6, false,
                 Date.valueOf( "1959-12-13" ), Date.valueOf( "1990-1-1" ) );
-
     }
 
 
@@ -171,24 +170,22 @@ public class CqlTestHelper {
 
         String query = String.format( "INSERT INTO test.testtable (tbigint, tboolean, tdate,"
                         + " tdecimal, tdouble, tinteger, treal, tsmallint, ttinyint, tvarchar)"
-                        + " VALUES (ROW(%d, %b, DATE '%s', %f, %f, %d, %f, %d, %d, '%s'))", tbigint, tboolean,
-                tdate.toString(), tdecimal, tdouble, tinteger, treal, tsmallint, ttinyint, tvarchar );
+                        + " VALUES (ROW(%d, %b, DATE '%s', %f, %f, %d, %f, %d, %d, '%s'))",
+                tbigint, tboolean, tdate.toString(), tdecimal, tdouble, tinteger, treal, tsmallint, ttinyint, tvarchar );
         executeInsertion( query );
     }
 
 
     private static void insertIntoDept( int deptno, String deptname ) {
-        String query = String.format( "INSERT INTO test.dept (deptno, deptname) VALUES (ROW(%d, '%s'))",
-                deptno, deptname );
+        String query = String.format( "INSERT INTO test.dept (deptno, deptname) VALUES (ROW(%d, '%s'))", deptno, deptname );
         executeInsertion( query );
     }
 
 
-    private static void insertIntoEmployee( int empno, String empname, double salary, int deptno, boolean married,
-            Date dob, Date joiningDate ) {
+    private static void insertIntoEmployee( int empno, String empname, double salary, int deptno, boolean married, Date dob, Date joiningDate ) {
         String query = String.format( "INSERT INTO test.employee (empno, empname, salary, deptno, married, dob,"
-                        + " joining_date) VALUES (ROW(%d, '%s', %f, %d, %b, DATE '%s', DATE '%s'))", empno,
-                empname, salary, deptno, married, dob.toString(), joiningDate.toString() );
+                        + " joining_date) VALUES (ROW(%d, '%s', %f, %d, %b, DATE '%s', DATE '%s'))",
+                empno, empname, salary, deptno, married, dob.toString(), joiningDate.toString() );
         executeInsertion( query );
     }
 

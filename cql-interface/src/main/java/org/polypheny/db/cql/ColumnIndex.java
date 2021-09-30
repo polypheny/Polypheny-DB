@@ -17,13 +17,13 @@
 package org.polypheny.db.cql;
 
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.cql.exception.UnknownIndexException;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.cql.exception.UnknownIndexException;
 
 
 /**
@@ -39,8 +39,11 @@ public class ColumnIndex {
     public final String columnName;
 
 
-    public ColumnIndex( final CatalogColumn catalogColumn, final String schemaName,
-            final String tableName, final String columnName ) {
+    public ColumnIndex(
+            final CatalogColumn catalogColumn,
+            final String schemaName,
+            final String tableName,
+            final String columnName ) {
         this.catalogColumn = catalogColumn;
         this.fullyQualifiedName = schemaName + "." + tableName + "." + columnName;
         this.schemaName = schemaName;
@@ -49,23 +52,16 @@ public class ColumnIndex {
     }
 
 
-    public static ColumnIndex createIndex( String inDatabase, String schemaName, String tableName, String columnName )
-            throws UnknownIndexException {
-
+    public static ColumnIndex createIndex( String inDatabase, String schemaName, String tableName, String columnName ) throws UnknownIndexException {
         try {
             log.debug( "Creating ColumnIndex." );
             Catalog catalog = Catalog.getInstance();
             CatalogColumn column = catalog.getColumn( inDatabase, schemaName, tableName, columnName );
-
             return new ColumnIndex( column, schemaName, tableName, columnName );
-
         } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException | UnknownColumnException e ) {
-            log.error( "Cannot find a underlying column for the specified column name: "
-                    + schemaName + "." + tableName + "." + columnName + ".", e );
-            throw new UnknownIndexException( "Cannot find a underlying column for the specified column name: "
-                    + schemaName + "." + tableName + "." + columnName + "." );
+            log.error( "Cannot find a underlying column for the specified column name: {}.{}.{}.", schemaName, tableName, columnName, e );
+            throw new UnknownIndexException( "Cannot find a underlying column for the specified column name: " + schemaName + "." + tableName + "." + columnName + "." );
         }
-
     }
 
 

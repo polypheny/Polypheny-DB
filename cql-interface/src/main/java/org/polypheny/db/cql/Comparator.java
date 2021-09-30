@@ -43,8 +43,7 @@ public enum Comparator {
 
     /**
      * Create a {@link #NAMED_COMPARATOR}.
-     * Always use this function to create {@link #NAMED_COMPARATOR}
-     * to correctly set its name.
+     * Always use this function to create {@link #NAMED_COMPARATOR} to correctly set its name.
      *
      * @param comparisonOp the name of the comparison operator.
      * @return {@link #NAMED_COMPARATOR}.

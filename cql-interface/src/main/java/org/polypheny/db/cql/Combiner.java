@@ -54,9 +54,7 @@ public class Combiner {
     }
 
 
-    public static Combiner createCombiner( BooleanGroup<TableOpsBooleanOperator> booleanGroup,
-            TableIndex left, TableIndex right )
-            throws InvalidModifierException {
+    public static Combiner createCombiner( BooleanGroup<TableOpsBooleanOperator> booleanGroup, TableIndex left, TableIndex right ) throws InvalidModifierException {
 
         log.debug( "Creating Combiner." );
         log.debug( "Setting default values for modifiers." );
@@ -77,7 +75,7 @@ public class Combiner {
                     log.debug( "Found 'null' modifier." );
                     modifiers.put( "null", parseNullModifier( modifier.comparator, modifier.modifierValue.trim() ) );
                 } else {
-                    log.error( "Invalid modifier for combining tables: " + modifierName );
+                    log.error( "Invalid modifier for combining tables: {}", modifierName );
                     throw new RuntimeException( "Invalid modifier for combining tables: " + modifierName );
                 }
             } );
@@ -94,7 +92,6 @@ public class Combiner {
 
 
     private static String[] parseOnModifier( Comparator comparator, String modifierValue ) {
-
         log.debug( "Parsing 'on' modifier." );
         if ( modifierValue.equalsIgnoreCase( "all" ) ) {
             return new String[]{ "all" };
@@ -103,12 +100,10 @@ public class Combiner {
         } else {
             return modifierValue.trim().split( "\\s*,\\s*" );
         }
-
     }
 
 
     private static String parseNullModifier( Comparator comparator, String modifierValue ) {
-
         log.debug( "Parsing 'null' modifier." );
         if ( modifierValue.equalsIgnoreCase( "left" ) ) {
             return "left";
@@ -117,13 +112,10 @@ public class Combiner {
         } else {
             return "both";
         }
-
     }
 
 
-    private static CombinerType determineCombinerType( TableOpsBooleanOperator tableOpsBooleanOperator,
-            String nullValue ) {
-
+    private static CombinerType determineCombinerType( TableOpsBooleanOperator tableOpsBooleanOperator, String nullValue ) {
         log.debug( "Determining Combiner Type." );
         if ( tableOpsBooleanOperator == TableOpsBooleanOperator.OR ) {
             if ( nullValue.equals( "both" ) ) {
@@ -136,13 +128,10 @@ public class Combiner {
         } else {
             return CombinerType.JOIN_INNER;
         }
-
     }
 
 
-    private static String[] getColumnsToJoinOn( TableIndex left, TableIndex right, String[] columnStrs )
-            throws InvalidModifierException {
-
+    private static String[] getColumnsToJoinOn( TableIndex left, TableIndex right, String[] columnStrs ) throws InvalidModifierException {
         assert columnStrs.length > 0;
 
         log.debug( "Getting Columns to Join '" + left.fullyQualifiedName + "' and '"
@@ -175,8 +164,9 @@ public class Combiner {
     private static String[] getCommonColumns( TableIndex table1, TableIndex table2 ) {
         // TODO: Create a cache and check if in cache.
 
-        log.debug( "Getting Common Columns between '" + table1.fullyQualifiedName + "' and '"
-                + table2.fullyQualifiedName + "'." );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Getting Common Columns between '{}' and '{}'.", table1.fullyQualifiedName, table2.fullyQualifiedName );
+        }
         List<String> table1Columns = table1.catalogTable.getColumnNames();
         List<String> table2Columns = table2.catalogTable.getColumnNames();
 
@@ -195,13 +185,10 @@ public class Combiner {
                 }
             } else {
 //                TODO: Implement SetOpsType Combiners. (Union, Intersection, etc.)
-                log.error( "Set Ops Type Combiners have not been implemented." );
-                throw new RuntimeException( "Not Implemented." );
+                throw new RuntimeException( "Set Ops Type Combiners have not been implemented." );
             }
         } catch ( InvalidMethodInvocation e ) {
-            log.error( "Exception Unexpected.", e );
-            throw new RuntimeException( "This exception would never be thrown since we have checked if the combiner"
-                    + " isJoinType." );
+            throw new RuntimeException( "This exception would never be thrown since we have checked if the combiner isJoinType.", e );
         }
     }
 

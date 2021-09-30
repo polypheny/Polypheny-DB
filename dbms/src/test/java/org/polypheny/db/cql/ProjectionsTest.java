@@ -40,10 +40,8 @@ public class ProjectionsTest extends RelBuildTestHelper {
     public ProjectionsTest() throws UnknownIndexException {
         super( RelBuildLevel.INITIAL_PROJECTION );
         projections = new Projections();
-        empname = ColumnIndex.createIndex( "APP", "test", "employee",
-                "empname" );
-        deptname = ColumnIndex.createIndex( "APP", "test", "dept",
-                "deptname" );
+        empname = ColumnIndex.createIndex( "APP", "test", "employee", "empname" );
+        deptname = ColumnIndex.createIndex( "APP", "test", "dept", "deptname" );
     }
 
 
@@ -58,8 +56,7 @@ public class ProjectionsTest extends RelBuildTestHelper {
         testCases.put( "", null );
         testCases.put( "abc", null );
 
-        ColumnIndex columnIndex = ColumnIndex.createIndex( "APP", "test", "employee",
-                "empname" );
+        ColumnIndex columnIndex = ColumnIndex.createIndex( "APP", "test", "employee", "empname" );
 
         testCases.forEach( ( modifierName, expected ) ->
                 testGetAggregateFunctionHelper( columnIndex, modifierName, expected ) );

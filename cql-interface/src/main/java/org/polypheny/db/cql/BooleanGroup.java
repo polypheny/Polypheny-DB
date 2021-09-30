@@ -47,8 +47,7 @@ public class BooleanGroup<E extends BooleanGroup.BooleanOperator> {
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
 
-        stringBuilder.append( booleanOperator.getName() )
-                .append( " " );
+        stringBuilder.append( booleanOperator.getName() ).append( " " );
 
         modifiers.forEach( ( s, modifier ) -> stringBuilder.append( s )
                 .append( " : " )
@@ -80,7 +79,6 @@ public class BooleanGroup<E extends BooleanGroup.BooleanOperator> {
             return this.booleanOperator;
         }
 
-
     }
 
 
@@ -106,7 +104,6 @@ public class BooleanGroup<E extends BooleanGroup.BooleanOperator> {
         public String getName() {
             return this.booleanOperator;
         }
-
 
     }
 

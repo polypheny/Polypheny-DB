@@ -57,8 +57,7 @@ public class CqlQuery {
         if ( filters != null ) {
             stringBuilder.append( filters );
         }
-        stringBuilder.append( "relation " )
-                .append( queryRelation );
+        stringBuilder.append( "relation " ).append( queryRelation );
         if ( sortSpecifications != null && sortSpecifications.size() != 0 ) {
             stringBuilder.append( " " );
             for ( Pair<ColumnIndex, Map<String, Modifier>> sortSpecification : sortSpecifications ) {

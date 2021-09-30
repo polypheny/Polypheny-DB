@@ -44,17 +44,16 @@ public class LiteralFilter implements Filter {
 
 
     @Override
-    public RexNode convert2RexNode( RelNode baseNode, RexBuilder rexBuilder,
-            Map<String, RelDataTypeField> filterMap ) {
-
-        log.debug( "Converting '" + this + "' to RexNode." );
+    public RexNode convert2RexNode( RelNode baseNode, RexBuilder rexBuilder, Map<String, RelDataTypeField> filterMap ) {
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Converting '{}' to RexNode.", this );
+        }
         RelDataTypeField typeField = filterMap.get( columnIndex.fullyQualifiedName );
         RexNode lhs = rexBuilder.makeInputRef( baseNode, typeField.getIndex() );
         RexNode rhs = rexBuilder.makeLiteral( searchTerm );
         rhs = rexBuilder.makeCast( typeField.getType(), rhs );
         if ( relation.comparator.isSymbolComparator() ) {
-            return rexBuilder.makeCall(
-                    relation.comparator.toSqlStdOperatorTable( SqlStdOperatorTable.EQUALS ), lhs, rhs );
+            return rexBuilder.makeCall( relation.comparator.toSqlStdOperatorTable( SqlStdOperatorTable.EQUALS ), lhs, rhs );
         } else {
             log.error( "Named Comparators have not been implemented." );
             throw new RuntimeException( "Named Comparators have not been implemented." );

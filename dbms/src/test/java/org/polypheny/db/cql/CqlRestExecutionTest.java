@@ -31,9 +31,7 @@ public class CqlRestExecutionTest extends CqlTestHelper {
 
     @Test
     public void testRestCqlEmptyQueryReturnsException() {
-        JsonNode expectedJsonNode = new JsonNode( "{\"Exception\":"
-                + " \"Query relations and filters cannot both be empty.\"}" );
-
+        JsonNode expectedJsonNode = new JsonNode( "{\"Exception\": \"Query relations and filters cannot both be empty.\"}" );
         restCqlTestHelper( "", expectedJsonNode );
     }
 
@@ -59,8 +57,7 @@ public class CqlRestExecutionTest extends CqlTestHelper {
                 + "\"test.employee.joining_date\":7305,\"test.employee.dob\":-763,\"test.employee.salary\":35700.0,"
                 + "\"test.employee.deptno\":6,\"test.dept.deptname\":\"IT\"}],\"size\":2}" );
 
-        restCqlTestHelper( "test.dept.deptname = \"IT\" and test.employee.married = TRUE",
-                expectedJsonNode );
+        restCqlTestHelper( "test.dept.deptname = \"IT\" and test.employee.married = TRUE", expectedJsonNode );
     }
 
 
@@ -70,8 +67,7 @@ public class CqlRestExecutionTest extends CqlTestHelper {
                 + "\"test.dept.deptname\":\"Human Resources\"},{\"test.dept.deptno\":6,"
                 + "\"test.dept.deptname\":\"IT\"}],\"size\":2}" );
 
-        restCqlTestHelper( "test.dept.deptname = \"IT\" or test.dept.deptname = \"Human Resources\"",
-                expectedJsonNode );
+        restCqlTestHelper( "test.dept.deptname = \"IT\" or test.dept.deptname = \"Human Resources\"", expectedJsonNode );
     }
 
 
@@ -144,18 +140,14 @@ public class CqlRestExecutionTest extends CqlTestHelper {
                 + "\"test.employee.salary\":3000.0,\"test.employee.deptno\":6,\"test.dept.deptname\":\"IT\"}],"
                 + "\"size\":20}" );
 
-        restCqlTestHelper( "test.employee.empno >= 1 NOT test.dept.deptname = \"Human Resources\"",
-                expectedJsonNode );
+        restCqlTestHelper( "test.employee.empno >= 1 NOT test.dept.deptname = \"Human Resources\"", expectedJsonNode );
     }
 
 
     @Test
     public void testRestCqlFiltersOnlyQueryWithPROXOperator() {
-        JsonNode expectedJsonNode = new JsonNode( "{\"Exception\":"
-                + " \"'PROX' boolean operator not implemented.\"}" );
-
-        restCqlTestHelper( "test.dept.deptname = \"IT\" PROX test.dept.deptname = \"Human Resources\"",
-                expectedJsonNode );
+        JsonNode expectedJsonNode = new JsonNode( "{\"Exception\": \"'PROX' boolean operator not implemented.\"}" );
+        restCqlTestHelper( "test.dept.deptname = \"IT\" PROX test.dept.deptname = \"Human Resources\"", expectedJsonNode );
     }
 
 
@@ -288,8 +280,9 @@ public class CqlRestExecutionTest extends CqlTestHelper {
                 + "\"test.employee.joining_date\":18914,\"test.employee.dob\":11244,\"test.employee.salary\":90000.0,"
                 + "\"test.employee.deptno\":5,\"test.dept.deptname\":\"Accounting and Finance\"}],\"size\":5}" );
 
-        restCqlTestHelper( "test.employee.salary >= 50000 and test.employee.married == FALSE"
-                + " relation test.dept and test.employee", expectedJsonNode );
+        restCqlTestHelper(
+                "test.employee.salary >= 50000 and test.employee.married == FALSE relation test.dept and test.employee",
+                expectedJsonNode );
     }
 
 
@@ -309,15 +302,13 @@ public class CqlRestExecutionTest extends CqlTestHelper {
                 + "{\"test.employee.empname\":\"Peralta\"},{\"test.employee.empname\":\"Mando\"},"
                 + "{\"test.employee.empname\":\"Vader\"}],\"size\":24}" );
 
-        restCqlTestHelper( "relation test.dept and test.employee"
-                + " project test.employee.empname", expectedJsonNode );
+        restCqlTestHelper( "relation test.dept and test.employee project test.employee.empname", expectedJsonNode );
     }
 
 
     @Test
     public void testRestCqlProjectionQueryWithAggregation() {
         JsonNode expectedJsonNode = new JsonNode( "{\"result\":[{\"COUNT( test.employee.empno )\":24}],\"size\":1}" );
-
         restCqlTestHelper( "relation test.employee project test.employee.empno/count", expectedJsonNode );
     }
 
@@ -344,8 +335,8 @@ public class CqlRestExecutionTest extends CqlTestHelper {
                 + "{\"test.employee.married\":false,\"COUNT( test.employee.empno )\":2,"
                 + "\"test.dept.deptname\":\"IT\"}],\"size\":12}" );
 
-        restCqlTestHelper( "relation test.employee and test.dept"
-                        + " project test.employee.empno/count test.employee.married test.dept.deptname ",
+        restCqlTestHelper(
+                "relation test.employee and test.dept project test.employee.empno/count test.employee.married test.dept.deptname ",
                 expectedJsonNode );
     }
 
@@ -366,8 +357,8 @@ public class CqlRestExecutionTest extends CqlTestHelper {
                 + "{\"test.employee.empname\":\"Roy\"},{\"test.employee.empname\":\"Troy\"},"
                 + "{\"test.employee.empname\":\"Vader\"}],\"size\":24}" );
 
-        restCqlTestHelper( "relation test.employee sortby test.employee.empname"
-                        + " project test.employee.empname",
+        restCqlTestHelper(
+                "relation test.employee sortby test.employee.empname project test.employee.empname",
                 expectedJsonNode );
     }
 
@@ -386,7 +377,9 @@ public class CqlRestExecutionTest extends CqlTestHelper {
         request.routeParam( "port", "8089" );
         request.queryString( "testing", "true" );
         request.queryString( "cql", cqlQuery );
-        log.debug( request.getUrl() );
+        if ( log.isDebugEnabled() ) {
+            log.debug( request.getUrl() );
+        }
         return request.asJson();
     }
 

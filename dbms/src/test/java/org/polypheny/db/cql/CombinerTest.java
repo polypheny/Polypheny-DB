@@ -68,91 +68,77 @@ public class CombinerTest extends RelBuildTestHelper {
 
     @Test
     public void testORCombinerWithNoModifiers() throws InvalidModifierException {
-        testORCombinerHelper( null, null, new String[0],
-                CombinerType.JOIN_FULL );
+        testORCombinerHelper( null, null, new String[0], CombinerType.JOIN_FULL );
     }
 
 
     @Test
     public void testORCombinerWithALLOnModifier() throws InvalidModifierException {
-        testORCombinerHelper( "ALl", null, new String[]{ "deptno" },
-                CombinerType.JOIN_FULL );
+        testORCombinerHelper( "ALl", null, new String[]{ "deptno" }, CombinerType.JOIN_FULL );
     }
 
 
     @Test
     public void testORCombinerWithNONEOnModifier() throws InvalidModifierException {
-        testORCombinerHelper( "NoNe", null, new String[0],
-                CombinerType.JOIN_FULL );
+        testORCombinerHelper( "NoNe", null, new String[0], CombinerType.JOIN_FULL );
     }
 
 
     @Test
     public void testORCombinerWithLEFTNullModifier() throws InvalidModifierException {
-        testORCombinerHelper( null, "LefT", new String[0],
-                CombinerType.JOIN_RIGHT );
+        testORCombinerHelper( null, "LefT", new String[0], CombinerType.JOIN_RIGHT );
     }
 
 
     @Test
     public void testORCombinerWithALLOnAndLEFTNullModifiers() throws InvalidModifierException {
-        testORCombinerHelper( "ALl", "leFt", new String[]{ "deptno" },
-                CombinerType.JOIN_RIGHT );
+        testORCombinerHelper( "ALl", "leFt", new String[]{ "deptno" }, CombinerType.JOIN_RIGHT );
     }
 
 
     @Test
     public void testORCombinerWithNONEOnAndLEFTNullModifiers() throws InvalidModifierException {
-        testORCombinerHelper( "NoNe", "lEft", new String[0],
-                CombinerType.JOIN_RIGHT );
+        testORCombinerHelper( "NoNe", "lEft", new String[0], CombinerType.JOIN_RIGHT );
     }
 
 
     @Test
     public void testORCombinerWithRIGHTNullModifier() throws InvalidModifierException {
-        testORCombinerHelper( null, "riGht", new String[0],
-                CombinerType.JOIN_LEFT );
+        testORCombinerHelper( null, "riGht", new String[0], CombinerType.JOIN_LEFT );
     }
 
 
     @Test
     public void testORCombinerWithALLOnAndRIGHTNullModifiers() throws InvalidModifierException {
-        testORCombinerHelper( "ALl", "RigHt", new String[]{ "deptno" },
-                CombinerType.JOIN_LEFT );
+        testORCombinerHelper( "ALl", "RigHt", new String[]{ "deptno" }, CombinerType.JOIN_LEFT );
     }
 
 
     @Test
     public void testORCombinerWithNONEOnAndRIGHTNullModifiers() throws InvalidModifierException {
-        testORCombinerHelper( "NoNe", "rIghT", new String[0],
-                CombinerType.JOIN_LEFT );
+        testORCombinerHelper( "NoNe", "rIghT", new String[0], CombinerType.JOIN_LEFT );
     }
 
 
     @Test
     public void testORCombinerWithBOTHNullModifier() throws InvalidModifierException {
-        testORCombinerHelper( null, "boTh", new String[0],
-                CombinerType.JOIN_FULL );
+        testORCombinerHelper( null, "boTh", new String[0], CombinerType.JOIN_FULL );
     }
 
 
     @Test
     public void testORCombinerWithALLOnAndBOTHNullModifiers() throws InvalidModifierException {
-        testORCombinerHelper( "ALl", "boTh", new String[]{ "deptno" },
-                CombinerType.JOIN_FULL );
+        testORCombinerHelper( "ALl", "boTh", new String[]{ "deptno" }, CombinerType.JOIN_FULL );
     }
 
 
     @Test
     public void testORCombinerWithNONEOnAndBOTHNullModifiers() throws InvalidModifierException {
-        testORCombinerHelper( "NoNe", "BotH", new String[0],
-                CombinerType.JOIN_FULL );
+        testORCombinerHelper( "NoNe", "BotH", new String[0], CombinerType.JOIN_FULL );
     }
 
 
-    private void testANDCombinerHelper( boolean withModifiers, String onModifierValue,
-            String[] expectedJoinOnColumns ) throws InvalidModifierException {
-
+    private void testANDCombinerHelper( boolean withModifiers, String onModifierValue, String[] expectedJoinOnColumns ) throws InvalidModifierException {
         Map<String, Modifier> modifiers = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
         if ( withModifiers ) {
             modifiers.put( "on", new Modifier( "on", Comparator.EQUALS, onModifierValue ) );
@@ -182,8 +168,7 @@ public class CombinerTest extends RelBuildTestHelper {
     }
 
 
-    private void testORCombinerHelper( String onModifierValue, String nullModifierValue,
-            String[] expectedJoinOnColumns, CombinerType expectedCombinerType ) throws InvalidModifierException {
+    private void testORCombinerHelper( String onModifierValue, String nullModifierValue, String[] expectedJoinOnColumns, CombinerType expectedCombinerType ) throws InvalidModifierException {
 
         Map<String, Modifier> modifiers = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
         if ( onModifierValue != null ) {

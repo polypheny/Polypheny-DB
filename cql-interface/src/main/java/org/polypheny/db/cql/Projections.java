@@ -91,25 +91,26 @@ public class Projections {
      * Also classifies it into {@link Aggregation} or {@link Grouping}.
      */
     public void add( ColumnIndex columnIndex, Map<String, Modifier> modifiers ) {
-
         Projection projection;
-
         String aggregationFunction = getAggregationFunction( columnIndex, modifiers );
 
         if ( aggregationFunction == null ) {
-            log.debug( "Adding grouping for ColumnIndex '" + columnIndex.fullyQualifiedName + "'." );
+            if ( log.isDebugEnabled() ) {
+                log.debug( "Adding grouping for ColumnIndex '{}'.", columnIndex.fullyQualifiedName );
+            }
             Grouping grouping = new Grouping( columnIndex, modifiers );
             groupings.add( grouping );
             projection = grouping;
         } else {
             Aggregation aggregation = new Aggregation( columnIndex, modifiers, aggregationFunction );
-            log.debug( "Adding aggregation for ColumnIndex '" + aggregation.getProjectionName() + "'." );
+            if ( log.isDebugEnabled() ) {
+                log.debug( "Adding aggregation for ColumnIndex '{}'.", aggregation.getProjectionName() );
+            }
             aggregations.add( aggregation );
             projection = aggregation;
         }
 
         projections.add( projection );
-
     }
 
 
@@ -121,9 +122,7 @@ public class Projections {
      * @param rexBuilder {@link RexBuilder}.
      * @return {@link RelBuilder}.
      */
-    public RelBuilder convert2RelForSingleProjection( Map<Long, Integer> tableScanOrdinalities,
-            RelBuilder relBuilder, RexBuilder rexBuilder ) {
-
+    public RelBuilder convert2RelForSingleProjection( Map<Long, Integer> tableScanOrdinalities, RelBuilder relBuilder, RexBuilder rexBuilder ) {
         setColumnOrdinalities();
 
         List<RexNode> inputRefs = new ArrayList<>();
@@ -155,13 +154,10 @@ public class Projections {
      * @param rexBuilder {@link RexBuilder}.
      * @return {@link RelBuilder}.
      */
-    public RelBuilder convert2Rel( Map<Long, Integer> tableScanOrdinalities,
-            RelBuilder relBuilder, RexBuilder rexBuilder ) {
-
+    public RelBuilder convert2Rel( Map<Long, Integer> tableScanOrdinalities, RelBuilder relBuilder, RexBuilder rexBuilder ) {
         RelNode baseNode = relBuilder.peek();
 
         if ( !aggregations.isEmpty() ) {
-
             log.debug( "Found aggregations. Creating AggregateCalls." );
             List<AggregateCall> aggregateCalls = new ArrayList<>();
 
@@ -276,10 +272,7 @@ public class Projections {
 
 
         public String getAliasWithColumnName( String fullyQualifiedName ) {
-            return sqlAggFunction.getName()
-                    + "( "
-                    + fullyQualifiedName
-                    + " )";
+            return sqlAggFunction.getName() + "( " + fullyQualifiedName + " )";
         }
 
     }
@@ -325,14 +318,16 @@ public class Projections {
         }
 
 
+        @Override
         public String getProjectionName() {
             return aggregationFunction.getAliasWithColumnName( columnIndex.fullyQualifiedName );
         }
 
 
         public AggregateCall getAggregateCall( RelNode baseNode, int ordinality, int groupCount ) {
-
-            log.debug( "Creating AggregateCall for '" + getProjectionName() + "'." );
+            if ( log.isDebugEnabled() ) {
+                log.debug( "Creating AggregateCall for '{}'.", getProjectionName() );
+            }
             List<Integer> inputFields = new ArrayList<>();
             inputFields.add( ordinality );
             return AggregateCall.create(

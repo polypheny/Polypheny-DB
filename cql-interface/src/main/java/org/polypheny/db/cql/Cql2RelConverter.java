@@ -22,14 +22,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.cql.BooleanGroup.ColumnOpsBooleanOperator;
 import org.polypheny.db.cql.exception.UnexpectedTypeException;
 import org.polypheny.db.cql.utils.Tree;
 import org.polypheny.db.cql.utils.Tree.NodeType;
 import org.polypheny.db.cql.utils.Tree.TraversalType;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
@@ -74,7 +74,6 @@ public class Cql2RelConverter {
      * @return {@link RelRoot}.
      */
     public RelRoot convert2Rel( RelBuilder relBuilder, RexBuilder rexBuilder ) {
-
         relBuilder = generateTableScan( relBuilder, rexBuilder );
         if ( cqlQuery.filters != null ) {
             relBuilder = generateProjections( relBuilder, rexBuilder );
@@ -123,7 +122,6 @@ public class Cql2RelConverter {
                     tableScanColumnOrdinalities.put( columnId, tableScanColumnOrdinalities.size() );
                 }
             }
-
             return true;
         } );
     }
@@ -138,7 +136,6 @@ public class Cql2RelConverter {
      * @return {@link RelBuilder}.
      */
     private RelBuilder generateTableScan( RelBuilder relBuilder, RexBuilder rexBuilder ) {
-
         log.debug( "Generating table scan." );
         Tree<Combiner, TableIndex> tableOperations = cqlQuery.queryRelation;
         AtomicReference<RelBuilder> relBuilderAtomicReference = new AtomicReference<>( relBuilder );
@@ -158,9 +155,8 @@ public class Cql2RelConverter {
                         );
                     }
                 } catch ( UnexpectedTypeException e ) {
-                    log.error( "Exception Unexpected.", e );
-                    throw new RuntimeException( "This exception will never be thrown since checks have been"
-                            + "made before calling the getExternalNode and getInternalNode methods." );
+                    throw new RuntimeException( "This exception will never be thrown since checks have been "
+                            + "made before calling the getExternalNode and getInternalNode methods.", e );
                 }
             }
             return true;
@@ -185,7 +181,6 @@ public class Cql2RelConverter {
      * @return {@link RelBuilder}.
      */
     private RelBuilder generateProjections( RelBuilder relBuilder, RexBuilder rexBuilder ) {
-
         log.debug( "Generating initial projection." );
         Tree<Combiner, TableIndex> queryRelation = cqlQuery.queryRelation;
         RelNode baseNode = relBuilder.peek();
@@ -208,9 +203,8 @@ public class Cql2RelConverter {
                         tableScanColumnOrdinalities.put( columnId, ordinal );
                     }
                 } catch ( UnexpectedTypeException e ) {
-                    log.error( "Exception Unexpected.", e );
                     throw new RuntimeException( "This exception will never be thrown since checks have been"
-                            + " made before calling the getExternalNode method." );
+                            + " made before calling the getExternalNode method.", e );
                 }
             }
 
@@ -230,7 +224,6 @@ public class Cql2RelConverter {
      * @return {@link RelBuilder}.
      */
     private RelBuilder generateFilters( RelBuilder relBuilder, RexBuilder rexBuilder ) {
-
         log.debug( "Generating filters." );
         Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> filters = cqlQuery.filters;
         if ( filters == null ) {
@@ -288,9 +281,8 @@ public class Cql2RelConverter {
                     secondToLastRexNode.set( lastRexNode.get() );
                     lastRexNode.set( rexNode );
                 } catch ( UnexpectedTypeException e ) {
-                    log.error( "Exception Unexpected.", e );
                     throw new RuntimeException( "This exception will never be thrown since checks have been"
-                            + " made before calling the getExternalNode method." );
+                            + " made before calling the getExternalNode method.", e );
                 }
             }
 
@@ -311,7 +303,6 @@ public class Cql2RelConverter {
      * @return {@link RelBuilder}.
      */
     private RelBuilder generateSort( RelBuilder relBuilder, RexBuilder rexBuilder ) {
-
         log.debug( "Generating sort." );
         List<Pair<ColumnIndex, Map<String, Modifier>>> sortSpecifications = cqlQuery.sortSpecifications;
         List<RexNode> sortingNodes = new ArrayList<>();

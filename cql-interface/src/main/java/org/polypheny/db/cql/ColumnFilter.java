@@ -43,9 +43,7 @@ public class ColumnFilter implements Filter {
 
 
     @Override
-    public RexNode convert2RexNode( RelNode baseNode, RexBuilder rexBuilder,
-            Map<String, RelDataTypeField> typeField ) {
-
+    public RexNode convert2RexNode( RelNode baseNode, RexBuilder rexBuilder, Map<String, RelDataTypeField> typeField ) {
         log.error( "Column Filters have not been implemented." );
         throw new RuntimeException( "Column Filters have not been implemented." );
     }
