@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
-import lombok.Setter;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -42,16 +41,11 @@ public class EthereumTable extends AbstractTable implements FilterableTable {
     protected final int[] fields;
     protected final EthereumDataSource ethereumDataSource;
     protected final EthereumMapper mapper;
-    @Setter
-    private int blocks;
-    private final boolean experimentalFiltering;
     protected List<EthereumFieldType> fieldTypes;
 
 
     public EthereumTable(
             String clientUrl,
-            int blocks,
-            boolean experimentalFiltering,
             RelProtoDataType protoRowType,
             List<EthereumFieldType> fieldTypes,
             int[] fields,
@@ -63,8 +57,6 @@ public class EthereumTable extends AbstractTable implements FilterableTable {
         this.fields = fields;
         this.ethereumDataSource = ethereumDataSource;
         this.mapper = mapper;
-        this.blocks = blocks;
-        this.experimentalFiltering = experimentalFiltering;
     }
 
 
@@ -89,7 +81,7 @@ public class EthereumTable extends AbstractTable implements FilterableTable {
     public Enumerable scan( DataContext dataContext, List<RexNode> filters ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( ethereumDataSource );
         Predicate<BigInteger> blockNumberPredicate = EthereumPredicateFactory.ALWAYS_TRUE;
-        if ( experimentalFiltering ) {
+        if ( ethereumDataSource.isExperimentalFiltering() ) {
             if ( !filters.isEmpty() ) {
                 blockNumberPredicate = EthereumPredicateFactory.makePredicate( dataContext, filters, mapper );
             }
@@ -103,7 +95,7 @@ public class EthereumTable extends AbstractTable implements FilterableTable {
                 public Enumerator<Object> enumerator() {
                     return new EthereumEnumerator<>(
                             clientUrl,
-                            blocks,
+                            ethereumDataSource.getBlocks(),
                             cancelFlag,
                             true,
                             null,
@@ -118,7 +110,7 @@ public class EthereumTable extends AbstractTable implements FilterableTable {
             public Enumerator<Object[]> enumerator() {
                 return new EthereumEnumerator<>(
                         clientUrl,
-                        blocks,
+                        ethereumDataSource.getBlocks(),
                         cancelFlag,
                         true,
                         null,

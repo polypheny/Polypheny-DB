@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingBoolean;
@@ -50,13 +51,15 @@ import org.web3j.protocol.http.HttpService;
         description = "An adapter for querying the Ethereum blockchain. It uses the ethereum JSON-RPC API. Currently, this adapter only supports read operations.",
         usedModes = DeployMode.REMOTE)
 @AdapterSettingString(name = "ClientUrl", description = "The URL of the ethereum JSON RPC client", defaultValue = "https://mainnet.infura.io/v3/4d06589e97064040b5da99cf4051ef04", position = 1)
-@AdapterSettingInteger(name = "Blocks", description = "The number of Blocks to fetch when processing a query", defaultValue = 10, position = 2)
-@AdapterSettingBoolean(name = "ExperimentalFiltering", description = "Experimentally filter Past Block", defaultValue = false, position = 3)
+@AdapterSettingInteger(name = "Blocks", description = "The number of Blocks to fetch when processing a query", defaultValue = 10, position = 2, modifiable = true)
+@AdapterSettingBoolean(name = "ExperimentalFiltering", description = "Experimentally filter Past Block", defaultValue = false, position = 3, modifiable = true)
 public class EthereumDataSource extends DataSource {
 
     private String clientURL;
-    private final int blocks;
-    private final boolean experimentalFiltering;
+    @Getter
+    private int blocks;
+    @Getter
+    private boolean experimentalFiltering;
     private EthereumSchema currentSchema;
 
 
@@ -84,7 +87,7 @@ public class EthereumDataSource extends DataSource {
 
     @Override
     public void createNewSchema( SchemaPlus rootSchema, String name ) {
-        currentSchema = new EthereumSchema( this.clientURL, this.blocks, this.experimentalFiltering );
+        currentSchema = new EthereumSchema( this.clientURL );
     }
 
 
@@ -194,6 +197,12 @@ public class EthereumDataSource extends DataSource {
     protected void reloadSettings( List<String> updatedSettings ) {
         if ( updatedSettings.contains( "ClientUrl" ) ) {
             setClientURL( settings.get( "ClientUrl" ) );
+        }
+        if ( updatedSettings.contains( "Blocks" ) ) {
+            this.blocks = Integer.parseInt( settings.get( "Blocks" ) );
+        }
+        if ( updatedSettings.contains( "ExperimentalFiltering" ) ) {
+            this.experimentalFiltering = Boolean.parseBoolean( settings.get( "ExperimentalFiltering" ) );
         }
     }
 

@@ -38,15 +38,11 @@ import org.polypheny.db.util.Util;
 public class EthereumSchema extends AbstractSchema {
 
     private final String clientUrl;
-    private int blocks;
-    private final boolean experimentalFiltering;
     private Map<String, EthereumTable> tableMap = new HashMap<>();
 
 
-    public EthereumSchema( String clientUrl, int blocks, boolean experimentalFiltering ) {
+    public EthereumSchema( String clientUrl ) {
         this.clientUrl = clientUrl;
-        this.blocks = blocks;
-        this.experimentalFiltering = experimentalFiltering;
     }
 
 
@@ -65,7 +61,7 @@ public class EthereumSchema extends AbstractSchema {
 
         int[] fields = fieldIds.stream().mapToInt( i -> i ).toArray();
         EthereumMapper mapper = catalogTable.name.equals( "block" ) ? EthereumMapper.BLOCK : EthereumMapper.TRANSACTION;
-        EthereumTable table = new EthereumTable( clientUrl, blocks, experimentalFiltering, RelDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, mapper, ethereumDataSource );
+        EthereumTable table = new EthereumTable( clientUrl, RelDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, mapper, ethereumDataSource );
         tableMap.put( catalogTable.name, table );
         return table;
     }
