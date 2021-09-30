@@ -50,21 +50,21 @@ import org.web3j.protocol.http.HttpService;
 @AdapterProperties(
         name = "Blockchain",
         description = "An adapter for querying the Ethereum blockchain. It uses the ethereum JSON-RPC API. Currently, this adapter only supports read operations.",
-        usedModes = DeployMode.EMBEDDED)
-@AdapterSettingString(name = "ClientUrl", description = "The URL of the ethereum JSONRPC client", defaultValue = "https://mainnet.infura.io/v3/4d06589e97064040b5da99cf4051ef04", position = 1)
+        usedModes = DeployMode.REMOTE)
+@AdapterSettingString(name = "ClientUrl", description = "The URL of the ethereum JSON RPC client", defaultValue = "https://mainnet.infura.io/v3/4d06589e97064040b5da99cf4051ef04", position = 1)
 @AdapterSettingInteger(name = "Blocks", description = "The number of Blocks to fetch when processing a query", defaultValue = 10, position = 2)
 @AdapterSettingBoolean(name = "ExperimentalFiltering", description = "Experimentally filter Past Block", defaultValue = false, position = 3)
 public class BlockchainDataSource extends DataSource {
 
     private String clientURL;
-    private int blocks;
-    private boolean experimentalFiltering;
+    private final int blocks;
+    private final boolean experimentalFiltering;
     private BlockchainSchema currentSchema;
 
 
     public BlockchainDataSource( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );
-        setClientURL( settings );
+        setClientURL( settings.get( "ClientUrl" ) );
         this.blocks = Integer.parseInt( settings.get( "Blocks" ) );
         this.experimentalFiltering = Boolean.parseBoolean( settings.get( "ExperimentalFiltering" ) );
         registerInformationPage( uniqueName );
@@ -72,13 +72,12 @@ public class BlockchainDataSource extends DataSource {
     }
 
 
-    private void setClientURL( Map<String, String> settings ) {
-        String clientURL = settings.get( "ClientUrl" );
+    private void setClientURL( String clientURL ) {
         Web3j web3j = Web3j.build( new HttpService( clientURL ) );
         try {
             BigInteger latest = web3j.ethBlockNumber().send().getBlockNumber();
         } catch ( Exception e ) {
-            throw new RuntimeException( ":Unable to connect the client URL '" + clientURL + "'" );
+            throw new RuntimeException( "Unable to connect the client URL '" + clientURL + "'" );
         }
         web3j.shutdown();
         this.clientURL = clientURL;
@@ -196,7 +195,7 @@ public class BlockchainDataSource extends DataSource {
     @Override
     protected void reloadSettings( List<String> updatedSettings ) {
         if ( updatedSettings.contains( "ClientUrl" ) ) {
-            setClientURL( settings );
+            setClientURL( settings.get( "ClientUrl" ) );
         }
     }
 

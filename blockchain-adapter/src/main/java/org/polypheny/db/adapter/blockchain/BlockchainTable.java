@@ -46,7 +46,15 @@ public class BlockchainTable extends AbstractTable implements FilterableTable {
     protected List<BlockchainFieldType> fieldTypes;
 
 
-    public BlockchainTable( String clientUrl, int blocks, boolean experimentalFiltering, RelProtoDataType protoRowType, List<BlockchainFieldType> fieldTypes, int[] fields, BlockchainMapper mapper, BlockchainDataSource blockchainDataSource ) {
+    public BlockchainTable(
+            String clientUrl,
+            int blocks,
+            boolean experimentalFiltering,
+            RelProtoDataType protoRowType,
+            List<BlockchainFieldType> fieldTypes,
+            int[] fields,
+            BlockchainMapper mapper,
+            BlockchainDataSource blockchainDataSource ) {
         this.clientUrl = clientUrl;
         this.protoRowType = protoRowType;
         this.fieldTypes = fieldTypes;
@@ -91,14 +99,30 @@ public class BlockchainTable extends AbstractTable implements FilterableTable {
             return new AbstractEnumerable<Object>() {
                 @Override
                 public Enumerator<Object> enumerator() {
-                    return new BlockchainEnumerator<>( clientUrl, blocks, cancelFlag, true, null, mapper, finalBlockNumberPredicate, (BlockchainEnumerator.RowConverter<Object>) BlockchainEnumerator.converter( fieldTypes, fields ) );
+                    return new BlockchainEnumerator<>(
+                            clientUrl,
+                            blocks,
+                            cancelFlag,
+                            true,
+                            null,
+                            mapper,
+                            finalBlockNumberPredicate,
+                            (BlockchainEnumerator.RowConverter<Object>) BlockchainEnumerator.converter( fieldTypes, fields ) );
                 }
             };
         }
         return new AbstractEnumerable<Object[]>() {
             @Override
             public Enumerator<Object[]> enumerator() {
-                return new BlockchainEnumerator<>( clientUrl, blocks, cancelFlag, true, null, mapper, finalBlockNumberPredicate, (BlockchainEnumerator.RowConverter<Object[]>) BlockchainEnumerator.converter( fieldTypes, fields ) );
+                return new BlockchainEnumerator<>(
+                        clientUrl,
+                        blocks,
+                        cancelFlag,
+                        true,
+                        null,
+                        mapper,
+                        finalBlockNumberPredicate,
+                        (BlockchainEnumerator.RowConverter<Object[]>) BlockchainEnumerator.converter( fieldTypes, fields ) );
             }
         };
     }

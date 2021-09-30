@@ -53,7 +53,10 @@ class BlockReader implements Closeable {
         EthBlock.Block block = null;
         while ( this.currentBlock.compareTo( BigInteger.ZERO ) == 1 && block == null ) {
             if ( blockNumberPredicate.test( this.currentBlock ) ) {
-                block = web3j.ethGetBlockByNumber( DefaultBlockParameter.valueOf( this.currentBlock ), false ).send().getBlock();
+                block = web3j
+                        .ethGetBlockByNumber( DefaultBlockParameter.valueOf( this.currentBlock ), false )
+                        .send()
+                        .getBlock();
                 blockReads--;
             }
             this.currentBlock = this.currentBlock.subtract( BigInteger.ONE );
@@ -73,4 +76,3 @@ class BlockReader implements Closeable {
     }
 
 }
-

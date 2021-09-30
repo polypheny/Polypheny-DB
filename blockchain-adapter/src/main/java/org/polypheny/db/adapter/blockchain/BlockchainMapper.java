@@ -21,6 +21,7 @@ import java.util.function.Predicate;
 import org.web3j.protocol.core.methods.response.EthBlock;
 
 public enum BlockchainMapper {
+
     BLOCK,
     TRANSACTION;
 

@@ -43,7 +43,11 @@ public class TransactionReader extends BlockReader {
 
         while ( this.currentBlock.compareTo( BigInteger.ZERO ) == 1 && (transactionsList == null || transactionsList.size() == 0) ) {
             if ( blockNumberPredicate.test( this.currentBlock ) ) {
-                transactionsList = web3j.ethGetBlockByNumber( DefaultBlockParameter.valueOf( currentBlock ), true ).send().getBlock().getTransactions();
+                transactionsList = web3j
+                        .ethGetBlockByNumber( DefaultBlockParameter.valueOf( currentBlock ), true )
+                        .send()
+                        .getBlock()
+                        .getTransactions();
                 transactionIndex = 0;
                 blockReads--;
             }

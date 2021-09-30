@@ -314,4 +314,3 @@ class BlockchainEnumerator<E> implements Enumerator<E> {
     }
 
 }
-
