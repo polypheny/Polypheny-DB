@@ -20,6 +20,7 @@ import java.sql.Connection;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Locale;
 import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
@@ -169,7 +170,7 @@ public class CqlTestHelper {
     private static void insertIntoTestTable( long tbigint, boolean tboolean, Date tdate, double tdecimal,
             double tdouble, int tinteger, double treal, int tsmallint, int ttinyint, String tvarchar ) {
 
-        String query = String.format( "INSERT INTO test.testtable (tbigint, tboolean, tdate,"
+        String query = String.format( Locale.ROOT, "INSERT INTO test.testtable (tbigint, tboolean, tdate,"
                         + " tdecimal, tdouble, tinteger, treal, tsmallint, ttinyint, tvarchar)"
                         + " VALUES (ROW(%d, %b, DATE '%s', %f, %f, %d, %f, %d, %d, '%s'))",
                 tbigint, tboolean, tdate.toString(), tdecimal, tdouble, tinteger, treal, tsmallint, ttinyint, tvarchar );
@@ -178,13 +179,13 @@ public class CqlTestHelper {
 
 
     private static void insertIntoDept( int deptno, String deptname ) {
-        String query = String.format( "INSERT INTO test.dept (deptno, deptname) VALUES (ROW(%d, '%s'))", deptno, deptname );
+        String query = String.format( Locale.ROOT, "INSERT INTO test.dept (deptno, deptname) VALUES (%d, '%s')", deptno, deptname );
         executeInsertion( query );
     }
 
 
     private static void insertIntoEmployee( int empno, String empname, double salary, int deptno, boolean married, Date dob, Date joiningDate ) {
-        String query = String.format( "INSERT INTO test.employee (empno, empname, salary, deptno, married, dob,"
+        String query = String.format( Locale.ROOT, "INSERT INTO test.employee (empno, empname, salary, deptno, married, dob,"
                         + " joining_date) VALUES (ROW(%d, '%s', %f, %d, %b, DATE '%s', DATE '%s'))",
                 empno, empname, salary, deptno, married, dob.toString(), joiningDate.toString() );
         executeInsertion( query );

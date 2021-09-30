@@ -52,7 +52,7 @@ public class TableIndex {
             CatalogTable table = catalog.getTable( inDatabase, schemaName, tableName );
             return new TableIndex( table, schemaName, tableName );
         } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
-            throw new UnknownIndexException( "Cannot find a underlying table for the specified table name: " + schemaName + "." + tableName + ".", e );
+            throw new UnknownIndexException( "Cannot find a underlying table for the specified table name: " + schemaName + "." + tableName + "." );
         }
     }
 
