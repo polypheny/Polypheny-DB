@@ -48,7 +48,7 @@ public class SidebarElement {
      *
      * @param id unique id for the SidebarElement, e.g. of the form "schemaName.tableName.columnName"
      * @param name the name of the SidebarElement that will be displayed in the UI
-     * @param schemaType
+     * @param schemaType the schema type of the sidebar element, this is nullable for non-database elements
      * @param routerLinkRoot routerLink to the view where the Sidebar is displayed. When clicking on a SidebarElement, the user will be directed to the page "routerLinkRoot/id" (id of the SidebarElement)
      * @param icon class name of the icon that will be displayed left of the id, e.g. "fa fa-table"
      */

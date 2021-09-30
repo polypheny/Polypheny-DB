@@ -210,7 +210,6 @@ import org.polypheny.db.webui.models.requests.BatchUpdateRequest.Update;
 import org.polypheny.db.webui.models.requests.ClassifyAllData;
 import org.polypheny.db.webui.models.requests.ColumnRequest;
 import org.polypheny.db.webui.models.requests.ConstraintRequest;
-import org.polypheny.db.webui.models.requests.EditCollectionRequest;
 import org.polypheny.db.webui.models.requests.EditTableRequest;
 import org.polypheny.db.webui.models.requests.ExploreData;
 import org.polypheny.db.webui.models.requests.ExploreTables;
@@ -249,7 +248,7 @@ public class Crud implements InformationObserver {
         this.transactionManager = transactionManager;
         this.databaseName = databaseName;
         this.userName = userName;
-        this.documentCrud = new DocumentCrud();
+        this.documentCrud = new DocumentCrud( this );
         registerStatisticObserver();
     }
 
@@ -629,42 +628,6 @@ public class Crud implements InformationObserver {
             colJoiner.add( primaryKeys.toString() );
         }
         query.append( colJoiner.toString() );
-        query.append( ")" );
-        if ( request.store != null && !request.store.equals( "" ) ) {
-            query.append( String.format( " ON STORE \"%s\"", request.store ) );
-        }
-
-        try {
-            int a = executeSqlUpdate( transaction, query.toString() );
-            result = new Result( a ).setGeneratedQuery( query.toString() );
-            transaction.commit();
-        } catch ( QueryExecutionException | TransactionException e ) {
-            log.error( "Caught exception while creating a table", e );
-            result = new Result( e ).setGeneratedQuery( query.toString() );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback CREATE TABLE statement: {}", ex.getMessage(), ex );
-            }
-        }
-        return result;
-    }
-
-
-    Result createCollection( final Request req, final Response res ) {
-        EditCollectionRequest request = this.gson.fromJson( req.body(), EditCollectionRequest.class );
-        Transaction transaction = getTransaction();
-        StringBuilder query = new StringBuilder();
-        StringJoiner colBuilder = new StringJoiner( "," );
-        String tableId = String.format( "\"%s\".\"%s\"", request.database, request.collection );
-        query.append( "CREATE TABLE " ).append( tableId ).append( "(" );
-        Result result;
-        colBuilder.add( "\"_id\" VARCHAR(24) NOT NULL" );
-        //colBuilder.add( "\"_data\" JSON" );
-        StringJoiner primaryKeys = new StringJoiner( ",", "PRIMARY KEY (", ")" );
-        primaryKeys.add( "\"_id\"" );
-        colBuilder.add( primaryKeys.toString() );
-        query.append( colBuilder );
         query.append( ")" );
         if ( request.store != null && !request.store.equals( "" ) ) {
             query.append( String.format( " ON STORE \"%s\"", request.store ) );
@@ -3808,7 +3771,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    private int executeSqlUpdate( final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
+    public int executeSqlUpdate( final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
         return executeSqlUpdate( transaction.createStatement(), transaction, sqlUpdate );
     }
 
@@ -3951,7 +3914,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    private Transaction getTransaction() {
+    public Transaction getTransaction() {
         return getTransaction( false );
     }
 
@@ -3984,21 +3947,6 @@ public class Crud implements InformationObserver {
             log.error( "Caught exception", e );
         }
         return dataTypes;
-    }
-
-
-    /**
-     * This query returns a list of all available databases to the frontend,
-     * disguised as a query result
-     */
-    public Result getDocumentDatabases( Request request, Response response ) {
-        Map<String, String> names = Catalog.getInstance()
-                .getSchemas( Catalog.defaultDatabaseId, null )
-                .stream()
-                .collect( Collectors.toMap( CatalogSchema::getName, s -> s.schemaType.name() ) );
-
-        String[][] data = names.entrySet().stream().map( n -> new String[]{ n.getKey(), n.getValue() } ).toArray( String[][]::new );
-        return new Result( new DbColumn[]{ new DbColumn( "Database/Schema" ), new DbColumn( "Type" ) }, data );
     }
 
 
@@ -4069,7 +4017,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    static class QueryExecutionException extends Exception {
+    public static class QueryExecutionException extends Exception {
 
         QueryExecutionException( String message ) {
             super( message );

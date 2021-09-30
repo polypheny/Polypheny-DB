@@ -18,9 +18,24 @@ package org.polypheny.db.webui.models.requests;
 
 public class EditCollectionRequest {
 
+    /**
+     * Name of the document database (Polypheny schema)
+     */
     public String database;
+
+    /**
+     * Name of the document collection (Polypheny table)
+     */
     public String collection;
+
+    /**
+     * Action which is performed on the collection
+     */
     public String action; // truncate / drop
+
+    /**
+     * Identifier of the store on which the collection is edited
+     */
     public String store;
 
 }

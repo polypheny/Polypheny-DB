@@ -35,7 +35,7 @@ public class QueryRequest extends UIRequest {
     public String language;
 
     /**
-     * This flag defines the default database to use
+     * This flag defines the default Polypheny schema (document database) to use
      */
     public String database;
 

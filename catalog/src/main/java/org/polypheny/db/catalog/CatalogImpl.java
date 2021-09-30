@@ -260,9 +260,9 @@ public class CatalogImpl extends Catalog {
 
     @Override
     public void commit() throws NoTablePrimaryKeyException {
-        /*if ( openTable != null ) {
+        if ( openTable != null ) {
             throw new NoTablePrimaryKeyException();
-        }*/ //TODO DL temporarily disabled, re-enable
+        }
         db.commit();
     }
 
