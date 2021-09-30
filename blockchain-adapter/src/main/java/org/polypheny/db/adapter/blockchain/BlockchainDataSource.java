@@ -33,8 +33,6 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
@@ -67,7 +65,7 @@ public class BlockchainDataSource extends DataSource {
         setClientURL( settings.get( "ClientUrl" ) );
         this.blocks = Integer.parseInt( settings.get( "Blocks" ) );
         this.experimentalFiltering = Boolean.parseBoolean( settings.get( "ExperimentalFiltering" ) );
-        registerInformationPage( uniqueName );
+        createInformationPage();
         enableInformationPage();
     }
 
@@ -200,24 +198,20 @@ public class BlockchainDataSource extends DataSource {
     }
 
 
-    protected void registerInformationPage( String uniqueName ) {
-        InformationManager im = InformationManager.getInstance();
-        InformationPage informationPage = new InformationPage( uniqueName, "Blockchain Data Source" ).setLabel( "Sources" );
-        im.addPage( informationPage );
-
+    protected void createInformationPage() {
         for ( Map.Entry<String, List<ExportedColumn>> entry : getExportedColumns().entrySet() ) {
-            InformationGroup group = new InformationGroup( informationPage, entry.getValue().get( 0 ).physicalSchemaName );
+            InformationGroup group = new InformationGroup(
+                    informationPage,
+                    entry.getValue().get( 0 ).physicalSchemaName + "." + entry.getValue().get( 0 ).physicalTableName );
 
             InformationTable table = new InformationTable(
                     group,
-                    Arrays.asList( "Position", "Column Name", "Type", "Nullable", "Filename", "Primary" ) );
+                    Arrays.asList( "Position", "Column Name", "Type", "Primary" ) );
             for ( ExportedColumn exportedColumn : entry.getValue() ) {
                 table.addRow(
                         exportedColumn.physicalPosition,
                         exportedColumn.name,
                         exportedColumn.getDisplayType(),
-                        exportedColumn.nullable ? "✔" : "",
-                        exportedColumn.physicalSchemaName,
                         exportedColumn.primary ? "✔" : ""
                 );
             }
