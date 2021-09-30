@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.blockchain;
+package org.polypheny.db.adapter.ethereum;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -28,7 +28,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.util.Pair;
 
-public class BlockchainPredicateFactory {
+public class EthereumPredicateFactory {
 
     static final List<SqlKind> REX_COMPARATORS = new ArrayList<SqlKind>() {{
         this.add( SqlKind.EQUALS );
@@ -40,9 +40,9 @@ public class BlockchainPredicateFactory {
     static final Predicate<BigInteger> ALWAYS_TRUE = bigInteger -> true;
 
 
-    static Predicate<BigInteger> makePredicate( DataContext dataContext, List<RexNode> filters, BlockchainMapper mapper ) {
+    static Predicate<BigInteger> makePredicate( DataContext dataContext, List<RexNode> filters, EthereumMapper mapper ) {
         String field = "$0";
-        if ( mapper == BlockchainMapper.TRANSACTION ) {
+        if ( mapper == EthereumMapper.TRANSACTION ) {
             field = "$3";
         }
         String blockNumberField = field;

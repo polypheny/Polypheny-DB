@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.blockchain;
+package org.polypheny.db.adapter.ethereum;
 
 import java.math.BigInteger;
 import java.util.function.Predicate;
 import org.web3j.protocol.core.methods.response.EthBlock;
 
-public enum BlockchainMapper {
+public enum EthereumMapper {
 
     BLOCK,
     TRANSACTION;
 
 
-    static BlockchainMapper getMapper( String tableName ) {
+    static EthereumMapper getMapper( String tableName ) {
         if ( tableName.equals( "block" ) ) {
             return BLOCK;
         }

@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.blockchain;
+package org.polypheny.db.adapter.ethereum;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
+import lombok.Setter;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -34,32 +35,33 @@ import org.polypheny.db.schema.FilterableTable;
 import org.polypheny.db.schema.impl.AbstractTable;
 import org.polypheny.db.util.Pair;
 
-public class BlockchainTable extends AbstractTable implements FilterableTable {
+public class EthereumTable extends AbstractTable implements FilterableTable {
 
     protected final String clientUrl;
     protected final RelProtoDataType protoRowType;
     protected final int[] fields;
-    protected final BlockchainDataSource blockchainDataSource;
-    protected final BlockchainMapper mapper;
-    private final int blocks;
+    protected final EthereumDataSource ethereumDataSource;
+    protected final EthereumMapper mapper;
+    @Setter
+    private int blocks;
     private final boolean experimentalFiltering;
-    protected List<BlockchainFieldType> fieldTypes;
+    protected List<EthereumFieldType> fieldTypes;
 
 
-    public BlockchainTable(
+    public EthereumTable(
             String clientUrl,
             int blocks,
             boolean experimentalFiltering,
             RelProtoDataType protoRowType,
-            List<BlockchainFieldType> fieldTypes,
+            List<EthereumFieldType> fieldTypes,
             int[] fields,
-            BlockchainMapper mapper,
-            BlockchainDataSource blockchainDataSource ) {
+            EthereumMapper mapper,
+            EthereumDataSource ethereumDataSource ) {
         this.clientUrl = clientUrl;
         this.protoRowType = protoRowType;
         this.fieldTypes = fieldTypes;
         this.fields = fields;
-        this.blockchainDataSource = blockchainDataSource;
+        this.ethereumDataSource = ethereumDataSource;
         this.mapper = mapper;
         this.blocks = blocks;
         this.experimentalFiltering = experimentalFiltering;
@@ -85,11 +87,11 @@ public class BlockchainTable extends AbstractTable implements FilterableTable {
 
     @Override
     public Enumerable scan( DataContext dataContext, List<RexNode> filters ) {
-        dataContext.getStatement().getTransaction().registerInvolvedAdapter( blockchainDataSource );
-        Predicate<BigInteger> blockNumberPredicate = BlockchainPredicateFactory.ALWAYS_TRUE;
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter( ethereumDataSource );
+        Predicate<BigInteger> blockNumberPredicate = EthereumPredicateFactory.ALWAYS_TRUE;
         if ( experimentalFiltering ) {
             if ( !filters.isEmpty() ) {
-                blockNumberPredicate = BlockchainPredicateFactory.makePredicate( dataContext, filters, mapper );
+                blockNumberPredicate = EthereumPredicateFactory.makePredicate( dataContext, filters, mapper );
             }
         }
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
@@ -99,7 +101,7 @@ public class BlockchainTable extends AbstractTable implements FilterableTable {
             return new AbstractEnumerable<Object>() {
                 @Override
                 public Enumerator<Object> enumerator() {
-                    return new BlockchainEnumerator<>(
+                    return new EthereumEnumerator<>(
                             clientUrl,
                             blocks,
                             cancelFlag,
@@ -107,14 +109,14 @@ public class BlockchainTable extends AbstractTable implements FilterableTable {
                             null,
                             mapper,
                             finalBlockNumberPredicate,
-                            (BlockchainEnumerator.RowConverter<Object>) BlockchainEnumerator.converter( fieldTypes, fields ) );
+                            (EthereumEnumerator.RowConverter<Object>) EthereumEnumerator.converter( fieldTypes, fields ) );
                 }
             };
         }
         return new AbstractEnumerable<Object[]>() {
             @Override
             public Enumerator<Object[]> enumerator() {
-                return new BlockchainEnumerator<>(
+                return new EthereumEnumerator<>(
                         clientUrl,
                         blocks,
                         cancelFlag,
@@ -122,7 +124,7 @@ public class BlockchainTable extends AbstractTable implements FilterableTable {
                         null,
                         mapper,
                         finalBlockNumberPredicate,
-                        (BlockchainEnumerator.RowConverter<Object[]>) BlockchainEnumerator.converter( fieldTypes, fields ) );
+                        (EthereumEnumerator.RowConverter<Object[]>) EthereumEnumerator.converter( fieldTypes, fields ) );
             }
         };
     }

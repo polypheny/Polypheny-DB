@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.blockchain;
+package org.polypheny.db.adapter.ethereum;
 
 
 import java.math.BigInteger;
@@ -46,21 +46,21 @@ import org.web3j.protocol.http.HttpService;
 
 @Slf4j
 @AdapterProperties(
-        name = "Blockchain",
+        name = "Ethereum",
         description = "An adapter for querying the Ethereum blockchain. It uses the ethereum JSON-RPC API. Currently, this adapter only supports read operations.",
         usedModes = DeployMode.REMOTE)
 @AdapterSettingString(name = "ClientUrl", description = "The URL of the ethereum JSON RPC client", defaultValue = "https://mainnet.infura.io/v3/4d06589e97064040b5da99cf4051ef04", position = 1)
 @AdapterSettingInteger(name = "Blocks", description = "The number of Blocks to fetch when processing a query", defaultValue = 10, position = 2)
 @AdapterSettingBoolean(name = "ExperimentalFiltering", description = "Experimentally filter Past Block", defaultValue = false, position = 3)
-public class BlockchainDataSource extends DataSource {
+public class EthereumDataSource extends DataSource {
 
     private String clientURL;
     private final int blocks;
     private final boolean experimentalFiltering;
-    private BlockchainSchema currentSchema;
+    private EthereumSchema currentSchema;
 
 
-    public BlockchainDataSource( final int storeId, final String uniqueName, final Map<String, String> settings ) {
+    public EthereumDataSource( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );
         setClientURL( settings.get( "ClientUrl" ) );
         this.blocks = Integer.parseInt( settings.get( "Blocks" ) );
@@ -84,7 +84,7 @@ public class BlockchainDataSource extends DataSource {
 
     @Override
     public void createNewSchema( SchemaPlus rootSchema, String name ) {
-        currentSchema = new BlockchainSchema( this.clientURL, this.blocks, this.experimentalFiltering );
+        currentSchema = new EthereumSchema( this.clientURL, this.blocks, this.experimentalFiltering );
     }
 
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.blockchain;
+package org.polypheny.db.adapter.ethereum;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -54,7 +54,7 @@ public class TransactionReader extends BlockReader {
             this.currentBlock = this.currentBlock.subtract( BigInteger.ONE );
         }
 
-        String[] res = BlockchainMapper.TRANSACTION.map( transactionsList.get( transactionIndex++ ).get() );
+        String[] res = EthereumMapper.TRANSACTION.map( transactionsList.get( transactionIndex++ ).get() );
 
         if ( transactionIndex >= transactionsList.size() ) {
             transactionsList = null;

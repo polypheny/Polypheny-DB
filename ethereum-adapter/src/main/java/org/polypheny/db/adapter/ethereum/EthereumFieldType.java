@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.blockchain;
+package org.polypheny.db.adapter.ethereum;
 
 
 import java.util.HashMap;
@@ -28,7 +28,7 @@ import org.polypheny.db.type.PolyType;
 /**
  * Type of Blockchain field.
  */
-enum BlockchainFieldType {
+enum EthereumFieldType {
     STRING( String.class, "string" ),
     BOOLEAN( Primitive.BOOLEAN ),
     BYTE( Primitive.BYTE ),
@@ -42,11 +42,11 @@ enum BlockchainFieldType {
     TIME( java.sql.Time.class, "time" ),
     TIMESTAMP( java.sql.Timestamp.class, "timestamp" );
 
-    private static final Map<String, BlockchainFieldType> MAP = new HashMap<>();
+    private static final Map<String, EthereumFieldType> MAP = new HashMap<>();
 
 
     static {
-        for ( BlockchainFieldType value : values() ) {
+        for ( EthereumFieldType value : values() ) {
             MAP.put( value.simpleName, value );
         }
     }
@@ -56,46 +56,46 @@ enum BlockchainFieldType {
     private final String simpleName;
 
 
-    BlockchainFieldType( Primitive primitive ) {
+    EthereumFieldType( Primitive primitive ) {
         this( primitive.boxClass, primitive.primitiveClass.getSimpleName() );
     }
 
 
-    BlockchainFieldType( Class clazz, String simpleName ) {
+    EthereumFieldType( Class clazz, String simpleName ) {
         this.clazz = clazz;
         this.simpleName = simpleName;
     }
 
 
-    public static BlockchainFieldType getBlockchainFieldType( PolyType type ) {
+    public static EthereumFieldType getBlockchainFieldType( PolyType type ) {
         switch ( type ) {
             case BOOLEAN:
-                return BlockchainFieldType.BOOLEAN;
+                return EthereumFieldType.BOOLEAN;
             case VARBINARY:
-                return BlockchainFieldType.BYTE;
+                return EthereumFieldType.BYTE;
             case INTEGER:
-                return BlockchainFieldType.INT;
+                return EthereumFieldType.INT;
             case BIGINT:
-                return BlockchainFieldType.LONG;
+                return EthereumFieldType.LONG;
             case REAL:
-                return BlockchainFieldType.FLOAT;
+                return EthereumFieldType.FLOAT;
             case DOUBLE:
-                return BlockchainFieldType.DOUBLE;
+                return EthereumFieldType.DOUBLE;
             case VARCHAR:
-                return BlockchainFieldType.STRING;
+                return EthereumFieldType.STRING;
             case DATE:
-                return BlockchainFieldType.DATE;
+                return EthereumFieldType.DATE;
             case TIME:
-                return BlockchainFieldType.TIME;
+                return EthereumFieldType.TIME;
             case TIMESTAMP:
-                return BlockchainFieldType.TIMESTAMP;
+                return EthereumFieldType.TIMESTAMP;
             default:
                 throw new RuntimeException( "Unsupported datatype: " + type.name() );
         }
     }
 
 
-    public static BlockchainFieldType of( String typeString ) {
+    public static EthereumFieldType of( String typeString ) {
         return MAP.get( typeString );
     }
 

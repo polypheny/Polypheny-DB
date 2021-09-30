@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.blockchain;
+package org.polypheny.db.adapter.ethereum;
 
 
 import java.io.Closeable;
@@ -61,7 +61,7 @@ class BlockReader implements Closeable {
             }
             this.currentBlock = this.currentBlock.subtract( BigInteger.ONE );
         }
-        return block == null ? null : BlockchainMapper.BLOCK.map( block );
+        return block == null ? null : EthereumMapper.BLOCK.map( block );
     }
 
 

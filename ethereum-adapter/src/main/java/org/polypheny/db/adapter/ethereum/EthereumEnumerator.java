@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.blockchain;
+package org.polypheny.db.adapter.ethereum;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -34,7 +34,7 @@ import org.apache.commons.lang3.time.FastDateFormat;
  *
  * @param <E> Row type
  */
-class BlockchainEnumerator<E> implements Enumerator<E> {
+class EthereumEnumerator<E> implements Enumerator<E> {
 
     private static final FastDateFormat TIME_FORMAT_DATE;
     private static final FastDateFormat TIME_FORMAT_TIME;
@@ -58,7 +58,7 @@ class BlockchainEnumerator<E> implements Enumerator<E> {
     private E current;
 
 
-    BlockchainEnumerator( String clientUrl, int blocks, AtomicBoolean cancelFlag, boolean stream, String[] filterValues, BlockchainMapper mapper, Predicate<BigInteger> blockNumberPredicate, RowConverter<E> rowConverter ) {
+    EthereumEnumerator( String clientUrl, int blocks, AtomicBoolean cancelFlag, boolean stream, String[] filterValues, EthereumMapper mapper, Predicate<BigInteger> blockNumberPredicate, RowConverter<E> rowConverter ) {
         this.clientUrl = clientUrl;
         this.cancelFlag = cancelFlag;
         this.rowConverter = rowConverter;
@@ -68,7 +68,7 @@ class BlockchainEnumerator<E> implements Enumerator<E> {
     }
 
 
-    static RowConverter<?> converter( List<BlockchainFieldType> fieldTypes, int[] fields ) {
+    static RowConverter<?> converter( List<EthereumFieldType> fieldTypes, int[] fields ) {
         if ( fields.length == 1 ) {
             final int field = fields[0];
             return new SingleColumnRowConverter( fieldTypes.get( field ), field );
@@ -153,7 +153,7 @@ class BlockchainEnumerator<E> implements Enumerator<E> {
         abstract E convertRow( String[] rows );
 
 
-        protected Object convert( BlockchainFieldType fieldType, String string ) {
+        protected Object convert( EthereumFieldType fieldType, String string ) {
             if ( fieldType == null ) {
                 return string;
             }
@@ -238,21 +238,21 @@ class BlockchainEnumerator<E> implements Enumerator<E> {
      */
     static class ArrayRowConverter extends RowConverter<Object[]> {
 
-        private final BlockchainFieldType[] fieldTypes;
+        private final EthereumFieldType[] fieldTypes;
         private final int[] fields;
         // whether the row to convert is from a stream
         private final boolean stream;
 
 
-        ArrayRowConverter( List<BlockchainFieldType> fieldTypes, int[] fields ) {
-            this.fieldTypes = fieldTypes.toArray( new BlockchainFieldType[0] );
+        ArrayRowConverter( List<EthereumFieldType> fieldTypes, int[] fields ) {
+            this.fieldTypes = fieldTypes.toArray( new EthereumFieldType[0] );
             this.fields = fields;
             this.stream = false;
         }
 
 
-        ArrayRowConverter( List<BlockchainFieldType> fieldTypes, int[] fields, boolean stream ) {
-            this.fieldTypes = fieldTypes.toArray( new BlockchainFieldType[0] );
+        ArrayRowConverter( List<EthereumFieldType> fieldTypes, int[] fields, boolean stream ) {
+            this.fieldTypes = fieldTypes.toArray( new EthereumFieldType[0] );
             this.fields = fields;
             this.stream = stream;
         }
@@ -296,11 +296,11 @@ class BlockchainEnumerator<E> implements Enumerator<E> {
      */
     private static class SingleColumnRowConverter extends RowConverter {
 
-        private final BlockchainFieldType fieldType;
+        private final EthereumFieldType fieldType;
         private final int fieldIndex;
 
 
-        private SingleColumnRowConverter( BlockchainFieldType fieldType, int fieldIndex ) {
+        private SingleColumnRowConverter( EthereumFieldType fieldType, int fieldIndex ) {
             this.fieldType = fieldType;
             this.fieldIndex = fieldIndex;
         }

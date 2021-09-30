@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.blockchain;
+package org.polypheny.db.adapter.ethereum;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,37 +35,37 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Util;
 
-public class BlockchainSchema extends AbstractSchema {
+public class EthereumSchema extends AbstractSchema {
 
     private final String clientUrl;
-    private final int blocks;
+    private int blocks;
     private final boolean experimentalFiltering;
-    private Map<String, BlockchainTable> tableMap = new HashMap<>();
+    private Map<String, EthereumTable> tableMap = new HashMap<>();
 
 
-    public BlockchainSchema( String clientUrl, int blocks, boolean experimentalFiltering ) {
+    public EthereumSchema( String clientUrl, int blocks, boolean experimentalFiltering ) {
         this.clientUrl = clientUrl;
         this.blocks = blocks;
         this.experimentalFiltering = experimentalFiltering;
     }
 
 
-    public Table createBlockchainTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, BlockchainDataSource blockchainDataSource ) {
+    public Table createBlockchainTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, EthereumDataSource ethereumDataSource ) {
         final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
-        List<BlockchainFieldType> fieldTypes = new LinkedList<>();
+        List<EthereumFieldType> fieldTypes = new LinkedList<>();
         List<Integer> fieldIds = new ArrayList<>( columnPlacementsOnStore.size() );
         for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
             CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
             RelDataType sqlType = sqlType( typeFactory, catalogColumn.type, catalogColumn.length, catalogColumn.scale, null );
             fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
-            fieldTypes.add( BlockchainFieldType.getBlockchainFieldType( catalogColumn.type ) );
+            fieldTypes.add( EthereumFieldType.getBlockchainFieldType( catalogColumn.type ) );
             fieldIds.add( (int) placement.physicalPosition );
         }
 
         int[] fields = fieldIds.stream().mapToInt( i -> i ).toArray();
-        BlockchainMapper mapper = catalogTable.name.equals( "block" ) ? BlockchainMapper.BLOCK : BlockchainMapper.TRANSACTION;
-        BlockchainTable table = new BlockchainTable( clientUrl, blocks, experimentalFiltering, RelDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, mapper, blockchainDataSource );
+        EthereumMapper mapper = catalogTable.name.equals( "block" ) ? EthereumMapper.BLOCK : EthereumMapper.TRANSACTION;
+        EthereumTable table = new EthereumTable( clientUrl, blocks, experimentalFiltering, RelDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, mapper, ethereumDataSource );
         tableMap.put( catalogTable.name, table );
         return table;
     }
