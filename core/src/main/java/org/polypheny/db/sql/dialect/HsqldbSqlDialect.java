@@ -36,9 +36,12 @@ package org.polypheny.db.sql.dialect;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlBasicCall;
 import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlDialect;
+import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
@@ -78,6 +81,50 @@ public class HsqldbSqlDialect extends SqlDialect {
     @Override
     public boolean supportsWindowFunctions() {
         return false;
+    }
+
+
+    @Override
+    public IntervalParameterStrategy getIntervalParameterStrategy() {
+        return IntervalParameterStrategy.NONE;
+    }
+
+
+    @Override
+    public SqlNode getCastSpec( RelDataType type ) {
+        String castSpec;
+        switch ( type.getPolyType() ) {
+            case ARRAY:
+                // We need to flag the type with a underscore to flag the type (the underscore is removed in the unparse method)
+                castSpec = "_LONGVARCHAR";
+                break;
+            case FILE:
+            case IMAGE:
+            case VIDEO:
+            case SOUND:
+                // We need to flag the type with a underscore to flag the type (the underscore is removed in the unparse method)
+                castSpec = "_BLOB";
+                break;
+            case INTERVAL_YEAR_MONTH:
+            case INTERVAL_DAY:
+            case INTERVAL_DAY_HOUR:
+            case INTERVAL_DAY_MINUTE:
+            case INTERVAL_DAY_SECOND:
+            case INTERVAL_HOUR_MINUTE:
+            case INTERVAL_HOUR:
+            case INTERVAL_HOUR_SECOND:
+            case INTERVAL_MINUTE:
+            case INTERVAL_MONTH:
+            case INTERVAL_SECOND:
+            case INTERVAL_MINUTE_SECOND:
+            case INTERVAL_YEAR:
+                castSpec = "INTERVAL";
+                break;
+            default:
+                return super.getCastSpec( type );
+        }
+
+        return new SqlDataTypeSpec( new SqlIdentifier( castSpec, SqlParserPos.ZERO ), -1, -1, null, null, SqlParserPos.ZERO );
     }
 
 
@@ -155,6 +202,35 @@ public class HsqldbSqlDialect extends SqlDialect {
                 return "MI";
             case SECOND:
                 return "SS";
+            default:
+                throw new AssertionError( "could not convert time unit to HSQLDB equivalent: " + unit );
+        }
+    }
+
+
+    @Override
+    public String timeUnitName( TimeUnitRange unit ) {
+        switch ( unit ) {
+            case YEAR:
+                return "YEAR";
+            case MONTH:
+                return "MONTH";
+            case DAY:
+                return "DAY";
+            case HOUR:
+                return "HOUR";
+            case MINUTE:
+                return "MINUTE";
+            case SECOND:
+                return "SECOND";
+            case WEEK:
+                return "WEEK_OF_YEAR";
+            case DOW:
+                return "DAY_OF_WEEK";
+            case QUARTER:
+                return "QUARTER";
+            case DOY:
+                return "DAY_OF_YEAR";
             default:
                 throw new AssertionError( "could not convert time unit to HSQLDB equivalent: " + unit );
         }

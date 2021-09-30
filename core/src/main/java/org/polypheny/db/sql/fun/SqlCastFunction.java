@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFamily;
+import org.polypheny.db.sql.SqlBasicCall;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlDynamicParam;
@@ -49,13 +50,13 @@ import org.polypheny.db.sql.SqlIntervalQualifier;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlSyntax;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
 import org.polypheny.db.sql.validate.SqlValidatorImpl;
+import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -113,6 +114,9 @@ public class SqlCastFunction extends SqlFunction {
             if ( ((operand0 instanceof SqlLiteral) && (((SqlLiteral) operand0).getValue() == null)) || (operand0 instanceof SqlDynamicParam) ) {
                 final SqlValidatorImpl validator = (SqlValidatorImpl) callBinding.getValidator();
                 validator.setValidatedNodeType( operand0, ret );
+            } else if ( ((operand0 instanceof SqlBasicCall) && (((SqlBasicCall) operand0).getOperator() instanceof SqlArrayValueConstructor)) ) {
+                final SqlValidatorImpl validator = (SqlValidatorImpl) callBinding.getValidator();
+                validator.setValidatedNodeType( operand0, ret );
             }
         }
         return ret;
@@ -127,7 +131,7 @@ public class SqlCastFunction extends SqlFunction {
 
 
     @Override
-    public SqlOperandCountRange getOperandCountRange() {
+    public OperandCountRange getOperandCountRange() {
         return PolyOperandCountRanges.of( 2 );
     }
 
@@ -192,5 +196,6 @@ public class SqlCastFunction extends SqlFunction {
             return call.getOperandMonotonicity( 0 );
         }
     }
+
 }
 

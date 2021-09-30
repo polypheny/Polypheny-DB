@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 package org.polypheny.db.schema;
 
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Set;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -60,7 +61,7 @@ import org.polypheny.db.rel.type.RelProtoDataType;
  *
  * A schema may be nested within another schema; see {@link Schema#getSubSchema(String)}.
  */
-public interface Schema {
+public interface Schema extends Serializable {
 
     /**
      * Returns a table with a given name, or null if not found.
@@ -371,5 +372,6 @@ public interface Schema {
             this.jdbcName = name().replace( '_', ' ' );
         }
     }
+
 }
 

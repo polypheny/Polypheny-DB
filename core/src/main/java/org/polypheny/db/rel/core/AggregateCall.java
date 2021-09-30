@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ package org.polypheny.db.rel.core;
 
 
 import com.google.common.collect.ImmutableList;
+import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.rel.RelCollation;
@@ -51,7 +52,7 @@ import org.polypheny.db.util.mapping.Mappings;
 /**
  * Call to an aggregate function within an {@link org.polypheny.db.rel.core.Aggregate}.
  */
-public class AggregateCall {
+public class AggregateCall implements Serializable {
 
     private final SqlAggFunction aggFunction;
 
@@ -71,13 +72,13 @@ public class AggregateCall {
      * Creates an AggregateCall.
      *
      * @param aggFunction Aggregate function
-     * @param distinct    Whether distinct
+     * @param distinct Whether distinct
      * @param approximate Whether approximate
-     * @param argList     List of ordinals of arguments
-     * @param filterArg   Ordinal of filter argument (the {@code FILTER (WHERE ...)} clause in SQL), or -1
-     * @param collation   How to sort values before aggregation (the {@code WITHIN GROUP} clause in SQL)
-     * @param type        Result type
-     * @param name        Name (may be null)
+     * @param argList List of ordinals of arguments
+     * @param filterArg Ordinal of filter argument (the {@code FILTER (WHERE ...)} clause in SQL), or -1
+     * @param collation How to sort values before aggregation (the {@code WITHIN GROUP} clause in SQL)
+     * @param type Result type
+     * @param name Name (may be null)
      */
     private AggregateCall(
             SqlAggFunction aggFunction,
@@ -343,4 +344,5 @@ public class AggregateCall {
                         : -1,
                 RelCollations.permute( collation, mapping ) );
     }
+
 }

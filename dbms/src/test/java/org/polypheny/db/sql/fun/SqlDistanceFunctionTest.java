@@ -32,12 +32,17 @@ import org.apache.calcite.avatica.util.Unsafe;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.excluded.CassandraExcluded;
+import org.polypheny.db.excluded.FileExcluded;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
+@Category({ AdapterTestSuite.class, FileExcluded.class, CassandraExcluded.class })
 public class SqlDistanceFunctionTest {
 
 
@@ -114,6 +119,21 @@ public class SqlDistanceFunctionTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L2SQUARED') as dist FROM knnbigtest" ),
+                        expectedResult
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L2SQUARED') as dist FROM knninttest ORDER BY dist LIMIT 5" ),
+                        expectedResult
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L2SQUARED') as dist FROM knndoubletest ORDER BY dist LIMIT 5" ),
+                        expectedResult
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L2SQUARED') as dist FROM knnbigtest ORDER BY dist LIMIT 5" ),
                         expectedResult
                 );
             }

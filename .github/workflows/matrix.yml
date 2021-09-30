@@ -1,14 +1,18 @@
 name: Polypheny-DB Matrix
 
-on: [ push, pull_request ]
+on:
+    push:
+    pull_request:
+        types: [ opened, synchronize, reopened, ready_for_review ]
 
 jobs:
     build:
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
         runs-on: ${{ matrix.os }}
         strategy:
             fail-fast: false
             matrix:
-                java: [ 8, 11, 15 ]
+                java: [ 11, 15 ]
                 os: [ macos-latest, ubuntu-latest, windows-latest ]
         name: Java ${{ matrix.java }} @ ${{ matrix.os }}
         steps:
@@ -18,7 +22,22 @@ jobs:
                 uses: actions/setup-java@v1
                 with:
                     java-version: ${{ matrix.java }}
+            -   name: Set env variable
+                run: |
+                    echo "POLYPHENY_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+            -   name: Create folders for certs
+                run: |
+                    mkdir $POLYPHENY_HOME/.polypheny
+                    mkdir $POLYPHENY_HOME/.polypheny/certs
             -   name: Assemble
-                run: ./gradlew assemble
+                uses: nick-invision/retry@v2
+                with:
+                    max_attempts: 2
+                    timeout_minutes: 15
+                    command: ./gradlew assemble
             -   name: Execute tests
-                run: ./gradlew check
+                uses: nick-invision/retry@v2
+                with:
+                    max_attempts: 2
+                    timeout_minutes: 15
+                    command: ./gradlew check

@@ -22,6 +22,7 @@ import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -77,7 +78,7 @@ public class CottontailTypeUtil {
     public static final Method COTTONTAIL_SIMPLE_CONSTANT_TO_DATA_METHOD = Types.lookupMethod(
             CottontailTypeUtil.class,
             "toData",
-            Object.class, PolyType.class );
+            Object.class, PolyType.class, PolyType.class );
 
     public static final Method COTTONTAIL_SIMPLE_LIST_TO_VECTOR_METHOD = Types.lookupMethod(
             CottontailTypeUtil.class,
@@ -185,8 +186,16 @@ public class CottontailTypeUtil {
 
     public static Expression rexDynamicParamToDataExpression( RexDynamicParam dynamicParam, ParameterExpression dynamicParameterMap_, PolyType actualType ) {
         return Expressions.call( COTTONTAIL_SIMPLE_CONSTANT_TO_DATA_METHOD,
-                Expressions.call( dynamicParameterMap_, BuiltInMethod.MAP_GET.method,
-                        Expressions.constant( dynamicParam.getIndex() ) ), Expressions.constant( actualType ) );
+                Expressions.call(
+                        dynamicParameterMap_,
+                        BuiltInMethod.MAP_GET.method,
+                        Expressions.constant( dynamicParam.getIndex() ) ),
+                Expressions.constant( actualType ),
+                Expressions.constant( dynamicParam.getType() != null ?
+                        dynamicParam.getType().getComponentType() != null ?
+                                dynamicParam.getType().getComponentType().getPolyType()
+                                : null
+                        : null ) );
     }
 
 
@@ -246,17 +255,17 @@ public class CottontailTypeUtil {
             }
         }
 
-        return Expressions.call( COTTONTAIL_SIMPLE_CONSTANT_TO_DATA_METHOD, constantExpression, Expressions.constant( actualType ) );
+        return Expressions.call( COTTONTAIL_SIMPLE_CONSTANT_TO_DATA_METHOD, constantExpression, Expressions.constant( actualType ), Expressions.constant( null ) );
     }
 
 
     public static Expression rexArrayConstructorToExpression( RexCall rexCall, PolyType innerType ) {
         Expression constantExpression = arrayListToExpression( rexCall.getOperands(), innerType );
-        return Expressions.call( COTTONTAIL_SIMPLE_CONSTANT_TO_DATA_METHOD, constantExpression, Expressions.constant( innerType ) );
+        return Expressions.call( COTTONTAIL_SIMPLE_CONSTANT_TO_DATA_METHOD, constantExpression, Expressions.constant( innerType ), Expressions.constant( null ) );
     }
 
 
-    public static CottontailGrpc.Literal toData( Object value, PolyType actualType ) {
+    public static CottontailGrpc.Literal toData( Object value, PolyType actualType, PolyType parameterComponentType ) {
         final CottontailGrpc.Literal.Builder builder = Literal.newBuilder();
         if ( value == null ) {
             return builder.setNullData( Null.newBuilder().build() ).build();
@@ -267,6 +276,13 @@ public class CottontailTypeUtil {
         if ( value instanceof List ) {
             log.trace( "Attempting to convert an array to data." );
             // TODO js(ct): add list.size() == 0 handling
+            // Check whether the decimal array should be converted to a double array (i.e. when we are not comparing to a column of
+            // type decimal (which is encoded as string since cottontail does not support the data type decimal))
+            if ( parameterComponentType != null && parameterComponentType == PolyType.DECIMAL && actualType != PolyType.DECIMAL && actualType != PolyType.ARRAY && ((List) value).get( 0 ) instanceof BigDecimal ) {
+                ArrayList<Double> arrayList = new ArrayList<>( ((List) value).size() );
+                ((List) value).forEach( e -> arrayList.add( ((BigDecimal) e).doubleValue() ) );
+                value = arrayList;
+            }
             final Vector vector = toVectorData( value );
             if ( vector != null ) {
                 return builder.setVectorData( vector ).build();
@@ -281,38 +297,31 @@ public class CottontailTypeUtil {
                 if ( value instanceof Boolean ) {
                     return builder.setBooleanData( (Boolean) value ).build();
                 }
-
                 break;
             }
-            case INTEGER: {
+            case INTEGER:
+            case SMALLINT:
+            case TINYINT: {
+                if ( value instanceof Byte ) {
+                    return builder.setIntData( ((Byte) value).intValue() ).build();
+                }
+                if ( value instanceof Short ) {
+                    return builder.setIntData( ((Short) value).intValue() ).build();
+                }
                 if ( value instanceof Integer ) {
                     return builder.setIntData( (Integer) value ).build();
-                } else if ( value instanceof Long ) {
+                }
+                if ( value instanceof Long ) {
                     return builder.setIntData( ((Long) value).intValue() ).build();
                 }
                 break;
             }
             case BIGINT: {
+                if ( value instanceof Integer ) {
+                    return builder.setLongData( ((Integer) value).longValue() ).build();
+                }
                 if ( value instanceof Long ) {
                     return builder.setLongData( (Long) value ).build();
-                }
-                break;
-            }
-            case TINYINT: {
-                if ( value instanceof Byte ) {
-                    return builder.setIntData( ((Byte) value).intValue() ).build();
-                }
-                if ( value instanceof Long ) {
-                    return builder.setIntData( ((Long) value).intValue() ).build();
-                }
-                break;
-            }
-            case SMALLINT: {
-                if ( value instanceof Short ) {
-                    return builder.setIntData( ((Short) value).intValue() ).build();
-                }
-                if ( value instanceof Long ) {
-                    return builder.setIntData( ((Long) value).intValue() ).build();
                 }
                 break;
             }
@@ -321,6 +330,8 @@ public class CottontailTypeUtil {
                     return builder.setDoubleData( (Double) value ).build();
                 } else if ( value instanceof Integer ) {
                     return builder.setDoubleData( ((Integer) value).doubleValue() ).build();
+                } else if ( value instanceof BigDecimal ) {
+                    return builder.setDoubleData( ((BigDecimal) value).doubleValue() ).build();
                 }
                 break;
             }
@@ -330,6 +341,8 @@ public class CottontailTypeUtil {
                     return builder.setFloatData( (Float) value ).build();
                 } else if ( value instanceof Double ) {
                     return builder.setFloatData( ((Double) value).floatValue() ).build();
+                } else if ( value instanceof BigDecimal ) {
+                    return builder.setFloatData( ((BigDecimal) value).floatValue() ).build();
                 }
                 break;
             }
@@ -362,6 +375,9 @@ public class CottontailTypeUtil {
                     return builder.setIntData( timeString.getMillisOfDay() ).build();
                 } else if ( value instanceof Integer ) {
                     return builder.setIntData( (Integer) value ).build();
+                } else if ( value instanceof GregorianCalendar ) {
+                    GregorianCalendar calendar = (GregorianCalendar) value;
+                    return builder.setIntData( TimeString.fromCalendarFields( calendar ).getMillisOfDay() ).build();
                 }
                 break;
             }
@@ -373,6 +389,9 @@ public class CottontailTypeUtil {
                     return builder.setIntData( dateString.getDaysSinceEpoch() ).build();
                 } else if ( value instanceof Integer ) {
                     return builder.setIntData( (Integer) value ).build();
+                } else if ( value instanceof GregorianCalendar ) {
+                    GregorianCalendar calendar = (GregorianCalendar) value;
+                    return builder.setIntData( DateString.fromCalendarFields( calendar ).getDaysSinceEpoch() ).build();
                 }
                 break;
             }

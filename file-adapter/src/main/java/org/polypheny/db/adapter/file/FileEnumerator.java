@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,7 +41,10 @@ import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.FileInputHandle;
+import org.polypheny.db.util.TimeString;
+import org.polypheny.db.util.TimestampString;
 
 
 @Slf4j
@@ -313,6 +317,12 @@ public class FileEnumerator implements Enumerator<Object> {
                                     ((FileInputHandle) updateObj[j]).materializeAsFile( insertFile.toPath() );
                                 } else if ( updateObj[j] instanceof InputStream ) {
                                     FileUtils.copyInputStreamToFile( ((InputStream) updateObj[j]), insertFile );
+                                } else if ( updateObj[j] instanceof TimestampString ) {
+                                    Files.write( insertFile.toPath(), ("" + ((TimestampString) updateObj[j]).getMillisSinceEpoch()).getBytes( StandardCharsets.UTF_8 ) );
+                                } else if ( updateObj[j] instanceof DateString ) {
+                                    Files.write( insertFile.toPath(), ("" + ((DateString) updateObj[j]).getDaysSinceEpoch()).getBytes( StandardCharsets.UTF_8 ) );
+                                } else if ( updateObj[j] instanceof TimeString ) {
+                                    Files.write( insertFile.toPath(), ("" + ((TimeString) updateObj[j]).getMillisOfDay()).getBytes( StandardCharsets.UTF_8 ) );
                                 } else {
                                     Files.write( insertFile.toPath(), updateObj[j].toString().getBytes( FileStore.CHARSET ) );
                                 }

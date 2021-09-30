@@ -22,6 +22,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.HashMap;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -31,6 +32,8 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.restapi.exception.UnauthorizedAccessException;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.util.Pair;
 
 
@@ -65,6 +68,27 @@ public class RequestParserTest {
         RequestParser requestParser = new RequestParser( mockedCatalog, null, null, "username", "testdb" );
         CatalogTable table = requestParser.parseCatalogTableName( "schema1.table1." );
         verify( mockedCatalog ).getTable( "testdb", "schema1", "table1" );
+    }
+
+
+    @Test
+    public void testParseFilterOperation() {
+        Catalog mockedCatalog = mock( Catalog.class );
+        RequestParser requestParser = new RequestParser( mockedCatalog, null, null, "testdb", "username" );
+        HashMap<String, Pair<SqlOperator, String>> operationMap = new HashMap<>();
+        operationMap.put( ">=10", new Pair<>( SqlStdOperatorTable.GREATER_THAN_OR_EQUAL, "10" ) );
+        operationMap.put( ">10", new Pair<>( SqlStdOperatorTable.GREATER_THAN, "10" ) );
+        operationMap.put( "<=10", new Pair<>( SqlStdOperatorTable.LESS_THAN_OR_EQUAL, "10" ) );
+        operationMap.put( "<10", new Pair<>( SqlStdOperatorTable.LESS_THAN, "10" ) );
+        operationMap.put( "=10", new Pair<>( SqlStdOperatorTable.EQUALS, "10" ) );
+        operationMap.put( "!=10", new Pair<>( SqlStdOperatorTable.NOT_EQUALS, "10" ) );
+        operationMap.put( "%10", new Pair<>( SqlStdOperatorTable.LIKE, "10" ) );
+        operationMap.put( "!%10", new Pair<>( SqlStdOperatorTable.NOT_LIKE, "10" ) );
+
+        operationMap.forEach( ( k, v ) -> {
+            Pair<SqlOperator, String> operationPair = requestParser.parseFilterOperation( k );
+            assertEquals( v, operationPair );
+        } );
     }
 
 }

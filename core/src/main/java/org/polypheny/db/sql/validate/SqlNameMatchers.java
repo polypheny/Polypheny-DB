@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ package org.polypheny.db.sql.validate;
 
 
 import com.google.common.collect.ImmutableList;
+import java.io.Serializable;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -78,7 +79,7 @@ public class SqlNameMatchers {
     /**
      * Partial implementation of {@link SqlNameMatcher}.
      */
-    private static class BaseMatcher implements SqlNameMatcher {
+    private static class BaseMatcher implements SqlNameMatcher, Serializable {
 
         private final boolean caseSensitive;
 
@@ -185,6 +186,7 @@ public class SqlNameMatchers {
                     ? new LinkedHashSet<>()
                     : new TreeSet<>( String.CASE_INSENSITIVE_ORDER );
         }
+
     }
 
 
@@ -224,5 +226,7 @@ public class SqlNameMatchers {
         public List<String> bestMatch() {
             return matchedNames;
         }
+
     }
+
 }

@@ -596,23 +596,24 @@ public class RequestParser {
     }
 
 
+    @VisibleForTesting
     Pair<SqlOperator, String> parseFilterOperation( String filterString ) throws ParserException {
         log.debug( "Starting to parse filter operation. Value: {}.", filterString );
 
         SqlOperator callOperator;
         String rightHandSide;
-        if ( filterString.startsWith( "<" ) ) {
-            callOperator = SqlStdOperatorTable.LESS_THAN;
-            rightHandSide = filterString.substring( 1, filterString.length() );
-        } else if ( filterString.startsWith( "<=" ) ) {
+        if ( filterString.startsWith( "<=" ) ) {
             callOperator = SqlStdOperatorTable.LESS_THAN_OR_EQUAL;
             rightHandSide = filterString.substring( 2, filterString.length() );
-        } else if ( filterString.startsWith( ">" ) ) {
-            callOperator = SqlStdOperatorTable.GREATER_THAN;
+        } else if ( filterString.startsWith( "<" ) ) {
+            callOperator = SqlStdOperatorTable.LESS_THAN;
             rightHandSide = filterString.substring( 1, filterString.length() );
         } else if ( filterString.startsWith( ">=" ) ) {
             callOperator = SqlStdOperatorTable.GREATER_THAN_OR_EQUAL;
             rightHandSide = filterString.substring( 2, filterString.length() );
+        } else if ( filterString.startsWith( ">" ) ) {
+            callOperator = SqlStdOperatorTable.GREATER_THAN;
+            rightHandSide = filterString.substring( 1, filterString.length() );
         } else if ( filterString.startsWith( "=" ) ) {
             callOperator = SqlStdOperatorTable.EQUALS;
             rightHandSide = filterString.substring( 1, filterString.length() );

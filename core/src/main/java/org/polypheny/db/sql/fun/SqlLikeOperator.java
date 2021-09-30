@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,12 +38,12 @@ import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.parser.SqlParserUtil;
+import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.OperandTypes;
@@ -100,7 +100,7 @@ public class SqlLikeOperator extends SqlSpecialOperator {
 
 
     @Override
-    public SqlOperandCountRange getOperandCountRange() {
+    public OperandCountRange getOperandCountRange() {
         return PolyOperandCountRanges.between( 2, 3 );
     }
 
@@ -182,4 +182,5 @@ public class SqlLikeOperator extends SqlSpecialOperator {
         SqlCall call = createCall( SqlParserPos.ZERO, operands );
         return new ReduceResult( opOrdinal - 1, end, call );
     }
+
 }

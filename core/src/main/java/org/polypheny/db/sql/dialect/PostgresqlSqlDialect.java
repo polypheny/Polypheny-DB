@@ -42,13 +42,18 @@ import org.polypheny.db.rel.type.RelDataTypeSystemImpl;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlDialect;
+import org.polypheny.db.sql.SqlFunction;
+import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.fun.SqlFloorFunction;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.inference.ReturnTypes;
 
 
 /**
@@ -98,6 +103,12 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
 
     @Override
+    public IntervalParameterStrategy getIntervalParameterStrategy() {
+        return IntervalParameterStrategy.CAST;
+    }
+
+
+    @Override
     public boolean supportsNestedArrays() {
         return true;
     }
@@ -114,6 +125,46 @@ public class PostgresqlSqlDialect extends SqlDialect {
             case DOUBLE:
                 // Postgres has a double type but it is named differently
                 castSpec = "_double precision";
+                break;
+            case FILE:
+            case IMAGE:
+            case VIDEO:
+            case SOUND:
+                castSpec = "_BYTEA";
+                break;
+            case ARRAY:
+                RelDataType tt = type;
+                StringBuilder brackets = new StringBuilder( "[]" );
+                while ( tt.getComponentType().getPolyType() == PolyType.ARRAY ) {
+                    tt = tt.getComponentType();
+                    brackets.append( "[]" );
+                }
+                PolyType t = tt.getComponentType().getPolyType();
+                switch ( t ) {
+                    case TINYINT:
+                        castSpec = "_smallint" + brackets;
+                        break;
+                    case DOUBLE:
+                        castSpec = "_double precision" + brackets;
+                        break;
+                    default:
+                        castSpec = "_" + t.getName() + brackets;
+                }
+                break;
+            case INTERVAL_YEAR_MONTH:
+            case INTERVAL_DAY:
+            case INTERVAL_DAY_HOUR:
+            case INTERVAL_DAY_MINUTE:
+            case INTERVAL_DAY_SECOND:
+            case INTERVAL_HOUR_MINUTE:
+            case INTERVAL_HOUR:
+            case INTERVAL_HOUR_SECOND:
+            case INTERVAL_MINUTE:
+            case INTERVAL_MONTH:
+            case INTERVAL_SECOND:
+            case INTERVAL_MINUTE_SECOND:
+            case INTERVAL_YEAR:
+                castSpec = "interval";
                 break;
             default:
                 return super.getCastSpec( type );
@@ -162,6 +213,27 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
                 SqlCall call2 = SqlFloorFunction.replaceTimeUnitOperand( call, timeUnit.name(), timeUnitNode.getParserPosition() );
                 SqlFloorFunction.unparseDatetimeFunction( writer, call2, "DATE_TRUNC", false );
+                break;
+
+            case EXTRACT:
+                if ( call.getOperandList().get( 0 ) instanceof SqlLiteral && ((SqlLiteral) call.getOperandList().get( 0 )).getValue() instanceof TimeUnitRange ) {
+                    TimeUnitRange unitRange = (TimeUnitRange) ((SqlLiteral) call.getOperandList().get( 0 )).getValue();
+                    if ( unitRange == TimeUnitRange.DOW ) {
+                        SqlFunction func = new SqlFunction(
+                                "DOW_SUNDAY",
+                                SqlKind.OTHER_FUNCTION,
+                                ReturnTypes.INTEGER,
+                                null,
+                                null,
+                                SqlFunctionCategory.USER_DEFINED_FUNCTION );
+                        SqlCall call1 = call.getOperator().createCall( call.getParserPosition(), call.getOperandList().get( 1 ) );
+                        SqlUtil.unparseFunctionSyntax( func, writer, call1 );
+                    } else {
+                        super.unparseCall( writer, call, leftPrec, rightPrec );
+                    }
+                } else {
+                    super.unparseCall( writer, call, leftPrec, rightPrec );
+                }
                 break;
 
             default:

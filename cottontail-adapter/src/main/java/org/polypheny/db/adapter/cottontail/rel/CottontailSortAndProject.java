@@ -79,15 +79,12 @@ public class CottontailSortAndProject extends SortAndProject implements Cottonta
             columnTypes.add( field.getType().getPolyType() );
         }
 
-        if ( this.offset != null || this.fetch != null ) {
+        if ( this.fetch != null ) {
+            context.limitBuilder = numberBuilderBuilder( this.fetch );
+        }
 
-            if ( this.fetch != null ) {
-                context.limitBuilder = numberBuilderBuilder( this.fetch );
-            }
-
-            if ( this.offset != null ) {
-                context.offsetBuilder = numberBuilderBuilder( this.offset );
-            }
+        if ( this.offset != null ) {
+            context.offsetBuilder = numberBuilderBuilder( this.offset );
         }
 
         if ( this.arrayProject ) {

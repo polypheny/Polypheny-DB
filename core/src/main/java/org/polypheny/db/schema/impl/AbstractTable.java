@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 package org.polypheny.db.schema.impl;
 
 
+import java.io.Serializable;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Schema.TableType;
 import org.polypheny.db.schema.Statistic;
@@ -50,7 +51,7 @@ import org.polypheny.db.sql.SqlNode;
  * Sub-classes should override {@link #isRolledUp} and {@link Table#rolledUpColumnValidInsideAgg(String, SqlCall, SqlNode)} if their table can potentially contain rolled up values.
  * This information is used by the validator to check for illegal uses of these columns.
  */
-public abstract class AbstractTable implements Table, Wrapper {
+public abstract class AbstractTable implements Table, Wrapper, Serializable {
 
     protected AbstractTable() {
     }
@@ -88,5 +89,6 @@ public abstract class AbstractTable implements Table, Wrapper {
     public boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent ) {
         return true;
     }
+
 }
 

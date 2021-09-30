@@ -74,7 +74,7 @@ public enum PolyphenyDbConnectionProperty implements ConnectionProperty {
     /**
      * Lexical policy.
      */
-    LEX( "lex", Type.ENUM, Lex.ORACLE, false ),
+    LEX( "lex", Type.ENUM, Lex.POLYPHENY, false ),
 
     /**
      * Collection of built-in functions and operators. Valid values include "standard", "oracle" and "spatial", and also comma-separated lists, for example "oracle,spatial".

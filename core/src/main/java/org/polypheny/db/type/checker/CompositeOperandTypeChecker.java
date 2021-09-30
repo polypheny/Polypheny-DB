@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.sql.SqlCallBinding;
-import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.util.Util;
 
@@ -67,7 +67,7 @@ import org.polypheny.db.util.Util;
  */
 public class CompositeOperandTypeChecker implements PolyOperandTypeChecker {
 
-    private final SqlOperandCountRange range;
+    private final OperandCountRange range;
 
 
     /**
@@ -90,7 +90,7 @@ public class CompositeOperandTypeChecker implements PolyOperandTypeChecker {
             Composition composition,
             ImmutableList<? extends PolyOperandTypeChecker> allowedRules,
             @Nullable String allowedSignatures,
-            @Nullable SqlOperandCountRange range ) {
+            @Nullable OperandCountRange range ) {
         this.allowedRules = Objects.requireNonNull( allowedRules );
         this.composition = Objects.requireNonNull( composition );
         this.allowedSignatures = allowedSignatures;
@@ -145,7 +145,7 @@ public class CompositeOperandTypeChecker implements PolyOperandTypeChecker {
 
 
     @Override
-    public SqlOperandCountRange getOperandCountRange() {
+    public OperandCountRange getOperandCountRange() {
         switch ( composition ) {
             case REPEAT:
                 return range;
@@ -154,10 +154,10 @@ public class CompositeOperandTypeChecker implements PolyOperandTypeChecker {
             case AND:
             case OR:
             default:
-                final List<SqlOperandCountRange> ranges =
-                        new AbstractList<SqlOperandCountRange>() {
+                final List<OperandCountRange> ranges =
+                        new AbstractList<OperandCountRange>() {
                             @Override
-                            public SqlOperandCountRange get( int index ) {
+                            public OperandCountRange get( int index ) {
                                 return allowedRules.get( index ).getOperandCountRange();
                             }
 
@@ -169,13 +169,13 @@ public class CompositeOperandTypeChecker implements PolyOperandTypeChecker {
                         };
                 final int min = minMin( ranges );
                 final int max = maxMax( ranges );
-                SqlOperandCountRange composite =
-                        new SqlOperandCountRange() {
+                OperandCountRange composite =
+                        new OperandCountRange() {
                             @Override
                             public boolean isValidCount( int count ) {
                                 switch ( composition ) {
                                     case AND:
-                                        for ( SqlOperandCountRange range : ranges ) {
+                                        for ( OperandCountRange range : ranges ) {
                                             if ( !range.isValidCount( count ) ) {
                                                 return false;
                                             }
@@ -183,7 +183,7 @@ public class CompositeOperandTypeChecker implements PolyOperandTypeChecker {
                                         return true;
                                     case OR:
                                     default:
-                                        for ( SqlOperandCountRange range : ranges ) {
+                                        for ( OperandCountRange range : ranges ) {
                                             if ( range.isValidCount( count ) ) {
                                                 return true;
                                             }
@@ -219,18 +219,18 @@ public class CompositeOperandTypeChecker implements PolyOperandTypeChecker {
     }
 
 
-    private int minMin( List<SqlOperandCountRange> ranges ) {
+    private int minMin( List<OperandCountRange> ranges ) {
         int min = Integer.MAX_VALUE;
-        for ( SqlOperandCountRange range : ranges ) {
+        for ( OperandCountRange range : ranges ) {
             min = Math.min( min, range.getMax() );
         }
         return min;
     }
 
 
-    private int maxMax( List<SqlOperandCountRange> ranges ) {
+    private int maxMax( List<OperandCountRange> ranges ) {
         int max = Integer.MIN_VALUE;
-        for ( SqlOperandCountRange range : ranges ) {
+        for ( OperandCountRange range : ranges ) {
             if ( range.getMax() < 0 ) {
                 if ( composition == Composition.OR ) {
                     return -1;
@@ -320,4 +320,5 @@ public class CompositeOperandTypeChecker implements PolyOperandTypeChecker {
                 throw new AssertionError();
         }
     }
+
 }

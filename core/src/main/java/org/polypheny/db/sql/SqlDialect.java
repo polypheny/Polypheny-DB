@@ -51,6 +51,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.polypheny.db.rel.RelFieldCollation;
 import org.polypheny.db.rel.type.RelDataType;
@@ -245,10 +246,13 @@ public class SqlDialect {
     public StringBuilder quoteIdentifier( StringBuilder buf, List<String> identifiers ) {
         int i = 0;
         for ( String identifier : identifiers ) {
-            if ( i++ > 0 ) {
-                buf.append( '.' );
+            if ( i != 0 || identifiers.size() != 3 || this.supportsColumnNamesWithSchema() ) {
+                if ( i > 0 ) {
+                    buf.append( '.' );
+                }
+                quoteIdentifier( buf, identifier );
             }
-            quoteIdentifier( buf, identifier );
+            i++;
         }
         return buf;
     }
@@ -525,6 +529,14 @@ public class SqlDialect {
 
 
     /**
+     * Returns whether this dialect supports column names of level 3 (SchemaName.TableName.ColumnName).
+     */
+    public boolean supportsColumnNamesWithSchema() {
+        return true;
+    }
+
+
+    /**
      * Returns whether this dialect supports a given function or operator.
      * It only applies to built-in scalar functions and operators, since user-defined functions and procedures should be read by JdbcSchema.
      */
@@ -583,9 +595,10 @@ public class SqlDialect {
                     new SqlIdentifier( type.getPolyType().name(), SqlParserPos.ZERO ),
                     precision,
                     type.getScale(),
-                    type.getCharset() != null && supportsCharSet()
-                            ? type.getCharset().name()
-                            : null,
+                    null,
+                    ///type.getCharset() != null && supportsCharSet()
+                    //        ? type.getCharset().name()
+                    //        : null,
                     null,
                     SqlParserPos.ZERO );
         }
@@ -600,6 +613,11 @@ public class SqlDialect {
     public SqlNode rewriteSingleValueExpr( SqlNode aggCall ) {
         log.debug( "SINGLE_VALUE rewrite not supported for {}", databaseProduct );
         return aggCall;
+    }
+
+
+    public String timeUnitName( TimeUnitRange unit ) {
+        return unit.name();
     }
 
 
@@ -751,6 +769,19 @@ public class SqlDialect {
 
     public String getArrayComponentTypeString( SqlType type ) {
         return type.name();
+    }
+
+
+    public boolean supportsBinaryStream() {
+        return true;
+    }
+
+
+    public enum IntervalParameterStrategy {CAST, MULTIPLICATION, NONE}
+
+
+    public IntervalParameterStrategy getIntervalParameterStrategy() {
+        return IntervalParameterStrategy.CAST;
     }
 
 
