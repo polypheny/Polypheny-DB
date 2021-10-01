@@ -375,11 +375,10 @@ public class CqlInterfaceTest extends CqlTestHelper {
         request.routeParam( "protocol", "http" );
         request.routeParam( "host", "127.0.0.1" );
         request.routeParam( "port", "8087" );
-        request.body( cqlQuery );
         if ( log.isDebugEnabled() ) {
             log.debug( request.getUrl() );
         }
-        return request.asJson();
+        return request.body( cqlQuery ).asJson();
     }
 
 }
