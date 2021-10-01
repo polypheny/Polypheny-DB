@@ -85,7 +85,7 @@ public class HttpCqlInterface extends QueryInterface {
 
 
     public HttpCqlInterface( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
-        super( transactionManager, authenticator, ifaceId, uniqueName, settings, true, false );
+        super( transactionManager, authenticator, ifaceId, uniqueName, settings, false, false );
         this.uniqueName = uniqueName;
         this.port = Integer.parseInt( settings.get( "port" ) );
         if ( !Util.checkIfPortIsAvailable( port ) ) {
