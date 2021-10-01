@@ -23,15 +23,18 @@ import kong.unirest.Unirest;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.cql.helper.CqlTestHelper;
 
 
 @Slf4j
+@Category(AdapterTestSuite.class)
 public class CqlInterfaceTest extends CqlTestHelper {
 
     @Test
     public void testRestCqlEmptyQueryReturnsException() {
-        JsonNode expectedJsonNode = new JsonNode( "{\"Exception\": \"Query relations and filters cannot both be empty.\"}" );
+        JsonNode expectedJsonNode = new JsonNode( "{\"Exception\":\"CQL query is an empty string!\"}" );
         cqlInterfaceTestHelper( "", expectedJsonNode );
     }
 
