@@ -23,13 +23,10 @@ import kong.unirest.Unirest;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.cql.helper.CqlTestHelper;
 
 
 @Slf4j
-@Category(AdapterTestSuite.class)
 public class CqlInterfaceTest extends CqlTestHelper {
 
     @Test
