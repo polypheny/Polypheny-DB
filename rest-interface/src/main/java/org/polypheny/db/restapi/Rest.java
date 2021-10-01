@@ -32,8 +32,6 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.cql.Cql2RelConverter;
-import org.polypheny.db.cql.CqlQuery;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -145,22 +143,6 @@ public class Rest {
         log.debug( "RelRoot was built." );
 
         return executeAndTransformRelAlg( root, statement, res );
-    }
-
-
-    String processCqlResource( final CqlQuery cqlQuery, final Request req, final Response res ) {
-        log.debug( "Starting to process CQL resource request. Session ID: {}.", req.session().id() );
-        Transaction transaction = getTransaction();
-        Statement statement = transaction.createStatement();
-        RelBuilder relBuilder = RelBuilder.create( statement );
-        JavaTypeFactory typeFactory = transaction.getTypeFactory();
-        RexBuilder rexBuilder = new RexBuilder( typeFactory );
-
-        Cql2RelConverter cql2RelConverter = new Cql2RelConverter( cqlQuery );
-
-        RelRoot relRoot = cql2RelConverter.convert2Rel( relBuilder, rexBuilder );
-
-        return executeAndTransformRelAlg( relRoot, statement, res );
     }
 
 

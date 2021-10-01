@@ -370,11 +370,11 @@ public class CqlRestExecutionTest extends CqlTestHelper {
 
 
     private HttpResponse<JsonNode> executeCQL( String cqlQuery ) {
-        GetRequest request = Unirest.get( "{protocol}://{host}:{port}/restapi/v1/cql" );
+        GetRequest request = Unirest.get( "{protocol}://{host}:{port}/cql" );
         request.basicAuth( "pa", "" );
         request.routeParam( "protocol", "http" );
         request.routeParam( "host", "127.0.0.1" );
-        request.routeParam( "port", "8089" );
+        request.routeParam( "port", "8088" );
         request.queryString( "testing", "true" );
         request.queryString( "cql", cqlQuery );
         if ( log.isDebugEnabled() ) {

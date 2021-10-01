@@ -37,6 +37,7 @@ public class CqlTestHelper {
     @BeforeClass
     public static void setup() throws SQLException {
         TestHelper.getInstance();
+        deployCqlInterface();
         createTestSchema();
         addTestData();
     }
@@ -45,6 +46,31 @@ public class CqlTestHelper {
     @AfterClass
     public static void teardown() {
         deleteTestData();
+        removeCqlInterface();
+    }
+
+
+    private static void deployCqlInterface() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "ALTER INTERFACES ADD \"cql\" USING 'org.polypheny.db.cql.server.HttpCqlInterface' WITH '{\"port\":\"8088\"}'" );
+                connection.commit();
+            }
+        }
+    }
+
+
+    private static void removeCqlInterface() {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "ALTER INTERFACES DROP \"cql\"" );
+                connection.commit();
+            }
+        } catch ( SQLException e ) {
+            log.error( "Exception while removing cql query interface", e );
+        }
     }
 
 

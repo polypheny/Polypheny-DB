@@ -38,9 +38,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.Part;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.cql.CqlQuery;
-import org.polypheny.db.cql.parser.CqlParser;
-import org.polypheny.db.cql.parser.ParseException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.information.InformationGraph;
@@ -136,40 +133,7 @@ public class HttpRestServer extends QueryInterface {
             restServer.delete( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.DELETE, q, a, q.params( ":resName" ) ) );
             restServer.patch( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.PATCH, q, a, q.params( ":resName" ) ) );
             restServer.post( "/multipart", "multipart/form-data", ( q, a ) -> this.processMultipart( rest, RequestType.POST, q, a ), gson::toJson );
-            restServer.get( "/cql", ( q, a ) -> this.processCQLRequest( rest, RequestType.GET, q, a ) );
         } );
-    }
-
-
-    String processCQLRequest( Rest rest, RequestType type, Request request, Response response ) {
-        try {
-            String cqlQueryStr = request.body();
-            if ( request.queryParams( "testing" ) != null ) {
-                cqlQueryStr = request.queryParams( "cql" );
-            }
-            CqlParser cqlParser = new CqlParser( cqlQueryStr, databaseName );
-            CqlQuery cqlQuery = cqlParser.parse();
-
-            return rest.processCqlResource( cqlQuery, request, response );
-        } catch ( ParseException e ) {
-            log.error( "ParseException", e );
-            response.status( 400 );
-            Map<String, Object> bodyReturn = new HashMap<>();
-            bodyReturn.put( "Exception", e.getMessage() );
-            return gson.toJson( bodyReturn );
-        } catch ( RuntimeException e ) {
-            log.error( "RuntimeException", e );
-            response.status( 400 );
-            Map<String, Object> bodyReturn = new HashMap<>();
-            bodyReturn.put( "Exception", e.getMessage() );
-            return gson.toJson( bodyReturn );
-        } catch ( Error e ) {
-            log.error( "Error", e );
-            response.status( 400 );
-            Map<String, Object> bodyReturn = new HashMap<>();
-            bodyReturn.put( "Exception", e.getMessage() );
-            return gson.toJson( bodyReturn );
-        }
     }
 
 

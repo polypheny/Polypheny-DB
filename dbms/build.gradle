@@ -28,6 +28,7 @@ dependencies {
     implementation project(":webui")
     implementation project(":jdbc-interface")
     implementation project(":rest-interface")
+    implementation project(":cql-interface")
     implementation project(":statistic")
     implementation project(":explore-by-example")
     implementation project(":monitoring")
@@ -49,7 +50,6 @@ dependencies {
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
-    testImplementation project(path: ":cql-interface")
 
     testImplementation group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version  // Apache 2.0
 
