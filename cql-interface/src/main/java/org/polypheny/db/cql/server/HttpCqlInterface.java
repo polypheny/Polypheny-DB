@@ -65,10 +65,10 @@ public class HttpCqlInterface extends QueryInterface {
     @SuppressWarnings("WeakerAccess")
     public static final String INTERFACE_NAME = "CQL Interface";
     @SuppressWarnings("WeakerAccess")
-    public static final String INTERFACE_DESCRIPTION = "Interface that excepts CQL queries using HTTP.";
+    public static final String INTERFACE_DESCRIPTION = "HTTP-based query interface for the Contextual Query Language (CQL).";
     @SuppressWarnings("WeakerAccess")
     public static final List<QueryInterfaceSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-            new QueryInterfaceSettingInteger( "port", false, true, false, 8088 )
+            new QueryInterfaceSettingInteger( "port", false, true, false, 8087 )
     );
 
     private final Gson gson = new Gson();
@@ -107,7 +107,7 @@ public class HttpCqlInterface extends QueryInterface {
                     server.halt( 401, e.getMessage() );
                 }
             } );
-            server.get( "/cql", this::processRequest );
+            server.post( "/", this::processRequest );
         } );
     }
 
@@ -124,8 +124,8 @@ public class HttpCqlInterface extends QueryInterface {
     String processRequest( Request request, Response response ) {
         try {
             String cqlQueryStr = request.body();
-            if ( request.queryParams( "testing" ) != null ) {
-                cqlQueryStr = request.queryParams( "cql" );
+            if ( cqlQueryStr.equals( "" ) ) {
+                throw new RuntimeException( "CQL query is an empty string!" );
             }
             CqlParser cqlParser = new CqlParser( cqlQueryStr, databaseName );
             CqlQuery cqlQuery = cqlParser.parse();
@@ -279,7 +279,7 @@ public class HttpCqlInterface extends QueryInterface {
         public MonitoringPage() {
             InformationManager im = InformationManager.getInstance();
 
-            informationPage = new InformationPage( uniqueName, INTERFACE_NAME ).fullWidth().setLabel( "Interfaces" );
+            informationPage = new InformationPage( uniqueName, INTERFACE_NAME ).setLabel( "Interfaces" );
             informationGroupRequests = new InformationGroup( informationPage, "Number of requests" );
 
             im.addPage( informationPage );
