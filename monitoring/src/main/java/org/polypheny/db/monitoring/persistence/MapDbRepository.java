@@ -34,6 +34,7 @@ import org.mapdb.Serializer;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.util.FileSystemManager;
 
+
 @Slf4j
 public class MapDbRepository implements MonitoringRepository {
 
@@ -41,8 +42,8 @@ public class MapDbRepository implements MonitoringRepository {
 
     private static final String FILE_PATH = "simpleBackendDb";
     private static final String FOLDER_NAME = "monitoring";
-    private final HashMap<Class, BTreeMap<UUID, MonitoringDataPoint>> data = new HashMap<>();
-    private DB simpleBackendDb;
+    protected final HashMap<Class, BTreeMap<UUID, MonitoringDataPoint>> data = new HashMap<>();
+    protected DB simpleBackendDb;
 
     // endregion
 
@@ -51,30 +52,12 @@ public class MapDbRepository implements MonitoringRepository {
 
     @Override
     public void initialize() {
-
-        if ( simpleBackendDb != null ) {
-            simpleBackendDb.close();
-        }
-
-        File folder = FileSystemManager.getInstance().registerNewFolder( FOLDER_NAME );
-
-        simpleBackendDb = DBMaker.fileDB( new File( folder, FILE_PATH ) )
-                .closeOnJvmShutdown()
-                .transactionEnable()
-                .fileMmapEnableIfSupported()
-                .fileMmapPreclearDisable()
-                .make();
-
-        simpleBackendDb.getStore().fileLoad();
+        this.initialize( FILE_PATH, FOLDER_NAME );
     }
 
 
     @Override
     public void persistDataPoint( @NonNull MonitoringDataPoint dataPoint ) {
-        if ( dataPoint == null ) {
-            throw new IllegalArgumentException( "invalid argument null" );
-        }
-
         BTreeMap table = this.data.get( dataPoint.getClass() );
         if ( table == null ) {
             this.createPersistentTable( dataPoint.getClass() );
@@ -105,7 +88,6 @@ public class MapDbRepository implements MonitoringRepository {
 
     @Override
     public <T extends MonitoringDataPoint> List<T> getDataPointsBefore( @NonNull Class<T> dataPointClass, @NonNull Timestamp timestamp ) {
-        // TODO: not tested yet
         val table = this.data.get( dataPointClass );
         if ( table != null ) {
             return table.values()
@@ -122,7 +104,6 @@ public class MapDbRepository implements MonitoringRepository {
 
     @Override
     public <T extends MonitoringDataPoint> List<T> getDataPointsAfter( @NonNull Class<T> dataPointClass, @NonNull Timestamp timestamp ) {
-        // TODO: not tested yet
         val table = this.data.get( dataPointClass );
         if ( table != null ) {
             return table.values()
@@ -138,7 +119,24 @@ public class MapDbRepository implements MonitoringRepository {
 
     // endregion
 
+
     // region private helper methods
+    protected void initialize( String filePath, String folderName ) {
+        if ( simpleBackendDb != null ) {
+            simpleBackendDb.close();
+        }
+
+        File folder = FileSystemManager.getInstance().registerNewFolder( folderName );
+
+        simpleBackendDb = DBMaker.fileDB( new File( folder, filePath ) )
+                .closeOnJvmShutdown()
+                .transactionEnable()
+                .fileMmapEnableIfSupported()
+                .fileMmapPreclearDisable()
+                .make();
+
+        simpleBackendDb.getStore().fileLoad();
+    }
 
 
     private void createPersistentTable( Class<? extends MonitoringDataPoint> classPersistentData ) {
@@ -149,5 +147,4 @@ public class MapDbRepository implements MonitoringRepository {
     }
 
     // endregion
-
 }

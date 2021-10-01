@@ -25,6 +25,7 @@ import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 
+
 @Slf4j
 public class MonitoringServiceImpl implements MonitoringService {
 

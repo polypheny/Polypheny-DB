@@ -51,6 +51,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.polypheny.db.rel.RelFieldCollation;
 import org.polypheny.db.rel.type.RelDataType;
@@ -612,6 +613,11 @@ public class SqlDialect {
     public SqlNode rewriteSingleValueExpr( SqlNode aggCall ) {
         log.debug( "SINGLE_VALUE rewrite not supported for {}", databaseProduct );
         return aggCall;
+    }
+
+
+    public String timeUnitName( TimeUnitRange unit ) {
+        return unit.name();
     }
 
 

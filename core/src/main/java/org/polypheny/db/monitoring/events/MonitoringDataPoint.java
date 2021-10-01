@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.UUID;
 
+
 /**
  * Marker interface for the persistent metric type, which can be monitored.
  * A MonitoringEvent will be analyzed and create metric objects.

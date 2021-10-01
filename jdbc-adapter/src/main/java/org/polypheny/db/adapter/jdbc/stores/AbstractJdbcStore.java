@@ -79,6 +79,9 @@ public abstract class AbstractJdbcStore extends DataStore {
 
         // Register the JDBC Pool Size as information in the information manager and enable it
         registerJdbcInformation();
+
+        // Create udfs
+        createUdfs();
     }
 
 
@@ -107,6 +110,11 @@ public abstract class AbstractJdbcStore extends DataStore {
     @Override
     public void createNewSchema( SchemaPlus rootSchema, String name ) {
         currentJdbcSchema = JdbcSchema.create( rootSchema, name, connectionFactory, dialect, this );
+    }
+
+
+    public void createUdfs() {
+
     }
 
 

@@ -16,13 +16,13 @@
 
 package org.polypheny.db.information;
 
-
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.UUID;
 import org.apache.commons.lang3.time.StopWatch;
+import org.polypheny.db.information.exception.InformationRuntimeException;
 
 
 public class InformationDuration extends Information {
@@ -76,12 +76,12 @@ public class InformationDuration extends Information {
     }
 
 
-    public long getDuration( final String name ) {
-        Duration child = this.children.get( name );
-        if ( child != null ) {
-            return child.duration;
+    public long getNanoDuration( final String name ) throws InformationRuntimeException {
+        Duration child = this.get( name );
+        if ( child == null ) {
+            throw new InformationRuntimeException( "could no find duration: " + name );
         }
-        return 0;
+        return child.duration;
     }
 
 
@@ -209,6 +209,24 @@ public class InformationDuration extends Information {
                 return 0;
             }
             return -1;
+        }
+
+
+        static JsonSerializer<Duration> getSerializer() {
+            return ( src, typeOfSrc, context ) -> {
+                JsonObject jsonObj = new JsonObject();
+                jsonObj.addProperty( "type", src.type );
+                jsonObj.addProperty( "name", src.name );
+                jsonObj.add( "duration", context.serialize( src.duration ) );
+                jsonObj.add( "limit", context.serialize( src.limit ) );
+                jsonObj.add( "sequence", context.serialize( src.sequence ) );
+                jsonObj.add( "noProgressBar", context.serialize( src.noProgressBar ) );
+                Object[] children1 = src.children.values().toArray();
+                Arrays.sort( children1 );
+                jsonObj.add( "children", context.serialize( children1 ) );
+                jsonObj.add( "isChild", context.serialize( src.isChild ) );
+                return jsonObj;
+            };
         }
 
     }

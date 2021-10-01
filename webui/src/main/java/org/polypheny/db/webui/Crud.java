@@ -235,8 +235,8 @@ public class Crud implements InformationObserver {
     private final String databaseName;
     private final String userName;
     private final StatisticsManager<?> statisticsManager = StatisticsManager.getInstance();
-    private boolean isActiveTracking = false;
     private final Catalog catalog = Catalog.getInstance();
+    private boolean isActiveTracking = false;
 
 
     /**
@@ -843,6 +843,7 @@ public class Crud implements InformationObserver {
                     int numOfRows = executeSqlUpdate( transaction, query );
                     executionTime += System.nanoTime() - temp;
                     transaction.getMonitoringData().setExecutionTime( executionTime );
+
                     result = new Result( numOfRows ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
                     results.add( result );
                     if ( autoCommit ) {
@@ -2209,7 +2210,6 @@ public class Crud implements InformationObserver {
             for ( int i = 0; i < rowsBefore.size(); i++ ) {
                 rows.add( buildPartitionFunctionRow( request, rowsBefore.get( i ) ) );
             }
-
         }
 
         if ( infoJson.has( "dynamicRows" ) ) {
@@ -3473,6 +3473,7 @@ public class Crud implements InformationObserver {
         Iterator<Object> iterator = null;
         boolean hasMoreRows = false;
         statement.getTransaction().setMonitoringData( new QueryEvent() );
+
         try {
             signature = processQuery( statement, sqlSelect );
             final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
@@ -3760,13 +3761,10 @@ public class Crud implements InformationObserver {
         RelRoot logicalRoot = null;
         if ( parsed.isA( SqlKind.DDL ) ) {
             signature = sqlProcessor.prepareDdl( statement, parsed );
-
         } else {
-
             Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
             logicalRoot = sqlProcessor.translate( statement, validated.left );
             signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
-
         }
         return signature;
     }
@@ -3781,6 +3779,7 @@ public class Crud implements InformationObserver {
         PolyphenyDbSignature<?> signature;
 
         statement.getTransaction().setMonitoringData( new DmlEvent() );
+
         try {
             signature = processQuery( statement, sqlUpdate );
         } catch ( Throwable t ) {
@@ -3837,6 +3836,7 @@ public class Crud implements InformationObserver {
             ev.setRowCount( rowsChanged );
 
             MonitoringServiceProvider.getInstance().monitorEvent( ev );
+
             return rowsChanged;
         } else {
             throw new QueryExecutionException( "Unknown statement type: " + signature.statementType );

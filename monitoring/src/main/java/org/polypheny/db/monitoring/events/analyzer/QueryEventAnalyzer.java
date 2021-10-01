@@ -24,6 +24,7 @@ import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 
+
 @Slf4j
 public class QueryEventAnalyzer {
 
@@ -57,35 +58,26 @@ public class QueryEventAnalyzer {
 
 
     private static void processDurationInfo( QueryEvent queryEvent, QueryDataPoint metric ) {
-        try {
-            InformationDuration duration = new Gson().fromJson( queryEvent.getDurations(), InformationDuration.class );
-            getDurationInfo( metric, "Plan Caching", duration );
-            getDurationInfo( metric, "Index Lookup Rewrite", duration );
-            getDurationInfo( metric, "Constraint Enforcement", duration );
-            getDurationInfo( metric, "Implementation Caching", duration );
-            getDurationInfo( metric, "Index Update", duration );
-            getDurationInfo( metric, "Routing", duration );
-            getDurationInfo( metric, "Planning & Optimization", duration );
-            getDurationInfo( metric, "Implementation", duration );
-            getDurationInfo( metric, "Locking", duration );
-        } catch ( Exception e ) {
-            log.debug( "could not deserialize of get duration info" );
-        }
+        InformationDuration duration = new Gson().fromJson( queryEvent.getDurations(), InformationDuration.class );
+        getDurationInfo( metric, "Plan Caching", duration );
+        getDurationInfo( metric, "Index Lookup Rewrite", duration );
+        getDurationInfo( metric, "Constraint Enforcement", duration );
+        getDurationInfo( metric, "Implementation Caching", duration );
+        getDurationInfo( metric, "Index Update", duration );
+        getDurationInfo( metric, "Routing", duration );
+        getDurationInfo( metric, "Planning & Optimization", duration );
+        getDurationInfo( metric, "Implementation", duration );
+        getDurationInfo( metric, "Locking", duration );
     }
 
 
     private static void getDurationInfo( QueryDataPoint queryMetric, String durationName, InformationDuration duration ) {
-        try {
-            long time = duration.getDuration( durationName );
-            queryMetric.getDataElements().put( durationName, time );
-        } catch ( Exception e ) {
-            log.debug( "could no find duration:" + durationName );
-        }
+        long time = duration.getNanoDuration( durationName );
+        queryMetric.getDataElements().put( durationName, time );
     }
 
 
     private static void processRelNode( RelNode node, QueryEvent event, QueryDataPoint metric ) {
-
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
             processRelNode( node.getInput( i ), event, metric );
         }
@@ -93,7 +85,6 @@ public class QueryEventAnalyzer {
         if ( node.getTable() != null ) {
             metric.getTables().addAll( node.getTable().getQualifiedName() );
         }
-
     }
 
 }

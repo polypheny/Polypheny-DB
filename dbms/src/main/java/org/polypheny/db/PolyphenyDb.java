@@ -37,6 +37,7 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManagerImpl;
+import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.exploreByExample.ExploreManager;
 import org.polypheny.db.exploreByExample.ExploreQueryProcessor;
 import org.polypheny.db.iface.Authenticator;
@@ -61,6 +62,8 @@ import org.polypheny.db.util.FileSystemManager;
 import org.polypheny.db.webui.ConfigServer;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.InformationServer;
+import org.polypheny.db.webui.UiTestingConfigPage;
+import org.polypheny.db.webui.UiTestingMonitoringPage;
 
 
 @Command(name = "polypheny-db", description = "Polypheny-DB command line hook.")
@@ -269,17 +272,18 @@ public class PolyphenyDb {
             throw new RuntimeException( "Something went wrong while initializing index manager.", e );
         }
 
+        // Call DockerManager once to remove old containers
+        DockerManager.getInstance();
+
         final ExploreQueryProcessor exploreQueryProcessor = new ExploreQueryProcessor( transactionManager, authenticator ); // Explore-by-Example
         ExploreManager explore = ExploreManager.getInstance();
         explore.setExploreQueryProcessor( exploreQueryProcessor );
 
-        // Todo remove this testing
-       /* InternalSubscriber internalSubscriber = new InternalSubscriber();
-        DummySubscriber dummySubscriber = new DummySubscriber();
-        MonitoringService.INSTANCE.subscribeToEvents( internalSubscriber, SubscriptionTopic.TABLE, 6, "Internal Usage" );
-        MonitoringService.INSTANCE.subscribeToEvents( internalSubscriber, SubscriptionTopic.STORE, 2, "Internal Usage" );
-        MonitoringService.INSTANCE.subscribeToEvents( dummySubscriber, SubscriptionTopic.TABLE, 6, "Lorem ipsum" );
-        *///
+        // Add config and monitoring test page for UI testing
+        if ( testMode ) {
+            new UiTestingConfigPage();
+            new UiTestingMonitoringPage();
+        }
 
         MonitoringService monitoringService = MonitoringServiceProvider.getInstance();
 

@@ -88,7 +88,6 @@ public class TransactionImpl implements Transaction, Comparable {
 
     private final List<Statement> statements = new ArrayList<>();
 
-
     private final List<String> changedTables = new ArrayList<>();
 
     @Getter

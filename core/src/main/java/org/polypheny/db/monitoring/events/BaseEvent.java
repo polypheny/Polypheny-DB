@@ -23,7 +23,10 @@ import lombok.Getter;
 
 public abstract class BaseEvent implements MonitoringEvent {
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> master
     @Getter
     private final UUID id = UUID.randomUUID();
     protected String eventType;

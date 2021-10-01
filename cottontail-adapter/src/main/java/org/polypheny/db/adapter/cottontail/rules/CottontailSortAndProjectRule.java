@@ -17,7 +17,11 @@
 package org.polypheny.db.adapter.cottontail.rules;
 
 
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.CottontailToEnumerableConverter;
 import org.polypheny.db.adapter.cottontail.rel.CottontailSortAndProject;
@@ -68,7 +72,7 @@ public class CottontailSortAndProjectRule extends RelOptRule {
         }
 
         // Projection checks
-        Project innerProject = CottontailSortRule.getUnderlyingProject( (RelSubset) project.getInput(), this.out );
+        Project innerProject = getUnderlyingProject( (RelSubset) project.getInput(), this.out );
 
         if ( innerProject != null ) {
             return false;
@@ -158,6 +162,47 @@ public class CottontailSortAndProjectRule extends RelOptRule {
                 arrayValueProject );
 
         call.transformTo( sortAndProject );
+    }
+
+
+    /**
+     * Finds the underlying {@link Project} of the subset.
+     *
+     * @param relSubset the subset.
+     * @return the {@link Project} or <code>null</code> if not found.
+     */
+    public static Project getUnderlyingProject( RelSubset relSubset, Convention targetConvention ) {
+        return getUnderlyingProject( relSubset.getRelList(), targetConvention );
+    }
+
+
+    private static Project getUnderlyingProject( List<RelNode> rels, Convention targetConvention ) {
+        Set<RelNode> alreadyChecked = new HashSet<>();
+        Deque<RelNode> innerLevel = new LinkedList<>();
+
+        innerLevel.addAll( rels );
+
+        while ( !innerLevel.isEmpty() ) {
+            RelNode relNode = innerLevel.pop();
+            alreadyChecked.add( relNode );
+            if ( relNode instanceof Project ) {
+//                if ( ((Project) relNode).getInput().getConvention().equals( targetConvention ) ) {
+                return (Project) relNode;
+//                }
+            } else {
+                for ( RelNode innerNode : relNode.getInputs() ) {
+                    if ( innerNode instanceof RelSubset ) {
+                        for ( RelNode possibleNewRel : ((RelSubset) innerNode).getRelList() ) {
+                            if ( !alreadyChecked.contains( possibleNewRel ) ) {
+                                innerLevel.addLast( possibleNewRel );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
 }

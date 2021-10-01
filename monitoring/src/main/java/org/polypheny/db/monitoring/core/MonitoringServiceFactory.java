@@ -21,27 +21,24 @@ import org.polypheny.db.monitoring.persistence.MapDbRepository;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUiImpl;
 
+
 @Slf4j
 public class MonitoringServiceFactory {
 
-    public static MonitoringServiceImpl CreateMonitoringService() {
-
-        // create mapDB repository
+    public static MonitoringServiceImpl createMonitoringService() {
+        // Create mapDB repository
         MapDbRepository repo = new MapDbRepository();
-        // initialize the mapDB repo and open connection
+
+        // Initialize the mapDB repo and open connection
         repo.initialize();
 
-        // create monitoring service with dependencies
+        // Create monitoring service with dependencies
         MonitoringQueue queueWriteService = new MonitoringQueueImpl( repo );
         MonitoringServiceUi uiService = new MonitoringServiceUiImpl( repo, queueWriteService );
 
-        // initialize ui with first Metric
-        //Todo @Cedric to we need to display this at the monitoring view?
-        //  For me seems to be necessary only for debugging purposes
-        //  uiService.registerMetricForUi( QueryMetric.class );
-
-        // initialize the monitoringService
+        // Initialize the monitoringService
         MonitoringServiceImpl monitoringService = new MonitoringServiceImpl( queueWriteService, repo, uiService );
+
         return monitoringService;
     }
 

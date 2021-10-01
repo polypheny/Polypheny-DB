@@ -34,7 +34,9 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 import org.polypheny.db.util.background.BackgroundTask;
+import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
+
 
 /**
  * MonitoringQueue implementation which stores the monitoring jobs in a
@@ -43,25 +45,19 @@ import org.polypheny.db.util.background.BackgroundTaskManager;
 @Slf4j
 public class MonitoringQueueImpl implements MonitoringQueue {
 
-    // region private fields
-
-    /**
-     * monitoring queue which will queue all the incoming jobs.
-     */
+    // Monitoring queue which will queue all the incoming jobs.
     private final Queue<MonitoringEvent> monitoringJobQueue = new ConcurrentLinkedQueue<>();
+
     private final Set<UUID> queueIds = Sets.newConcurrentHashSet();
     private final Lock processingQueueLock = new ReentrantLock();
     private final MonitoringRepository repository;
 
-
     private String backgroundTaskId;
-    //For ever
+
+    // Processed events since restart
+    private long processedEvents;
     private long processedEventsTotal;
 
-    /**
-     * Processed events since restart.
-     */
-    private long processedEvents;
 
     // endregion
 
@@ -74,8 +70,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
      * @param startBackGroundTask Indicates whether the background task for consuming the queue will be started.
      */
     public MonitoringQueueImpl( boolean startBackGroundTask, @NonNull MonitoringRepository repository ) {
-        log.info( "write queue service" );
-
         this.repository = repository;
 
         if ( startBackGroundTask ) {
@@ -91,14 +85,8 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         this( true, repository );
     }
 
-    // endregion
 
-    // region public methods
-
-
-    @Override
-    protected void finalize() throws Throwable {
-        super.finalize();
+    public void terminateQueue() {
         if ( backgroundTaskId != null ) {
             BackgroundTaskManager.INSTANCE.removeBackgroundTask( backgroundTaskId );
         }
@@ -117,7 +105,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     /**
      * Display current number of elements in queue
      *
-     * @return Current numbe of elements in Queue
+     * @return Current number of elements in Queue
      */
     @Override
     public long getNumberOfElementsInQueue() {
@@ -130,7 +118,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         List<HashMap<String, String>> infoList = new ArrayList<>();
 
         for ( MonitoringEvent event : monitoringJobQueue ) {
-            HashMap<String, String> infoRow = new HashMap<String, String>();
+            HashMap<String, String> infoRow = new HashMap<>();
             infoRow.put( "type", event.getClass().toString() );
             infoRow.put( "id", event.getId().toString() );
             infoRow.put( "timestamp", event.getRecordedTimestamp().toString() );
@@ -161,7 +149,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
                     this::processQueue,
                     "Send monitoring jobs to job consumers",
                     BackgroundTask.TaskPriority.LOW,
-                    BackgroundTask.TaskSchedulingType.EVERY_TEN_SECONDS
+                    (TaskSchedulingType) RuntimeConfig.QUEUE_PROCESSING_INTERVAL.getEnum()
             );
         }
     }
@@ -177,7 +165,9 @@ public class MonitoringQueueImpl implements MonitoringQueue {
             // while there are jobs to consume:
             int countEvents = 0;
             while ( (event = this.getNextJob()).isPresent() && countEvents < RuntimeConfig.QUEUE_PROCESSING_ELEMENTS.getInteger() ) {
-                log.debug( "get new monitoring job" + event.get().getId().toString() );
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "get new monitoring job {}", event.get().getId().toString() );
+                }
 
                 // returns list of metrics which was produced by this particular event
                 val dataPoints = event.get().analyze();

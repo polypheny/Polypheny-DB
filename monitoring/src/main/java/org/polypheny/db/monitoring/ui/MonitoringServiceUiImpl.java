@@ -38,6 +38,7 @@ import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 
+
 @Slf4j
 public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
@@ -46,7 +47,6 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
     private InformationPage informationPage;
 
 
-    // TODO: die Abhänigkeit zur Queue ist nicht wirklich optimal, aber lassen wir vielleicht mal so stehen
     public MonitoringServiceUiImpl( @NonNull MonitoringRepository repo, @NonNull MonitoringQueue queue ) {
         this.repo = repo;
         this.queue = queue;
@@ -57,7 +57,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
     @Override
     public void initializeInformationPage() {
-        //Initialize Information Page
+        // Initialize Information Page
         informationPage = new InformationPage( "Workload Monitoring" );
         informationPage.fullWidth();
         InformationManager im = InformationManager.getInstance();
@@ -88,6 +88,8 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
      *
      * @param informationGroup
      * @param informationTables
+    /**
+     * Universal method to add arbitrary new information Groups to UI.
      */
     private void addInformationGroupTUi( @NonNull InformationGroup informationGroup, @NonNull List<InformationTable> informationTables ) {
         InformationManager im = InformationManager.getInstance();
@@ -110,8 +112,8 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
             for ( Field field : fields ) {
                 // TODO: get declared fields and fine corresponding Lombok getter to execute
-                // Therefore, nothing need to be done for serialVersionID
-                // and neither do we need to hacky set the setAccessible flag for the fields
+                //  Therefore, nothing need to be done for serialVersionID
+                //  and neither do we need to hacky set the setAccessible flag for the fields
                 if ( field.getName().equals( "serialVersionUID" ) ) {
                     continue;
                 }
@@ -143,19 +145,16 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
 
     private void initializeQueueInformationTable() {
-
         //On first subscriber also add
         //Also build active subscription table Metric to subscribers
         //or which subscribers, exist and to which metrics they are subscribed
 
         val informationGroup = new InformationGroup( informationPage, "Monitoring Queue" ).setOrder( 2 );
-        val informationTable = new InformationTable( informationGroup,
-                Arrays.asList( "Event Type", "UUID", "Timestamp" ) );
+        val informationTable = new InformationTable( informationGroup, Arrays.asList( "Event Type", "UUID", "Timestamp" ) );
 
         informationGroup.setRefreshFunction( () -> this.updateQueueInformationTable( informationTable ) );
 
         addInformationGroupTUi( informationGroup, Arrays.asList( informationTable ) );
-
     }
 
 
@@ -175,16 +174,13 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
 
     private void updateWorkloadInformationTable( InformationTable table ) {
-
         table.reset();
 
-        table.addRow( "Number of processed events in total", queue.getNumberOfProcessedEvents( true ) );
-        table.addRow( "Number of processed events since restart", queue.getNumberOfProcessedEvents( false ) );
+        table.addRow( "Number of processed events since restart", queue.getNumberOfProcessedEvents() );
         table.addRow( "Number of events in queue", queue.getNumberOfElementsInQueue() );
         //table.addRow( "# Data Points", queue.getElementsInQueue().size() );
         table.addRow( "# SELECT", MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPoint.class ).size() );
         table.addRow( "# DML", MonitoringServiceProvider.getInstance().getAllDataPoints( DmlDataPoint.class ).size() );
     }
-
 
 }

@@ -16,7 +16,6 @@
 
 package org.polypheny.db.monitoring.events.analyzer;
 
-
 import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.InformationDuration;
@@ -25,10 +24,9 @@ import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 
+
 @Slf4j
 public class DmlEventAnalyzer {
-    // TODO: Bis jetzt sind die Klassen mehr oder weniger identisch. Ist das einfach vorbereitet für später oder wie?
-
 
     public static DmlDataPoint analyze( DmlEvent dmlEvent ) {
         DmlDataPoint metric = DmlDataPoint
@@ -59,30 +57,22 @@ public class DmlEventAnalyzer {
 
 
     private static void processDurationInfo( DmlEvent dmlEvent, DmlDataPoint metric ) {
-        try {
-            InformationDuration duration = new Gson().fromJson( dmlEvent.getDurations(), InformationDuration.class );
-            getDurationInfo( metric, "Plan Caching", duration );
-            getDurationInfo( metric, "Index Lookup Rewrite", duration );
-            getDurationInfo( metric, "Constraint Enforcement", duration );
-            getDurationInfo( metric, "Implementation Caching", duration );
-            getDurationInfo( metric, "Index Update", duration );
-            getDurationInfo( metric, "Routing", duration );
-            getDurationInfo( metric, "Planning & Optimization", duration );
-            getDurationInfo( metric, "Implementation", duration );
-            getDurationInfo( metric, "Locking", duration );
-        } catch ( Exception e ) {
-            log.debug( "could not deserialize of get duration info" );
-        }
+        InformationDuration duration = new Gson().fromJson( dmlEvent.getDurations(), InformationDuration.class );
+        getDurationInfo( metric, "Plan Caching", duration );
+        getDurationInfo( metric, "Index Lookup Rewrite", duration );
+        getDurationInfo( metric, "Constraint Enforcement", duration );
+        getDurationInfo( metric, "Implementation Caching", duration );
+        getDurationInfo( metric, "Index Update", duration );
+        getDurationInfo( metric, "Routing", duration );
+        getDurationInfo( metric, "Planning & Optimization", duration );
+        getDurationInfo( metric, "Implementation", duration );
+        getDurationInfo( metric, "Locking", duration );
     }
 
 
     private static void getDurationInfo( DmlDataPoint dmlMetric, String durationName, InformationDuration duration ) {
-        try {
-            long time = duration.getDuration( durationName );
-            dmlMetric.getDataElements().put( durationName, time );
-        } catch ( Exception e ) {
-            log.debug( "could no find duration:" + durationName );
-        }
+        long time = duration.getNanoDuration( durationName );
+        dmlMetric.getDataElements().put( durationName, time );
     }
 
 
