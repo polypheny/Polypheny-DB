@@ -83,8 +83,8 @@ public class RequestParserTest {
                 mockedCatalog,
                 null,
                 null,
-                "testdb",
-                "username" );
+                "username",
+                "testdb" );
         HashMap<String, Pair<SqlOperator, String>> operationMap = new HashMap<>();
         operationMap.put( ">=10", new Pair<>( SqlStdOperatorTable.GREATER_THAN_OR_EQUAL, "10" ) );
         operationMap.put( ">10", new Pair<>( SqlStdOperatorTable.GREATER_THAN, "10" ) );

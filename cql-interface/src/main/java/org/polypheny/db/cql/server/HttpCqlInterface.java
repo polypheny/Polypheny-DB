@@ -58,6 +58,7 @@ import spark.Request;
 import spark.Response;
 import spark.Service;
 
+
 @Slf4j
 public class HttpCqlInterface extends QueryInterface {
 
@@ -96,7 +97,7 @@ public class HttpCqlInterface extends QueryInterface {
     }
 
 
-    private void restRoutes( Service server ) {
+    private void routes( Service server ) {
         server.path( "/", () -> {
             server.before( "/*", ( q, a ) -> {
                 log.debug( "Checking authentication of request with id: {}.", q.session().id() );
@@ -115,7 +116,7 @@ public class HttpCqlInterface extends QueryInterface {
     public void run() {
         server = Service.ignite();
         server.port( port );
-        restRoutes( server );
+        routes( server );
         log.info( "{} started and is listening on port {}.", INTERFACE_NAME, port );
     }
 
@@ -182,7 +183,7 @@ public class HttpCqlInterface extends QueryInterface {
 
             statement.getTransaction().commit();
         } catch ( Throwable e ) {
-            log.error( "Error during execution of REST query", e );
+            log.error( "Error during execution of CQL query", e );
             try {
                 statement.getTransaction().rollback();
             } catch ( TransactionException transactionException ) {
@@ -198,7 +199,7 @@ public class HttpCqlInterface extends QueryInterface {
     private Transaction getTransaction() {
         try {
             String userName = "pa";
-            return transactionManager.startTransaction( userName, databaseName, false, "REST Interface", MultimediaFlavor.FILE );
+            return transactionManager.startTransaction( userName, databaseName, false, "CQL Interface", MultimediaFlavor.FILE );
         } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }

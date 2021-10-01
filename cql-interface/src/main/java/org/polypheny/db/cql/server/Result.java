@@ -16,7 +16,6 @@
 
 package org.polypheny.db.cql.server;
 
-
 import com.google.gson.Gson;
 import com.j256.simplemagic.ContentInfo;
 import com.j256.simplemagic.ContentInfoUtil;
