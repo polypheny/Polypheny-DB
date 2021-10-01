@@ -19,7 +19,7 @@ package org.polypheny.db.cql;
 import org.junit.Assert;
 import org.junit.Test;
 import org.polypheny.db.cql.exception.UnknownIndexException;
-import org.polypheny.db.cql.testhelpers.CqlTestHelper;
+import org.polypheny.db.cql.helper.CqlTestHelper;
 
 
 public class IndexTest extends CqlTestHelper {

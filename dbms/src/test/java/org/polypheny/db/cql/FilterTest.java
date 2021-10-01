@@ -22,7 +22,7 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 import org.polypheny.db.cql.exception.UnknownIndexException;
-import org.polypheny.db.cql.testhelpers.RelBuildTestHelper;
+import org.polypheny.db.cql.helper.RelBuildTestHelper;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;

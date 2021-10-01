@@ -25,7 +25,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.polypheny.db.cql.Projections.AggregationFunctions;
 import org.polypheny.db.cql.exception.UnknownIndexException;
-import org.polypheny.db.cql.testhelpers.RelBuildTestHelper;
+import org.polypheny.db.cql.helper.RelBuildTestHelper;
 import org.polypheny.db.rel.RelNode;
 
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cql.testhelpers;
+package org.polypheny.db.cql.helper;
 
 import java.sql.Connection;
 import java.sql.Date;

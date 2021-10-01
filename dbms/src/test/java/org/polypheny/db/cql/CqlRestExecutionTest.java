@@ -23,7 +23,7 @@ import kong.unirest.Unirest;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.Test;
-import org.polypheny.db.cql.testhelpers.CqlTestHelper;
+import org.polypheny.db.cql.helper.CqlTestHelper;
 
 
 @Slf4j

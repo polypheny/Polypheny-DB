@@ -26,8 +26,9 @@ import org.polypheny.db.cql.BooleanGroup.TableOpsBooleanOperator;
 import org.polypheny.db.cql.Combiner.CombinerType;
 import org.polypheny.db.cql.exception.InvalidModifierException;
 import org.polypheny.db.cql.exception.UnknownIndexException;
-import org.polypheny.db.cql.testhelpers.RelBuildTestHelper;
+import org.polypheny.db.cql.helper.RelBuildTestHelper;
 import org.polypheny.db.rel.RelNode;
+
 
 public class CombinerTest extends RelBuildTestHelper {
 
