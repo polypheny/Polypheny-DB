@@ -176,7 +176,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
     private void updateWorkloadInformationTable( InformationTable table ) {
         table.reset();
 
-        table.addRow( "Number of processed events since restart", queue.getNumberOfProcessedEvents() );
+        table.addRow( "Number of processed events since restart", queue.getNumberOfProcessedEvents(false) );
         table.addRow( "Number of events in queue", queue.getNumberOfElementsInQueue() );
         //table.addRow( "# Data Points", queue.getElementsInQueue().size() );
         table.addRow( "# SELECT", MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPoint.class ).size() );

@@ -592,11 +592,11 @@ public class Rest {
             }
             return null;
         }
-        String result = restResult.getResult( res );
+        Pair<String, Integer> result = restResult.getResult( res );
         statement.getTransaction().getMonitoringData().setRowCount( result.right );
         MonitoringServiceProvider.getInstance().monitorEvent( statement.getTransaction().getMonitoringData() );
 
-        return result;
+        return result.left;
     }
 
 }

@@ -138,24 +138,6 @@ public class InformationDuration extends Information {
         }
 
 
-        static JsonSerializer<Duration> getSerializer() {
-            return ( src, typeOfSrc, context ) -> {
-                JsonObject jsonObj = new JsonObject();
-                jsonObj.addProperty( "type", src.type );
-                jsonObj.addProperty( "name", src.name );
-                jsonObj.add( "duration", context.serialize( src.duration ) );
-                jsonObj.add( "limit", context.serialize( src.limit ) );
-                jsonObj.add( "sequence", context.serialize( src.sequence ) );
-                jsonObj.add( "noProgressBar", context.serialize( src.noProgressBar ) );
-                Object[] children1 = src.children.values().toArray();
-                Arrays.sort( children1 );
-                jsonObj.add( "children", context.serialize( children1 ) );
-                jsonObj.add( "isChild", context.serialize( src.isChild ) );
-                return jsonObj;
-            };
-        }
-
-
         public long stop() {
             this.sw.stop();
             long time = this.sw.getNanoTime();
