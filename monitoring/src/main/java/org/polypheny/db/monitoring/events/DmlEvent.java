@@ -22,7 +22,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.monitoring.events.analyzer.DmlEventAnalyzer;
 import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
-import org.polypheny.db.monitoring.exceptions.GenericEventAnalyzeRuntimeException;
 
 
 @Getter

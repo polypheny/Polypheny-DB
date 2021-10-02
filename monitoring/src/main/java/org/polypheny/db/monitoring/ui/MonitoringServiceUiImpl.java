@@ -74,7 +74,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
         val informationGroup = new InformationGroup( informationPage, className );
 
         // TODO: see todo below
-        val fieldAsString = Arrays.stream( metricClass.getDeclaredFields() ).map( f -> f.getName() ).filter( str -> !str.equals( "serialVersionUID" ) ).collect( Collectors.toList() );
+        val fieldAsString = Arrays.stream( metricClass.getDeclaredFields() ).map( Field::getName ).filter( str -> !str.equals( "serialVersionUID" ) ).collect( Collectors.toList() );
         val informationTable = new InformationTable( informationGroup, fieldAsString );
 
         //informationGroup.setRefreshFunction( () -> this.updateMetricInformationTable( informationTable, metricClass ) );
@@ -87,8 +87,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
      * Universal method to add arbitrary new information Groups to UI
      *
      * @param informationGroup
-     * @param informationTables
-    /**
+     * @param informationTables /**
      * Universal method to add arbitrary new information Groups to UI.
      */
     private void addInformationGroupTUi( @NonNull InformationGroup informationGroup, @NonNull List<InformationTable> informationTables ) {
@@ -176,7 +175,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
     private void updateWorkloadInformationTable( InformationTable table ) {
         table.reset();
 
-        table.addRow( "Number of processed events since restart", queue.getNumberOfProcessedEvents(false) );
+        table.addRow( "Number of processed events since restart", queue.getNumberOfProcessedEvents( false ) );
         table.addRow( "Number of events in queue", queue.getNumberOfElementsInQueue() );
         //table.addRow( "# Data Points", queue.getElementsInQueue().size() );
         table.addRow( "# SELECT", MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPoint.class ).size() );

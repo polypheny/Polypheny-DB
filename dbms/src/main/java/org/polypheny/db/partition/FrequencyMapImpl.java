@@ -21,6 +21,7 @@ import static java.util.stream.Collectors.toCollection;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -129,7 +130,7 @@ public class FrequencyMapImpl extends FrequencyMap {
 
         //Outer of is needed to ignore frequencies from old non-existing partitionIds
         //Which are not yet linked to the table but are still in monitoring
-        //TODO @CEDRIC or @HENNLO introduce monitoring cleanisng of datapoints
+        //TODO @CEDRIC or @HENNLO introduce monitoring cleaning of data points
         if ( partitionIds.contains( partitionId ) ) {
             if ( accessCounter.containsKey( partitionId ) ) {
                 accessCounter.replace( partitionId, accessCounter.get( partitionId ) + 1 );
@@ -141,7 +142,9 @@ public class FrequencyMapImpl extends FrequencyMap {
 
 
     private void determinePartitionDistribution( CatalogTable table ) {
-        log.debug( "Determine access frequency of partitions of table: " + table.name );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Determine access frequency of partitions of table: " + table.name );
+        }
 
         //Get percentage of tables which can remain in HOT
         long numberOfPartitionsInHot = (table.partitionProperty.partitionIds.size() * ((TemperaturePartitionProperty) table.partitionProperty).getHotAccessPercentageIn()) / 100;
@@ -170,7 +173,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                 .sorted( (Map.Entry.<Long, Long>comparingByValue().reversed()) )
                 .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue, ( e1, e2 ) -> e1, LinkedHashMap::new ) );
 
-        //Start gathering the partitions begining with the most frequently accessed
+        //Start gathering the partitions beginning with the most frequently accessed
         int hotCounter = 0;
         int toleranceCounter = 0;
         boolean skip = false;
@@ -235,9 +238,11 @@ public class FrequencyMapImpl extends FrequencyMap {
     private void redistributePartitions( CatalogTable table, List<Long> partitionsFromColdToHot, List<Long> partitionsFromHotToCold ) {
         // Invoke DdlManager/dataMigrator to copy data with both new Lists
 
-        log.debug( "Execute physical redistribution of partitions for table: " + table.name );
-        log.debug( "Partitions to move from HOT to COLD: " + partitionsFromHotToCold );
-        log.debug( "Partitions to move from COLD to HOT: " + partitionsFromColdToHot );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Execute physical redistribution of partitions for table: {}", table.name );
+            log.debug( "Partitions to move from HOT to COLD: {}", partitionsFromHotToCold );
+            log.debug( "Partitions to move from COLD to HOT: {}", partitionsFromColdToHot );
+        }
 
         Map<DataStore, List<Long>> partitionsToRemoveFromStore = new HashMap<>();
 
@@ -258,7 +263,9 @@ public class FrequencyMapImpl extends FrequencyMap {
 
                 // Skip creation/deletion because this adapter contains both groups HOT & COLD
                 if ( adaptersWithCold.contains( catalogAdapter ) ) {
-                    log.debug( " Skip adapter " + catalogAdapter.uniqueName + ", hold both partitionGroups HOT & COLD" );
+                    if ( log.isDebugEnabled() ) {
+                        log.debug( " Skip adapter " + catalogAdapter.uniqueName + ", hold both partitionGroups HOT & COLD" );
+                    }
                     continue;
                 }
 
@@ -298,7 +305,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                                     Stream.of(
                                             partitionsToRemoveFromStore.get( store ),
                                             partitionsFromHotToCold )
-                                            .flatMap( p -> p.stream() )
+                                            .flatMap( Collection::stream )
                                             .collect( Collectors.toList() )
                             );
                         }
@@ -343,7 +350,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                                     Stream.of(
                                             partitionsToRemoveFromStore.get( store ),
                                             partitionsFromColdToHot )
-                                            .flatMap( p -> p.stream() )
+                                            .flatMap( Collection::stream )
                                             .collect( Collectors.toList() )
                             );
                         }
@@ -394,12 +401,13 @@ public class FrequencyMapImpl extends FrequencyMap {
     }
 
 
+    @Override
     public void determinePartitionFrequency( CatalogTable table, long invocationTimestamp ) {
         Timestamp queryStart = new Timestamp( invocationTimestamp - ((TemperaturePartitionProperty) table.partitionProperty).getFrequencyInterval() * 1000 );
 
         accessCounter = new HashMap<>();
         List<Long> tempPartitionIds = table.partitionProperty.partitionIds.stream().collect( toCollection( ArrayList::new ) );
-        ;
+
         tempPartitionIds.forEach( p -> accessCounter.put( p, (long) 0 ) );
 
         switch ( ((TemperaturePartitionProperty) table.partitionProperty).getPartitionCostIndication() ) {

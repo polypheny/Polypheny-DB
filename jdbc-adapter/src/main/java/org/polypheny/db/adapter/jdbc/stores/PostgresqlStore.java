@@ -221,7 +221,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 builder.append( "gin" );
                 break;
             case "brin":
-                builder.append( "gin" );
+                builder.append( "brin" );
                 break;
         }
 
@@ -280,6 +280,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
     }
 
 
+    @Override
     protected void createColumnDefinition( CatalogColumn catalogColumn, StringBuilder builder ) {
         builder.append( " " ).append( getTypeString( catalogColumn.type ) );
         if ( catalogColumn.length != null ) {

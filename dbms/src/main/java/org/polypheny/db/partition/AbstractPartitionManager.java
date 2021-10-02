@@ -71,7 +71,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
 
     //Returns 1 for most PartitionFunctions since they have a 1:1 relation between Groups and Internal Partitions
-    //In that case the input of numberOfPartitions is ommitted
+    //In that case the input of numberOfPartitions is omitted
     @Override
     public int getNumberOfPartitionsPerGroup( int numberOfPartitions ) {
         return 1;

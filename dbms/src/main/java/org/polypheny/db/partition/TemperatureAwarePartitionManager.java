@@ -87,7 +87,7 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
     public boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, CatalogColumn partitionColumn ) {
         super.validatePartitionGroupSetup( partitionGroupQualifiers, numPartitionGroups, partitionGroupNames, partitionColumn );
 
-        // VALUES for HOT in & COLD out cannot be ambigious or overlapping
+        // VALUES for HOT in & COLD out cannot be ambiguous or overlapping
         // Percentage of HOt to COLD has to be truly greater than HOT in
 
         return true;

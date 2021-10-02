@@ -332,7 +332,7 @@ public class FileStore extends DataStore {
             movePrefix = "_del_" + xidHash;
         }
         if ( rootDir.listFiles() != null ) {
-            for ( File columnFolder : rootDir.listFiles( f -> f.isDirectory() ) ) {
+            for ( File columnFolder : rootDir.listFiles( File::isDirectory ) ) {
                 for ( File data : columnFolder.listFiles( f -> !f.isHidden() && f.getName().startsWith( deletePrefix ) ) ) {
                     data.delete();
                 }

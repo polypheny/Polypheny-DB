@@ -127,7 +127,7 @@ public abstract class AbstractJdbcStore extends DataStore {
         qualifiedNames.add( catalogTable.getSchemaName() );
         qualifiedNames.add( catalogTable.name );
 
-        //Retrieve all table names to be created
+        // Retrieve all table names to be created
         List<String> physicalTableNames = new ArrayList<>();
         //-1 for unpartitioned
         String originalPhysicalTableName = getPhysicalTableName( catalogTable.id, -1 );
@@ -143,7 +143,7 @@ public abstract class AbstractJdbcStore extends DataStore {
                 log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), qualifiedNames, physicalTableName );
             }
             StringBuilder query = buildCreateTableQuery( getDefaultPhysicalSchemaName(), physicalTableName, catalogTable );
-            log.info( query.toString() + " on store " + this.getUniqueName() );
+            log.info( "{} on store {}", query.toString(), this.getUniqueName() );
             executeUpdate( query, context );
 
             catalog.updatePartitionPlacementPhysicalNames(
@@ -342,7 +342,7 @@ public abstract class AbstractJdbcStore extends DataStore {
                     .append( "." )
                     .append( dialect.quoteIdentifier( physicalTableName ) );
 
-            log.info( builder.toString() + " from store " + this.getUniqueName() );
+            log.info( "{} from store {}", builder.toString(), this.getUniqueName() );
             executeUpdate( builder, context );
         }
     }

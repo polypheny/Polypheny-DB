@@ -1030,7 +1030,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     /**
-     * Assigne the partition to a new partitionGroup
+     * Assign the partition to a new partitionGroup
      */
     @Override
     public void updatePartition( long partitionId, Long partitionGroupId ) {

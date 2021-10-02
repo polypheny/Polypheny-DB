@@ -42,7 +42,7 @@ import org.polypheny.db.util.ImmutableNullableList;
 
 
 /**
- * Parse tree for {@code ALTER TABLE name MODIFY PARTITIONS (partitionId [, partitonId]* ) } statement.
+ * Parse tree for {@code ALTER TABLE name MODIFY PARTITIONS (partitionId [, partitionId]* ) } statement.
  */
 @Slf4j
 public class SqlAlterTableModifyPartitions extends SqlAlterTable {

@@ -72,10 +72,10 @@ import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -435,9 +435,7 @@ public abstract class Catalog {
      * @param physicalColumnName The column name on the adapter
      * @param partitionGroupIds List of partitions to place on this column placement (may be null)
      */
-    public abstract void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, List<Long> partitionGroupIds);
-
-
+    public abstract void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, List<Long> partitionGroupIds );
 
 
     /**
@@ -447,10 +445,6 @@ public abstract class Catalog {
      * @param columnId The id of the column
      */
     public abstract void deleteColumnPlacement( int adapterId, long columnId );
-
-
-
-
 
 
     /**
@@ -491,8 +485,6 @@ public abstract class Catalog {
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterPerTable( int adapterId, long tableId );
 
 
-
-
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterSortedByPhysicalPosition( int storeId, long tableId );
 
 
@@ -521,7 +513,6 @@ public abstract class Catalog {
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterAndSchema( int adapterId, long schemaId );
 
 
-
     /**
      * Update type of a placement.
      *
@@ -529,7 +520,7 @@ public abstract class Catalog {
      * @param columnId The id of the column
      * @param placementType The new type of placement
      */
-    public abstract void updateColumnPlacementType( int adapterId, long columnId ,  PlacementType placementType );
+    public abstract void updateColumnPlacementType( int adapterId, long columnId, PlacementType placementType );
 
     /**
      * Update physical position of a column placement on a specified adapter.
@@ -541,7 +532,6 @@ public abstract class Catalog {
     public abstract void updateColumnPlacementPhysicalPosition( int adapterId, long columnId, long position );
 
 
-
     /**
      * Update physical position of a column placement on a specified adapter. Uses auto-increment to get the globally increasing number.
      *
@@ -551,20 +541,16 @@ public abstract class Catalog {
     public abstract void updateColumnPlacementPhysicalPosition( int adapterId, long columnId );
 
 
-
-
-
     /**
      * Change physical names of all column placements.
-     *  @param adapterId The id of the adapter
+     *
+     * @param adapterId The id of the adapter
      * @param columnId The id of the column
      * @param physicalSchemaName The physical schema name
      * @param physicalColumnName The physical column name
      * @param updatePhysicalColumnPosition Whether to reset the column position (highest number in the table; represents that the column is now at the last position)
      */
     public abstract void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalColumnName, boolean updatePhysicalColumnPosition );
-
-
 
 
     /**
@@ -1086,7 +1072,6 @@ public abstract class Catalog {
     public abstract CatalogPartition getPartition( long partitionId );
 
 
-
     public abstract List<CatalogPartition> getPartitionsByTable( long tableId );
 
 
@@ -1115,7 +1100,7 @@ public abstract class Catalog {
      * @param tableId Table to be partitioned
      * @param partitionProperty Partition properties
      */
-    public abstract void updateTablePartitionProperties( long tableId, PartitionProperty partitionProperty);
+    public abstract void updateTablePartitionProperties( long tableId, PartitionProperty partitionProperty );
 
 
     /**
@@ -1142,7 +1127,6 @@ public abstract class Catalog {
      *
      * @param partitionGroupId
      * @param partitionIds List of new partitionIds
-     *
      */
     public abstract void updatePartitionGroup( long partitionGroupId, List<Long> partitionIds );
 
@@ -1151,7 +1135,7 @@ public abstract class Catalog {
     public abstract void removePartitionFromGroup( long partitionGroupId, Long partitionId );
 
     /**
-     * Assigne the partition to a new partitionGroup
+     * Assign the partition to a new partitionGroup
      *
      * @param partitionId
      * @param partitionGroupId
@@ -1284,34 +1268,34 @@ public abstract class Catalog {
 
 
     /**
-            * Adds a placement for a partition.
-            *
-    * @param adapterId The adapter on which the table should be placed on
-    * @param tableId
-    * @param partitionId
+     * Adds a placement for a partition.
+     *
+     * @param adapterId The adapter on which the table should be placed on
+     * @param tableId
+     * @param partitionId
      * @param placementType The type of placement
      * @param physicalSchemaName The schema name on the adapter
      * @param physicalTableName The table name on the adapter
-
      */
-    public abstract void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName);
+    public abstract void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName );
 
     /**
      * Change physical names of a partition placement.
-     *  @param adapterId The id of the adapter
+     *
+     * @param adapterId The id of the adapter
      * @param partitionId The id of the partition
      * @param physicalSchemaName The physical schema name
      * @param physicalTableName The physical table name
      */
-    public abstract void updatePartitionPlacementPhysicalNames( int adapterId, long partitionId, String physicalSchemaName, String physicalTableName) ;
+    public abstract void updatePartitionPlacementPhysicalNames( int adapterId, long partitionId, String physicalSchemaName, String physicalTableName );
 
     /**
-     * Delets a placement for a partition.
+     * Deletes a placement for a partition.
      *
      * @param adapterId The adapter on which the table should be placed on
      * @param partitionId
      */
-    public abstract void deletePartitionPlacement( int adapterId, long partitionId);
+    public abstract void deletePartitionPlacement( int adapterId, long partitionId );
 
 
     public abstract CatalogPartitionPlacement getPartitionPlacement( int adapterId, long partitionId );
@@ -1324,14 +1308,14 @@ public abstract class Catalog {
 
     public abstract List<CatalogPartitionPlacement> getPartitionPlacements( long partitionId );
 
-    public abstract  List<CatalogTable> getTablesForPeriodicProcessing();
+    public abstract List<CatalogTable> getTablesForPeriodicProcessing();
 
-    public abstract void addTableToPeriodicProcessing(long tableId)  ;
+    public abstract void addTableToPeriodicProcessing( long tableId );
 
-    public abstract  void removeTableFromPeriodicProcessing(long tableId)  ;
+    public abstract void removeTableFromPeriodicProcessing( long tableId );
 
 
-    public abstract boolean checkIfExistsPartitionPlacement(int adapterId, long partitionId );
+    public abstract boolean checkIfExistsPartitionPlacement( int adapterId, long partitionId );
 
     /*
      *
@@ -1658,8 +1642,8 @@ public abstract class Catalog {
         RANGE( 1 ),
         LIST( 2 ),
         HASH( 3 ),
-        //TODO @HENNLO think about excluding "UDPF" here, these should only be used for internal Partiiton Functions
-        TEMPERATURE(4);
+        //TODO @HENNLO think about excluding "UDPF" here, these should only be used for internal Partition Functions
+        TEMPERATURE( 4 );
 
         private final int id;
 

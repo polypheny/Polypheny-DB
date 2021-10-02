@@ -254,10 +254,14 @@ public abstract class AbstractRouter implements Router {
                         if ( partitionValues.size() != 0 ) {
                             List<Long> identPartitions = new ArrayList<>();
                             for ( String partitionValue : partitionValues ) {
-                                log.debug( "Extracted PartitionValue: {}", partitionValue );
+                                if ( log.isDebugEnabled() ) {
+                                    log.debug( "Extracted PartitionValue: {}", partitionValue );
+                                }
                                 long identPart = partitionManager.getTargetPartitionId( catalogTable, partitionValue );
                                 identPartitions.add( identPart );
-                                log.debug( "Identified PartitionId: {} for value: {}", identPart, partitionValue );
+                                if ( log.isDebugEnabled() ) {
+                                    log.debug( "Identified PartitionId: {} for value: {}", identPart, partitionValue );
+                                }
                             }
                             // Add identified partitions to monitoring object
                             // Currently only one partition is identified, therefore LIST is not needed YET.
@@ -274,7 +278,9 @@ public abstract class AbstractRouter implements Router {
                     }
 
                 } else {
-                    log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
+                    if ( log.isDebugEnabled() ) {
+                        log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
+                    }
                     placements = selectPlacement( node, catalogTable );
                     accessedPartitionList = catalogTable.partitionProperty.partitionIds;
                     placementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ), placements );
@@ -446,7 +452,9 @@ public abstract class AbstractRouter implements Router {
                             whereClauseValues = whereClauseVisitor.getValues().stream()
                                     .map( Object::toString )
                                     .collect( Collectors.toList() );
-                            log.debug( "Found Where Clause Values: {}", whereClauseValues );
+                            if ( log.isDebugEnabled() ) {
+                                log.debug( "Found Where Clause Values: {}", whereClauseValues );
+                            }
                             worstCaseRouting = true;
                             // }
                         }
@@ -472,7 +480,9 @@ public abstract class AbstractRouter implements Router {
                             for ( String cn : updateColumnList ) {
                                 try {
                                     if ( catalog.getColumn( catalogTable.id, cn ).id == catalogTable.partitionColumnId ) {
-                                        log.debug( " UPDATE: Found PartitionColumnID Match: '{}' at index: {}", catalogTable.partitionColumnId, index );
+                                        if ( log.isDebugEnabled() ) {
+                                            log.debug( " UPDATE: Found PartitionColumnID Match: '{}' at index: {}", catalogTable.partitionColumnId, index );
+                                        }
 
                                         //Routing/Locking can now be executed on certain partitions
                                         partitionColumnIdentified = true;
@@ -503,14 +513,16 @@ public abstract class AbstractRouter implements Router {
                                     //SET value and single WHERE clause point to same partition.
                                     //Inplace update possible
                                     if ( identifiedPartitionsInFilter.size() == 1 && identifiedPartitionsInFilter.contains( identifiedPartitionForSetValue ) ) {
-                                        log.debug( "oldValue and new value reside on same partition: " + identifiedPartitionForSetValue );
+                                        if ( log.isDebugEnabled() ) {
+                                            log.debug( "oldValue and new value reside on same partition: " + identifiedPartitionForSetValue );
+                                        }
                                         worstCaseRouting = false;
                                     } else {
                                         throw new RuntimeException( "Updating partition key is not allowed" );
 
-                                        /* TODO add possibility to substitute the update as a insert into target partitoin from all source parttions
+                                        /* TODO add possibility to substitute the update as a insert into target partition from all source partitions
                                         // IS currently blocked
-                                        //needs to to a insert into target partition select from all other partitoins first and then delte on source partiitons
+                                        //needs to to a insert into target partition select from all other partitoins first and then delete on source partiitons
                                         worstCaseRouting = false;
                                         log.debug( "oldValue and new value reside on same partition: " + identifiedPartitionForSetValue );
 
@@ -628,7 +640,9 @@ public abstract class AbstractRouter implements Router {
 
                                     for ( i = 0; i < catalogTable.columnIds.size(); i++ ) {
                                         if ( catalogTable.columnIds.get( i ) == catalogTable.partitionColumnId ) {
-                                            log.debug( "INSERT: Found PartitionColumnID: '{}' at column index: {}", catalogTable.partitionColumnId, i );
+                                            if ( log.isDebugEnabled() ) {
+                                                log.debug( "INSERT: Found PartitionColumnID: '{}' at column index: {}", catalogTable.partitionColumnId, i );
+                                            }
                                             partitionColumnIdentified = true;
                                             worstCaseRouting = false;
                                             partitionValue = currentTuple.get( i ).toString().replace( "'", "" );
@@ -786,7 +800,7 @@ public abstract class AbstractRouter implements Router {
                             accessedPartitionList = catalogTable.partitionProperty.partitionIds.stream().collect( Collectors.toSet() );
                         }
                     } else {
-                        //unpartitioned tables only have one partition anyway
+                        // unpartitioned tables only have one partition anyway
                         identPart = catalogTable.partitionProperty.partitionIds.get( 0 );
                         accessedPartitionList.add( identPart );
 
@@ -1027,7 +1041,7 @@ public abstract class AbstractRouter implements Router {
 
         for ( Entry partitionToPlacement : placements.entrySet() ) {
 
-            Long partitionId = (long) partitionToPlacement.getKey();
+            long partitionId = (long) partitionToPlacement.getKey();
             List<CatalogColumnPlacement> currentPlacements = (List<CatalogColumnPlacement>) partitionToPlacement.getValue();
             // Sort by adapter
             Map<Integer, List<CatalogColumnPlacement>> placementsByAdapter = new HashMap<>();

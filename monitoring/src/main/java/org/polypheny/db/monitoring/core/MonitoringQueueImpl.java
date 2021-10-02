@@ -58,7 +58,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     private long processedEvents;
     private long processedEventsTotal;
 
-
     // endregion
 
     // region ctors
