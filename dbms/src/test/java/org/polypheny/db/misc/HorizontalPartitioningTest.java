@@ -530,10 +530,10 @@ public class HorizontalPartitioningTest {
                     Assert.assertEquals( 2, table.partitionProperty.getPartitionGroupIds().size() );
                     Assert.assertEquals( 20, table.partitionProperty.getPartitionIds().size() );
 
-                    //Check if initially as many partitonPlacements are created as requested and stored in the partitionproperty
+                    //Check if initially as many partitionPlacements are created as requested and stored in the partitionproperty
                     Assert.assertEquals( table.partitionProperty.getPartitionIds().size(), Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size() );
 
-                    //Retrieve partiton distribution
+                    //Retrieve partition distribution
                     //Get percentage of tables which can remain in HOT
                     long numberOfPartitionsInHot = (table.partitionProperty.partitionIds.size() * ((TemperaturePartitionProperty) table.partitionProperty).getHotAccessPercentageIn()) / 100;
                     //These are the tables than can remain in HOT

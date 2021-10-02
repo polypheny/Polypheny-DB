@@ -74,10 +74,10 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
         val informationGroup = new InformationGroup( informationPage, className );
 
         // TODO: see todo below
-        val fieldAsString = Arrays.stream( metricClass.getDeclaredFields() ).map( f -> f.getName() ).filter( str -> !str.equals( "serialVersionUID" ) ).collect( Collectors.toList() );
+        val fieldAsString = Arrays.stream( metricClass.getDeclaredFields() ).map( Field::getName ).filter( str -> !str.equals( "serialVersionUID" ) ).collect( Collectors.toList() );
         val informationTable = new InformationTable( informationGroup, fieldAsString );
 
-        //informationGroup.setRefreshFunction( () -> this.updateMetricInformationTable( informationTable, metricClass ) );
+        // informationGroup.setRefreshFunction( () -> this.updateMetricInformationTable( informationTable, metricClass ) );
 
         addInformationGroupTUi( informationGroup, Arrays.asList( informationTable ) );
     }
@@ -87,8 +87,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
      * Universal method to add arbitrary new information Groups to UI
      *
      * @param informationGroup
-     * @param informationTables
-    /**
+     * @param informationTables /**
      * Universal method to add arbitrary new information Groups to UI.
      */
     private void addInformationGroupTUi( @NonNull InformationGroup informationGroup, @NonNull List<InformationTable> informationTables ) {
@@ -123,7 +122,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
                     val value = field.get( element );
                     row.add( value.toString() );
                 } catch ( IllegalAccessException e ) {
-                    e.printStackTrace();
+                    log.error( "Caught exception", e );
                 }
             }
 
@@ -145,9 +144,9 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
 
     private void initializeQueueInformationTable() {
-        //On first subscriber also add
-        //Also build active subscription table Metric to subscribers
-        //or which subscribers, exist and to which metrics they are subscribed
+        // On first subscriber also add
+        // Also build active subscription table Metric to subscribers
+        // or which subscribers, exist and to which metrics they are subscribed
 
         val informationGroup = new InformationGroup( informationPage, "Monitoring Queue" ).setOrder( 2 );
         val informationTable = new InformationTable( informationGroup, Arrays.asList( "Event Type", "UUID", "Timestamp" ) );
@@ -176,7 +175,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
     private void updateWorkloadInformationTable( InformationTable table ) {
         table.reset();
 
-        table.addRow( "Number of processed events since restart", queue.getNumberOfProcessedEvents(false) );
+        table.addRow( "Number of processed events since restart", queue.getNumberOfProcessedEvents( false ) );
         table.addRow( "Number of events in queue", queue.getNumberOfElementsInQueue() );
         //table.addRow( "# Data Points", queue.getElementsInQueue().size() );
         table.addRow( "# SELECT", MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPoint.class ).size() );

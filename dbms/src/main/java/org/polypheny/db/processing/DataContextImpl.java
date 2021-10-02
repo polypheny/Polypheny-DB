@@ -16,7 +16,6 @@
 
 package org.polypheny.db.processing;
 
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -55,8 +54,7 @@ public class DataContextImpl implements DataContext {
     private final Map<Long, RelDataType> parameterTypes; // ParameterIndex -> Data Type
     private List<Map<Long, Object>> parameterValues; // List of ( ParameterIndex -> Value )
 
-    private Map<Long, RelDataType> backupParameterTypes = new HashMap<>();
-    ; // ParameterIndex -> Data Type
+    private Map<Long, RelDataType> backupParameterTypes = new HashMap<>(); // ParameterIndex -> Data Type
     private List<Map<Long, Object>> backupParameterValues = new ArrayList<>(); // List of ( ParameterIndex -> Value )
 
 

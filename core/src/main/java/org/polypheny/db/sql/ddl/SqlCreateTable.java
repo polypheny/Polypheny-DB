@@ -141,7 +141,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         // TODO @HENNLO: The partition part is still incomplete
-        /** There are several possible ways to unparse the partition section.
+        /* There are several possible ways to unparse the partition section.
          The To Do is deferred until we have decided if parsing of partition functions will be
          self contained or not. If not than we need to unparse
          `WITH PARTITIONS 3`
@@ -268,8 +268,8 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
 
     private Pair<List<ColumnInformation>, List<ConstraintInformation>> separateColumnList() {
-        List<ColumnInformation> columnInformations = new ArrayList<>();
-        List<ConstraintInformation> constraintInformations = new ArrayList<>();
+        List<ColumnInformation> columnInformation = new ArrayList<>();
+        List<ConstraintInformation> constraintInformation = new ArrayList<>();
 
         int position = 1;
         for ( Ord<SqlNode> c : Ord.zip( columnList ) ) {
@@ -278,7 +278,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
                 String defaultValue = columnDeclaration.getExpression() == null ? null : columnDeclaration.getExpression().toString();
 
-                columnInformations.add(
+                columnInformation.add(
                         new ColumnInformation(
                                 columnDeclaration.getName().getSimple(),
                                 ColumnTypeInformation.fromSqlDataTypeSpec( columnDeclaration.getDataType() ),
@@ -290,14 +290,14 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 SqlKeyConstraint constraint = (SqlKeyConstraint) c.e;
                 String constraintName = constraint.getName() != null ? constraint.getName().getSimple() : null;
 
-                constraintInformations.add( new ConstraintInformation( constraintName, constraint.getConstraintType(), constraint.getColumnList().getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ) ) );
+                constraintInformation.add( new ConstraintInformation( constraintName, constraint.getConstraintType(), constraint.getColumnList().getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ) ) );
             } else {
                 throw new AssertionError( c.e.getClass() );
             }
             position++;
         }
 
-        return new Pair<>( columnInformations, constraintInformations );
+        return new Pair<>( columnInformation, constraintInformation );
 
     }
 

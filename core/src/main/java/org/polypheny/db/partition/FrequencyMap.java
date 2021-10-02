@@ -16,7 +16,6 @@
 
 package org.polypheny.db.partition;
 
-
 import org.polypheny.db.catalog.entity.CatalogTable;
 
 

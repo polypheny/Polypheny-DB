@@ -346,7 +346,7 @@ public class CassandraStore extends DataStore {
 
     @Override
     public void dropIndex( Context context, CatalogIndex catalogIndex ) {
-        throw new RuntimeException( "Cassandra adaper does not support dropping indexes" );
+        throw new RuntimeException( "Cassandra adapter does not support dropping indexes" );
     }
 
 

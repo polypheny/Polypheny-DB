@@ -77,7 +77,6 @@ public class DmlEventAnalyzer {
 
 
     private static void processRelNode( RelNode node, DmlEvent event, DmlDataPoint metric ) {
-
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
             processRelNode( node.getInput( i ), event, metric );
         }

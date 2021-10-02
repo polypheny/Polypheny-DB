@@ -16,7 +16,6 @@
 
 package org.polypheny.db.partition.properties;
 
-
 import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
 import lombok.Getter;
@@ -37,6 +36,5 @@ public class PartitionProperty implements Serializable {
     public final long numPartitions;
 
     public final boolean reliesOnPeriodicChecks;
-
 
 }

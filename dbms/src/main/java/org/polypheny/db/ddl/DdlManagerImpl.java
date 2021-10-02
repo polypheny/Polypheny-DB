@@ -254,7 +254,7 @@ public class DdlManagerImpl extends DdlManager {
                             exportedColumn.physicalSchemaName,
                             exportedColumn.physicalTableName,
                             exportedColumn.physicalColumnName,
-                            null ); //Not a valid partitionID --> placeholder
+                            null ); // Not a valid partitionID --> placeholder
                     catalog.updateColumnPlacementPhysicalPosition( adapter.getAdapterId(), columnId, exportedColumn.physicalPosition );
                     if ( exportedColumn.primary ) {
                         primaryKeyColIds.add( columnId );
@@ -1236,6 +1236,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    @Override
     public void modifyPartitionPlacement( CatalogTable catalogTable, List<Long> partitionGroupIds, DataStore storeInstance, Statement statement ) {
 
         int storeId = storeInstance.getAdapterId();
@@ -1736,7 +1737,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         List<Long> partitionIds = new ArrayList<>();
-        //get All PartitoinGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
+        //get All PartitionGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
         //catalog.getPartitionGroups( partitionInfo.table.id ).forEach( pg -> partitionIds.forEach( p -> partitionIds.add( p ) ) );
         partitionGroupIds.forEach( pg -> catalog.getPartitions( pg ).forEach( p -> partitionIds.add( p.id ) ) );
 
@@ -1848,7 +1849,7 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        //Now get the partitioned table, partionInfo still contains the basic/unpartitioned table.
+        //Now get the partitioned table, partitionInfo still contains the basic/unpartitioned table.
         CatalogTable partitionedTable = catalog.getTable( partitionInfo.table.id );
 
         for ( DataStore store : stores ) {
@@ -1892,6 +1893,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    @Override
     public void removePartitioning( CatalogTable partitionedTable, Statement statement ) {
 
         long tableId = partitionedTable.id;
@@ -1924,7 +1926,7 @@ public class DdlManagerImpl extends DdlManager {
 
         }
 
-        //For merge create only full placements on the used stores. Otherwise partiton constraints might not hold
+        //For merge create only full placements on the used stores. Otherwise partition constraints might not hold
         for ( DataStore store : stores ) {
 
             List<Long> partitionIdsOnStore = new ArrayList<>();
@@ -1960,7 +1962,7 @@ public class DdlManagerImpl extends DdlManager {
             store.dropTable( statement.getPrepareContext(), partitionedTable, partitionIdsOnStore );
         }
         // Loop over **old.partitionIds** to delete all partitions which are part of table
-        //Needs to be done separately because partitionPlacements will be recursiveley dropped in `deletePartitiongroup` but are needed in dropTable
+        //Needs to be done separately because partitionPlacements will be recursively dropped in `deletePartitionGroup` but are needed in dropTable
         for ( long partitionGroupId : partitionedTable.partitionProperty.partitionGroupIds ) {
             catalog.deletePartitionGroup( tableId, partitionedTable.schemaId, partitionGroupId );
         }

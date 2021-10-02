@@ -240,7 +240,9 @@ public class TransactionImpl implements Transaction, Comparable {
     @Override
     public void addChangedTable( String qualifiedTableName ) {
         if ( !this.changedTables.contains( qualifiedTableName ) ) {
-            log.debug( "Add changed table: {}", qualifiedTableName );
+            if ( log.isDebugEnabled() ) {
+                log.debug( "Add changed table: {}", qualifiedTableName );
+            }
             this.changedTables.add( qualifiedTableName );
         }
     }

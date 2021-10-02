@@ -16,7 +16,6 @@
 
 package org.polypheny.db.catalog.entity;
 
-
 import java.io.Serializable;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog.PlacementType;
@@ -44,7 +43,6 @@ public class CatalogPartitionPlacement implements CatalogEntity {
             final String physicalSchemaName,
             final String physicalTableName,
             final long partitionId ) {
-
         this.tableId = tableId;
         this.adapterId = adapterId;
         this.adapterUniqueName = adapterUniqueName;

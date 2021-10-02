@@ -173,7 +173,7 @@ public class FileStore extends DataStore {
     @Override
     public void dropTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
-        //todo check if it is on this store?
+        // TODO check if it is on this store?
         catalog.deletePartitionPlacement( getAdapterId(), partitionIds.get( 0 ) );
         for ( Long colId : catalogTable.columnIds ) {
             File f = getColumnFolder( colId );
@@ -332,7 +332,7 @@ public class FileStore extends DataStore {
             movePrefix = "_del_" + xidHash;
         }
         if ( rootDir.listFiles() != null ) {
-            for ( File columnFolder : rootDir.listFiles( f -> f.isDirectory() ) ) {
+            for ( File columnFolder : rootDir.listFiles( File::isDirectory ) ) {
                 for ( File data : columnFolder.listFiles( f -> !f.isHidden() && f.getName().startsWith( deletePrefix ) ) ) {
                     data.delete();
                 }
