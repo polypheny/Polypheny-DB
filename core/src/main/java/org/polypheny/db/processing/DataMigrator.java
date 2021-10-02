@@ -25,4 +25,6 @@ public interface DataMigrator {
 
     void copyData( Transaction transaction, CatalogAdapter store, List<CatalogColumn> columns, List<Long> partitionIds );
 
+    void copySelectiveData( Transaction transaction, CatalogAdapter store, List<CatalogColumn> columns, Long sourcePartitionId, Long targetPartitionId );
+
 }

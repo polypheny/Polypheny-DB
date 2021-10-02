@@ -1866,7 +1866,20 @@ public class DdlManagerImpl extends DdlManager {
             //First create new tables
             store.createTable( statement.getPrepareContext(), partitionedTable, partitionedTable.partitionProperty.partitionIds );
 
-            //Copy data from unpartitioned to partitioned
+
+
+           /* //Copy data from unpartitioned to partitioned
+            // Get only columns that are actually on that store
+            List<CatalogColumn> necessaryColumns = new LinkedList<>();
+            catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), partitionedTable.id ).forEach( cp -> necessaryColumns.add( catalog.getColumn( cp.columnId ) ) );
+
+            DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
+
+            //Copy data from all partitions to new partition
+            for ( long newPartitionId : partitionedTable.partitionProperty.partitionIds ) {
+                dataMigrator.copySelectiveData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ),
+                        necessaryColumns, unPartitionedTable.partitionProperty.partitionIds.get( 0 ), newPartitionId );
+            }*/
 
             //Drop all unpartitionedTables
             //store.dropTable( statement.getPrepareContext(), unPartitionedTable, unPartitionedTable.partitionProperty.partitionIds);
@@ -1886,12 +1899,6 @@ public class DdlManagerImpl extends DdlManager {
         if ( log.isDebugEnabled() ) {
             log.debug( "Merging partitions for table: {} with id {} on schema: {}", partitionedTable.name, partitionedTable.id, partitionedTable.getSchemaName() );
         }
-
-        // TODO : Data Migrate needed.
-        //  We have partitioned data throughout many stores. And now want to merge all partitions.
-        //  Currently although the table isn't partitioned anymore, the old data stays partitioned on the store.
-        //  Therefore we need to make sure(maybe with migrator?) to gather all data from all partitions, and stores. That at the end of mergeTable()
-        //  there aren't any partitioned chunks of data left on a single store.
 
         // Update catalog table
         catalog.mergeTable( tableId );
@@ -1937,8 +1944,17 @@ public class DdlManagerImpl extends DdlManager {
             //First create new tables
             store.createTable( statement.getPrepareContext(), mergedTable, mergedTable.partitionProperty.partitionIds );
 
-            //TODO Migrate data from all source partitions to standard single partition table
-            //Currently would cleanse table if merged
+            // Get only columns that are actually on that store
+            List<CatalogColumn> necessaryColumns = new LinkedList<>();
+            catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), mergedTable.id ).forEach( cp -> necessaryColumns.add( catalog.getColumn( cp.columnId ) ) );
+
+            DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
+
+            //Copy data from all partitions to new partition
+            for ( long oldPartitionId : partitionedTable.partitionProperty.partitionIds ) {
+                dataMigrator.copySelectiveData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ),
+                        necessaryColumns, oldPartitionId, mergedTable.partitionProperty.partitionIds.get( 0 ) );
+            }
 
             //Drop all partitionedTables (table contains old partitionIds)
             store.dropTable( statement.getPrepareContext(), partitionedTable, partitionIdsOnStore );
@@ -1948,8 +1964,6 @@ public class DdlManagerImpl extends DdlManager {
         for ( long partitionGroupId : partitionedTable.partitionProperty.partitionGroupIds ) {
             catalog.deletePartitionGroup( tableId, partitionedTable.schemaId, partitionGroupId );
         }
-
-
     }
 
 

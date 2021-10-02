@@ -18,6 +18,7 @@ package org.polypheny.db.processing;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -62,7 +63,6 @@ import org.polypheny.db.util.LimitIterator;
 
 @Slf4j
 public class DataMigratorImpl implements DataMigrator {
-
 
     @Override
     public void copyData( Transaction transaction, CatalogAdapter store, List<CatalogColumn> columns, List<Long> partitionIds ) {
@@ -160,6 +160,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         }
     }
+
 
 
     private RelRoot buildInsertStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId ) {
@@ -323,6 +324,101 @@ public class DataMigratorImpl implements DataMigrator {
         }
 
         return placementList;
+    }
+
+
+    @Override
+    public void copySelectiveData( Transaction transaction, CatalogAdapter store, List<CatalogColumn> columns, Long sourcePartitionId, Long targetPartitionId ) {
+
+        CatalogTable table = Catalog.getInstance().getTable( columns.get( 0 ).tableId );
+        CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( table.primaryKey );
+
+        // Check Lists
+        List<CatalogColumnPlacement> targetColumnPlacements = new LinkedList<>();
+        for ( CatalogColumn catalogColumn : columns ) {
+            targetColumnPlacements.add( Catalog.getInstance().getColumnPlacement( store.id, catalogColumn.id ) );
+        }
+
+        List<CatalogColumn> selectColumnList = new LinkedList<>( columns );
+
+        // Add primary keys to select column list
+        for ( long cid : primaryKey.columnIds ) {
+            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( cid );
+            if ( !selectColumnList.contains( catalogColumn ) ) {
+                selectColumnList.add( catalogColumn );
+            }
+        }
+
+        //We need a columnPlacement for every partition
+        Map<Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
+        if ( table.isPartitioned ) {
+            PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
+            PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( table.partitionProperty.partitionType );
+            placementDistribution = partitionManager.getRelevantPlacements( table, Arrays.asList( sourcePartitionId ) );
+        } else {
+            placementDistribution.put( sourcePartitionId, selectSourcePlacements( table, selectColumnList, -1 ) );
+        }
+
+        Statement sourceStatement = transaction.createStatement();
+        Statement targetStatement = transaction.createStatement();
+
+        RelRoot sourceRel = getSourceIterator( sourceStatement, placementDistribution.get( sourcePartitionId ), sourcePartitionId );
+        RelRoot targetRel;
+        if ( Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( store.id, table.id ).size() == columns.size() ) {
+            // There have been no placements for this table on this store before. Build insert statement
+            targetRel = buildInsertStatement( targetStatement, targetColumnPlacements, targetPartitionId );
+        } else {
+            // Build update statement
+            targetRel = buildUpdateStatement( targetStatement, targetColumnPlacements, targetPartitionId );
+        }
+
+        // Execute Query
+        try {
+            PolyphenyDbSignature signature = sourceStatement.getQueryProcessor().prepareQuery( sourceRel, sourceRel.rel.getCluster().getTypeFactory().builder().build(), true );
+            final Enumerable enumerable = signature.enumerable( sourceStatement.getDataContext() );
+            //noinspection unchecked
+            Iterator<Object> sourceIterator = enumerable.iterator();
+
+            Map<Long, Integer> resultColMapping = new HashMap<>();
+            for ( CatalogColumn catalogColumn : selectColumnList ) {
+                int i = 0;
+                for ( ColumnMetaData metaData : signature.columns ) {
+                    if ( metaData.columnName.equalsIgnoreCase( catalogColumn.name ) ) {
+                        resultColMapping.put( catalogColumn.id, i );
+                    }
+                    i++;
+                }
+            }
+
+            int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
+            while ( sourceIterator.hasNext() ) {
+                List<List<Object>> rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
+                Map<Long, List<Object>> values = new HashMap<>();
+                for ( List<Object> list : rows ) {
+                    for ( Map.Entry<Long, Integer> entry : resultColMapping.entrySet() ) {
+                        if ( !values.containsKey( entry.getKey() ) ) {
+                            values.put( entry.getKey(), new LinkedList<>() );
+                        }
+                        values.get( entry.getKey() ).add( list.get( entry.getValue() ) );
+                    }
+                }
+                for ( Map.Entry<Long, List<Object>> v : values.entrySet() ) {
+                    targetStatement.getDataContext().addParameterValues( v.getKey(), null, v.getValue() );
+                }
+                Iterator iterator = targetStatement.getQueryProcessor()
+                        .prepareQuery( targetRel, sourceRel.validatedRowType, true )
+                        .enumerable( targetStatement.getDataContext() )
+                        .iterator();
+                //noinspection WhileLoopReplaceableByForEach
+                while ( iterator.hasNext() ) {
+                    iterator.next();
+                }
+                targetStatement.getDataContext().resetParameterValues();
+            }
+        } catch ( Throwable t ) {
+            throw new RuntimeException( t );
+        }
+
     }
 
 }
