@@ -28,7 +28,6 @@ import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
 @Setter
 public class DmlEvent extends StatementEvent {
 
-
     private String eventType = "DML EVENT";
 
 

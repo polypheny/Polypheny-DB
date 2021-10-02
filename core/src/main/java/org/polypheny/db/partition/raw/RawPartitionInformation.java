@@ -16,7 +16,6 @@
 
 package org.polypheny.db.partition.raw;
 
-
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -36,6 +35,5 @@ public class RawPartitionInformation {
 
     public long numPartitionGroups;
     public long numPartitions;
-
 
 }

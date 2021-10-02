@@ -254,7 +254,7 @@ public class DdlManagerImpl extends DdlManager {
                             exportedColumn.physicalSchemaName,
                             exportedColumn.physicalTableName,
                             exportedColumn.physicalColumnName,
-                            null ); //Not a valid partitionID --> placeholder
+                            null ); // Not a valid partitionID --> placeholder
                     catalog.updateColumnPlacementPhysicalPosition( adapter.getAdapterId(), columnId, exportedColumn.physicalPosition );
                     if ( exportedColumn.primary ) {
                         primaryKeyColIds.add( columnId );

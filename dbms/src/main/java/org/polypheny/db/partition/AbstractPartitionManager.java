@@ -29,7 +29,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 public abstract class AbstractPartitionManager implements PartitionManager {
 
 
-    // returns the Index of the partition where to place the object
+    // Returns the Index of the partition where to place the object
     @Override
     public abstract long getTargetPartitionId( CatalogTable catalogTable, String columnValue );
 
@@ -38,7 +38,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
     public boolean probePartitionGroupDistributionChange( CatalogTable catalogTable, int storeId, long columnId, int threshold ) {
         Catalog catalog = Catalog.getInstance();
 
-        //Check for the specified columnId if we still have a ColumnPlacement for every partitionGroup
+        // Check for the specified columnId if we still have a ColumnPlacement for every partitionGroup
         for ( Long partitionGroupId : catalogTable.partitionProperty.partitionGroupIds ) {
             List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartitionGroup( catalogTable.id, partitionGroupId, columnId );
             if ( ccps.size() <= threshold ) {
@@ -70,8 +70,8 @@ public abstract class AbstractPartitionManager implements PartitionManager {
     }
 
 
-    //Returns 1 for most PartitionFunctions since they have a 1:1 relation between Groups and Internal Partitions
-    //In that case the input of numberOfPartitions is omitted
+    // Returns 1 for most PartitionFunctions since they have a 1:1 relation between Groups and Internal Partitions
+    // In that case the input of numberOfPartitions is omitted
     @Override
     public int getNumberOfPartitionsPerGroup( int numberOfPartitions ) {
         return 1;

@@ -46,7 +46,6 @@ class BackgroundTaskHandle implements Runnable {
         ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
         // TODO MV: implement workload based scheduling
         this.runner = exec.scheduleAtFixedRate( this, 0, schedulingType.getMillis(), TimeUnit.MILLISECONDS );
-
     }
 
 

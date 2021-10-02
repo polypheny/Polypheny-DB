@@ -29,7 +29,6 @@ import org.polypheny.db.monitoring.exceptions.GenericEventAnalyzeRuntimeExceptio
 @Setter
 public class QueryEvent extends StatementEvent {
 
-
     private String eventType = "QUERY EVENT";
 
 

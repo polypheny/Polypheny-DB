@@ -437,7 +437,6 @@ public abstract class Catalog {
      */
     public abstract void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, List<Long> partitionGroupIds );
 
-
     /**
      * Deletes all dependent column placements
      *
@@ -445,7 +444,6 @@ public abstract class Catalog {
      * @param columnId The id of the column
      */
     public abstract void deleteColumnPlacement( int adapterId, long columnId );
-
 
     /**
      * Gets a collective list of column placements per column on a adapter.
@@ -466,7 +464,6 @@ public abstract class Catalog {
      */
     public abstract boolean checkIfExistsColumnPlacement( int adapterId, long columnId );
 
-
     /**
      * Get all column placements of a column
      *
@@ -474,7 +471,6 @@ public abstract class Catalog {
      * @return List of column placements of specific column
      */
     public abstract List<CatalogColumnPlacement> getColumnPlacement( long columnId );
-
 
     /**
      * Get column placements of a specific table on a specific adapter
@@ -484,9 +480,7 @@ public abstract class Catalog {
      */
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterPerTable( int adapterId, long tableId );
 
-
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterSortedByPhysicalPosition( int storeId, long tableId );
-
 
     /**
      * Get column placements on a adapter
@@ -495,7 +489,6 @@ public abstract class Catalog {
      * @return List of column placements on the specified adapter
      */
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapter( int adapterId );
-
 
     public abstract List<CatalogColumnPlacement> getColumnPlacementsByColumn( long columnId );
 
@@ -511,7 +504,6 @@ public abstract class Catalog {
      * @return List of column placements on this adapter and schema
      */
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterAndSchema( int adapterId, long schemaId );
-
 
     /**
      * Update type of a placement.
@@ -531,7 +523,6 @@ public abstract class Catalog {
      */
     public abstract void updateColumnPlacementPhysicalPosition( int adapterId, long columnId, long position );
 
-
     /**
      * Update physical position of a column placement on a specified adapter. Uses auto-increment to get the globally increasing number.
      *
@@ -539,7 +530,6 @@ public abstract class Catalog {
      * @param columnId The id of the column
      */
     public abstract void updateColumnPlacementPhysicalPosition( int adapterId, long columnId );
-
 
     /**
      * Change physical names of all column placements.
@@ -551,7 +541,6 @@ public abstract class Catalog {
      * @param updatePhysicalColumnPosition Whether to reset the column position (highest number in the table; represents that the column is now at the last position)
      */
     public abstract void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalColumnName, boolean updatePhysicalColumnPosition );
-
 
     /**
      * Get all columns of the specified table.
@@ -1043,7 +1032,6 @@ public abstract class Catalog {
      */
     public abstract CatalogPartitionGroup getPartitionGroup( long partitionGroupId );
 
-
     /**
      * Adds a partition to the catalog
      *
@@ -1102,7 +1090,6 @@ public abstract class Catalog {
      */
     public abstract void updateTablePartitionProperties( long tableId, PartitionProperty partitionProperty );
 
-
     /**
      * Get a List of all partitions belonging to a specific table
      *
@@ -1160,7 +1147,6 @@ public abstract class Catalog {
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
     public abstract List<CatalogPartition> getPartitions( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern );
-
 
     /**
      * Get a List of all partition name belonging to a specific table
@@ -1265,7 +1251,6 @@ public abstract class Catalog {
      * @return If table is flagged for deletion or not
      */
     public abstract boolean isTableFlaggedForDeletion( long tableId );
-
 
     /**
      * Adds a placement for a partition.

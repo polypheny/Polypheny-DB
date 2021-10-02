@@ -16,7 +16,6 @@
 
 package org.polypheny.db.router;
 
-
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
@@ -367,7 +366,7 @@ public abstract class AbstractRouter implements Router {
                 List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
                 CatalogColumn pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );
 
-                //Essentially gets a list of all stores where this table resides
+                // Essentially gets a list of all stores where this table resides
                 List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacement( pkColumn.id );
 
                 if ( catalogTable.isPartitioned && log.isDebugEnabled() ) {
@@ -383,8 +382,8 @@ public abstract class AbstractRouter implements Router {
                 // Execute on all primary key placements
                 List<TableModify> modifies = new ArrayList<>();
 
-                //Needed for partitioned updates when source partition and target partition are not equal
-                //SET Value is the new partition, where clause is the source
+                // Needed for partitioned updates when source partition and target partition are not equal
+                // SET Value is the new partition, where clause is the source
                 boolean operationWasRewritten = false;
                 List<Map<Long, Object>> tempParamValues = null;
 
@@ -434,7 +433,7 @@ public abstract class AbstractRouter implements Router {
 
                         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
                         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionType );
-                        //partitionManager.validatePartitionGroupDistribution( catalogTable );
+                        // partitionManager.validatePartitionGroupDistribution( catalogTable );
 
                         WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor( statement, catalogTable.columnIds.indexOf( catalogTable.partitionColumnId ) );
                         node.accept( new RelShuttleImpl() {
@@ -469,7 +468,7 @@ public abstract class AbstractRouter implements Router {
                         }
 
                         String partitionValue = "";
-                        //set true if partitionColumn is part of UPDATE Statement, else assume worst case routing
+                        // Set true if partitionColumn is part of UPDATE Statement, else assume worst case routing
                         boolean partitionColumnIdentified = false;
 
                         if ( ((LogicalTableModify) node).getOperation() == Operation.UPDATE ) {
@@ -484,7 +483,7 @@ public abstract class AbstractRouter implements Router {
                                             log.debug( " UPDATE: Found PartitionColumnID Match: '{}' at index: {}", catalogTable.partitionColumnId, index );
                                         }
 
-                                        //Routing/Locking can now be executed on certain partitions
+                                        // Routing/Locking can now be executed on certain partitions
                                         partitionColumnIdentified = true;
                                         partitionValue = sourceExpressionList.get( index ).toString().replace( "'", "" );
                                         if ( log.isDebugEnabled() ) {
@@ -493,7 +492,7 @@ public abstract class AbstractRouter implements Router {
                                                     partitionManager.getTargetPartitionId( catalogTable, partitionValue ) );
                                         }
                                         identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
-                                        //needed to verify if UPDATE shall be executed on two partitions or not
+                                        // Needed to verify if UPDATE shall be executed on two partitions or not
                                         identifiedPartitionForSetValue = identPart;
                                         accessedPartitionList.add( identPart );
                                         break;
@@ -504,17 +503,17 @@ public abstract class AbstractRouter implements Router {
                                 index++;
                             }
 
-                            //If WHERE clause has any value for partition column
+                            // If WHERE clause has any value for partition column
                             if ( identifiedPartitionsInFilter.size() > 0 ) {
 
-                                //Partition has been identified in SET
+                                // Partition has been identified in SET
                                 if ( identifiedPartitionForSetValue != -1 ) {
 
-                                    //SET value and single WHERE clause point to same partition.
-                                    //Inplace update possible
+                                    // SET value and single WHERE clause point to same partition.
+                                    // Inplace update possible
                                     if ( identifiedPartitionsInFilter.size() == 1 && identifiedPartitionsInFilter.contains( identifiedPartitionForSetValue ) ) {
                                         if ( log.isDebugEnabled() ) {
-                                            log.debug( "oldValue and new value reside on same partition: " + identifiedPartitionForSetValue );
+                                            log.debug( "oldValue and new value reside on same partition: {}", identifiedPartitionForSetValue );
                                         }
                                         worstCaseRouting = false;
                                     } else {
@@ -616,7 +615,7 @@ public abstract class AbstractRouter implements Router {
                                     //worstCaseRouting = false;
                                 }
                             }// If only SET is specified
-                            //changes the value of partition column of complete table to only reside on one partition
+                            // Changes the value of partition column of complete table to only reside on one partition
                             else if ( identifiedPartitionForSetValue != -1 ) {
 
                                 //Data Migrate copy of all other partitions beside the identifed on towards the identified one
@@ -681,7 +680,7 @@ public abstract class AbstractRouter implements Router {
 
                                         if ( ((LogicalTableModify) node).getInput().getChildExps().get( i ).getKind().equals( SqlKind.DYNAMIC_PARAM ) ) {
 
-                                            //Needed to identify the column which contains the partition value
+                                            // Needed to identify the column which contains the partition value
                                             long partitionValueIndex = ((RexDynamicParam) fieldValues.get( i )).getIndex();
 
                                             if ( tempParamValues == null ) {
@@ -690,8 +689,8 @@ public abstract class AbstractRouter implements Router {
                                             }
                                             statement.getDataContext().resetParameterValues();
                                             long tempPartitionId = 0;
-                                            //Get partitionValue per row/tuple to be inserted
-                                            //Create as many independent TableModifies as there are entries in getParameterValues
+                                            // Get partitionValue per row/tuple to be inserted
+                                            // Create as many independent TableModifies as there are entries in getParameterValues
 
                                             for ( Map<Long, Object> currentRow : tempParamValues ) {
 
@@ -761,11 +760,10 @@ public abstract class AbstractRouter implements Router {
                                         }
                                         break;
                                     } else {
-                                        //when loop is finished
+                                        // When loop is finished
                                         if ( i == fieldNames.size() - 1 && !partitionColumnIdentified ) {
-
                                             worstCaseRouting = true;
-                                            //Because partitionColumn has not been specified in insert
+                                            // Because partitionColumn has not been specified in insert
                                         }
                                     }
                                 }

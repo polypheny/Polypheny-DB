@@ -32,8 +32,8 @@ public class PartitionManagerFactoryImpl extends PartitionManagerFactory {
             case RANGE:
                 return new RangePartitionManager();
 
-            //TODO @HENNLO think about excluding "UDPF" here, these should only be used for internal Partition Functions
-            //Or create an internal mapping from PARTITIONTYPE to teh handling partition manager
+            // TODO @HENNLO think about excluding "UDPF" here, these should only be used for internal Partition Functions
+            // Or create an internal mapping from PARTITIONTYPE to teh handling partition manager
             case TEMPERATURE:
                 return new TemperatureAwarePartitionManager();
         }

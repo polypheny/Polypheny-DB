@@ -19,7 +19,7 @@ package org.polypheny.db.monitoring.ui;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 
 /**
- * Ui abstraction service for monitoring.
+ * UI abstraction service for monitoring.
  */
 public interface MonitoringServiceUi {
 

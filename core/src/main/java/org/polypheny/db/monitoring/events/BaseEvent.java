@@ -23,11 +23,9 @@ import lombok.Getter;
 
 public abstract class BaseEvent implements MonitoringEvent {
 
-
     @Getter
     private final UUID id = UUID.randomUUID();
     protected String eventType;
-
 
     private long recordedTimestamp;
 
