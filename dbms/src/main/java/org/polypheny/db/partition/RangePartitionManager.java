@@ -170,7 +170,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
 
                 if ( contestingUpperBound < contestingLowerBound ) {
                     int temp = contestingUpperBound;
-                    contestingUpperBound = contestingUpperBound;
+                    contestingUpperBound = contestingLowerBound;
                     contestingLowerBound = temp;
 
                     List<String> list = Stream.of( partitionGroupQualifiers.get( k + 1 ).get( 1 ), partitionGroupQualifiers.get( k + 1 ).get( 0 ) )

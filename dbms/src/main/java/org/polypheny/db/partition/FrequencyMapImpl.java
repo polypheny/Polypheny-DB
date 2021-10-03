@@ -373,7 +373,7 @@ public class FrequencyMapImpl extends FrequencyMap {
 
             transaction.commit();
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException | TransactionException e ) {
-            e.printStackTrace();
+            log.error( "Error while reassigning new location for temperature-based partitions", e );
             if ( transaction != null ) {
                 try {
                     transaction.rollback();

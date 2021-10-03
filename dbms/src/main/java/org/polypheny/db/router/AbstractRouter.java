@@ -774,7 +774,7 @@ public abstract class AbstractRouter implements Router {
                             if ( log.isDebugEnabled() ) {
                                 String partitionColumnName = catalog.getColumn( catalogTable.partitionColumnId ).name;
                                 String partitionName = catalog.getPartitionGroup( identPart ).partitionGroupName;
-                                log.debug( "INSERT: partitionColumn-value: '{}' should be put on partition: {} ({}), which is partitioned with column",
+                                log.debug( "INSERT: partitionColumn-value: '{}' should be put on partition: {} ({}), which is partitioned with column {}",
                                         partitionValue, identPart, partitionName, partitionColumnName );
                             }
 

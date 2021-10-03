@@ -1332,7 +1332,7 @@ public class CatalogImpl extends Catalog {
             openTable = id;
 
         } catch ( GenericCatalogException e ) {
-            e.printStackTrace();
+            throw new RuntimeException( "Error when adding table " + name, e );
         }
         return id;
 

@@ -127,12 +127,6 @@ public abstract class AbstractJdbcStore extends DataStore {
         qualifiedNames.add( catalogTable.getSchemaName() );
         qualifiedNames.add( catalogTable.name );
 
-        // Retrieve all table names to be created
-        List<String> physicalTableNames = new ArrayList<>();
-        //-1 for unpartitioned
-        String originalPhysicalTableName = getPhysicalTableName( catalogTable.id, -1 );
-        physicalTableNames.add( originalPhysicalTableName );
-
         List<CatalogColumnPlacement> existingPlacements = catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id );
 
         //Remove the unpartitioned table name again, otherwise it would cause, table already exist due to create statement

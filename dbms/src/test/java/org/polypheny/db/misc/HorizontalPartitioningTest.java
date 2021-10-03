@@ -414,6 +414,12 @@ public class HorizontalPartitioningTest {
                             ImmutableList.of(
                                     new Object[]{ 2, 6, "bob" } ) );
 
+                    //Todo @HENNLO
+                    // Add test that checks if the input of the modal is handled correctly
+
+                    //TODO @HENNLO
+                    // Add test that checks if the input is ordered correctly. e.g. if the range for MIN and MAX ist swapped
+
                     // RANGE partitioning can't be created without specifying ranges
                     boolean failed = false;
                     try {
