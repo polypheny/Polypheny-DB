@@ -1726,8 +1726,7 @@ public class CatalogImpl extends Catalog {
             if ( !dataPartitionGroupPlacement.containsKey( new Object[]{ adapterId, column.tableId } ) ) {
                 if ( log.isDebugEnabled() ) {
                     log.debug( "Table '{}.{}' does not exists in DataPartitionPlacements so far. Assigning partitions {}",
-                            store.uniqueName,
-                            old.name, partitionGroupIds );
+                            store.uniqueName, old.name, partitionGroupIds );
                 }
                 updatePartitionGroupsOnDataPlacement( adapterId, column.tableId, partitionGroupIds );
             } else {

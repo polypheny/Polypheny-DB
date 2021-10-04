@@ -91,7 +91,7 @@ public class Qfs extends DataSource {
 
     @Override
     public Table createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
-        return currentSchema.createFileTable( combinedTable, columnPlacementsOnStore );
+        return currentSchema.createFileTable( combinedTable, columnPlacementsOnStore, partitionPlacement );
     }
 
 

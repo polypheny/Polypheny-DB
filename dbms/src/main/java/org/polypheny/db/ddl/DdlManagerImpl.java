@@ -254,7 +254,7 @@ public class DdlManagerImpl extends DdlManager {
                             exportedColumn.physicalSchemaName,
                             exportedColumn.physicalTableName,
                             exportedColumn.physicalColumnName,
-                            null ); // Not a valid partitionID --> placeholder
+                            null ); // Not a valid partitionGroupID --> placeholder
                     catalog.updateColumnPlacementPhysicalPosition( adapter.getAdapterId(), columnId, exportedColumn.physicalPosition );
                     if ( exportedColumn.primary ) {
                         primaryKeyColIds.add( columnId );
@@ -262,6 +262,14 @@ public class DdlManagerImpl extends DdlManager {
                 }
                 try {
                     catalog.addPrimaryKey( tableId, primaryKeyColIds );
+                    CatalogTable catalogTable = catalog.getTable( tableId );
+                    catalog.addPartitionPlacement(
+                            adapter.getAdapterId(),
+                            catalogTable.id,
+                            catalogTable.partitionProperty.partitionIds.get( 0 ),
+                            PlacementType.AUTOMATIC,
+                            null,
+                            null );
                 } catch ( GenericCatalogException e ) {
                     throw new RuntimeException( "Exception while adding primary key" );
                 }
@@ -1618,7 +1626,6 @@ public class DdlManagerImpl extends DdlManager {
             CatalogTable catalogTable = catalog.getTable( tableId );
 
             for ( DataStore store : stores ) {
-
                 catalog.addPartitionPlacement(
                         store.getAdapterId(),
                         catalogTable.id,

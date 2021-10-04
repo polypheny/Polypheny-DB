@@ -39,6 +39,7 @@ import org.polypheny.db.adapter.file.Value;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -91,7 +92,7 @@ public class QfsSchema extends AbstractSchema implements FileSchema {
     }
 
 
-    public Table createFileTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore ) {
+    public Table createFileTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
         final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         ArrayList<Long> columnIds = new ArrayList<>();
@@ -132,15 +133,15 @@ public class QfsSchema extends AbstractSchema implements FileSchema {
         }
         FileTranslatableTable table = new FileTranslatableTable(
                 this,
-                catalogTable.name,
+                catalogTable.name + "_" + partitionPlacement.partitionId,
                 catalogTable.id,
-                -1,
+                partitionPlacement.partitionId,
                 columnIds,
                 columnTypes,
                 columnNames,
                 pkIds,
                 protoRowType );
-        tableMap.put( catalogTable.name, table );
+        tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
         return table;
     }
 
@@ -151,6 +152,7 @@ public class QfsSchema extends AbstractSchema implements FileSchema {
     public static Enumerable<Object[]> execute(
             final Operation operation,
             final Integer adapterId,
+            final Long partitionId,
             final DataContext dataContext,
             final String path,
             final Long[] columnIds,
