@@ -39,9 +39,6 @@ import org.polypheny.db.config.Config;
 import org.polypheny.db.config.ConfigEnum;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.excluded.CassandraExcluded;
-import org.polypheny.db.excluded.CottontailExcluded;
-import org.polypheny.db.excluded.FileExcluded;
-import org.polypheny.db.excluded.MongodbExcluded;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
@@ -61,7 +58,6 @@ public class HorizontalPartitioningTest {
 
 
     @Test
-    @Category({ CassandraExcluded.class, MongodbExcluded.class, CottontailExcluded.class, FileExcluded.class })
     public void basicHorizontalPartitioningTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -114,7 +110,6 @@ public class HorizontalPartitioningTest {
 
 
     @Test
-    @Category({ CassandraExcluded.class, MongodbExcluded.class, CottontailExcluded.class, FileExcluded.class })
     public void modifyPartitionTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -168,7 +163,7 @@ public class HorizontalPartitioningTest {
                     //add mergetable test
                     statement.executeUpdate( "ALTER TABLE \"horizontalparttestextension\" MERGE PARTITIONS" );
 
-                    //DROP Table to repartition
+                    // DROP Table to repartition
                     statement.executeUpdate( "DROP TABLE \"horizontalparttestextension\" " );
 
                     // Partition by name
@@ -211,7 +206,6 @@ public class HorizontalPartitioningTest {
 
     // Check if partitions have enough partitions
     @Test
-    @Category({ CassandraExcluded.class, MongodbExcluded.class, CottontailExcluded.class, FileExcluded.class })
     public void partitionNumberTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -255,7 +249,6 @@ public class HorizontalPartitioningTest {
 
 
     @Test
-    @Category({ CassandraExcluded.class, MongodbExcluded.class, CottontailExcluded.class, FileExcluded.class })
     public void hashPartitioningTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -323,7 +316,6 @@ public class HorizontalPartitioningTest {
 
 
     @Test
-    @Category({ CassandraExcluded.class, MongodbExcluded.class, CottontailExcluded.class, FileExcluded.class })
     public void listPartitioningTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -380,7 +372,7 @@ public class HorizontalPartitioningTest {
 
 
     @Test
-    @Category({ CassandraExcluded.class, MongodbExcluded.class, CottontailExcluded.class, FileExcluded.class })
+    @Category(CassandraExcluded.class)
     public void rangePartitioningTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -444,7 +436,6 @@ public class HorizontalPartitioningTest {
 
 
     @Test
-    @Category({ CassandraExcluded.class, MongodbExcluded.class, CottontailExcluded.class, FileExcluded.class })
     public void partitionPlacementTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -461,11 +452,10 @@ public class HorizontalPartitioningTest {
                         + "PARTITIONS " + partitionsToCreate );
 
                 try {
-
                     CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "physicalpartitiontest" ) ).get( 0 );
-                    //Check if sufficient PartitionPlacements have been created
+                    // Check if sufficient PartitionPlacements have been created
 
-                    //Check if initially as many partitonPlacements are created as requested
+                    // Check if initially as many partitonPlacements are created as requested
                     Assert.assertEquals( partitionsToCreate, Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size() );
 
                     // ADD adapter
@@ -476,11 +466,11 @@ public class HorizontalPartitioningTest {
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" ADD PLACEMENT ON STORE \"anotherstore\"" );
                     Assert.assertEquals( partitionsToCreate * 2, Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size() );
 
-                    //Modify partitions on second store
+                    // Modify partitions on second store
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" MODIFY PARTITIONS (0) ON STORE anotherstore" );
                     Assert.assertEquals( partitionsToCreate + 1, Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size() );
 
-                    //After MERGE should only hold on partition
+                    // After MERGE should only hold on partition
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" MERGE PARTITIONS" );
                     Assert.assertEquals( 2, Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size() );
 
@@ -499,14 +489,12 @@ public class HorizontalPartitioningTest {
 
 
     @Test
-    @Category({ CassandraExcluded.class, MongodbExcluded.class, CottontailExcluded.class, FileExcluded.class })
     public void temperaturePartitionTest() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
 
-                //Sets the background processing of Workload Monitoring an Temperature monitoring to one second to get immediate results
+                // Sets the background processing of Workload Monitoring an Temperature monitoring to one second to get immediate results
                 ConfigManager cm = ConfigManager.getInstance();
                 Config c1 = cm.getConfig( "runtime/partitionFrequencyProcessingInterval" );
                 Config c2 = cm.getConfig( "runtime/queueProcessingInterval" );
@@ -527,7 +515,7 @@ public class HorizontalPartitioningTest {
 
                     CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "temperaturetest" ) ).get( 0 );
 
-                    //Check if partition properties are correctly set and parsed
+                    // Check if partition properties are correctly set and parsed
                     Assert.assertEquals( 600, ((TemperaturePartitionProperty) table.partitionProperty).getFrequencyInterval() );
                     Assert.assertEquals( 12, ((TemperaturePartitionProperty) table.partitionProperty).getHotAccessPercentageIn() );
                     Assert.assertEquals( 14, ((TemperaturePartitionProperty) table.partitionProperty).getHotAccessPercentageOut() );
@@ -536,11 +524,11 @@ public class HorizontalPartitioningTest {
                     Assert.assertEquals( 2, table.partitionProperty.getPartitionGroupIds().size() );
                     Assert.assertEquals( 20, table.partitionProperty.getPartitionIds().size() );
 
-                    //Check if initially as many partitionPlacements are created as requested and stored in the partitionproperty
+                    // Check if initially as many partitionPlacements are created as requested and stored in the partitionproperty
                     Assert.assertEquals( table.partitionProperty.getPartitionIds().size(), Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size() );
 
-                    //Retrieve partition distribution
-                    //Get percentage of tables which can remain in HOT
+                    // Retrieve partition distribution
+                    // Get percentage of tables which can remain in HOT
                     long numberOfPartitionsInHot = (table.partitionProperty.partitionIds.size() * ((TemperaturePartitionProperty) table.partitionProperty).getHotAccessPercentageIn()) / 100;
                     //These are the tables than can remain in HOT
                     long allowedTablesInHot = (table.partitionProperty.partitionIds.size() * ((TemperaturePartitionProperty) table.partitionProperty).getHotAccessPercentageOut()) / 100;
@@ -596,10 +584,10 @@ public class HorizontalPartitioningTest {
                     preparedInsert.executeBatch();
                     // This should execute two DML INSERTS on the target PartitionId and therefore redistribute the data
 
-                    //verify that the partition is now in HOT and was not before
+                    // Verify that the partition is now in HOT and was not before
                     CatalogTable updatedTable = Catalog.getInstance().getTables( null, null, new Pattern( "temperaturetest" ) ).get( 0 );
 
-                    //manually get the target partitionID of query
+                    // Manually get the target partitionID of query
                     PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
                     PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( table.partitionType );
                     long targetId = partitionManager.getTargetPartitionId( table, partitionValue );

@@ -227,11 +227,6 @@ public class CottontailStore extends DataStore {
         /* Begin or continue Cottontail DB transaction. */
         final TransactionId txId = this.wrapper.beginOrContinue( context.getStatement().getTransaction() );
 
-        if ( partitionIds.size() != 1 ) {
-            throw new RuntimeException( "CottontailDB Store can't be partitioned but number of specified partitions where: " + partitionIds.size() );
-        }
-
-
         /* Prepare CREATE TABLE message. */
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( this.catalog.getColumnPlacementsOnAdapterPerTable( this.getAdapterId(), combinedTable.id ) );
 

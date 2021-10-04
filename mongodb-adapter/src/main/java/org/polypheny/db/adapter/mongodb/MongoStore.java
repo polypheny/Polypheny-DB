@@ -219,12 +219,8 @@ public class MongoStore extends DataStore {
         commitAll();
         //ClientSession session = transactionProvider.startTransaction( context.getStatement().getTransaction().getXid() );
         //context.getStatement().getTransaction().registerInvolvedAdapter( this );
-        if ( partitionIds.size() != 1 ) {
-            throw new RuntimeException( "MongoDB Store can't be partitioned but number of specified partitions where: " + partitionIds.size() );
-        }
 
         for ( long partitionId : partitionIds ) {
-
             String physicalTableName = getPhysicalTableName( catalogTable.id, partitionId );
             this.currentSchema.database.createCollection( physicalTableName );
 
@@ -370,7 +366,6 @@ public class MongoStore extends DataStore {
 
 
     private void addCompositeIndex( CatalogIndex catalogIndex, List<String> columns ) {
-
         for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable( getAdapterId(), catalogIndex.key.tableId ) ) {
             Document doc = new Document();
             columns.forEach( name -> doc.append( name, 1 ) );
@@ -436,7 +431,6 @@ public class MongoStore extends DataStore {
 
 
     public static String getPhysicalTableName( long tableId, long partitionId ) {
-
         String physicalTableName = "tab-" + tableId;
         if ( partitionId >= 0 ) {
             physicalTableName += "_part" + partitionId;

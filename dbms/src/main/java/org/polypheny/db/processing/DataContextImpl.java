@@ -22,7 +22,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.apache.calcite.avatica.AvaticaSite;
 import org.apache.calcite.linq4j.QueryProvider;
@@ -152,7 +151,6 @@ public class DataContextImpl implements DataContext {
 
     @Override
     public void resetParameterValues() {
-
         parameterTypes.clear();
         parameterValues.clear();
     }
@@ -166,20 +164,16 @@ public class DataContextImpl implements DataContext {
 
     @Override
     public void backupParameterValues() {
-
         wasBackuped = true;
-
         backupParameterTypes.putAll( parameterTypes );
-        backupParameterValues = parameterValues.stream().collect( Collectors.toList() );
+        backupParameterValues = new ArrayList<>( parameterValues );
     }
 
 
     @Override
     public void restoreParameterValues() {
-
         parameterTypes.putAll( backupParameterTypes );
-        parameterValues = backupParameterValues.stream().collect( Collectors.toList() );
-
+        parameterValues = new ArrayList<>( backupParameterValues );
     }
 
     /*

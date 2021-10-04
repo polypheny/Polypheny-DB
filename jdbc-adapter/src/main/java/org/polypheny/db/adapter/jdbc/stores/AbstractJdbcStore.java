@@ -35,6 +35,7 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.runtime.PolyphenyDbException;
@@ -137,7 +138,9 @@ public abstract class AbstractJdbcStore extends DataStore {
                 log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), qualifiedNames, physicalTableName );
             }
             StringBuilder query = buildCreateTableQuery( getDefaultPhysicalSchemaName(), physicalTableName, catalogTable );
-            log.info( "{} on store {}", query.toString(), this.getUniqueName() );
+            if ( RuntimeConfig.DEBUG.getBoolean() ) {
+                log.info( "{} on store {}", query.toString(), this.getUniqueName() );
+            }
             executeUpdate( query, context );
 
             catalog.updatePartitionPlacementPhysicalNames(
@@ -336,7 +339,9 @@ public abstract class AbstractJdbcStore extends DataStore {
                     .append( "." )
                     .append( dialect.quoteIdentifier( physicalTableName ) );
 
-            log.info( "{} from store {}", builder.toString(), this.getUniqueName() );
+            if ( RuntimeConfig.DEBUG.getBoolean() ) {
+                log.info( "{} from store {}", builder.toString(), this.getUniqueName() );
+            }
             executeUpdate( builder, context );
         }
     }

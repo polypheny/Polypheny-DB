@@ -141,10 +141,6 @@ public class FileStore extends DataStore {
     public void createTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
 
-        if ( partitionIds.size() != 1 ) {
-            throw new RuntimeException( "Files can't be partitioned but number of specified partitions where: " + partitionIds.size() );
-        }
-
         for ( long partitionId : partitionIds ) {
             catalog.updatePartitionPlacementPhysicalNames(
                     getAdapterId(),
@@ -423,7 +419,7 @@ public class FileStore extends DataStore {
 
     @Override
     public void shutdown() {
-        log.info( "shutting down file store '{}'", getUniqueName() );
+        log.info( "Shutting down file store '{}'", getUniqueName() );
         removeInformationPage();
         try {
             FileHelper.deleteDirRecursively( rootDir );

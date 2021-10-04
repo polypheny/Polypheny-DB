@@ -1926,13 +1926,13 @@ public class DdlManagerImpl extends DdlManager {
 
         }
 
-        //For merge create only full placements on the used stores. Otherwise partition constraints might not hold
+        // For merge create only full placements on the used stores. Otherwise partition constraints might not hold
         for ( DataStore store : stores ) {
 
             List<Long> partitionIdsOnStore = new ArrayList<>();
             catalog.getPartitionPlacementByTable( store.getAdapterId(), partitionedTable.id ).forEach( p -> partitionIdsOnStore.add( p.partitionId ) );
 
-            //Need to create partitionPlacements first in order to trigger schema creation on PolySchemaBuilder
+            // Need to create partitionPlacements first in order to trigger schema creation on PolySchemaBuilder
             for ( long partitionId : mergedTable.partitionProperty.partitionIds ) {
                 catalog.addPartitionPlacement(
                         store.getAdapterId(),
@@ -1943,7 +1943,7 @@ public class DdlManagerImpl extends DdlManager {
                         null );
             }
 
-            //First create new tables
+            // First create new tables
             store.createTable( statement.getPrepareContext(), mergedTable, mergedTable.partitionProperty.partitionIds );
 
             // Get only columns that are actually on that store
@@ -1952,13 +1952,13 @@ public class DdlManagerImpl extends DdlManager {
 
             DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
 
-            //Copy data from all partitions to new partition
+            // Copy data from all partitions to new partition
             for ( long oldPartitionId : partitionedTable.partitionProperty.partitionIds ) {
                 dataMigrator.copySelectiveData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ),
                         necessaryColumns, oldPartitionId, mergedTable.partitionProperty.partitionIds.get( 0 ) );
             }
 
-            //Drop all partitionedTables (table contains old partitionIds)
+            // Drop all partitionedTables (table contains old partitionIds)
             store.dropTable( statement.getPrepareContext(), partitionedTable, partitionIdsOnStore );
         }
         // Loop over **old.partitionIds** to delete all partitions which are part of table
