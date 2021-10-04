@@ -146,22 +146,23 @@ public class FileStore extends DataStore {
                     getAdapterId(),
                     partitionId,
                     currentSchema.getSchemaName(),
-                    getPhysicalTableName( catalogTable.id, partitionId ) );
+                    "unused" );
 
+            for ( Long colId : catalogTable.columnIds ) {
+                File newColumnFolder = getColumnFolder( colId, partitionId );
+                if ( !newColumnFolder.mkdir() ) {
+                    throw new RuntimeException( "Could not create column folder " + newColumnFolder.getAbsolutePath() );
+                }
+            }
         }
+
         for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ) ) {
             catalog.updateColumnPlacementPhysicalNames(
                     getAdapterId(),
                     placement.columnId,
                     currentSchema.getSchemaName(),
-                    getPhysicalColumnName( placement.columnId ),
+                    "unused",
                     true );
-        }
-        for ( Long colId : catalogTable.columnIds ) {
-            File newColumnFolder = getColumnFolder( colId );
-            if ( !newColumnFolder.mkdir() ) {
-                throw new RuntimeException( "Could not create column folder " + newColumnFolder.getAbsolutePath() );
-            }
         }
     }
 
@@ -170,13 +171,16 @@ public class FileStore extends DataStore {
     public void dropTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         // TODO check if it is on this store?
-        catalog.deletePartitionPlacement( getAdapterId(), partitionIds.get( 0 ) );
-        for ( Long colId : catalogTable.columnIds ) {
-            File f = getColumnFolder( colId );
-            try {
-                FileUtils.deleteDirectory( f );
-            } catch ( IOException e ) {
-                throw new RuntimeException( "Could not drop table " + colId, e );
+
+        for ( long partitionId : partitionIds ) {
+            catalog.deletePartitionPlacement( getAdapterId(), partitionId );
+            for ( Long colId : catalogTable.columnIds ) {
+                File f = getColumnFolder( colId, partitionId );
+                try {
+                    FileUtils.deleteDirectory( f );
+                } catch ( IOException e ) {
+                    throw new RuntimeException( "Could not drop table " + colId, e );
+                }
             }
         }
     }
@@ -185,21 +189,32 @@ public class FileStore extends DataStore {
     @Override
     public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
-        File newColumnFolder = getColumnFolder( catalogColumn.id );
-        if ( !newColumnFolder.mkdir() ) {
-            throw new RuntimeException( "Could not create column folder " + newColumnFolder.getName() );
-        }
 
-        // Add default values
-        if ( catalogColumn.defaultValue != null ) {
-            try {
-                CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
-                File primaryKeyDir = new File( rootDir, getPhysicalColumnName( primaryKey.columnIds.get( 0 ) ) );
-                for ( File entry : primaryKeyDir.listFiles() ) {
-                    FileModifier.write( new File( newColumnFolder, entry.getName() ), catalogColumn.defaultValue.value );
+        CatalogColumnPlacement ccp = null;
+        for ( CatalogColumnPlacement p : Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ) ) {
+            // The for loop is required to avoid using the names of the column which we are currently adding (which are null)
+            if ( p.columnId != catalogColumn.id ) {
+                ccp = p;
+                break;
+            }
+        }
+        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable( ccp.adapterId, catalogTable.id ) ) {
+            File newColumnFolder = getColumnFolder( catalogColumn.id, partitionPlacement.partitionId );
+            if ( !newColumnFolder.mkdir() ) {
+                throw new RuntimeException( "Could not create column folder " + newColumnFolder.getName() );
+            }
+
+            // Add default values
+            if ( catalogColumn.defaultValue != null ) {
+                try {
+                    CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
+                    File primaryKeyDir = new File( rootDir, getPhysicalColumnName( primaryKey.columnIds.get( 0 ), partitionPlacement.partitionId ) );
+                    for ( File entry : primaryKeyDir.listFiles() ) {
+                        FileModifier.write( new File( newColumnFolder, entry.getName() ), catalogColumn.defaultValue.value );
+                    }
+                } catch ( IOException e ) {
+                    throw new RuntimeException( "Caught exception while inserting default values", e );
                 }
-            } catch ( IOException e ) {
-                throw new RuntimeException( "Caught exception while inserting default values", e );
             }
         }
 
@@ -207,7 +222,7 @@ public class FileStore extends DataStore {
                 getAdapterId(),
                 catalogColumn.id,
                 currentSchema.getSchemaName(),
-                getPhysicalColumnName( catalogColumn.id ),
+                "unused",
                 false );
     }
 
@@ -215,11 +230,14 @@ public class FileStore extends DataStore {
     @Override
     public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
-        File columnFile = getColumnFolder( columnPlacement.columnId );
-        try {
-            FileUtils.deleteDirectory( columnFile );
-        } catch ( IOException e ) {
-            throw new RuntimeException( "Could not delete column folder", e );
+
+        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable( columnPlacement.adapterId, columnPlacement.tableId ) ) {
+            File columnFile = getColumnFolder( columnPlacement.columnId, partitionPlacement.partitionId );
+            try {
+                FileUtils.deleteDirectory( columnFile );
+            } catch ( IOException e ) {
+                throw new RuntimeException( "Could not delete column folder", e );
+            }
         }
     }
 
@@ -378,14 +396,16 @@ public class FileStore extends DataStore {
     @Override
     public void truncate( Context context, CatalogTable table ) {
         //context.getStatement().getTransaction().registerInvolvedStore( this );
-        FileTranslatableTable fileTable = (FileTranslatableTable) currentSchema.getTable( table.name );
-        try {
-            for ( String colName : fileTable.getColumnNames() ) {
-                File columnFolder = getColumnFolder( fileTable.getColumnIdMap().get( colName ) );
-                FileUtils.cleanDirectory( columnFolder );
+        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable( getAdapterId(), table.id ) ) {
+            FileTranslatableTable fileTable = (FileTranslatableTable) currentSchema.getTable( table.name + "_" + partitionPlacement.partitionId );
+            try {
+                for ( String colName : fileTable.getColumnNames() ) {
+                    File columnFolder = getColumnFolder( fileTable.getColumnIdMap().get( colName ), fileTable.getPartitionId() );
+                    FileUtils.cleanDirectory( columnFolder );
+                }
+            } catch ( IOException e ) {
+                throw new RuntimeException( "Could not truncate file table", e );
             }
-        } catch ( IOException e ) {
-            throw new RuntimeException( "Could not truncate file table", e );
         }
     }
 
@@ -435,28 +455,19 @@ public class FileStore extends DataStore {
     }
 
 
-    protected static String getPhysicalTableName( long tableId, long partitionId ) {
-        String physicalTableName = "tab" + tableId;
-        if ( partitionId >= 0 ) {
-            physicalTableName += "_part" + partitionId;
-        }
-        return physicalTableName;
+    protected static String getPhysicalColumnName( long columnId, long partitionId ) {
+        return "col" + columnId + "_" + partitionId;
     }
 
 
-    protected static String getPhysicalColumnName( long columnId ) {
-        return "col" + columnId;
-    }
-
-
-    public static File getColumnFolder( final String rootPath, final Long columnId ) {
+    public static File getColumnFolder( final String rootPath, final long columnId, final long partitionId ) {
         File root = new File( rootPath );
-        return new File( root, getPhysicalColumnName( columnId ) );
+        return new File( root, getPhysicalColumnName( columnId, partitionId ) );
     }
 
 
-    public File getColumnFolder( final Long columnId ) {
-        return new File( rootDir, getPhysicalColumnName( columnId ) );
+    public File getColumnFolder( final long columnId, final long partitionId ) {
+        return new File( rootDir, getPhysicalColumnName( columnId, partitionId ) );
     }
 
 }

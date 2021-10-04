@@ -87,7 +87,10 @@ public class FileStoreSchema extends AbstractSchema implements FileSchema {
     }
 
 
-    public Table createFileTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+    public Table createFileTable(
+            CatalogTable catalogTable,
+            List<CatalogColumnPlacement> columnPlacementsOnStore,
+            CatalogPartitionPlacement partitionPlacement ) {
         final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         ArrayList<Long> columnIds = new ArrayList<>();
@@ -123,8 +126,17 @@ public class FileStoreSchema extends AbstractSchema implements FileSchema {
         } else {
             pkIds = new ArrayList<>();
         }
-        //FileTable table = new FileTable( store.getRootDir(), schemaName, catalogTable.id, columnIds, columnTypes, columnNames, store, this );
-        FileTranslatableTable table = new FileTranslatableTable( this, catalogTable.name, catalogTable.id, columnIds, columnTypes, columnNames, pkIds, protoRowType );
+        // FileTable table = new FileTable( store.getRootDir(), schemaName, catalogTable.id, columnIds, columnTypes, columnNames, store, this );
+        FileTranslatableTable table = new FileTranslatableTable(
+                this,
+                catalogTable.name + "_" + partitionPlacement.partitionId,
+                catalogTable.id,
+                partitionPlacement.partitionId,
+                columnIds,
+                columnTypes,
+                columnNames,
+                pkIds,
+                protoRowType );
         tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
         return table;
     }
@@ -135,12 +147,23 @@ public class FileStoreSchema extends AbstractSchema implements FileSchema {
      * Executes SELECT, UPDATE and DELETE operations
      * see {@link FileMethod#EXECUTE} and {@link org.polypheny.db.adapter.file.rel.FileToEnumerableConverter#implement}
      */
-    public static Enumerable<Object> execute( final Operation operation, final Integer adapterId, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Integer[] projectionMapping, final Condition condition, final Value[] updates ) {
+    public static Enumerable<Object> execute(
+            final Operation operation,
+            final Integer adapterId,
+            final Long partitionId,
+            final DataContext dataContext,
+            final String path,
+            final Long[] columnIds,
+            final PolyType[] columnTypes,
+            final List<Long> pkIds,
+            final Integer[] projectionMapping,
+            final Condition condition,
+            final Value[] updates ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getAdapter( adapterId ) );
         return new AbstractEnumerable<Object>() {
             @Override
             public Enumerator<Object> enumerator() {
-                return new FileEnumerator( operation, path, columnIds, columnTypes, pkIds, projectionMapping, dataContext, condition, updates );
+                return new FileEnumerator( operation, path, partitionId, columnIds, columnTypes, pkIds, projectionMapping, dataContext, condition, updates );
             }
         };
     }
@@ -151,7 +174,18 @@ public class FileStoreSchema extends AbstractSchema implements FileSchema {
      * Executes INSERT operations
      * see {@link FileMethod#EXECUTE_MODIFY} and {@link org.polypheny.db.adapter.file.rel.FileToEnumerableConverter#implement}
      */
-    public static Enumerable<Object> executeModify( final Operation operation, final Integer adapterId, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Boolean isBatch, final Object[] insertValues, final Condition condition ) {
+    public static Enumerable<Object> executeModify(
+            final Operation operation,
+            final Integer adapterId,
+            final Long partitionId,
+            final DataContext dataContext,
+            final String path,
+            final Long[] columnIds,
+            final PolyType[] columnTypes,
+            final List<Long> pkIds,
+            final Boolean isBatch,
+            final Object[] insertValues,
+            final Condition condition ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getAdapter( adapterId ) );
         final Object[] insert;
 
@@ -184,7 +218,7 @@ public class FileStoreSchema extends AbstractSchema implements FileSchema {
         return new AbstractEnumerable<Object>() {
             @Override
             public Enumerator<Object> enumerator() {
-                return new FileModifier( operation, path, columnIds, columnTypes, pkIds, dataContext, insert, condition );
+                return new FileModifier( operation, path, partitionId, columnIds, columnTypes, pkIds, dataContext, insert, condition );
             }
         };
     }

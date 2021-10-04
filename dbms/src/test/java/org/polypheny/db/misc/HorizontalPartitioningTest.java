@@ -474,7 +474,7 @@ public class HorizontalPartitioningTest {
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" MERGE PARTITIONS" );
                     Assert.assertEquals( 2, Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size() );
 
-                    // DROP STORE and verfiy number of partition Placements
+                    // DROP STORE and verify number of partition Placements
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" DROP PLACEMENT ON STORE \"anotherstore\"" );
                     Assert.assertEquals( 1, Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size() );
 

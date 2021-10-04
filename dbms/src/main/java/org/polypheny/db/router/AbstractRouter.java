@@ -1051,7 +1051,6 @@ public abstract class AbstractRouter implements Router {
             }
 
             if ( placementsByAdapter.size() == 1 ) {
-
                 List<CatalogColumnPlacement> ccps = placementsByAdapter.values().iterator().next();
                 CatalogColumnPlacement ccp = ccps.get( 0 );
                 CatalogPartitionPlacement cpp = catalog.getPartitionPlacement( ccp.adapterId, partitionId );

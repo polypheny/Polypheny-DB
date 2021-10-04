@@ -134,6 +134,7 @@ public class QfsSchema extends AbstractSchema implements FileSchema {
                 this,
                 catalogTable.name,
                 catalogTable.id,
+                -1,
                 columnIds,
                 columnTypes,
                 columnNames,
