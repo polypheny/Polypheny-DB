@@ -93,7 +93,7 @@ public class HttpRestServer extends QueryInterface {
 
     public HttpRestServer( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
         super( transactionManager, authenticator, ifaceId, uniqueName, settings, true, false );
-        this.requestParser = new RequestParser( transactionManager, authenticator, "APP", "pa" );
+        this.requestParser = new RequestParser( transactionManager, authenticator, "pa", "APP" );
         this.uniqueName = uniqueName;
         this.port = Integer.parseInt( settings.get( "port" ) );
         if ( !Util.checkIfPortIsAvailable( port ) ) {
@@ -120,9 +120,7 @@ public class HttpRestServer extends QueryInterface {
     private void restRoutes( Service restServer, Rest rest ) {
         restServer.path( "/restapi/v1", () -> {
             restServer.before( "/*", ( q, a ) -> {
-                if ( log.isDebugEnabled() ) {
-                    log.debug( "Checking authentication of request with id: {}.", q.session().id() );
-                }
+                log.debug( "Checking authentication of request with id: {}.", q.session().id() );
                 try {
                     CatalogUser catalogUser = this.requestParser.parseBasicAuthentication( q );
                 } catch ( UnauthorizedAccessException e ) {
