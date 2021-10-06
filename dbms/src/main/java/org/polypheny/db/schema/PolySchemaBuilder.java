@@ -152,8 +152,6 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                     HashMap<String, Table> physicalTables = new HashMap<>();
                     Adapter adapter = AdapterManager.getInstance().getAdapter( catalogAdapter.id );
 
-                    HashMap<String, SchemaPlus> schemaNames = new HashMap<>();
-
                     final String schemaName = buildAdapterSchemaName( catalogAdapter.uniqueName, catalogSchema.name, physicalSchemaName );
 
                     adapter.createNewSchema( rootSchema, schemaName );

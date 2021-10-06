@@ -73,7 +73,6 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
     }
 
 
-    // ToDo place everything on COLD and then on later on by distribution on HOT
     @Override
     public int getNumberOfPartitionsPerGroup( int numberOfPartitions ) {
         return 1;
@@ -83,9 +82,6 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
     @Override
     public boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, CatalogColumn partitionColumn ) {
         super.validatePartitionGroupSetup( partitionGroupQualifiers, numPartitionGroups, partitionGroupNames, partitionColumn );
-
-        // VALUES for HOT in & COLD out cannot be ambiguous or overlapping
-        // Percentage of HOt to COLD has to be truly greater than HOT in
 
         return true;
     }
@@ -148,7 +144,6 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
                 .defaultValue( "% Threshold into HOT" )
                 .build() );
 
-        // TODO get Thresholds from central configuration, as well as standard internal partitioning
         rowInHot.add( PartitionFunctionInfoColumn.builder()
                 .fieldType( PartitionFunctionInfoColumnType.STRING )
                 .mandatory( false )

@@ -1933,6 +1933,8 @@ public class DdlManagerImpl extends DdlManager {
 
         }
 
+        DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
+        boolean firstIteration = true;
         // For merge create only full placements on the used stores. Otherwise partition constraints might not hold
         for ( DataStore store : stores ) {
 
@@ -1957,17 +1959,26 @@ public class DdlManagerImpl extends DdlManager {
             List<CatalogColumn> necessaryColumns = new LinkedList<>();
             catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), mergedTable.id ).forEach( cp -> necessaryColumns.add( catalog.getColumn( cp.columnId ) ) );
 
-            DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
-
-            // Copy data from all partitions to new partition
-            for ( long oldPartitionId : partitionedTable.partitionProperty.partitionIds ) {
+            if ( firstIteration ) {
+                // Copy data from all partitions to new partition
+                for ( long oldPartitionId : partitionedTable.partitionProperty.partitionIds ) {
+                    dataMigrator.copySelectiveData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ),
+                            necessaryColumns, oldPartitionId, mergedTable.partitionProperty.partitionIds.get( 0 ) );
+                }
+                firstIteration = false;
+            } else {
+                //Second Iteration all data is already in one partition, which speeds up data migration
                 dataMigrator.copySelectiveData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ),
-                        necessaryColumns, oldPartitionId, mergedTable.partitionProperty.partitionIds.get( 0 ) );
+                        necessaryColumns, mergedTable.partitionProperty.partitionIds.get( 0 ), mergedTable.partitionProperty.partitionIds.get( 0 ) );
             }
-
             // Drop all partitionedTables (table contains old partitionIds)
             store.dropTable( statement.getPrepareContext(), partitionedTable, partitionIdsOnStore );
         }
+
+        //Needs to be separated from loop above. Otherwise we loose data
+        //for ( DataStore store : stores ) {
+
+        // }
         // Loop over **old.partitionIds** to delete all partitions which are part of table
         //Needs to be done separately because partitionPlacements will be recursively dropped in `deletePartitionGroup` but are needed in dropTable
         for ( long partitionGroupId : partitionedTable.partitionProperty.partitionGroupIds ) {

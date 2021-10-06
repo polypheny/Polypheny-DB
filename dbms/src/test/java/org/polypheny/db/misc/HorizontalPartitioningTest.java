@@ -470,7 +470,7 @@ public class HorizontalPartitioningTest {
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" MODIFY PARTITIONS (0) ON STORE anotherstore" );
                     Assert.assertEquals( partitionsToCreate + 1, Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size() );
 
-                    // After MERGE should only hold on partition
+                    // After MERGE should only hold one partition
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" MERGE PARTITIONS" );
                     Assert.assertEquals( 2, Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size() );
 

@@ -146,33 +146,37 @@ public class PostgresqlStore extends AbstractJdbcStore {
     @Override
     public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn, PolyType oldType ) {
         StringBuilder builder = new StringBuilder();
-        CatalogPartitionPlacement partitionPlacement = catalog.getPartitionPlacement( getAdapterId(), catalog.getTable( columnPlacement.tableId ).partitionProperty.partitionIds.get( 0 ) );
+        List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementByTable( getAdapterId(), catalogColumn.tableId );
 
-        builder.append( "ALTER TABLE " )
-                .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
-                .append( "." )
-                .append( dialect.quoteIdentifier( partitionPlacement.physicalTableName ) );
-        builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
-        builder.append( " TYPE " ).append( getTypeString( catalogColumn.type ) );
-        if ( catalogColumn.collectionsType != null ) {
-            builder.append( " " ).append( catalogColumn.collectionsType.toString() );
-        }
-        if ( catalogColumn.length != null ) {
-            builder.append( "(" );
-            builder.append( catalogColumn.length );
-            if ( catalogColumn.scale != null ) {
-                builder.append( "," ).append( catalogColumn.scale );
+        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
+
+            builder.append( "ALTER TABLE " )
+                    .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
+                    .append( "." )
+                    .append( dialect.quoteIdentifier( partitionPlacement.physicalTableName ) );
+            builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
+            builder.append( " TYPE " ).append( getTypeString( catalogColumn.type ) );
+            if ( catalogColumn.collectionsType != null ) {
+                builder.append( " " ).append( catalogColumn.collectionsType.toString() );
             }
-            builder.append( ")" );
+            if ( catalogColumn.length != null ) {
+                builder.append( "(" );
+                builder.append( catalogColumn.length );
+                if ( catalogColumn.scale != null ) {
+                    builder.append( "," ).append( catalogColumn.scale );
+                }
+                builder.append( ")" );
+            }
+            builder.append( " USING " )
+                    .append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) )
+                    .append( "::" )
+                    .append( getTypeString( catalogColumn.type ) );
+            if ( catalogColumn.collectionsType != null ) {
+                builder.append( " " ).append( catalogColumn.collectionsType.toString() );
+            }
+            executeUpdate( builder, context );
         }
-        builder.append( " USING " )
-                .append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) )
-                .append( "::" )
-                .append( getTypeString( catalogColumn.type ) );
-        if ( catalogColumn.collectionsType != null ) {
-            builder.append( " " ).append( catalogColumn.collectionsType.toString() );
-        }
-        executeUpdate( builder, context );
+
     }
 
 
@@ -191,63 +195,74 @@ public class PostgresqlStore extends AbstractJdbcStore {
     @Override
     public void addIndex( Context context, CatalogIndex catalogIndex ) {
         List<CatalogColumnPlacement> ccps = Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogIndex.key.tableId );
-        CatalogPartitionPlacement partitionPlacement = catalog.getPartitionPlacement( getAdapterId(), catalog.getTable( catalogIndex.key.tableId ).partitionProperty.partitionIds.get( 0 ) );
-        StringBuilder builder = new StringBuilder();
-        builder.append( "CREATE " );
-        if ( catalogIndex.unique ) {
-            builder.append( "UNIQUE INDEX " );
-        } else {
-            builder.append( "INDEX " );
-        }
+        List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementByTable( getAdapterId(), catalogIndex.key.tableId );
+
         String physicalIndexName = getPhysicalIndexName( catalogIndex.key.tableId, catalogIndex.id );
-        builder.append( dialect.quoteIdentifier( physicalIndexName ) );
-        builder.append( " ON " )
-                .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
-                .append( "." )
-                .append( dialect.quoteIdentifier( partitionPlacement.physicalTableName ) );
 
-        builder.append( " USING " );
-        switch ( catalogIndex.method ) {
-            case "btree":
-            case "btree_unique":
-                builder.append( "btree" );
-                break;
-            case "hash":
-            case "hash_unique":
-                builder.append( "hash" );
-                break;
-            case "gin":
-            case "gin_unique":
-                builder.append( "gin" );
-                break;
-            case "brin":
-                builder.append( "brin" );
-                break;
-        }
+        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
 
-        builder.append( "(" );
-        boolean first = true;
-        for ( long columnId : catalogIndex.key.columnIds ) {
-            if ( !first ) {
-                builder.append( ", " );
+            StringBuilder builder = new StringBuilder();
+            builder.append( "CREATE " );
+            if ( catalogIndex.unique ) {
+                builder.append( "UNIQUE INDEX " );
+            } else {
+                builder.append( "INDEX " );
             }
-            first = false;
-            builder.append( dialect.quoteIdentifier( getPhysicalColumnName( columnId ) ) ).append( " " );
+
+            builder.append( dialect.quoteIdentifier( physicalIndexName ) );
+            builder.append( " ON " )
+                    .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
+                    .append( "." )
+                    .append( dialect.quoteIdentifier( partitionPlacement.physicalTableName ) );
+
+            builder.append( " USING " );
+            switch ( catalogIndex.method ) {
+                case "btree":
+                case "btree_unique":
+                    builder.append( "btree" );
+                    break;
+                case "hash":
+                case "hash_unique":
+                    builder.append( "hash" );
+                    break;
+                case "gin":
+                case "gin_unique":
+                    builder.append( "gin" );
+                    break;
+                case "brin":
+                    builder.append( "brin" );
+                    break;
+            }
+
+            builder.append( "(" );
+            boolean first = true;
+            for ( long columnId : catalogIndex.key.columnIds ) {
+                if ( !first ) {
+                    builder.append( ", " );
+                }
+                first = false;
+                builder.append( dialect.quoteIdentifier( getPhysicalColumnName( columnId ) ) ).append( " " );
+            }
+            builder.append( ")" );
+
+            executeUpdate( builder, context );
         }
-        builder.append( ")" );
-
-        executeUpdate( builder, context );
-
         Catalog.getInstance().setIndexPhysicalName( catalogIndex.id, physicalIndexName );
     }
 
 
     @Override
     public void dropIndex( Context context, CatalogIndex catalogIndex ) {
-        StringBuilder builder = new StringBuilder();
-        builder.append( "DROP INDEX " );
-        builder.append( dialect.quoteIdentifier( catalogIndex.physicalName ) );
-        executeUpdate( builder, context );
+
+        List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementByTable( getAdapterId(), catalogIndex.key.tableId );
+
+        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
+
+            StringBuilder builder = new StringBuilder();
+            builder.append( "DROP INDEX " );
+            builder.append( dialect.quoteIdentifier( catalogIndex.physicalName ) );
+            executeUpdate( builder, context );
+        }
     }
 
 
