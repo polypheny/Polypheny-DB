@@ -83,18 +83,26 @@ public class CottontailProject extends Project implements CottontailRel {
     @Override
     public void implement( CottontailImplementContext context ) {
         final BlockBuilder builder = context.blockBuilder;
-        final List<String> physicalColumnNames = new ArrayList<>();
-        final List<PolyType> columnTypes = new ArrayList<>();
 
-        context.visitChild( 0, getInput() );
+        if ( !this.arrayProject ) {
+            context.visitChild( 0, getInput() );
+        }
 
-        for ( RelDataTypeField field : context.cottontailTable.getRowType( getCluster().getTypeFactory() ).getFieldList() ) {
+        final List<RelDataTypeField> fieldList = context.cottontailTable.getRowType( getCluster().getTypeFactory() ).getFieldList();
+        final List<String> physicalColumnNames = new ArrayList<>(fieldList.size());
+        final List<PolyType> columnTypes = new ArrayList<>(fieldList.size());
+
+        for ( RelDataTypeField field : fieldList ) {
             physicalColumnNames.add( context.cottontailTable.getPhysicalColumnName( field.getName() ) );
-            columnTypes.add( field.getType().getPolyType() );
+            if ( field.getType().getComponentType() != null ) {
+                columnTypes.add( field.getType().getComponentType().getPolyType() );
+            } else {
+                columnTypes.add( field.getType().getPolyType() );
+            }
         }
 
         if ( this.arrayProject ) {
-            context.preparedValuesMapBuilder = CottontailProject.makeProjectValueBuilder( context.blockBuilder, getNamedProjects(), physicalColumnNames, columnTypes );
+            context.preparedValuesMapBuilder = makeProjectValueBuilder( getNamedProjects(), physicalColumnNames, columnTypes );
         } else {
             context.blockBuilder = builder;
         }
@@ -132,13 +140,12 @@ public class CottontailProject extends Project implements CottontailRel {
 
     /**
      *
-     * @param builder
      * @param namedProjects
      * @param physicalColumnNames
      * @param columnTypes
      * @return
      */
-    public static Expression makeProjectValueBuilder( BlockBuilder builder, List<Pair<RexNode, String>> namedProjects, List<String> physicalColumnNames, List<PolyType> columnTypes ) {
+    public static Expression makeProjectValueBuilder( List<Pair<RexNode, String>> namedProjects, List<String> physicalColumnNames, List<PolyType> columnTypes ) {
         BlockBuilder inner = new BlockBuilder();
 
         ParameterExpression dynamicParameterMap_ = Expressions.parameter( Modifier.FINAL, Map.class, inner.newName( "dynamicParameters" ) );
