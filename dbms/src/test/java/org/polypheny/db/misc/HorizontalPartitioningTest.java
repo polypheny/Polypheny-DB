@@ -46,7 +46,7 @@ import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
 
 @SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
-@Category(AdapterTestSuite.class)
+@Category({ AdapterTestSuite.class, CassandraExcluded.class })
 public class HorizontalPartitioningTest {
 
     @BeforeClass
