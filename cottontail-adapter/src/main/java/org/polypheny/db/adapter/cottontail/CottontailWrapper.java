@@ -130,6 +130,7 @@ public class CottontailWrapper implements AutoCloseable {
                 final Empty result = stub.commit( txId );
             } catch ( StatusRuntimeException e ) {
                 log.error( "Could not COMMIT Cottontail DB transaction {} due to error.", txId, e );
+                throw new RuntimeException( e );
             }
         } else {
             log.warn( "No Cottontail DB transaction for Xid {} could be found.", xid );
@@ -150,6 +151,7 @@ public class CottontailWrapper implements AutoCloseable {
                 final Empty result = stub.rollback( txId );
             } catch ( StatusRuntimeException e ) {
                 log.error( "Could not ROLLBACK Cottontail DB transaction {} due to error.", txId, e );
+                throw new RuntimeException( e );
             }
         } else {
             log.warn( "No Cottontail DB transaction for Xid {} could be found.", xid );
