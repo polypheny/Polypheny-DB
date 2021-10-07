@@ -573,11 +573,11 @@ public class HorizontalPartitioningTest {
                     //Do batch INSERT to check if BATCH INSERT works for partitioned tables
                     PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO temperaturetest(tprimary,tvarchar) VALUES (?, ?)" );
 
-                    preparedInsert.setInt( 1, 1 );
+                    preparedInsert.setInt( 1, 7 );
                     preparedInsert.setString( 2, partitionValue );
                     preparedInsert.addBatch();
 
-                    preparedInsert.setInt( 1, 2 );
+                    preparedInsert.setInt( 1, 8 );
                     preparedInsert.setString( 2, partitionValue );
                     preparedInsert.addBatch();
 
