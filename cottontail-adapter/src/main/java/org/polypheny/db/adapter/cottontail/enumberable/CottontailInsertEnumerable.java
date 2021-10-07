@@ -23,7 +23,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.InsertMessage;
 import java.util.List;
 
 
-public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
+public class CottontailInsertEnumerable extends AbstractEnumerable<Long> {
     private final List<InsertMessage> inserts;
     private final CottontailWrapper wrapper;
 
@@ -33,29 +33,32 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
     }
 
     @Override
-    public Enumerator<T> enumerator() {
-        return new CottontailInsertResultEnumerator<>();
+    public Enumerator<Long> enumerator() {
+        return new CottontailInsertResultEnumerator();
     }
 
-    private class CottontailInsertResultEnumerator<T> implements Enumerator<T> {
-        private boolean wasSuccessful;
-        private int checkCount = 0;
+    private class CottontailInsertResultEnumerator implements Enumerator<Long> {
+        /** Result of the last INSERT that was performed. */
+        private long currentResult;
 
-        @SuppressWarnings("unchecked")
+        /** The pointer to the last {@link InsertMessage} that was executed. */
+        private int pointer = 0;
+
         @Override
-        public T current() {
-            if ( this.wasSuccessful ) {
-                return (T) Integer.valueOf( CottontailInsertEnumerable.this.inserts.size() );
-            } else {
-                return (T) Integer.valueOf( -1 );
-            }
+        public Long current() {
+            return this.currentResult;
         }
 
         @Override
         public boolean moveNext() {
-            if ( this.checkCount < CottontailInsertEnumerable.this.inserts.size() ) {
-                this.wasSuccessful = CottontailInsertEnumerable.this.wrapper.insert( CottontailInsertEnumerable.this.inserts.get(this.checkCount++) );
-                return true;
+            if ( this.pointer < CottontailInsertEnumerable.this.inserts.size() ) {
+                final InsertMessage insertMessage = CottontailInsertEnumerable.this.inserts.get(this.pointer++);
+                if ( CottontailInsertEnumerable.this.wrapper.insert( insertMessage ) ) {
+                    this.currentResult = 1;
+                } else {
+                    this.currentResult = -1;
+                }
+                return !(this.currentResult == -1L);
             } else {
                 return false;
             }
@@ -63,7 +66,7 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
 
         @Override
         public void reset() {
-            this.checkCount = 0;
+            this.pointer = 0;
         }
 
         @Override

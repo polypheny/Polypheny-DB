@@ -192,7 +192,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
 
             case UPDATE:
                 enumerable = list.append( "enumerable",
-                        Expressions.call( CottontailUpdateEnumerable.CREATE_UPDATE_METHOD,
+                        Expressions.call( CottontailEnumerableFactory.CREATE_UPDATE_METHOD,
                                 Expressions.constant( cottontailContext.tableName ),
                                 Expressions.constant( cottontailContext.schemaName ),
                                 expressionOrNullExpression( cottontailContext.filterBuilder ),

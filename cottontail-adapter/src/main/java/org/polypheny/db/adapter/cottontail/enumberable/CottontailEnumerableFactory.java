@@ -33,10 +33,11 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.Projection.ProjectionElement;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.Map.Entry;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.UpdateMessage.UpdateElement;
 
 public class CottontailEnumerableFactory {
     /**
-     * Method signature for Query statements.
+     * Method signature for building SELECT statements.
      */
     public static final Method CREATE_QUERY_METHOD = Types.lookupMethod(
             CottontailEnumerableFactory.class,
@@ -44,7 +45,7 @@ public class CottontailEnumerableFactory {
             String.class, String.class, Map.class, Map.class, Function1.class, Function1.class, Function1.class, DataContext.class, CottontailWrapper.class );
 
     /**
-     * Method signature for INSERT of values.
+     * Method signature for building INSERT of values.
      */
     public static final Method CREATE_INSERT_VALUES = Types.lookupMethod(
             CottontailEnumerableFactory.class,
@@ -52,12 +53,20 @@ public class CottontailEnumerableFactory {
             String.class, String.class, List.class, DataContext.class, CottontailWrapper.class );
 
     /**
-     * Method signature for INSERT for prepared statements.
+     * Method signature for building INSERT for prepared statements.
      */
     public static final Method CREATE_INSERT_PREPARED = Types.lookupMethod(
             CottontailEnumerableFactory.class,
             "insertFromPreparedStatements",
             String.class, String.class, Function1.class, DataContext.class, CottontailWrapper.class );
+
+    /**
+     * Method signature for building UPDATE with values.
+     */
+    public static final Method CREATE_UPDATE_METHOD = Types.lookupMethod(
+        CottontailEnumerableFactory.class,
+        "updateFromValues",
+        String.class, String.class, Function1.class, Function1.class, DataContext.class, CottontailWrapper.class );
 
     /**
      *
@@ -203,7 +212,7 @@ public class CottontailEnumerableFactory {
     }
 
     @SuppressWarnings("unused") // Used via reflection
-    public static AbstractEnumerable<Object> insertFromValues(
+    public static AbstractEnumerable<Long> insertFromValues(
             String from,
             String schema,
             List<Map<String, Literal>> values,
@@ -224,11 +233,11 @@ public class CottontailEnumerableFactory {
             insertMessages.add( message.build() );
         }
 
-        return new CottontailInsertEnumerable<>( insertMessages, wrapper );
+        return new CottontailInsertEnumerable( insertMessages, wrapper );
     }
 
     @SuppressWarnings("unused") // Used via reflection
-    public static AbstractEnumerable<Object> insertFromPreparedStatements(
+    public static AbstractEnumerable<Long> insertFromPreparedStatements(
             String from,
             String schema,
             Function1<Map<Long, Object>, Map<String, CottontailGrpc.Literal>> tupleBuilder,
@@ -248,7 +257,7 @@ public class CottontailEnumerableFactory {
                 insert.addElements( InsertElement.newBuilder().setColumn( ColumnName.newBuilder().setName( e.getKey() ) ).setValue( e.getValue() ) );
             }
             insertMessages.add( insert.build() );
-            return new CottontailInsertEnumerable<>( insertMessages, wrapper );
+            return new CottontailInsertEnumerable( insertMessages, wrapper );
         } else {
             final List<BatchInsertMessage> insertMessages = new LinkedList<>();
             BatchInsertMessage.Builder builder = BatchInsertMessage.newBuilder().setFrom( from_ ).setTxId( txId );
@@ -287,7 +296,84 @@ public class CottontailEnumerableFactory {
                 insertMessages.add(builder.build());
             }
 
-            return new CottontailBatchInsertEnumerable<>( insertMessages, wrapper );
+            return new CottontailBatchInsertEnumerable( insertMessages, wrapper );
         }
+    }
+
+    /**
+     * Builds and returns an {@link CottontailUpdateEnumerable}.
+     *
+     * @param entity
+     * @param schema
+     * @param whereBuilder
+     * @param tupleBuilder
+     * @param dataContext
+     * @param wrapper
+     * @return
+     */
+    @SuppressWarnings("unused") // Used via reflection
+    public static CottontailUpdateEnumerable updateFromValues(
+        String entity,
+        String schema,
+        Function1<Map<Long, Object>, Where> whereBuilder,
+        Function1<Map<Long, Object>, Map<String, CottontailGrpc.Literal>> tupleBuilder,
+        DataContext dataContext,
+        CottontailWrapper wrapper
+    ) {
+        /* Begin or continue Cottontail DB transaction. */
+        final TransactionId txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
+
+        /* Build UPDATE messages and create enumerable. */
+        List<UpdateMessage> updateMessages;
+        if ( dataContext.getParameterValues().size() < 2 ) {
+            Map<Long, Object> parameterValues;
+            if ( dataContext.getParameterValues().size() == 0 ) {
+                parameterValues = new HashMap<>();
+            } else {
+                parameterValues = dataContext.getParameterValues().get( 0 );
+            }
+            updateMessages = new ArrayList<>( 1 );
+            updateMessages.add( buildSingleUpdate( entity, schema, txId, whereBuilder, tupleBuilder, parameterValues ) );
+        } else {
+            updateMessages = new ArrayList<>();
+            for ( Map<Long, Object> parameterValues : dataContext.getParameterValues() ) {
+                updateMessages.add( buildSingleUpdate( entity, schema, txId, whereBuilder, tupleBuilder, parameterValues ) );
+            }
+        }
+
+        return new CottontailUpdateEnumerable( updateMessages, wrapper );
+    }
+
+
+    private static UpdateMessage buildSingleUpdate(
+        String entity,
+        String schema,
+        TransactionId txId,
+        Function1<Map<Long, Object>, Where> whereBuilder,
+        Function1<Map<Long, Object>, Map<String, CottontailGrpc.Literal>> tupleBuilder,
+        Map<Long, Object> parameterValues
+    ) {
+        UpdateMessage.Builder builder = UpdateMessage.newBuilder().setTxId( txId );
+
+        CottontailGrpc.From from_ = CottontailTypeUtil.fromFromTableAndSchema( entity, schema );
+
+        if ( whereBuilder != null ) {
+            builder.setWhere( whereBuilder.apply( parameterValues ) );
+        }
+
+        try {
+            for ( Entry<String, Literal> e : tupleBuilder.apply( parameterValues ).entrySet() ) {
+                builder.addUpdates( UpdateElement.newBuilder()
+                    .setColumn( ColumnName.newBuilder().setName( e.getKey() ) )
+                    .setValue( Expression.newBuilder().setLiteral( e.getValue() ) )
+                    .build() );
+            }
+        } catch ( RuntimeException e ) {
+            throw new RuntimeException( e );
+        }
+
+        builder.setFrom( from_ );
+
+        return builder.build();
     }
 }

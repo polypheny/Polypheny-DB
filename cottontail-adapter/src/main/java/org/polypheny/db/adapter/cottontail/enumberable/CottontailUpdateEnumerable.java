@@ -24,150 +24,57 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.CottontailWrapper;
-import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
-import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.*;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.UpdateMessage.UpdateElement;
 
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.Map.Entry;
 
 
 @Slf4j
-public class CottontailUpdateEnumerable<T> extends AbstractEnumerable<T> {
-
-    public static final Method CREATE_UPDATE_METHOD = Types.lookupMethod(
-            CottontailUpdateEnumerable.class,
-            "update",
-            String.class, String.class, Function1.class, Function1.class, DataContext.class, CottontailWrapper.class );
+public class CottontailUpdateEnumerable extends AbstractEnumerable<Long> {
 
     private final List<UpdateMessage> updates;
     private final CottontailWrapper wrapper;
 
-
-    public CottontailUpdateEnumerable( List<UpdateMessage> updates, DataContext dataContext, CottontailWrapper wrapper ) {
+    public CottontailUpdateEnumerable( List<UpdateMessage> updates, CottontailWrapper wrapper ) {
         this.updates = updates;
         this.wrapper = wrapper;
     }
 
 
-    public static CottontailUpdateEnumerable<Object> update(
-            String entity,
-            String schema,
-            Function1<Map<Long, Object>, Where> whereBuilder,
-            Function1<Map<Long, Object>, Map<String, CottontailGrpc.Literal>> tupleBuilder,
-            DataContext dataContext,
-            CottontailWrapper wrapper
-    ) {
-        /* Begin or continue Cottontail DB transaction. */
-        final TransactionId txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
-
-        /* Build UPDATE messages and create enumerable. */
-        List<UpdateMessage> updateMessages;
-        if ( dataContext.getParameterValues().size() < 2 ) {
-            Map<Long, Object> parameterValues;
-            if ( dataContext.getParameterValues().size() == 0 ) {
-                parameterValues = new HashMap<>();
-            } else {
-                parameterValues = dataContext.getParameterValues().get( 0 );
-            }
-            updateMessages = new ArrayList<>( 1 );
-            updateMessages.add( buildSingleUpdate( entity, schema, txId, whereBuilder, tupleBuilder, parameterValues ) );
-        } else {
-            updateMessages = new ArrayList<>();
-            for ( Map<Long, Object> parameterValues : dataContext.getParameterValues() ) {
-                updateMessages.add( buildSingleUpdate( entity, schema, txId, whereBuilder, tupleBuilder, parameterValues ) );
-            }
-        }
-
-        return new CottontailUpdateEnumerable<>( updateMessages, dataContext, wrapper );
-    }
-
-
-    private static UpdateMessage buildSingleUpdate(
-            String entity,
-            String schema,
-            TransactionId txId,
-            Function1<Map<Long, Object>, Where> whereBuilder,
-            Function1<Map<Long, Object>, Map<String, CottontailGrpc.Literal>> tupleBuilder,
-            Map<Long, Object> parameterValues
-    ) {
-        UpdateMessage.Builder builder = UpdateMessage.newBuilder().setTxId( txId );
-
-        CottontailGrpc.From from_ = CottontailTypeUtil.fromFromTableAndSchema( entity, schema );
-
-        if ( whereBuilder != null ) {
-            builder.setWhere( whereBuilder.apply( parameterValues ) );
-        }
-
-        try {
-            for ( Entry<String, Literal> e : tupleBuilder.apply( parameterValues ).entrySet() ) {
-                builder.addUpdates( UpdateElement.newBuilder()
-                        .setColumn( ColumnName.newBuilder().setName( e.getKey() ) )
-                        .setValue( Expression.newBuilder().setLiteral( e.getValue() ) )
-                        .build() );
-            }
-        } catch ( RuntimeException e ) {
-            log.error( "Something went wrong here!", e );
-            throw new RuntimeException( e );
-        }
-
-        builder.setFrom( from_ );
-
-        return builder.build();
-    }
-
-
     @Override
-    public Enumerator<T> enumerator() {
-        return new CottontailUpdateEnumerator<>( updates, wrapper );
+    public Enumerator<Long> enumerator() {
+        return new CottontailUpdateEnumerator();
     }
 
+    private class CottontailUpdateEnumerator implements Enumerator<Long> {
+        /** Result of the last UPDATE that was performed. */
+        private long currentResult;
 
-    private static class CottontailUpdateEnumerator<T> implements Enumerator<T> {
-
-        Iterator<UpdateMessage> updateMessageIterator;
-        Long currentResult;
-        CottontailWrapper wrapper;
-
-
-        public CottontailUpdateEnumerator( List<UpdateMessage> updateMessageList, CottontailWrapper wrapper ) {
-            this.updateMessageIterator = updateMessageList.iterator();
-            this.wrapper = wrapper;
-        }
-
+        /** The pointer to the last {@link UpdateMessage} that was executed. */
+        private int pointer = 0;
 
         @Override
-        public T current() {
-            return (T) this.currentResult;
+        public Long current() {
+            return this.currentResult;
         }
-
 
         @Override
         public boolean moveNext() {
-            if ( updateMessageIterator.hasNext() ) {
-                UpdateMessage updateMessage = updateMessageIterator.next();
-
-                this.currentResult = wrapper.update( updateMessage );
-
-                return !this.currentResult.equals( -1L );
+            if ( this.pointer < CottontailUpdateEnumerable.this.updates.size() ) {
+                final UpdateMessage updateMessage = CottontailUpdateEnumerable.this.updates.get(this.pointer++);
+                this.currentResult = CottontailUpdateEnumerable.this.wrapper.update( updateMessage );
+                return !(this.currentResult == -1L);
             }
             return false;
         }
 
-
         @Override
         public void reset() {
-
+            this.pointer = 0;
         }
-
 
         @Override
-        public void close() {
-
-        }
-
+        public void close() {}
     }
-
 }
