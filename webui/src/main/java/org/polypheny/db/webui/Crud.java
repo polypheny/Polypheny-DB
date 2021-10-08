@@ -428,6 +428,8 @@ public class Crud implements InformationObserver {
                             tableElement.setTableType( "TABLE" );
                         } else if ( table.tableType == TableType.VIEW ) {
                             tableElement.setTableType( "VIEW" );
+                        } else if (table.tableType == TableType.MATERIALIZEDVIEW){
+                            tableElement.setTableType( "MATERIALIZED" );
                         }
                     }
 
@@ -1354,7 +1356,9 @@ public class Crud implements InformationObserver {
             result = new Result( cols.toArray( new DbColumn[0] ), null );
             if ( catalogTable.tableType == TableType.TABLE ) {
                 result.setType( ResultType.TABLE );
-            } else {
+            } else if(catalogTable.tableType == TableType.MATERIALIZEDVIEW)  {
+                result.setType( ResultType.MATERIALIZED );
+            }else {
                 result.setType( ResultType.VIEW );
             }
         } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
@@ -1416,7 +1420,7 @@ public class Crud implements InformationObserver {
                             col.defaultValue == null ? null : col.defaultValue.value
                     ).setPhysicalName( ccp.physicalColumnName ) );
                 }
-                return new Result( columns.toArray( new DbColumn[0] ), null ).setType( ResultType.VIEW );
+                return new Result( columns.toArray( new DbColumn[0] ), null ).setType( ResultType.TABLE );
             }
         } catch ( UnknownDatabaseException | UnknownSchemaException | UnknownTableException e ) {
             return new Result( e );

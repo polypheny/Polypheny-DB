@@ -136,7 +136,6 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
             stores = null;
         }
 
-        //List<DataStore> stores = store != null ? ImmutableList.of( getDataStoreInstance( store ) ) : null;
         PlacementType placementType = store.size() > 0 ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
 
         SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
@@ -180,7 +179,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
 
         try {
             DdlManager.getInstance().createMaterializedView(
-                    viewName,
+                    viewName.replaceAll("[^A-Za-z0-9]", "_"),
                     schemaId,
                     relRoot,
                     replace,

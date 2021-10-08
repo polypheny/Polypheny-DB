@@ -24,5 +24,6 @@ package org.polypheny.db.webui.models;
 public enum ResultType {
     TABLE,
     VIEW,
-    QUERY
+    QUERY,
+    MATERIALIZED
 }
