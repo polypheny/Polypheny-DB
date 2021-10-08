@@ -60,7 +60,7 @@ import org.polypheny.db.type.PolyTypeFamily;
         usedModes = { DeployMode.REMOTE, DeployMode.DOCKER })
 @AdapterSettingString(name = "host", defaultValue = "localhost", position = 1,
         description = "Hostname or IP address of the remote PostgreSQL instance.", appliesTo = DeploySetting.REMOTE)
-@AdapterSettingInteger(name = "port", defaultValue = 3306, position = 2,
+@AdapterSettingInteger(name = "port", defaultValue = 5432, position = 2,
         description = "JDBC port number on the remote PostgreSQL instance.")
 @AdapterSettingString(name = "database", defaultValue = "polypheny", position = 3,
         description = "Name of the database to connect to.", appliesTo = DeploySetting.REMOTE)
@@ -87,7 +87,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
         DockerManager.Container container = new ContainerBuilder( getAdapterId(), "postgres:13.2", getUniqueName(), instanceId )
                 .withMappedPort( 5432, Integer.parseInt( settings.get( "port" ) ) )
                 .withEnvironmentVariable( "POSTGRES_PASSWORD=" + settings.get( "password" ) )
-                .withReadyTest( this::testDockerConnection, 15000 )
+                .withReadyTest( this::testConnection, 15000 )
                 .build();
 
         host = container.getHost();
@@ -105,6 +105,9 @@ public class PostgresqlStore extends AbstractJdbcStore {
         host = settings.get( "host" );
         database = settings.get( "database" );
         username = settings.get( "username" );
+        if ( !testConnection() ) {
+            throw new RuntimeException( "Unable to connect" );
+        }
         return createConnectionFactory();
     }
 
@@ -363,7 +366,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
     }
 
 
-    private boolean testDockerConnection() {
+    private boolean testConnection() {
         ConnectionFactory connectionFactory = null;
         ConnectionHandler handler = null;
         try {

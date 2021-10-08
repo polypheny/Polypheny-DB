@@ -81,7 +81,7 @@ public class MonetdbStore extends AbstractJdbcStore {
         DockerManager.Container container = new ContainerBuilder( getAdapterId(), "topaztechnology/monetdb:11.37.11", getUniqueName(), dockerInstanceId )
                 .withMappedPort( 50000, Integer.parseInt( settings.get( "port" ) ) )
                 .withEnvironmentVariables( Arrays.asList( "MONETDB_PASSWORD=" + settings.get( "password" ), "MONET_DATABASE=monetdb" ) )
-                .withReadyTest( this::testDockerConnection, 15000 )
+                .withReadyTest( this::testConnection, 15000 )
                 .build();
 
         host = container.getHost();
@@ -101,6 +101,9 @@ public class MonetdbStore extends AbstractJdbcStore {
         host = settings.get( "host" );
         database = settings.get( "database" );
         username = settings.get( "username" );
+        if ( !testConnection() ) {
+            throw new RuntimeException( "Unable to connect" );
+        }
         ConnectionFactory connectionFactory = createConnectionFactory();
         createDefaultSchema( connectionFactory );
         return connectionFactory;
@@ -319,7 +322,7 @@ public class MonetdbStore extends AbstractJdbcStore {
     }
 
 
-    private boolean testDockerConnection() {
+    private boolean testConnection() {
         ConnectionFactory connectionFactory = null;
         ConnectionHandler handler = null;
         try {
