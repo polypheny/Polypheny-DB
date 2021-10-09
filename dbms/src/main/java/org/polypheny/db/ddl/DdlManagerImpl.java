@@ -1874,20 +1874,22 @@ public class DdlManagerImpl extends DdlManager {
             //First create new tables
             store.createTable( statement.getPrepareContext(), partitionedTable, partitionedTable.partitionProperty.partitionIds );
 
-
-
-           /* //Copy data from unpartitioned to partitioned
+            //Copy data from unpartitioned to partitioned
             // Get only columns that are actually on that store
+            //Every store of a newly partitioned table, initially will hold all partitions
             List<CatalogColumn> necessaryColumns = new LinkedList<>();
             catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), partitionedTable.id ).forEach( cp -> necessaryColumns.add( catalog.getColumn( cp.columnId ) ) );
 
             DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
 
             //Copy data from all partitions to new partition
-            for ( long newPartitionId : partitionedTable.partitionProperty.partitionIds ) {
-                dataMigrator.copySelectiveData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ),
-                        necessaryColumns, unPartitionedTable.partitionProperty.partitionIds.get( 0 ), newPartitionId );
-            }*/
+            //for ( long newPartitionId : partitionedTable.partitionProperty.partitionIds ) {
+            //dataMigrator.copySelectiveData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ),
+            //        necessaryColumns, unPartitionedTable.partitionProperty.partitionIds.get( 0 ), newPartitionId );
+
+            dataMigrator.copyPartitionData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), unPartitionedTable, partitionedTable, necessaryColumns,
+                    unPartitionedTable.partitionProperty.partitionIds, partitionedTable.partitionProperty.partitionIds );
+            // }
 
             //Drop all unpartitionedTables
             //store.dropTable( statement.getPrepareContext(), unPartitionedTable, unPartitionedTable.partitionProperty.partitionIds);
@@ -1895,8 +1897,9 @@ public class DdlManagerImpl extends DdlManager {
             //Shadow based operation
 
             //Remove old table //Todo currently drops catalog.columnPlacement which is the last CCP that was added. in that case the last physical table partition
-            //store.dropTable( statement.getPrepareContext(),partitionInfo.table  );
+            store.dropTable( statement.getPrepareContext(), unPartitionedTable, unPartitionedTable.partitionProperty.partitionIds );
         }
+        catalog.deletePartitionGroup( unPartitionedTable.id, unPartitionedTable.schemaId, unPartitionedTable.partitionProperty.partitionGroupIds.get( 0 ) );
     }
 
 

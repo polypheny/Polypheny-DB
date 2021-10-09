@@ -160,7 +160,9 @@ public class HorizontalPartitioningTest {
                     statement.executeUpdate( "ALTER TABLE \"horizontalparttestextension\" ADD PLACEMENT (tvarchar) ON STORE \"store2\"" );
 
                     //TODO @HENNLO
-                    //add mergetable test
+                    // add mergetable test
+                    // add independent tests to check if number of rows before and after merge/partitoin are equal
+                    // an therefore datamigration works
                     statement.executeUpdate( "ALTER TABLE \"horizontalparttestextension\" MERGE PARTITIONS" );
 
                     // DROP Table to repartition
@@ -552,16 +554,6 @@ public class HorizontalPartitioningTest {
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"cold\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
                             + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
-                    // ADD FullPlacement
-                   /* statement.executeUpdate( "ALTER TABLE \"temperaturetest\" ADD PLACEMENT ON STORE \"hot\"" );
-                    statement.executeUpdate( "ALTER TABLE \"temperaturetest\" ADD PLACEMENT ON STORE \"cold\"" );
-
-                    statement.executeUpdate( "ALTER TABLE \"temperaturetest\" DROP PLACEMENT ON STORE \"hsqldb\"" );
-
-                    statement.executeUpdate( "ALTER TABLE \"temperaturetest\" MODIFY PARTITIONS (\"hot\") ON STORE hot" );
-                    statement.executeUpdate( "ALTER TABLE \"temperaturetest\" MODIFY PARTITIONS (\"cold\") ON STORE cold" );
-                    */
-                    //Todo ADD placement fails on integration test during dataCopy
 
                     String partitionValue = "Foo";
 
@@ -577,10 +569,10 @@ public class HorizontalPartitioningTest {
                     preparedInsert.setString( 2, partitionValue );
                     preparedInsert.addBatch();
 
-                    preparedInsert.setInt( 1, 8 );
+                   /* preparedInsert.setInt( 1, 8 );
                     preparedInsert.setString( 2, partitionValue );
                     preparedInsert.addBatch();
-
+*/
                     preparedInsert.executeBatch();
                     // This should execute two DML INSERTS on the target PartitionId and therefore redistribute the data
 

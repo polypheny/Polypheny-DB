@@ -3647,7 +3647,7 @@ public class CatalogImpl extends Catalog {
 
         //Clean old partitionGroup form "unpartitionedTable"
         //deletion of partitionGroup subsequently clears all partitions and placements
-        deletePartitionGroup( tableId, old.schemaId, old.partitionProperty.partitionGroupIds.get( 0 ) );
+        //deletePartitionGroup( tableId, old.schemaId, old.partitionProperty.partitionGroupIds.get( 0 ) );
 
         CatalogTable table = new CatalogTable(
                 old.id,

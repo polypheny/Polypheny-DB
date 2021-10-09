@@ -19,7 +19,9 @@ package org.polypheny.db.processing;
 import java.util.List;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.transaction.Transaction;
+
 
 public interface DataMigrator {
 
@@ -27,4 +29,6 @@ public interface DataMigrator {
 
     void copySelectiveData( Transaction transaction, CatalogAdapter store, List<CatalogColumn> columns, Long sourcePartitionId, Long targetPartitionId );
 
+    void copyPartitionData( Transaction transaction, CatalogAdapter store, CatalogTable sourceTable, CatalogTable targetTable
+            , List<CatalogColumn> columns, List<Long> sourcePartitionIds, List<Long> targetPartitionIds );
 }
