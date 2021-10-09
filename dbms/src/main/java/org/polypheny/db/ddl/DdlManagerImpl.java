@@ -552,7 +552,7 @@ public class DdlManagerImpl extends DdlManager {
         IndexType type = IndexType.MANUAL;
 
         // Make sure that this is a table of type TABLE (and not SOURCE)
-        if ( catalogTable.tableType != TableType.TABLE ) {
+        if ( !(catalogTable.tableType == TableType.TABLE || catalogTable.tableType == TableType.MATERIALIZEDVIEW) ) {
             throw new AlterSourceException();
         }
 
@@ -1405,8 +1405,6 @@ public class DdlManagerImpl extends DdlManager {
         //prepareView( relRoot.rel );
         RelDataType fieldList = relRoot.rel.getRowType();
 
-        List<ColumnInformation> columns = getColumnInformation( projectedColumns, fieldList, true );
-
         Map<Long, List<Long>> underlyingTables = new HashMap<>();
         long tableId = catalog.addMaterializedView(
                 viewName,
@@ -1424,6 +1422,7 @@ public class DdlManagerImpl extends DdlManager {
                 ordered
         );
 
+        List<ColumnInformation> columns = getColumnInformation( projectedColumns, fieldList, true, tableId );
         Map<Integer, List<CatalogColumn>> addedColumns = new HashMap<>();
 
         List<Long> columnIds = new ArrayList<>();
@@ -1442,7 +1441,7 @@ public class DdlManagerImpl extends DdlManager {
                     column.typeInformation.nullable,
                     column.collation );
 
-            if ( column.name.equals( "primaryKey" ) ) {
+            if ( column.name.startsWith( "_matid_" ) ) {
                 columnIds.add( columnId );
             }
 
@@ -1468,7 +1467,7 @@ public class DdlManagerImpl extends DdlManager {
             }
 
         }
-        renameColumn( catalog.getTable( tableId ), "primaryKey", "_matId_" + tableId, statement );
+        //renameColumn( catalog.getTable( tableId ), "primaryKey", "_matId_" + tableId, statement );
         catalog.addPrimaryKey( tableId, columnIds );
 
         CatalogMaterialized catalogMaterialized = (CatalogMaterialized) catalog.getTable( tableId );
@@ -1491,11 +1490,11 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private List<ColumnInformation> getColumnInformation( List<String> projectedColumns, RelDataType fieldList ) {
-        return getColumnInformation( projectedColumns, fieldList, false );
+        return getColumnInformation( projectedColumns, fieldList, false, 0 );
     }
 
 
-    private List<ColumnInformation> getColumnInformation( List<String> projectedColumns, RelDataType fieldList, boolean addPrimary ) {
+    private List<ColumnInformation> getColumnInformation( List<String> projectedColumns, RelDataType fieldList, boolean addPrimary, long tableId ) {
         List<ColumnInformation> columns = new ArrayList<>();
 
         int position = 1;
@@ -1528,8 +1527,9 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         if ( addPrimary ) {
+            String primaryName = "_matid_" + tableId;
             columns.add( new ColumnInformation(
-                    "primaryKey",
+                    primaryName,
                     new ColumnTypeInformation(
                             PolyType.INTEGER,
                             PolyType.INTEGER,

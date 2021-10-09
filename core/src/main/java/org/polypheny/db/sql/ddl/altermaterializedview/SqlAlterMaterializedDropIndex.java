@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.ddl.altertable;
-
+package org.polypheny.db.sql.ddl.altermaterializedview;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
@@ -29,22 +28,18 @@ import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.ddl.SqlAlterTable;
+import org.polypheny.db.sql.ddl.SqlAlterMaterializedView;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
-
-/**
- * Parse tree for {@code ALTER TABLE name DROP INDEX} statement.
- */
-public class SqlAlterTableDropIndex extends SqlAlterTable {
+public class SqlAlterMaterializedDropIndex extends SqlAlterMaterializedView {
 
     private final SqlIdentifier table;
     private final SqlIdentifier indexName;
 
 
-    public SqlAlterTableDropIndex( SqlParserPos pos, SqlIdentifier table, SqlIdentifier indexName ) {
+    public SqlAlterMaterializedDropIndex( SqlParserPos pos, SqlIdentifier table, SqlIdentifier indexName ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.indexName = Objects.requireNonNull( indexName );
@@ -84,4 +79,3 @@ public class SqlAlterTableDropIndex extends SqlAlterTable {
     }
 
 }
-

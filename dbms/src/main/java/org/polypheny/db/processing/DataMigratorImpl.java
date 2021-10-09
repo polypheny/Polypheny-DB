@@ -136,11 +136,11 @@ public class DataMigratorImpl implements DataMigrator {
             }
 
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
+            int i = 0;
             while ( sourceIterator.hasNext() ) {
                 List<List<Object>> rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
-
                 Map<Long, List<Object>> values = new HashMap<>();
-                int i = 0;
+
                 for ( List<Object> list : rows ) {
                     for ( Map.Entry<Long, Integer> entry : resultColMapping.entrySet() ) {
                         if ( !values.containsKey( entry.getKey() ) ) {

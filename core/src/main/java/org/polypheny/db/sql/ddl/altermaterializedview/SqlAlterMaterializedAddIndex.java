@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.ddl.altertable;
-
+package org.polypheny.db.sql.ddl.altermaterializedview;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
@@ -42,17 +41,14 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.ddl.SqlAlterTable;
+import org.polypheny.db.sql.ddl.SqlAlterMaterializedView;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.util.ImmutableNullableList;
 
+public class SqlAlterMaterializedAddIndex extends SqlAlterMaterializedView {
 
-/**
- * Parse tree for {@code ALTER TABLE name ADD INDEX} statement.
- */
-public class SqlAlterTableAddIndex extends SqlAlterTable {
 
     private final SqlIdentifier table;
     private final SqlIdentifier indexName;
@@ -62,7 +58,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
     private final SqlIdentifier storeName;
 
 
-    public SqlAlterTableAddIndex(
+    public SqlAlterMaterializedAddIndex(
             SqlParserPos pos,
             SqlIdentifier table,
             SqlNodeList columnList,
@@ -165,5 +161,5 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
         }
     }
 
-}
 
+}
