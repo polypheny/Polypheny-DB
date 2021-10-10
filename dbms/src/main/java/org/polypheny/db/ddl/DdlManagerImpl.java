@@ -1927,7 +1927,6 @@ public class DdlManagerImpl extends DdlManager {
             if ( adapter instanceof DataStore ) {
                 stores.add( (DataStore) adapter );
             }
-
         }
 
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
@@ -1974,7 +1973,7 @@ public class DdlManagerImpl extends DdlManager {
             List<Long> partitionIdsOnStore = new ArrayList<>();
             catalog.getPartitionPlacementByTable( store.getAdapterId(), partitionedTable.id ).forEach( p -> partitionIdsOnStore.add( p.partitionId ) );
 
-            //Otherwise evrything will be dropped again, leaving the table unaccessible
+            //Otherwise everything will be dropped again, leaving the table unaccessible
             partitionIdsOnStore.remove( mergedTable.partitionProperty.partitionIds.get( 0 ) );
 
             // Drop all partitionedTables (table contains old partitionIds)

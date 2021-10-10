@@ -159,10 +159,6 @@ public class HorizontalPartitioningTest {
                     // Add placement for second table
                     statement.executeUpdate( "ALTER TABLE \"horizontalparttestextension\" ADD PLACEMENT (tvarchar) ON STORE \"store2\"" );
 
-                    //TODO @HENNLO
-                    // add mergetable test
-                    // add independent tests to check if number of rows before and after merge/partitoin are equal
-                    // an therefore datamigration works
                     statement.executeUpdate( "ALTER TABLE \"horizontalparttestextension\" MERGE PARTITIONS" );
 
                     // DROP Table to repartition
@@ -245,6 +241,83 @@ public class HorizontalPartitioningTest {
 
                 statement.executeUpdate( "DROP TABLE horizontalparttestfalseNEW" );
                 statement.executeUpdate( "DROP TABLE horizontal2" );
+            }
+        }
+    }
+
+
+    @Test
+    public void dataMigrationTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+
+                try {
+                    statement.executeUpdate( "CREATE TABLE hashpartition( "
+                            + "tprimary INTEGER NOT NULL, "
+                            + "tinteger INTEGER , "
+                            + "tvarchar VARCHAR(20) , "
+                            + "PRIMARY KEY (tprimary) )" );
+
+                    statement.executeUpdate( "INSERT INTO hashpartition VALUES (1, 3, 'hans')" );
+                    statement.executeUpdate( "INSERT INTO hashpartition VALUES (2, 7, 'bob')" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM hashpartition ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 3, "hans" },
+                                    new Object[]{ 2, 7, "bob" } ) );
+
+                    // ADD adapter
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"storehash\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+
+                    // ADD FullPlacement
+                    statement.executeUpdate( "ALTER TABLE \"hashpartition\" ADD PLACEMENT (tprimary, tinteger, tvarchar) ON STORE \"storehash\"" );
+
+                    statement.executeUpdate( "ALTER TABLE hashpartition "
+                            + "PARTITION BY HASH (tvarchar) "
+                            + "PARTITIONS 3" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM hashpartition ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 3, "hans" },
+                                    new Object[]{ 2, 7, "bob" } ) );
+
+                    statement.executeUpdate( "ALTER TABLE \"hashpartition\" MERGE PARTITIONS" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM hashpartition ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 3, "hans" },
+                                    new Object[]{ 2, 7, "bob" } ) );
+
+                    //Combined with verticalPartitioning
+
+                    statement.executeUpdate( "ALTER TABLE hashpartition MODIFY PLACEMENT"
+                            + " DROP COLUMN tvarchar ON STORE storehash" );
+
+                    statement.executeUpdate( "ALTER TABLE hashpartition MODIFY PLACEMENT"
+                            + " DROP COLUMN tinteger ON STORE hsqldb" );
+
+                    statement.executeUpdate( "ALTER TABLE hashpartition "
+                            + "PARTITION BY HASH (tvarchar) "
+                            + "PARTITIONS 3" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM hashpartition ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 3, "hans" },
+                                    new Object[]{ 2, 7, "bob" } ) );
+
+                    statement.executeUpdate( "ALTER TABLE \"hashpartition\" MERGE PARTITIONS" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM hashpartition ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 3, "hans" },
+                                    new Object[]{ 2, 7, "bob" } ) );
+
+                } finally {
+                    statement.executeUpdate( "DROP TABLE hashpartition" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP \"storehash\"" );
+                }
             }
         }
     }
