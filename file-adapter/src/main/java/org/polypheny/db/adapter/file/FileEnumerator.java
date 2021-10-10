@@ -94,6 +94,10 @@ public class FileEnumerator implements Enumerator<Object> {
             final Condition condition,
             final Value[] updates ) {
 
+        if ( dataContext.getParameterValues().size() > 1 && (operation == Operation.UPDATE || operation == Operation.DELETE) ) {
+            throw new RuntimeException( "The file store does not support batch update or delete statements!" );
+        }
+
         this.operation = operation;
         if ( operation == Operation.DELETE || operation == Operation.UPDATE ) {
             //fix to make sure current is never null
