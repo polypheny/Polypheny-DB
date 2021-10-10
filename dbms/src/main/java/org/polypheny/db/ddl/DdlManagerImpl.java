@@ -1348,7 +1348,6 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        //prepareView( relNode );
         RelDataType fieldList = relNode.getRowType();
 
         List<ColumnInformation> columns = getColumnInformation( projectedColumns, fieldList );
@@ -1402,7 +1401,6 @@ public class DdlManagerImpl extends DdlManager {
             stores = statement.getRouter().createTable( schemaId, statement );
         }
 
-        //prepareView( relRoot.rel );
         RelDataType fieldList = relRoot.rel.getRowType();
 
         Map<Long, List<Long>> underlyingTables = new HashMap<>();
@@ -1422,6 +1420,7 @@ public class DdlManagerImpl extends DdlManager {
                 ordered
         );
 
+        //creates a list with all columns, tableId is needed to creat the primary key
         List<ColumnInformation> columns = getColumnInformation( projectedColumns, fieldList, true, tableId );
         Map<Integer, List<CatalogColumn>> addedColumns = new HashMap<>();
 
@@ -1441,6 +1440,7 @@ public class DdlManagerImpl extends DdlManager {
                     column.typeInformation.nullable,
                     column.collation );
 
+            //created primary key is added to list
             if ( column.name.startsWith( "_matid_" ) ) {
                 columnIds.add( columnId );
             }
@@ -1467,7 +1467,7 @@ public class DdlManagerImpl extends DdlManager {
             }
 
         }
-        //renameColumn( catalog.getTable( tableId ), "primaryKey", "_matId_" + tableId, statement );
+        //sets previously created primary key
         catalog.addPrimaryKey( tableId, columnIds );
 
         CatalogMaterialized catalogMaterialized = (CatalogMaterialized) catalog.getTable( tableId );
@@ -1475,6 +1475,7 @@ public class DdlManagerImpl extends DdlManager {
             store.createTable( statement.getPrepareContext(), catalogMaterialized );
         }
 
+        //selected data from tables is added into the newly crated materialized view
         MaterializedManager materializedManager = MaterializedManager.getInstance();
         materializedManager.addData( statement.getTransaction(), stores, addedColumns, relRoot, catalogMaterialized );
 
@@ -1509,8 +1510,7 @@ public class DdlManagerImpl extends DdlManager {
             }
 
             columns.add( new ColumnInformation(
-                    colName,
-                    //colName.toLowerCase().replaceAll( "[^A-Za-z0-9]", "_" ),
+                    colName.toLowerCase().replaceAll( "[^A-Za-z0-9]", "_" ),
                     new ColumnTypeInformation(
                             type.getPolyType(),
                             rel.getType().getPolyType(),
@@ -1545,21 +1545,6 @@ public class DdlManagerImpl extends DdlManager {
 
         return columns;
     }
-
-
-    /*
-    private void prepareView( RelNode viewNode ) {
-        if ( viewNode instanceof AbstractRelNode ) {
-            ((AbstractRelNode) viewNode).setCluster( null );
-        }
-        if ( viewNode instanceof BiRel ) {
-            prepareView( ((BiRel) viewNode).getLeft() );
-            prepareView( ((BiRel) viewNode).getRight() );
-        } else if ( viewNode instanceof SingleRel ) {
-            prepareView( ((SingleRel) viewNode).getInput() );
-        }
-    }
-*/
 
     private Map<Long, List<Long>> findUnderlyingTablesOfView( RelNode relNode, Map<Long, List<Long>> underlyingTables, RelDataType fieldList ) {
         if ( relNode instanceof LogicalTableScan ) {

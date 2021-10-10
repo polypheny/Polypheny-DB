@@ -1475,6 +1475,41 @@ public class Crud implements InformationObserver {
     }
 
 
+    Result updateMaterialized( final Request req, final Response res ) {
+        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
+        Transaction transaction = getTransaction();
+        Result result;
+        ArrayList<String> queries = new ArrayList<>();
+        StringBuilder sBuilder = new StringBuilder();
+
+        String[] t = request.tableId.split( "\\." );
+        String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
+
+        String query = String.format( "ALTER MATERIALIZED VIEW %s FRESHNESS MANUAL", tableId );
+        queries.add( query );
+
+        result = new Result( 1 ).setGeneratedQuery( queries.toString() );
+        try {
+            for ( String q : queries ) {
+                sBuilder.append( q );
+                executeSqlUpdate( transaction, q );
+            }
+            transaction.commit();
+        } catch ( QueryExecutionException | TransactionException e ) {
+            log.error( "Caught exception while updating a column", e );
+            result = new Result( e ).setAffectedRows( 0 ).setGeneratedQuery( sBuilder.toString() );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException e2 ) {
+                log.error( "Caught exception during rollback", e2 );
+                result = new Result( e2 ).setAffectedRows( 0 ).setGeneratedQuery( sBuilder.toString() );
+            }
+        }
+
+        return result;
+    }
+
+
     Result updateColumn( final Request req, final Response res ) {
         ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
         Transaction transaction = getTransaction();
@@ -1488,9 +1523,17 @@ public class Crud implements InformationObserver {
         String[] t = request.tableId.split( "\\." );
         String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
 
+
         // rename column if needed
         if ( !oldColumn.name.equals( newColumn.name ) ) {
-            String query = String.format( "ALTER TABLE %s RENAME COLUMN \"%s\" TO \"%s\"", tableId, oldColumn.name, newColumn.name );
+            String query;
+            if ( request.tableType.equals( "VIEW" ) ) {
+                query = String.format( "ALTER VIEW %s RENAME COLUMN \"%s\" TO \"%s\"", tableId, oldColumn.name, newColumn.name );
+            } else if ( request.tableType.equals( "MATERIALIZED" ) ) {
+                query = String.format( "ALTER MATERIALIZED VIEW %s RENAME COLUMN \"%s\" TO \"%s\"", tableId, oldColumn.name, newColumn.name );
+            } else {
+                query = String.format( "ALTER TABLE %s RENAME COLUMN \"%s\" TO \"%s\"", tableId, oldColumn.name, newColumn.name );
+            }
             queries.add( query );
         }
 
