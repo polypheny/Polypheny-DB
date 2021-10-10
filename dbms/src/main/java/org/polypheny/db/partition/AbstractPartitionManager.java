@@ -57,7 +57,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
 
     @Override
-    public Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
+    public Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds, List<Integer> excludedAdapters ) {
         Catalog catalog = Catalog.getInstance();
 
         Map<Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
@@ -70,6 +70,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
                 for ( long columnId : catalogTable.columnIds ) {
                     List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartitionGroup( catalogTable.id, catalogPartition.partitionGroupId, columnId );
+                    ccps.removeIf( ccp -> excludedAdapters.contains( ccp.adapterId ) );
                     if ( !ccps.isEmpty() ) {
                         //get first column placement which contains partition
                         relevantCcps.add( ccps.get( 0 ) );

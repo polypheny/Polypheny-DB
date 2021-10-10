@@ -1163,6 +1163,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         List<Long> tempPartitionGroupList = new ArrayList<>();
+
         // Select partitions to create on this placement
         if ( catalogTable.isPartitioned ) {
             long tableId = catalogTable.id;
@@ -1198,6 +1199,11 @@ public class DdlManagerImpl extends DdlManager {
                     }
                 }
                 catalog.updatePartitionGroupsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id, tempPartitionGroupList );
+            } else if ( partitionGroupNames.isEmpty() && partitionGroupIds.isEmpty() ) {
+                // If nothing has been explicitly specified keep current placement of partitions.
+                // Since it's impossible to have a placement without any partitions anyway
+                log.debug( "Table is partitioned and concrete partitionList has NOT been specified " );
+                tempPartitionGroupList = catalogTable.partitionProperty.partitionGroupIds;
             }
         } else {
             tempPartitionGroupList.add( catalogTable.partitionProperty.partitionGroupIds.get( 0 ) );
@@ -1933,15 +1939,13 @@ public class DdlManagerImpl extends DdlManager {
             catalog.getPartitionPlacementByTable( store.getAdapterId(), partitionedTable.id ).forEach( p -> partitionIdsOnStore.add( p.partitionId ) );
 
             // Need to create partitionPlacements first in order to trigger schema creation on PolySchemaBuilder
-            for ( long partitionId : mergedTable.partitionProperty.partitionIds ) {
-                catalog.addPartitionPlacement(
-                        store.getAdapterId(),
-                        mergedTable.id,
-                        partitionId,
-                        PlacementType.AUTOMATIC,
-                        null,
-                        null );
-            }
+            catalog.addPartitionPlacement(
+                    store.getAdapterId(),
+                    mergedTable.id,
+                    mergedTable.partitionProperty.partitionIds.get( 0 ),
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null );
 
             // First create new tables
             store.createTable( statement.getPrepareContext(), mergedTable, mergedTable.partitionProperty.partitionIds );
@@ -1956,20 +1960,26 @@ public class DdlManagerImpl extends DdlManager {
                     dataMigrator.copySelectiveData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ),
                             necessaryColumns, oldPartitionId, mergedTable.partitionProperty.partitionIds.get( 0 ) );
                 }
-                firstIteration = false;
+                //firstIteration = false;
             } else {
                 //Second Iteration all data is already in one partition, which speeds up data migration
                 dataMigrator.copySelectiveData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ),
                         necessaryColumns, mergedTable.partitionProperty.partitionIds.get( 0 ), mergedTable.partitionProperty.partitionIds.get( 0 ) );
             }
-            // Drop all partitionedTables (table contains old partitionIds)
-            store.dropTable( statement.getPrepareContext(), partitionedTable, partitionIdsOnStore );
         }
 
         //Needs to be separated from loop above. Otherwise we loose data
-        //for ( DataStore store : stores ) {
+        for ( DataStore store : stores ) {
 
-        // }
+            List<Long> partitionIdsOnStore = new ArrayList<>();
+            catalog.getPartitionPlacementByTable( store.getAdapterId(), partitionedTable.id ).forEach( p -> partitionIdsOnStore.add( p.partitionId ) );
+
+            //Otherwise evrything will be dropped again, leaving the table unaccessible
+            partitionIdsOnStore.remove( mergedTable.partitionProperty.partitionIds.get( 0 ) );
+
+            // Drop all partitionedTables (table contains old partitionIds)
+            store.dropTable( statement.getPrepareContext(), partitionedTable, partitionIdsOnStore );
+        }
         // Loop over **old.partitionIds** to delete all partitions which are part of table
         //Needs to be done separately because partitionPlacements will be recursively dropped in `deletePartitionGroup` but are needed in dropTable
         for ( long partitionGroupId : partitionedTable.partitionProperty.partitionGroupIds ) {

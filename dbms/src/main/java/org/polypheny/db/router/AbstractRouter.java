@@ -265,14 +265,14 @@ public abstract class AbstractRouter implements Router {
                             // Add identified partitions to monitoring object
                             // Currently only one partition is identified, therefore LIST is not needed YET.
 
-                            placementDistribution = partitionManager.getRelevantPlacements( catalogTable, identPartitions );
+                            placementDistribution = partitionManager.getRelevantPlacements( catalogTable, identPartitions, new ArrayList<>() );
                             accessedPartitionList = identPartitions;
                         } else {
-                            placementDistribution = partitionManager.getRelevantPlacements( catalogTable, catalogTable.partitionProperty.partitionIds );
+                            placementDistribution = partitionManager.getRelevantPlacements( catalogTable, catalogTable.partitionProperty.partitionIds, new ArrayList<>() );
                             accessedPartitionList = catalogTable.partitionProperty.partitionIds;
                         }
                     } else {
-                        placementDistribution = partitionManager.getRelevantPlacements( catalogTable, catalogTable.partitionProperty.partitionIds );
+                        placementDistribution = partitionManager.getRelevantPlacements( catalogTable, catalogTable.partitionProperty.partitionIds, new ArrayList<>() );
                         accessedPartitionList = catalogTable.partitionProperty.partitionIds;
                     }
 

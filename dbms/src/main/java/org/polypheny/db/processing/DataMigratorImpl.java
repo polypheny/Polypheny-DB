@@ -19,6 +19,7 @@ package org.polypheny.db.processing;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -91,7 +92,7 @@ public class DataMigratorImpl implements DataMigrator {
         if ( table.isPartitioned ) {
             PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
             PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( table.partitionProperty.partitionType );
-            placementDistribution = partitionManager.getRelevantPlacements( table, partitionIds );
+            placementDistribution = partitionManager.getRelevantPlacements( table, partitionIds, new ArrayList<>( Arrays.asList( store.id ) ) );
         } else {
             placementDistribution.put( table.partitionProperty.partitionIds.get( 0 ), selectSourcePlacements( table, selectColumnList, targetColumnPlacements.get( 0 ).adapterId ) );
         }
@@ -551,21 +552,22 @@ public class DataMigratorImpl implements DataMigrator {
 
                     long partitionId = entry.getKey();
                     Map<Long, List<Object>> values = entry.getValue();
+                    Statement currentTargetStatement = targetStatements.get( partitionId );
 
                     for ( Map.Entry<Long, List<Object>> v : values.entrySet() ) {
                         //Check partitionValue
-                        targetStatements.get( partitionId ).getDataContext().addParameterValues( v.getKey(), null, v.getValue() );
+                        currentTargetStatement.getDataContext().addParameterValues( v.getKey(), null, v.getValue() );
                     }
 
-                    Iterator iterator = targetStatements.get( partitionId ).getQueryProcessor()
+                    Iterator iterator = currentTargetStatement.getQueryProcessor()
                             .prepareQuery( targetRels.get( partitionId ), sourceRel.validatedRowType, true )
-                            .enumerable( targetStatements.get( partitionId ).getDataContext() )
+                            .enumerable( currentTargetStatement.getDataContext() )
                             .iterator();
                     //noinspection WhileLoopReplaceableByForEach
                     while ( iterator.hasNext() ) {
                         iterator.next();
                     }
-                    targetStatements.get( partitionId ).getDataContext().resetParameterValues();
+                    currentTargetStatement.getDataContext().resetParameterValues();
                 }
             }
         } catch ( Throwable t ) {
