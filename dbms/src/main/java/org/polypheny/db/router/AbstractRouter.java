@@ -644,7 +644,11 @@ public abstract class AbstractRouter implements Router {
                                             }
                                             partitionColumnIdentified = true;
                                             worstCaseRouting = false;
-                                            partitionValue = currentTuple.get( i ).toString().replace( "'", "" );
+                                            if ( currentTuple.get( i ).getValue() == null ) {
+                                                partitionValue = partitionManager.getUnifiedNullValue();
+                                            } else {
+                                                partitionValue = currentTuple.get( i ).toString().replace( "'", "" );
+                                            }
                                             identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
                                             accessedPartitionList.add( identPart );
                                             break;

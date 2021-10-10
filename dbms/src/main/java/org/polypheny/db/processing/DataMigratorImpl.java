@@ -50,7 +50,6 @@ import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.PolySchemaBuilder;
@@ -59,7 +58,6 @@ import org.polypheny.db.sql2rel.RelStructuredTypeFlattener;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.LimitIterator;
 
@@ -437,7 +435,7 @@ public class DataMigratorImpl implements DataMigrator {
     public void copyPartitionData( Transaction transaction, CatalogAdapter store, CatalogTable sourceTable, CatalogTable targetTable
             , List<CatalogColumn> columns, List<Long> sourcePartitionIds, List<Long> targetPartitionIds ) {
 
-        // TODO @HENNLO curent case source is unpartitioend and target is not
+        // TODO @HENNLO curent case source is unpartitioned and target is not
         // has to be extended
 
         if ( sourceTable.id != targetTable.id ) {
@@ -461,6 +459,9 @@ public class DataMigratorImpl implements DataMigrator {
                 selectColumnList.add( catalogColumn );
             }
         }
+
+        PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
+        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( targetTable.partitionProperty.partitionType );
 
         //We need a columnPlacement for every partition
         Map<Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
@@ -506,8 +507,14 @@ public class DataMigratorImpl implements DataMigrator {
             }
 
             int partitionColumnIndex = -1;
+            String parsedValue = null;
+            String nullifiedPartitionValue = partitionManager.getUnifiedNullValue();
             if ( targetTable.isPartitioned ) {
-                partitionColumnIndex = resultColMapping.get( targetTable.partitionProperty.partitionColumnId );
+                if ( resultColMapping.containsKey( targetTable.partitionProperty.partitionColumnId ) ) {
+                    partitionColumnIndex = resultColMapping.get( targetTable.partitionProperty.partitionColumnId );
+                } else {
+                    parsedValue = nullifiedPartitionValue;
+                }
             }
 
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
@@ -519,16 +526,13 @@ public class DataMigratorImpl implements DataMigrator {
                 for ( List<Object> list : rows ) {
                     long currentPartitionId = -1;
                     if ( partitionColumnIndex >= 0 ) {
-                        PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-                        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( targetTable.partitionProperty.partitionType );
-                        String parsedValue = null;
+                        parsedValue = nullifiedPartitionValue;
                         if ( list.get( partitionColumnIndex ) != null ) {
                             parsedValue = list.get( partitionColumnIndex ).toString();
-                        } else {
-                            parsedValue = new RexLiteral( null, sourceRel.rel.getRowType().getFieldList().get( partitionColumnIndex ).getValue(), PolyType.NULL, false ).toString();
                         }
-                        currentPartitionId = partitionManager.getTargetPartitionId( targetTable, parsedValue );
                     }
+
+                    currentPartitionId = partitionManager.getTargetPartitionId( targetTable, parsedValue );
 
                     for ( Map.Entry<Long, Integer> entry : resultColMapping.entrySet() ) {
 

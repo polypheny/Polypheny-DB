@@ -42,6 +42,8 @@ public interface PartitionManager {
 
     boolean supportsColumnOfType( PolyType type );
 
+    String getUnifiedNullValue();
+
     /**
      * Returns an instance of PartitionFunctionInfo specifying the available parameters of the partition function.
      */

@@ -16,16 +16,14 @@
 
 package org.polypheny.db.partition;
 
+
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
@@ -79,37 +77,6 @@ public class ListPartitionManager extends AbstractPartitionManager {
         }
 
         return selectedPartitionId;
-    }
-
-
-    // Relevant for select
-    @Override
-    public Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
-        Catalog catalog = Catalog.getInstance();
-
-        Map<Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
-
-        if ( partitionIds != null ) {
-            for ( long partitionId : partitionIds ) {
-
-                CatalogPartition catalogPartition = catalog.getPartition( partitionId );
-                List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();
-
-                for ( long columnId : catalogTable.columnIds ) {
-                    List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartitionGroup( catalogTable.id, catalogPartition.partitionGroupId, columnId );
-                    if ( !ccps.isEmpty() ) {
-                        //get first column placement which contains partition
-                        relevantCcps.add( ccps.get( 0 ) );
-                        if ( log.isDebugEnabled() ) {
-                            log.debug( "{} {} with part. {}", ccps.get( 0 ).adapterUniqueName, ccps.get( 0 ).getLogicalColumnName(), partitionId );
-                        }
-                    }
-                }
-                placementDistribution.put( partitionId, relevantCcps );
-            }
-        }
-
-        return placementDistribution;
     }
 
 
