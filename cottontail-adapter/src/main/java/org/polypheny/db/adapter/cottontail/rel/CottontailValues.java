@@ -50,13 +50,6 @@ public class CottontailValues extends Values implements org.polypheny.db.adapter
         super( cluster, rowType, tuples, traits );
     }
 
-
-    @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
-        return super.computeSelfCost( planner, mq ).multiplyBy( CottontailConvention.COST_MULTIPLIER );
-    }
-
-
     @Override
     public void implement( CottontailImplementContext context ) {
         BlockBuilder builder = context.blockBuilder;

@@ -28,7 +28,7 @@ import org.polypheny.db.tools.RelBuilderFactory;
 public class CottontailValuesRule extends CottontailConverterRule {
 
     CottontailValuesRule( CottontailConvention out, RelBuilderFactory relBuilderFactory ) {
-        super( Values.class, r -> true, Convention.NONE, out, relBuilderFactory, "CassandraValuesRule:" + out.getName() );
+        super( Values.class, r -> true, Convention.NONE, out, relBuilderFactory, "CottontailValuesRule:" + out.getName() );
     }
 
 
