@@ -297,35 +297,34 @@ public class CottontailTypeUtil {
                 if ( value instanceof Boolean ) {
                     return builder.setBooleanData( (Boolean) value ).build();
                 }
-
-                break;
-            }
-            case INTEGER: {
-                if ( value instanceof Integer ) {
-                    return builder.setIntData( (Integer) value ).build();
-                } else if ( value instanceof Long ) {
-                    return builder.setIntData( ((Long) value).intValue() ).build();
-                }
                 break;
             }
             case BIGINT: {
+                if ( value instanceof Byte ) {
+                    return builder.setLongData( ((Byte) value).longValue() ).build();
+                }
+                if ( value instanceof Short ) {
+                    return builder.setLongData( ((Short) value).longValue() ).build();
+                }
+                if ( value instanceof Integer ) {
+                    return builder.setLongData( ((Integer) value).longValue() ).build();
+                }
                 if ( value instanceof Long ) {
-                    return builder.setLongData( (Long) value ).build();
+                    return builder.setLongData( ((Long) value) ).build();
                 }
                 break;
             }
-            case TINYINT: {
+            case INTEGER:
+            case TINYINT:
+            case SMALLINT: {
                 if ( value instanceof Byte ) {
                     return builder.setIntData( ((Byte) value).intValue() ).build();
                 }
-                if ( value instanceof Long ) {
-                    return builder.setIntData( ((Long) value).intValue() ).build();
-                }
-                break;
-            }
-            case SMALLINT: {
                 if ( value instanceof Short ) {
                     return builder.setIntData( ((Short) value).intValue() ).build();
+                }
+                if ( value instanceof Integer ) {
+                    return builder.setIntData( ((Integer) value) ).build();
                 }
                 if ( value instanceof Long ) {
                     return builder.setIntData( ((Long) value).intValue() ).build();
@@ -333,23 +332,15 @@ public class CottontailTypeUtil {
                 break;
             }
             case DOUBLE: {
-                if ( value instanceof Double ) {
-                    return builder.setDoubleData( (Double) value ).build();
-                } else if ( value instanceof Integer ) {
-                    return builder.setDoubleData( ((Integer) value).doubleValue() ).build();
-                } else if ( value instanceof BigDecimal ) {
-                    return builder.setDoubleData( ((BigDecimal) value).doubleValue() ).build();
+                if ( value instanceof Number ) {
+                    return builder.setDoubleData( ((Number) value).doubleValue() ).build();
                 }
                 break;
             }
             case FLOAT:
             case REAL: {
-                if ( value instanceof Float ) {
-                    return builder.setFloatData( (Float) value ).build();
-                } else if ( value instanceof Double ) {
-                    return builder.setFloatData( ((Double) value).floatValue() ).build();
-                } else if ( value instanceof BigDecimal ) {
-                    return builder.setFloatData( ((BigDecimal) value).floatValue() ).build();
+                if ( value instanceof Number ) {
+                    return builder.setFloatData( ((Number) value).floatValue() ).build();
                 }
                 break;
             }
