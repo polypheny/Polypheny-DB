@@ -152,7 +152,6 @@ public class PostgresqlStore extends AbstractJdbcStore {
         List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementByTable( getAdapterId(), catalogColumn.tableId );
 
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-
             builder.append( "ALTER TABLE " )
                     .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
                     .append( "." )
@@ -203,7 +202,6 @@ public class PostgresqlStore extends AbstractJdbcStore {
         String physicalIndexName = getPhysicalIndexName( catalogIndex.key.tableId, catalogIndex.id );
 
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-
             StringBuilder builder = new StringBuilder();
             builder.append( "CREATE " );
             if ( catalogIndex.unique ) {
@@ -256,11 +254,9 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
     @Override
     public void dropIndex( Context context, CatalogIndex catalogIndex ) {
-
         List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementByTable( getAdapterId(), catalogIndex.key.tableId );
 
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-
             StringBuilder builder = new StringBuilder();
             builder.append( "DROP INDEX " );
             builder.append( dialect.quoteIdentifier( catalogIndex.physicalName ) );

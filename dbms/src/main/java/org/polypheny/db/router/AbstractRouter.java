@@ -122,7 +122,6 @@ public abstract class AbstractRouter implements Router {
         RelNode routed;
         analyze( statement, logicalRoot );
         if ( logicalRoot.rel instanceof LogicalTableModify ) {
-
             routed = routeDml( logicalRoot.rel, statement );
         } else if ( logicalRoot.rel instanceof ConditionalExecute ) {
             routed = handleConditionalExecute( logicalRoot.rel, statement );
@@ -182,7 +181,6 @@ public abstract class AbstractRouter implements Router {
                 RelOptTableImpl table = (RelOptTableImpl) ((LogicalFilter) node).getInput().getTable();
 
                 if ( table.getTable() instanceof LogicalTable ) {
-
                     LogicalTable t = ((LogicalTable) table.getTable());
                     CatalogTable catalogTable;
                     catalogTable = Catalog.getInstance().getTable( t.getTableId() );
@@ -385,8 +383,8 @@ public abstract class AbstractRouter implements Router {
                 // Needed for partitioned updates when source partition and target partition are not equal
                 // SET Value is the new partition, where clause is the source
                 boolean operationWasRewritten = false;
-                List<Map<Long, Object>> tempParamValues = null;
 
+                Map<Long, Object> newParameterValues = new HashMap<>();
                 for ( CatalogColumnPlacement pkPlacement : pkPlacements ) {
 
                     CatalogReader catalogReader = statement.getTransaction().getCatalogReader();
@@ -627,7 +625,7 @@ public abstract class AbstractRouter implements Router {
                             //Partition functionality cannot be used --> worstCase --> send query to every partition
                             else {
                                 worstCaseRouting = true;
-                                accessedPartitionList = catalogTable.partitionProperty.partitionIds.stream().collect( Collectors.toSet() );
+                                accessedPartitionList = new HashSet<>( catalogTable.partitionProperty.partitionIds );
                             }
 
                         } else if ( ((LogicalTableModify) node).getOperation() == Operation.INSERT ) {
@@ -665,17 +663,17 @@ public abstract class AbstractRouter implements Router {
                                 LogicalProject lproject = (LogicalProject) ltm.getInput();
 
                                 List<RexNode> fieldValues = lproject.getProjects();
-                                Map<Long, RexDynamicParam> indexRemap = new HashMap<>();
+                                /*Map<Long, RexDynamicParam> indexRemap = new HashMap<>();
 
-                                //Retrieve RexDynamicParams and their param index position
+                                // Retrieve RexDynamicParams and their param index position
                                 for ( int j = 0; j < fieldNames.size(); j++ ) {
                                     if ( fieldValues.get( j ) instanceof RexDynamicParam ) {
                                         long valueIndex = ((RexDynamicParam) fieldValues.get( j )).getIndex();
-                                        RelDataType type = ((RexDynamicParam) fieldValues.get( j )).getType();
+                                        //RelDataType type = ((RexDynamicParam) fieldValues.get( j )).getType();
 
                                         indexRemap.put( valueIndex, (RexDynamicParam) fieldValues.get( j ) );
                                     }
-                                }
+                                }*/
 
                                 for ( i = 0; i < fieldNames.size(); i++ ) {
                                     String columnName = fieldNames.get( i );
@@ -687,35 +685,34 @@ public abstract class AbstractRouter implements Router {
                                             // Needed to identify the column which contains the partition value
                                             long partitionValueIndex = ((RexDynamicParam) fieldValues.get( i )).getIndex();
 
-                                            if ( tempParamValues == null ) {
-                                                statement.getDataContext().backupParameterValues();
-                                                tempParamValues = statement.getDataContext().getParameterValues().stream().collect( Collectors.toList() );
-                                            }
-                                            statement.getDataContext().resetParameterValues();
                                             long tempPartitionId = 0;
                                             // Get partitionValue per row/tuple to be inserted
                                             // Create as many independent TableModifies as there are entries in getParameterValues
 
-                                            for ( Map<Long, Object> currentRow : tempParamValues ) {
+                                            for ( Map<Long, Object> currentRow : statement.getDataContext().getParameterValues() ) {
 
                                                 tempPartitionId = partitionManager.getTargetPartitionId( catalogTable, currentRow.get( partitionValueIndex ).toString() );
 
                                                 if ( !catalog.getPartitionsOnDataPlacement( pkPlacement.adapterId, catalogTable.id ).contains( tempPartitionId ) ) {
                                                     continue;
                                                 }
-                                                statement.getDataContext().resetParameterValues();
-                                                for ( Entry<Long, RexDynamicParam> param : indexRemap.entrySet() ) {
 
+                                                /*
+                                                int parameterValueSetIndex = statement.getDataContext().createParameterValuesSet();
+
+                                                for ( Entry<Long, RexDynamicParam> param : indexRemap.entrySet() ) {
                                                     List<Object> singleDataObject = new ArrayList<>();
 
                                                     long paramIndexPos = param.getKey();
                                                     RelDataType paramType = param.getValue().getType();
 
                                                     singleDataObject.add( currentRow.get( paramIndexPos ) );
+                                                    statement.getDataContext().addParameterValues( parameterValueSetIndex, paramIndexPos, paramType, singleDataObject );
+                                                }*/
 
-                                                    statement.getDataContext().addParameterValues( paramIndexPos, paramType, singleDataObject );
-
-                                                }
+                                                List<Map<Long, Object>> parameterValues = new ArrayList<>();
+                                                parameterValues.add( new HashMap<>( newParameterValues ) );
+                                                parameterValues.get( 0 ).putAll( currentRow );
 
                                                 RelNode input = buildDml(
                                                         recursiveCopy( node.getInput( 0 ) ),
@@ -724,7 +721,10 @@ public abstract class AbstractRouter implements Router {
                                                         placementsOnAdapter,
                                                         catalog.getPartitionPlacement( pkPlacement.adapterId, tempPartitionId ),
                                                         statement,
-                                                        cluster ).build();
+                                                        cluster,
+                                                        parameterValues ).build();
+
+                                                newParameterValues.putAll( parameterValues.get( 0 ) );
 
                                                 List<String> qualifiedTableName = ImmutableList.of(
                                                         PolySchemaBuilder.buildAdapterSchemaName(
@@ -842,7 +842,8 @@ public abstract class AbstractRouter implements Router {
                                     placementsOnAdapter,
                                     catalog.getPartitionPlacement( pkPlacement.adapterId, partitionId ),
                                     statement,
-                                    cluster ).build();
+                                    cluster,
+                                    statement.getDataContext().getParameterValues() ).build();
                             if ( modifiableTable != null && modifiableTable == physical.unwrap( Table.class ) ) {
                                 modify = modifiableTable.toModificationRel(
                                         cluster,
@@ -870,8 +871,16 @@ public abstract class AbstractRouter implements Router {
                     }
                 }
 
-                if ( statement.getDataContext().wasBackuped() ) {
-                    statement.getDataContext().restoreParameterValues();
+                // Update parameter values (horizontal partitioning)
+                if ( !newParameterValues.isEmpty() ) {
+                    statement.getDataContext().resetParameterValues();
+                    int idx = 0;
+                    for ( Map.Entry<Long, Object> entry : newParameterValues.entrySet() ) {
+                        statement.getDataContext().addParameterValues(
+                                entry.getKey(),
+                                statement.getDataContext().getParameterType( idx++ ),
+                                ImmutableList.of( entry.getValue() ) );
+                    }
                 }
 
                 if ( modifies.size() == 1 ) {
@@ -898,9 +907,9 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    protected RelBuilder buildDml( RelNode node, RelBuilder builder, CatalogTable catalogTable, List<CatalogColumnPlacement> placements, CatalogPartitionPlacement partitionPlacement, Statement statement, RelOptCluster cluster ) {
+    protected RelBuilder buildDml( RelNode node, RelBuilder builder, CatalogTable catalogTable, List<CatalogColumnPlacement> placements, CatalogPartitionPlacement partitionPlacement, Statement statement, RelOptCluster cluster, List<Map<Long, Object>> parameterValues ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            buildDml( node.getInput( i ), builder, catalogTable, placements, partitionPlacement, statement, cluster );
+            buildDml( node.getInput( i ), builder, catalogTable, placements, partitionPlacement, statement, cluster, parameterValues );
         }
 
         if ( log.isDebugEnabled() ) {
@@ -950,9 +959,16 @@ public abstract class AbstractRouter implements Router {
             }
         } else if ( node instanceof LogicalProject ) {
             if ( catalogTable.columnIds.size() == placements.size() ) { // full placement, generic handling is sufficient
-                return handleGeneric( node, builder );
-            } else { // partitioned, adjust project
+                if ( catalogTable.isPartitioned ) {  //  && ((LogicalProject) node).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" )
+                    return remapParameterizedDml( node, builder, statement, parameterValues );
+                } else {
+                    return handleGeneric( node, builder );
+                }
+            } else { // vertically partitioned, adjust project
                 if ( ((LogicalProject) node).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
+                    if ( catalogTable.isPartitioned ) {
+                        builder = remapParameterizedDml( node, builder, statement, parameterValues );
+                    }
                     builder.push( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 0 ) ) ) );
                     ArrayList<RexNode> rexNodes = new ArrayList<>();
                     for ( CatalogColumnPlacement ccp : placements ) {
@@ -984,6 +1000,38 @@ public abstract class AbstractRouter implements Router {
         } else {
             return handleGeneric( node, builder );
         }
+    }
+
+
+    private RelBuilder remapParameterizedDml( RelNode node, RelBuilder builder, Statement statement, List<Map<Long, Object>> parameterValues ) {
+        if ( parameterValues.size() != 1 ) {
+            throw new RuntimeException( "The parameter values is expected to have a size of one in this case!" );
+        }
+
+        List<RexNode> projects = new ArrayList<>();
+        for ( RexNode project : ((LogicalProject) node).getProjects() ) {
+            if ( project instanceof RexDynamicParam ) {
+                long newIndex = parameterValues.get( 0 ).size();
+                long oldIndex = ((RexDynamicParam) project).getIndex();
+                RelDataType type = statement.getDataContext().getParameterType( oldIndex );
+                if ( type == null ) {
+                    type = project.getType();
+                }
+                Object value = parameterValues.get( 0 ).get( oldIndex );
+                projects.add( new RexDynamicParam( type, newIndex ) );
+                parameterValues.get( 0 ).put( newIndex, value );
+            }
+        }
+
+        LogicalValues logicalValues = LogicalValues.createOneRow( node.getCluster() );
+        LogicalProject newProject = new LogicalProject(
+                node.getCluster(),
+                node.getTraitSet(),
+                logicalValues,
+                projects,
+                node.getRowType()
+        );
+        return handleGeneric( newProject, builder );
     }
 
 

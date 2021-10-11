@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2020 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,17 +91,6 @@ public interface DataContext {
         return getParameterValues().get( 0 ).get( index );
     }
 
-    default void backupParameterValues() {
-        throw new UnsupportedOperationException();
-    }
-
-    default void restoreParameterValues() {
-        throw new UnsupportedOperationException();
-    }
-
-    default boolean wasBackuped() {
-        throw new UnsupportedOperationException();
-    }
 
     @Data
     class ParameterValue {
@@ -109,7 +98,6 @@ public interface DataContext {
         private final long index;
         private final RelDataType type;
         private final Object value;
-
     }
 
 
@@ -240,12 +228,6 @@ public interface DataContext {
 
 
         @Override
-        public boolean wasBackuped() {
-            return false;
-        }
-
-
-        @Override
         public RelDataType getParameterType( long index ) {
             return null;
         }
@@ -255,8 +237,6 @@ public interface DataContext {
         public List<Map<Long, Object>> getParameterValues() {
             return null;
         }
-
     }
-
 }
 

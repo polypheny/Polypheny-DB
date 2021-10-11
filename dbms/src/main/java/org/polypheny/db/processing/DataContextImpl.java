@@ -16,7 +16,6 @@
 
 package org.polypheny.db.processing;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -48,13 +47,8 @@ public class DataContextImpl implements DataContext {
     @Getter
     private final Statement statement;
 
-    private boolean wasBackuped = false;
-
     private final Map<Long, RelDataType> parameterTypes; // ParameterIndex -> Data Type
-    private List<Map<Long, Object>> parameterValues; // List of ( ParameterIndex -> Value )
-
-    private Map<Long, RelDataType> backupParameterTypes = new HashMap<>(); // ParameterIndex -> Data Type
-    private List<Map<Long, Object>> backupParameterValues = new ArrayList<>(); // List of ( ParameterIndex -> Value )
+    private final List<Map<Long, Object>> parameterValues; // List of ( ParameterIndex -> Value )
 
 
     public DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory, Statement statement ) {
@@ -154,56 +148,6 @@ public class DataContextImpl implements DataContext {
         parameterTypes.clear();
         parameterValues.clear();
     }
-
-
-    @Override
-    public boolean wasBackuped() {
-        return wasBackuped;
-    }
-
-
-    @Override
-    public void backupParameterValues() {
-        wasBackuped = true;
-        backupParameterTypes.putAll( parameterTypes );
-        backupParameterValues = new ArrayList<>( parameterValues );
-    }
-
-
-    @Override
-    public void restoreParameterValues() {
-        parameterTypes.putAll( backupParameterTypes );
-        parameterValues = new ArrayList<>( backupParameterValues );
-    }
-
-    /*
-    private SqlAdvisor getSqlAdvisor() {
-        final String schemaName;
-        try {
-            schemaName = con.getSchema();
-        } catch ( SQLException e ) {
-            throw new RuntimeException( e );
-        }
-        final List<String> schemaPath =
-                schemaName == null
-                        ? ImmutableList.of()
-                        : ImmutableList.of( schemaName );
-        final SqlValidatorWithHints validator =
-                new SqlAdvisorValidator(
-                        SqlStdOperatorTable.instance(),
-                        new PolyphenyDbCatalogReader( rootSchema, schemaPath, typeFactory ), typeFactory, SqlConformanceEnum.DEFAULT );
-        final PolyphenyDbConnectionConfig config = con.config();
-        // This duplicates org.polypheny.db.prepare.PolyphenyDbPrepareImpl.prepare2_
-        final Config parserConfig = SqlParser.configBuilder()
-                .setQuotedCasing( config.quotedCasing() )
-                .setUnquotedCasing( config.unquotedCasing() )
-                .setQuoting( config.quoting() )
-                .setConformance( config.conformance() )
-                .setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() )
-                .build();
-        return new SqlAdvisor( validator, parserConfig );
-    }
-*/
 
 
     @Override

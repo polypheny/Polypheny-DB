@@ -627,7 +627,6 @@ public class HorizontalPartitioningTest {
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"cold\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
                             + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
-
                     String partitionValue = "Foo";
 
                     statement.executeUpdate( "INSERT INTO temperaturetest VALUES (1, 3, '" + partitionValue + "')" );
@@ -636,10 +635,11 @@ public class HorizontalPartitioningTest {
                     statement.executeUpdate( "INSERT INTO temperaturetest VALUES (4, 6, '" + partitionValue + "')" );
 
                     //Do batch INSERT to check if BATCH INSERT works for partitioned tables
-                    PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO temperaturetest(tprimary,tvarchar) VALUES (?, ?)" );
+                    PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO temperaturetest(tprimary,tinteger,tvarchar) VALUES (?, ?, ?)" );
 
                     preparedInsert.setInt( 1, 7 );
-                    preparedInsert.setString( 2, partitionValue );
+                    preparedInsert.setInt( 2, 55 );
+                    preparedInsert.setString( 3, partitionValue );
                     preparedInsert.addBatch();
 
                    /* preparedInsert.setInt( 1, 8 );
@@ -666,6 +666,58 @@ public class HorizontalPartitioningTest {
                     statement.executeUpdate( "DROP TABLE IF EXISTS temperaturetest" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP hot" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP cold" );
+                }
+            }
+        }
+
+    }
+
+
+    @Test
+    public void batchPartitionTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+
+                statement.executeUpdate( "CREATE TABLE batchtest( "
+                        + "tprimary INTEGER NOT NULL, "
+                        + "tvarchar VARCHAR(20) NULL, "
+                        + "PRIMARY KEY (tprimary) )"
+                        + "PARTITION BY HASH (tvarchar) "
+                        + "PARTITIONS 20" );
+
+                try {
+                    PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO batchtest(tprimary,tvarchar) VALUES (?, ?)" );
+
+                    preparedInsert.setInt( 1, 1 );
+                    preparedInsert.setString( 2, "Foo" );
+                    preparedInsert.addBatch();
+
+                    preparedInsert.setInt( 1, 2 );
+                    preparedInsert.setString( 2, "Bar" );
+                    preparedInsert.addBatch();
+
+                    preparedInsert.setInt( 1, 3 );
+                    preparedInsert.setString( 2, "Foo" );
+                    preparedInsert.addBatch();
+
+                    preparedInsert.setInt( 1, 4 );
+                    preparedInsert.setString( 2, "FooBar" );
+                    preparedInsert.addBatch();
+
+                    preparedInsert.executeBatch();
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM batchtest ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Foo" },
+                                    new Object[]{ 2, "Bar" },
+                                    new Object[]{ 3, "Foo" },
+                                    new Object[]{ 4, "FooBar" } ) );
+
+                } finally {
+                    // Drop tables and stores
+                    statement.executeUpdate( "DROP TABLE IF EXISTS batchtest" );
                 }
             }
         }
