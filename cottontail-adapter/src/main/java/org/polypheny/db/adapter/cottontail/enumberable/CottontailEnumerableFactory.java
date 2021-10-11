@@ -183,9 +183,6 @@ public class CottontailEnumerableFactory {
                 final String value = p.getValue();
                 if (key instanceof String) {
                     final ProjectionElement.Builder ele = projBuilder.addElementsBuilder().setColumn( ColumnName.newBuilder().setName( (String) key ) );
-                    if (value != null) {
-                        ele.setAlias( ColumnName.newBuilder().setName( value ) );
-                    }
                 } else if (key instanceof Function1) {
                     /* Not exactly beautiful i know ;-) */
                     projBuilder.addElements(((Function1<Map<Long, Object>, ProjectionElement>) key).apply(parameterValues));
