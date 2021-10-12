@@ -148,51 +148,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     protected static final boolean ENABLE_ENUMERABLE = true;
     protected static final boolean CONSTANT_REDUCTION = false;
     protected static final boolean ENABLE_STREAM = true;
+
     private final Statement statement;
 
 
     protected AbstractQueryProcessor( Statement statement ) {
         this.statement = statement;
-    }
-
-
-    private static RelDataType makeStruct( RelDataTypeFactory typeFactory, RelDataType type ) {
-        if ( type.isStruct() ) {
-            return type;
-        }
-        // TODO MV: This "null" might be wrong
-        return typeFactory.builder().add( "$0", null, type ).build();
-    }
-
-
-    private static String origin( List<String> origins, int offsetFromEnd ) {
-        return origins == null || offsetFromEnd >= origins.size()
-                ? null
-                : origins.get( origins.size() - 1 - offsetFromEnd );
-    }
-
-
-    private static int getScale( RelDataType type ) {
-        return type.getScale() == RelDataType.SCALE_NOT_SPECIFIED
-                ? 0
-                : type.getScale();
-    }
-
-
-    private static int getPrecision( RelDataType type ) {
-        return type.getPrecision() == RelDataType.PRECISION_NOT_SPECIFIED
-                ? 0
-                : type.getPrecision();
-    }
-
-
-    private static String getClassName( RelDataType type ) {
-        return Object.class.getName();
-    }
-
-
-    private static int getTypeOrdinal( RelDataType type ) {
-        return type.getPolyType().getJdbcOrdinal();
     }
 
 
@@ -1074,6 +1035,46 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         } else {
             return StatementType.SELECT;
         }
+    }
+
+
+    private static RelDataType makeStruct( RelDataTypeFactory typeFactory, RelDataType type ) {
+        if ( type.isStruct() ) {
+            return type;
+        }
+        // TODO MV: This "null" might be wrong
+        return typeFactory.builder().add( "$0", null, type ).build();
+    }
+
+
+    private static String origin( List<String> origins, int offsetFromEnd ) {
+        return origins == null || offsetFromEnd >= origins.size()
+                ? null
+                : origins.get( origins.size() - 1 - offsetFromEnd );
+    }
+
+
+    private static int getScale( RelDataType type ) {
+        return type.getScale() == RelDataType.SCALE_NOT_SPECIFIED
+                ? 0
+                : type.getScale();
+    }
+
+
+    private static int getPrecision( RelDataType type ) {
+        return type.getPrecision() == RelDataType.PRECISION_NOT_SPECIFIED
+                ? 0
+                : type.getPrecision();
+    }
+
+
+    private static String getClassName( RelDataType type ) {
+        return Object.class.getName();
+    }
+
+
+    private static int getTypeOrdinal( RelDataType type ) {
+        return type.getPolyType().getJdbcOrdinal();
     }
 
 
