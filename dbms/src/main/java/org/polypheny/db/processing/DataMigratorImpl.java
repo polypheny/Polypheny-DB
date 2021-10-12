@@ -461,6 +461,13 @@ public class DataMigratorImpl implements DataMigrator {
             }
         }
 
+        // Add partition columns to select column list
+        long partitionColumnId = targetTable.partitionProperty.partitionColumnId;
+        CatalogColumn partitionColumn = Catalog.getInstance().getColumn( partitionColumnId );
+        if ( !selectColumnList.contains( partitionColumn ) ) {
+            selectColumnList.add( partitionColumn );
+        }
+
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( targetTable.partitionProperty.partitionType );
 
@@ -471,7 +478,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         Statement sourceStatement = transaction.createStatement();
 
-        //Map PartitonId to TargetStatementQueue
+        //Map PartitionId to TargetStatementQueue
         Map<Long, Statement> targetStatements = new HashMap<>();
 
         //Creates queue of target Statements depending
@@ -524,39 +531,40 @@ public class DataMigratorImpl implements DataMigrator {
 
                 Map<Long, Map<Long, List<Object>>> partitionValues = new HashMap<>();
 
-                for ( List<Object> list : rows ) {
+                for ( List<Object> row : rows ) {
                     long currentPartitionId = -1;
                     if ( partitionColumnIndex >= 0 ) {
                         parsedValue = nullifiedPartitionValue;
-                        if ( list.get( partitionColumnIndex ) != null ) {
-                            parsedValue = list.get( partitionColumnIndex ).toString();
+                        if ( row.get( partitionColumnIndex ) != null ) {
+                            parsedValue = row.get( partitionColumnIndex ).toString();
                         }
                     }
 
                     currentPartitionId = partitionManager.getTargetPartitionId( targetTable, parsedValue );
 
                     for ( Map.Entry<Long, Integer> entry : resultColMapping.entrySet() ) {
-
+                        if ( entry.getKey() == partitionColumn.id && !columns.contains( partitionColumn ) ) {
+                            continue;
+                        }
                         if ( !partitionValues.containsKey( currentPartitionId ) ) {
                             partitionValues.put( currentPartitionId, new HashMap<>() );
                         }
-
                         if ( !partitionValues.get( currentPartitionId ).containsKey( entry.getKey() ) ) {
                             partitionValues.get( currentPartitionId ).put( entry.getKey(), new LinkedList<>() );
                         }
-                        partitionValues.get( currentPartitionId ).get( entry.getKey() ).add( list.get( entry.getValue() ) );
+                        partitionValues.get( currentPartitionId ).get( entry.getKey() ).add( row.get( entry.getValue() ) );
                     }
                 }
-                //Iterate over partitionValues in that way we don't even execute a statement which has no rows
-                for ( Map.Entry<Long, Map<Long, List<Object>>> entry : partitionValues.entrySet() ) {
 
-                    long partitionId = entry.getKey();
-                    Map<Long, List<Object>> values = entry.getValue();
+                // Iterate over partitionValues in that way we don't even execute a statement which has no rows
+                for ( Map.Entry<Long, Map<Long, List<Object>>> dataOnPartition : partitionValues.entrySet() ) {
+                    long partitionId = dataOnPartition.getKey();
+                    Map<Long, List<Object>> values = dataOnPartition.getValue();
                     Statement currentTargetStatement = targetStatements.get( partitionId );
 
-                    for ( Map.Entry<Long, List<Object>> v : values.entrySet() ) {
+                    for ( Map.Entry<Long, List<Object>> columnDataOnPartition : values.entrySet() ) {
                         //Check partitionValue
-                        currentTargetStatement.getDataContext().addParameterValues( v.getKey(), null, v.getValue() );
+                        currentTargetStatement.getDataContext().addParameterValues( columnDataOnPartition.getKey(), null, columnDataOnPartition.getValue() );
                     }
 
                     Iterator iterator = currentTargetStatement.getQueryProcessor()
