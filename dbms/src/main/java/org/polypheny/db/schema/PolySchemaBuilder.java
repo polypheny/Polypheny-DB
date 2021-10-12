@@ -77,7 +77,6 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
 
     private synchronized AbstractPolyphenyDbSchema buildSchema() {
-
         final Schema schema = new RootSchema();
         final AbstractPolyphenyDbSchema polyphenyDbSchema = new SimplePolyphenyDbSchema( null, schema, "" );
 
@@ -175,9 +174,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                             physicalTables.forEach( rootSchema.getSubSchema( schemaName )::add );
                             rootSchema.getSubSchema( schemaName ).polyphenyDbSchema().setSchema( adapter.getCurrentSchema() );
                         } else {
-
                             for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-
                                 Table table = adapter.createTableSchema(
                                         catalogTable,
                                         Catalog.getInstance().getColumnPlacementsOnAdapterSortedByPhysicalPosition( adapter.getAdapterId(), catalogTable.id ),

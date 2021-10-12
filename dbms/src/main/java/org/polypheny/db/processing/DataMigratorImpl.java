@@ -67,7 +67,6 @@ public class DataMigratorImpl implements DataMigrator {
 
     @Override
     public void copyData( Transaction transaction, CatalogAdapter store, List<CatalogColumn> columns, List<Long> partitionIds ) {
-
         CatalogTable table = Catalog.getInstance().getTable( columns.get( 0 ).tableId );
         CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( table.primaryKey );
 
@@ -87,7 +86,7 @@ public class DataMigratorImpl implements DataMigrator {
             }
         }
 
-        //We need a columnPlacement for every partition
+        // We need a columnPlacement for every partition
         Map<Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
         if ( table.isPartitioned ) {
             PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
@@ -98,7 +97,6 @@ public class DataMigratorImpl implements DataMigrator {
         }
 
         for ( long partitionId : partitionIds ) {
-
             Statement sourceStatement = transaction.createStatement();
             Statement targetStatement = transaction.createStatement();
 
@@ -132,7 +130,10 @@ public class DataMigratorImpl implements DataMigrator {
 
                 int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
                 while ( sourceIterator.hasNext() ) {
-                    List<List<Object>> rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
+                    List<List<Object>> rows = MetaImpl.collect(
+                            signature.cursorFactory,
+                            LimitIterator.of( sourceIterator, batchSize ),
+                            new ArrayList<>() );
                     Map<Long, List<Object>> values = new HashMap<>();
                     for ( List<Object> list : rows ) {
                         for ( Map.Entry<Long, Integer> entry : resultColMapping.entrySet() ) {
@@ -330,7 +331,6 @@ public class DataMigratorImpl implements DataMigrator {
 
     @Override
     public void copySelectiveData( Transaction transaction, CatalogAdapter store, List<CatalogColumn> columns, Long sourcePartitionId, Long targetPartitionId ) {
-
         CatalogTable table = Catalog.getInstance().getTable( columns.get( 0 ).tableId );
         CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( table.primaryKey );
 
@@ -350,7 +350,7 @@ public class DataMigratorImpl implements DataMigrator {
             }
         }
 
-        //We need a columnPlacement for every partition
+        // We need a columnPlacement for every partition
         Map<Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
         /*if ( table.isPartitioned ) {
             PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
@@ -394,7 +394,10 @@ public class DataMigratorImpl implements DataMigrator {
 
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
             while ( sourceIterator.hasNext() ) {
-                List<List<Object>> rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
+                List<List<Object>> rows = MetaImpl.collect(
+                        signature.cursorFactory,
+                        LimitIterator.of( sourceIterator, batchSize ),
+                        new ArrayList<>() );
                 Map<Long, List<Object>> values = new HashMap<>();
                 for ( List<Object> list : rows ) {
                     for ( Map.Entry<Long, Integer> entry : resultColMapping.entrySet() ) {
@@ -428,13 +431,11 @@ public class DataMigratorImpl implements DataMigrator {
         } catch ( Throwable t ) {
             throw new RuntimeException( t );
         }
-
     }
 
 
     @Override
-    public void copyPartitionData( Transaction transaction, CatalogAdapter store, CatalogTable sourceTable, CatalogTable targetTable
-            , List<CatalogColumn> columns, List<Long> sourcePartitionIds, List<Long> targetPartitionIds ) {
+    public void copyPartitionData( Transaction transaction, CatalogAdapter store, CatalogTable sourceTable, CatalogTable targetTable, List<CatalogColumn> columns, List<Long> sourcePartitionIds, List<Long> targetPartitionIds ) {
 
         // TODO @HENNLO curent case source is unpartitioned and target is not
         // has to be extended

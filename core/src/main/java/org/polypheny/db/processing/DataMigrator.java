@@ -25,10 +25,26 @@ import org.polypheny.db.transaction.Transaction;
 
 public interface DataMigrator {
 
-    void copyData( Transaction transaction, CatalogAdapter store, List<CatalogColumn> columns, List<Long> partitionIds );
+    void copyData(
+            Transaction transaction,
+            CatalogAdapter store,
+            List<CatalogColumn> columns,
+            List<Long> partitionIds );
 
-    void copySelectiveData( Transaction transaction, CatalogAdapter store, List<CatalogColumn> columns, Long sourcePartitionId, Long targetPartitionId );
+    void copySelectiveData(
+            Transaction transaction,
+            CatalogAdapter store,
+            List<CatalogColumn> columns,
+            Long sourcePartitionId,
+            Long targetPartitionId );
 
-    void copyPartitionData( Transaction transaction, CatalogAdapter store, CatalogTable sourceTable, CatalogTable targetTable
-            , List<CatalogColumn> columns, List<Long> sourcePartitionIds, List<Long> targetPartitionIds );
+    void copyPartitionData(
+            Transaction transaction,
+            CatalogAdapter store,
+            CatalogTable sourceTable,
+            CatalogTable targetTable,
+            List<CatalogColumn> columns,
+            List<Long> sourcePartitionIds,
+            List<Long> targetPartitionIds );
+
 }
