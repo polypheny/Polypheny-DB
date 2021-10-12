@@ -16,12 +16,10 @@
 
 package org.polypheny.db.partition;
 
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
@@ -44,8 +42,6 @@ public class HashPartitionManager extends AbstractPartitionManager {
         if ( hashValue <= 0 ) {
             hashValue *= -1;
         }
-
-        Catalog catalog = Catalog.getInstance();
 
         // Get designated HASH partition based on number of internal partitions
         int partitionIndex = (int) (hashValue % catalogTable.partitionProperty.partitionIds.size());

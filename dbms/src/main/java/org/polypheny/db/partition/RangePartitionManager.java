@@ -16,7 +16,6 @@
 
 package org.polypheny.db.partition;
 
-
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,14 +43,11 @@ public class RangePartitionManager extends AbstractPartitionManager {
 
     @Override
     public long getTargetPartitionId( CatalogTable catalogTable, String columnValue ) {
-        Catalog catalog = Catalog.getInstance();
-
         long unboundPartitionId = -1;
         long selectedPartitionId = -1;
 
         // Process all accumulated CatalogPartitions
-        for ( CatalogPartition catalogPartition : catalog.getPartitionsByTable( catalogTable.id ) ) {
-
+        for ( CatalogPartition catalogPartition : Catalog.getInstance().getPartitionsByTable( catalogTable.id ) ) {
             if ( unboundPartitionId == -1 && catalogPartition.isUnbound ) {
                 unboundPartitionId = catalogPartition.id;
                 break;
@@ -68,7 +64,6 @@ public class RangePartitionManager extends AbstractPartitionManager {
                 selectedPartitionId = catalogPartition.id;
                 break;
             }
-
         }
 
         // If no concrete partition could be identified, report back the unbound/default partition
@@ -90,7 +85,6 @@ public class RangePartitionManager extends AbstractPartitionManager {
 
         for ( List<String> partitionQualifiers : partitionGroupQualifiers ) {
             for ( String partitionQualifier : partitionQualifiers ) {
-
                 if ( partitionQualifier.isEmpty() ) {
                     throw new RuntimeException( "RANGE Partitioning doesn't support  empty Partition Qualifiers: '" + partitionGroupQualifiers + "'. USE (PARTITION name1 VALUES(value1)[(,PARTITION name1 VALUES(value1))*])" );
                 }

@@ -35,7 +35,7 @@ import org.polypheny.db.partition.properties.PartitionProperty;
 @EqualsAndHashCode
 public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
 
-    private static final long serialVersionUID = 5426944084650275437L;
+    private static final long serialVersionUID = 1781666800808312001L;
 
     public final long id;
     public final String name;
@@ -133,7 +133,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
         if ( type == TableType.TABLE && !modifiable ) {
             throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
         }
-
     }
 
 
