@@ -16,9 +16,6 @@
 
 package org.polypheny.db.partition;
 
-
-import static java.util.stream.Collectors.toCollection;
-
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -312,7 +309,6 @@ public class FrequencyMapImpl extends FrequencyMap {
             }
 
             for ( CatalogAdapter catalogAdapter : adaptersWithCold ) {
-
                 // Skip creation/deletion because this adapter contains both groups HOT & COLD
                 if ( adaptersWithHot.contains( catalogAdapter ) ) {
                     continue;
@@ -388,7 +384,7 @@ public class FrequencyMapImpl extends FrequencyMap {
 
 
     private List<Long> filterList( int adapterId, long tableId, List<Long> partitionsToFilter ) {
-        // Remove partition from list if its already contained on the store
+        // Remove partition from list if it's already contained on the store
         for ( long partitionId : Catalog.getInstance().getPartitionsOnDataPlacement( adapterId, tableId ) ) {
             if ( partitionsToFilter.contains( partitionId ) ) {
                 partitionsToFilter.remove( partitionId );
@@ -403,7 +399,7 @@ public class FrequencyMapImpl extends FrequencyMap {
         Timestamp queryStart = new Timestamp( invocationTimestamp - ((TemperaturePartitionProperty) table.partitionProperty).getFrequencyInterval() * 1000 );
 
         accessCounter = new HashMap<>();
-        List<Long> tempPartitionIds = table.partitionProperty.partitionIds.stream().collect( toCollection( ArrayList::new ) );
+        List<Long> tempPartitionIds = new ArrayList<>( table.partitionProperty.partitionIds );
 
         tempPartitionIds.forEach( p -> accessCounter.put( p, (long) 0 ) );
 

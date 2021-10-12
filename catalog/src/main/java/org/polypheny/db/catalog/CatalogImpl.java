@@ -16,9 +16,6 @@
 
 package org.polypheny.db.catalog;
 
-
-import static java.util.stream.Collectors.toCollection;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.io.File;
@@ -3460,7 +3457,7 @@ public class CatalogImpl extends Catalog {
 
         // Check whether there this partition id exists
         CatalogPartitionGroup partitionGroup = getPartitionGroup( partitionGroupId );
-        List<Long> newPartitionIds = partitionGroup.partitionIds.stream().collect( toCollection( ArrayList::new ) );
+        List<Long> newPartitionIds = new ArrayList<>( partitionGroup.partitionIds );
 
         CatalogPartition partition = getPartition( partitionId );
 
@@ -3477,7 +3474,7 @@ public class CatalogImpl extends Catalog {
     public void removePartitionFromGroup( long partitionGroupId, Long partitionId ) {
 // Check whether there this partition id exists
         CatalogPartitionGroup partitionGroup = getPartitionGroup( partitionGroupId );
-        List<Long> newPartitionIds = partitionGroup.partitionIds.stream().collect( toCollection( ArrayList::new ) );
+        List<Long> newPartitionIds = new ArrayList<>( partitionGroup.partitionIds );
 
         if ( newPartitionIds.contains( partitionId ) ) {
             newPartitionIds.remove( partitionId );
@@ -3499,7 +3496,7 @@ public class CatalogImpl extends Catalog {
 
         // Check whether there this partition id exists
         CatalogPartitionGroup partitionGroup = getPartitionGroup( partitionGroupId );
-        List<Long> newPartitionIds = partitionGroup.partitionIds.stream().collect( toCollection( ArrayList::new ) );
+        List<Long> newPartitionIds = new ArrayList<>( partitionGroup.partitionIds );
 
         CatalogPartition oldPartition = getPartition( partitionId );
 

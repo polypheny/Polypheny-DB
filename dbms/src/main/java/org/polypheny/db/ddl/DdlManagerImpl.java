@@ -16,9 +16,6 @@
 
 package org.polypheny.db.ddl;
 
-import static java.util.stream.Collectors.toCollection;
-import static org.reflections.Reflections.log;
-
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
@@ -118,6 +116,7 @@ import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 
 
+@Slf4j
 public class DdlManagerImpl extends DdlManager {
 
     private final Catalog catalog;
@@ -1277,7 +1276,7 @@ public class DdlManagerImpl extends DdlManager {
         //Check for the specified columnId if we still have a ColumnPlacement for every partitionGroup
         //Check for removed partitions if every CCP  still has all partitions somewhere
         for ( long partitionId : removedPartitions ) {
-            List<Long> tempIds = catalogTable.columnIds.stream().collect( toCollection( ArrayList::new ) );
+            List<Long> tempIds = new ArrayList<>( catalogTable.columnIds );
             boolean partitionChecked = false;
 
             for ( CatalogPartitionPlacement cpp : catalog.getPartitionPlacements( partitionId ) ) {
