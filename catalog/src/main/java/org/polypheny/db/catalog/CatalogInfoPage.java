@@ -58,26 +58,27 @@ public class CatalogInfoPage implements PropertyChangeListener {
         InformationPage page = new InformationPage( "Catalog" );
         infoManager.addPage( page );
 
-        this.adapterInformation = addCatalogInformationTable( page, "Adapters", Arrays.asList( "ID", "Name", "Type" ) );
-        this.databaseInformation = addCatalogInformationTable( page, "Databases", Arrays.asList( "ID", "Name", "Default SchemaID" ) );
-        this.schemaInformation = addCatalogInformationTable( page, "Schemas", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaType" ) );
-        this.tableInformation = addCatalogInformationTable( page, "Tables", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "Type", "PartitionType", "PartitionGroups" ) );
-        this.columnInformation = addCatalogInformationTable( page, "Columns", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "TableID", "Placements" ) );
-        this.indexInformation = addCatalogInformationTable( page, "Indexes", Arrays.asList( "ID", "Name", "KeyID", "Location", "Method", "Unique" ) );
-        this.partitionGroupInformation = addCatalogInformationTable( page, "Partition Groups", Arrays.asList( "ID", "Name", "TableID", "Partitions" ) );
-        this.partitionInformation = addCatalogInformationTable( page, "Partitions", Arrays.asList( "ID", "PartitionGroupID", "TableID", "Qualifiers" ) );
+        this.adapterInformation = addCatalogInformationTable( page, "Adapters", 5, Arrays.asList( "ID", "Name", "Type" ) );
+        this.databaseInformation = addCatalogInformationTable( page, "Databases", 1, Arrays.asList( "ID", "Name", "Default SchemaID" ) );
+        this.schemaInformation = addCatalogInformationTable( page, "Schemas", 2, Arrays.asList( "ID", "Name", "DatabaseID", "SchemaType" ) );
+        this.tableInformation = addCatalogInformationTable( page, "Tables", 3, Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "Type", "PartitionType", "PartitionGroups" ) );
+        this.columnInformation = addCatalogInformationTable( page, "Columns", 4, Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "TableID", "Placements" ) );
+        this.indexInformation = addCatalogInformationTable( page, "Indexes", 6, Arrays.asList( "ID", "Name", "KeyID", "Location", "Method", "Unique" ) );
+        this.partitionGroupInformation = addCatalogInformationTable( page, "Partition Groups", 7, Arrays.asList( "ID", "Name", "TableID", "# Partitions" ) );
+        this.partitionInformation = addCatalogInformationTable( page, "Partitions", 8, Arrays.asList( "ID", "PartitionGroupID", "TableID", "Qualifiers" ) );
 
-        this.debugInformation = addCatalogInformationTable( page, "Debug", Arrays.asList( "Time", "Message" ) );
+        this.debugInformation = addCatalogInformationTable( page, "Debug", 10, Arrays.asList( "Time", "Message" ) );
 
         addPersistentInfo( page );
 
-        resetCatalogInformation();
+        page.setRefreshFunction( this::resetCatalogInformation );
         catalog.addObserver( this );
     }
 
 
-    private InformationTable addCatalogInformationTable( InformationPage page, String name, List<String> titles ) {
+    private InformationTable addCatalogInformationTable( InformationPage page, String name, int order, List<String> titles ) {
         InformationGroup catalogGroup = new InformationGroup( page, name );
+        catalogGroup.setOrder( order );
         infoManager.addGroup( catalogGroup );
         InformationTable table = new InformationTable( catalogGroup, titles );
         infoManager.registerInformation( table );
@@ -87,6 +88,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
 
     private void addPersistentInfo( InformationPage page ) {
         InformationGroup catalogGroup = new InformationGroup( page, "Persistency" );
+        catalogGroup.setOrder( 9 );
         infoManager.addGroup( catalogGroup );
         InformationTable table = new InformationTable( catalogGroup, Collections.singletonList( "is persistent" ) );
         infoManager.registerInformation( table );
@@ -97,7 +99,6 @@ public class CatalogInfoPage implements PropertyChangeListener {
     @Override
     public void propertyChange( PropertyChangeEvent propertyChangeEvent ) {
         addDebugMessage( propertyChangeEvent );
-        this.resetCatalogInformation();
     }
 
 
