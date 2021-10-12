@@ -1049,7 +1049,7 @@ public class BasicMaterializedTest {
     }
 
 
-    @Test
+    @Ignore
     public void testUpdateFreshnessIntervals() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
