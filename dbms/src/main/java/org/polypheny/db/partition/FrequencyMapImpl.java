@@ -296,12 +296,9 @@ public class FrequencyMapImpl extends FrequencyMap {
                         if ( !partitionsToRemoveFromStore.containsKey( store ) ) {
                             partitionsToRemoveFromStore.put( store, partitionsFromHotToCold );
                         } else {
-                            partitionsToRemoveFromStore.replace( store,
-                                    Stream.of(
-                                            partitionsToRemoveFromStore.get( store ),
-                                            partitionsFromHotToCold )
-                                            .flatMap( Collection::stream )
-                                            .collect( Collectors.toList() )
+                            partitionsToRemoveFromStore.replace(
+                                    store,
+                                    Stream.of( partitionsToRemoveFromStore.get( store ), partitionsFromHotToCold ).flatMap( Collection::stream ).collect( Collectors.toList() )
                             );
                         }
                     }
@@ -340,12 +337,9 @@ public class FrequencyMapImpl extends FrequencyMap {
                         if ( !partitionsToRemoveFromStore.containsKey( store ) ) {
                             partitionsToRemoveFromStore.put( store, partitionsFromColdToHot );
                         } else {
-                            partitionsToRemoveFromStore.replace( store,
-                                    Stream.of(
-                                            partitionsToRemoveFromStore.get( store ),
-                                            partitionsFromColdToHot )
-                                            .flatMap( Collection::stream )
-                                            .collect( Collectors.toList() )
+                            partitionsToRemoveFromStore.replace(
+                                    store,
+                                    Stream.of( partitionsToRemoveFromStore.get( store ), partitionsFromColdToHot ).flatMap( Collection::stream ).collect( Collectors.toList() )
                             );
                         }
 

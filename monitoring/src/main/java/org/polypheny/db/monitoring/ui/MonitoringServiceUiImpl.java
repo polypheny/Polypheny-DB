@@ -74,7 +74,10 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
         val informationGroup = new InformationGroup( informationPage, className );
 
         // TODO: see todo below
-        val fieldAsString = Arrays.stream( metricClass.getDeclaredFields() ).map( Field::getName ).filter( str -> !str.equals( "serialVersionUID" ) ).collect( Collectors.toList() );
+        val fieldAsString = Arrays.stream( metricClass.getDeclaredFields() )
+                .map( Field::getName )
+                .filter( str -> !str.equals( "serialVersionUID" ) )
+                .collect( Collectors.toList() );
         val informationTable = new InformationTable( informationGroup, fieldAsString );
 
         // informationGroup.setRefreshFunction( () -> this.updateMetricInformationTable( informationTable, metricClass ) );
@@ -84,11 +87,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
 
     /**
-     * Universal method to add arbitrary new information Groups to UI
-     *
-     * @param informationGroup
-     * @param informationTables /**
-     * Universal method to add arbitrary new information Groups to UI.
+     * Universal method to add arbitrary new information groups to UI
      */
     private void addInformationGroupTUi( @NonNull InformationGroup informationGroup, @NonNull List<InformationTable> informationTables ) {
         InformationManager im = InformationManager.getInstance();
@@ -133,8 +132,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
     private void initializeWorkloadInformationTable() {
         val informationGroup = new InformationGroup( informationPage, "Workload Overview" );
-        val informationTable = new InformationTable( informationGroup,
-                Arrays.asList( "Attribute", "Value" ) );
+        val informationTable = new InformationTable( informationGroup, Arrays.asList( "Attribute", "Value" ) );
         informationGroup.setOrder( 1 );
 
         informationGroup.setRefreshFunction( () -> this.updateWorkloadInformationTable( informationTable ) );
@@ -166,7 +164,6 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
             row.add( infoRow.get( "type" ) );
             row.add( infoRow.get( "id" ) );
             row.add( infoRow.get( "timestamp" ) );
-
             table.addRow( row );
         }
     }

@@ -164,7 +164,6 @@ public class DataMigratorImpl implements DataMigrator {
     }
 
 
-
     private RelRoot buildInsertStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId ) {
         List<String> qualifiedTableName = ImmutableList.of(
                 PolySchemaBuilder.buildAdapterSchemaName( to.get( 0 ).adapterUniqueName, to.get( 0 ).getLogicalSchemaName(), to.get( 0 ).physicalSchemaName ),

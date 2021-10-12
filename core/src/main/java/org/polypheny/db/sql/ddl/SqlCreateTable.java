@@ -239,15 +239,16 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                     statement );
 
             if ( partitionType != null ) {
-                DdlManager.getInstance().addPartitioning( PartitionInformation.fromSqlLists(
-                        getCatalogTable( context, new SqlIdentifier( tableName, SqlParserPos.ZERO ) ),
-                        partitionType.getSimple(),
-                        partitionColumn.getSimple(),
-                        partitionNamesList,
-                        numPartitionGroups,
-                        numPartitions,
-                        partitionQualifierList,
-                        rawPartitionInfo ),
+                DdlManager.getInstance().addPartitioning(
+                        PartitionInformation.fromSqlLists(
+                                getCatalogTable( context, new SqlIdentifier( tableName, SqlParserPos.ZERO ) ),
+                                partitionType.getSimple(),
+                                partitionColumn.getSimple(),
+                                partitionNamesList,
+                                numPartitionGroups,
+                                numPartitions,
+                                partitionQualifierList,
+                                rawPartitionInfo ),
                         stores,
                         statement );
             }
