@@ -251,7 +251,6 @@ public class HorizontalPartitioningTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-
                 try {
                     statement.executeUpdate( "CREATE TABLE hashpartition( "
                             + "tprimary INTEGER NOT NULL, "
@@ -365,6 +364,8 @@ public class HorizontalPartitioningTest {
                     // Change placement on second store
                     statement.executeUpdate( "ALTER TABLE \"hashpartition\" MODIFY PARTITIONS (0,1) ON STORE \"storehash\"" );
 
+                    statement.executeUpdate( "ALTER TABLE \"hashpartition\" MERGE PARTITIONS" );
+
                     // You can't change the distribution unless there exists at least one full partition placement of each column as a fallback
                     failed = false;
                     try {
@@ -381,8 +382,9 @@ public class HorizontalPartitioningTest {
                     }
                     Assert.assertTrue( failed );
                 } finally {
-                    statement.executeUpdate( "DROP TABLE hashpartitioning" );
                     statement.executeUpdate( "DROP TABLE hashpartition" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS hashpartitioning" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS hashpartitioningvalidate" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"storehash\"" );
                 }
             }
@@ -524,13 +526,13 @@ public class HorizontalPartitioningTest {
                         + "tvarchar VARCHAR(20) NULL, "
                         + "PRIMARY KEY (tprimary) )"
                         + "PARTITION BY HASH (tvarchar) "
-                        + "PARTITIONS " + partitionsToCreate );
+                        + "WITH (foo, bar, foobar, barfoo) " );
 
                 try {
                     CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "physicalpartitiontest" ) ).get( 0 );
                     // Check if sufficient PartitionPlacements have been created
 
-                    // Check if initially as many partitonPlacements are created as requested
+                    // Check if initially as many partitionPlacements are created as requested
                     Assert.assertEquals( partitionsToCreate, Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size() );
 
                     // ADD adapter
@@ -542,7 +544,7 @@ public class HorizontalPartitioningTest {
                     Assert.assertEquals( partitionsToCreate * 2, Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size() );
 
                     // Modify partitions on second store
-                    statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" MODIFY PARTITIONS (0) ON STORE anotherstore" );
+                    statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" MODIFY PARTITIONS (\"foo\") ON STORE anotherstore" );
                     Assert.assertEquals( partitionsToCreate + 1, Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size() );
 
                     // After MERGE should only hold one partition

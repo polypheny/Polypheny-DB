@@ -1090,7 +1090,6 @@ public abstract class AbstractRouter implements Router {
         }
 
         for ( Entry partitionToPlacement : placements.entrySet() ) {
-
             long partitionId = (long) partitionToPlacement.getKey();
             List<CatalogColumnPlacement> currentPlacements = (List<CatalogColumnPlacement>) partitionToPlacement.getValue();
             // Sort by adapter

@@ -1899,7 +1899,6 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void removePartitioning( CatalogTable partitionedTable, Statement statement ) {
-
         long tableId = partitionedTable.id;
 
         if ( log.isDebugEnabled() ) {
@@ -1933,10 +1932,6 @@ public class DdlManagerImpl extends DdlManager {
         boolean firstIteration = true;
         // For merge create only full placements on the used stores. Otherwise partition constraints might not hold
         for ( DataStore store : stores ) {
-
-            List<Long> partitionIdsOnStore = new ArrayList<>();
-            catalog.getPartitionPlacementByTable( store.getAdapterId(), partitionedTable.id ).forEach( p -> partitionIdsOnStore.add( p.partitionId ) );
-
             // Need to create partitionPlacements first in order to trigger schema creation on PolySchemaBuilder
             catalog.addPartitionPlacement(
                     store.getAdapterId(),
@@ -1967,13 +1962,12 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        //Needs to be separated from loop above. Otherwise we loose data
+        // Needs to be separated from loop above. Otherwise we loose data
         for ( DataStore store : stores ) {
-
             List<Long> partitionIdsOnStore = new ArrayList<>();
             catalog.getPartitionPlacementByTable( store.getAdapterId(), partitionedTable.id ).forEach( p -> partitionIdsOnStore.add( p.partitionId ) );
 
-            //Otherwise everything will be dropped again, leaving the table unaccessible
+            // Otherwise everything will be dropped again, leaving the table inaccessible
             partitionIdsOnStore.remove( mergedTable.partitionProperty.partitionIds.get( 0 ) );
 
             // Drop all partitionedTables (table contains old partitionIds)
