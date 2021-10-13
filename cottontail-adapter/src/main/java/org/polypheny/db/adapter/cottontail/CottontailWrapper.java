@@ -113,12 +113,13 @@ public class CottontailWrapper implements AutoCloseable {
      * @param xid {@link PolyXid} of transaction to commit.
      */
     public void commit( PolyXid xid ) {
-        final Long txId = this.transactions.remove( xid );
+        final Long txId = this.transactions.get( xid );
         if ( txId != null ) {
             try {
                 this.client.commit(txId);
+                this.transactions.remove( xid );
             } catch ( StatusRuntimeException e ) {
-                log.error( "Could not COMMIT Cottontail DB transaction {} due to error.", txId, e );
+                log.error( "Could not COMMIT Cottontail DB transaction {} due to error; trying rollback", txId, e );
                 throw new RuntimeException( e );
             }
         } else {
@@ -133,10 +134,11 @@ public class CottontailWrapper implements AutoCloseable {
      * @param xid {@link PolyXid} of transaction to commit.
      */
     public void rollback( PolyXid xid ) {
-        final Long txId = this.transactions.remove( xid );
+        final Long txId = this.transactions.get( xid );
         if ( txId != null ) {
             try {
                 this.client.rollback(txId);
+                this.transactions.remove( xid );
             } catch ( StatusRuntimeException e ) {
                 log.error( "Could not ROLLBACK Cottontail DB transaction {} due to error.", txId, e );
                 throw new RuntimeException( e );
