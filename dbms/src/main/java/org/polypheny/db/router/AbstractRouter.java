@@ -722,6 +722,7 @@ public abstract class AbstractRouter implements Router {
                                                         catalog.getPartitionPlacement( pkPlacement.adapterId, tempPartitionId ),
                                                         statement,
                                                         cluster,
+                                                        true,
                                                         parameterValues ).build();
 
                                                 newParameterValues.putAll( parameterValues.get( 0 ) );
@@ -843,6 +844,7 @@ public abstract class AbstractRouter implements Router {
                                     catalog.getPartitionPlacement( pkPlacement.adapterId, partitionId ),
                                     statement,
                                     cluster,
+                                    false,
                                     statement.getDataContext().getParameterValues() ).build();
                             if ( modifiableTable != null && modifiableTable == physical.unwrap( Table.class ) ) {
                                 modify = modifiableTable.toModificationRel(
@@ -907,9 +909,9 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    protected RelBuilder buildDml( RelNode node, RelBuilder builder, CatalogTable catalogTable, List<CatalogColumnPlacement> placements, CatalogPartitionPlacement partitionPlacement, Statement statement, RelOptCluster cluster, List<Map<Long, Object>> parameterValues ) {
+    protected RelBuilder buildDml( RelNode node, RelBuilder builder, CatalogTable catalogTable, List<CatalogColumnPlacement> placements, CatalogPartitionPlacement partitionPlacement, Statement statement, RelOptCluster cluster, boolean remapParameterValues, List<Map<Long, Object>> parameterValues ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            buildDml( node.getInput( i ), builder, catalogTable, placements, partitionPlacement, statement, cluster, parameterValues );
+            buildDml( node.getInput( i ), builder, catalogTable, placements, partitionPlacement, statement, cluster, remapParameterValues, parameterValues );
         }
 
         if ( log.isDebugEnabled() ) {
@@ -959,14 +961,14 @@ public abstract class AbstractRouter implements Router {
             }
         } else if ( node instanceof LogicalProject ) {
             if ( catalogTable.columnIds.size() == placements.size() ) { // full placement, generic handling is sufficient
-                if ( catalogTable.isPartitioned ) {  //  && ((LogicalProject) node).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" )
+                if ( catalogTable.isPartitioned && remapParameterValues ) {  //  && ((LogicalProject) node).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" )
                     return remapParameterizedDml( node, builder, statement, parameterValues );
                 } else {
                     return handleGeneric( node, builder );
                 }
             } else { // vertically partitioned, adjust project
                 if ( ((LogicalProject) node).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
-                    if ( catalogTable.isPartitioned ) {
+                    if ( catalogTable.isPartitioned && remapParameterValues ) {
                         builder = remapParameterizedDml( node, builder, statement, parameterValues );
                     }
                     builder.push( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 0 ) ) ) );

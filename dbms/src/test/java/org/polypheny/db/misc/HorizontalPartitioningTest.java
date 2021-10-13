@@ -684,27 +684,34 @@ public class HorizontalPartitioningTest {
                 statement.executeUpdate( "CREATE TABLE batchtest( "
                         + "tprimary INTEGER NOT NULL, "
                         + "tvarchar VARCHAR(20) NULL, "
+                        + "tinteger INTEGER NULL, "
                         + "PRIMARY KEY (tprimary) )"
                         + "PARTITION BY HASH (tvarchar) "
                         + "PARTITIONS 20" );
 
                 try {
-                    PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO batchtest(tprimary,tvarchar) VALUES (?, ?)" );
+                    //
+                    // INSERT
+                    PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO batchtest(tprimary,tvarchar,tinteger) VALUES (?, ?, ?)" );
 
                     preparedInsert.setInt( 1, 1 );
                     preparedInsert.setString( 2, "Foo" );
+                    preparedInsert.setInt( 3, 4 );
                     preparedInsert.addBatch();
 
                     preparedInsert.setInt( 1, 2 );
                     preparedInsert.setString( 2, "Bar" );
+                    preparedInsert.setInt( 3, 55 );
                     preparedInsert.addBatch();
 
                     preparedInsert.setInt( 1, 3 );
                     preparedInsert.setString( 2, "Foo" );
+                    preparedInsert.setInt( 3, 67 );
                     preparedInsert.addBatch();
 
                     preparedInsert.setInt( 1, 4 );
                     preparedInsert.setString( 2, "FooBar" );
+                    preparedInsert.setInt( 3, 89 );
                     preparedInsert.addBatch();
 
                     preparedInsert.executeBatch();
@@ -712,10 +719,61 @@ public class HorizontalPartitioningTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM batchtest ORDER BY tprimary" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, "Foo" },
-                                    new Object[]{ 2, "Bar" },
-                                    new Object[]{ 3, "Foo" },
-                                    new Object[]{ 4, "FooBar" } ) );
+                                    new Object[]{ 1, "Foo", 4 },
+                                    new Object[]{ 2, "Bar", 55 },
+                                    new Object[]{ 3, "Foo", 67 },
+                                    new Object[]{ 4, "FooBar", 89 } ) );
+
+                    //
+                    // UPDATE
+                    PreparedStatement preparedUpdate = connection.prepareStatement( "UPDATE batchtest SET tinteger = ? WHERE tprimary = ?" );
+
+                    preparedUpdate.setInt( 1, 31 );
+                    preparedUpdate.setInt( 2, 1 );
+                    preparedUpdate.addBatch();
+
+                    preparedUpdate.setInt( 1, 32 );
+                    preparedUpdate.setInt( 2, 2 );
+                    preparedUpdate.addBatch();
+
+                    preparedUpdate.setInt( 1, 33 );
+                    preparedUpdate.setInt( 2, 3 );
+                    preparedUpdate.addBatch();
+
+                    preparedUpdate.executeBatch();
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM batchtest ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Foo", 31 },
+                                    new Object[]{ 2, "Bar", 32 },
+                                    new Object[]{ 3, "Foo", 33 },
+                                    new Object[]{ 4, "FooBar", 89 } ) );
+
+                    //
+                    // DELETE
+                    PreparedStatement preparedDelete = connection.prepareStatement( "DELETE FROM batchtest WHERE tinteger = ?" );
+
+                    preparedDelete.setInt( 1, 31 );
+                    preparedDelete.addBatch();
+
+                    preparedDelete.setInt( 1, 89 );
+                    preparedDelete.addBatch();
+
+                    preparedDelete.executeBatch();
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM batchtest ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 2, "Bar", 32 },
+                                    new Object[]{ 3, "Foo", 33 } ) );
+
+                    statement.executeUpdate( "ALTER TABLE \"batchtest\" MERGE PARTITIONS" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM batchtest ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 2, "Bar", 32 },
+                                    new Object[]{ 3, "Foo", 33 } ) );
 
                 } finally {
                     // Drop tables and stores
