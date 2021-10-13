@@ -676,11 +676,41 @@ public class HorizontalPartitioningTest {
 
 
     @Test
+    public void multiInsertTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE multiinsert( "
+                        + "tprimary INTEGER NOT NULL, "
+                        + "tvarchar VARCHAR(20) NULL, "
+                        + "tinteger INTEGER NULL, "
+                        + "PRIMARY KEY (tprimary) )"
+                        + "PARTITION BY HASH (tvarchar) "
+                        + "PARTITIONS 20" );
+
+                try {
+                    statement.executeUpdate( "INSERT INTO multiinsert(tprimary,tvarchar,tinteger) VALUES (1,'Hans',5),(2,'Eva',7),(3,'Alice',89)" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM multiinsert ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Hans", 5 },
+                                    new Object[]{ 2, "Eva", 7 },
+                                    new Object[]{ 3, "Alice", 89 } ) );
+                } finally {
+                    // Drop tables and stores
+                    statement.executeUpdate( "DROP TABLE IF EXISTS batchtest" );
+                }
+            }
+        }
+
+    }
+
+
+    @Test
     public void batchPartitionTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-
                 statement.executeUpdate( "CREATE TABLE batchtest( "
                         + "tprimary INTEGER NOT NULL, "
                         + "tvarchar VARCHAR(20) NULL, "
