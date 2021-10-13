@@ -47,11 +47,11 @@ import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.EntityName;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.From;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Metadata;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Query;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Scan;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.SchemaName;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.TransactionId;
 
 
 public class CottontailTable extends AbstractQueryableTable implements TranslatableTable, ModifiableTable {  // implements TranslatableTable
@@ -190,18 +190,11 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
 
         @Override
         public Enumerator<T> enumerator() {
-            final JavaTypeFactory typeFactory = dataContext.getTypeFactory();
             final CottontailTable cottontailTable = (CottontailTable) this.table;
-
-            /* Begin or continue Cottontail DB transaction. */
-            final TransactionId txId = cottontailTable.cottontailSchema.getWrapper().beginOrContinue( this.dataContext.getStatement().getTransaction() );
-
+            final long txId = cottontailTable.cottontailSchema.getWrapper().beginOrContinue( this.dataContext.getStatement().getTransaction() );
             final Query query = Query.newBuilder().setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( cottontailTable.entity ) ).build() ).build();
-            final QueryMessage queryMessage = QueryMessage.newBuilder().setTxId( txId ).setQuery( query ).build();
-            final Enumerable enumerable = new CottontailQueryEnumerable<>( cottontailTable.cottontailSchema.getWrapper().query( queryMessage ) );
-            return enumerable.enumerator();
+            final QueryMessage queryMessage = QueryMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId( txId ) ).setQuery( query ).build();
+            return new CottontailQueryEnumerable( cottontailTable.cottontailSchema.getWrapper().query( queryMessage ) ).enumerator();
         }
-
     }
-
 }

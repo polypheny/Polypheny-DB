@@ -25,7 +25,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.CottontailWrapper;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.DeleteMessage;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.TransactionId;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Metadata;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
 
 import java.lang.reflect.Method;
@@ -63,7 +63,7 @@ public class CottontailDeleteEnumerable<T> extends AbstractEnumerable<T> {
             CottontailWrapper wrapper
     ) {
         /* Begin or continue Cottontail DB transaction. */
-        final TransactionId txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
+        final Long txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
 
         /* Build DELETE messages and create enumerable. */
         List<DeleteMessage> deleteMessages;
@@ -90,11 +90,11 @@ public class CottontailDeleteEnumerable<T> extends AbstractEnumerable<T> {
     private static DeleteMessage buildSingleDelete(
             String entity,
             String schema,
-            TransactionId txId,
+            Long txId,
             Function1<Map<Long, Object>, Where> whereBuilder,
             Map<Long, Object> parameterValues
     ) {
-        final DeleteMessage.Builder builder = DeleteMessage.newBuilder().setTxId( txId );
+        final DeleteMessage.Builder builder = DeleteMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId( txId ).build() );
         builder.setFrom( CottontailTypeUtil.fromFromTableAndSchema( entity, schema ) );
         builder.setWhere( whereBuilder.apply( parameterValues ) );
         return builder.build();

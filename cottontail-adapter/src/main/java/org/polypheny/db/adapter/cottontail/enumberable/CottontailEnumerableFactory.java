@@ -93,7 +93,7 @@ public class CottontailEnumerableFactory {
     ) {
 
         /* Begin or continue Cottontail DB transaction. */
-        final TransactionId txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
+        final long txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
 
         /* Build SELECT messages and create enumerable. */
         TupleIterator queryResponseIterator;
@@ -116,9 +116,9 @@ public class CottontailEnumerableFactory {
             }
 
             final Query query = buildSingleQuery( from, schema, projection, orderBy, limit, offset, whereBuilder, parameterValues );
-            queryResponseIterator = wrapper.query( QueryMessage.newBuilder().setTxId( txId ).setQuery( query ).build() );
+            queryResponseIterator = wrapper.query( QueryMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId( txId ) ).setQuery( query ).build() );
         } else {
-            BatchedQueryMessage.Builder batchedQueryMessageBuilder = BatchedQueryMessage.newBuilder().setTxId( txId );
+            BatchedQueryMessage.Builder batchedQueryMessageBuilder = BatchedQueryMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId( txId ) );
             for ( Map<Long, Object> parameterValues : dataContext.getParameterValues() ) {
 
                 Integer limit = null;
@@ -217,13 +217,13 @@ public class CottontailEnumerableFactory {
             CottontailWrapper wrapper
     ) {
         /* Begin or continue Cottontail DB transaction. */
-        final TransactionId txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
+        final long txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
 
         /* Build INSERT messages and create enumerable. */
         final CottontailGrpc.From from_ = CottontailTypeUtil.fromFromTableAndSchema( from, schema );
         final List<InsertMessage> insertMessages = new ArrayList<>( values.size() );
         for ( Map<String, CottontailGrpc.Literal> value : values ) {
-            final InsertMessage.Builder message = InsertMessage.newBuilder().setFrom( from_ ).setTxId( txId );
+            final InsertMessage.Builder message = InsertMessage.newBuilder().setFrom( from_ ).setMetadata( Metadata.newBuilder().setTransactionId( txId ) );
             for ( Entry<String, Literal> e : value.entrySet() ) {
                 message.addElements( InsertElement.newBuilder().setColumn( ColumnName.newBuilder().setName( e.getKey() ) ).setValue( e.getValue() ).build() );
             }
@@ -242,13 +242,13 @@ public class CottontailEnumerableFactory {
             CottontailWrapper wrapper
     ) {
         /* Begin or continue Cottontail DB transaction. */
-        final TransactionId txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
+        final long txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
 
         /* Build INSERT messages and create enumerable. */
         final CottontailGrpc.From from_ = CottontailTypeUtil.fromFromTableAndSchema( from, schema );
         if ( dataContext.getParameterValues().size() == 0 ) {
             final List<InsertMessage> insertMessages = new LinkedList<>();
-            final InsertMessage.Builder insert = InsertMessage.newBuilder().setFrom( from_ ).setTxId( txId );
+            final InsertMessage.Builder insert = InsertMessage.newBuilder().setFrom( from_ ).setMetadata( Metadata.newBuilder().setTransactionId( txId ) );
             final Map<String, Literal> values = tupleBuilder.apply( new HashMap<>() );
             for ( Entry<String, Literal> e : values.entrySet() ) {
                 insert.addElements( InsertElement.newBuilder().setColumn( ColumnName.newBuilder().setName( e.getKey() ) ).setValue( e.getValue() ) );
@@ -257,7 +257,7 @@ public class CottontailEnumerableFactory {
             return new CottontailInsertEnumerable( insertMessages, wrapper );
         } else {
             final List<BatchInsertMessage> insertMessages = new LinkedList<>();
-            BatchInsertMessage.Builder builder = BatchInsertMessage.newBuilder().setFrom( from_ ).setTxId( txId );
+            BatchInsertMessage.Builder builder = BatchInsertMessage.newBuilder().setFrom( from_ ).setMetadata( Metadata.newBuilder().setTransactionId( txId ) );
 
             /* Add columns to BatchInsertMessage */
             final List<Map<Long,Object>> parameterValues = dataContext.getParameterValues();
@@ -318,7 +318,7 @@ public class CottontailEnumerableFactory {
         CottontailWrapper wrapper
     ) {
         /* Begin or continue Cottontail DB transaction. */
-        final TransactionId txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
+        final long txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
 
         /* Build UPDATE messages and create enumerable. */
         List<UpdateMessage> updateMessages;
@@ -345,14 +345,13 @@ public class CottontailEnumerableFactory {
     private static UpdateMessage buildSingleUpdate(
         String entity,
         String schema,
-        TransactionId txId,
+        Long txId,
         Function1<Map<Long, Object>, Where> whereBuilder,
         Function1<Map<Long, Object>, Map<String, CottontailGrpc.Literal>> tupleBuilder,
         Map<Long, Object> parameterValues
     ) {
-        UpdateMessage.Builder builder = UpdateMessage.newBuilder().setTxId( txId );
-
-        CottontailGrpc.From from_ = CottontailTypeUtil.fromFromTableAndSchema( entity, schema );
+        final UpdateMessage.Builder builder = UpdateMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId( txId ).build() );
+        final CottontailGrpc.From from_ = CottontailTypeUtil.fromFromTableAndSchema( entity, schema );
 
         if ( whereBuilder != null ) {
             builder.setWhere( whereBuilder.apply( parameterValues ) );
