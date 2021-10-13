@@ -123,6 +123,9 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.CatalogView.QueryLanguage;
+import org.polypheny.db.catalog.entity.MaterializedCriteria;
+import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
+import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
@@ -137,6 +140,7 @@ import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.exploreByExample.Explore;
 import org.polypheny.db.exploreByExample.ExploreManager;
@@ -428,7 +432,7 @@ public class Crud implements InformationObserver {
                             tableElement.setTableType( "TABLE" );
                         } else if ( table.tableType == TableType.VIEW ) {
                             tableElement.setTableType( "VIEW" );
-                        } else if (table.tableType == TableType.MATERIALIZEDVIEW){
+                        } else if ( table.tableType == TableType.MATERIALIZEDVIEW ) {
                             tableElement.setTableType( "MATERIALIZED" );
                         }
                     }
@@ -1356,9 +1360,9 @@ public class Crud implements InformationObserver {
             result = new Result( cols.toArray( new DbColumn[0] ), null );
             if ( catalogTable.tableType == TableType.TABLE ) {
                 result.setType( ResultType.TABLE );
-            } else if(catalogTable.tableType == TableType.MATERIALIZEDVIEW)  {
+            } else if ( catalogTable.tableType == TableType.MATERIALIZEDVIEW ) {
                 result.setType( ResultType.MATERIALIZED );
-            }else {
+            } else {
                 result.setType( ResultType.VIEW );
             }
         } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
@@ -1522,7 +1526,6 @@ public class Crud implements InformationObserver {
 
         String[] t = request.tableId.split( "\\." );
         String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
-
 
         // rename column if needed
         if ( !oldColumn.name.equals( newColumn.name ) ) {
@@ -2797,6 +2800,37 @@ public class Crud implements InformationObserver {
     }
 
 
+    // helper for relAlg materialized View
+    private TimeUnit getFreshnessType( String freshnessId ) {
+        TimeUnit timeUnit;
+        switch ( freshnessId ) {
+            case "min":
+            case "minutes":
+                timeUnit = TimeUnit.MINUTES;
+                break;
+            case "hours":
+                timeUnit = TimeUnit.HOURS;
+                break;
+            case "sec":
+            case "seconds":
+                timeUnit = TimeUnit.SECONDS;
+                break;
+            case "days":
+            case "day":
+                timeUnit = TimeUnit.DAYS;
+                break;
+            case "millisec":
+            case "milliseconds":
+                timeUnit = TimeUnit.MILLISECONDS;
+                break;
+            default:
+                timeUnit = TimeUnit.MINUTES;
+                break;
+        }
+        return timeUnit;
+    }
+
+
     /**
      * Execute a logical plan coming from the Web-Ui plan builder
      */
@@ -2834,35 +2868,94 @@ public class Crud implements InformationObserver {
 
             String viewName = request.viewName;
             boolean replace = false;
-            List<DataStore> store = null;
-            PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
+            String viewType;
 
-            List<String> columns = new ArrayList<>();
-            root.rel.getRowType().getFieldList().forEach( f -> columns.add( f.getName() ) );
+            if ( request.freshness != null ) {
+                viewType = "Materialized View";
+                DataStore store = (DataStore) AdapterManager.getInstance().getAdapter( request.store );
+                List<DataStore> stores = new ArrayList<>();
+                stores.add( store );
 
-            //default Schema
-            long schemaId = transaction.getDefaultSchema().id;
+                PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
 
-            Gson gson = new Gson();
+                List<String> columns = new ArrayList<>();
+                root.rel.getRowType().getFieldList().forEach( f -> columns.add( f.getName() ) );
 
-            try {
-                DdlManager.getInstance().createView(
-                        viewName,
-                        schemaId,
-                        root.rel,
-                        root.collation,
-                        replace,
-                        statement,
-                        placementType,
-                        columns,
-                        gson.toJson( request.topNode ),
-                        QueryLanguage.RELALG
-                );
-            } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
-                log.error( "Not possible to create View because the Name is already used", e );
-                Result finalResult = new Result( e );
-                finalResult.setGeneratedQuery( "Execute logical query plan" );
-                return finalResult;
+                //default Schema
+                long schemaId = transaction.getDefaultSchema().id;
+
+                MaterializedCriteria materializedCriteria;
+                if ( request.freshness.toUpperCase().equalsIgnoreCase( CriteriaType.INTERVAL.toString() ) ) {
+                    materializedCriteria = new MaterializedCriteria( CriteriaType.INTERVAL, Integer.parseInt( request.interval ), getFreshnessType( request.timeUnit ) );
+                } else if ( request.freshness.toUpperCase().equalsIgnoreCase( CriteriaType.UPDATE.toString() ) ) {
+                    materializedCriteria = new MaterializedCriteria( CriteriaType.UPDATE, Integer.parseInt( request.interval ) );
+                } else if ( request.freshness.toUpperCase().equalsIgnoreCase( CriteriaType.MANUAL.toString() ) ) {
+                    materializedCriteria = new MaterializedCriteria( CriteriaType.MANUAL );
+                } else {
+                    materializedCriteria = new MaterializedCriteria();
+                }
+
+                Gson gson = new Gson();
+
+                try {
+                    DdlManager.getInstance().createMaterializedView(
+                            viewName,
+                            schemaId,
+                            root,
+                            replace,
+                            statement,
+                            stores,
+                            placementType,
+                            columns,
+                            materializedCriteria,
+                            gson.toJson( request.topNode ),
+                            QueryLanguage.RELALG,
+                            false,
+                            false
+                    );
+                } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
+                    log.error( "Not possible to create View because the Name is already used", e );
+                    Result finalResult = new Result( e );
+                    finalResult.setGeneratedQuery( "Execute logical query plan" );
+                    return finalResult;
+                } catch ( ColumnNotExistsException | ColumnAlreadyExistsException e ) {
+                    e.printStackTrace();
+                }
+
+            } else {
+
+                viewType = "View";
+                List<DataStore> store = null;
+                PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
+
+                List<String> columns = new ArrayList<>();
+                root.rel.getRowType().getFieldList().forEach( f -> columns.add( f.getName() ) );
+
+                //default Schema
+                long schemaId = transaction.getDefaultSchema().id;
+
+                Gson gson = new Gson();
+
+                try {
+                    DdlManager.getInstance().createView(
+                            viewName,
+                            schemaId,
+                            root.rel,
+                            root.collation,
+                            replace,
+                            statement,
+                            placementType,
+                            columns,
+                            gson.toJson( request.topNode ),
+                            QueryLanguage.RELALG
+                    );
+                } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
+                    log.error( "Not possible to create View because the Name is already used", e );
+                    Result finalResult = new Result( e );
+                    finalResult.setGeneratedQuery( "Execute logical query plan" );
+                    return finalResult;
+                }
+
             }
             try {
                 transaction.commit();
@@ -2879,7 +2972,8 @@ public class Crud implements InformationObserver {
                 e.printStackTrace();
             }
 
-            return new Result().setGeneratedQuery( "Created View \"" + viewName + "\" from logical query plan" );
+            return new Result().setGeneratedQuery( "Created " + viewType + " \"" + viewName + "\" from logical query plan" );
+
         }
 
         List<List<Object>> rows;
