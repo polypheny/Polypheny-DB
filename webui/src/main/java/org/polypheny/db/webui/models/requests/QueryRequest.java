@@ -30,6 +30,11 @@ public class QueryRequest extends UIRequest {
     public boolean analyze;
 
     /**
+     * TRUE if the query should use the cache
+     */
+    public boolean cache;
+
+    /**
      * This flag defines which language was used for this query
      */
     public String language;

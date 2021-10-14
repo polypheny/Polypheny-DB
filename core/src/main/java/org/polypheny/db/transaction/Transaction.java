@@ -81,6 +81,10 @@ public interface Transaction {
 
     void setMonitoringEvent( MonitoringEvent event );
 
+    void setCacheUse( boolean useCache );
+
+    boolean usesCache();
+
     /**
      * Flavor, how multimedia results should be returned from a store.
      */

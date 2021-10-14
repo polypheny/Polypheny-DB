@@ -88,6 +88,7 @@ public class TransactionImpl implements Transaction, Comparable {
     private final List<Adapter> involvedAdapters = new CopyOnWriteArrayList<>();
     private final Set<Lock> lockList = new HashSet<>();
     private MonitoringEvent monitoringEvent;
+    private boolean useCache = true;
 
 
     TransactionImpl(
@@ -281,6 +282,18 @@ public class TransactionImpl implements Transaction, Comparable {
     @Override
     public void setMonitoringEvent( MonitoringEvent event ) {
         this.monitoringEvent = event;
+    }
+
+
+    @Override
+    public void setCacheUse( boolean useCache ) {
+        this.useCache = useCache;
+    }
+
+
+    @Override
+    public boolean usesCache() {
+        return this.useCache;
     }
 
     // For locking
