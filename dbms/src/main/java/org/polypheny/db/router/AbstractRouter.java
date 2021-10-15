@@ -16,6 +16,7 @@
 
 package org.polypheny.db.router;
 
+
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
@@ -633,26 +634,94 @@ public abstract class AbstractRouter implements Router {
 
                             if ( ((LogicalTableModify) node).getInput() instanceof LogicalValues ) {
 
-                                for ( ImmutableList<RexLiteral> currentTuple : ((LogicalValues) ((LogicalTableModify) node).getInput()).tuples ) {
+                                // Get fieldList and map columns to index since they could be in arbitrary order
+                                int partitionColumnIndex = -1;
+                                Map<Long, Integer> resultColMapping = new HashMap<>();
+                                for ( int j = 0; j < (((LogicalTableModify) node).getInput()).getRowType().getFieldList().size(); j++ ) {
 
-                                    for ( i = 0; i < catalogTable.columnIds.size(); i++ ) {
-                                        if ( catalogTable.columnIds.get( i ) == catalogTable.partitionColumnId ) {
-                                            if ( log.isDebugEnabled() ) {
-                                                log.debug( "INSERT: Found PartitionColumnID: '{}' at column index: {}", catalogTable.partitionColumnId, i );
-                                            }
-                                            partitionColumnIdentified = true;
+                                    String columnFieldName = (((LogicalTableModify) node).getInput()).getRowType().getFieldList().get( j ).getKey();
+
+                                    //Retrieve columnId of fieldName and map it to its fieldList location of INSERT Stmt
+                                    int columnIndex = catalogTable.getColumnNames().indexOf( columnFieldName );
+                                    ;
+                                    resultColMapping.put( catalogTable.columnIds.get( columnIndex ), j );
+
+                                    //Determine location of partitionColumn in fieldList
+                                    if ( catalogTable.columnIds.get( columnIndex ) == catalogTable.partitionColumnId ) {
+                                        partitionColumnIndex = columnIndex;
+                                        partitionColumnIdentified = true;
+                                        if ( log.isDebugEnabled() ) {
+                                            log.debug( "INSERT: Found PartitionColumnID: '{}' at column index: {}", catalogTable.partitionColumnId, j );
                                             worstCaseRouting = false;
-                                            if ( currentTuple.get( i ).getValue() == null ) {
-                                                partitionValue = partitionManager.getUnifiedNullValue();
-                                            } else {
-                                                partitionValue = currentTuple.get( i ).toString().replace( "'", "" );
-                                            }
-                                            identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
-                                            accessedPartitionList.add( identPart );
-                                            break;
                                         }
                                     }
                                 }
+
+                                //Will executed all required tuples that belong on the same partition jointly
+                                Map<Long, List<ImmutableList<RexLiteral>>> tuplesOnPartition = new HashMap<>();
+                                for ( ImmutableList<RexLiteral> currentTuple : ((LogicalValues) ((LogicalTableModify) node).getInput()).tuples ) {
+
+                                    worstCaseRouting = false;
+                                    if ( partitionColumnIndex == -1 || currentTuple.get( partitionColumnIndex ).getValue() == null ) {
+                                        partitionValue = partitionManager.getUnifiedNullValue();
+                                    } else {
+                                        partitionValue = currentTuple.get( partitionColumnIndex ).toString().replace( "'", "" );
+                                    }
+                                    identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
+                                    accessedPartitionList.add( identPart );
+
+                                    if ( !tuplesOnPartition.containsKey( identPart ) ) {
+                                        tuplesOnPartition.put( identPart, new ArrayList<>() );
+                                    }
+                                    tuplesOnPartition.get( identPart ).add( currentTuple );
+
+                                }
+
+                                for ( Map.Entry<Long, List<ImmutableList<RexLiteral>>> partitionMapping : tuplesOnPartition.entrySet() ) {
+
+                                    Long currentPartitionId = partitionMapping.getKey();
+                                    LogicalValues newLogicalValues = new LogicalValues( cluster, cluster.traitSet(), (((LogicalTableModify) node).getInput()).getRowType()
+                                            , ImmutableList.copyOf( partitionMapping.getValue() ) );
+
+                                    RelNode input = buildDml(
+                                            newLogicalValues,
+                                            RelBuilder.create( statement, cluster ),
+                                            catalogTable,
+                                            placementsOnAdapter,
+                                            catalog.getPartitionPlacement( pkPlacement.adapterId, currentPartitionId ),
+                                            statement,
+                                            cluster,
+                                            false,
+                                            statement.getDataContext().getParameterValues() ).build();
+
+                                    List<String> qualifiedTableName = ImmutableList.of(
+                                            PolySchemaBuilder.buildAdapterSchemaName(
+                                                    pkPlacement.adapterUniqueName,
+                                                    catalogTable.getSchemaName(),
+                                                    pkPlacement.physicalSchemaName
+                                            ),
+                                            t.getLogicalTableName() + "_" + currentPartitionId );
+                                    RelOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
+                                    ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
+
+                                    // Build DML
+                                    TableModify modify;
+
+                                    modify = modifiableTable.toModificationRel(
+                                            cluster,
+                                            physical,
+                                            catalogReader,
+                                            input,
+                                            ((LogicalTableModify) node).getOperation(),
+                                            updateColumnList,
+                                            sourceExpressionList,
+                                            ((LogicalTableModify) node).isFlattened() );
+
+                                    modifies.add( modify );
+
+                                }
+                                operationWasRewritten = true;
+
                             } else if ( ((LogicalTableModify) node).getInput() instanceof LogicalProject
                                     && ((LogicalProject) ((LogicalTableModify) node).getInput()).getInput() instanceof LogicalValues ) {
 
@@ -663,17 +732,6 @@ public abstract class AbstractRouter implements Router {
                                 LogicalProject lproject = (LogicalProject) ltm.getInput();
 
                                 List<RexNode> fieldValues = lproject.getProjects();
-                                /*Map<Long, RexDynamicParam> indexRemap = new HashMap<>();
-
-                                // Retrieve RexDynamicParams and their param index position
-                                for ( int j = 0; j < fieldNames.size(); j++ ) {
-                                    if ( fieldValues.get( j ) instanceof RexDynamicParam ) {
-                                        long valueIndex = ((RexDynamicParam) fieldValues.get( j )).getIndex();
-                                        //RelDataType type = ((RexDynamicParam) fieldValues.get( j )).getType();
-
-                                        indexRemap.put( valueIndex, (RexDynamicParam) fieldValues.get( j ) );
-                                    }
-                                }*/
 
                                 for ( i = 0; i < fieldNames.size(); i++ ) {
                                     String columnName = fieldNames.get( i );

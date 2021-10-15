@@ -31,6 +31,7 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rel.logical.LogicalFilter;
+import org.polypheny.db.rel.logical.LogicalModifyCollect;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalValues;
@@ -119,8 +120,10 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
                         int idx = index.getAndIncrement();
                         RelDataType type = input.getRowType().getFieldList().get( i++ ).getValue();
                         if ( firstRow ) {
-                            types.add( type );
                             projects.add( new RexDynamicParam( type, idx ) );
+                        }
+                        if ( !values.containsKey( i ) ) {
+                            types.add( type );
                             values.put( i, new ArrayList<>( ((LogicalValues) input).getTuples().size() ) );
                         }
                         values.get( i ).add( new ParameterValue( idx, type, literal.getValueForQueryParameterizer() ) );
@@ -146,6 +149,17 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
                     modify.getUpdateColumnList(),
                     newSourceExpression,
                     modify.isFlattened() );
+        } else if ( other instanceof LogicalModifyCollect ) {
+            List<RelNode> inputs = new ArrayList<>( other.getInputs().size() );
+            for ( RelNode node : other.getInputs() ) {
+                inputs.add( visit( node ) );
+            }
+            return new LogicalModifyCollect(
+                    other.getCluster(),
+                    other.getTraitSet(),
+                    inputs,
+                    ((LogicalModifyCollect) other).all
+            );
         } else {
             return super.visit( other );
         }
