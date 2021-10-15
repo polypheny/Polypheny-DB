@@ -210,7 +210,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 builder.append( "INDEX " );
             }
 
-            builder.append( dialect.quoteIdentifier( physicalIndexName ) );
+            builder.append( dialect.quoteIdentifier( physicalIndexName + "_" + partitionPlacement.partitionId ) );
             builder.append( " ON " )
                     .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
                     .append( "." )
@@ -259,7 +259,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
             StringBuilder builder = new StringBuilder();
             builder.append( "DROP INDEX " );
-            builder.append( dialect.quoteIdentifier( catalogIndex.physicalName ) );
+            builder.append( dialect.quoteIdentifier( catalogIndex.physicalName + "_" + partitionPlacement.partitionId ) );
             executeUpdate( builder, context );
         }
     }
