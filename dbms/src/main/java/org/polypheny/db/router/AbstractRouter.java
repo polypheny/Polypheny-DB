@@ -691,7 +691,7 @@ public abstract class AbstractRouter implements Router {
                                             catalog.getPartitionPlacement( pkPlacement.adapterId, currentPartitionId ),
                                             statement,
                                             cluster,
-                                            false,
+                                            true,
                                             statement.getDataContext().getParameterValues() ).build();
 
                                     List<String> qualifiedTableName = ImmutableList.of(
@@ -754,19 +754,6 @@ public abstract class AbstractRouter implements Router {
                                                 if ( !catalog.getPartitionsOnDataPlacement( pkPlacement.adapterId, catalogTable.id ).contains( tempPartitionId ) ) {
                                                     continue;
                                                 }
-
-                                                /*
-                                                int parameterValueSetIndex = statement.getDataContext().createParameterValuesSet();
-
-                                                for ( Entry<Long, RexDynamicParam> param : indexRemap.entrySet() ) {
-                                                    List<Object> singleDataObject = new ArrayList<>();
-
-                                                    long paramIndexPos = param.getKey();
-                                                    RelDataType paramType = param.getValue().getType();
-
-                                                    singleDataObject.add( currentRow.get( paramIndexPos ) );
-                                                    statement.getDataContext().addParameterValues( parameterValueSetIndex, paramIndexPos, paramType, singleDataObject );
-                                                }*/
 
                                                 List<Map<Long, Object>> parameterValues = new ArrayList<>();
                                                 parameterValues.add( new HashMap<>( newParameterValues ) );

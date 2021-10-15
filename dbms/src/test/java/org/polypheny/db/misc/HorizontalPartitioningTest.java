@@ -698,7 +698,18 @@ public class HorizontalPartitioningTest {
                                     new Object[]{ 2, "Eva", 7 },
                                     new Object[]{ 3, "Alice", 89 } ) );
 
-                    //TODO Change order of VALUES such that partitionValue is not on same index
+                    //Check if the values are correctly associated with the corresponding partition
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM multiinsert ORDER BY tprimary WHERE tvarchar = 'Hans'" ),
+                            ImmutableList.of( new Object[]{ 1, "Hans", 5 } ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM multiinsert ORDER BY tprimary WHERE tvarchar = 'Eva'" ),
+                            ImmutableList.of( new Object[]{ 2, "Eva", 7 } ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM multiinsert ORDER BY tprimary WHERE tvarchar = 'Alice'" ),
+                            ImmutableList.of( new Object[]{ 3, "Alice", 89 } ) );
 
                 } finally {
                     // Drop tables and stores
