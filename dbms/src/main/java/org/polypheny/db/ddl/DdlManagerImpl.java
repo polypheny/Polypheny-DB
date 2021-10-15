@@ -1885,9 +1885,8 @@ public class DdlManagerImpl extends DdlManager {
             // Every store of a newly partitioned table, initially will hold all partitions
             List<CatalogColumn> necessaryColumns = new LinkedList<>();
             catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), partitionedTable.id ).forEach( cp -> necessaryColumns.add( catalog.getColumn( cp.columnId ) ) );
-            //necessaryColumns = catalog.getColumns( unPartitionedTable.id );
-            //Copy data from the old partition to new partitions
 
+            //Copy data from the old partition to new partitions
             dataMigrator.copyPartitionData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), unPartitionedTable, partitionedTable, necessaryColumns,
                     unPartitionedTable.partitionProperty.partitionIds, partitionedTable.partitionProperty.partitionIds );
         }
@@ -1957,22 +1956,6 @@ public class DdlManagerImpl extends DdlManager {
 
             dataMigrator.copySelectiveData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), partitionedTable, mergedTable,
                     necessaryColumns, placementDistribution, mergedTable.partitionProperty.partitionIds );
-            /*
-            if ( firstIteration ) {
-                // Copy data from all partitions to new partition
-
-                for ( long oldPartitionId : partitionedTable.partitionProperty.partitionIds ) {
-                    dataMigrator.copySelectiveData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), , ,
-                            necessaryColumns, oldPartitionId, mergedTable.partitionProperty.partitionIds.get( 0 ) );
-                }
-                //firstIteration = false;
-            } else {
-                //Second Iteration all data is already in one partition, which speeds up data migration
-                dataMigrator.copySelectiveData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), , ,
-                        necessaryColumns, mergedTable.partitionProperty.partitionIds.get( 0 ), mergedTable.partitionProperty.partitionIds.get( 0 ) );
-            }
-            */
-
         }
 
         // Needs to be separated from loop above. Otherwise we loose data

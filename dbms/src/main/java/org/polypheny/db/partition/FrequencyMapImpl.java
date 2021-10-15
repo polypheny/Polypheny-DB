@@ -123,7 +123,7 @@ public class FrequencyMapImpl extends FrequencyMap {
 
 
     private void incrementPartitionAccess( long partitionId, List<Long> partitionIds ) {
-        // Outer of is needed to ignore frequencies from old non-existing partitionIds
+        // Outer if is needed to ignore frequencies from old non-existing partitionIds
         // Which are not yet linked to the table but are still in monitoring
         // TODO @CEDRIC or @HENNLO introduce monitoring cleaning of data points
         if ( partitionIds.contains( partitionId ) ) {
@@ -422,7 +422,6 @@ public class FrequencyMapImpl extends FrequencyMap {
                 }
         }
 
-        // TODO @HENNLO  create a new monitoring page to give information what partitions are currently placed in hot and with which frequencies.
         // To gain observability
         // Update infoPage here
         determinePartitionDistribution( table );

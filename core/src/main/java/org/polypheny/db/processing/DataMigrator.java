@@ -33,6 +33,18 @@ public interface DataMigrator {
             List<CatalogColumn> columns,
             List<Long> partitionIds );
 
+    /**
+     * Currently used to to transfer data if partitioned table is about to be merged.
+     * For Table Partitioning use {@link #copyPartitionData(Transaction, CatalogAdapter, CatalogTable, CatalogTable, List, List, List)}  } instead
+     *
+     * @param transaction Transactional scope
+     * @param store Target Store where data should be migrated to
+     * @param sourceTable Source Table from where data is queried
+     * @param targetTable Source Table from where data is queried
+     * @param columns Necessary columns on target
+     * @param placementDistribution Pre computed mapping of partitions and the necessary column placements
+     * @param targetPartitionIds Target Partitions where data should be inserted
+     */
     void copySelectiveData(
             Transaction transaction,
             CatalogAdapter store,
@@ -40,6 +52,18 @@ public interface DataMigrator {
             Map<Long, List<CatalogColumnPlacement>> placementDistribution,
             List<Long> targetPartitionIds );
 
+    /**
+     * Currently used to to transfer data if unpartitioned is about to be partitioned.
+     * For Table Merge use {@link #copySelectiveData(Transaction, CatalogAdapter, CatalogTable, CatalogTable, List, Map, List)}   } instead
+     *
+     * @param transaction Transactional scope
+     * @param store Target Store where data should be migrated to
+     * @param sourceTable Source Table from where data is queried
+     * @param targetTable Target Table where data is to be inserted
+     * @param columns Necessary columns on target
+     * @param sourcePartitionIds Source Partitions which need to be considered for querying
+     * @param targetPartitionIds Target Partitions where data should be inserted
+     */
     void copyPartitionData(
             Transaction transaction,
             CatalogAdapter store,

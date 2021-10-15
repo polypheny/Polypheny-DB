@@ -80,10 +80,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
-        // TODO @HENNLO: The partition part is still incomplete
-        /** There are several possible ways to unparse the partition section.
-         The To Do is deferred until we have decided if parsing of partition functions will be
-         self contained or not.*/
+
         writer.keyword( "ALTER" );
         writer.keyword( "TABLE" );
         table.unparse( writer, leftPrec, rightPrec );
@@ -93,6 +90,23 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
         writer.keyword( "ON" );
         writer.keyword( "STORE" );
         storeName.unparse( writer, leftPrec, rightPrec );
+
+        if ( partitionGroupList != null || partitionGroupNamesList != null ) {
+            writer.keyword( " WITH " );
+            writer.keyword( " PARTITIONS" );
+            SqlWriter.Frame frame = writer.startList( "(", ")" );
+
+            if ( partitionGroupNamesList != null ) {
+                for ( int i = 0; i < partitionGroupNamesList.size(); i++ ) {
+                    partitionGroupNamesList.get( i ).unparse( writer, leftPrec, rightPrec );
+                    if ( i + 1 < partitionGroupNamesList.size() ) {
+                        writer.sep( "," );
+                        break;
+                    }
+                }
+            }
+        }
+
     }
 
 

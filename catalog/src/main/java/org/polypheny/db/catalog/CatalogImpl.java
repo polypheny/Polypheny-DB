@@ -3642,10 +3642,6 @@ public class CatalogImpl extends Catalog {
     public void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitionGroups, List<Long> partitionGroupIds, PartitionProperty partitionProperty ) {
         CatalogTable old = Objects.requireNonNull( tables.get( tableId ) );
 
-        //Clean old partitionGroup form "unpartitionedTable"
-        //deletion of partitionGroup subsequently clears all partitions and placements
-        //deletePartitionGroup( tableId, old.schemaId, old.partitionProperty.partitionGroupIds.get( 0 ) );
-
         CatalogTable table = new CatalogTable(
                 old.id,
                 old.name,

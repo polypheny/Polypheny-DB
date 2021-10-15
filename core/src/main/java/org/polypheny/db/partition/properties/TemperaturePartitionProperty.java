@@ -40,10 +40,4 @@ public class TemperaturePartitionProperty extends PartitionProperty {
     private final long hotPartitionGroupId;
     private final long coldPartitionGroupId;
 
-
-    /* TODO @HENNLO Maybe extend later on with Records
-    private final long hotAccessRecordsIn;
-    private final long hotAccessRecordsOut;
-    */
-
 }
