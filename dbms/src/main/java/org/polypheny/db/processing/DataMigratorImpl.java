@@ -100,7 +100,7 @@ public class DataMigratorImpl implements DataMigrator {
             Statement sourceStatement = transaction.createStatement();
             Statement targetStatement = transaction.createStatement();
 
-            RelRoot sourceRel = getSourceIterator( sourceStatement, placementDistribution.get( partitionId ), partitionId );
+            RelRoot sourceRel = getSourceIterator( sourceStatement, placementDistribution );
             RelRoot targetRel;
             if ( Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( store.id, table.id ).size() == columns.size() ) {
                 // There have been no placements for this table on this store before. Build insert statement
@@ -265,28 +265,14 @@ public class DataMigratorImpl implements DataMigrator {
     }
 
 
-    private RelRoot getSourceIterator( Statement statement, List<CatalogColumnPlacement> placements, long partitionId ) {
-        // Get map of placements by adapter
-        Map<String, List<CatalogColumnPlacement>> placementsByAdapter = new HashMap<>();
-        long tableId = -1;
-        for ( CatalogColumnPlacement p : placements ) {
-            placementsByAdapter.putIfAbsent( p.getAdapterUniqueName(), new LinkedList<>() );
-            placementsByAdapter.get( p.getAdapterUniqueName() ).add( p );
-
-            if ( tableId == -1 ) {
-                tableId = p.tableId;
-            }
-        }
+    private RelRoot getSourceIterator( Statement statement, Map<Long, List<CatalogColumnPlacement>> placementDistribution ) {
 
         // Build Query
         RelOptCluster cluster = RelOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),
                 new RexBuilder( statement.getTransaction().getTypeFactory() ) );
 
-        Map<Long, List<CatalogColumnPlacement>> distributionPlacements = new HashMap<>();
-        distributionPlacements.put( partitionId, placements );
-
-        RelNode node = statement.getRouter().buildJoinedTableScan( statement, cluster, distributionPlacements );
+        RelNode node = statement.getRouter().buildJoinedTableScan( statement, cluster, placementDistribution );
         return RelRoot.of( node, SqlKind.SELECT );
     }
 
@@ -329,9 +315,9 @@ public class DataMigratorImpl implements DataMigrator {
 
 
     @Override
-    public void copySelectiveData( Transaction transaction, CatalogAdapter store, List<CatalogColumn> columns, Long sourcePartitionId, Long targetPartitionId ) {
-        CatalogTable table = Catalog.getInstance().getTable( columns.get( 0 ).tableId );
-        CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( table.primaryKey );
+    public void copySelectiveData( Transaction transaction, CatalogAdapter store, CatalogTable sourceTable, CatalogTable targetTable, List<CatalogColumn> columns, Map<Long, List<CatalogColumnPlacement>> placementDistribution, List<Long> targetPartitionIds ) {
+
+        CatalogPrimaryKey sourcePrimaryKey = Catalog.getInstance().getPrimaryKey( sourceTable.primaryKey );
 
         // Check Lists
         List<CatalogColumnPlacement> targetColumnPlacements = new LinkedList<>();
@@ -342,35 +328,24 @@ public class DataMigratorImpl implements DataMigrator {
         List<CatalogColumn> selectColumnList = new LinkedList<>( columns );
 
         // Add primary keys to select column list
-        for ( long cid : primaryKey.columnIds ) {
+        for ( long cid : sourcePrimaryKey.columnIds ) {
             CatalogColumn catalogColumn = Catalog.getInstance().getColumn( cid );
             if ( !selectColumnList.contains( catalogColumn ) ) {
                 selectColumnList.add( catalogColumn );
             }
         }
 
-        // We need a columnPlacement for every partition
-        Map<Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
-        /*if ( table.isPartitioned ) {
-            PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-            PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( table.partitionProperty.partitionType );
-            placementDistribution = partitionManager.getRelevantPlacements( table, Arrays.asList( sourcePartitionId ) );
-        } else {
-            placementDistribution.put( sourcePartitionId, selectSourcePlacements( table, selectColumnList, -1 ) );
-        }*/
-        placementDistribution.put( sourcePartitionId, selectSourcePlacements( table, selectColumnList, -1 ) );
-
         Statement sourceStatement = transaction.createStatement();
         Statement targetStatement = transaction.createStatement();
 
-        RelRoot sourceRel = getSourceIterator( sourceStatement, placementDistribution.get( sourcePartitionId ), sourcePartitionId );
+        RelRoot sourceRel = getSourceIterator( sourceStatement, placementDistribution );
         RelRoot targetRel;
-        if ( Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( store.id, table.id ).size() == columns.size() ) {
+        if ( Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( store.id, targetTable.id ).size() == columns.size() ) {
             // There have been no placements for this table on this store before. Build insert statement
-            targetRel = buildInsertStatement( targetStatement, targetColumnPlacements, targetPartitionId );
+            targetRel = buildInsertStatement( targetStatement, targetColumnPlacements, targetPartitionIds.get( 0 ) );
         } else {
             // Build update statement
-            targetRel = buildUpdateStatement( targetStatement, targetColumnPlacements, targetPartitionId );
+            targetRel = buildUpdateStatement( targetStatement, targetColumnPlacements, targetPartitionIds.get( 0 ) );
         }
 
         // Execute Query
@@ -413,13 +388,6 @@ public class DataMigratorImpl implements DataMigrator {
                         .prepareQuery( targetRel, sourceRel.validatedRowType, true )
                         .enumerable( targetStatement.getDataContext() )
                         .iterator();
-
-                //rows auf viele Target Stmt vberteilen
-                //fall abfagen das jedes TargetStatament at least one value hat, darf einfahc nicht ausgeführt werden
-
-                //if habe ich das partition column dirn if so columnnumber setzen und wenn nein dann setz es auf column size und setz ein weiteres column mit dazu
-                //im getSourceiterator
-                //muss allerdings wieder entfernt werden
 
                 //noinspection WhileLoopReplaceableByForEach
                 while ( iterator.hasNext() ) {
@@ -486,7 +454,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         Map<Long, RelRoot> targetRels = new HashMap<>();
 
-        RelRoot sourceRel = getSourceIterator( sourceStatement, placementDistribution.get( sourcePartitionIds.get( 0 ) ), sourcePartitionIds.get( 0 ) );
+        RelRoot sourceRel = getSourceIterator( sourceStatement, placementDistribution );
         RelRoot targetRel;
         if ( Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( store.id, sourceTable.id ).size() == columns.size() ) {
             // There have been no placements for this table on this store before. Build insert statement

@@ -18,6 +18,7 @@ package org.polypheny.db.ddl;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -1904,6 +1905,13 @@ public class DdlManagerImpl extends DdlManager {
             log.debug( "Merging partitions for table: {} with id {} on schema: {}", partitionedTable.name, partitionedTable.id, partitionedTable.getSchemaName() );
         }
 
+        // Need to gather the partitionDistribution before actually merging
+        // We need a columnPlacement for every partition
+        Map<Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
+        PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
+        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( partitionedTable.partitionProperty.partitionType );
+        placementDistribution = partitionManager.getRelevantPlacements( partitionedTable, partitionedTable.partitionProperty.partitionIds, new ArrayList<>( Arrays.asList( -1 ) ) );
+
         // Update catalog table
         catalog.mergeTable( tableId );
 
@@ -1947,18 +1955,24 @@ public class DdlManagerImpl extends DdlManager {
             List<CatalogColumn> necessaryColumns = new LinkedList<>();
             catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), mergedTable.id ).forEach( cp -> necessaryColumns.add( catalog.getColumn( cp.columnId ) ) );
 
+            dataMigrator.copySelectiveData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), partitionedTable, mergedTable,
+                    necessaryColumns, placementDistribution, mergedTable.partitionProperty.partitionIds );
+            /*
             if ( firstIteration ) {
                 // Copy data from all partitions to new partition
+
                 for ( long oldPartitionId : partitionedTable.partitionProperty.partitionIds ) {
-                    dataMigrator.copySelectiveData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ),
+                    dataMigrator.copySelectiveData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), , ,
                             necessaryColumns, oldPartitionId, mergedTable.partitionProperty.partitionIds.get( 0 ) );
                 }
                 //firstIteration = false;
             } else {
                 //Second Iteration all data is already in one partition, which speeds up data migration
-                dataMigrator.copySelectiveData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ),
+                dataMigrator.copySelectiveData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), , ,
                         necessaryColumns, mergedTable.partitionProperty.partitionIds.get( 0 ), mergedTable.partitionProperty.partitionIds.get( 0 ) );
             }
+            */
+
         }
 
         // Needs to be separated from loop above. Otherwise we loose data

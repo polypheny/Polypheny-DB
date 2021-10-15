@@ -34,6 +34,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogPartition;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.ConfigEnum;
@@ -538,19 +539,19 @@ public class HorizontalPartitioningTest {
                     // ADD adapter
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"anotherstore\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
                             + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
-
+                    List<CatalogPartitionPlacement> debugPlacements = Catalog.getInstance().getAllPartitionPlacementsByTable( table.id );
                     // ADD FullPlacement
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" ADD PLACEMENT ON STORE \"anotherstore\"" );
                     Assert.assertEquals( partitionsToCreate * 2, Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size() );
-
+                    debugPlacements = Catalog.getInstance().getAllPartitionPlacementsByTable( table.id );
                     // Modify partitions on second store
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" MODIFY PARTITIONS (\"foo\") ON STORE anotherstore" );
                     Assert.assertEquals( partitionsToCreate + 1, Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size() );
-
+                    debugPlacements = Catalog.getInstance().getAllPartitionPlacementsByTable( table.id );
                     // After MERGE should only hold one partition
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" MERGE PARTITIONS" );
                     Assert.assertEquals( 2, Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size() );
-
+                    debugPlacements = Catalog.getInstance().getAllPartitionPlacementsByTable( table.id );
                     // DROP STORE and verify number of partition Placements
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" DROP PLACEMENT ON STORE \"anotherstore\"" );
                     Assert.assertEquals( 1, Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size() );
@@ -696,6 +697,9 @@ public class HorizontalPartitioningTest {
                                     new Object[]{ 1, "Hans", 5 },
                                     new Object[]{ 2, "Eva", 7 },
                                     new Object[]{ 3, "Alice", 89 } ) );
+
+                    //TODO Change order of VALUES such that partitionValue is not on same index
+
                 } finally {
                     // Drop tables and stores
                     statement.executeUpdate( "DROP TABLE IF EXISTS batchtest" );
