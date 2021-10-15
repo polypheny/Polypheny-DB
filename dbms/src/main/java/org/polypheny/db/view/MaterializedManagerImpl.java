@@ -192,7 +192,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
             commitTransaction( transaction );
 
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
-           throw new RuntimeException("Not possible to create Transaction for Materialized View update", e);
+            throw new RuntimeException( "Not possible to create Transaction for Materialized View update", e );
         }
     }
 
@@ -205,7 +205,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
         List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
         DataMigrator dataMigrator = transaction.getDataMigrator();
 
-        prepareSourceRel(sourceStatement, materializedView.getRelCollation(),  sourceRel.rel);
+        prepareSourceRel( sourceStatement, materializedView.getRelCollation(), sourceRel.rel );
 
         for ( int id : materializedView.placementsByAdapter.keySet() ) {
             Statement targetStatement = transaction.createStatement();
@@ -244,7 +244,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
             }
         }
 
-        prepareSourceRel(sourceStatement, catalogMaterialized.getRelCollation(),  catalogMaterialized.getDefinition());
+        prepareSourceRel( sourceStatement, catalogMaterialized.getRelCollation(), catalogMaterialized.getDefinition() );
 
         RelRoot targetRel;
 
@@ -290,7 +290,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
     }
 
 
-    private void prepareSourceRel(Statement sourceStatement, RelCollation relCollation, RelNode sourceRel) {
+    private void prepareSourceRel( Statement sourceStatement, RelCollation relCollation, RelNode sourceRel ) {
         RelOptCluster cluster = RelOptCluster.create(
                 sourceStatement.getQueryProcessor().getPlanner(),
                 new RexBuilder( sourceStatement.getTransaction().getTypeFactory() ) );

@@ -24,7 +24,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
@@ -587,7 +586,7 @@ public class BasicMaterializedTest {
     }
 
 
-    @Ignore
+    @Test
     public void testTwoStores() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -601,12 +600,13 @@ public class BasicMaterializedTest {
 
                 statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
 
-                statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable ON STORE \"store2\", \"store3\" FRESHNESS INTERVAL 100 \"milliseconds\" " );
+                statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable ON STORE \"store2\", \"store3\" FRESHNESS MANUAL" );
                 waiter.await( 2, TimeUnit.SECONDS );
                 try {
 
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                     connection.commit();
+                    statement.executeUpdate( "ALTER MATERIALIZED VIEW viewTestEmp FRESHNESS MANUAL" );
 
                     waiter.await( 2, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
@@ -618,7 +618,9 @@ public class BasicMaterializedTest {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
                     connection.commit();
 
+                    statement.executeUpdate( "ALTER MATERIALIZED VIEW viewTestEmp FRESHNESS MANUAL" );
                     waiter.await( 2, TimeUnit.SECONDS );
+
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
@@ -1049,7 +1051,7 @@ public class BasicMaterializedTest {
     }
 
 
-    @Ignore
+    @Test
     public void testUpdateFreshnessIntervals() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -1058,6 +1060,7 @@ public class BasicMaterializedTest {
                 statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestDep AS SELECT * FROM viewTestDepTable FRESHNESS INTERVAL 500 \"milliseconds\"" );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 100 \"milliseconds\" " );
+                statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp1 AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 800 \"milliseconds\" " );
                 waiter.await( 1, TimeUnit.SECONDS );
                 try {
 
@@ -1068,6 +1071,12 @@ public class BasicMaterializedTest {
                     waiter.await( 1, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 }
+                            ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp1" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "Max", "Muster", 1, 0 }
                             ) );
@@ -1085,6 +1094,15 @@ public class BasicMaterializedTest {
                     waiter.await( 1, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2, 1 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
+                            )
+                    );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp1" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "Max", "Muster", 1, 0 },
                                     new Object[]{ 2, "Ernst", "Walter", 2, 1 },
@@ -1111,6 +1129,11 @@ public class BasicMaterializedTest {
                     );
 
                     TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp1" ),
+                            ImmutableList.of()
+                    );
+
+                    TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestDep" ),
                             ImmutableList.of()
                     );
@@ -1127,6 +1150,12 @@ public class BasicMaterializedTest {
                             ) );
 
                     TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM viewTestEmp1" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 }
+                            ) );
+
+                    TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestDep" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "IT", 1, 0 }
@@ -1135,6 +1164,7 @@ public class BasicMaterializedTest {
                 } finally {
                     statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
                     statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestDep" );
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp1" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
                     statement.executeUpdate( "DROP TABLE viewTestDepTable" );
                     dropTables( statement );

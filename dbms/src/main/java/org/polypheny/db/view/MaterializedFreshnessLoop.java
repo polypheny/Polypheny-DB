@@ -36,7 +36,6 @@ public class MaterializedFreshnessLoop implements Runnable {
 
     @Override
     public void run() {
-
         try {
             while ( true ) {
                 startEventLoop();
@@ -55,9 +54,11 @@ public class MaterializedFreshnessLoop implements Runnable {
 
                 if ( v.getCriteriaType() == CriteriaType.INTERVAL ) {
                     if ( v.getLastUpdate().getTime() + v.getTimeInMillis() < System.currentTimeMillis() ) {
+                        if ( !manager.isCreatingMaterializedView ) {
+                            manager.prepareToUpdate( k );
+                            manager.updateMaterializedTime( k );
+                        }
 
-                        manager.prepareToUpdate( k );
-                        manager.updateMaterializedTime( k );
                     }
                 }
             } );
