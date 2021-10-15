@@ -21,6 +21,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.apache.calcite.avatica.AvaticaSqlException;
 import org.junit.Assert;
@@ -484,16 +486,30 @@ public class HorizontalPartitioningTest {
                             ImmutableList.of(
                                     new Object[]{ 2, 6, "bob" } ) );
 
-                    //Todo @HENNLO
-                    // Add test that checks if the input of the modal is handled correctly
+                    // Checks if the input is ordered correctly. e.g. if the range for MIN and MAX is swapped when necessary
+                    statement.executeUpdate( "CREATE TABLE rangepartitioning3( "
+                            + "tprimary INTEGER NOT NULL, "
+                            + "tinteger INTEGER NULL, "
+                            + "tvarchar VARCHAR(20) NULL, "
+                            + "PRIMARY KEY (tprimary) )"
+                            + "PARTITION BY RANGE (tinteger) "
+                            + "( PARTITION parta VALUES(5,4), "
+                            + "PARTITION partb VALUES(10,6))" );
 
-                    //TODO @HENNLO
-                    // Add test that checks if the input is ordered correctly. e.g. if the range for MIN and MAX ist swapped
+                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "rangepartitioning3" ) ).get( 0 );
+
+                    List<CatalogPartition> catalogPartitions = Catalog.getInstance().getPartitionsByTable( table.id );
+
+                    Assert.assertEquals( new ArrayList<>( Arrays.asList( "4", "5" ) )
+                            , catalogPartitions.get( 0 ).partitionQualifiers );
+
+                    Assert.assertEquals( new ArrayList<>( Arrays.asList( "6", "10" ) )
+                            , catalogPartitions.get( 1 ).partitionQualifiers );
 
                     // RANGE partitioning can't be created without specifying ranges
                     boolean failed = false;
                     try {
-                        statement.executeUpdate( "CREATE TABLE rangepartitioning2( "
+                        statement.executeUpdate( "CREATE TABLE rangepartitioning3( "
                                 + "tprimary INTEGER NOT NULL, "
                                 + "tinteger INTEGER NULL, "
                                 + "tvarchar VARCHAR(20) NULL, "
@@ -507,6 +523,7 @@ public class HorizontalPartitioningTest {
                 } finally {
                     statement.executeUpdate( "DROP TABLE rangepartitioning1" );
                     statement.executeUpdate( "DROP TABLE IF EXISTS rangepartitioning2" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS rangepartitioning3" );
                 }
             }
         }
