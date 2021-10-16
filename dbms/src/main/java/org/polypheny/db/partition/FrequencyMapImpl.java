@@ -73,7 +73,6 @@ public class FrequencyMapImpl extends FrequencyMap {
     private final Catalog catalog;
 
     // Make use of central configuration
-    private final long checkInterval = 20; //in seconds
     private String backgroundTaskId;
     private Map<Long, Long> accessCounter = new HashMap<>();
 
@@ -83,12 +82,19 @@ public class FrequencyMapImpl extends FrequencyMap {
     }
 
 
+    /**
+     * Initializes the periodic frequency check by starting a background task.
+     * Which gathers frequency related access information on
+     */
     @Override
     public void initialize() {
         startBackgroundTask();
     }
 
 
+    /**
+     * Stops all background processing and disables the accumulation of frequency related access information.
+     */
     @Override
     public void terminate() {
         BackgroundTaskManager.INSTANCE.removeBackgroundTask( backgroundTaskId );
@@ -106,6 +112,9 @@ public class FrequencyMapImpl extends FrequencyMap {
     }
 
 
+    /**
+     * Retrieves all tables which require periodic processing and starts the access frequency process
+     */
     private void processAllPeriodicTables() {
         log.debug( "Start processing access frequency of tables" );
         Catalog catalog = Catalog.getInstance();
@@ -122,20 +131,26 @@ public class FrequencyMapImpl extends FrequencyMap {
     }
 
 
-    private void incrementPartitionAccess( long partitionId, List<Long> partitionIds ) {
+    private void incrementPartitionAccess( long identifiedPartitionId, List<Long> partitionIds ) {
         // Outer if is needed to ignore frequencies from old non-existing partitionIds
         // Which are not yet linked to the table but are still in monitoring
         // TODO @CEDRIC or @HENNLO introduce monitoring cleaning of data points
-        if ( partitionIds.contains( partitionId ) ) {
-            if ( accessCounter.containsKey( partitionId ) ) {
-                accessCounter.replace( partitionId, accessCounter.get( partitionId ) + 1 );
+        if ( partitionIds.contains( identifiedPartitionId ) ) {
+            if ( accessCounter.containsKey( identifiedPartitionId ) ) {
+                accessCounter.replace( identifiedPartitionId, accessCounter.get( identifiedPartitionId ) + 1 );
             } else {
-                accessCounter.put( partitionId, (long) 1 );
+                accessCounter.put( identifiedPartitionId, (long) 1 );
             }
         }
     }
 
 
+    /**
+     * Determines the partition distribution for temperature partitioned tables by deciding which partitions should be moved from HOT to COLD
+     * and from COLD to HOT. To setup the table corresponding to the current access frequencies patterns.
+     *
+     * @param table Temperature partitioned Table
+     */
     private void determinePartitionDistribution( CatalogTable table ) {
         if ( log.isDebugEnabled() ) {
             log.debug( "Determine access frequency of partitions of table: {}", table.name );
@@ -230,8 +245,15 @@ public class FrequencyMapImpl extends FrequencyMap {
     }
 
 
+    /**
+     * Physically executes the data redistribution of the specific internal partitions and consequently creates new physical tables
+     * as well as removing tables which are not needed anymore.
+     *
+     * @param table Temperature partitioned table
+     * @param partitionsFromColdToHot Partitions which should be moved from COLD to HOT PartitionGroup
+     * @param partitionsFromHotToCold Partitions which should be moved from HOT to COLD PartitionGroup
+     */
     private void redistributePartitions( CatalogTable table, List<Long> partitionsFromColdToHot, List<Long> partitionsFromHotToCold ) {
-        // Invoke DdlManager/dataMigrator to copy data with both new Lists
 
         if ( log.isDebugEnabled() ) {
             log.debug( "Execute physical redistribution of partitions for table: {}", table.name );
@@ -377,6 +399,15 @@ public class FrequencyMapImpl extends FrequencyMap {
     }
 
 
+    /**
+     * Cleanses the List if physical partitions already resides on store. Happens if PartitionGroups HOT and COLD logically reside on same store.
+     * Therefore no actual data distribution has to take place
+     *
+     * @param adapterId Adapter which ist subject of receiving new tables
+     * @param tableId Id of temperature partitioned table
+     * @param partitionsToFilter List of partitions to be filtered
+     * @return The filtered and cleansed list
+     */
     private List<Long> filterList( int adapterId, long tableId, List<Long> partitionsToFilter ) {
         // Remove partition from list if it's already contained on the store
         for ( long partitionId : Catalog.getInstance().getPartitionsOnDataPlacement( adapterId, tableId ) ) {
@@ -388,6 +419,13 @@ public class FrequencyMapImpl extends FrequencyMap {
     }
 
 
+    /**
+     * Determines the partition frequency for each partition of a temperature partitioned table based on the chosen Cost Indication (ALL, WRITE,READ)
+     * in a desired time interval.
+     *
+     * @param table Temperature partitioned table
+     * @param invocationTimestamp Timestamp do determine the interval for which monitoring metrics should be collected.
+     */
     @Override
     public void determinePartitionFrequency( CatalogTable table, long invocationTimestamp ) {
         Timestamp queryStart = new Timestamp( invocationTimestamp - ((TemperaturePartitionProperty) table.partitionProperty).getFrequencyInterval() * 1000 );
