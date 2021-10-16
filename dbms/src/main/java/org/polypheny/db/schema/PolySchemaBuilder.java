@@ -161,31 +161,17 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
                         List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementByTable( adapter.getAdapterId(), tableId );
 
-                        if ( false ) {
-                            //if ( adapter instanceof FileStore  ) {
-
+                        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
                             Table table = adapter.createTableSchema(
                                     catalogTable,
-                                    Catalog.getInstance().getColumnPlacementsOnAdapterSortedByPhysicalPosition( adapter.getAdapterId(), catalogTable.id ), null );
+                                    Catalog.getInstance().getColumnPlacementsOnAdapterSortedByPhysicalPosition( adapter.getAdapterId(), catalogTable.id ),
+                                    partitionPlacement );
 
-                            physicalTables.put( catalog.getTable( tableId ).name, table );
+                            physicalTables.put( catalog.getTable( tableId ).name + "_" + partitionPlacement.partitionId, table );
 
                             rootSchema.add( schemaName, s );
                             physicalTables.forEach( rootSchema.getSubSchema( schemaName )::add );
                             rootSchema.getSubSchema( schemaName ).polyphenyDbSchema().setSchema( adapter.getCurrentSchema() );
-                        } else {
-                            for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-                                Table table = adapter.createTableSchema(
-                                        catalogTable,
-                                        Catalog.getInstance().getColumnPlacementsOnAdapterSortedByPhysicalPosition( adapter.getAdapterId(), catalogTable.id ),
-                                        partitionPlacement );
-
-                                physicalTables.put( catalog.getTable( tableId ).name + "_" + partitionPlacement.partitionId, table );
-
-                                rootSchema.add( schemaName, s );
-                                physicalTables.forEach( rootSchema.getSubSchema( schemaName )::add );
-                                rootSchema.getSubSchema( schemaName ).polyphenyDbSchema().setSchema( adapter.getCurrentSchema() );
-                            }
                         }
                     }
                 }

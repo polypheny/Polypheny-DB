@@ -476,7 +476,6 @@ public class DataMigratorImpl implements DataMigrator {
         Map<Long, RelRoot> targetRels = new HashMap<>();
 
         RelRoot sourceRel = getSourceIterator( sourceStatement, placementDistribution );
-        RelRoot targetRel;
         if ( Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( store.id, sourceTable.id ).size() == columns.size() ) {
             // There have been no placements for this table on this store before. Build insert statement
             targetPartitionIds.forEach( id -> targetRels.put( id, buildInsertStatement( targetStatements.get( id ), targetColumnPlacements, id ) ) );

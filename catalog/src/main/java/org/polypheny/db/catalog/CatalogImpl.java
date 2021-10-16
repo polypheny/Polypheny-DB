@@ -1300,7 +1300,6 @@ public class CatalogImpl extends Catalog {
             List<Long> partitionGroupIds = new ArrayList<>();
             partitionGroupIds.add( addPartitionGroup( id, "full", schemaId, PartitionType.NONE, 1, new ArrayList<>(), true ) );
 
-            List<Long> partitionIds = new ArrayList<>();
             //get All(only one) PartitionGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
             CatalogPartitionGroup defaultUnpartitionedGroup = getPartitionGroup( partitionGroupIds.get( 0 ) );
 
