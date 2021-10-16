@@ -1348,7 +1348,7 @@ public abstract class AbstractRouter implements Router {
                                 valueIdentified = true;
                             } else if ( call.operands.get( 1 ) instanceof RexDynamicParam ) {
                                 long index = ((RexDynamicParam) call.operands.get( 1 )).getIndex();
-                                value = statement.getDataContext().getParameterValue( index );//.get("?" + index);
+                                value = statement.getDataContext().getParameterValue( index );
                                 values.add( value );
                                 valueIdentified = true;
                             }
@@ -1361,7 +1361,7 @@ public abstract class AbstractRouter implements Router {
                                 valueIdentified = true;
                             } else if ( call.operands.get( 0 ) instanceof RexDynamicParam ) {
                                 long index = ((RexDynamicParam) call.operands.get( 0 )).getIndex();
-                                value = statement.getDataContext().getParameterValue( index );//get("?" + index); //.getParameterValues //
+                                value = statement.getDataContext().getParameterValue( index );
                                 values.add( value );
                                 valueIdentified = true;
                             }
