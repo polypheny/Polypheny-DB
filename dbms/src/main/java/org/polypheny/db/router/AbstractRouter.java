@@ -196,7 +196,7 @@ public abstract class AbstractRouter implements Router {
                             }
                         } );
 
-                        if ( whereClauseVisitor.valueIdentified ) {
+                        if ( whereClauseVisitor.valueIdentified && !whereClauseVisitor.unsupportedFilter ) {
                             List<Object> values = whereClauseVisitor.getValues().stream()
                                     .map( Object::toString )
                                     .collect( Collectors.toList() );
@@ -242,6 +242,9 @@ public abstract class AbstractRouter implements Router {
 
                     PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
                     PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionType );
+
+                    //Only possible if partitionsCan be uniquely identified
+                    // For anything related to != , worst case routing is applied (selecting from all partitions)
                     if ( partitionValues != null ) {
                         if ( log.isDebugEnabled() ) {
                             log.debug( "TableID: {} is partitioned on column: {} - {}",
@@ -262,8 +265,6 @@ public abstract class AbstractRouter implements Router {
                                 }
                             }
                             // Add identified partitions to monitoring object
-                            // Currently only one partition is identified, therefore LIST is not needed YET.
-
                             placementDistribution = partitionManager.getRelevantPlacements( catalogTable, identPartitions, new ArrayList<>() );
                             accessedPartitionList = identPartitions;
                         } else {
@@ -854,7 +855,6 @@ public abstract class AbstractRouter implements Router {
 
                     }
 
-                    List<CatalogPartitionPlacement> debugPlacements = catalog.getAllPartitionPlacementsByTable( t.getTableId() );
                     if ( statement.getTransaction().getMonitoringData() != null ) {
                         statement.getTransaction()
                                 .getMonitoringData()
@@ -1324,6 +1324,7 @@ public abstract class AbstractRouter implements Router {
         private final long partitionColumnIndex;
         @Getter
         private boolean valueIdentified = false;
+        private boolean unsupportedFilter = false;
 
 
         public WhereClauseVisitor( Statement statement, long partitionColumnIndex ) {
@@ -1338,34 +1339,37 @@ public abstract class AbstractRouter implements Router {
             super.visitCall( call );
 
             if ( call.operands.size() == 2 ) {
-
-                if ( call.operands.get( 0 ) instanceof RexInputRef ) {
-                    if ( ((RexInputRef) call.operands.get( 0 )).getIndex() == partitionColumnIndex ) {
-                        if ( call.operands.get( 1 ) instanceof RexLiteral ) {
-                            value = ((RexLiteral) call.operands.get( 1 )).getValueForQueryParameterizer();
-                            values.add( value );
-                            valueIdentified = true;
-                        } else if ( call.operands.get( 1 ) instanceof RexDynamicParam ) {
-                            long index = ((RexDynamicParam) call.operands.get( 1 )).getIndex();
-                            value = statement.getDataContext().getParameterValue( index );//.get("?" + index);
-                            values.add( value );
-                            valueIdentified = true;
+                if ( call.op.getKind().equals( SqlKind.EQUALS ) ) {
+                    if ( call.operands.get( 0 ) instanceof RexInputRef ) {
+                        if ( ((RexInputRef) call.operands.get( 0 )).getIndex() == partitionColumnIndex ) {
+                            if ( call.operands.get( 1 ) instanceof RexLiteral ) {
+                                value = ((RexLiteral) call.operands.get( 1 )).getValueForQueryParameterizer();
+                                values.add( value );
+                                valueIdentified = true;
+                            } else if ( call.operands.get( 1 ) instanceof RexDynamicParam ) {
+                                long index = ((RexDynamicParam) call.operands.get( 1 )).getIndex();
+                                value = statement.getDataContext().getParameterValue( index );//.get("?" + index);
+                                values.add( value );
+                                valueIdentified = true;
+                            }
+                        }
+                    } else if ( call.operands.get( 1 ) instanceof RexInputRef ) {
+                        if ( ((RexInputRef) call.operands.get( 1 )).getIndex() == partitionColumnIndex ) {
+                            if ( call.operands.get( 0 ) instanceof RexLiteral ) {
+                                value = ((RexLiteral) call.operands.get( 0 )).getValueForQueryParameterizer();
+                                values.add( value );
+                                valueIdentified = true;
+                            } else if ( call.operands.get( 0 ) instanceof RexDynamicParam ) {
+                                long index = ((RexDynamicParam) call.operands.get( 0 )).getIndex();
+                                value = statement.getDataContext().getParameterValue( index );//get("?" + index); //.getParameterValues //
+                                values.add( value );
+                                valueIdentified = true;
+                            }
                         }
                     }
-                } else if ( call.operands.get( 1 ) instanceof RexInputRef ) {
-
-                    if ( ((RexInputRef) call.operands.get( 1 )).getIndex() == partitionColumnIndex ) {
-                        if ( call.operands.get( 0 ) instanceof RexLiteral ) {
-                            value = ((RexLiteral) call.operands.get( 0 )).getValueForQueryParameterizer();
-                            values.add( value );
-                            valueIdentified = true;
-                        } else if ( call.operands.get( 0 ) instanceof RexDynamicParam ) {
-                            long index = ((RexDynamicParam) call.operands.get( 0 )).getIndex();
-                            value = statement.getDataContext().getParameterValue( index );//get("?" + index); //.getParameterValues //
-                            values.add( value );
-                            valueIdentified = true;
-                        }
-                    }
+                } else {
+                    //Enable worstcase routing
+                    unsupportedFilter = true;
                 }
             }
             return call;
