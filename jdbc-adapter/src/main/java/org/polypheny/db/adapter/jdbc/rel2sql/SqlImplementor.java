@@ -1145,7 +1145,11 @@ public abstract class SqlImplementor {
             if ( needNew ) {
                 select = subSelect();
             } else {
-                select = asSelect();
+                if ( rel.getInputs().size() == 1 && rel.getInput( 0 ) instanceof JdbcTableScan ) {
+                    select = asSelect( ((JdbcTable) ((RelOptTableImpl) rel.getInput( 0 ).getTable()).getTable()).getNodeList() );
+                } else {
+                    select = asSelect();
+                }
                 clauseList.addAll( this.clauses );
             }
             clauseList.appendAll( clauses );
