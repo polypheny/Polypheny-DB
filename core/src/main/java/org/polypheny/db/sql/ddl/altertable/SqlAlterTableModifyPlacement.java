@@ -99,7 +99,6 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
                     partitionGroupNamesList.get( i ).unparse( writer, leftPrec, rightPrec );
                     if ( i + 1 < partitionGroupNamesList.size() ) {
                         writer.sep( "," );
-                        break;
                     }
                 }
             }

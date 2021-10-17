@@ -371,6 +371,15 @@ public abstract class DdlManager {
      */
     public abstract void modifyColumnPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement ) throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException;
 
+    /**
+     * Modified the partition distribution on the selected store. Can be used to add or remove partitions on a store.
+     * Which consequently alters the Partition Placments.
+     *
+     * @param catalogTable the table
+     * @param partitionGroupIds the desired target state of partition groups which should remain on this store
+     * @param storeInstance the data store on which the partition placements should be altered
+     * @param statement the used statement
+     */
     public abstract void modifyPartitionPlacement( CatalogTable catalogTable, List<Long> partitionGroupIds, DataStore storeInstance, Statement statement );
 
     /**

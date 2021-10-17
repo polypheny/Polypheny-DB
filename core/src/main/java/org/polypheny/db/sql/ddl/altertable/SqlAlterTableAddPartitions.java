@@ -104,7 +104,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
                     writer.sep( "," );
                     name.unparse( writer, 0, 0 );
                 }
-                ;
+                break;
             case "RANGE":
             case "LIST":
                 writer.keyword( "(" );
@@ -123,7 +123,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
                     }
                 }
                 writer.keyword( ")" );
-                ;
+                break;
         }
     }
 

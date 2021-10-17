@@ -178,7 +178,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                         writer.sep( "," );
                         name.unparse( writer, 0, 0 );
                     }
-                    ;
+                    break;
                 case "RANGE":
                 case "LIST":
                     writer.keyword( "(" );
@@ -194,11 +194,10 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
                         if ( i + 1 < partitionGroupNamesList.size() ) {
                             writer.sep( "," );
-                            break;
                         }
                     }
                     writer.keyword( ")" );
-                    ;
+                    break;
             }
             writer.endList( frame );
         }
