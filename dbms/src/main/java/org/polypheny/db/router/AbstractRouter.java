@@ -639,15 +639,13 @@ public abstract class AbstractRouter implements Router {
                                 int partitionColumnIndex = -1;
                                 Map<Long, Integer> resultColMapping = new HashMap<>();
                                 for ( int j = 0; j < (((LogicalTableModify) node).getInput()).getRowType().getFieldList().size(); j++ ) {
-
                                     String columnFieldName = (((LogicalTableModify) node).getInput()).getRowType().getFieldList().get( j ).getKey();
 
-                                    //Retrieve columnId of fieldName and map it to its fieldList location of INSERT Stmt
+                                    // Retrieve columnId of fieldName and map it to its fieldList location of INSERT Stmt
                                     int columnIndex = catalogTable.getColumnNames().indexOf( columnFieldName );
-                                    ;
                                     resultColMapping.put( catalogTable.columnIds.get( columnIndex ), j );
 
-                                    //Determine location of partitionColumn in fieldList
+                                    // Determine location of partitionColumn in fieldList
                                     if ( catalogTable.columnIds.get( columnIndex ) == catalogTable.partitionColumnId ) {
                                         partitionColumnIndex = columnIndex;
                                         partitionColumnIdentified = true;
@@ -658,7 +656,7 @@ public abstract class AbstractRouter implements Router {
                                     }
                                 }
 
-                                //Will executed all required tuples that belong on the same partition jointly
+                                // Will executed all required tuples that belong on the same partition jointly
                                 Map<Long, List<ImmutableList<RexLiteral>>> tuplesOnPartition = new HashMap<>();
                                 for ( ImmutableList<RexLiteral> currentTuple : ((LogicalValues) ((LogicalTableModify) node).getInput()).tuples ) {
 
@@ -679,47 +677,51 @@ public abstract class AbstractRouter implements Router {
                                 }
 
                                 for ( Map.Entry<Long, List<ImmutableList<RexLiteral>>> partitionMapping : tuplesOnPartition.entrySet() ) {
-
                                     Long currentPartitionId = partitionMapping.getKey();
-                                    LogicalValues newLogicalValues = new LogicalValues( cluster, cluster.traitSet(), (((LogicalTableModify) node).getInput()).getRowType()
-                                            , ImmutableList.copyOf( partitionMapping.getValue() ) );
+                                    for ( ImmutableList<RexLiteral> row : partitionMapping.getValue() ) {
+                                        LogicalValues newLogicalValues = new LogicalValues(
+                                                cluster,
+                                                cluster.traitSet(),
+                                                (((LogicalTableModify) node).getInput()).getRowType(),
+                                                ImmutableList.copyOf( ImmutableList.of( row ) ) );
 
-                                    RelNode input = buildDml(
-                                            newLogicalValues,
-                                            RelBuilder.create( statement, cluster ),
-                                            catalogTable,
-                                            placementsOnAdapter,
-                                            catalog.getPartitionPlacement( pkPlacement.adapterId, currentPartitionId ),
-                                            statement,
-                                            cluster,
-                                            true,
-                                            statement.getDataContext().getParameterValues() ).build();
+                                        RelNode input = buildDml(
+                                                newLogicalValues,
+                                                RelBuilder.create( statement, cluster ),
+                                                catalogTable,
+                                                placementsOnAdapter,
+                                                catalog.getPartitionPlacement( pkPlacement.adapterId, currentPartitionId ),
+                                                statement,
+                                                cluster,
+                                                true,
+                                                statement.getDataContext().getParameterValues() ).build();
 
-                                    List<String> qualifiedTableName = ImmutableList.of(
-                                            PolySchemaBuilder.buildAdapterSchemaName(
-                                                    pkPlacement.adapterUniqueName,
-                                                    catalogTable.getSchemaName(),
-                                                    pkPlacement.physicalSchemaName
-                                            ),
-                                            t.getLogicalTableName() + "_" + currentPartitionId );
-                                    RelOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
-                                    ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
+                                        List<String> qualifiedTableName = ImmutableList.of(
+                                                PolySchemaBuilder.buildAdapterSchemaName(
+                                                        pkPlacement.adapterUniqueName,
+                                                        catalogTable.getSchemaName(),
+                                                        pkPlacement.physicalSchemaName
+                                                ),
+                                                t.getLogicalTableName() + "_" + currentPartitionId );
+                                        RelOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
+                                        ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
-                                    // Build DML
-                                    TableModify modify;
+                                        // Build DML
+                                        TableModify modify;
 
-                                    modify = modifiableTable.toModificationRel(
-                                            cluster,
-                                            physical,
-                                            catalogReader,
-                                            input,
-                                            ((LogicalTableModify) node).getOperation(),
-                                            updateColumnList,
-                                            sourceExpressionList,
-                                            ((LogicalTableModify) node).isFlattened() );
+                                        modify = modifiableTable.toModificationRel(
+                                                cluster,
+                                                physical,
+                                                catalogReader,
+                                                input,
+                                                ((LogicalTableModify) node).getOperation(),
+                                                updateColumnList,
+                                                sourceExpressionList,
+                                                ((LogicalTableModify) node).isFlattened() );
 
-                                    modifies.add( modify );
+                                        modifies.add( modify );
 
+                                    }
                                 }
                                 operationWasRewritten = true;
 

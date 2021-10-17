@@ -114,19 +114,27 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
             if ( input instanceof LogicalValues ) {
                 List<RexNode> projects = new ArrayList<>();
                 boolean firstRow = true;
+                HashMap<Integer, Integer> idxMapping = new HashMap<>();
                 for ( ImmutableList<RexLiteral> node : ((LogicalValues) input).getTuples() ) {
                     int i = 0;
                     for ( RexLiteral literal : node ) {
-                        int idx = index.getAndIncrement();
-                        RelDataType type = input.getRowType().getFieldList().get( i++ ).getValue();
+                        int idx;
+                        if ( !idxMapping.containsKey( i ) ) {
+                            idx = index.getAndIncrement();
+                            idxMapping.put( i, idx );
+                        } else {
+                            idx = idxMapping.get( i );
+                        }
+                        RelDataType type = input.getRowType().getFieldList().get( i ).getValue();
                         if ( firstRow ) {
                             projects.add( new RexDynamicParam( type, idx ) );
                         }
-                        if ( !values.containsKey( i ) ) {
+                        if ( !values.containsKey( idx ) ) {
                             types.add( type );
-                            values.put( i, new ArrayList<>( ((LogicalValues) input).getTuples().size() ) );
+                            values.put( idx, new ArrayList<>( ((LogicalValues) input).getTuples().size() ) );
                         }
-                        values.get( i ).add( new ParameterValue( idx, type, literal.getValueForQueryParameterizer() ) );
+                        values.get( idx ).add( new ParameterValue( idx, type, literal.getValueForQueryParameterizer() ) );
+                        i++;
                     }
                     firstRow = false;
                 }
