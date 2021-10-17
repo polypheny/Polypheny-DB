@@ -343,7 +343,7 @@ public enum RuntimeConfig {
 
     TEMPERATURE_FREQUENCY_PROCESSING_INTERVAL( "runtime/partitionFrequencyProcessingInterval",
             "Time interval in seconds, how often the access frequency of all TEMPERATURE-partitioned tables is analyzed and redistributed",
-            BackgroundTask.TaskSchedulingType.EVERY_TEN_SECONDS,
+            BackgroundTask.TaskSchedulingType.EVERY_MINUTE,
             ConfigType.ENUM,
             "temperaturePartitionProcessingSettingsGroup" );
 

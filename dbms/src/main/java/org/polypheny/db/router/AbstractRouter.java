@@ -196,8 +196,8 @@ public abstract class AbstractRouter implements Router {
                             }
                         } );
 
-                        //if ( whereClauseVisitor.valueIdentified && !whereClauseVisitor.unsupportedFilter ) {
-                        if ( whereClauseVisitor.valueIdentified ) {
+                        if ( whereClauseVisitor.valueIdentified && !whereClauseVisitor.unsupportedFilter ) {
+                            //if ( whereClauseVisitor.valueIdentified ) {
                             List<Object> values = whereClauseVisitor.getValues().stream()
                                     .map( Object::toString )
                                     .collect( Collectors.toList() );

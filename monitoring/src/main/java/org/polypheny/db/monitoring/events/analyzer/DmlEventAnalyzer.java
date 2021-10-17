@@ -58,14 +58,11 @@ public class DmlEventAnalyzer {
 
     private static void processDurationInfo( DmlEvent dmlEvent, DmlDataPoint metric ) {
         InformationDuration duration = new Gson().fromJson( dmlEvent.getDurations(), InformationDuration.class );
-        getDurationInfo( metric, "Plan Caching", duration );
         getDurationInfo( metric, "Index Lookup Rewrite", duration );
         getDurationInfo( metric, "Constraint Enforcement", duration );
         getDurationInfo( metric, "Implementation Caching", duration );
         getDurationInfo( metric, "Index Update", duration );
         getDurationInfo( metric, "Routing", duration );
-        getDurationInfo( metric, "Planning & Optimization", duration );
-        getDurationInfo( metric, "Implementation", duration );
         getDurationInfo( metric, "Locking", duration );
     }
 
