@@ -145,7 +145,7 @@ public class FileStore extends DataStore {
             catalog.updatePartitionPlacementPhysicalNames(
                     getAdapterId(),
                     partitionId,
-                    currentSchema.getSchemaName(),
+                    "unused",
                     "unused" );
 
             for ( Long colId : catalogTable.columnIds ) {
@@ -160,7 +160,7 @@ public class FileStore extends DataStore {
             catalog.updateColumnPlacementPhysicalNames(
                     getAdapterId(),
                     placement.columnId,
-                    currentSchema.getSchemaName(),
+                    "unused",
                     "unused",
                     true );
         }
