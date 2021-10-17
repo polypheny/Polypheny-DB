@@ -4096,6 +4096,8 @@ public class CatalogImpl extends Catalog {
      * Adds a placement for a partition.
      *
      * @param adapterId The adapter on which the table should be placed on
+     * @param tableId The table for which a partition placement shall be created
+     * @param partitionId The id of a specific partition that shall create a new placement
      * @param placementType The type of placement
      * @param physicalSchemaName The schema name on the adapter
      * @param physicalTableName The table name on the adapter
@@ -4126,6 +4128,7 @@ public class CatalogImpl extends Catalog {
      * Deletes a placement for a partition.
      *
      * @param adapterId The adapter on which the table should be placed on
+     * @param partitionId   The id of a partition which shall be removed from that store.
      */
     @Override
     public void deletePartitionPlacement( int adapterId, long partitionId ) {
@@ -4137,6 +4140,13 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * Returns a specific partition entity which is placed on a store.
+     *
+     * @param adapterId The adapter on which the requested partitions palcement resides
+     * @param partitionId The id of the requested partition
+     * @return The requested PartitionPlacement on that store for agiven is
+     */
     @Override
     public CatalogPartitionPlacement getPartitionPlacement( int adapterId, long partitionId ) {
         try {
@@ -4149,12 +4159,25 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * Returns a list of all Partition Placements which currently reside on a adpater, disregarded of the table.
+     *
+     * @param adapterId The adapter on which the requested partition placements reside
+     * @return A list of all Partition Placements, that are currently located  on that specific store
+     */
     @Override
     public List<CatalogPartitionPlacement> getPartitionPlacementsByAdapter( int adapterId ) {
         return new ArrayList<>( partitionPlacements.prefixSubMap( new Object[]{ adapterId } ).values() );
     }
 
 
+    /**
+     * Returns a list of all Partition Placements which currently reside on a adapter, for a specific table.
+     *
+     * @param adapterId The adapter on which the requested partition placements reside
+     * @param tableId The table for which all partition placements on a adapter should be considered
+     * @return A list of all Partition Placements, that are currently located  on that specific store for a individual table
+     */
     @Override
     public List<CatalogPartitionPlacement> getPartitionPlacementByTable( int adapterId, long tableId ) {
         return getPartitionPlacementsByAdapter( adapterId )
@@ -4164,24 +4187,28 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * Returns a list of all Partition Placements which are currently associated with a table.
+     *
+     * @param tableId The table on which the requested partition placements are currently associated with.
+     * @return A list of all Partition Placements, that belong to the desired table
+     */
     @Override
     public List<CatalogPartitionPlacement> getAllPartitionPlacementsByTable( long tableId ) {
-
         return partitionPlacements.values()
                 .stream()
                 .filter( p -> p.tableId == tableId )
                 .collect( Collectors.toList() );
-
     }
 
 
-    @Override
-    public boolean checkIfExistsPartitionPlacement( int adapterId, long partitionId ) {
-        CatalogPartitionPlacement placement = partitionPlacements.get( new Object[]{ adapterId, partitionId } );
-        return placement != null;
-    }
-
-
+    /**
+     * Get all Partition Placements which are associated with a individual partition Id.
+     * Identifies on which locations and how often the individual partition is placed.
+     *
+     * @param partitionId The requested partition Id
+     * @return A list of Partition Placements which are physically responsible for that partition
+     */
     @Override
     public List<CatalogPartitionPlacement> getPartitionPlacements( long partitionId ) {
         return partitionPlacements.values()
@@ -4191,6 +4218,11 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * Returns all tables which are in need of special periodic treatment.
+     *
+     * @return List of tables which need to be periodically processed
+     */
     @Override
     public List<CatalogTable> getTablesForPeriodicProcessing() {
         List<CatalogTable> procTables = new ArrayList<>();
@@ -4207,6 +4239,11 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * Registers a table to be considered for periodic processing
+     *
+     * @param tableId Id of table to be considered for periodic processing
+     */
     @Override
     public void addTableToPeriodicProcessing( long tableId ) {
 
@@ -4220,10 +4257,14 @@ public class CatalogImpl extends Catalog {
             //Start Job for periodic processing
             FrequencyMap.INSTANCE.initialize();
         }
-
     }
 
 
+    /**
+     * Remove a table from periodic background processing
+     *
+     * @param tableId Id of table to be removed for periodic processing
+     */
     @Override
     public void removeTableFromPeriodicProcessing( long tableId ) {
         getTable( tableId );
@@ -4236,6 +4277,20 @@ public class CatalogImpl extends Catalog {
             //Terminate Job for periodic processing
             FrequencyMap.INSTANCE.terminate();
         }
+    }
+
+
+    /**
+     * Probes if a Partition Placement on a adapter for a specific partition already exists.
+     *
+     * @param adapterId Adapter on which to check
+     * @param partitionId Partition which to check
+     * @return teh response of the probe
+     */
+    @Override
+    public boolean checkIfExistsPartitionPlacement( int adapterId, long partitionId ) {
+        CatalogPartitionPlacement placement = partitionPlacements.get( new Object[]{ adapterId, partitionId } );
+        return placement != null;
     }
 
 
