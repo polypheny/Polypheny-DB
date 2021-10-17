@@ -19,10 +19,12 @@ package org.polypheny.db.view;
 import com.google.common.collect.ImmutableList;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
@@ -73,13 +75,17 @@ public class MaterializedManagerImpl extends MaterializedManager {
     @Getter
     private final TransactionManager transactionManager;
 
+    @Getter
+    private final List<Long> intervalToUpdate;
+
     Map<PolyXid, Long> potentialInteresting;
 
 
     public MaterializedManagerImpl( TransactionManager transactionManager ) {
         this.transactionManager = transactionManager;
-        this.materializedInfo = new HashMap<>();
+        this.materializedInfo = new ConcurrentHashMap<>();
         this.potentialInteresting = new HashMap<PolyXid, Long>();
+        this.intervalToUpdate = Collections.synchronizedList( new ArrayList<>() );
         MaterializedFreshnessLoop materializedFreshnessLoop = new MaterializedFreshnessLoop( this );
         Thread t = new Thread( materializedFreshnessLoop );
         t.start();
@@ -136,9 +142,11 @@ public class MaterializedManagerImpl extends MaterializedManager {
         }
     }
 
+
     /**
      * if a transaction is committed, it checks if it is connected to a materialized view
      * with freshness update, if it is the materialized view is updated
+     *
      * @param xid of committed transaction
      */
     @Override
@@ -146,6 +154,17 @@ public class MaterializedManagerImpl extends MaterializedManager {
         if ( potentialInteresting.containsKey( xid ) ) {
             materializedUpdate( potentialInteresting.remove( xid ) );
         }
+        List<Long> intervalUpdate = ImmutableList.copyOf( intervalToUpdate );
+        intervalToUpdate.clear();
+        if ( !intervalUpdate.isEmpty() ) {
+
+            for ( long id : intervalUpdate ) {
+                if ( Catalog.getInstance().checkIfExistsTable( id ) ) {
+                    prepareToUpdate( id );
+                }
+            }
+        }
+
     }
 
 
@@ -171,8 +190,10 @@ public class MaterializedManagerImpl extends MaterializedManager {
         }
     }
 
+
     /**
      * starts transition and acquires a global schema lock before the materialized view is updated
+     *
      * @param viewId of materialized view, which is updated
      */
     public void prepareToUpdate( Long viewId ) {

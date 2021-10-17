@@ -270,6 +270,12 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
+    public boolean checkIfExistsTable( long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
     public void renameTable( long tableId, String name ) {
         throw new NotImplementedException();
     }

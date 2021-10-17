@@ -57,7 +57,6 @@ import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
-import org.polypheny.db.view.MaterializedManager;
 
 public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutableStatement {
 
@@ -107,7 +106,6 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
 
     @Override
     public void execute( Context context, Statement statement ) {
-        MaterializedManager.getInstance().isCreatingMaterializedView = true;
         Catalog catalog = Catalog.getInstance();
         long schemaId;
         String viewName;
@@ -202,8 +200,6 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
         } catch ( ColumnNotExistsException | ColumnAlreadyExistsException e ) {
             e.printStackTrace();
         }
-
-        MaterializedManager.getInstance().isCreatingMaterializedView = false;
 
     }
 

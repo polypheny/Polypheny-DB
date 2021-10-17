@@ -393,8 +393,6 @@ public abstract class Catalog {
     public abstract long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean orderd );
 
 
-
-
     /**
      * Checks if there is a table with the specified name in the specified schema.
      *
@@ -403,6 +401,15 @@ public abstract class Catalog {
      * @return true if there is a table with this name, false if not.
      */
     public abstract boolean checkIfExistsTable( long schemaId, String tableName );
+
+
+    /**
+     * Checks if there is a table with the specified id.
+     *
+     * @param tableId id of the table
+     * @return true if there is a table with this id, false if not.
+     */
+    public abstract boolean checkIfExistsTable( long tableId );
 
     /**
      * Renames a table
@@ -1198,7 +1205,7 @@ public abstract class Catalog {
         TABLE( 1 ),
         SOURCE( 2 ),
         VIEW( 3 ),
-        MATERIALIZEDVIEW(4);
+        MATERIALIZEDVIEW( 4 );
         // STREAM, ...
 
         private final int id;

@@ -1533,6 +1533,18 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Checks if there is a table with the specified id.
+     *
+     * @param tableId id of the table
+     * @return true if there is a table with this id, false if not.
+     */
+    @Override
+    public boolean checkIfExistsTable( long tableId ) {
+        return tables.containsKey( tableId );
+    }
+
+
+    /**
      * Renames a table
      *
      * @param tableId The if of the table to rename
