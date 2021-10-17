@@ -591,7 +591,6 @@ public abstract class Catalog {
      */
     public abstract CatalogColumn getColumn( String databaseName, String schemaName, String tableName, String columnName ) throws UnknownColumnException, UnknownSchemaException, UnknownDatabaseException, UnknownTableException;
 
-
     /**
      * Adds a column.
      *
@@ -1067,7 +1066,6 @@ public abstract class Catalog {
      * @return List of all partitions associated with that table
      */
     public abstract List<CatalogPartition> getPartitionsByTable( long tableId );
-
 
     /**
      * Effectively partitions a table with the specified partitionType
