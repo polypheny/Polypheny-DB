@@ -32,7 +32,7 @@ class BackgroundTaskHandle implements Runnable {
     @Getter
     private long maxExecTime = 0L;
 
-    private ScheduledFuture runner;
+    private final ScheduledFuture<?> runner;
 
 
     public BackgroundTaskHandle( String id, BackgroundTask task, String description, TaskPriority priority, TaskSchedulingType schedulingType ) {
@@ -44,7 +44,6 @@ class BackgroundTaskHandle implements Runnable {
 
         // Schedule
         ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
-        // TODO MV: implement workload based scheduling
         this.runner = exec.scheduleAtFixedRate( this, 0, schedulingType.getMillis(), TimeUnit.MILLISECONDS );
     }
 

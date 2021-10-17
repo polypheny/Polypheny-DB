@@ -15,7 +15,6 @@ public interface BackgroundTask {
 
 
     enum TaskSchedulingType {
-        WORKLOAD( 0 ),
         EVERY_SECOND( 1000 ),
         EVERY_FIVE_SECONDS( 5000 ),
         EVERY_TEN_SECONDS( 10000 ),

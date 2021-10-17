@@ -80,7 +80,6 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
-
         writer.keyword( "ALTER" );
         writer.keyword( "TABLE" );
         table.unparse( writer, leftPrec, rightPrec );
@@ -95,7 +94,6 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
             writer.keyword( " WITH " );
             writer.keyword( " PARTITIONS" );
             SqlWriter.Frame frame = writer.startList( "(", ")" );
-
             if ( partitionGroupNamesList != null ) {
                 for ( int i = 0; i < partitionGroupNamesList.size(); i++ ) {
                     partitionGroupNamesList.get( i ).unparse( writer, leftPrec, rightPrec );
@@ -120,7 +118,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
 
         // You can't partition placements if the table is not partitioned
         if ( !catalogTable.isPartitioned && (!partitionGroupList.isEmpty() || !partitionGroupNamesList.isEmpty()) ) {
-            throw new RuntimeException( " Partition Placement is not allowed for unpartitioned table '" + catalogTable.name + "'" );
+            throw new RuntimeException( "Partition Placement is not allowed for unpartitioned table '" + catalogTable.name + "'" );
         }
 
         List<Long> columnIds = new LinkedList<>();
@@ -133,9 +131,13 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
         try {
             DdlManager.getInstance().modifyColumnPlacement(
                     catalogTable,
-                    columnList.getList().stream().map( c -> getCatalogColumn( catalogTable.id, (SqlIdentifier) c ).id ).collect( Collectors.toList() ),
+                    columnList.getList().stream()
+                            .map( c -> getCatalogColumn( catalogTable.id, (SqlIdentifier) c ).id )
+                            .collect( Collectors.toList() ),
                     partitionGroupList,
-                    partitionGroupNamesList.stream().map( SqlIdentifier::toString ).collect( Collectors.toList() ),
+                    partitionGroupNamesList.stream()
+                            .map( SqlIdentifier::toString )
+                            .collect( Collectors.toList() ),
                     storeInstance,
                     statement );
         } catch ( PlacementNotExistsException e ) {
