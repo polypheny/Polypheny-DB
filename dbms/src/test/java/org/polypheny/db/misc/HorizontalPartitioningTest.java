@@ -570,23 +570,20 @@ public class HorizontalPartitioningTest {
                             ImmutableList.of(
                                     new Object[]{ 10, "e", 100 } ) );
 
-                    //Check if FILTER Compound can be used - OR
+                    // Check if FILTER Compound can be used - OR
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM physicalPartitionFilter WHERE tvarchar = 'e' OR tvarchar = 'f' ORDER BY tprimary" ),
                             ImmutableList.of(
                                     new Object[]{ 10, "e", 100 },
                                     new Object[]{ 21, "f", 200 } ) );
 
-                    //Check if FILTER Compound can be used - AND
+                    // Check if FILTER Compound can be used - AND
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM physicalPartitionFilter WHERE tvarchar = 'e' AND tvarchar = 'f'" ),
                             ImmutableList.of() );
-
-
                 } finally {
                     // Drop tables and stores
                     statement.executeUpdate( "DROP TABLE IF EXISTS physicalPartitionFilter" );
-
                 }
             }
         }
@@ -752,7 +749,6 @@ public class HorizontalPartitioningTest {
                 }
             }
         }
-
     }
 
 
@@ -778,7 +774,7 @@ public class HorizontalPartitioningTest {
                                     new Object[]{ 2, "Eva", 7 },
                                     new Object[]{ 3, "Alice", 89 } ) );
 
-                    //Check if the values are correctly associated with the corresponding partition
+                    // Check if the values are correctly associated with the corresponding partition
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM multiinsert WHERE tvarchar = 'Hans' ORDER BY tprimary" ),
                             ImmutableList.of( new Object[]{ 1, "Hans", 5 } ) );

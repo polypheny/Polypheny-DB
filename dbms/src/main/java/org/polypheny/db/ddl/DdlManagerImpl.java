@@ -951,8 +951,10 @@ public class DdlManagerImpl extends DdlManager {
                     IndexManager.getInstance().deleteIndex( index );
                 } else {
                     // Delete index on store
-                    AdapterManager.getInstance().getStore( index.location ).dropIndex( statement.getPrepareContext()
-                            , index, catalog.getPartitionsOnDataPlacement( index.location, catalogTable.id ) );
+                    AdapterManager.getInstance().getStore( index.location ).dropIndex(
+                            statement.getPrepareContext(),
+                            index,
+                            catalog.getPartitionsOnDataPlacement( index.location, catalogTable.id ) );
                 }
                 // Delete index in catalog
                 catalog.deleteIndex( index.id );
@@ -1326,7 +1328,7 @@ public class DdlManagerImpl extends DdlManager {
         if ( removedPartitions.size() > 0 ) {
             storeInstance.dropTable( statement.getPrepareContext(), catalogTable, removedPartitions );
 
-            //  indexes on this new Partition Placement if there is already an index
+            //  Indexes on this new Partition Placement if there is already an index
             for ( CatalogIndex currentIndex : catalog.getIndexes( catalogTable.id, false ) ) {
                 if ( currentIndex.location == storeId ) {
                     storeInstance.dropIndex( statement.getPrepareContext(), currentIndex, removedPartitions );
@@ -2134,8 +2136,10 @@ public class DdlManagerImpl extends DdlManager {
                 IndexManager.getInstance().deleteIndex( index );
             } else {
                 // Delete index on store
-                AdapterManager.getInstance().getStore( index.location ).dropIndex( statement.getPrepareContext()
-                        , index, catalog.getPartitionsOnDataPlacement( index.location, catalogTable.id ) );
+                AdapterManager.getInstance().getStore( index.location ).dropIndex(
+                        statement.getPrepareContext(),
+                        index,
+                        catalog.getPartitionsOnDataPlacement( index.location, catalogTable.id ) );
             }
             // Delete index in catalog
             catalog.deleteIndex( index.id );

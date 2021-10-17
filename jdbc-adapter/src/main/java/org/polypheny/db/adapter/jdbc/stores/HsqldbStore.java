@@ -133,7 +133,6 @@ public class HsqldbStore extends AbstractJdbcStore {
 
     @Override
     public void dropIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
-
         List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
         partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
 

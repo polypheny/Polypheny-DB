@@ -118,11 +118,12 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
             throw new RuntimeException( "Partition Placement is not allowed for unpartitioned table '" + catalogTable.name + "'" );
         }
 
+        // Check if all columns exist
         for ( SqlNode node : columnList.getList() ) {
             getCatalogColumn( catalogTable.id, (SqlIdentifier) node );
         }
-        DataStore storeInstance = getDataStoreInstance( storeName );
 
+        DataStore storeInstance = getDataStoreInstance( storeName );
         try {
             DdlManager.getInstance().modifyColumnPlacement(
                     catalogTable,
