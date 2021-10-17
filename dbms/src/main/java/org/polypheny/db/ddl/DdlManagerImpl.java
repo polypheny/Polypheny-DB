@@ -111,6 +111,7 @@ import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.LogicalView;
+import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.ArrayType;
@@ -1630,6 +1631,9 @@ public class DdlManagerImpl extends DdlManager {
 
             //catalog.updateTablePartitionProperties(tableId, partitionProperty);
             CatalogTable catalogTable = catalog.getTable( tableId );
+
+            // Trigger rebuild of schema; triggers schema creation on adapters
+            PolySchemaBuilder.getInstance().getCurrent();
 
             for ( DataStore store : stores ) {
                 catalog.addPartitionPlacement(
