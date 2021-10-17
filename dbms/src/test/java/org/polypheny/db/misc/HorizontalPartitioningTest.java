@@ -717,15 +717,15 @@ public class HorizontalPartitioningTest {
 
                     //Check if the values are correctly associated with the corresponding partition
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM multiinsert ORDER BY tprimary WHERE tvarchar = 'Hans'" ),
+                            statement.executeQuery( "SELECT * FROM multiinsert WHERE tvarchar = 'Hans' ORDER BY tprimary" ),
                             ImmutableList.of( new Object[]{ 1, "Hans", 5 } ) );
 
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM multiinsert ORDER BY tprimary WHERE tvarchar = 'Eva'" ),
+                            statement.executeQuery( "SELECT * FROM multiinsert WHERE tvarchar = 'Eva' ORDER BY tprimary" ),
                             ImmutableList.of( new Object[]{ 2, "Eva", 7 } ) );
 
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM multiinsert ORDER BY tprimary WHERE tvarchar = 'Alice'" ),
+                            statement.executeQuery( "SELECT * FROM multiinsert WHERE tvarchar = 'Alice' ORDER BY tprimary" ),
                             ImmutableList.of( new Object[]{ 3, "Alice", 89 } ) );
 
                 } finally {
