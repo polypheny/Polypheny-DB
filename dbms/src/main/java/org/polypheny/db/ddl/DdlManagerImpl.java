@@ -725,7 +725,7 @@ public class DdlManagerImpl extends DdlManager {
             //add default value for non-partitioned otherwise CCP wouldn't be created at all
         }*/
 
-        //Gather all partitions relevant to add depending on the specified partitionGroup
+        // Gather all partitions relevant to add depending on the specified partitionGroup
         tempPartitionGroupList.forEach( pg -> catalog.getPartitions( pg ).forEach( p -> partitionIds.add( p.id ) ) );
 
         // Create column placements
@@ -740,7 +740,7 @@ public class DdlManagerImpl extends DdlManager {
                     tempPartitionGroupList );
             addedColumns.add( catalog.getColumn( cid ) );
         }
-        //Check if placement includes primary key columns
+        // Check if placement includes primary key columns
         CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
         for ( long cid : primaryKey.columnIds ) {
             if ( !columnIds.contains( cid ) ) {
@@ -756,7 +756,7 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        //Need to create partitionPlacements first in order to trigger schema creation on PolySchemaBuilder
+        // Need to create partitionPlacements first in order to trigger schema creation on PolySchemaBuilder
         for ( long partitionId : partitionIds ) {
             catalog.addPartitionPlacement(
                     dataStore.getAdapterId(),

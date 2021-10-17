@@ -16,7 +16,6 @@
 
 package org.polypheny.db.processing;
 
-
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -61,6 +60,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.LimitIterator;
+
 
 @Slf4j
 public class DataMigratorImpl implements DataMigrator {
@@ -159,7 +159,6 @@ public class DataMigratorImpl implements DataMigrator {
             } catch ( Throwable t ) {
                 throw new RuntimeException( t );
             }
-
         }
     }
 
@@ -266,7 +265,6 @@ public class DataMigratorImpl implements DataMigrator {
 
 
     private RelRoot getSourceIterator( Statement statement, Map<Long, List<CatalogColumnPlacement>> placementDistribution ) {
-
         // Build Query
         RelOptCluster cluster = RelOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),
@@ -328,7 +326,6 @@ public class DataMigratorImpl implements DataMigrator {
      */
     @Override
     public void copySelectiveData( Transaction transaction, CatalogAdapter store, CatalogTable sourceTable, CatalogTable targetTable, List<CatalogColumn> columns, Map<Long, List<CatalogColumnPlacement>> placementDistribution, List<Long> targetPartitionIds ) {
-
         CatalogPrimaryKey sourcePrimaryKey = Catalog.getInstance().getPrimaryKey( sourceTable.primaryKey );
 
         // Check Lists
@@ -427,7 +424,6 @@ public class DataMigratorImpl implements DataMigrator {
      */
     @Override
     public void copyPartitionData( Transaction transaction, CatalogAdapter store, CatalogTable sourceTable, CatalogTable targetTable, List<CatalogColumn> columns, List<Long> sourcePartitionIds, List<Long> targetPartitionIds ) {
-
         if ( sourceTable.id != targetTable.id ) {
             throw new RuntimeException( "Unsupported migration scenario. Table ID mismatch" );
         }
@@ -551,7 +547,7 @@ public class DataMigratorImpl implements DataMigrator {
                     Statement currentTargetStatement = targetStatements.get( partitionId );
 
                     for ( Map.Entry<Long, List<Object>> columnDataOnPartition : values.entrySet() ) {
-                        //Check partitionValue
+                        // Check partitionValue
                         currentTargetStatement.getDataContext().addParameterValues( columnDataOnPartition.getKey(), null, columnDataOnPartition.getValue() );
                     }
 
