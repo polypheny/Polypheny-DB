@@ -1060,6 +1060,12 @@ public abstract class Catalog {
     public abstract CatalogPartition getPartition( long partitionId );
 
 
+    /**
+     * Retrieves a list of partitions which are associated with a specific table
+     *
+     * @param tableId Table for which partitions shall be gathered
+     * @return List of all partitions associated with that table
+     */
     public abstract List<CatalogPartition> getPartitionsByTable( long tableId );
 
 
@@ -1112,20 +1118,32 @@ public abstract class Catalog {
     /**
      * Updates the specified partition group with the attached partitionIds
      *
-     * @param partitionGroupId
+     * @param partitionGroupId Partition Group to be updated
      * @param partitionIds List of new partitionIds
      */
     public abstract void updatePartitionGroup( long partitionGroupId, List<Long> partitionIds );
 
+    /**
+     * Adds a partition to an already existing partition Group
+     *
+     * @param partitionGroupId Group to add to
+     * @param partitionId Partition to add
+     */
     public abstract void addPartitionToGroup( long partitionGroupId, Long partitionId );
 
+    /**
+     * Removes a partition from an already existing partition Group
+     *
+     * @param partitionGroupId Group to remove the partition from
+     * @param partitionId Partition to remove
+     */
     public abstract void removePartitionFromGroup( long partitionGroupId, Long partitionId );
 
     /**
      * Assign the partition to a new partitionGroup
      *
-     * @param partitionId
-     * @param partitionGroupId
+     * @param partitionId Partition to move
+     * @param partitionGroupId New target gorup to move the partion to
      */
     public abstract void updatePartition( long partitionId, Long partitionGroupId );
 
@@ -1228,7 +1246,7 @@ public abstract class Catalog {
      * @param adapterId The id of the adapter to be checked
      * @param tableId The id of the table to be checked
      * @param columnId The id of the column to be checked
-     * @param threshold
+     * @param threshold Accepted toleration threshold for new setup of how many placements must remain after new partitionGroup distribution
      * @return If its correctly distributed or not
      */
     public abstract boolean validatePartitionGroupDistribution( int adapterId, long tableId, long columnId, int threshold );

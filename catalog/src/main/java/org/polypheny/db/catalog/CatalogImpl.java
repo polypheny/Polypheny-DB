@@ -3422,7 +3422,7 @@ public class CatalogImpl extends Catalog {
     /**
      * Updates the specified partition group with the attached partitionIds
      *
-     * @param partitionGroupId
+     * @param partitionGroupId Partition Group to be updated
      * @param partitionIds List of new partitionIds
      */
     @Override
@@ -3450,6 +3450,12 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * Adds a partition to an already existing partition Group
+     *
+     * @param partitionGroupId Group to add to
+     * @param partitionId Partition to add
+     */
     @Override
     public void addPartitionToGroup( long partitionGroupId, Long partitionId ) {
 
@@ -3468,9 +3474,15 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * Removes a partition from an already existing partition Group
+     *
+     * @param partitionGroupId Group to remove the partition from
+     * @param partitionId Partition to remove
+     */
     @Override
     public void removePartitionFromGroup( long partitionGroupId, Long partitionId ) {
-// Check whether there this partition id exists
+        // Check whether there this partition id exists
         CatalogPartitionGroup partitionGroup = getPartitionGroup( partitionGroupId );
         List<Long> newPartitionIds = new ArrayList<>( partitionGroup.partitionIds );
 
@@ -3484,10 +3496,10 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Updates the partition to with new partitionGroup
+     * Assign the partition to a new partitionGroup
      *
-     * @param partitionId
-     * @param partitionGroupId
+     * @param partitionId   Partition to move
+     * @param partitionGroupId  New target gorup to move the partion to
      */
     @Override
     public void updatePartition( long partitionId, Long partitionGroupId ) {
@@ -3616,6 +3628,12 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * Retrieves a list of partitions which are associated with a specific table
+     *
+     * @param tableId Table for which partitions shall be gathered
+     * @return List of all partitions associated with that table
+     */
     @Override
     public List<CatalogPartition> getPartitionsByTable( long tableId ) {
 
