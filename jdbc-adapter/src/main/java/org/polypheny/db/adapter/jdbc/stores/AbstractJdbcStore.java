@@ -130,7 +130,7 @@ public abstract class AbstractJdbcStore extends DataStore {
 
         List<CatalogColumnPlacement> existingPlacements = catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id );
 
-        //Remove the unpartitioned table name again, otherwise it would cause, table already exist due to create statement
+        // Remove the unpartitioned table name again, otherwise it would cause, table already exist due to create statement
         for ( long partitionId : partitionIds ) {
             String physicalTableName = getPhysicalTableName( catalogTable.id, partitionId );
 
@@ -234,7 +234,7 @@ public abstract class AbstractJdbcStore extends DataStore {
 
     protected void createColumnDefinition( CatalogColumn catalogColumn, StringBuilder builder ) {
         if ( !this.dialect.supportsNestedArrays() && catalogColumn.collectionsType != null ) {
-            //returns e.g. TEXT if arrays are not supported
+            // Returns e.g. TEXT if arrays are not supported
             builder.append( getTypeString( PolyType.ARRAY ) );
         } else {
             builder.append( " " ).append( getTypeString( catalogColumn.type ) );
@@ -455,6 +455,5 @@ public abstract class AbstractJdbcStore extends DataStore {
 
 
     protected abstract String getDefaultPhysicalSchemaName();
-
 
 }

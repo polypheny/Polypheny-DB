@@ -445,7 +445,6 @@ public abstract class DdlManager {
      */
     public abstract void createTable( long schemaId, String tableName, List<ColumnInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws TableAlreadyExistsException, ColumnNotExistsException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException;
 
-
     /**
      * Create a new view
      *
@@ -470,7 +469,6 @@ public abstract class DdlManager {
      * @param statement the used Statement
      */
     public abstract void removePartitioning( CatalogTable catalogTable, Statement statement );
-
 
     /**
      * Adds a new constraint to a table

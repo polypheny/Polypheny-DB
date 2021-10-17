@@ -189,7 +189,6 @@ public class FrequencyMapImpl extends FrequencyMap {
         boolean skip = false;
         boolean firstRound = true;
         for ( Entry<Long, Long> currentEntry : descSortedMap.entrySet() ) {
-
             if ( currentEntry.getValue() == 0 ) {
                 if ( firstRound ) {
                     skip = true;
@@ -212,7 +211,6 @@ public class FrequencyMapImpl extends FrequencyMap {
                 partitionsAllowedInHot.add( currentEntry.getKey() );
                 toleranceCounter++;
             }
-
         }
 
         if ( !skip ) {
@@ -254,7 +252,6 @@ public class FrequencyMapImpl extends FrequencyMap {
      * @param partitionsFromHotToCold Partitions which should be moved from HOT to COLD PartitionGroup
      */
     private void redistributePartitions( CatalogTable table, List<Long> partitionsFromColdToHot, List<Long> partitionsFromHotToCold ) {
-
         if ( log.isDebugEnabled() ) {
             log.debug( "Execute physical redistribution of partitions for table: {}", table.name );
             log.debug( "Partitions to move from HOT to COLD: {}", partitionsFromHotToCold );
@@ -275,9 +272,8 @@ public class FrequencyMapImpl extends FrequencyMap {
             List<CatalogAdapter> adaptersWithCold = Catalog.getInstance().getAdaptersByPartitionGroup( table.id, ((TemperaturePartitionProperty) table.partitionProperty).getColdPartitionGroupId() );
 
             log.debug( "Get adapters to create physical tables" );
-            //Validate that partition does not already exist on store
+            // Validate that partition does not already exist on store
             for ( CatalogAdapter catalogAdapter : adaptersWithHot ) {
-
                 // Skip creation/deletion because this adapter contains both groups HOT & COLD
                 if ( adaptersWithCold.contains( catalogAdapter ) ) {
                     if ( log.isDebugEnabled() ) {
@@ -286,7 +282,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                     continue;
                 }
 
-                //First create new HOT tables
+                // First create new HOT tables
                 Adapter adapter = AdapterManager.getInstance().getAdapter( catalogAdapter.id );
                 if ( adapter instanceof DataStore ) {
                     DataStore store = (DataStore) adapter;
@@ -294,7 +290,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                     List<Long> hotPartitionsToCreate = filterList( catalogAdapter.id, table.id, partitionsFromColdToHot );
                     //List<Long> coldPartitionsToDelete = filterList( catalogAdapter.id, table.id, partitionsFromHotToCold );
 
-                    //IF this store contains both Groups HOT & COLD do nothing
+                    // If this store contains both Groups HOT & COLD do nothing
                     if ( hotPartitionsToCreate.size() != 0 ) {
                         Catalog.getInstance().getPartitionsOnDataPlacement( store.getAdapterId(), table.id );
 
@@ -313,14 +309,20 @@ public class FrequencyMapImpl extends FrequencyMap {
                         List<CatalogColumn> catalogColumns = new ArrayList<>();
                         catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> catalogColumns.add( catalog.getColumn( cp.columnId ) ) );
 
-                        dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), catalogColumns, hotPartitionsToCreate );
+                        dataMigrator.copyData(
+                                statement.getTransaction(),
+                                catalog.getAdapter( store.getAdapterId() ),
+                                catalogColumns,
+                                hotPartitionsToCreate );
 
                         if ( !partitionsToRemoveFromStore.containsKey( store ) ) {
                             partitionsToRemoveFromStore.put( store, partitionsFromHotToCold );
                         } else {
                             partitionsToRemoveFromStore.replace(
                                     store,
-                                    Stream.of( partitionsToRemoveFromStore.get( store ), partitionsFromHotToCold ).flatMap( Collection::stream ).collect( Collectors.toList() )
+                                    Stream.of( partitionsToRemoveFromStore.get( store ), partitionsFromHotToCold )
+                                            .flatMap( Collection::stream )
+                                            .collect( Collectors.toList() )
                             );
                         }
                     }
@@ -364,7 +366,6 @@ public class FrequencyMapImpl extends FrequencyMap {
                                     Stream.of( partitionsToRemoveFromStore.get( store ), partitionsFromColdToHot ).flatMap( Collection::stream ).collect( Collectors.toList() )
                             );
                         }
-
                     }
                 }
             }
@@ -394,8 +395,6 @@ public class FrequencyMapImpl extends FrequencyMap {
                 }
             }
         }
-
-
     }
 
 
