@@ -79,7 +79,6 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
-
         writer.keyword( "ALTER" );
         writer.keyword( "TABLE" );
         table.unparse( writer, leftPrec, rightPrec );
@@ -144,4 +143,3 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
     }
 
 }
-

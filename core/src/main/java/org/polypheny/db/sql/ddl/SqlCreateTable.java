@@ -140,7 +140,6 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
-
         writer.keyword( "CREATE" );
         writer.keyword( "TABLE" );
         if ( ifNotExists ) {
@@ -214,7 +213,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         long schemaId;
 
         try {
-            // cannot use getTable here, as table does not yet exist
+            // Cannot use getTable() here since table does not yet exist
             if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
                 schemaId = catalog.getSchema( name.names.get( 0 ), name.names.get( 1 ) ).id;
                 tableName = name.names.get( 2 );
@@ -245,7 +244,6 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         }
 
         try {
-
             DdlManager.getInstance().createTable(
                     schemaId,
                     tableName,
@@ -280,7 +278,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         } catch ( PartitionGroupNamesNotUniqueException e ) {
             throw SqlUtil.newContextException( partitionColumn.getParserPosition(), RESOURCE.partitionNamesNotUnique() );
         } catch ( GenericCatalogException | UnknownColumnException e ) {
-            // we just added the table/column so it has to exist or we have a internal problem
+            // We just added the table/column so it has to exist or we have an internal problem
             throw new RuntimeException( e );
         }
     }
@@ -309,7 +307,14 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 SqlKeyConstraint constraint = (SqlKeyConstraint) c.e;
                 String constraintName = constraint.getName() != null ? constraint.getName().getSimple() : null;
 
-                constraintInformation.add( new ConstraintInformation( constraintName, constraint.getConstraintType(), constraint.getColumnList().getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ) ) );
+                ConstraintInformation ci = new ConstraintInformation(
+                        constraintName,
+                        constraint.getConstraintType(),
+                        constraint.getColumnList().getList().stream()
+                                .map( SqlNode::toString )
+                                .collect( Collectors.toList() )
+                );
+                constraintInformation.add( ci );
             } else {
                 throw new AssertionError( c.e.getClass() );
             }

@@ -1117,16 +1117,17 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void modifyColumnPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement ) throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException {
+    public void modifyColumnPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement )
+            throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException {
         // Check whether this placement already exists
         if ( !catalogTable.placementsByAdapter.containsKey( storeInstance.getAdapterId() ) ) {
             throw new PlacementNotExistsException();
         }
 
-        //check if views are dependent from this view
+        // Check if views are dependent from this view
         checkViewDependencies( catalogTable );
 
-        //check before physical removal if placement would be correct
+        // Check before physical removal if placement would be correct
 
         // Which columns to remove
         for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id ) ) {
@@ -1210,10 +1211,10 @@ public class DdlManagerImpl extends DdlManager {
             tempPartitionGroupList.add( catalogTable.partitionProperty.partitionGroupIds.get( 0 ) );
         }
 
-        //all internal partitions placed on this store
+        // All internal partitions placed on this store
         List<Long> partitionIds = new ArrayList<>();
 
-        //Gather all partitions relevant to add depending on the specified partitionGroup
+        // Gather all partitions relevant to add depending on the specified partitionGroup
         tempPartitionGroupList.forEach( pg -> catalog.getPartitions( pg ).forEach( p -> partitionIds.add( p.id ) ) );
 
         // Which columns to add
@@ -1253,14 +1254,13 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void modifyPartitionPlacement( CatalogTable catalogTable, List<Long> partitionGroupIds, DataStore storeInstance, Statement statement ) {
-
         int storeId = storeInstance.getAdapterId();
         List<Long> newPartitions = new ArrayList<>();
         List<Long> removedPartitions = new ArrayList<>();
 
         List<Long> currentPartitionGroupsOnStore = catalog.getPartitionGroupsOnDataPlacement( storeId, catalogTable.id );
 
-        //Get PartitionGroups that have been removed
+        // Get PartitionGroups that have been removed
         for ( long partitionGroupId : currentPartitionGroupsOnStore ) {
             if ( !partitionGroupIds.contains( partitionGroupId ) ) {
                 catalog.getPartitions( partitionGroupId ).forEach( p -> removedPartitions.add( p.id ) );
@@ -1268,15 +1268,15 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        //Get PartitionGroups that have been newly added
+        // Get PartitionGroups that have been newly added
         for ( Long partitionGroupId : partitionGroupIds ) {
             if ( !currentPartitionGroupsOnStore.contains( partitionGroupId ) ) {
                 catalog.getPartitions( partitionGroupId ).forEach( p -> newPartitions.add( p.id ) );
             }
         }
 
-        //Check for the specified columnId if we still have a ColumnPlacement for every partitionGroup
-        //Check for removed partitions if every CCP  still has all partitions somewhere
+        // Check for the specified columnId if we still have a ColumnPlacement for every partitionGroup
+        // Check for removed partitions if every CCP  still has all partitions somewhere
         for ( long partitionId : removedPartitions ) {
             List<Long> tempIds = new ArrayList<>( catalogTable.columnIds );
             boolean partitionChecked = false;
@@ -1303,7 +1303,7 @@ public class DdlManagerImpl extends DdlManager {
         // Copy the data to the newly added column placements
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
         if ( newPartitions.size() > 0 ) {
-            //Need to create partitionPlacements first in order to trigger schema creation on PolySchemaBuilder
+            // Need to create partitionPlacements first in order to trigger schema creation on PolySchemaBuilder
             for ( long partitionId : newPartitions ) {
                 catalog.addPartitionPlacement(
                         storeInstance.getAdapterId(),
@@ -1325,8 +1325,6 @@ public class DdlManagerImpl extends DdlManager {
         if ( removedPartitions.size() > 0 ) {
             storeInstance.dropTable( statement.getPrepareContext(), catalogTable, removedPartitions );
         }
-
-
     }
 
 
@@ -1750,7 +1748,6 @@ public class DdlManagerImpl extends DdlManager {
                 }
             }
             partitionGroupIds.add( partId );
-
         }
 
         List<Long> partitionIds = new ArrayList<>();
@@ -1786,11 +1783,11 @@ public class DdlManagerImpl extends DdlManager {
 
             long numberOfPartitionsInCold = numberOfPartitions - numberOfPartitionsInHot;
 
-            //-1 because one partition is already created in COLD
+            // -1 because one partition is already created in COLD
             List<Long> partitionsForHot = new ArrayList<>();
             catalog.getPartitions( partitionGroupIds.get( 0 ) ).forEach( p -> partitionsForHot.add( p.id ) );
 
-            //-1 because one partition is already created in HOT
+            // -1 because one partition is already created in HOT
             for ( int i = 0; i < numberOfPartitionsInHot - 1; i++ ) {
                 long tempId;
                 tempId = catalog.addPartition( partitionInfo.table.id, partitionInfo.table.schemaId, partitionGroupIds.get( 0 ), partitionInfo.qualifiers.get( 0 ), false );
@@ -1800,7 +1797,7 @@ public class DdlManagerImpl extends DdlManager {
 
             catalog.updatePartitionGroup( partitionGroupIds.get( 0 ), partitionsForHot );
 
-            //-1 because one partition is already created in COLD
+            // -1 because one partition is already created in COLD
             List<Long> partitionsForCold = new ArrayList<>();
             catalog.getPartitions( partitionGroupIds.get( 1 ) ).forEach( p -> partitionsForCold.add( p.id ) );
 
@@ -1866,11 +1863,10 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        //Now get the partitioned table, partitionInfo still contains the basic/unpartitioned table.
+        // Now get the partitioned table, partitionInfo still contains the basic/unpartitioned table.
         CatalogTable partitionedTable = catalog.getTable( partitionInfo.table.id );
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
         for ( DataStore store : stores ) {
-
             for ( long partitionId : partitionIds ) {
                 catalog.addPartitionPlacement(
                         store.getAdapterId(),
@@ -1881,18 +1877,24 @@ public class DdlManagerImpl extends DdlManager {
                         null );
             }
 
-            //First create new tables
+            // First create new tables
             store.createTable( statement.getPrepareContext(), partitionedTable, partitionedTable.partitionProperty.partitionIds );
 
-            //Copy data from unpartitioned to partitioned
+            // Copy data from unpartitioned to partitioned
             // Get only columns that are actually on that store
             // Every store of a newly partitioned table, initially will hold all partitions
             List<CatalogColumn> necessaryColumns = new LinkedList<>();
             catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), partitionedTable.id ).forEach( cp -> necessaryColumns.add( catalog.getColumn( cp.columnId ) ) );
 
-            //Copy data from the old partition to new partitions
-            dataMigrator.copyPartitionData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), unPartitionedTable, partitionedTable, necessaryColumns,
-                    unPartitionedTable.partitionProperty.partitionIds, partitionedTable.partitionProperty.partitionIds );
+            // Copy data from the old partition to new partitions
+            dataMigrator.copyPartitionData(
+                    statement.getTransaction(),
+                    catalog.getAdapter( store.getAdapterId() ),
+                    unPartitionedTable,
+                    partitionedTable,
+                    necessaryColumns,
+                    unPartitionedTable.partitionProperty.partitionIds,
+                    partitionedTable.partitionProperty.partitionIds );
         }
         //Remove old tables
         stores.forEach( store -> store.dropTable( statement.getPrepareContext(), unPartitionedTable, unPartitionedTable.partitionProperty.partitionIds ) );
@@ -1905,7 +1907,8 @@ public class DdlManagerImpl extends DdlManager {
         long tableId = partitionedTable.id;
 
         if ( log.isDebugEnabled() ) {
-            log.debug( "Merging partitions for table: {} with id {} on schema: {}", partitionedTable.name, partitionedTable.id, partitionedTable.getSchemaName() );
+            log.debug( "Merging partitions for table: {} with id {} on schema: {}",
+                    partitionedTable.name, partitionedTable.id, partitionedTable.getSchemaName() );
         }
 
         // Need to gather the partitionDistribution before actually merging
@@ -1918,7 +1921,7 @@ public class DdlManagerImpl extends DdlManager {
         // Update catalog table
         catalog.mergeTable( tableId );
 
-        //Now get the merged table
+        // Now get the merged table
         CatalogTable mergedTable = catalog.getTable( tableId );
 
         List<DataStore> stores = new ArrayList<>();
@@ -1958,8 +1961,14 @@ public class DdlManagerImpl extends DdlManager {
             List<CatalogColumn> necessaryColumns = new LinkedList<>();
             catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), mergedTable.id ).forEach( cp -> necessaryColumns.add( catalog.getColumn( cp.columnId ) ) );
 
-            dataMigrator.copySelectiveData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), partitionedTable, mergedTable,
-                    necessaryColumns, placementDistribution, mergedTable.partitionProperty.partitionIds );
+            dataMigrator.copySelectiveData(
+                    statement.getTransaction(),
+                    catalog.getAdapter( store.getAdapterId() ),
+                    partitionedTable,
+                    mergedTable,
+                    necessaryColumns,
+                    placementDistribution,
+                    mergedTable.partitionProperty.partitionIds );
         }
 
         // Needs to be separated from loop above. Otherwise we loose data
@@ -1974,7 +1983,7 @@ public class DdlManagerImpl extends DdlManager {
             store.dropTable( statement.getPrepareContext(), partitionedTable, partitionIdsOnStore );
         }
         // Loop over **old.partitionIds** to delete all partitions which are part of table
-        //Needs to be done separately because partitionPlacements will be recursively dropped in `deletePartitionGroup` but are needed in dropTable
+        // Needs to be done separately because partitionPlacements will be recursively dropped in `deletePartitionGroup` but are needed in dropTable
         for ( long partitionGroupId : partitionedTable.partitionProperty.partitionGroupIds ) {
             catalog.deletePartitionGroup( tableId, partitionedTable.schemaId, partitionGroupId );
         }
