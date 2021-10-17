@@ -53,6 +53,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
     private final static PolySchemaBuilder INSTANCE = new PolySchemaBuilder();
 
     private AbstractPolyphenyDbSchema current;
+    private boolean isOutdated = true;
 
 
     private PolySchemaBuilder() {
@@ -69,7 +70,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
         if ( !RuntimeConfig.SCHEMA_CACHING.getBoolean() ) {
             return buildSchema();
         }
-        if ( current == null ) {
+        if ( current == null || isOutdated ) {
             current = buildSchema();
         }
         return current;
@@ -177,6 +178,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                 }
             }
         }
+        isOutdated = false;
         return polyphenyDbSchema;
     }
 
@@ -189,8 +191,8 @@ public class PolySchemaBuilder implements PropertyChangeListener {
     // Listens on changes to the catalog
     @Override
     public void propertyChange( PropertyChangeEvent evt ) {
-        // Catalog changed, rebuild schema
-        current = buildSchema();
+        // Catalog changed, flag as outdated
+        isOutdated = true;
     }
 
 
