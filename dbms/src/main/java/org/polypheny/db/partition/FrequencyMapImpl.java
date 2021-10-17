@@ -169,9 +169,6 @@ public class FrequencyMapImpl extends FrequencyMap {
             allowedTablesInHot = 1;
         }
 
-        long thresholdValue = Long.MAX_VALUE;
-        long thresholdPartitionId = -1;
-
         List<Long> partitionsFromColdToHot = new ArrayList<>();
         List<Long> partitionsFromHotToCold = new ArrayList<>();
 

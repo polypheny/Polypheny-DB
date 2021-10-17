@@ -73,7 +73,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
         String className = metricClass.getName();
         val informationGroup = new InformationGroup( informationPage, className );
 
-        // TODO: see todo below
+        // TODO: see todo below in {#link updateMetricInformationTable}
         val fieldAsString = Arrays.stream( metricClass.getDeclaredFields() )
                 .map( Field::getName )
                 .filter( str -> !str.equals( "serialVersionUID" ) )
@@ -109,8 +109,8 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
             List<String> row = new LinkedList<>();
 
             for ( Field field : fields ) {
-                // TODO: get declared fields and fine corresponding Lombok getter to execute
-                //  Therefore, nothing need to be done for serialVersionID
+                // TODO: get declared fields and find corresponding Lombok getter to execute
+                //  Therefore, nothing needs to be done for serialVersionID
                 //  and neither do we need to hacky set the setAccessible flag for the fields
                 if ( field.getName().equals( "serialVersionUID" ) ) {
                     continue;

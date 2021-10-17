@@ -4,6 +4,7 @@ package org.polypheny.db.adapter.jdbc.stores;
 import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -92,10 +93,13 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     @Override
-    public void addIndex( Context context, CatalogIndex catalogIndex ) {
+    public void addIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
         List<CatalogColumnPlacement> ccps = Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogIndex.key.tableId );
-        List<CatalogPartitionPlacement> cpps = Catalog.getInstance().getPartitionPlacementByTable( getAdapterId(), catalogIndex.key.tableId );
-        for ( CatalogPartitionPlacement partitionPlacement : cpps ) {
+        List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
+        partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
+
+        String physicalIndexName = getPhysicalIndexName( catalogIndex.key.tableId, catalogIndex.id );
+        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
 
             StringBuilder builder = new StringBuilder();
             builder.append( "CREATE " );
@@ -104,8 +108,8 @@ public class HsqldbStore extends AbstractJdbcStore {
             } else {
                 builder.append( "INDEX " );
             }
-            String physicalIndexName = getPhysicalIndexName( catalogIndex.key.tableId, catalogIndex.id );
-            builder.append( dialect.quoteIdentifier( physicalIndexName ) );
+
+            builder.append( dialect.quoteIdentifier( physicalIndexName + "_" + partitionPlacement.partitionId ) );
             builder.append( " ON " )
                     .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
                     .append( "." )
@@ -122,18 +126,23 @@ public class HsqldbStore extends AbstractJdbcStore {
             }
             builder.append( ")" );
             executeUpdate( builder, context );
-
-            Catalog.getInstance().setIndexPhysicalName( catalogIndex.id, physicalIndexName );
         }
+        Catalog.getInstance().setIndexPhysicalName( catalogIndex.id, physicalIndexName );
     }
 
 
     @Override
-    public void dropIndex( Context context, CatalogIndex catalogIndex ) {
-        StringBuilder builder = new StringBuilder();
-        builder.append( "DROP INDEX " );
-        builder.append( dialect.quoteIdentifier( catalogIndex.physicalName ) );
-        executeUpdate( builder, context );
+    public void dropIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
+
+        List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
+        partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
+
+        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
+            StringBuilder builder = new StringBuilder();
+            builder.append( "DROP INDEX " );
+            builder.append( dialect.quoteIdentifier( catalogIndex.physicalName + "_" + partitionPlacement.partitionId ) );
+            executeUpdate( builder, context );
+        }
     }
 
 

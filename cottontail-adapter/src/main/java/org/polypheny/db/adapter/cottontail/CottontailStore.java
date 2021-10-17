@@ -481,12 +481,13 @@ public class CottontailStore extends DataStore {
 
 
     @Override
-    public void addIndex( Context context, CatalogIndex catalogIndex ) {
+    public void addIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
         /* Begin or continue Cottontail DB transaction. */
         final TransactionId txId = this.wrapper.beginOrContinue( context.getStatement().getTransaction() );
 
-        List<CatalogPartitionPlacement> cpps = Catalog.getInstance().getPartitionPlacementByTable( getAdapterId(), catalogIndex.key.tableId );
-        for ( CatalogPartitionPlacement partitionPlacement : cpps ) {
+        List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
+        partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
+        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
 
             /* Prepare CREATE INDEX message. */
             final IndexType indexType;
@@ -514,7 +515,7 @@ public class CottontailStore extends DataStore {
 
 
     @Override
-    public void dropIndex( Context context, CatalogIndex catalogIndex ) {
+    public void dropIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
         /* Begin or continue Cottontail DB transaction. */
         final TransactionId txId = this.wrapper.beginOrContinue( context.getStatement().getTransaction() );
         CatalogPartitionPlacement partitionPlacement = catalog.getPartitionPlacement( getAdapterId(), catalog.getTable( catalogIndex.key.tableId ).partitionProperty.partitionIds.get( 0 ) );

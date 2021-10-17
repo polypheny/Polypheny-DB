@@ -626,7 +626,7 @@ public class DdlManagerImpl extends DdlManager {
                     type,
                     indexName );
 
-            location.addIndex( statement.getPrepareContext(), catalog.getIndex( indexId ) );
+            location.addIndex( statement.getPrepareContext(), catalog.getIndex( indexId ), catalog.getPartitionsOnDataPlacement( location.getAdapterId(), catalogTable.id ) );
         }
     }
 
@@ -718,12 +718,6 @@ public class DdlManagerImpl extends DdlManager {
 
         //all internal partitions placed on this store
         List<Long> partitionIds = new ArrayList<>();
-        /*partitionIds = catalog.getPartitionsOnDataPlacement(dataStore.getAdapterId(), catalogTable.id );
-
-        if ( partitionIds.isEmpty() ){
-            partitionIds.add( (long) -1 );
-            //add default value for non-partitioned otherwise CCP wouldn't be created at all
-        }*/
 
         // Gather all partitions relevant to add depending on the specified partitionGroup
         tempPartitionGroupList.forEach( pg -> catalog.getPartitions( pg ).forEach( p -> partitionIds.add( p.id ) ) );
@@ -925,7 +919,7 @@ public class DdlManagerImpl extends DdlManager {
                 IndexManager.getInstance().deleteIndex( index );
             } else {
                 DataStore storeInstance = AdapterManager.getInstance().getStore( index.location );
-                storeInstance.dropIndex( statement.getPrepareContext(), index );
+                storeInstance.dropIndex( statement.getPrepareContext(), index, catalog.getPartitionsOnDataPlacement( index.location, catalogTable.id ) );
             }
 
             catalog.deleteIndex( index.id );
@@ -957,7 +951,8 @@ public class DdlManagerImpl extends DdlManager {
                     IndexManager.getInstance().deleteIndex( index );
                 } else {
                     // Delete index on store
-                    AdapterManager.getInstance().getStore( index.location ).dropIndex( statement.getPrepareContext(), index );
+                    AdapterManager.getInstance().getStore( index.location ).dropIndex( statement.getPrepareContext()
+                            , index, catalog.getPartitionsOnDataPlacement( index.location, catalogTable.id ) );
                 }
                 // Delete index in catalog
                 catalog.deleteIndex( index.id );
@@ -1127,9 +1122,8 @@ public class DdlManagerImpl extends DdlManager {
         // Check if views are dependent from this view
         checkViewDependencies( catalogTable );
 
-        // Check before physical removal if placement would be correct
-
-        // Which columns to remove
+        // Checks before physically removing of placement that the partition distribution is still valid and sufficient
+        // Identifies which columns need to be removed
         for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id ) ) {
             if ( !columnIds.contains( placement.columnId ) ) {
                 // Check whether there are any indexes located on the store requiring this column
@@ -1320,10 +1314,24 @@ public class DdlManagerImpl extends DdlManager {
             List<CatalogColumn> necessaryColumns = new LinkedList<>();
             catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id ).forEach( cp -> necessaryColumns.add( catalog.getColumn( cp.columnId ) ) );
             dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( storeId ), necessaryColumns, newPartitions );
+
+            // Add indexes on this new Partition Placement if there is already an index
+            for ( CatalogIndex currentIndex : catalog.getIndexes( catalogTable.id, false ) ) {
+                if ( currentIndex.location == storeId ) {
+                    storeInstance.addIndex( statement.getPrepareContext(), currentIndex, newPartitions );
+                }
+            }
         }
 
         if ( removedPartitions.size() > 0 ) {
             storeInstance.dropTable( statement.getPrepareContext(), catalogTable, removedPartitions );
+
+            //  indexes on this new Partition Placement if there is already an index
+            for ( CatalogIndex currentIndex : catalog.getIndexes( catalogTable.id, false ) ) {
+                if ( currentIndex.location == storeId ) {
+                    storeInstance.dropIndex( statement.getPrepareContext(), currentIndex, removedPartitions );
+                }
+            }
         }
     }
 
@@ -2126,7 +2134,8 @@ public class DdlManagerImpl extends DdlManager {
                 IndexManager.getInstance().deleteIndex( index );
             } else {
                 // Delete index on store
-                AdapterManager.getInstance().getStore( index.location ).dropIndex( statement.getPrepareContext(), index );
+                AdapterManager.getInstance().getStore( index.location ).dropIndex( statement.getPrepareContext()
+                        , index, catalog.getPartitionsOnDataPlacement( index.location, catalogTable.id ) );
             }
             // Delete index in catalog
             catalog.deleteIndex( index.id );

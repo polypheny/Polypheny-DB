@@ -196,7 +196,8 @@ public abstract class AbstractRouter implements Router {
                             }
                         } );
 
-                        if ( whereClauseVisitor.valueIdentified && !whereClauseVisitor.unsupportedFilter ) {
+                        //if ( whereClauseVisitor.valueIdentified && !whereClauseVisitor.unsupportedFilter ) {
+                        if ( whereClauseVisitor.valueIdentified ) {
                             List<Object> values = whereClauseVisitor.getValues().stream()
                                     .map( Object::toString )
                                     .collect( Collectors.toList() );
@@ -447,7 +448,6 @@ public abstract class AbstractRouter implements Router {
 
                         List<String> whereClauseValues = null;
                         if ( !whereClauseVisitor.getValues().isEmpty() ) {
-                            // if ( whereClauseVisitor.getValues().size() == 1 ) {
                             whereClauseValues = whereClauseVisitor.getValues().stream()
                                     .map( Object::toString )
                                     .collect( Collectors.toList() );
@@ -455,7 +455,6 @@ public abstract class AbstractRouter implements Router {
                                 log.debug( "Found Where Clause Values: {}", whereClauseValues );
                             }
                             worstCaseRouting = true;
-                            // }
                         }
 
                         if ( whereClauseValues != null ) {
@@ -469,7 +468,6 @@ public abstract class AbstractRouter implements Router {
 
                         String partitionValue = "";
                         // Set true if partitionColumn is part of UPDATE Statement, else assume worst case routing
-                        boolean partitionColumnIdentified = false;
 
                         if ( ((LogicalTableModify) node).getOperation() == Operation.UPDATE ) {
                             // In case of update always use worst case routing for now.
@@ -484,7 +482,6 @@ public abstract class AbstractRouter implements Router {
                                         }
 
                                         // Routing/Locking can now be executed on certain partitions
-                                        partitionColumnIdentified = true;
                                         partitionValue = sourceExpressionList.get( index ).toString().replace( "'", "" );
                                         if ( log.isDebugEnabled() ) {
                                             log.debug( "UPDATE: partitionColumn-value: '{}' should be put on partition: {}",
@@ -648,7 +645,6 @@ public abstract class AbstractRouter implements Router {
                                     // Determine location of partitionColumn in fieldList
                                     if ( catalogTable.columnIds.get( columnIndex ) == catalogTable.partitionColumnId ) {
                                         partitionColumnIndex = columnIndex;
-                                        partitionColumnIdentified = true;
                                         if ( log.isDebugEnabled() ) {
                                             log.debug( "INSERT: Found PartitionColumnID: '{}' at column index: {}", catalogTable.partitionColumnId, j );
                                             worstCaseRouting = false;
@@ -801,11 +797,9 @@ public abstract class AbstractRouter implements Router {
                                                 modifies.add( modify );
                                             }
 
-                                            partitionColumnIdentified = true;
                                             operationWasRewritten = true;
                                             worstCaseRouting = false;
                                         } else {
-                                            partitionColumnIdentified = true;
                                             partitionValue = ((LogicalTableModify) node).getInput().getChildExps().get( i ).toString().replace( "'", "" );
                                             identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
                                             accessedPartitionList.add( identPart );
@@ -814,7 +808,7 @@ public abstract class AbstractRouter implements Router {
                                         break;
                                     } else {
                                         // When loop is finished
-                                        if ( i == fieldNames.size() - 1 && !partitionColumnIdentified ) {
+                                        if ( i == fieldNames.size() - 1 ) {
                                             worstCaseRouting = true;
                                             // Because partitionColumn has not been specified in insert
                                         }
@@ -838,7 +832,6 @@ public abstract class AbstractRouter implements Router {
                             } else {
                                 if ( whereClauseValues.size() >= 4 ) {
                                     worstCaseRouting = true;
-                                    partitionColumnIdentified = false;
                                 } else {
                                     worstCaseRouting = false;
                                 }

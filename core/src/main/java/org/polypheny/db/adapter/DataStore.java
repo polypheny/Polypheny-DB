@@ -55,9 +55,9 @@ public abstract class DataStore extends Adapter {
 
     public abstract void dropColumn( Context context, CatalogColumnPlacement columnPlacement );
 
-    public abstract void addIndex( Context context, CatalogIndex catalogIndex );
+    public abstract void addIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds );
 
-    public abstract void dropIndex( Context context, CatalogIndex catalogIndex );
+    public abstract void dropIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds );
 
     public abstract void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn, PolyType oldType );
 

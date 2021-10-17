@@ -19,13 +19,11 @@ package org.polypheny.db.sql.ddl.altertable;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.IndexPreventsRemovalException;
@@ -120,10 +118,8 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
             throw new RuntimeException( "Partition Placement is not allowed for unpartitioned table '" + catalogTable.name + "'" );
         }
 
-        List<Long> columnIds = new LinkedList<>();
         for ( SqlNode node : columnList.getList() ) {
-            CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, (SqlIdentifier) node );
-            columnIds.add( catalogColumn.id );
+            getCatalogColumn( catalogTable.id, (SqlIdentifier) node );
         }
         DataStore storeInstance = getDataStoreInstance( storeName );
 

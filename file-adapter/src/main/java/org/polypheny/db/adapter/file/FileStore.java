@@ -243,13 +243,13 @@ public class FileStore extends DataStore {
 
 
     @Override
-    public void addIndex( Context context, CatalogIndex catalogIndex ) {
+    public void addIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
         throw new RuntimeException( "File adapter does not support adding indexes" );
     }
 
 
     @Override
-    public void dropIndex( Context context, CatalogIndex catalogIndex ) {
+    public void dropIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
         throw new RuntimeException( "File adapter does not support dropping indexes" );
     }
 
