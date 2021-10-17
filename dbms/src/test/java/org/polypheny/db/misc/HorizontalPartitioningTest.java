@@ -532,6 +532,68 @@ public class HorizontalPartitioningTest {
 
 
     @Test
+    public void partitionFilterTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+
+            long partitionsToCreate = 4;
+
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE physicalPartitionFilter( "
+                        + "tprimary INTEGER NOT NULL, "
+                        + "tvarchar VARCHAR(20) NULL, "
+                        + "tinteger INTEGER NULL, "
+                        + "PRIMARY KEY (tprimary) )"
+                        + "PARTITION BY HASH (tvarchar) "
+                        + "WITH (foo, bar, foobar, barfoo) " );
+
+                try {
+
+                    statement.executeUpdate( "INSERT INTO physicalPartitionFilter VALUES (10, 'e', 100)" );
+                    statement.executeUpdate( "INSERT INTO physicalPartitionFilter VALUES (21, 'f', 200)" );
+
+                    // Check if filter on partitionValue can be applied
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM physicalPartitionFilter WHERE tvarchar = 'e'" ),
+                            ImmutableList.of(
+                                    new Object[]{ 10, "e", 100 } ) );
+
+                    // Check if negative Value can be used on partitionColumn
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM physicalPartitionFilter WHERE tvarchar != 'e'" ),
+                            ImmutableList.of(
+                                    new Object[]{ 21, "f", 200 } ) );
+
+                    // Check if filter can be applied to arbitrary column != partitionColumn
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM physicalPartitionFilter WHERE tinteger = 100" ),
+                            ImmutableList.of(
+                                    new Object[]{ 10, "e", 100 } ) );
+
+                    //Check if FILTER Compound can be used - OR
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM physicalPartitionFilter WHERE tvarchar = 'e' OR tvarchar = 'f' ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 10, "e", 100 },
+                                    new Object[]{ 21, "f", 200 } ) );
+
+                    //Check if FILTER Compound can be used - AND
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM physicalPartitionFilter WHERE tvarchar = 'e' AND tvarchar = 'f'" ),
+                            ImmutableList.of() );
+
+
+                } finally {
+                    // Drop tables and stores
+                    statement.executeUpdate( "DROP TABLE IF EXISTS physicalPartitionFilter" );
+
+                }
+            }
+        }
+    }
+
+
+    @Test
     public void partitionPlacementTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
