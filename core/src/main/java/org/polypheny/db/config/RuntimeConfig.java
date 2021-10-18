@@ -322,11 +322,13 @@ public enum RuntimeConfig {
             ConfigType.INSTANCE_LIST,
             "dockerGroup" ),
 
+
     FILE_HANDLE_CACHE_SIZE( "runtime/fileHandleCacheSize",
             "Size (in Bytes) up to which media files are cached in-memory instead of creating a temporary file. Needs to be >= 0 and smaller than Integer.MAX_SIZE. Setting to zero disables caching of media files.",
             0,
             ConfigType.INTEGER,
             "runtimeExecutionGroup" ),
+
 
     QUEUE_PROCESSING_INTERVAL( "runtime/queueProcessingInterval",
             "Rate of passive tracking of statistics.",
@@ -345,10 +347,11 @@ public enum RuntimeConfig {
             SchemaType.RELATIONAL,
             ConfigType.ENUM ),
 
-    JSON_MODE( "runtime/jsonMode",
-            "Define the mode of the json matching.",
-            "strict",
-            ConfigType.STRING );
+    TEMPERATURE_FREQUENCY_PROCESSING_INTERVAL( "runtime/partitionFrequencyProcessingInterval",
+            "Time interval in seconds, how often the access frequency of all TEMPERATURE-partitioned tables is analyzed and redistributed",
+            BackgroundTask.TaskSchedulingType.EVERY_MINUTE,
+            ConfigType.ENUM,
+            "temperaturePartitionProcessingSettingsGroup" );
 
 
     private final String key;
@@ -450,6 +453,16 @@ public enum RuntimeConfig {
         monitoringSettingsQueueGroup.withTitle( "Queue Processing" );
         configManager.registerWebUiPage( monitoringSettingsPage );
         configManager.registerWebUiGroup( monitoringSettingsQueueGroup );
+
+        // Partitioning specific setting
+        final WebUiPage partitionSettingsPage = new WebUiPage(
+                "partitionSettings",
+                "Partitioning",
+                "Settings for partitioning" );
+        final WebUiGroup temperaturePartitionProcessingSettingsGroup = new WebUiGroup( "temperaturePartitionProcessingSettingsGroup", partitionSettingsPage.getId() );
+        temperaturePartitionProcessingSettingsGroup.withTitle( "TEMPERATURE Partition Processing" );
+        configManager.registerWebUiPage( partitionSettingsPage );
+        configManager.registerWebUiGroup( temperaturePartitionProcessingSettingsGroup );
     }
 
 

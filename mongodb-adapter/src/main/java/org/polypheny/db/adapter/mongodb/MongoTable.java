@@ -70,6 +70,7 @@ import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.adapter.mongodb.MongoEnumerator.IterWrapper;
 import org.polypheny.db.adapter.mongodb.util.MongoDynamic;
 import org.polypheny.db.adapter.mongodb.util.MongoTypeUtil;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.mql.parser.BsonUtil;
 import org.polypheny.db.plan.Convention;
@@ -117,9 +118,9 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
     /**
      * Creates a MongoTable.
      */
-    MongoTable( CatalogTable catalogTable, MongoSchema schema, RelProtoDataType proto, TransactionProvider transactionProvider, int storeId ) {
+    MongoTable( CatalogTable catalogTable, MongoSchema schema, RelProtoDataType proto, TransactionProvider transactionProvider, int storeId, CatalogPartitionPlacement partitionPlacement ) {
         super( Object[].class );
-        this.collectionName = MongoStore.getPhysicalTableName( catalogTable.id );
+        this.collectionName = MongoStore.getPhysicalTableName( catalogTable.id, partitionPlacement.partitionId );
         this.transactionProvider = transactionProvider;
         this.catalogTable = catalogTable;
         this.protoRowType = proto;

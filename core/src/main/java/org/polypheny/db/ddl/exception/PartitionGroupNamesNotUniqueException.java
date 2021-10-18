@@ -14,13 +14,8 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.exceptions;
+package org.polypheny.db.ddl.exception;
 
-
-public class UnknownPartitionIdRuntimeException extends CatalogRuntimeException {
-
-    public UnknownPartitionIdRuntimeException( long partitionId ) {
-        super( "There is no partition with id '" + partitionId + "'." );
-    }
+public class PartitionGroupNamesNotUniqueException extends Exception {
 
 }

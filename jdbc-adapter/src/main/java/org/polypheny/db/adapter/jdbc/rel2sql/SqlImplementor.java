@@ -58,6 +58,9 @@ import java.util.function.IntFunction;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.polypheny.db.adapter.jdbc.JdbcTable;
+import org.polypheny.db.adapter.jdbc.JdbcTableScan;
+import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.RelFieldCollation;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.AggregateCall;
@@ -183,9 +186,17 @@ public abstract class SqlImplementor {
         for ( Ord<RelNode> input : Ord.zip( rel.getInputs() ) ) {
             final Result result = visitChild( input.i, input.e );
             if ( node == null ) {
-                node = result.asSelect();
+                if ( input.getValue() instanceof JdbcTableScan ) {
+                    node = result.asSelect( ((JdbcTable) ((RelOptTableImpl) input.getValue().getTable()).getTable()).getNodeList() );
+                } else {
+                    node = result.asSelect();
+                }
             } else {
-                node = operator.createCall( POS, node, result.asSelect() );
+                if ( input.getValue() instanceof JdbcTableScan ) {
+                    node = operator.createCall( POS, node, result.asSelect( ((JdbcTable) ((RelOptTableImpl) input.getValue().getTable()).getTable()).getNodeList() ) );
+                } else {
+                    node = operator.createCall( POS, node, result.asSelect() );
+                }
             }
         }
         final List<Clause> clauses = Expressions.list( Clause.SET_OP );
@@ -412,10 +423,15 @@ public abstract class SqlImplementor {
     }
 
 
+    SqlSelect wrapSelect( SqlNode node ) {
+        return wrapSelect( node, null );
+    }
+
+
     /**
      * Wraps a node in a SELECT statement that has no clauses: "SELECT ... FROM (node)".
      */
-    SqlSelect wrapSelect( SqlNode node ) {
+    SqlSelect wrapSelect( SqlNode node, SqlNodeList sqlNodes ) {
         assert node instanceof SqlJoin
                 || node instanceof SqlIdentifier
                 || node instanceof SqlMatchRecognize
@@ -427,7 +443,7 @@ public abstract class SqlImplementor {
         return new SqlSelect(
                 POS,
                 SqlNodeList.EMPTY,
-                null,
+                sqlNodes,
                 node,
                 null,
                 null,
@@ -1109,7 +1125,7 @@ public abstract class SqlImplementor {
          * @param clauses Clauses that will be generated to implement current relational expression
          * @return A builder
          */
-        public Builder builder( RelNode rel, Clause... clauses ) {
+        public Builder builder( RelNode rel, boolean explicitColumnNames, Clause... clauses ) {
             final Clause maxClause = maxClause();
             boolean needNew = false;
             // If old and new clause are equal and belong to below set, then new SELECT wrap is not required
@@ -1131,7 +1147,11 @@ public abstract class SqlImplementor {
             if ( needNew ) {
                 select = subSelect();
             } else {
-                select = asSelect();
+                if ( explicitColumnNames && rel.getInputs().size() == 1 && rel.getInput( 0 ) instanceof JdbcTableScan ) {
+                    select = asSelect( ((JdbcTable) ((RelOptTableImpl) rel.getInput( 0 ).getTable()).getTable()).getNodeList() );
+                } else {
+                    select = asSelect();
+                }
                 clauseList.addAll( this.clauses );
             }
             clauseList.appendAll( clauses );
@@ -1223,13 +1243,18 @@ public abstract class SqlImplementor {
          * Converts a non-query node into a SELECT node. Set operators (UNION, INTERSECT, EXCEPT) remain as is.
          */
         public SqlSelect asSelect() {
+            return asSelect( null );
+        }
+
+
+        public SqlSelect asSelect( SqlNodeList sqlNodes ) {
             if ( node instanceof SqlSelect ) {
                 return (SqlSelect) node;
             }
             if ( !dialect.hasImplicitTableAlias() ) {
-                return wrapSelect( asFrom() );
+                return wrapSelect( asFrom(), sqlNodes );
             }
-            return wrapSelect( node );
+            return wrapSelect( node, sqlNodes );
         }
 
 

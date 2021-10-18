@@ -35,6 +35,8 @@ import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPartition;
+import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogSchema;
@@ -70,6 +72,7 @@ import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
@@ -438,12 +441,12 @@ public abstract class Catalog {
      * @param physicalSchemaName The schema name on the adapter
      * @param physicalTableName The table name on the adapter
      * @param physicalColumnName The column name on the adapter
-     * @param partitionIds List of partitions to place on this column placement (may be null)
+     * @param partitionGroupIds List of partitions to place on this column placement (may be null)
      */
-    public abstract void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, List<Long> partitionIds );
+    public abstract void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, List<Long> partitionGroupIds );
 
     /**
-     * Deletes a column placement
+     * Deletes all dependent column placements
      *
      * @param adapterId The id of the adapter
      * @param columnId The id of the column
@@ -451,7 +454,8 @@ public abstract class Catalog {
     public abstract void deleteColumnPlacement( int adapterId, long columnId );
 
     /**
-     * Get a specific column placement.
+     * Gets a collective list of column placements per column on a adapter.
+     * Effectively used to retrieve all relevant placements including partitions.
      *
      * @param adapterId The id of the adapter
      * @param columnId The id of the column
@@ -474,7 +478,7 @@ public abstract class Catalog {
      * @param columnId The id of the specific column
      * @return List of column placements of specific column
      */
-    public abstract List<CatalogColumnPlacement> getColumnPlacements( long columnId );
+    public abstract List<CatalogColumnPlacement> getColumnPlacement( long columnId );
 
     /**
      * Get column placements of a specific table on a specific adapter
@@ -482,7 +486,7 @@ public abstract class Catalog {
      * @param adapterId The id of the adapter
      * @return List of column placements of the table on the specified adapter
      */
-    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapter( int adapterId, long tableId );
+    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterPerTable( int adapterId, long tableId );
 
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterSortedByPhysicalPosition( int storeId, long tableId );
 
@@ -536,16 +540,15 @@ public abstract class Catalog {
     public abstract void updateColumnPlacementPhysicalPosition( int adapterId, long columnId );
 
     /**
-     * Change physical names of a placement.
+     * Change physical names of all column placements.
      *
      * @param adapterId The id of the adapter
      * @param columnId The id of the column
      * @param physicalSchemaName The physical schema name
-     * @param physicalTableName The physical table name
      * @param physicalColumnName The physical column name
      * @param updatePhysicalColumnPosition Whether to reset the column position (highest number in the table; represents that the column is now at the last position)
      */
-    public abstract void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName, boolean updatePhysicalColumnPosition );
+    public abstract void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalColumnName, boolean updatePhysicalColumnPosition );
 
     /**
      * Get all columns of the specified table.
@@ -595,7 +598,6 @@ public abstract class Catalog {
      * @return A CatalogColumn
      */
     public abstract CatalogColumn getColumn( String databaseName, String schemaName, String tableName, String columnName ) throws UnknownColumnException, UnknownSchemaException, UnknownDatabaseException, UnknownTableException;
-
 
     /**
      * Adds a column.
@@ -1015,11 +1017,37 @@ public abstract class Catalog {
      *
      * @param tableId The unique id of the table
      * @param schemaId The unique id of the table
-     * @param ownerId the partitionId to be deleted
      * @param partitionType partition Type of the added partition
+     * @return The id of the created partitionGroup
+     */
+    public abstract long addPartitionGroup( long tableId, String partitionGroupName, long schemaId, PartitionType partitionType, long numberOfInternalPartitions, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException;
+
+    /**
+     * Deletes a single partition and all references.
+     *
+     * @param tableId The unique id of the table
+     * @param schemaId The unique id of the table
+     * @param partitionGroupId The partitionGroupId to be deleted
+     */
+    public abstract void deletePartitionGroup( long tableId, long schemaId, long partitionGroupId );
+
+    /**
+     * Get a partition object by its unique id
+     *
+     * @param partitionGroupId The unique id of the partition
+     * @return A catalog partitionGroup
+     */
+    public abstract CatalogPartitionGroup getPartitionGroup( long partitionGroupId );
+
+    /**
+     * Adds a partition to the catalog
+     *
+     * @param tableId The unique id of the table
+     * @param schemaId The unique id of the table
+     * @param partitionGroupId partitionGroupId where the partition should be initially added to
      * @return The id of the created partition
      */
-    public abstract long addPartition( long tableId, String partitionName, long schemaId, int ownerId, PartitionType partitionType, List<String> effectivePartitionQualifier, boolean isUnbound ) throws GenericCatalogException;
+    public abstract long addPartition( long tableId, long schemaId, long partitionGroupId, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException;
 
     /**
      * Deletes a single partition and all references.
@@ -1038,16 +1066,25 @@ public abstract class Catalog {
      */
     public abstract CatalogPartition getPartition( long partitionId );
 
+
+    /**
+     * Retrieves a list of partitions which are associated with a specific table
+     *
+     * @param tableId Table for which partitions shall be gathered
+     * @return List of all partitions associated with that table
+     */
+    public abstract List<CatalogPartition> getPartitionsByTable( long tableId );
+
     /**
      * Effectively partitions a table with the specified partitionType
      *
      * @param tableId Table to be partitioned
      * @param partitionType Partition function to apply on the table
      * @param partitionColumnId Column used to apply the partition function on
-     * @param numPartitions Explicit number of partitions
-     * @param partitionIds List of ids of the catalog partitions
+     * @param numPartitionGroups Explicit number of partitions
+     * @param partitionGroupIds List of ids of the catalog partitions
      */
-    public abstract void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitions, List<Long> partitionIds );
+    public abstract void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitionGroups, List<Long> partitionGroupIds, PartitionProperty partitionProperty );
 
     /**
      * Merges a  partitioned table.
@@ -1058,12 +1095,71 @@ public abstract class Catalog {
     public abstract void mergeTable( long tableId );
 
     /**
+     * Updates partitionProperties on table
+     *
+     * @param tableId Table to be partitioned
+     * @param partitionProperty Partition properties
+     */
+    public abstract void updateTablePartitionProperties( long tableId, PartitionProperty partitionProperty );
+
+    /**
      * Get a List of all partitions belonging to a specific table
      *
      * @param tableId Table to be queried
      * @return list of all partitions on this table
      */
-    public abstract List<CatalogPartition> getPartitions( long tableId );
+    public abstract List<CatalogPartitionGroup> getPartitionGroups( long tableId );
+
+    /**
+     * Get all partitions of the specified database which fit to the specified filter patterns.
+     * <code>getColumns(xid, databaseName, null, null, null)</code> returns all partitions of the database.
+     *
+     * @param databaseNamePattern Pattern for the database name. null returns all.
+     * @param schemaNamePattern Pattern for the schema name. null returns all.
+     * @param tableNamePattern Pattern for the table name. null returns catalog/src/test/java/org/polypheny/db/test/CatalogTest.javaall.
+     * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
+     */
+    public abstract List<CatalogPartitionGroup> getPartitionGroups( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern );
+
+    /**
+     * Updates the specified partition group with the attached partitionIds
+     *
+     * @param partitionGroupId Partition Group to be updated
+     * @param partitionIds List of new partitionIds
+     */
+    public abstract void updatePartitionGroup( long partitionGroupId, List<Long> partitionIds );
+
+    /**
+     * Adds a partition to an already existing partition Group
+     *
+     * @param partitionGroupId Group to add to
+     * @param partitionId Partition to add
+     */
+    public abstract void addPartitionToGroup( long partitionGroupId, Long partitionId );
+
+    /**
+     * Removes a partition from an already existing partition Group
+     *
+     * @param partitionGroupId Group to remove the partition from
+     * @param partitionId Partition to remove
+     */
+    public abstract void removePartitionFromGroup( long partitionGroupId, Long partitionId );
+
+    /**
+     * Assign the partition to a new partitionGroup
+     *
+     * @param partitionId Partition to move
+     * @param partitionGroupId New target gorup to move the partion to
+     */
+    public abstract void updatePartition( long partitionId, Long partitionGroupId );
+
+    /**
+     * Get a List of all partitions belonging to a specific table
+     *
+     * @param partitionGroupId Table to be queried
+     * @return list of all partitions on this table
+     */
+    public abstract List<CatalogPartition> getPartitions( long partitionGroupId );
 
     /**
      * Get all partitions of the specified database which fit to the specified filter patterns.
@@ -1082,37 +1178,46 @@ public abstract class Catalog {
      * @param tableId Table to be queried
      * @return list of all partition names on this table
      */
-    public abstract List<String> getPartitionNames( long tableId );
+    public abstract List<String> getPartitionGroupNames( long tableId );
 
     /**
      * Get placements by partition. Identify the location of partitions.
      * Essentially returns all ColumnPlacements which hold the specified partitionID.
      *
      * @param tableId The id of the table
-     * @param partitionId The id of the partition
+     * @param partitionGroupId The id of the partition
      * @param columnId The id of tje column
      * @return List of CatalogColumnPlacements
      */
-    public abstract List<CatalogColumnPlacement> getColumnPlacementsByPartition( long tableId, long partitionId, long columnId );
+    public abstract List<CatalogColumnPlacement> getColumnPlacementsByPartitionGroup( long tableId, long partitionGroupId, long columnId );
 
     /**
      * Get adapters by partition. Identify the location of partitions/replicas
      * Essentially returns all adapters which hold the specified partitionID
      *
      * @param tableId The unique id of the table
-     * @param partitionId The unique id of the partition
+     * @param partitionGroupId The unique id of the partition
      * @return List of CatalogAdapters
      */
-    public abstract List<CatalogAdapter> getAdaptersByPartition( long tableId, long partitionId );
+    public abstract List<CatalogAdapter> getAdaptersByPartitionGroup( long tableId, long partitionGroupId );
 
     /**
      * Updates the reference which partitions reside on which DataPlacement (identified by adapterId and tableId)
      *
      * @param adapterId The unique id of the adapter
      * @param tableId The unique id of the table
-     * @param partitionIds List of partitionsIds to be updated
+     * @param partitionGroupIds List of partitionsIds to be updated
      */
-    public abstract void updatePartitionsOnDataPlacement( int adapterId, long tableId, List<Long> partitionIds );
+    public abstract void updatePartitionGroupsOnDataPlacement( int adapterId, long tableId, List<Long> partitionGroupIds );
+
+    /**
+     * Get all partitions of a DataPlacement (identified by adapterId and tableId)
+     *
+     * @param adapterId The unique id of the adapter
+     * @param tableId The unique id of the table
+     * @return List of partitionIds
+     */
+    public abstract List<Long> getPartitionGroupsOnDataPlacement( int adapterId, long tableId );
 
     /**
      * Get all partitions of a DataPlacement (identified by adapterId and tableId)
@@ -1130,7 +1235,7 @@ public abstract class Catalog {
      * @param tableId The unique id of the table
      * @return List of partitionId Indices
      */
-    public abstract List<Long> getPartitionsIndexOnDataPlacement( int adapterId, long tableId );
+    public abstract List<Long> getPartitionGroupsIndexOnDataPlacement( int adapterId, long tableId );
 
     /**
      * Mostly needed if a placement is dropped from a store.
@@ -1138,7 +1243,7 @@ public abstract class Catalog {
      * @param storeId Placement to be updated with new partitions
      * @param tableId List of partitions which the placement should hold
      */
-    public abstract void deletePartitionsOnDataPlacement( int storeId, long tableId );
+    public abstract void deletePartitionGroupsOnDataPlacement( int storeId, long tableId );
 
     /**
      * Checks depending on the current partition distribution and partitionType
@@ -1147,9 +1252,10 @@ public abstract class Catalog {
      * @param adapterId The id of the adapter to be checked
      * @param tableId The id of the table to be checked
      * @param columnId The id of the column to be checked
+     * @param threshold Accepted toleration threshold for new setup of how many placements must remain after new partitionGroup distribution
      * @return If its correctly distributed or not
      */
-    public abstract boolean validatePartitionDistribution( int adapterId, long tableId, long columnId );
+    public abstract boolean validatePartitionGroupDistribution( int adapterId, long tableId, long columnId, int threshold );
 
     /**
      * Flags the table for deletion.
@@ -1169,6 +1275,109 @@ public abstract class Catalog {
      * @return If table is flagged for deletion or not
      */
     public abstract boolean isTableFlaggedForDeletion( long tableId );
+
+    /**
+     * Adds a placement for a partition.
+     *
+     * @param adapterId The adapter on which the table should be placed on
+     * @param tableId The table for which a partition placement shall be created
+     * @param partitionId The id of a specific partition that shall create a new placement
+     * @param placementType The type of placement
+     * @param physicalSchemaName The schema name on the adapter
+     * @param physicalTableName The table name on the adapter
+     */
+    public abstract void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName );
+
+    /**
+     * Change physical names of a partition placement.
+     *
+     * @param adapterId The id of the adapter
+     * @param partitionId The id of the partition
+     * @param physicalSchemaName The physical schema name
+     * @param physicalTableName The physical table name
+     */
+    public abstract void updatePartitionPlacementPhysicalNames( int adapterId, long partitionId, String physicalSchemaName, String physicalTableName );
+
+    /**
+     * Deletes a placement for a partition.
+     *
+     * @param adapterId The adapter on which the table should be placed on
+     * @param partitionId The id of a partition which shall be removed from that store.
+     */
+    public abstract void deletePartitionPlacement( int adapterId, long partitionId );
+
+    /**
+     * Returns a specific partition entity which is placed on a store.
+     *
+     * @param adapterId The adapter on which the requested partition placements reside
+     * @param partitionId The id of the requested partition
+     * @return The requested PartitionPlacement on that store for a given is
+     */
+    public abstract CatalogPartitionPlacement getPartitionPlacement( int adapterId, long partitionId );
+
+    /**
+     * Returns a list of all Partition Placements which currently reside on a adapter, disregarded of the table.
+     *
+     * @param adapterId The adapter on which the requested partition placements reside
+     * @return A list of all Partition Placements, that are currently located  on that specific store
+     */
+    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByAdapter( int adapterId );
+
+    /**
+     * Returns a list of all Partition Placements which currently reside on a adapter, for a specific table.
+     *
+     * @param adapterId The adapter on which the requested partition placements reside
+     * @param tableId The table for which all partition placements on a adapter should be considered
+     * @return A list of all Partition Placements, that are currently located  on that specific store for a individual table
+     */
+    public abstract List<CatalogPartitionPlacement> getPartitionPlacementByTable( int adapterId, long tableId );
+
+    /**
+     * Returns a list of all Partition Placements which are currently associated with a table.
+     *
+     * @param tableId The table on which the requested partition placements are currently associated with.
+     * @return A list of all Partition Placements, that belong to the desired table
+     */
+    public abstract List<CatalogPartitionPlacement> getAllPartitionPlacementsByTable( long tableId );
+
+    /**
+     * Get all Partition Placements which are associated with a individual partition Id.
+     * Identifies on which locations and how often the individual partition is placed.
+     *
+     * @param partitionId The requested partition Id
+     * @return A list of Partition Placements which are physically responsible for that partition
+     */
+    public abstract List<CatalogPartitionPlacement> getPartitionPlacements( long partitionId );
+
+    /**
+     * Returns all tables which are in need of special periodic treatment.
+     *
+     * @return List of tables which need to be periodically processed
+     */
+    public abstract List<CatalogTable> getTablesForPeriodicProcessing();
+
+    /**
+     * Registers a table to be considered for periodic processing
+     *
+     * @param tableId Id of table to be considered for periodic processing
+     */
+    public abstract void addTableToPeriodicProcessing( long tableId );
+
+    /**
+     * Remove a table from periodic background processing
+     *
+     * @param tableId Id of table to be removed for periodic processing
+     */
+    public abstract void removeTableFromPeriodicProcessing( long tableId );
+
+    /**
+     * Probes if a Partition Placement on a adapter for a specific partition already exists.
+     *
+     * @param adapterId Adapter on which to check
+     * @param partitionId Partition which to check
+     * @return teh response of the probe
+     */
+    public abstract boolean checkIfExistsPartitionPlacement( int adapterId, long partitionId );
 
 
     /*
@@ -1501,7 +1710,9 @@ public abstract class Catalog {
         NONE( 0 ),
         RANGE( 1 ),
         LIST( 2 ),
-        HASH( 3 );
+        HASH( 3 ),
+        //TODO @HENNLO think about excluding "UDPF" here, these should only be used for internal Partition Functions
+        TEMPERATURE( 4 );
 
         private final int id;
 

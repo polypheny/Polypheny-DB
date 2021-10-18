@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -67,8 +68,26 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
     }
 
 
+    @Override
+    public <T extends MonitoringDataPoint> void registerDataPointForUi( @NonNull Class<T> metricClass ) {
+        String className = metricClass.getName();
+        val informationGroup = new InformationGroup( informationPage, className );
+
+        // TODO: see todo below in {#link updateMetricInformationTable}
+        val fieldAsString = Arrays.stream( metricClass.getDeclaredFields() )
+                .map( Field::getName )
+                .filter( str -> !str.equals( "serialVersionUID" ) )
+                .collect( Collectors.toList() );
+        val informationTable = new InformationTable( informationGroup, fieldAsString );
+
+        // informationGroup.setRefreshFunction( () -> this.updateMetricInformationTable( informationTable, metricClass ) );
+
+        addInformationGroupTUi( informationGroup, Arrays.asList( informationTable ) );
+    }
+
+
     /**
-     * Universal method to add arbitrary new information Groups to UI.
+     * Universal method to add arbitrary new information groups to UI
      */
     private void addInformationGroupTUi( @NonNull InformationGroup informationGroup, @NonNull List<InformationTable> informationTables ) {
         InformationManager im = InformationManager.getInstance();
@@ -90,8 +109,8 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
             List<String> row = new LinkedList<>();
 
             for ( Field field : fields ) {
-                // TODO: get declared fields and fine corresponding Lombok getter to execute
-                //  Therefore, nothing need to be done for serialVersionID
+                // TODO: get declared fields and find corresponding Lombok getter to execute
+                //  Therefore, nothing needs to be done for serialVersionID
                 //  and neither do we need to hacky set the setAccessible flag for the fields
                 if ( field.getName().equals( "serialVersionUID" ) ) {
                     continue;
@@ -102,7 +121,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
                     val value = field.get( element );
                     row.add( value.toString() );
                 } catch ( IllegalAccessException e ) {
-                    e.printStackTrace();
+                    log.error( "Caught exception", e );
                 }
             }
 
@@ -113,8 +132,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
     private void initializeWorkloadInformationTable() {
         val informationGroup = new InformationGroup( informationPage, "Workload Overview" );
-        val informationTable = new InformationTable( informationGroup,
-                Arrays.asList( "Attribute", "Value" ) );
+        val informationTable = new InformationTable( informationGroup, Arrays.asList( "Attribute", "Value" ) );
         informationGroup.setOrder( 1 );
 
         informationGroup.setRefreshFunction( () -> this.updateWorkloadInformationTable( informationTable ) );
@@ -124,9 +142,9 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
 
     private void initializeQueueInformationTable() {
-        //On first subscriber also add
-        //Also build active subscription table Metric to subscribers
-        //or which subscribers, exist and to which metrics they are subscribed
+        // On first subscriber also add
+        // Also build active subscription table Metric to subscribers
+        // or which subscribers, exist and to which metrics they are subscribed
 
         val informationGroup = new InformationGroup( informationPage, "Monitoring Queue" ).setOrder( 2 );
         val informationTable = new InformationTable( informationGroup, Arrays.asList( "Event Type", "UUID", "Timestamp" ) );
@@ -146,7 +164,6 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
             row.add( infoRow.get( "type" ) );
             row.add( infoRow.get( "id" ) );
             row.add( infoRow.get( "timestamp" ) );
-
             table.addRow( row );
         }
     }
@@ -155,7 +172,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
     private void updateWorkloadInformationTable( InformationTable table ) {
         table.reset();
 
-        table.addRow( "Number of processed events since restart", queue.getNumberOfProcessedEvents() );
+        table.addRow( "Number of processed events since restart", queue.getNumberOfProcessedEvents( false ) );
         table.addRow( "Number of events in queue", queue.getNumberOfElementsInQueue() );
         //table.addRow( "# Data Points", queue.getElementsInQueue().size() );
         table.addRow( "# SELECT", MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPoint.class ).size() );

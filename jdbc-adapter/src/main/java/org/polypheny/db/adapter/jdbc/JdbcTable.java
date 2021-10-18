@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,10 +65,12 @@ import org.polypheny.db.schema.Schema.TableType;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
+import org.polypheny.db.sql.SqlBasicCall;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlSelect;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.pretty.SqlPrettyWriter;
 import org.polypheny.db.sql.util.SqlString;
@@ -193,6 +195,20 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
     }
 
 
+    public SqlNodeList getNodeList() {
+        List<SqlNode> pcnl = Expressions.list();
+        int i = 0;
+        for ( String str : physicalColumnNames ) {
+            SqlNode[] operands = new SqlNode[]{
+                    new SqlIdentifier( Arrays.asList( physicalSchemaName, physicalTableName, str ), SqlParserPos.ZERO ),
+                    new SqlIdentifier( Arrays.asList( logicalColumnNames.get( i++ ) ), SqlParserPos.ZERO )
+            };
+            pcnl.add( new SqlBasicCall( SqlStdOperatorTable.AS, operands, SqlParserPos.ZERO ) );
+        }
+        return new SqlNodeList( pcnl, SqlParserPos.ZERO );
+    }
+
+
     @Override
     public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
         return new JdbcTableScan( context.getCluster(), relOptTable, this, jdbcSchema.getConvention() );
@@ -286,6 +302,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
                     JdbcUtils.ObjectArrayRowBuilder.factory( fieldClasses( typeFactory ) ) );
             return enumerable.enumerator();
         }
+
     }
 
 }

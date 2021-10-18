@@ -68,6 +68,9 @@ import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.monitoring.events.DmlEvent;
+import org.polypheny.db.monitoring.events.QueryEvent;
+import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.RelTraitSet;
@@ -141,13 +144,13 @@ import org.polypheny.db.util.Util;
 @Slf4j
 public abstract class AbstractQueryProcessor implements QueryProcessor {
 
-    private final Statement statement;
-
     protected static final boolean ENABLE_BINDABLE = false;
     protected static final boolean ENABLE_COLLATION_TRAIT = true;
     protected static final boolean ENABLE_ENUMERABLE = true;
     protected static final boolean CONSTANT_REDUCTION = false;
     protected static final boolean ENABLE_STREAM = true;
+
+    private final Statement statement;
 
 
     protected AbstractQueryProcessor( Statement statement ) {
@@ -179,6 +182,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         if ( log.isDebugEnabled() ) {
             log.debug( "Preparing statement  ..." );
         }
+
+        if ( statement.getTransaction().getMonitoringData() == null ) {
+            if ( logicalRoot.kind.belongsTo( SqlKind.DML ) ) {
+                statement.getTransaction().setMonitoringData( new DmlEvent() );
+            } else if ( logicalRoot.kind.belongsTo( SqlKind.QUERY ) ) {
+                statement.getTransaction().setMonitoringData( new QueryEvent() );
+            }
+        }
+
         stopWatch.start();
 
         if ( logicalRoot.rel.hasView() ) {
@@ -302,6 +314,25 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 if ( isAnalyze ) {
                     statement.getDuration().stop( "Implementation Caching" );
                 }
+
+                //TODO @Cedric this produces an error causing several checks to fail. Please investigate
+                //needed for row results
+
+                //final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
+                //Iterator<Object> iterator = enumerable.iterator();
+
+                if ( statement.getTransaction().getMonitoringData() != null ) {
+                    StatementEvent eventData = statement.getTransaction().getMonitoringData();
+                    eventData.setMonitoringType( parameterizedRoot.kind.sql );
+                    eventData.setDescription( "Test description: " + signature.statementType.toString() );
+                    eventData.setRouted( logicalRoot );
+                    eventData.setFieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames() ) );
+                    //eventData.setRows( MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() ) );
+                    eventData.setAnalyze( isAnalyze );
+                    eventData.setSubQuery( isSubquery );
+                    eventData.setDurations( statement.getDuration().asJson() );
+                }
+
                 return signature;
             }
         }
@@ -371,6 +402,24 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         stopWatch.stop();
         if ( log.isDebugEnabled() ) {
             log.debug( "Preparing statement ... done. [{}]", stopWatch );
+        }
+
+        //TODO @Cedric this produces an error causing several checks to fail. Please investigate
+        //needed for row results
+        //final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
+        //Iterator<Object> iterator = enumerable.iterator();
+
+        TransactionImpl transaction = (TransactionImpl) statement.getTransaction();
+        if ( transaction.getMonitoringData() != null ) {
+            StatementEvent eventData = transaction.getMonitoringData();
+            eventData.setMonitoringType( parameterizedRoot.kind.sql );
+            eventData.setDescription( "Test description: " + signature.statementType.toString() );
+            eventData.setRouted( logicalRoot );
+            eventData.setFieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames() ) );
+            //eventData.setRows( MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() ) );
+            eventData.setAnalyze( isAnalyze );
+            eventData.setSubQuery( isSubquery );
+            eventData.setDurations( statement.getDuration().asJson() );
         }
 
         return signature;
@@ -1139,6 +1188,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     }
 
 
+    @Override
+    public void resetCaches() {
+        ImplementationCache.INSTANCE.reset();
+        QueryPlanCache.INSTANCE.reset();
+        statement.getRouter().resetCaches();
+    }
+
+
     static class RelDeepCopyShuttle extends RelShuttleImpl {
 
         private RelTraitSet copy( final RelTraitSet other ) {
@@ -1256,14 +1313,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             return node.copy( copy( node.getTraitSet() ), node.getInputs() );
         }
 
-    }
-
-
-    @Override
-    public void resetCaches() {
-        ImplementationCache.INSTANCE.reset();
-        QueryPlanCache.INSTANCE.reset();
-        statement.getRouter().resetCaches();
     }
 
 }

@@ -59,7 +59,7 @@ public class GroupByTest {
                 statement.executeUpdate( "INSERT INTO TestTableA VALUES(4,'Name4')" );
                 statement.executeUpdate( "INSERT INTO TestTableA VALUES(5,'Name5')" );
 
-                statement.executeUpdate( "CREATE TABLE TestTableB(Id INTEGER NOT NULL,Row_Code VARCHAR(255) NOT NULL,Frequency INTEGER, Primary key(Id,Row_Code))" );
+                statement.executeUpdate( "CREATE TABLE TestTableB(Id INTEGER NOT NULL,Row_Code VARCHAR(255) NOT NULL,Frequencies INTEGER, Primary key(Id,Row_Code))" );
                 statement.executeUpdate( "INSERT INTO TestTableB VALUES(1,'A',86)" );
                 statement.executeUpdate( "INSERT INTO TestTableB VALUES(1,'B',86)" );
                 statement.executeUpdate( "INSERT INTO TestTableB VALUES(1,'C',90)" );
@@ -113,7 +113,7 @@ public class GroupByTest {
                         new Object[]{ "Name5", 443 }
                 );
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT S.Name, sum (P.Frequency) FROM TestTableA S, TestTableB P WHERE P.Frequency > 84 GROUP BY S.Name ORDER BY S.Name" ),
+                        statement.executeQuery( "SELECT S.Name, sum (P.Frequencies) FROM TestTableA S, TestTableB P WHERE P.Frequencies > 84 GROUP BY S.Name ORDER BY S.Name" ),
                         expectedResult,
                         true
                 );
@@ -134,7 +134,7 @@ public class GroupByTest {
                         new Object[]{ 2, "Name2" }
                 );
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT s.id, s.name FROM TestTableC s, TestTableB t WHERE s.id = t.id AND Frequency >  (SELECT AVG (Frequency) FROM TestTableB WHERE row_code = 'C' GROUP BY row_code='C')\n" ),
+                        statement.executeQuery( "SELECT s.id, s.name FROM TestTableC s, TestTableB t WHERE s.id = t.id AND Frequencies >  (SELECT AVG (Frequencies) FROM TestTableB WHERE row_code = 'C' GROUP BY row_code='C')\n" ),
                         expectedResult,
                         true
                 );

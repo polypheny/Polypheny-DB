@@ -27,7 +27,7 @@ public abstract class BaseEvent implements MonitoringEvent {
     private final UUID id = UUID.randomUUID();
     protected String eventType;
 
-    private final long recordedTimestamp;
+    private long recordedTimestamp;
 
 
     public BaseEvent() {

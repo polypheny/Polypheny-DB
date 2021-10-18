@@ -46,6 +46,7 @@ import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rel.type.RelDataType;
@@ -116,7 +117,7 @@ public class MongoSchema extends AbstractSchema {
     }
 
 
-    public MongoTable createTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, int storeId ) {
+    public MongoTable createTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, int storeId, CatalogPartitionPlacement partitionPlacement ) {
         final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
 
@@ -125,9 +126,9 @@ public class MongoSchema extends AbstractSchema {
             RelDataType sqlType = catalogColumn.getRelDataType( typeFactory );
             fieldInfo.add( catalogColumn.name, MongoStore.getPhysicalColumnName( catalogColumn.name, catalogColumn.id ), sqlType ).nullable( catalogColumn.nullable );
         }
-        MongoTable table = new MongoTable( catalogTable, this, RelDataTypeImpl.proto( fieldInfo.build() ), transactionProvider, storeId );
+        MongoTable table = new MongoTable( catalogTable, this, RelDataTypeImpl.proto( fieldInfo.build() ), transactionProvider, storeId, partitionPlacement );
 
-        tableMap.put( catalogTable.name, table );
+        tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
         return table;
     }
 

@@ -39,7 +39,6 @@ public class CatalogColumnPlacement implements CatalogEntity {
     public final long physicalPosition;
 
     public final String physicalSchemaName;
-    public final String physicalTableName;
     public final String physicalColumnName;
 
 
@@ -50,7 +49,6 @@ public class CatalogColumnPlacement implements CatalogEntity {
             @NonNull final String adapterUniqueName,
             @NonNull final PlacementType placementType,
             final String physicalSchemaName,
-            final String physicalTableName,
             final String physicalColumnName,
             final long physicalPosition ) {
         this.tableId = tableId;
@@ -59,7 +57,6 @@ public class CatalogColumnPlacement implements CatalogEntity {
         this.adapterUniqueName = adapterUniqueName;
         this.placementType = placementType;
         this.physicalSchemaName = physicalSchemaName;
-        this.physicalTableName = physicalTableName;
         this.physicalColumnName = physicalColumnName;
         this.physicalPosition = physicalPosition;
     }
@@ -97,7 +94,6 @@ public class CatalogColumnPlacement implements CatalogEntity {
                 adapterUniqueName,
                 placementType.name(),
                 physicalSchemaName,
-                physicalTableName,
                 physicalColumnName };
     }
 

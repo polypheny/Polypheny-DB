@@ -74,6 +74,7 @@ public class FileEnumerator implements Enumerator<Object> {
      * If a filter is available, it will iterate over all columns and project each row
      *
      * @param rootPath The rootPath is required to know where the files to iterate are placed
+     * @param partitionId The id of the partition
      * @param columnIds Ids of the columns that come from a tableScan. If there is no filter, the enumerator will only iterate over the columns that are specified by the projection
      * @param columnTypes DataTypes of the columns that are given by the {@code columnIds} array
      * @param projectionMapping Mapping on how to project a table. E.g. the array [3,2] means that the row [a,b,c,d,e] will be projected to [c,b].
@@ -81,8 +82,10 @@ public class FileEnumerator implements Enumerator<Object> {
      * @param dataContext DataContext
      * @param condition Condition that can be {@code null}. The columnReferences in the filter point to the columns coming from the tableScan, not from the projection
      */
-    public FileEnumerator( final Operation operation,
+    public FileEnumerator(
+            final Operation operation,
             final String rootPath,
+            final Long partitionId,
             final Long[] columnIds,
             final PolyType[] columnTypes,
             final List<Long> pkIds,
@@ -90,6 +93,10 @@ public class FileEnumerator implements Enumerator<Object> {
             final DataContext dataContext,
             final Condition condition,
             final Value[] updates ) {
+
+        if ( dataContext.getParameterValues().size() > 1 && (operation == Operation.UPDATE || operation == Operation.DELETE) ) {
+            throw new RuntimeException( "The file store does not support batch update or delete statements!" );
+        }
 
         this.operation = operation;
         if ( operation == Operation.DELETE || operation == Operation.UPDATE ) {
@@ -139,19 +146,19 @@ public class FileEnumerator implements Enumerator<Object> {
         String xidHash = FileStore.SHA.hashString( dataContext.getStatement().getTransaction().getXid().toString(), FileStore.CHARSET ).toString();
         FileFilter fileFilter = file -> !file.isHidden() && !file.getName().startsWith( "~$" ) && (!file.getName().startsWith( "_" ) || file.getName().startsWith( "_ins_" + xidHash ));
         for ( Long colId : columnsToIterate ) {
-            File columnFolder = FileStore.getColumnFolder( rootPath, colId );
+            File columnFolder = FileStore.getColumnFolder( rootPath, colId, partitionId );
             columnFolders.add( columnFolder );
         }
         if ( columnsToIterate.length == 1 ) {
             // If we go over a single column, we can iterate it, even if null values are not present as files
-            this.fileList = FileStore.getColumnFolder( rootPath, columnsToIterate[0] ).listFiles( fileFilter );
+            this.fileList = FileStore.getColumnFolder( rootPath, columnsToIterate[0], partitionId ).listFiles( fileFilter );
         } else {
             // Iterate over a PK-column, because they are always NOT NULL
-            this.fileList = FileStore.getColumnFolder( rootPath, pkIds.get( 0 ) ).listFiles( fileFilter );
+            this.fileList = FileStore.getColumnFolder( rootPath, pkIds.get( 0 ), partitionId ).listFiles( fileFilter );
         }
         numOfCols = columnFolders.size();
 
-        //create folder for the hardlinks
+        // create folder for the hardlinks
         this.hardlinkFolder = new File( rootPath, "hardlinks/" + xidHash );
         if ( !hardlinkFolder.exists() ) {
             if ( !hardlinkFolder.mkdirs() ) {
