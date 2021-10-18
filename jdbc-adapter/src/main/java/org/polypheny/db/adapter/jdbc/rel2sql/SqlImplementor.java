@@ -1123,7 +1123,7 @@ public abstract class SqlImplementor {
          * @param clauses Clauses that will be generated to implement current relational expression
          * @return A builder
          */
-        public Builder builder( RelNode rel, Clause... clauses ) {
+        public Builder builder( RelNode rel, boolean explicitColumnNames, Clause... clauses ) {
             final Clause maxClause = maxClause();
             boolean needNew = false;
             // If old and new clause are equal and belong to below set, then new SELECT wrap is not required
@@ -1145,7 +1145,7 @@ public abstract class SqlImplementor {
             if ( needNew ) {
                 select = subSelect();
             } else {
-                if ( rel.getInputs().size() == 1 && rel.getInput( 0 ) instanceof JdbcTableScan ) {
+                if ( explicitColumnNames && rel.getInputs().size() == 1 && rel.getInput( 0 ) instanceof JdbcTableScan ) {
                     select = asSelect( ((JdbcTable) ((RelOptTableImpl) rel.getInput( 0 ).getTable()).getTable()).getNodeList() );
                 } else {
                     select = asSelect();

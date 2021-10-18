@@ -110,6 +110,8 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
 
     private final Deque<Frame> stack = new ArrayDeque<>();
 
+    private boolean isUnion = false;
+
 
     /**
      * Creates a RelToSqlConverter.
@@ -191,15 +193,15 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
         if ( input instanceof Aggregate ) {
             final Builder builder;
             if ( ((Aggregate) input).getInput() instanceof Project ) {
-                builder = x.builder( e );
+                builder = x.builder( e, true );
                 builder.clauses.add( Clause.HAVING );
             } else {
-                builder = x.builder( e, Clause.HAVING );
+                builder = x.builder( e, true, Clause.HAVING );
             }
             builder.setHaving( builder.context.toSql( null, e.getCondition() ) );
             return builder.result();
         } else {
-            final Builder builder = x.builder( e, Clause.WHERE );
+            final Builder builder = x.builder( e, isUnion, Clause.WHERE );
             builder.setWhere( builder.context.toSql( null, e.getCondition() ) );
             return builder.result();
         }
@@ -215,7 +217,7 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
         if ( isStar( e.getChildExps(), e.getInput().getRowType(), e.getRowType() ) ) {
             return x;
         }
-        final Builder builder = x.builder( e, Clause.SELECT );
+        final Builder builder = x.builder( e, false, Clause.SELECT );
         final List<SqlNode> selectList = new ArrayList<>();
         for ( RexNode ref : e.getChildExps() ) {
             SqlNode sqlExpr = builder.context.toSql( null, ref );
@@ -235,10 +237,10 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
         final Result x = visitChild( 0, e.getInput() );
         final Builder builder;
         if ( e.getInput() instanceof Project ) {
-            builder = x.builder( e );
+            builder = x.builder( e, true );
             builder.clauses.add( Clause.GROUP_BY );
         } else {
-            builder = x.builder( e, Clause.GROUP_BY );
+            builder = x.builder( e, true, Clause.GROUP_BY );
         }
         List<SqlNode> groupByList = Expressions.list();
         final List<SqlNode> selectList = new ArrayList<>();
@@ -280,9 +282,12 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
      * @see #dispatch
      */
     public Result visit( Union e ) {
-        return setOpToSql( e.all
+        isUnion = true;
+        Result result = setOpToSql( e.all
                 ? SqlStdOperatorTable.UNION_ALL
                 : SqlStdOperatorTable.UNION, e );
+        isUnion = false;
+        return result;
     }
 
 
@@ -315,8 +320,8 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
         final RexProgram program = e.getProgram();
         Builder builder =
                 program.getCondition() != null
-                        ? x.builder( e, Clause.WHERE )
-                        : x.builder( e );
+                        ? x.builder( e, true, Clause.WHERE )
+                        : x.builder( e, true );
         if ( !isStar( program ) ) {
             final List<SqlNode> selectList = new ArrayList<>();
             for ( RexLocalRef ref : program.getProjectList() ) {
@@ -405,7 +410,7 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
      */
     public Result visit( Sort e ) {
         Result x = visitChild( 0, e.getInput() );
-        Builder builder = x.builder( e, Clause.ORDER_BY );
+        Builder builder = x.builder( e, false, Clause.ORDER_BY );
         if ( stack.size() != 1 && builder.select.getSelectList() == null ) {
             // Generates explicit column names instead of start(*) for non-root ORDER BY to avoid ambiguity.
             final List<SqlNode> selectList = Expressions.list();
@@ -423,12 +428,12 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
             x = builder.result();
         }
         if ( e.fetch != null ) {
-            builder = x.builder( e, Clause.FETCH );
+            builder = x.builder( e, false, Clause.FETCH );
             builder.setFetch( builder.context.toSql( null, e.fetch ) );
             x = builder.result();
         }
         if ( e.offset != null ) {
-            builder = x.builder( e, Clause.OFFSET );
+            builder = x.builder( e, false, Clause.OFFSET );
             builder.setOffset( builder.context.toSql( null, e.offset ) );
             x = builder.result();
         }
