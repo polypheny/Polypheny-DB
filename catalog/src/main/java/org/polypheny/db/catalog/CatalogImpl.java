@@ -3498,8 +3498,8 @@ public class CatalogImpl extends Catalog {
     /**
      * Assign the partition to a new partitionGroup
      *
-     * @param partitionId   Partition to move
-     * @param partitionGroupId  New target gorup to move the partion to
+     * @param partitionId Partition to move
+     * @param partitionGroupId New target gorup to move the partion to
      */
     @Override
     public void updatePartition( long partitionId, Long partitionGroupId ) {
@@ -4146,7 +4146,7 @@ public class CatalogImpl extends Catalog {
      * Deletes a placement for a partition.
      *
      * @param adapterId The adapter on which the table should be placed on
-     * @param partitionId   The id of a partition which shall be removed from that store.
+     * @param partitionId The id of a partition which shall be removed from that store.
      */
     @Override
     public void deletePartitionPlacement( int adapterId, long partitionId ) {

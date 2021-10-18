@@ -28,6 +28,7 @@ public class TemperaturePartitionProperty extends PartitionProperty {
     // Cost Model, Access Frequency: ALL, READ FREQUENCY, WRITE FREQUENCY
     public enum PartitionCostIndication {ALL, READ, WRITE}
 
+
     private final PartitionCostIndication partitionCostIndication;
     private final PartitionType internalPartitionFunction;
 

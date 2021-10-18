@@ -123,8 +123,8 @@ public class CsvSource extends DataSource {
             }
         } else {
             fileNames = Arrays.stream( Sources.of( csvDir )
-                    .file()
-                    .listFiles( ( d, name ) -> name.endsWith( ".csv" ) || name.endsWith( ".csv.gz" ) ) )
+                            .file()
+                            .listFiles( ( d, name ) -> name.endsWith( ".csv" ) || name.endsWith( ".csv.gz" ) ) )
                     .sequential()
                     .map( File::getName )
                     .collect( Collectors.toSet() );
