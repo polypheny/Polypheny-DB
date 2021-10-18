@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 
 package org.polypheny.db.processing;
-
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -149,35 +148,6 @@ public class DataContextImpl implements DataContext {
         parameterTypes.clear();
         parameterValues.clear();
     }
-
-    /*
-    private SqlAdvisor getSqlAdvisor() {
-        final String schemaName;
-        try {
-            schemaName = con.getSchema();
-        } catch ( SQLException e ) {
-            throw new RuntimeException( e );
-        }
-        final List<String> schemaPath =
-                schemaName == null
-                        ? ImmutableList.of()
-                        : ImmutableList.of( schemaName );
-        final SqlValidatorWithHints validator =
-                new SqlAdvisorValidator(
-                        SqlStdOperatorTable.instance(),
-                        new PolyphenyDbCatalogReader( rootSchema, schemaPath, typeFactory ), typeFactory, SqlConformanceEnum.DEFAULT );
-        final PolyphenyDbConnectionConfig config = con.config();
-        // This duplicates org.polypheny.db.prepare.PolyphenyDbPrepareImpl.prepare2_
-        final Config parserConfig = SqlParser.configBuilder()
-                .setQuotedCasing( config.quotedCasing() )
-                .setUnquotedCasing( config.unquotedCasing() )
-                .setQuoting( config.quoting() )
-                .setConformance( config.conformance() )
-                .setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() )
-                .build();
-        return new SqlAdvisor( validator, parserConfig );
-    }
-*/
 
 
     @Override

@@ -29,12 +29,13 @@ import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.partition.properties.PartitionProperty;
 
 
 @EqualsAndHashCode
 public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
 
-    private static final long serialVersionUID = 5426944084650275437L;
+    private static final long serialVersionUID = 1781666800808312001L;
 
     public final long id;
     public final String name;
@@ -50,10 +51,8 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
 
     public final boolean isPartitioned;
     public final Catalog.PartitionType partitionType;
-    public final ImmutableList<Long> partitionIds;
     public final long partitionColumnId;
-
-    public final long numPartitions;
+    public final PartitionProperty partitionProperty;
 
     public final ImmutableList<Long> connectedViews;
 
@@ -69,7 +68,8 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
             @NonNull final TableType type,
             final Long primaryKey,
             @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
-            boolean modifiable ) {
+            boolean modifiable,
+            PartitionProperty partitionProperty ) {
         this.id = id;
         this.name = name;
         this.columnIds = columnIds;
@@ -84,9 +84,8 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
 
         this.isPartitioned = false;
         this.partitionType = PartitionType.NONE;
-        this.partitionIds = null;
         this.partitionColumnId = 0;
-        this.numPartitions = 0;
+        this.partitionProperty = partitionProperty;
         this.connectedViews = ImmutableList.<Long>builder().build();
 
         if ( type == TableType.TABLE && !modifiable ) {
@@ -109,10 +108,9 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
             final Long primaryKey,
             @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             boolean modifiable,
-            final long numPartitions,
             final PartitionType partitionType,
-            final ImmutableList<Long> partitionIds,
             final long partitionColumnId,
+            PartitionProperty partitionProperty,
             ImmutableList<Long> connectedViews ) {
         this.id = id;
         this.name = name;
@@ -126,17 +124,15 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
         this.placementsByAdapter = placementsByAdapter;
         this.modifiable = modifiable;
         this.partitionType = partitionType;
-        this.partitionIds = partitionIds;
         this.partitionColumnId = partitionColumnId;
-        this.numPartitions = numPartitions;
         this.isPartitioned = true;
+        this.partitionProperty = partitionProperty;
 
         this.connectedViews = connectedViews;
 
         if ( type == TableType.TABLE && !modifiable ) {
             throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
         }
-
     }
 
 
@@ -152,11 +148,10 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
             final Long primaryKey,
             @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             boolean modifiable,
-            final long numPartitions,
             final PartitionType partitionType,
-            final ImmutableList<Long> partitionIds,
             final long partitionColumnId,
             boolean isPartitioned,
+            PartitionProperty partitionProperty,
             ImmutableList<Long> connectedViews ) {
         this.id = id;
         this.name = name;
@@ -172,9 +167,49 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
 
         this.isPartitioned = isPartitioned;
         this.partitionType = partitionType;
-        this.partitionIds = partitionIds;
         this.partitionColumnId = partitionColumnId;
-        this.numPartitions = numPartitions;
+
+        this.partitionProperty = partitionProperty;
+
+        this.connectedViews = connectedViews;
+
+        if ( type == TableType.TABLE && !modifiable ) {
+            throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
+        }
+    }
+
+
+    public CatalogTable(
+            final long id,
+            @NonNull final String name,
+            final ImmutableList<Long> columnIds,
+            final long schemaId,
+            final long databaseId,
+            final int ownerId,
+            @NonNull final String ownerName,
+            @NonNull final TableType type,
+            final Long primaryKey,
+            @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
+            boolean modifiable,
+            PartitionProperty partitionProperty,
+            ImmutableList<Long> connectedViews ) {
+        this.id = id;
+        this.name = name;
+        this.columnIds = columnIds;
+        this.schemaId = schemaId;
+        this.databaseId = databaseId;
+        this.ownerId = ownerId;
+        this.ownerName = ownerName;
+        this.tableType = type;
+        this.primaryKey = primaryKey;
+        this.placementsByAdapter = placementsByAdapter;
+        this.modifiable = modifiable;
+
+        this.isPartitioned = false;
+        this.partitionType = PartitionType.NONE;
+        this.partitionColumnId = 0;
+
+        this.partitionProperty = partitionProperty;
 
         this.connectedViews = connectedViews;
 
@@ -263,11 +298,10 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
                 primaryKey,
                 placementsByAdapter,
                 modifiable,
-                numPartitions,
                 partitionType,
-                partitionIds,
                 partitionColumnId,
                 isPartitioned,
+                partitionProperty,
                 connectedViews );
     }
 
@@ -285,11 +319,10 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
                 primaryKey,
                 placementsByAdapter,
                 modifiable,
-                numPartitions,
                 partitionType,
-                partitionIds,
                 partitionColumnId,
                 isPartitioned,
+                partitionProperty,
                 newConnectedViews );
     }
 
@@ -307,11 +340,10 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
                 primaryKey,
                 placementsByAdapter,
                 modifiable,
-                numPartitions,
                 partitionType,
-                partitionIds,
                 partitionColumnId,
                 isPartitioned,
+                partitionProperty,
                 connectedViews );
     }
 

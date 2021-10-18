@@ -48,6 +48,7 @@ import lombok.experimental.Accessors;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
@@ -298,9 +299,10 @@ public abstract class Adapter {
         return properties.name();
     }
 
+
     public abstract void createNewSchema( SchemaPlus rootSchema, String name );
 
-    public abstract Table createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore );
+    public abstract Table createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement );
 
     public abstract Schema getCurrentSchema();
 
@@ -441,10 +443,13 @@ public abstract class Adapter {
         group.setRefreshFunction( () -> {
             physicalColumnNames.reset();
             Catalog.getInstance().getColumnPlacementsOnAdapter( adapterId ).forEach( placement -> {
-                physicalColumnNames.addRow(
-                        placement.columnId,
-                        Catalog.getInstance().getColumn( placement.columnId ).name,
-                        placement.physicalSchemaName + "." + placement.physicalTableName + "." + placement.physicalColumnName );
+                List<CatalogPartitionPlacement> cpps = Catalog.getInstance().getPartitionPlacementsByAdapter( adapterId );
+                cpps.forEach( cpp ->
+                        physicalColumnNames.addRow(
+                                placement.columnId,
+                                Catalog.getInstance().getColumn( placement.columnId ).name,
+                                cpp.physicalSchemaName + "." + cpp.physicalTableName + "." + placement.physicalColumnName )
+                );
             } );
         } );
 

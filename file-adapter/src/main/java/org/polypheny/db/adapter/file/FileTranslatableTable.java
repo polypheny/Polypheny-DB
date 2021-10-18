@@ -56,6 +56,8 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
     private final String tableName;
     private final long tableId;
     @Getter
+    private final long partitionId;
+    @Getter
     private final List<String> columnNames;
     @Getter
     private final Map<String, Long> columnIdMap;
@@ -70,9 +72,11 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
     private final RelProtoDataType protoRowType;
 
 
-    public FileTranslatableTable( final FileSchema fileSchema,
+    public FileTranslatableTable(
+            final FileSchema fileSchema,
             final String tableName,
             final long tableId,
+            final long partitionId,
             final List<Long> columnIds,
             final ArrayList<PolyType> columnTypes,
             final List<String> columnNames,
@@ -83,6 +87,7 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
         this.rootDir = fileSchema.getRootDir();
         this.tableName = tableName;
         this.tableId = tableId;
+        this.partitionId = partitionId;
         this.adapterId = fileSchema.getAdapterId();
         this.pkIds = pkIds;
         this.protoRowType = protoRowType;
@@ -120,9 +125,26 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
 
 
     @Override
-    public TableModify toModificationRel( RelOptCluster cluster, RelOptTable table, CatalogReader catalogReader, RelNode child, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+    public TableModify toModificationRel(
+            RelOptCluster cluster,
+            RelOptTable table,
+            CatalogReader catalogReader,
+            RelNode child,
+            Operation operation,
+            List<String> updateColumnList,
+            List<RexNode> sourceExpressionList,
+            boolean flattened ) {
         fileSchema.getConvention().register( cluster.getPlanner() );
-        return new LogicalTableModify( cluster, cluster.traitSetOf( Convention.NONE ), table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
+        return new LogicalTableModify(
+                cluster,
+                cluster.traitSetOf( Convention.NONE ),
+                table,
+                catalogReader,
+                child,
+                operation,
+                updateColumnList,
+                sourceExpressionList,
+                flattened );
     }
 
 

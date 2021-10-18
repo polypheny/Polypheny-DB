@@ -40,15 +40,17 @@ public class FileModifier extends FileEnumerator {
     private boolean inserted = false;
 
 
-    public FileModifier( final Operation operation,
+    public FileModifier(
+            final Operation operation,
             final String rootPath,
+            final Long partitionId,
             final Long[] columnIds,
             final PolyType[] columnTypes,
             final List<Long> pkIds,
             final DataContext dataContext,
             final Object[] insertValues,
             final Condition condition ) {
-        super( operation, rootPath, columnIds, columnTypes, pkIds, null, dataContext, condition, null );
+        super( operation, rootPath, partitionId, columnIds, columnTypes, pkIds, null, dataContext, condition, null );
         this.insertValues = insertValues;
     }
 

@@ -23,6 +23,7 @@ import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -91,8 +92,8 @@ public class CsvSource extends DataSource {
 
 
     @Override
-    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore ) {
-        return currentSchema.createCsvTable( catalogTable, columnPlacementsOnStore, this );
+    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+        return currentSchema.createCsvTable( catalogTable, columnPlacementsOnStore, this, partitionPlacement );
     }
 
 
@@ -122,8 +123,8 @@ public class CsvSource extends DataSource {
             }
         } else {
             fileNames = Arrays.stream( Sources.of( csvDir )
-                    .file()
-                    .listFiles( ( d, name ) -> name.endsWith( ".csv" ) || name.endsWith( ".csv.gz" ) ) )
+                            .file()
+                            .listFiles( ( d, name ) -> name.endsWith( ".csv" ) || name.endsWith( ".csv.gz" ) ) )
                     .sequential()
                     .map( File::getName )
                     .collect( Collectors.toSet() );

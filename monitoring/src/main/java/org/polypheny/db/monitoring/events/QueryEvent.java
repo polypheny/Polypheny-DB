@@ -16,20 +16,20 @@
 
 package org.polypheny.db.monitoring.events;
 
+
 import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.events.analyzer.QueryEventAnalyzer;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
-import org.polypheny.db.monitoring.exceptions.GenericEventAnalyzeRuntimeException;
 
 
 @Getter
 @Setter
-@Slf4j
 public class QueryEvent extends StatementEvent {
+
+    private String eventType = "QUERY EVENT";
 
 
     @Override
@@ -40,11 +40,7 @@ public class QueryEvent extends StatementEvent {
 
     @Override
     public List<MonitoringDataPoint> analyze() {
-        try {
-            return Arrays.asList( QueryEventAnalyzer.analyze( this ) );
-        } catch ( Exception e ) {
-            throw new GenericEventAnalyzeRuntimeException( "Could not analyze query event:" );
-        }
+        return Arrays.asList( QueryEventAnalyzer.analyze( this ) );
     }
 
 }

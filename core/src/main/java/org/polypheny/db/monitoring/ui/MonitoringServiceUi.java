@@ -16,11 +16,23 @@
 
 package org.polypheny.db.monitoring.ui;
 
+import org.polypheny.db.monitoring.events.MonitoringDataPoint;
+
 /**
  * UI abstraction service for monitoring.
  */
 public interface MonitoringServiceUi {
 
     void initializeInformationPage();
+
+    /**
+     * Will add new section to monitoring information page for the specified
+     * MonitoringPersistentData type and register the refresh function to read from repository.
+     *
+     * @param metricClass
+     * @param <T>
+     */
+    <T extends MonitoringDataPoint> void registerDataPointForUi( Class<T> metricClass );
+
 
 }

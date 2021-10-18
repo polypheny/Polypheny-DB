@@ -47,16 +47,18 @@ import org.polypheny.db.ddl.exception.IndexPreventsRemovalException;
 import org.polypheny.db.ddl.exception.LastPlacementException;
 import org.polypheny.db.ddl.exception.MissingColumnPlacementException;
 import org.polypheny.db.ddl.exception.NotNullAndDefaultValueException;
-import org.polypheny.db.ddl.exception.PartitionNamesNotUniqueException;
+import org.polypheny.db.ddl.exception.PartitionGroupNamesNotUniqueException;
 import org.polypheny.db.ddl.exception.PlacementAlreadyExistsException;
 import org.polypheny.db.ddl.exception.PlacementIsPrimaryException;
 import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
+import org.polypheny.db.partition.raw.RawPartitionInformation;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
@@ -217,12 +219,12 @@ public abstract class DdlManager {
      *
      * @param catalogTable the table
      * @param columnIds the ids of the columns for which to create a new placement
-     * @param partitionIds the ids of the partitions of the column
-     * @param partitionNames the name for these partition
+     * @param partitionGroupIds the ids of the partitions of the column
+     * @param partitionGroupNames the name for these partition
      * @param dataStore the data store on which to create the placement
      * @param statement the query statement
      */
-    public abstract void addPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionIds, List<String> partitionNames, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException;
+    public abstract void addPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException;
 
     /**
      * Adds a new primary key to a table
@@ -362,12 +364,23 @@ public abstract class DdlManager {
      *
      * @param catalogTable the table
      * @param columnIds which columns should be placed on the specified data store
-     * @param partitionIds the ids of the partitions of this column
-     * @param partitionNames the name of these partitions
+     * @param partitionGroupIds the ids of the partitions of this column
+     * @param partitionGroupNames the name of these partitions
      * @param storeInstance the data store
      * @param statement the used statement
      */
-    public abstract void modifyColumnPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionIds, List<String> partitionNames, DataStore storeInstance, Statement statement ) throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException;
+    public abstract void modifyColumnPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement ) throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException;
+
+    /**
+     * Modified the partition distribution on the selected store. Can be used to add or remove partitions on a store.
+     * Which consequently alters the Partition Placments.
+     *
+     * @param catalogTable the table
+     * @param partitionGroupIds the desired target state of partition groups which should remain on this store
+     * @param storeInstance the data store on which the partition placements should be altered
+     * @param statement the used statement
+     */
+    public abstract void modifyPartitionPlacement( CatalogTable catalogTable, List<Long> partitionGroupIds, DataStore storeInstance, Statement statement );
 
     /**
      * Add a column placement for a specified column on a specified data store. If the store already contains a placement of
@@ -430,8 +443,7 @@ public abstract class DdlManager {
      * @param placementType which placement type should be used for the initial placements
      * @param statement the used statement
      */
-    public abstract void createTable( long schemaId, String tableName, List<ColumnInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws TableAlreadyExistsException, ColumnNotExistsException, UnknownPartitionTypeException;
-
+    public abstract void createTable( long schemaId, String tableName, List<ColumnInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws TableAlreadyExistsException, ColumnNotExistsException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException;
 
     /**
      * Create a new view
@@ -448,7 +460,15 @@ public abstract class DdlManager {
      *
      * @param partitionInfo the information concerning the partition
      */
-    public abstract void addPartition( PartitionInformation partitionInfo ) throws GenericCatalogException, UnknownPartitionTypeException, UnknownColumnException, PartitionNamesNotUniqueException;
+    public abstract void addPartitioning( PartitionInformation partitionInfo, List<DataStore> stores, Statement statement ) throws GenericCatalogException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException;
+
+    /**
+     * Removes partitioning from Table
+     *
+     * @param catalogTable teh table to be merged
+     * @param statement the used Statement
+     */
+    public abstract void removePartitioning( CatalogTable catalogTable, Statement statement );
 
     /**
      * Adds a new constraint to a table
@@ -608,24 +628,30 @@ public abstract class DdlManager {
         public final CatalogTable table;
         public final String columnName;
         public final String typeName;
-        public final List<String> partitionNames;
-        public final int numberOf;
+        public final List<String> partitionGroupNames;
+        public final int numberOfPartitionGroups;
+        public final int numberOfPartitions;
         public final List<List<String>> qualifiers;
+        public final RawPartitionInformation rawPartitionInformation;
 
 
         public PartitionInformation(
                 CatalogTable table,
                 String typeName,
                 String columnName,
-                List<String> partitionNames,
-                int numberOf,
-                List<List<String>> qualifiers ) {
+                List<String> partitionGroupNames,
+                int numberOfPartitionGroups,
+                int numberOfPartitions,
+                List<List<String>> qualifiers,
+                RawPartitionInformation rawPartitionInformation ) {
             this.table = table;
             this.typeName = typeName;
             this.columnName = columnName;
-            this.partitionNames = partitionNames;
-            this.numberOf = numberOf;
+            this.partitionGroupNames = partitionGroupNames;
+            this.numberOfPartitionGroups = numberOfPartitionGroups;
+            this.numberOfPartitions = numberOfPartitions;
             this.qualifiers = qualifiers;
+            this.rawPartitionInformation = rawPartitionInformation;
         }
 
 
@@ -633,18 +659,36 @@ public abstract class DdlManager {
                 CatalogTable table,
                 String typeName,
                 String columnName,
-                List<SqlIdentifier> partitionNames,
-                int numberOf,
-                List<List<SqlNode>> partitionQualifierList ) {
-            List<String> names = partitionNames
+                List<SqlIdentifier> partitionGroupNames,
+                int numberOfPartitionGroups,
+                int numberOfPartitions,
+                List<List<SqlNode>> partitionQualifierList,
+                RawPartitionInformation rawPartitionInformation ) {
+            List<String> names = partitionGroupNames
                     .stream()
                     .map( SqlIdentifier::getSimple )
                     .collect( Collectors.toList() );
             List<List<String>> qualifiers = partitionQualifierList
                     .stream()
-                    .map( qs -> qs.stream().map( SqlNode::toString ).collect( Collectors.toList() ) )
+                    .map( qs -> qs.stream().map( PartitionInformation::getValueOfSqlNode ).collect( Collectors.toList() ) )
                     .collect( Collectors.toList() );
-            return new PartitionInformation( table, typeName, columnName, names, numberOf, qualifiers );
+            return new PartitionInformation( table, typeName, columnName, names, numberOfPartitionGroups, numberOfPartitions, qualifiers, rawPartitionInformation );
+        }
+
+
+        /**
+         * Needed to modify strings otherwise the SQL-input 'a' will be also added as the value "'a'" and not as "a" as intended
+         * Essentially removes " ' " at the start and end of value
+         *
+         * @param node Node to be modified
+         * @return String
+         */
+        public static String getValueOfSqlNode( SqlNode node ) {
+
+            if ( node instanceof SqlLiteral ) {
+                return ((SqlLiteral) node).toValue();
+            }
+            return node.toString();
         }
 
     }
