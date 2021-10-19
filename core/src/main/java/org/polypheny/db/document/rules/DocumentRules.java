@@ -76,7 +76,10 @@ public class DocumentRules {
         @Override
         public Void visitCall( RexCall call ) {
             SqlOperator operator = call.getOperator();
-            if ( operator.kind == SqlKind.JSON_VALUE_EXPRESSION || operator instanceof SqlJsonValueFunction || operator.kind == SqlKind.JSON_API_COMMON_SYNTAX || operator instanceof SqlDocEqualExpressionOperator ) {
+            if ( operator.kind == SqlKind.JSON_VALUE_EXPRESSION
+                    || operator instanceof SqlJsonValueFunction
+                    || operator.kind == SqlKind.JSON_API_COMMON_SYNTAX
+                    || operator instanceof SqlDocEqualExpressionOperator ) {
                 containsJson = true;
             }
             return super.visitCall( call );

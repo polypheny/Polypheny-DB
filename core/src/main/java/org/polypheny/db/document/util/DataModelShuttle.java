@@ -23,6 +23,7 @@ import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rel.logical.LogicalDocuments;
 import org.polypheny.db.rel.logical.LogicalValues;
 
+
 /**
  * Shuttle, which transforms a normal LogicalValues to LogicalValues
  */
@@ -42,7 +43,6 @@ public class DataModelShuttle extends RelShuttleImpl {
                 if ( modify.getInput() instanceof LogicalValues && !(modify.getInput() instanceof LogicalDocuments) ) {
                     modify.replaceInput( 0, LogicalDocuments.create( (LogicalValues) modify.getInput() ) );
                 }
-
                 return super.visit( other );
             }
             return super.visit( other );

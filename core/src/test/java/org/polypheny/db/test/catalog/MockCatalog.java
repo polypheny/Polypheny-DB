@@ -948,7 +948,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     /**
-     * Delets a placement for a partition.
+     * Deletes a placement for a partition.
      *
      * @param adapterId The adapter on which the table should be placed on
      */

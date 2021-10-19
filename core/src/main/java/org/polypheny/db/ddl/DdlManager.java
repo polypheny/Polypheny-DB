@@ -373,7 +373,7 @@ public abstract class DdlManager {
 
     /**
      * Modified the partition distribution on the selected store. Can be used to add or remove partitions on a store.
-     * Which consequently alters the Partition Placments.
+     * Which consequently alters the Partition Placements.
      *
      * @param catalogTable the table
      * @param partitionGroupIds the desired target state of partition groups which should remain on this store

@@ -520,7 +520,7 @@ public abstract class AbstractRouter implements Router {
 
                                         /* TODO add possibility to substitute the update as a insert into target partition from all source partitions
                                         // IS currently blocked
-                                        //needs to to a insert into target partition select from all other partitoins first and then delete on source partiitons
+                                        //needs to to a insert into target partition select from all other partitions first and then delete on source partitions
                                         worstCaseRouting = false;
                                         log.debug( "oldValue and new value reside on same partition: " + identifiedPartitionForSetValue );
 

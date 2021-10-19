@@ -604,7 +604,7 @@ public class CatalogImpl extends Catalog {
         }
 
         if ( !userNames.containsKey( "pa" ) ) {
-             addUser( "pa", "" );
+            addUser( "pa", "" );
         }
         Catalog.defaultUser = systemId;
 
@@ -894,6 +894,7 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    @Override
     public void setUserSchema( int userId, long schemaId ) {
         CatalogUser user = getUser( userId );
         CatalogUser newUser = new CatalogUser( user.id, user.name, user.password, schemaId );
@@ -3563,7 +3564,7 @@ public class CatalogImpl extends Catalog {
      * Assign the partition to a new partitionGroup
      *
      * @param partitionId Partition to move
-     * @param partitionGroupId New target gorup to move the partion to
+     * @param partitionGroupId New target group to move the partition to
      */
     @Override
     public void updatePartition( long partitionId, Long partitionGroupId ) {
@@ -4225,9 +4226,9 @@ public class CatalogImpl extends Catalog {
     /**
      * Returns a specific partition entity which is placed on a store.
      *
-     * @param adapterId The adapter on which the requested partitions palcement resides
+     * @param adapterId The adapter on which the requested partitions pldcement resides
      * @param partitionId The id of the requested partition
-     * @return The requested PartitionPlacement on that store for agiven is
+     * @return The PartitionPlacement on the specified store
      */
     @Override
     public CatalogPartitionPlacement getPartitionPlacement( int adapterId, long partitionId ) {
@@ -4242,7 +4243,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns a list of all Partition Placements which currently reside on a adpater, disregarded of the table.
+     * Returns a list of all Partition Placements which currently reside on an adapter, disregarded of the table.
      *
      * @param adapterId The adapter on which the requested partition placements reside
      * @return A list of all Partition Placements, that are currently located  on that specific store

@@ -98,6 +98,7 @@ public class TransactionImpl implements Transaction, Comparable {
     private final Set<Lock> lockList = new HashSet<>();
     private boolean useCache = false;
 
+
     TransactionImpl(
             PolyXid xid,
             TransactionManagerImpl transactionManager,

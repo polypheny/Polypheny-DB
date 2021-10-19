@@ -1149,7 +1149,7 @@ public abstract class Catalog {
      * Assign the partition to a new partitionGroup
      *
      * @param partitionId Partition to move
-     * @param partitionGroupId New target gorup to move the partion to
+     * @param partitionGroupId New target group to move the partition to
      */
     public abstract void updatePartition( long partitionId, Long partitionGroupId );
 
