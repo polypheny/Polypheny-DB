@@ -20,8 +20,8 @@ import java.util.List;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.rel.type.RelProtoDataType;
 
-public class LogicalView extends LogicalTable {
 
+public class LogicalView extends LogicalTable {
 
     protected LogicalView(
             long tableId,

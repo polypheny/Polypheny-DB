@@ -463,7 +463,6 @@ public class RelFactories {
 
     public interface DocumentsFactory {
 
-
         RelNode createDocuments(
                 RelOptCluster cluster,
                 ImmutableList<BsonValue> tuples,
@@ -474,7 +473,6 @@ public class RelFactories {
 
 
     private static class DocumentsFactoryImpl implements DocumentsFactory {
-
 
         @Override
         public RelNode createDocuments(
@@ -621,4 +619,3 @@ public class RelFactories {
     }
 
 }
-

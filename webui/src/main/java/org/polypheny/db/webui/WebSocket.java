@@ -114,7 +114,6 @@ public class WebSocket {
                         return;
                     }
                 } else {
-
                     try {
                         results = crud.anyQuery( queryRequest, session );
                     } catch ( Throwable t ) {

@@ -17,7 +17,6 @@
 package org.polypheny.db.rel.logical;
 
 import com.google.common.collect.ImmutableList;
-import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
@@ -53,7 +52,6 @@ import org.polypheny.db.type.PolyTypeFactoryImpl;
 public class LogicalDocuments extends LogicalValues implements Documents {
 
     private final static PolyTypeFactoryImpl typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-    private final static Gson gson = new Gson();
 
     private final RelDataType rowType;
     @Getter
@@ -259,6 +257,5 @@ public class LogicalDocuments extends LogicalValues implements Documents {
 
         return ImmutableList.copyOf( validated );
     }
-
 
 }

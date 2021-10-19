@@ -27,5 +27,4 @@ public interface Documents {
 
     ImmutableList<BsonValue> getDocumentTuples();
 
-
 }

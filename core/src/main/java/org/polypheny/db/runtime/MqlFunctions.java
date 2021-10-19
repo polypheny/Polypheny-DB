@@ -194,7 +194,6 @@ public class MqlFunctions {
         } else {
             throw new RuntimeException( "The provided values where not comparable." );
         }
-
     }
 
 
@@ -348,7 +347,6 @@ public class MqlFunctions {
         List<Pair<Class<? extends BsonValue>, Class<?>>> clazzPairs = typeNumbers.stream().map( DocumentUtil::getBsonClass ).collect( Collectors.toList() );
 
         return Pair.right( clazzPairs ).stream().anyMatch( clazz -> clazz.isInstance( input ) );
-
     }
 
 
@@ -635,7 +633,6 @@ public class MqlFunctions {
                 start = Math.max( 0, end + elements );
             }
             return list.subList( start, end );
-
         }
     }
 
@@ -728,7 +725,6 @@ public class MqlFunctions {
         }
 
         return false;
-
     }
 
 

@@ -34,17 +34,10 @@
 package org.polypheny.db.mql.parser;
 
 
-import org.polypheny.db.util.trace.PolyphenyDbTrace;
-import org.slf4j.Logger;
-
-
 /**
  * Utility methods relating to parsing MQL.
  */
 public final class MqlParserUtil {
-
-    static final Logger LOGGER = PolyphenyDbTrace.getParserTracer();
-
 
     private MqlParserUtil() {
     }
@@ -66,7 +59,6 @@ public final class MqlParserUtil {
         }
         return null;
     }
-
 
 }
 

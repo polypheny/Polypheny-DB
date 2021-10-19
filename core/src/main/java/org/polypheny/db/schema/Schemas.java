@@ -33,7 +33,6 @@
 
 package org.polypheny.db.schema;
 
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;

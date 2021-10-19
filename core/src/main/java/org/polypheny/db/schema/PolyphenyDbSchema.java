@@ -16,7 +16,6 @@
 
 package org.polypheny.db.schema;
 
-
 import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
 import java.util.Collection;

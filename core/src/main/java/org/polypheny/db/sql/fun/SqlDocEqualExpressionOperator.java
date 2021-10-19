@@ -19,6 +19,7 @@ package org.polypheny.db.sql.fun;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlSpecialOperator;
 
+
 public class SqlDocEqualExpressionOperator extends SqlSpecialOperator {
 
     public SqlDocEqualExpressionOperator( String name, SqlKind kind ) {

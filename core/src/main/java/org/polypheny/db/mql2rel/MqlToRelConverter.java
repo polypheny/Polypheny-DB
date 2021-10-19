@@ -113,9 +113,7 @@ public class MqlToRelConverter {
     private final RelDataType jsonType;
     private final RelDataType nullableJsonType;
 
-
     private static final HashMap<String, SqlOperator> singleMathOperators;
-
 
     private static final HashMap<String, SqlOperator> mathComparators;
 
@@ -807,8 +805,6 @@ public class MqlToRelConverter {
             default:
                 return cluster.getTypeFactory().createPolyType( getPolyType( value ) );
         }
-
-
     }
 
 
@@ -950,8 +946,6 @@ public class MqlToRelConverter {
      *
      * {"test","key",[3,1,"te"]} -> {"test","key",3},{"test","key",1},{"test","key","te"}
      *
-     * </code>
-     *
      * @param value the unparsed $unwind operation
      */
     private RelNode combineUnwind( BsonValue value, RelNode node ) {
@@ -1072,7 +1066,10 @@ public class MqlToRelConverter {
             }
         }
 
-        return conditionalWrap( node, rowType, names,
+        return conditionalWrap(
+                node,
+                rowType,
+                names,
                 ( newNode, newRowType ) -> LogicalSort.create( newNode, RelCollations.of( generateCollation( dirs, names, newRowType.getFieldNames() ) ), null, null ) );
     }
 
@@ -1498,7 +1495,6 @@ public class MqlToRelConverter {
         } else {
             throw new RuntimeException( msg );
         }
-
     }
 
 
@@ -1539,7 +1535,6 @@ public class MqlToRelConverter {
         }
 
         return new RexCall( any, op, Collections.singletonList( node ) );
-
     }
 
 
@@ -1633,7 +1628,6 @@ public class MqlToRelConverter {
 
             return getFixedCall( nodes, MqlStdOperatorTable.DOC_EQ, PolyType.BOOLEAN );
         }
-
     }
 
 
@@ -1674,7 +1668,6 @@ public class MqlToRelConverter {
         } else {
             return null;
         }
-
     }
 
 
@@ -1749,7 +1742,6 @@ public class MqlToRelConverter {
                 nodes.add( convertLiteral( bsonValue ) );
                 return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), op, nodes );
         }
-
     }
 
 
@@ -1906,7 +1898,6 @@ public class MqlToRelConverter {
         } else {
             throw new RuntimeException( "After $size there needs to follow a number" );
         }
-
     }
 
 
@@ -1964,7 +1955,6 @@ public class MqlToRelConverter {
         } else {
             throw new RuntimeException( "After $all there needs to follow a array" );
         }
-
     }
 
 
@@ -2058,7 +2048,6 @@ public class MqlToRelConverter {
                                 ? builder.makeCorrel( rowType, new CorrelationId( index ) )
                                 : RexInputRef.of( index, rowType ),
                         filter ) );
-
     }
 
 
@@ -2111,7 +2100,6 @@ public class MqlToRelConverter {
 
 
     private RexCall getArray( List<RexNode> elements, RelDataType type ) {
-
         return new RexCall( type, SqlStdOperatorTable.ARRAY_VALUE_CONSTRUCTOR, elements );
     }
 
@@ -2169,7 +2157,6 @@ public class MqlToRelConverter {
      */
     private PolyType getPolyType( BsonValue bsonValue ) {
         switch ( bsonValue.getBsonType() ) {
-
             case END_OF_DOCUMENT:
                 break;
             case DOUBLE:
@@ -2433,7 +2420,6 @@ public class MqlToRelConverter {
                 }
                 throw new RuntimeException( msg );
             }
-
         }
     }
 

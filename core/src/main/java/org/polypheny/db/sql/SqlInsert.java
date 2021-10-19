@@ -33,7 +33,6 @@
 
 package org.polypheny.db.sql;
 
-
 import java.util.List;
 import lombok.Setter;
 import org.polypheny.db.catalog.Catalog.SchemaType;
@@ -88,7 +87,8 @@ public class SqlInsert extends SqlCall {
     /**
      * Returns whether this is an UPSERT statement.
      *
-     * In SQL, this is represented using the {@code UPSERT} keyword rather than {@code INSERT}; in the abstract syntax tree, an UPSERT is indicated by the presence of a {@link SqlInsertKeyword#UPSERT} keyword.
+     * In SQL, this is represented using the {@code UPSERT} keyword rather than {@code INSERT};
+     * in the abstract syntax tree, an UPSERT is indicated by the presence of a {@link SqlInsertKeyword#UPSERT} keyword.
      */
     public final boolean isUpsert() {
         return getModifierNode( SqlInsertKeyword.UPSERT ) != null;

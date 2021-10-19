@@ -33,7 +33,6 @@
 
 package org.polypheny.db.schema;
 
-
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
