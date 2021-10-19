@@ -28,6 +28,7 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlDocEqualExpressionOperator;
 import org.polypheny.db.sql.fun.SqlJsonValueFunction;
 
+
 /**
  * Helper functions, which can be used to exclude document logics during planing from stores,
  * which are not able to support it

@@ -4226,7 +4226,7 @@ public class CatalogImpl extends Catalog {
     /**
      * Returns a specific partition entity which is placed on a store.
      *
-     * @param adapterId The adapter on which the requested partitions pldcement resides
+     * @param adapterId The adapter on which the requested partitions placement resides
      * @param partitionId The id of the requested partition
      * @return The PartitionPlacement on the specified store
      */
