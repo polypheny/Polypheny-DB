@@ -156,7 +156,7 @@ public enum RuntimeConfig {
 
     STATISTICS_ON_STARTUP( "statistics/statisticsOnStartup",
             "Whether to build statistics for all stored data on system startup.",
-            false,
+            true,
             ConfigType.BOOLEAN,
             "statisticSettingsGroup" ),
 
