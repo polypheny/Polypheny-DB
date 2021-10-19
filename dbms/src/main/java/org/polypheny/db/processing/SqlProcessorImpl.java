@@ -120,7 +120,9 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         }
         stopWatch.start();
         SqlNode parsed;
-        log.debug( "SQL: {}", sql );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "SQL: {}", sql );
+        }
 
         try {
             final SqlParser parser = SqlParser.create( new SourceStringReader( sql ), parserConfig );
@@ -417,12 +419,12 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
 
     /**
-     * Filters column names which are beeing added in this query
+     * Filters column names which are being added in this query
      *
      * @return set of new column names
      */
     private HashSet<String> getNewColumns( SqlInsert insert, SqlNodeList oldColumnList, CatalogTable catalogTable ) {
-        HashSet<String> newCols = new HashSet<String>();
+        HashSet<String> newCols = new HashSet<>();
         List<String> columnNames = catalogTable.getColumnNames();
 
         for ( SqlNode column : oldColumnList.getList() ) {

@@ -113,7 +113,7 @@ public class BsonUtil {
 
 
     /**
-     * Recursivly iterates over the operation mappings and replaces them in them with the equivalent BSON compatible format
+     * Recursively iterates over the operation mappings and replaces them in them with the equivalent BSON compatible format
      *
      * "{"key": 3*10-18}" -> "{"key": {"subtract":[18, {"multiply": [3, 10]}]}}"
      *

@@ -48,7 +48,7 @@ public class MqlDrop extends MqlCollectionStatement implements MqlExecutableStat
             CatalogTable table = catalog.getTable( Catalog.defaultDatabaseId, database, getCollection() );
             ddlManager.dropTable( table, statement );
         } catch ( DdlOnSourceException | UnknownTableException e ) {
-            throw new RuntimeException( "An error occurred while dropping the database (Polypheny Schema): " + e );
+            throw new RuntimeException( "An error occurred while dropping the database (Polypheny Schema): ", e );
         }
     }
 

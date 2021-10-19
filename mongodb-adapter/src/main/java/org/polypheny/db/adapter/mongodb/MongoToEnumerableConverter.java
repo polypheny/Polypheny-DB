@@ -173,7 +173,7 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
         }
 
         if ( RuntimeConfig.DEBUG.getBoolean() ) {
-            log.info( "Mongo: " + opList );
+            log.info( "Mongo: {}", opList );
         }
         Hook.QUERY_PLAN.run( opList );
         list.add( Expressions.return_( null, enumerable ) );

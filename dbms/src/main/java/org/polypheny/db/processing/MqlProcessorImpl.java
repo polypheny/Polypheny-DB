@@ -84,7 +84,9 @@ public class MqlProcessorImpl implements MqlProcessor, ViewExpander {
         }
         stopWatch.start();
         MqlNode parsed;
-        log.debug( "MQL: {}", mql );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "MQL: {}", mql );
+        }
 
         try {
             final MqlParser parser = MqlParser.create( new SourceStringReader( mql ), parserConfig );

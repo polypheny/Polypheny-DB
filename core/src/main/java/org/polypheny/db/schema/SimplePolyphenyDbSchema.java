@@ -37,7 +37,7 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
     /**
      * Creates a SimplePolyphenyDbSchema.
      *
-     * Use {@link AbstractPolyphenyDbSchema#createRootSchema(boolean)} or {@link #add(String, Schema)}.
+     * Use {@link AbstractPolyphenyDbSchema#createRootSchema(String)} or {@link #add(String, Schema, SchemaType)}.
      */
     SimplePolyphenyDbSchema( AbstractPolyphenyDbSchema parent, Schema schema, String name, SchemaType schemaType ) {
         this(

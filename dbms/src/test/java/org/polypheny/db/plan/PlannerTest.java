@@ -1047,7 +1047,7 @@ public class PlannerTest {
     /**
      * Rule to convert a {@link EnumerableProject} to an {@link JdbcRules.JdbcProject}.
      */
-    private class MockJdbcProjectRule extends ConverterRule {
+    private static class MockJdbcProjectRule extends ConverterRule {
 
         private MockJdbcProjectRule( JdbcConvention out ) {
             super( EnumerableProject.class, EnumerableConvention.INSTANCE, out, "MockJdbcProjectRule" );
@@ -1090,7 +1090,7 @@ public class PlannerTest {
     /**
      * Relational expression representing a "mock" scan of a table in a JDBC data source.
      */
-    private class MockJdbcTableScan extends TableScan implements JdbcRel {
+    private static class MockJdbcTableScan extends TableScan implements JdbcRel {
 
         MockJdbcTableScan( RelOptCluster cluster, RelOptTable table, JdbcConvention jdbcConvention ) {
             super( cluster, cluster.traitSetOf( jdbcConvention ), table );

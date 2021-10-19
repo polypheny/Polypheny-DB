@@ -298,9 +298,7 @@ public class StatisticsManager<T extends Comparable<T>> {
 
         StatisticQueryColumn unique = this.getUniqueValues( column );
         for ( int idx = 0; idx < unique.getData().length; idx++ ) {
-            if ( unique.getData()[idx] != null )
-            //noinspection unchecked
-            {
+            if ( unique.getData()[idx] != null ) {
                 unique.getData()[idx] = DateTimeStringUtils.longToAdjustedString( Long.parseLong( unique.getData()[idx] ), column.getType() );
             }
         }

@@ -2223,7 +2223,7 @@ public class MqlToRelConverter {
      * Starts translation of an aggregation stage <code>$project</code> or a projection in a <code>db.collection.find({},{projection})</code>
      *
      * @param projectionValue initial unparsed BSON, which defines the projection
-     * @param node the node to which the proejction is applied
+     * @param node the node to which the projection is applied
      * @param rowType the rowType, which is used at the moment
      * @param isAddFields if the projection is a <code>$addFields</code>, which is basically only inclusive projections
      * @param isUnset if the projection is a <code>$unset</code>, which is exclusive projection

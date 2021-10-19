@@ -177,12 +177,12 @@ public class MongoDynamic {
         for ( Entry<Long, Object> entry : parameterValues.entrySet() ) {
             if ( arrayHandles.containsKey( entry.getKey() ) ) {
                 Boolean isRegex = isRegexMap.get( entry.getKey() );
-                Boolean isFuntion = isFuncMap.get( entry.getKey() );
+                Boolean isFunction = isFuncMap.get( entry.getKey() );
 
                 if ( isRegex ) {
                     arrayHandles.get( entry.getKey() ).forEach( el -> el.insert( BsonUtil.replaceLikeWithRegex( (String) entry.getValue() ) ) );
                     docHandles.get( entry.getKey() ).forEach( el -> el.insert( BsonUtil.replaceLikeWithRegex( (String) entry.getValue() ) ) );
-                } else if ( isFuntion ) {
+                } else if ( isFunction ) {
                     // function is always part of a document
                     docHandles.get( entry.getKey() ).forEach( el -> el.insert( new BsonString( BsonFunctionHelper.getUsedFunction( entry.getValue() ) ) ) );
                 } else {

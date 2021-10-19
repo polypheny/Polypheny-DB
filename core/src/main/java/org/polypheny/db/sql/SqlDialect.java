@@ -612,7 +612,9 @@ public class SqlDialect {
      * E.g. HSQLDB, MYSQL, ORACLE, etc
      */
     public SqlNode rewriteSingleValueExpr( SqlNode aggCall ) {
-        log.debug( "SINGLE_VALUE rewrite not supported for {}", databaseProduct );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "SINGLE_VALUE rewrite not supported for {}", databaseProduct );
+        }
         return aggCall;
     }
 
@@ -910,7 +912,7 @@ public class SqlDialect {
                         .withDatabaseProductName( databaseProductName )
                         .withIdentifierQuoteString( quoteString )
                         .withNullCollation( nullCollation ) );
-            } )::get;
+            } );
         }
 
 
