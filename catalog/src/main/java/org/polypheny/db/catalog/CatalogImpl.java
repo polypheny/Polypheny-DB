@@ -654,8 +654,6 @@ public class CatalogImpl extends Catalog {
                     addDefaultCsvColumns( csv );
                 }
             }
-
-            initDocumentDefaultDocumentData( databaseId, systemId );
         }
 
         ////////////////////////
@@ -686,31 +684,6 @@ public class CatalogImpl extends Catalog {
             throw new RuntimeException( e );
         }
 
-    }
-
-
-    private void initDocumentDefaultDocumentData( long databaseId, int systemId ) throws UnknownDatabaseException, UnknownSchemaException, UnknownAdapterException, UnknownColumnException, GenericCatalogException {
-        //////////////
-        // init schema
-
-        long schemaId;
-        if ( !schemaNames.containsKey( new Object[]{ databaseId, "private" } ) ) {
-            schemaId = addSchema( "private", databaseId, 1, SchemaType.DOCUMENT );
-        } else {
-            schemaId = getSchema( "APP", "private" ).id;
-        }
-
-        setUserSchema( defaultUser, schemaId );
-        /*
-        if ( !testMode ) {
-            if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "secrets" } ) ) {
-                CatalogAdapter store = getAdapter( "hsqldb" );
-                long tableId = addTable( "secrets", schemaId, systemId, TableType.TABLE, true );
-                addDefaultColumn( store, getTable( tableId ), "_id", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 0, 24 ); //
-                addDefaultColumn( store, getTable( tableId ), "_data", PolyType.JSON, Collation.CASE_INSENSITIVE, 1, 1024 );
-                addPrimaryKey( tableId, Collections.singletonList( getColumn( tableId, "_id" ).id ) );
-            }
-        }*/
     }
 
 

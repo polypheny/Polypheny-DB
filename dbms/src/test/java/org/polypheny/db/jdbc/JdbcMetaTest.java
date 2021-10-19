@@ -195,7 +195,7 @@ public class JdbcMetaTest {
 
             // Check data
             final Object[] schemaPublic = new Object[]{ "public", "APP", "system", "RELATIONAL" };
-            final Object[] schemaPrivate = new Object[]{ "private", "APP", "system", "DOCUMENT" };
+            final Object[] schemaPrivate = new Object[]{ "private", "APP", "pa", "DOCUMENT" };
             final Object[] schemaTest = new Object[]{ "test", "APP", "pa", "RELATIONAL" };
 
             TestHelper.checkResultSet(

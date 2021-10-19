@@ -335,6 +335,7 @@ public class Crud implements InformationObserver {
         CatalogTable catalogTable;
         try {
             catalogTable = catalog.getTable( this.databaseName, t[0], t[1] );
+            result.setSchemaType( catalogTable.getSchemaType() );
             if ( catalogTable.modifiable ) {
                 result.setType( ResultType.TABLE );
             } else {

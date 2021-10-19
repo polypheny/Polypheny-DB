@@ -30,6 +30,9 @@ public class Mql {
             Type.USE_DATABASE,
             Type.DROP_DATABASE,
             Type.RENAME_COLLECTION );
+    static List<Type> DQL = Arrays.asList(
+            Type.AGGREGATE
+    );
     static List<Type> DML = Arrays.asList(
             Type.SELECT,
             Type.FIND,
@@ -54,6 +57,8 @@ public class Mql {
             return Family.DCL;
         } else if ( TCL.contains( kind ) ) {
             return Family.TCL;
+        } else if ( DQL.contains( kind ) ) {
+            return Family.DQL;
         } else {
             throw new RuntimeException( "Unknown kind: " + kind.name() );
         }
@@ -62,6 +67,7 @@ public class Mql {
 
     public enum Family {
         DDL,
+        DQL,
         DML,
         DCL,
         TCL

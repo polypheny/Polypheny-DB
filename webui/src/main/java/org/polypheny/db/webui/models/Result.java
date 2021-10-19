@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.webui.models.requests.UIRequest;
 
 
@@ -88,6 +89,12 @@ public class Result {
      * Type of the result: if the data is from a table/view/arbitrary query
      */
     private ResultType type;
+
+    /**
+     * schema type of result DOCUMENT/RELATIONAL
+     */
+    @Setter
+    private SchemaType schemaType = SchemaType.RELATIONAL;
 
     /**
      * Indicate that only a subset of the specified query is being displayed.

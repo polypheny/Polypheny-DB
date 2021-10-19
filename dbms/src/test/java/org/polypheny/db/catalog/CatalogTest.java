@@ -62,6 +62,7 @@ public class CatalogTest {
                 statement.executeUpdate( "ALTER TABLE schema1.table1 ADD UNIQUE INDEX index1 ON id ON STORE hsqldb" );
                 statement.executeUpdate( "CREATE TABLE schema1.table2( id INTEGER NOT NULL, PRIMARY KEY(id) )" );
                 statement.executeUpdate( "ALTER TABLE schema1.table2 ADD CONSTRAINT fk_id FOREIGN KEY (id) REFERENCES schema1.table1(id) ON UPDATE RESTRICT ON DELETE RESTRICT" );
+                statement.executeUpdate( "CREATE DOCUMENT SCHEMA private" );
                 connection.commit();
             }
         } catch ( SQLException e ) {
@@ -135,11 +136,11 @@ public class CatalogTest {
 
             final Object[] schemaTest = new Object[]{ "schema1", "APP", "pa", "RELATIONAL" };
             final Object[] schemaPublic = new Object[]{ "public", "APP", "system", "RELATIONAL" };
-            final Object[] schemaPrivate = new Object[]{ "private", "APP", "system", "DOCUMENT" };
+            final Object[] schemaPrivate = new Object[]{ "private", "APP", "pa", "DOCUMENT" };
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getSchemas( "APP", null ),
-                    ImmutableList.of( schemaPublic, schemaPrivate, schemaTest ) );
+                    ImmutableList.of( schemaPublic, schemaTest, schemaPrivate ) );
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getSchemas( "APP", "schema1" ),

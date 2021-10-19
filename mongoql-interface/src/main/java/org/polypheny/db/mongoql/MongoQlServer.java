@@ -127,20 +127,27 @@ public class MongoQlServer extends QueryInterface {
     }
 
 
+    /**
+     * This method handles mql queries of any sort
+     *
+     * // DISCLAIMER: this interface and this method only handle MQL atm
+     * // but will be repurposed later on in a more general http language server
+     *
+     * @param request the incoming request
+     * @param res the outgoing response
+     * @return the result of the executed query
+     */
     public String anyQuery( final Request request, final Response res ) {
         QueryRequest query = gson.fromJson( request.body(), QueryRequest.class );
 
-        Transaction transaction = null;
-        transaction = getTransaction();
+        Transaction transaction = getTransaction();
 
         PolyphenyDbSignature<?> signature;
         MqlProcessor mqlProcessor = transaction.getMqlProcessor();
         String mql = query.query;
         Statement statement = transaction.createStatement();
 
-        boolean autoCommit = true;
-
-        // This is not a nice solution. In case of a sql script with auto commit only the first statement is analyzed
+        // This is not a nice solution. In case of a mql script with auto commit only the first statement is analyzed
         // and in case of auto commit of, the information is overwritten
 
         List<Result> results = new ArrayList<>();
