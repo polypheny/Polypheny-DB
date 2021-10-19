@@ -14,8 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.ddl.exception;
+package org.polypheny.db.catalog.exceptions;
 
-public class PartitionNamesNotUniqueException extends Exception {
+
+public class UnknownPartitionPlacementException extends CatalogRuntimeException {
+
+    public UnknownPartitionPlacementException( long adapterId, long partitionId ) {
+        super( "There is no partition placement for partition id '" + partitionId + "' on adapter with id '" + adapterId + "'" );
+    }
 
 }

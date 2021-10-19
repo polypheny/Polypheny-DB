@@ -156,6 +156,10 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
+import org.polypheny.db.monitoring.events.DmlEvent;
+import org.polypheny.db.monitoring.events.QueryEvent;
+import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.partition.PartitionFunctionInfo;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionManager;
@@ -847,6 +851,7 @@ public class Crud implements InformationObserver {
                     temp = System.nanoTime();
                     int numOfRows = executeSqlUpdate( transaction, query );
                     executionTime += System.nanoTime() - temp;
+                    transaction.getMonitoringData().setExecutionTime( executionTime );
 
                     result = new Result( numOfRows ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
                     results.add( result );
@@ -1401,15 +1406,15 @@ public class Crud implements InformationObserver {
                 }
                 return new Result( columns.toArray( new DbColumn[0] ), null ).setType( ResultType.VIEW );
             } else {
-                if ( catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).size() != 1 ) {
+                if ( catalog.getColumnPlacement( catalogTable.columnIds.get( 0 ) ).size() != 1 ) {
                     throw new RuntimeException( "The table has an unexpected number of placements!" );
                 }
 
-                int adapterId = catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).get( 0 ).adapterId;
+                int adapterId = catalog.getColumnPlacement( catalogTable.columnIds.get( 0 ) ).get( 0 ).adapterId;
                 CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
                 List<String> pkColumnNames = primaryKey.getColumnNames();
                 List<DbColumn> columns = new ArrayList<>();
-                for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapter( adapterId, catalogTable.id ) ) {
+                for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapterPerTable( adapterId, catalogTable.id ) ) {
                     CatalogColumn col = catalog.getColumn( ccp.columnId );
                     columns.add( new DbColumn(
                             col.name,
@@ -2098,7 +2103,7 @@ public class Crud implements InformationObserver {
         String tableName = index.getTable();
         try {
             CatalogTable table = catalog.getTable( databaseName, schemaName, tableName );
-            Placement p = new Placement( table.isPartitioned, catalog.getPartitionNames( table.id ), table.tableType );
+            Placement p = new Placement( table.isPartitioned, catalog.getPartitionGroupNames( table.id ), table.tableType );
             if ( table.tableType == TableType.VIEW ) {
 
                 return p;
@@ -2106,20 +2111,19 @@ public class Crud implements InformationObserver {
                 long pkid = table.primaryKey;
                 List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
                 CatalogColumn pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );
-                List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacements( pkColumn.id );
+                List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacement( pkColumn.id );
                 for ( CatalogColumnPlacement placement : pkPlacements ) {
                     Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
                     p.addAdapter( new Placement.Store(
                             adapter.getUniqueName(),
                             adapter.getAdapterName(),
-                            catalog.getColumnPlacementsOnAdapter( adapter.getAdapterId(), table.id ),
-                            catalog.getPartitionsIndexOnDataPlacement( placement.adapterId, placement.tableId ),
-                            table.numPartitions,
-                            table.partitionType ) );
+                            catalog.getColumnPlacementsOnAdapterPerTable( adapter.getAdapterId(), table.id ),
+                            catalog.getPartitionGroupsIndexOnDataPlacement( placement.adapterId, placement.tableId ),
+                            table.partitionProperty.numPartitionGroups,
+                            table.partitionProperty.partitionType ) );
                 }
                 return p;
             }
-
         } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             log.error( "Caught exception while getting placements", e );
             return new Placement( e );
@@ -2175,7 +2179,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    private List<PartitionFunctionColumn> buildPartitionFunctionRow( List<PartitionFunctionInfoColumn> columnList ) {
+    private List<PartitionFunctionColumn> buildPartitionFunctionRow( PartitioningRequest request, List<PartitionFunctionInfoColumn> columnList ) {
         List<PartitionFunctionColumn> constructedRow = new ArrayList<>();
 
         for ( PartitionFunctionInfoColumn currentColumn : columnList ) {
@@ -2204,7 +2208,19 @@ public class Crud implements InformationObserver {
                         .setSqlPrefix( currentColumn.getSqlPrefix() )
                         .setSqlSuffix( currentColumn.getSqlSuffix() ) );
             } else {
-                constructedRow.add( new PartitionFunctionColumn( type, currentColumn.getDefaultValue() )
+
+                String defaultValue = currentColumn.getDefaultValue();
+
+                //Used specifically for Temp-Partitioning since number of selected partitions remains 2 but chunks change
+                //enables user to used selected "number of partitions" being used as default value for "number of interal data chunks"
+                if ( request.method.equals( PartitionType.TEMPERATURE ) ) {
+
+                    if ( type.equals( FieldType.STRING ) && currentColumn.getDefaultValue().equals( "-04071993" ) ) {
+                        defaultValue = String.valueOf( request.numPartitions );
+                    }
+                }
+
+                constructedRow.add( new PartitionFunctionColumn( type, defaultValue )
                         .setModifiable( currentColumn.isModifiable() )
                         .setMandatory( currentColumn.isMandatory() )
                         .setSqlPrefix( currentColumn.getSqlPrefix() )
@@ -2220,8 +2236,8 @@ public class Crud implements InformationObserver {
         PartitioningRequest request = gson.fromJson( req.body(), PartitioningRequest.class );
 
         // Get correct partition function
-        PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
-        PartitionManager partitionManager = partitionManagerFactory.getInstance( request.method );
+        PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
+        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( request.method );
 
         // Check whether the selected partition function supports the selected partition column
         CatalogColumn partitionColumn;
@@ -2245,14 +2261,14 @@ public class Crud implements InformationObserver {
             // Insert Rows Before
             List<List<PartitionFunctionInfoColumn>> rowsBefore = functionInfo.getRowsBefore();
             for ( int i = 0; i < rowsBefore.size(); i++ ) {
-                rows.add( buildPartitionFunctionRow( rowsBefore.get( i ) ) );
+                rows.add( buildPartitionFunctionRow( request, rowsBefore.get( i ) ) );
             }
         }
 
         if ( infoJson.has( "dynamicRows" ) ) {
             // Build as many dynamic rows as requested per num Partitions
             for ( int i = 0; i < request.numPartitions; i++ ) {
-                rows.add( buildPartitionFunctionRow( functionInfo.getDynamicRows() ) );
+                rows.add( buildPartitionFunctionRow( request, functionInfo.getDynamicRows() ) );
             }
         }
 
@@ -2260,7 +2276,7 @@ public class Crud implements InformationObserver {
             // Insert Rows After
             List<List<PartitionFunctionInfoColumn>> rowsAfter = functionInfo.getRowsAfter();
             for ( int i = 0; i < rowsAfter.size(); i++ ) {
-                rows.add( buildPartitionFunctionRow( rowsAfter.get( i ) ) );
+                rows.add( buildPartitionFunctionRow( request, rowsAfter.get( i ) ) );
             }
         }
 
@@ -2278,10 +2294,10 @@ public class Crud implements InformationObserver {
         PartitionFunctionModel request = gson.fromJson( req.body(), PartitionFunctionModel.class );
 
         // Get correct partition function
-        PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
+        PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = null;
         try {
-            partitionManager = partitionManagerFactory.getInstance( PartitionType.getByName( request.functionName ) );
+            partitionManager = partitionManagerFactory.getPartitionManager( PartitionType.getByName( request.functionName ) );
         } catch ( UnknownPartitionTypeException e ) {
             throw new RuntimeException( e );
         }
@@ -3607,6 +3623,7 @@ public class Crud implements InformationObserver {
         Iterator<Object> iterator = null;
         boolean hasMoreRows = false;
         boolean isAnalyze = statement.getTransaction().isAnalyze();
+        statement.getTransaction().setMonitoringData( new QueryEvent() );
 
         try {
             if ( isAnalyze ) {
@@ -3637,7 +3654,12 @@ public class Crud implements InformationObserver {
             }
             hasMoreRows = iterator.hasNext();
             stopWatch.stop();
-            signature.getExecutionTimeMonitor().setExecutionTime( stopWatch.getNanoTime() );
+
+            long executionTime = stopWatch.getNanoTime();
+            signature.getExecutionTimeMonitor().setExecutionTime( executionTime );
+
+            statement.getTransaction().getMonitoringData().setExecutionTime( executionTime );
+
         } catch ( Throwable t ) {
             if ( statement.getTransaction().isAnalyze() ) {
                 InformationManager analyzer = statement.getTransaction().getQueryAnalyzer();
@@ -3714,6 +3736,9 @@ public class Crud implements InformationObserver {
             }
 
             ArrayList<String[]> data = computeResultData( rows, header, statement.getTransaction() );
+
+            statement.getTransaction().getMonitoringData().setRowCount( data.size() );
+            MonitoringServiceProvider.getInstance().monitorEvent( statement.getTransaction().getMonitoringData() );
 
             if ( tableType != null ) {
                 return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
@@ -3919,6 +3944,8 @@ public class Crud implements InformationObserver {
     private int executeSqlUpdate( final Statement statement, final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
         PolyphenyDbSignature<?> signature;
 
+        statement.getTransaction().setMonitoringData( new DmlEvent() );
+
         try {
             signature = processQuery( statement, sqlUpdate );
         } catch ( Throwable t ) {
@@ -3970,6 +3997,11 @@ public class Crud implements InformationObserver {
                     throw new QueryExecutionException( e.getMessage(), e );
                 }
             }
+
+            StatementEvent ev = statement.getTransaction().getMonitoringData();
+            ev.setRowCount( rowsChanged );
+
+            MonitoringServiceProvider.getInstance().monitorEvent( ev );
 
             return rowsChanged;
         } else {

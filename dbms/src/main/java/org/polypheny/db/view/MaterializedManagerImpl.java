@@ -233,8 +233,8 @@ public class MaterializedManagerImpl extends MaterializedManager {
             columnPlacements.clear();
 
             columns.get( id ).forEach( column -> columnPlacements.add( Catalog.getInstance().getColumnPlacement( id, column.id ) ) );
-
-            RelRoot targetRel = dataMigrator.buildInsertStatement( targetStatement, columnPlacements );
+            //if partitions should be allowed for materialized views this needs to be changed that all partitions are considered
+            RelRoot targetRel = dataMigrator.buildInsertStatement( targetStatement, columnPlacements, Catalog.getInstance().getPartitionsOnDataPlacement( id, materializedView.id ).get( 0 ) );
 
             dataMigrator.executeQuery( columns.get( id ), sourceRel, sourceStatement, targetStatement, targetRel, true );
         }
@@ -280,11 +280,11 @@ public class MaterializedManagerImpl extends MaterializedManager {
             RelNode relNode = relBuilder.scan( catalogMaterialized.name ).build();
 
             //delete all data
-            targetRel = dataMigrator.buildDeleteStatement( targetStatement, columnPlacements );
+            targetRel = dataMigrator.buildDeleteStatement( targetStatement, columnPlacements, Catalog.getInstance().getPartitionsOnDataPlacement( id, catalogMaterialized.id ).get( 0 ) );
             dataMigrator.executeQuery( columns.get( id ), RelRoot.of( relNode, SqlKind.SELECT ), deleteStatement, targetStatement, targetRel, true );
 
             //insert new data
-            targetRel = dataMigrator.buildInsertStatement( targetStatement, columnPlacements );
+            targetRel = dataMigrator.buildInsertStatement( targetStatement, columnPlacements, Catalog.getInstance().getPartitionsOnDataPlacement( id, catalogMaterialized.id ).get( 0 ) );
             dataMigrator.executeQuery( columns.get( id ), RelRoot.of( catalogMaterialized.getDefinition(), SqlKind.SELECT ), sourceStatement, targetStatement, targetRel, true );
 
         }

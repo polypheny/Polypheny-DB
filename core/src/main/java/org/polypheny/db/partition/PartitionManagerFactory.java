@@ -13,25 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.polypheny.db.partition;
+
 
 import org.polypheny.db.catalog.Catalog;
 
-public class PartitionManagerFactory {
 
-    public PartitionManager getInstance( Catalog.PartitionType partitionType ) {
-        switch ( partitionType ) {
-            case HASH:
-                return new HashPartitionManager();
+public abstract class PartitionManagerFactory {
 
-            case LIST:
-                return new ListPartitionManager();
 
-            case RANGE:
-                return new RangePartitionManager();
+    public static PartitionManagerFactory INSTANCE = null;
+
+
+    public static PartitionManagerFactory setAndGetInstance( PartitionManagerFactory factory ) {
+        if ( INSTANCE != null ) {
+            throw new RuntimeException( "Setting the PartitionManager, when already set is not permitted." );
         }
-
-        throw new RuntimeException( "Unknown partition type: " + partitionType );
+        INSTANCE = factory;
+        return INSTANCE;
     }
+
+
+    public static PartitionManagerFactory getInstance() {
+        if ( INSTANCE == null ) {
+            throw new RuntimeException( "PartitionManager was not set correctly on Polypheny-DB start-up" );
+        }
+        return INSTANCE;
+    }
+
+
+    public abstract PartitionManager getPartitionManager( Catalog.PartitionType partitionType );
 
 }

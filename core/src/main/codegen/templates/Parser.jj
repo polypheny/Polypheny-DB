@@ -132,6 +132,7 @@ import org.polypheny.db.util.SourceStringReader;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.partition.raw.*;
 
 import org.slf4j.Logger;
 
@@ -6285,8 +6286,9 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < FRAC_SECOND: "FRAC_SECOND" >
 |   < FRAME_ROW: "FRAME_ROW" >
 |   < FREE: "FREE" >
+|   < FREQUENCY: "FREQUENCY" >
+|  < FRESHNESS: "FRESHNESS">
 |   < FROM: "FROM" >
-|   < FRESHNESS: "FRESHNESS">
 |   < FULL: "FULL" >
 |   < FUNCTION: "FUNCTION" >
 |   < FUSION: "FUSION" >
@@ -6670,6 +6672,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < TABLE: "TABLE" >
 |   < TABLE_NAME: "TABLE_NAME" >
 |   < TABLESAMPLE: "TABLESAMPLE" >
+|   < TEMPERATURE: "TEMPERATURE" >
 |   < TEMPORARY: "TEMPORARY" >
 |   < THEN: "THEN" >
 |   < TIES: "TIES" >

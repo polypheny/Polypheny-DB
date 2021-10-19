@@ -4,6 +4,7 @@ package org.polypheny.db.adapter.jdbc.stores;
 import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +19,7 @@ import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.Context;
@@ -79,8 +81,8 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     @Override
-    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore ) {
-        return currentJdbcSchema.createJdbcTable( catalogTable, columnPlacementsOnStore );
+    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+        return currentJdbcSchema.createJdbcTable( catalogTable, columnPlacementsOnStore, partitionPlacement );
     }
 
 
@@ -91,44 +93,55 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     @Override
-    public void addIndex( Context context, CatalogIndex catalogIndex ) {
-        List<CatalogColumnPlacement> ccps = Catalog.getInstance().getColumnPlacementsOnAdapter( getAdapterId(), catalogIndex.key.tableId );
-        StringBuilder builder = new StringBuilder();
-        builder.append( "CREATE " );
-        if ( catalogIndex.unique ) {
-            builder.append( "UNIQUE INDEX " );
-        } else {
-            builder.append( "INDEX " );
-        }
+    public void addIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
+        List<CatalogColumnPlacement> ccps = Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogIndex.key.tableId );
+        List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
+        partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
+
         String physicalIndexName = getPhysicalIndexName( catalogIndex.key.tableId, catalogIndex.id );
-        builder.append( dialect.quoteIdentifier( physicalIndexName ) );
-        builder.append( " ON " )
-                .append( dialect.quoteIdentifier( ccps.get( 0 ).physicalSchemaName ) )
-                .append( "." )
-                .append( dialect.quoteIdentifier( ccps.get( 0 ).physicalTableName ) );
+        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
 
-        builder.append( "(" );
-        boolean first = true;
-        for ( long columnId : catalogIndex.key.columnIds ) {
-            if ( !first ) {
-                builder.append( ", " );
+            StringBuilder builder = new StringBuilder();
+            builder.append( "CREATE " );
+            if ( catalogIndex.unique ) {
+                builder.append( "UNIQUE INDEX " );
+            } else {
+                builder.append( "INDEX " );
             }
-            first = false;
-            builder.append( dialect.quoteIdentifier( getPhysicalColumnName( columnId ) ) ).append( " " );
-        }
-        builder.append( ")" );
-        executeUpdate( builder, context );
 
+            builder.append( dialect.quoteIdentifier( physicalIndexName + "_" + partitionPlacement.partitionId ) );
+            builder.append( " ON " )
+                    .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
+                    .append( "." )
+                    .append( dialect.quoteIdentifier( partitionPlacement.physicalTableName ) );
+
+            builder.append( "(" );
+            boolean first = true;
+            for ( long columnId : catalogIndex.key.columnIds ) {
+                if ( !first ) {
+                    builder.append( ", " );
+                }
+                first = false;
+                builder.append( dialect.quoteIdentifier( getPhysicalColumnName( columnId ) ) ).append( " " );
+            }
+            builder.append( ")" );
+            executeUpdate( builder, context );
+        }
         Catalog.getInstance().setIndexPhysicalName( catalogIndex.id, physicalIndexName );
     }
 
 
     @Override
-    public void dropIndex( Context context, CatalogIndex catalogIndex ) {
-        StringBuilder builder = new StringBuilder();
-        builder.append( "DROP INDEX " );
-        builder.append( dialect.quoteIdentifier( catalogIndex.physicalName ) );
-        executeUpdate( builder, context );
+    public void dropIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
+        List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
+        partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
+
+        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
+            StringBuilder builder = new StringBuilder();
+            builder.append( "DROP INDEX " );
+            builder.append( dialect.quoteIdentifier( catalogIndex.physicalName + "_" + partitionPlacement.partitionId ) );
+            executeUpdate( builder, context );
+        }
     }
 
 

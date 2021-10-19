@@ -44,6 +44,12 @@ import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.information.HostInformation;
 import org.polypheny.db.information.JavaInformation;
+import org.polypheny.db.monitoring.core.MonitoringService;
+import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
+import org.polypheny.db.partition.FrequencyMap;
+import org.polypheny.db.partition.FrequencyMapImpl;
+import org.polypheny.db.partition.PartitionManagerFactory;
+import org.polypheny.db.partition.PartitionManagerFactoryImpl;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.statistic.StatisticQueryProcessor;
 import org.polypheny.db.statistic.StatisticsManager;
@@ -245,6 +251,10 @@ public class PolyphenyDb {
         // Initialize DdlManager
         DdlManager.setAndGetInstance( new DdlManagerImpl( catalog ) );
 
+        // Initialize PartitionMangerFactory
+        PartitionManagerFactory.setAndGetInstance( new PartitionManagerFactoryImpl() );
+        FrequencyMap.setAndGetInstance( new FrequencyMapImpl( catalog ) );
+
         // Start Polypheny UI
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator );
         Thread polyphenyUiThread = new Thread( httpServer );
@@ -280,6 +290,8 @@ public class PolyphenyDb {
             new UiTestingConfigPage();
             new UiTestingMonitoringPage();
         }
+
+        MonitoringService monitoringService = MonitoringServiceProvider.getInstance();
 
         log.info( "****************************************************************************************************" );
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );
