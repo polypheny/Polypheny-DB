@@ -150,7 +150,7 @@ public enum RuntimeConfig {
 
     DYNAMIC_QUERYING( "statistics/useDynamicQuerying",
             "Use statistics for query assistance.",
-            false,
+            true,
             ConfigType.BOOLEAN,
             "statisticSettingsGroup" ),
 
@@ -162,7 +162,7 @@ public enum RuntimeConfig {
 
     ACTIVE_TRACKING( "statistics/activeTracking",
             "All transactions are tracked and statistics collected during execution.",
-            false,
+            true,
             ConfigType.BOOLEAN,
             "statisticSettingsGroup" ),
 
@@ -248,7 +248,7 @@ public enum RuntimeConfig {
 
     IMPLEMENTATION_CACHING( "runtime/implementationCaching",
             "Cache implemented query plans.",
-            false,
+            true,
             ConfigType.BOOLEAN,
             "implementationCachingGroup" ),
 
