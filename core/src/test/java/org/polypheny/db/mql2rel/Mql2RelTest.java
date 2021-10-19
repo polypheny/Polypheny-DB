@@ -28,6 +28,7 @@ import org.polypheny.db.test.catalog.MockCatalogReader;
 import org.polypheny.db.test.catalog.MockCatalogReaderDocument;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 
+
 public abstract class Mql2RelTest extends MqlTest {
 
     private static final RelDataTypeFactory factory;

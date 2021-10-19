@@ -24,6 +24,7 @@ import org.polypheny.db.mql.MqlFind;
 import org.polypheny.db.mql.MqlNode;
 import org.polypheny.db.mql.MqlTest;
 
+
 public class MqlFindTest extends MqlTest {
 
     public String find( String match ) {

@@ -1064,6 +1064,7 @@ public class PlannerTest {
                     project.getProjects(),
                     project.getRowType() );
         }
+
     }
 
 
@@ -1082,6 +1083,7 @@ public class PlannerTest {
             final EnumerableTableScan scan = (EnumerableTableScan) rel;
             return new MockJdbcTableScan( scan.getCluster(), scan.getTable(), (JdbcConvention) getOutConvention() );
         }
+
     }
 
 
@@ -1114,6 +1116,7 @@ public class PlannerTest {
         public JdbcImplementor.Result implement( JdbcImplementor implementor ) {
             return null;
         }
+
     }
 
 
@@ -1191,6 +1194,7 @@ public class PlannerTest {
             }
             return super.deriveType( validator, scope, call );
         }
+
     }
 
 
@@ -1307,4 +1311,5 @@ public class PlannerTest {
         final RelRoot root = planner.rel( validate );
         assertThat( toString( root.rel ), matcher );
     }
+
 }

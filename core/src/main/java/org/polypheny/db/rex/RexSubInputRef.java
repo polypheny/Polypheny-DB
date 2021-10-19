@@ -20,6 +20,7 @@ import lombok.Getter;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlKind;
 
+
 public class RexSubInputRef extends RexInputRef {
 
     @Getter

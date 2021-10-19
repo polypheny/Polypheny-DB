@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import org.bson.BsonValue;
 import org.polypheny.db.rex.RexLiteral;
 
+
 public interface Documents {
 
     ImmutableList<ImmutableList<RexLiteral>> getTuples();

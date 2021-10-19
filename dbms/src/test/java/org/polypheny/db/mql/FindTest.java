@@ -30,6 +30,7 @@ import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.mongoql.model.Result;
 
+
 @Category({ AdapterTestSuite.class, FileExcluded.class, CassandraExcluded.class })
 public class FindTest extends MqlTestTemplate {
 

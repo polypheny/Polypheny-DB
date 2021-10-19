@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+
 public class Mql {
 
     static List<Type> DDL = Arrays.asList(
@@ -51,8 +52,10 @@ public class Mql {
             return Family.DML;
         } else if ( DCL.contains( kind ) ) {
             return Family.DCL;
-        } else {
+        } else if ( TCL.contains( kind ) ) {
             return Family.TCL;
+        } else {
+            throw new RuntimeException( "Unknown kind: " + kind.name() );
         }
     }
 
@@ -89,8 +92,8 @@ public class Mql {
         COMMIT,
         ROLLBACK,
         SET_TRANSACTION,
-        FIND_REPLACE, FIND_UPDATE;
-
+        FIND_REPLACE,
+        FIND_UPDATE
     }
 
 }

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2019-2021 The Polypheny Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.polypheny.db.mql;
 
 import org.bson.BsonArray;
@@ -16,8 +32,8 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.transaction.Statement;
 
-public class MqlCreateView extends MqlNode implements MqlExecutableStatement {
 
+public class MqlCreateView extends MqlNode implements MqlExecutableStatement {
 
     private final String source;
     private final String name;
@@ -34,8 +50,8 @@ public class MqlCreateView extends MqlNode implements MqlExecutableStatement {
     @Override
     public void execute( Context context, Statement statement, String database ) {
         Catalog catalog = Catalog.getInstance();
-        long schemaId;
 
+        long schemaId;
         try {
             schemaId = catalog.getSchema( context.getDatabaseId(), database ).id;
         } catch ( UnknownSchemaException e ) {
@@ -43,9 +59,13 @@ public class MqlCreateView extends MqlNode implements MqlExecutableStatement {
         }
         String json = new BsonDocument( "key", this.pipeline ).toJson();
 
-        MqlNode mqlNode = statement.getTransaction().getMqlProcessor().parse( "db." + source + ".aggregate(" + json.substring( 8, json.length() - 1 ) + ")" );
+        MqlNode mqlNode = statement.getTransaction()
+                .getMqlProcessor()
+                .parse( "db." + source + ".aggregate(" + json.substring( 8, json.length() - 1 ) + ")" );
 
-        RelRoot relRoot = statement.getTransaction().getMqlProcessor().translate( statement, mqlNode, database );
+        RelRoot relRoot = statement.getTransaction()
+                .getMqlProcessor()
+                .translate( statement, mqlNode, database );
         PlacementType placementType = PlacementType.AUTOMATIC;
 
         RelNode relNode = relRoot.rel;
@@ -65,7 +85,6 @@ public class MqlCreateView extends MqlNode implements MqlExecutableStatement {
         } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         } // we just added the table/column so it has to exist or we have a internal problem
-
     }
 
 

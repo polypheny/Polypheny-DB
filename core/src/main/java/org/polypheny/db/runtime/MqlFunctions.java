@@ -16,7 +16,6 @@
 
 package org.polypheny.db.runtime;
 
-
 import com.google.gson.Gson;
 import java.math.BigDecimal;
 import java.util.ArrayList;

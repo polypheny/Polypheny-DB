@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -242,6 +242,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
     public interface ColumnResolver {
 
         List<Pair<RelDataTypeField, List<String>>> resolveColumn( RelDataType rowType, RelDataTypeFactory typeFactory, List<String> names );
+
     }
 
 
@@ -272,6 +273,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         public String getName() {
             return name;
         }
+
     }
 
 
@@ -405,6 +407,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
             public int getExtendedColumnOffset() {
                 return rowType.getFieldCount();
             }
+
         }
 
 
@@ -591,7 +594,9 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
             public List<Pair<RelDataTypeField, List<String>>> resolveColumn( RelDataType rowType, RelDataTypeFactory typeFactory, List<String> names ) {
                 return resolver.resolveColumn( rowType, typeFactory, names );
             }
+
         }
+
     }
 
 
@@ -672,6 +677,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
                 final Type elementType = typeFactory.getJavaClass( parsed.rowType );
                 return new MockModifiableViewTable( elementType, RelDataTypeImpl.proto( parsed.rowType ), viewSql, schemaPath, viewPath, parsed.table, Schemas.path( schema.root(), parsed.tablePath ), parsed.constraint, parsed.columnMapping );
             }
+
         }
 
 
@@ -693,7 +699,9 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
             public ModifiableViewTable extend( Table extendedTable, RelProtoDataType protoRowType, ImmutableIntList newColumnMapping ) {
                 return new MockModifiableViewTable( getElementType(), protoRowType, getViewSql(), getSchemaPath(), getViewPath(), extendedTable, getTablePath(), constraint, newColumnMapping );
             }
+
         }
+
     }
 
 
@@ -778,6 +786,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
                 }
                 return super.unwrap( aClass );
             }
+
         }
 
 
@@ -802,6 +811,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
                 }
                 return super.unwrap( aClass );
             }
+
         }
 
 
@@ -851,6 +861,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
             }
             return super.unwrap( clazz );
         }
+
     }
 
 
@@ -880,6 +891,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
             }
             return super.toRel( context );
         }
+
     }
 
 
@@ -1035,6 +1047,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         public RelDataTypeComparability getComparability() {
             return delegate.getComparability();
         }
+
     }
 
 
@@ -1119,6 +1132,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         public Schema.TableType getJdbcTableType() {
             return table.stream ? Schema.TableType.STREAM : Schema.TableType.TABLE;
         }
+
     }
 
 
@@ -1136,6 +1150,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         public Table stream() {
             return this;
         }
+
     }
 
 }

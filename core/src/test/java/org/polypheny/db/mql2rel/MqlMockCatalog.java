@@ -20,6 +20,7 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.test.catalog.MockCatalog;
 
+
 public class MqlMockCatalog extends MockCatalog {
 
     @Override

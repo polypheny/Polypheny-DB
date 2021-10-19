@@ -18,6 +18,7 @@ package org.polypheny.db.mql;
 
 import org.bson.BsonDocument;
 
+
 public interface MqlQueryStatement {
 
     BsonDocument getQuery();

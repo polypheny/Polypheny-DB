@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -2510,6 +2510,7 @@ public class RelBuilder {
          * Returns a copy of this AggCall that is distinct.
          */
         AggCall distinct();
+
     }
 
 
@@ -2526,6 +2527,7 @@ public class RelBuilder {
          * Used to assign field names in the {@code group} operation.
          */
         GroupKey alias( String alias );
+
     }
 
 
@@ -2561,6 +2563,7 @@ public class RelBuilder {
                     ? this
                     : new GroupKeyImpl( nodes, indicator, nodeLists, alias );
         }
+
     }
 
 
@@ -2655,6 +2658,7 @@ public class RelBuilder {
         public AggCall distinct() {
             return distinct( true );
         }
+
     }
 
 
@@ -2711,6 +2715,7 @@ public class RelBuilder {
         public AggCall distinct() {
             throw new UnsupportedOperationException();
         }
+
     }
 
 
@@ -2751,6 +2756,7 @@ public class RelBuilder {
             }
             return builder;
         }
+
     }
 
 
@@ -2800,6 +2806,7 @@ public class RelBuilder {
         List<RelDataTypeField> fields() {
             return Pair.right( fields );
         }
+
     }
 
 
@@ -2820,6 +2827,7 @@ public class RelBuilder {
             final ImmutableSet<String> aliasList = ImmutableSet.<String>builder().addAll( left ).add( alias ).build();
             return new Field( aliasList, right );
         }
+
     }
 
 
@@ -2852,5 +2860,7 @@ public class RelBuilder {
                 return rexBuilder.makeInputRef( right, inputRef.getIndex() - leftCount );
             }
         }
+
     }
+
 }

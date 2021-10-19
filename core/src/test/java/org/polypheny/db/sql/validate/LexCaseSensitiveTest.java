@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -223,4 +223,5 @@ public class LexCaseSensitiveTest {
                 + "(select * from emps where emps.deptno < 200) s on t.empid = s.empid";
         runProjectQueryWithLex( Lex.JAVA, sql );
     }
+
 }

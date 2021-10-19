@@ -28,6 +28,7 @@ public class MongoConvention extends Convention.Impl {
 
     public static final boolean mapsDocuments = true;
 
+
     public MongoConvention() {
         super( "MONGO", MongoRel.class );
     }

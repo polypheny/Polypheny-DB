@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -956,6 +956,7 @@ public class SqlValidatorUtil {
     public interface Suggester {
 
         String apply( String original, int attempt, int size );
+
     }
 
 
@@ -989,6 +990,8 @@ public class SqlValidatorUtil {
             // TODO: create an expression that could have no other source
             return SqlLiteral.createCharString( "xyz" + groupCount++, SqlParserPos.ZERO );
         }
+
     }
+
 }
 

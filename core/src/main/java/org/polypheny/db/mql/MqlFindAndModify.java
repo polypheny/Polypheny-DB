@@ -21,6 +21,7 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.polypheny.db.mql.Mql.Type;
 
+
 public class MqlFindAndModify extends MqlCollectionStatement implements MqlQueryStatement {
 
     @Getter
@@ -69,6 +70,5 @@ public class MqlFindAndModify extends MqlCollectionStatement implements MqlQuery
     public Type getKind() {
         return Type.FIND_MODIFY;
     }
-
 
 }

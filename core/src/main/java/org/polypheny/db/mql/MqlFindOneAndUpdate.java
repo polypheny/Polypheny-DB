@@ -22,6 +22,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.polypheny.db.mql.Mql.Type;
 
+
 public class MqlFindOneAndUpdate extends MqlCollectionStatement implements MqlQueryStatement {
 
     @Getter
@@ -58,7 +59,6 @@ public class MqlFindOneAndUpdate extends MqlCollectionStatement implements MqlQu
         this.sort = getDocumentOrNull( options, "sort" );
         this.upsert = getBoolean( options, "upsert" );
         this.collation = getDocumentOrNull( options, "collation" );
-
     }
 
 
@@ -66,6 +66,5 @@ public class MqlFindOneAndUpdate extends MqlCollectionStatement implements MqlQu
     public Type getKind() {
         return Type.FIND_UPDATE;
     }
-
 
 }

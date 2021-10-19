@@ -19,6 +19,7 @@ package org.polypheny.db.mql;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.transaction.Statement;
 
+
 public interface MqlExecutableStatement {
 
     void execute( Context context, Statement statement, String database );

@@ -16,7 +16,6 @@
 
 package org.polypheny.db.mql2rel;
 
-
 import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -93,6 +92,7 @@ import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimestampString;
+
 
 /**
  * Converter class, which transforms a MongoQL command in its MqlNode form to an equal RelNode

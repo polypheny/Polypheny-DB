@@ -34,6 +34,8 @@ import org.polypheny.db.mongoql.model.Result;
  * Integration tests, which use the MongoQL-interface to observe
  * correctness of the MongoQL language and the document model
  */
+
+
 @Category({ AdapterTestSuite.class, CassandraExcluded.class })
 public class DmlTest extends MqlTestTemplate {
 

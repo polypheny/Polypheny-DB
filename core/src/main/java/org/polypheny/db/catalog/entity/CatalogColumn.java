@@ -208,6 +208,7 @@ public final class CatalogColumn implements CatalogEntity, Comparable<CatalogCol
         public final String isNullable;
 
         public final String collation;
+
     }
 
 }

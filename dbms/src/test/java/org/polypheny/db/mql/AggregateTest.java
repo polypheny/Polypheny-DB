@@ -16,7 +16,6 @@
 
 package org.polypheny.db.mql;
 
-
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,6 +27,7 @@ import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.mongoql.model.Result;
+
 
 @Category({ FileExcluded.class, CassandraExcluded.class })
 public class AggregateTest extends MqlTestTemplate {

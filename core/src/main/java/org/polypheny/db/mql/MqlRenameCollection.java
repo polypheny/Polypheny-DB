@@ -29,6 +29,7 @@ import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.mql.Mql.Type;
 import org.polypheny.db.transaction.Statement;
 
+
 public class MqlRenameCollection extends MqlCollectionStatement implements MqlExecutableStatement {
 
     private final String newName;
@@ -57,14 +58,18 @@ public class MqlRenameCollection extends MqlCollectionStatement implements MqlEx
             List<CatalogTable> tables = catalog.getTables( schema.id, null );
 
             if ( dropTarget ) {
-                Optional<CatalogTable> newTable = tables.stream().filter( t -> t.name.equals( newName ) ).findAny();
+                Optional<CatalogTable> newTable = tables.stream()
+                        .filter( t -> t.name.equals( newName ) )
+                        .findAny();
 
                 if ( newTable.isPresent() ) {
                     DdlManager.getInstance().dropTable( newTable.get(), statement );
                 }
             }
 
-            Optional<CatalogTable> table = tables.stream().filter( t -> t.name.equals( getCollection() ) ).findAny();
+            Optional<CatalogTable> table = tables.stream()
+                    .filter( t -> t.name.equals( getCollection() ) )
+                    .findAny();
 
             if ( !table.isPresent() ) {
                 throw new RuntimeException( "The target for the rename is not valid." );

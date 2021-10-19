@@ -67,5 +67,7 @@ public final class CatalogUser implements CatalogEntity, Comparable<CatalogUser>
     public static class PrimitiveCatalogUser {
 
         public final String name;
+
     }
+
 }

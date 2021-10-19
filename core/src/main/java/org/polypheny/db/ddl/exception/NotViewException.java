@@ -16,6 +16,7 @@
 
 package org.polypheny.db.ddl.exception;
 
+
 public class NotViewException extends RuntimeException {
 
     public NotViewException() {

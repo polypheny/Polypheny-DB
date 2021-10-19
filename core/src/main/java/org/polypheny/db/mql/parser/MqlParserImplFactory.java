@@ -16,9 +16,9 @@
 
 package org.polypheny.db.mql.parser;
 
-
 import java.io.Reader;
 import org.polypheny.db.tools.Planner;
+
 
 /**
  * Factory for {@link MqlAbstractParserImpl} objects.

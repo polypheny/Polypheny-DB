@@ -19,6 +19,7 @@ package org.polypheny.db.mql.fun;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlSpecialOperator;
 
+
 public class MqlFunctionOperator extends SqlSpecialOperator {
 
     public MqlFunctionOperator( String name, SqlKind kind ) {

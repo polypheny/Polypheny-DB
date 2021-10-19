@@ -157,9 +157,7 @@ public class MongoProject extends Project implements MongoRel {
 
         if ( documents.size() != 0 ) {
             String functions = documents.toJson( JsonWriterSettings.builder().outputMode( JsonMode.RELAXED ).build() );
-            mergedItems = Streams.concat(
-                            items.stream(),
-                            Stream.of( functions.substring( 1, functions.length() - 1 ) ) )
+            mergedItems = Streams.concat( items.stream(), Stream.of( functions.substring( 1, functions.length() - 1 ) ) )
                     .collect( Collectors.toList() );
         } else {
             mergedItems = items;

@@ -30,6 +30,7 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.util.SourceStringReader;
 
+
 public abstract class MqlTest {
 
     private static final MqlParserConfig parserConfig;

@@ -18,6 +18,7 @@ package org.polypheny.db.mql.dql;
 
 import org.polypheny.db.mql.MqlTest;
 
+
 public class MqlAggregateTest extends MqlTest {
 
 }
