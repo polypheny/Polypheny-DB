@@ -709,7 +709,7 @@ public class Crud implements InformationObserver {
                         String value = new BufferedReader( new InputStreamReader( part.getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
                         if ( catalogColumn.name.equals( "_id" ) ) {
                             if ( value.length() == 0 ) {
-                                value = BsonUtil.getObject();
+                                value = BsonUtil.getObjectId();
                             }
                         }
                         values.add( uiValueToSql( value, catalogColumn.type, catalogColumn.collectionsType ) );

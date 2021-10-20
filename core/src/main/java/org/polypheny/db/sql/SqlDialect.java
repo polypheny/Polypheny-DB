@@ -62,6 +62,8 @@ import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.util.SqlBuilder;
 import org.polypheny.db.type.BasicPolyType;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.PolyTypeUtil;
 
 
@@ -583,6 +585,10 @@ public class SqlDialect {
     public SqlNode getCastSpec( RelDataType type ) {
         if ( type instanceof BasicPolyType ) {
             int precision = type.getPrecision();
+            if ( type.getPolyType() == PolyType.JSON ) {
+                precision = 2024;
+                type = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT ).createPolyType( PolyType.VARCHAR, precision );
+            }
             switch ( type.getPolyType() ) {
                 case JSON:
                 case VARCHAR:

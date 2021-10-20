@@ -146,12 +146,12 @@ public class BsonUtil {
     }
 
 
-    public static String getObject() {
+    public static String getObjectId() {
         return new ObjectId().toHexString();
     }
 
 
-    public static String getObject( String template ) {
+    public static String getObjectId( String template ) {
         return new ObjectId( template ).toHexString();
     }
 
