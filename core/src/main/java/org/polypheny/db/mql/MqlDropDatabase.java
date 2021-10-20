@@ -23,10 +23,16 @@ import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.mql.Mql.Type;
+import org.polypheny.db.mql.parser.MqlParserPos;
 import org.polypheny.db.transaction.Statement;
 
 
 public class MqlDropDatabase extends MqlNode implements MqlExecutableStatement {
+
+    public MqlDropDatabase( MqlParserPos pos ) {
+        super( pos );
+    }
+
 
     @Override
     public void execute( Context context, Statement statement, String database ) {

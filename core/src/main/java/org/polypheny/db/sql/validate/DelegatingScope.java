@@ -461,7 +461,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                     if ( step.i < 0 ) {
                         throw validator.newValidationError( identifier, Static.RESOURCE.columnNotFound( name ) );
                     }
-                    RelDataTypeField field0 = step.rowType.getFieldList().get( step.i ); // TODO DL: make final again
+                    final RelDataTypeField field0 = step.rowType.getFieldList().get( step.i ); // TODO DL: make final again
 
                     final String fieldName = field0.getName();
                     switch ( step.kind ) {

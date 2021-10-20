@@ -23,6 +23,7 @@ import org.polypheny.db.catalog.exceptions.SchemaAlreadyExistsException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.mql.Mql.Type;
+import org.polypheny.db.mql.parser.MqlParserPos;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -32,7 +33,8 @@ public class MqlUseDatabase extends MqlNode implements MqlExecutableStatement {
     private String database;
 
 
-    public MqlUseDatabase( String database ) {
+    public MqlUseDatabase( MqlParserPos pos, String database ) {
+        super( pos );
         this.database = database;
     }
 

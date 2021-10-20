@@ -18,6 +18,7 @@ package org.polypheny.db.mql;
 
 import org.bson.BsonDocument;
 import org.polypheny.db.mql.Mql.Type;
+import org.polypheny.db.mql.parser.MqlParserPos;
 
 
 public class MqlSave extends MqlCollectionStatement {
@@ -25,8 +26,8 @@ public class MqlSave extends MqlCollectionStatement {
     private final BsonDocument document;
 
 
-    public MqlSave( String collection, BsonDocument document ) {
-        super( collection );
+    public MqlSave( MqlParserPos pos, String collection, BsonDocument document ) {
+        super( collection, pos );
         this.document = document;
     }
 

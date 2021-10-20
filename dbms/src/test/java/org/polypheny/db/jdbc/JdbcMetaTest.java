@@ -59,6 +59,7 @@ public class JdbcMetaTest {
                 statement.executeUpdate( "ALTER TABLE test.foo2 ADD CONSTRAINT fk_foo_2 FOREIGN KEY (id) REFERENCES public.foo(id)" );
                 statement.executeUpdate( "ALTER TABLE foo ADD UNIQUE INDEX i_foo ON id ON STORE hsqldb" );
                 statement.executeUpdate( "ALTER TABLE test.foo2 ADD INDEX i_foo2 ON (name, foobar) USING \"default\" ON STORE hsqldb" );
+                statement.executeUpdate( "CREATE DOCUMENT SCHEMA private" );
                 connection.commit();
             }
         }
@@ -200,10 +201,10 @@ public class JdbcMetaTest {
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getSchemas( "APP", null ),
-                    ImmutableList.of( schemaPublic, schemaPrivate, schemaTest ) );
+                    ImmutableList.of( schemaPublic, schemaTest, schemaPrivate ) );
             TestHelper.checkResultSet(
                     connection.getMetaData().getSchemas( "%", "%" ),
-                    ImmutableList.of( schemaPublic, schemaPrivate, schemaTest ) );
+                    ImmutableList.of( schemaPublic, schemaTest, schemaPrivate ) );
             TestHelper.checkResultSet(
                     connection.getMetaData().getSchemas( "APP", "test" ),
                     ImmutableList.of( schemaTest ) );

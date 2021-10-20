@@ -402,12 +402,6 @@ public final class Schemas {
 
 
             @Override
-            public String getDefaultDocumentSchemaName() {
-                return null;
-            }
-
-
-            @Override
             public List<String> getDefaultSchemaPath() {
                 // schemaPath is usually null. If specified, it overrides schema as the context within which the SQL is validated.
                 if ( schemaPath == null ) {

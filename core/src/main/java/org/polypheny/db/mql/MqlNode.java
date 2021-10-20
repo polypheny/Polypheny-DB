@@ -30,12 +30,20 @@ import org.polypheny.db.mql.parser.MqlParserPos;
 public abstract class MqlNode {
 
     @Getter
+    protected final MqlParserPos pos;
+
+    @Getter
     @Setter
     List<String> stores = new ArrayList<>();
 
     @Setter
     @Getter
     List<String> primary = new ArrayList<>();
+
+
+    protected MqlNode( MqlParserPos pos ) {
+        this.pos = pos;
+    }
 
 
     protected BsonDocument getDocumentOrNull( BsonDocument document, String name ) {

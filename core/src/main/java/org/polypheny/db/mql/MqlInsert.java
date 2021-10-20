@@ -22,6 +22,7 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.polypheny.db.mql.Mql.Type;
+import org.polypheny.db.mql.parser.MqlParserPos;
 
 
 public class MqlInsert extends MqlCollectionStatement {
@@ -32,8 +33,8 @@ public class MqlInsert extends MqlCollectionStatement {
     private final boolean ordered;
 
 
-    public MqlInsert( String collection, BsonValue values, BsonDocument options ) {
-        super( collection );
+    public MqlInsert( MqlParserPos pos, String collection, BsonValue values, BsonDocument options ) {
+        super( collection, pos );
         if ( values.isDocument() ) {
             this.values = new BsonArray( Collections.singletonList( values.asDocument() ) );
         } else if ( values.isArray() ) {

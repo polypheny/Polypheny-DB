@@ -21,7 +21,6 @@ import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.util.background.BackgroundTask;
 
@@ -341,11 +340,6 @@ public enum RuntimeConfig {
             50,
             ConfigType.INTEGER,
             "monitoringSettingsQueueGroup" ),
-
-    DEFAULT_SCHEMA_MODEL( "runtime/defaultSchemaModel",
-            "Define default schema model, which is used when none is provided.",
-            SchemaType.RELATIONAL,
-            ConfigType.ENUM ),
 
     TEMPERATURE_FREQUENCY_PROCESSING_INTERVAL( "runtime/partitionFrequencyProcessingInterval",
             "Time interval in seconds, how often the access frequency of all TEMPERATURE-partitioned tables is analyzed and redistributed",

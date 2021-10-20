@@ -45,8 +45,6 @@ public class ContextImpl implements Context {
     @Getter
     private final long databaseId;
     @Getter
-    private final String defaultDocumentSchemaName = "private";
-    @Getter
     private final int currentUserId;
 
 

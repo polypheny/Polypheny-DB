@@ -19,6 +19,7 @@ package org.polypheny.db.mql;
 import lombok.Getter;
 import org.bson.BsonDocument;
 import org.polypheny.db.mql.Mql.Type;
+import org.polypheny.db.mql.parser.MqlParserPos;
 
 
 public class MqlFind extends MqlCollectionStatement implements MqlQueryStatement {
@@ -31,8 +32,8 @@ public class MqlFind extends MqlCollectionStatement implements MqlQueryStatement
     private final boolean onlyOne;
 
 
-    public MqlFind( String collection, BsonDocument query, BsonDocument projection, boolean onlyOne ) {
-        super( collection );
+    public MqlFind( MqlParserPos pos, String collection, BsonDocument query, BsonDocument projection, boolean onlyOne ) {
+        super( collection, pos );
         this.query = query != null ? query : new BsonDocument();
         this.projection = projection != null ? projection : new BsonDocument();
         this.onlyOne = onlyOne;

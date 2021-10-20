@@ -2266,14 +2266,6 @@ public class CatalogImpl extends Catalog {
             }
         }
 
-        // TODO DL: remove
-        Integer fixedLength = length;
-        Collation fixedCollation = collation;
-        /*if ( type == PolyType.JSON ) {
-            fixedLength = scale == null ? 300 : scale;
-            fixedCollation = Collation.CASE_INSENSITIVE;
-        }*/
-
         long id = columnIdBuilder.getAndIncrement();
         CatalogColumn column = new CatalogColumn(
                 id,
@@ -2284,12 +2276,12 @@ public class CatalogImpl extends Catalog {
                 position,
                 type,
                 collectionsType,
-                fixedLength,
+                length,
                 scale,
                 dimension,
                 cardinality,
                 nullable,
-                fixedCollation,
+                collation,
                 null );
 
         synchronized ( this ) {

@@ -27,6 +27,7 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.mql.Mql.Type;
+import org.polypheny.db.mql.parser.MqlParserPos;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
@@ -40,7 +41,8 @@ public class MqlCreateView extends MqlNode implements MqlExecutableStatement {
     private final BsonArray pipeline;
 
 
-    public MqlCreateView( String name, String source, BsonArray pipeline ) {
+    public MqlCreateView( MqlParserPos pos, String name, String source, BsonArray pipeline ) {
+        super( pos );
         this.source = source;
         this.name = name;
         this.pipeline = pipeline;

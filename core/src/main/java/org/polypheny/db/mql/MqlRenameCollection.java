@@ -27,6 +27,7 @@ import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.mql.Mql.Type;
+import org.polypheny.db.mql.parser.MqlParserPos;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -36,8 +37,8 @@ public class MqlRenameCollection extends MqlCollectionStatement implements MqlEx
     private final boolean dropTarget;
 
 
-    public MqlRenameCollection( String collection, String newName, Boolean dropTarget ) {
-        super( collection );
+    public MqlRenameCollection( MqlParserPos pos, String collection, String newName, Boolean dropTarget ) {
+        super( collection, pos );
         this.newName = newName;
         this.dropTarget = dropTarget != null && dropTarget;
     }

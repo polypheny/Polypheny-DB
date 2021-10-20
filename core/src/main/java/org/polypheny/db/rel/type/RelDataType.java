@@ -236,9 +236,5 @@ public interface RelDataType extends Serializable {
      */
     boolean isDynamicStruct();
 
-    default void setIsDocument( boolean isDocument ) {
-
-    }
-
 }
 

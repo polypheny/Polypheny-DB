@@ -18,6 +18,7 @@ package org.polypheny.db.mql;
 
 import org.bson.BsonDocument;
 import org.polypheny.db.mql.Mql.Type;
+import org.polypheny.db.mql.parser.MqlParserPos;
 
 
 public class MqlRemove extends MqlCollectionStatement {
@@ -25,8 +26,8 @@ public class MqlRemove extends MqlCollectionStatement {
     private final BsonDocument document;
 
 
-    public MqlRemove( String collection, BsonDocument document ) {
-        super( collection );
+    public MqlRemove( MqlParserPos pos, String collection, BsonDocument document ) {
+        super( collection, pos );
         this.document = document;
     }
 

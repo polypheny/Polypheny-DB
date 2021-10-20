@@ -19,6 +19,7 @@ package org.polypheny.db.mql;
 import lombok.Getter;
 import org.bson.BsonDocument;
 import org.polypheny.db.mql.Mql.Type;
+import org.polypheny.db.mql.parser.MqlParserPos;
 
 
 public class MqlDelete extends MqlCollectionStatement implements MqlQueryStatement {
@@ -31,8 +32,8 @@ public class MqlDelete extends MqlCollectionStatement implements MqlQueryStateme
     private final boolean onlyOne;
 
 
-    public MqlDelete( String collection, BsonDocument query, BsonDocument options, boolean onlyOne ) {
-        super( collection );
+    public MqlDelete( MqlParserPos pos, String collection, BsonDocument query, BsonDocument options, boolean onlyOne ) {
+        super( collection, pos );
         this.query = query;
         this.options = options;
         this.onlyOne = onlyOne;

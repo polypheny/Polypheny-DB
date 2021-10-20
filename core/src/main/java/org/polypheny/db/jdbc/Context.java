@@ -40,8 +40,6 @@ public interface Context {
 
     String getDefaultSchemaName();
 
-    String getDefaultDocumentSchemaName();
-
     List<String> getDefaultSchemaPath();
 
     PolyphenyDbConnectionConfig config();

@@ -19,6 +19,7 @@ package org.polypheny.db.mql;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.polypheny.db.mql.parser.MqlParserPos;
 
 
 public abstract class MqlCollectionStatement extends MqlNode {
@@ -32,7 +33,8 @@ public abstract class MqlCollectionStatement extends MqlNode {
     private int limit = 10;
 
 
-    public MqlCollectionStatement( String collection ) {
+    public MqlCollectionStatement( String collection, MqlParserPos pos ) {
+        super( pos );
         this.collection = collection;
     }
 

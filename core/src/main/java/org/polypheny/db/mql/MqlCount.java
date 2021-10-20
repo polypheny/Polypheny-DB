@@ -19,6 +19,7 @@ package org.polypheny.db.mql;
 import lombok.Getter;
 import org.bson.BsonDocument;
 import org.polypheny.db.mql.Mql.Type;
+import org.polypheny.db.mql.parser.MqlParserPos;
 
 
 public class MqlCount extends MqlCollectionStatement implements MqlQueryStatement {
@@ -31,13 +32,13 @@ public class MqlCount extends MqlCollectionStatement implements MqlQueryStatemen
     private final BsonDocument options;
 
 
-    public MqlCount( String collection, BsonDocument query, BsonDocument options ) {
-        this( collection, query, options, false );
+    public MqlCount( MqlParserPos pos, String collection, BsonDocument query, BsonDocument options ) {
+        this( pos, collection, query, options, false );
     }
 
 
-    public MqlCount( String collection, BsonDocument query, BsonDocument options, boolean isEstimate ) {
-        super( collection );
+    public MqlCount( MqlParserPos pos, String collection, BsonDocument query, BsonDocument options, boolean isEstimate ) {
+        super( collection, pos );
         this.query = query;
         this.options = options;
         this.isEstimate = isEstimate;

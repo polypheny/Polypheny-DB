@@ -19,6 +19,7 @@ package org.polypheny.db.mql;
 import lombok.Getter;
 import org.bson.BsonDocument;
 import org.polypheny.db.mql.Mql.Type;
+import org.polypheny.db.mql.parser.MqlParserPos;
 
 
 public class MqlFindOneAndReplace extends MqlCollectionStatement implements MqlQueryStatement {
@@ -35,8 +36,8 @@ public class MqlFindOneAndReplace extends MqlCollectionStatement implements MqlQ
     private final BsonDocument upsert;
 
 
-    public MqlFindOneAndReplace( String collection, BsonDocument query, BsonDocument replacement, BsonDocument options ) {
-        super( collection );
+    public MqlFindOneAndReplace( MqlParserPos pos, String collection, BsonDocument query, BsonDocument replacement, BsonDocument options ) {
+        super( collection, pos );
         this.query = query;
         this.replacement = replacement;
         this.projection = getDocumentOrNull( options, "projection" );

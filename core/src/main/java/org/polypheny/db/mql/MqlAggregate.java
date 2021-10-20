@@ -20,6 +20,7 @@ import lombok.Getter;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.polypheny.db.mql.Mql.Type;
+import org.polypheny.db.mql.parser.MqlParserPos;
 
 
 public class MqlAggregate extends MqlCollectionStatement {
@@ -30,8 +31,8 @@ public class MqlAggregate extends MqlCollectionStatement {
     private final BsonDocument option;
 
 
-    public MqlAggregate( String collection, BsonArray pipeline, BsonDocument option ) {
-        super( collection );
+    public MqlAggregate( MqlParserPos pos, String collection, BsonArray pipeline, BsonDocument option ) {
+        super( collection, pos );
         this.pipeline = pipeline;
         this.option = option;
         enforceNonEmptyProject( pipeline );

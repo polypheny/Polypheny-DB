@@ -20,6 +20,7 @@ import lombok.Getter;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.polypheny.db.mql.Mql.Type;
+import org.polypheny.db.mql.parser.MqlParserPos;
 
 
 public class MqlFindAndModify extends MqlCollectionStatement implements MqlQueryStatement {
@@ -48,8 +49,8 @@ public class MqlFindAndModify extends MqlCollectionStatement implements MqlQuery
     private final BsonDocument let;
 
 
-    public MqlFindAndModify( String collection, BsonDocument document ) {
-        super( collection );
+    public MqlFindAndModify( MqlParserPos pos, String collection, BsonDocument document ) {
+        super( collection, pos );
         this.query = getDocumentOrNull( document, "query" );
         this.sort = getDocumentOrNull( document, "sort" );
         this.remove = getBoolean( document, "remove" );

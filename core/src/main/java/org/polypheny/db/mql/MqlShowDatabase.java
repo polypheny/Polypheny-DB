@@ -17,9 +17,15 @@
 package org.polypheny.db.mql;
 
 import org.polypheny.db.mql.Mql.Type;
+import org.polypheny.db.mql.parser.MqlParserPos;
 
 
 public class MqlShowDatabase extends MqlNode {
+
+    public MqlShowDatabase( MqlParserPos pos ) {
+        super( pos );
+    }
+
 
     @Override
     public Type getKind() {

@@ -59,11 +59,33 @@ public class LogicalDocuments extends LogicalValues implements Documents {
 
 
     /**
-     * Creates an <code>AbstractRelNode</code>.
+     * Java representation of multiple documents, which can be retrieved in the original BSON format form
+     * or in the substantiated relational form, where the documents are bundled into a BSON string
      *
-     * @param cluster
-     * @param traitSet
-     * @param tuples
+     * BSON format
+     * <pre><code>
+     *     "_id": ObjectId(23kdf232123)
+     *     "key": "value",
+     *     "key1": "value"
+     * </pre></code>
+     *
+     * becomes
+     *
+     * Column format
+     * <pre><code>
+     *     "_id": ObjectId(23kdf232123)
+     *     "_data": {
+     *         "key": "value",
+     *         "key1": "value"
+     *     }
+     *
+     * </pre></code>
+     *
+     * @param cluster the cluster, which holds the information regarding the ongoing operation
+     * @param defaultRowType, substitution rowType, which is "_id", "_data" and possible fixed columns if they exist
+     * @param traitSet the used traitSet
+     * @param tuples the documents in their native BSON format
+     * @param normalizedTuples the documents in their substituted relational format
      */
     public LogicalDocuments( RelOptCluster cluster, RelDataType defaultRowType, RelTraitSet traitSet, ImmutableList<BsonValue> tuples, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
         super( cluster, traitSet, defaultRowType, validateLiterals( normalizedTuples, defaultRowType, cluster.getRexBuilder() ) );

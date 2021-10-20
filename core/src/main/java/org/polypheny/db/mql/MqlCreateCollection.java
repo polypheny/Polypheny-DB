@@ -33,16 +33,18 @@ import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.ddl.exception.PartitionGroupNamesNotUniqueException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.mql.Mql.Type;
+import org.polypheny.db.mql.parser.MqlParserPos;
 import org.polypheny.db.transaction.Statement;
 
 
 public class MqlCreateCollection extends MqlNode implements MqlExecutableStatement {
 
     private final BsonDocument options;
-    String name;
+    private final String name;
 
 
-    public MqlCreateCollection( String name, BsonDocument options ) {
+    public MqlCreateCollection( MqlParserPos pos, String name, BsonDocument options ) {
+        super( pos );
         this.name = name;
         this.options = options;
     }

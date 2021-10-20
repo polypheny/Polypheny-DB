@@ -21,6 +21,7 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.polypheny.db.mql.Mql.Type;
+import org.polypheny.db.mql.parser.MqlParserPos;
 
 
 public class MqlUpdate extends MqlCollectionStatement implements MqlQueryStatement {
@@ -43,8 +44,8 @@ public class MqlUpdate extends MqlCollectionStatement implements MqlQueryStateme
     private final boolean onlyOne;
 
 
-    public MqlUpdate( String collection, BsonDocument query, BsonValue updateOrPipeline, BsonDocument options, boolean onlyOne ) {
-        super( collection );
+    public MqlUpdate( MqlParserPos pos, String collection, BsonDocument query, BsonValue updateOrPipeline, BsonDocument options, boolean onlyOne ) {
+        super( collection, pos );
         this.query = query;
         if ( updateOrPipeline.isArray() ) {
             this.pipeline = updateOrPipeline.asArray();

@@ -46,12 +46,12 @@ import org.polypheny.db.util.Static;
 
 
 /**
- * SqlParserPos represents the position of a parsed token within SQL statement text.
+ * MqlParserPos represents the position of a parsed token within MongoQL statement text.
  */
 public class MqlParserPos implements Serializable {
 
     /**
-     * SqlParserPos representing line one, character one. Use this if the node doesn't correspond to a position in piece of SQL text.
+     * MqlParserPos representing line one, character one. Use this if the node doesn't correspond to a position in piece of MongoQL text.
      */
     public static final MqlParserPos ZERO = new MqlParserPos( 0, 0 );
 
@@ -193,7 +193,6 @@ public class MqlParserPos implements Serializable {
     private static Iterable<MqlParserPos> toPos( Iterable<MqlNode> nodes ) {
         return Iterables.transform( nodes, MqlNode::getParserPosition );
     }
-
 
     /**
      * Combines the parser positions of a list of nodes to create a position which spans from the beginning of the first to the end of the last.
