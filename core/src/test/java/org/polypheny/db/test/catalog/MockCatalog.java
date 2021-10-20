@@ -399,6 +399,12 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
+    public void updateMaterialized( long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
     public List<CatalogColumn> getColumns( long tableId ) {
         throw new NotImplementedException();
     }
