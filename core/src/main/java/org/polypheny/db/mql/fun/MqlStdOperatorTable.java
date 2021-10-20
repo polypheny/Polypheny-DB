@@ -35,7 +35,7 @@ public interface MqlStdOperatorTable {
 
     MqlFunctionOperator DOC_TYPE_MATCH = new MqlFunctionOperator( "DOC_TYPE_MATCH", SqlKind.DOC_TYPE_MATCH );
 
-    MqlFunctionOperator DOC_QUERY_VALUE = new MqlFunctionOperator( "DOC_QUERY_VALUE", SqlKind.DOC_VALUE );
+    MqlFunctionOperator DOC_QUERY_VALUE = new MqlFunctionOperator( "DOC_QUERY_VALUE", SqlKind.DOC_DOCUMENTS );
 
     MqlFunctionOperator DOC_SLICE = new MqlFunctionOperator( "DOC_SLICE", SqlKind.DOC_SLICE );
 

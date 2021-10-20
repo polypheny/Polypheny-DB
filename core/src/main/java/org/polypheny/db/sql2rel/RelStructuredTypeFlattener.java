@@ -90,7 +90,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexProgramBuilder;
 import org.polypheny.db.rex.RexShuttle;
-import org.polypheny.db.rex.RexSubInputRef;
 import org.polypheny.db.rex.RexSubQuery;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.sql.SqlKind;
@@ -783,11 +782,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
 
             // Use the actual flattened type, which may be different from the current type.
             RelDataType fieldType = removeDistinct( field.e );
-            if ( input.getKind() == SqlKind.INPUT_REF ) {
-                return new RexInputRef( field.i, fieldType );
-            } else {
-                return new RexSubInputRef( field.i, fieldType, ((RexSubInputRef) input).getSubFieldName() );
-            }
+            return new RexInputRef( field.i, fieldType );
         }
 
 

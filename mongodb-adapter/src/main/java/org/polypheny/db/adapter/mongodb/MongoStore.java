@@ -156,7 +156,10 @@ public class MongoStore extends DataStore {
     @Override
     public void createNewSchema( SchemaPlus rootSchema, String name ) {
         String[] splits = name.split( "_" );
-        String database = splits[0] + "_" + splits[1];
+        String database = name;
+        if ( splits.length >= 2 ) {
+            database = splits[0] + "_" + splits[1];
+        }
         currentSchema = new MongoSchema( database, this.client, transactionProvider );
     }
 
@@ -225,8 +228,10 @@ public class MongoStore extends DataStore {
     public void createTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
         Catalog catalog = Catalog.getInstance();
         commitAll();
-        //ClientSession session = transactionProvider.startTransaction( context.getStatement().getTransaction().getXid() );
-        //context.getStatement().getTransaction().registerInvolvedAdapter( this );
+
+        if ( this.currentSchema == null ) {
+            createNewSchema( null, Catalog.getInstance().getSchema( catalogTable.schemaId ).getName() );
+        }
 
         for ( long partitionId : partitionIds ) {
             String physicalTableName = getPhysicalTableName( catalogTable.id, partitionId );

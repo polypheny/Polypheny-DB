@@ -421,7 +421,7 @@ public class MongoRules {
                 BsonArray array = new BsonArray();
                 array.addAll( translateList( call.operands ).stream().map( BsonString::new ).collect( Collectors.toList() ) );
                 return array.toString();
-            } else if ( call.isA( SqlKind.DOC_VALUE ) ) {
+            } else if ( call.isA( SqlKind.DOC_DOCUMENTS ) ) {
                 return RexToMongoTranslator.translateDocValue( implementor.getStaticRowType(), call );
 
             } else if ( call.isA( SqlKind.DOC_ITEM ) ) {

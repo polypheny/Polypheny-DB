@@ -23,13 +23,14 @@ import java.util.Collections;
 import java.util.List;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.mongoql.model.Result;
 
 
-@Category({ FileExcluded.class, CassandraExcluded.class })
+@Category({ AdapterTestSuite.class, FileExcluded.class, CassandraExcluded.class })
 public class AggregateTest extends MqlTestTemplate {
 
 
@@ -157,7 +158,6 @@ public class AggregateTest extends MqlTestTemplate {
         insertMany( DATA_0 );
 
         Result result = aggregate( $count( "newName" ) );
-        // todo test name
 
         MongoConnection.checkResultSet( result, expected );
     }

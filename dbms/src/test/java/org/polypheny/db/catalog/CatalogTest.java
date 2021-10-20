@@ -92,6 +92,7 @@ public class CatalogTest {
                     log.error( "Exception while deleting old data", e );
                 }
                 statement.executeUpdate( "DROP SCHEMA schema1" );
+                statement.executeUpdate( "DROP SCHEMA private" );
                 connection.commit();
             }
         } catch ( SQLException e ) {

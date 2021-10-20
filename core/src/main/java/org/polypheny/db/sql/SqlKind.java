@@ -626,9 +626,6 @@ public enum SqlKind {
      */
     INPUT_REF,
 
-
-    SUB_INPUT_REF,
-
     /**
      * Reference to an input field, with a qualified name and an identifier
      *
@@ -1221,34 +1218,84 @@ public enum SqlKind {
      */
     OTHER_DDL,
 
-    DOC_VALUE,
+    /**
+     * Document model document values
+     */
+    DOC_DOCUMENTS,
 
+    /**
+     * Document model item operator, which retrieves from any underlying array
+     */
     DOC_ITEM,
 
+    /**
+     * Document model {@code $size} operator
+     */
     DOC_SIZE_MATCH,
 
+    /**
+     * Document model {@code $regex} operator
+     */
     DOC_REGEX_MATCH,
 
+    /**
+     * Document model {@code $type} operator
+     */
     DOC_TYPE_MATCH,
 
+    /**
+     * Document model {@code $slice} operator
+     */
     DOC_SLICE,
 
+    /**
+     * Document model exclusive project {@code $project: 0}
+     */
     DOC_EXCLUDE,
 
+    /**
+     * ocument model {@code $elemMatch} operator
+     */
     DOC_ELEM_MATCH,
 
+    /**
+     * Document model {@code $unwind} operator
+     */
     DOC_UNWIND,
 
+    /**
+     * Document model {@code UPDATE} operator, which handles only REPLACE during updates
+     * // TODO DL: REFACTOR AFTER DML ENUMERABLE
+     */
     DOC_UPDATE_REPLACE,
 
+    /**
+     * Document model {@code UPDATE} operator, which handles new DOCUMENTS during updates
+     * // TODO DL: REFACTOR AFTER DML ENUMERABLE
+     */
     DOC_UPDATE_ADD,
 
+    /**
+     * Document model {@code UPDATE} operator, which handles removing DOCUMENTS during updates
+     * // TODO DL: REFACTOR AFTER DML ENUMERABLE
+     */
     DOC_UPDATE_REMOVE,
 
+    /**
+     * Document model {@code UPDATE} operator, which handles rename DOCUMENTS during updates
+     * // TODO DL: REFACTOR AFTER DML ENUMERABLE
+     */
     DOC_UPDATE_RENAME,
 
+    /**
+     * Document model {@code UPDATE} operator, which wrapes the other UPDATE operations
+     * // TODO DL: REFACTOR AFTER DML ENUMERABLE
+     */
     DOC_UPDATE,
 
+    /**
+     * Document model {@code $exists} operator
+     */
     DOC_EXISTS;
 
     // Most of the static fields are categories, aggregating several kinds into a set.
@@ -1374,7 +1421,7 @@ public enum SqlKind {
     public static final Set<SqlKind> COMPARISON = EnumSet.of( IN, EQUALS, NOT_EQUALS, LESS_THAN, GREATER_THAN, GREATER_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL );
 
     public static final Set<SqlKind> DOC_KIND = EnumSet.of(
-            DOC_VALUE,
+            DOC_DOCUMENTS,
             DOC_ITEM,
             DOC_SIZE_MATCH,
             DOC_REGEX_MATCH,

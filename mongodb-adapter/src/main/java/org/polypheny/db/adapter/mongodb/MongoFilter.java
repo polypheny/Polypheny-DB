@@ -38,7 +38,7 @@ import static org.polypheny.db.sql.SqlKind.AND;
 import static org.polypheny.db.sql.SqlKind.ARRAY_VALUE_CONSTRUCTOR;
 import static org.polypheny.db.sql.SqlKind.CAST;
 import static org.polypheny.db.sql.SqlKind.DISTANCE;
-import static org.polypheny.db.sql.SqlKind.DOC_VALUE;
+import static org.polypheny.db.sql.SqlKind.DOC_DOCUMENTS;
 import static org.polypheny.db.sql.SqlKind.DYNAMIC_PARAM;
 import static org.polypheny.db.sql.SqlKind.INPUT_REF;
 import static org.polypheny.db.sql.SqlKind.LITERAL;
@@ -629,7 +629,7 @@ public class MongoFilter extends Filter implements MongoRel {
 
 
         /**
-         * Translates a {@link SqlKind#DOC_VALUE } to its {"$test": true} form
+         * Translates a {@link SqlKind#DOC_DOCUMENTS } to its {"$test": true} form
          *
          * @param call the untranslated node
          */
@@ -1006,7 +1006,7 @@ public class MongoFilter extends Filter implements MongoRel {
                         return true;
                     }
 
-                case DOC_VALUE:
+                case DOC_DOCUMENTS:
                     return translateDocValue( op, (RexCall) left, right );
 
                 // fall through
@@ -1036,7 +1036,7 @@ public class MongoFilter extends Filter implements MongoRel {
             if ( left.getKind() == OTHER_FUNCTION ) {
                 return translateItem( op, (RexCall) left, right );
             }
-            if ( left.getKind() == DOC_VALUE ) {
+            if ( left.getKind() == DOC_DOCUMENTS ) {
                 return translateDocValue( op, (RexCall) left, right );
             }
             if ( left.getKind() == CAST ) {
