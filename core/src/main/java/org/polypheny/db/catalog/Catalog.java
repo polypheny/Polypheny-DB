@@ -1409,6 +1409,8 @@ public abstract class Catalog {
      */
     public abstract void deleteViewDependencies( CatalogView catalogView );
 
+    public abstract void updateMaterialized( long tableId );
+
 
     public enum TableType {
         TABLE( 1 ),

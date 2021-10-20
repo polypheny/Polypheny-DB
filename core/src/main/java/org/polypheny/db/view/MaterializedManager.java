@@ -66,6 +66,7 @@ public abstract class MaterializedManager {
 
     public abstract void updateCommitedXid( PolyXid xid );
 
+    public abstract void updateMaterializedTime( Long materializedId );
 
     public static class TableUpdateVisitor extends RelShuttleImpl {
 

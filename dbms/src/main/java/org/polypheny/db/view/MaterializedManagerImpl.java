@@ -113,6 +113,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
     public synchronized void updateMaterializedTime( Long materializedId ) {
         if ( materializedInfo.containsKey( materializedId ) ) {
             materializedInfo.get( materializedId ).setLastUpdate( new Timestamp( System.currentTimeMillis() ) );
+            Catalog.getInstance().updateMaterialized( materializedId );
         }
     }
 
@@ -215,6 +216,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Not possible to create Transaction for Materialized View update", e );
         }
+        updateMaterializedTime( viewId );
     }
 
 

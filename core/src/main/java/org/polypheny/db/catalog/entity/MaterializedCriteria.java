@@ -49,10 +49,10 @@ public class MaterializedCriteria implements Serializable {
 
     public MaterializedCriteria() {
         this.criteriaType = CriteriaType.MANUAL;
-        this.interval = 1;
-        this.timeUnit = TimeUnit.DAYS;
+        this.interval = 0;
+        this.timeUnit = null;
         this.lastUpdate = new Timestamp( System.currentTimeMillis() );
-        this.timeInMillis = timeUnit.toMillis( interval );
+        this.timeInMillis = null;
         this.timesUpdated = 0;
     }
 

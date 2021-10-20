@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import java.io.File;
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -2018,6 +2019,46 @@ public class CatalogImpl extends Catalog {
             getPartition( partitionId );
             throw new UnknownPartitionPlacementException( adapterId, partitionId );
         }
+    }
+
+
+    @Override
+    public void updateMaterialized( long tableId ) {
+        CatalogMaterialized old = (CatalogMaterialized) getTable( tableId );
+
+        MaterializedCriteria materializedCriteria = old.getMaterializedCriteria();
+        materializedCriteria.setLastUpdate( new Timestamp( System.currentTimeMillis() ) );
+
+        CatalogMaterialized catalogMaterialized = new CatalogMaterialized(
+                old.id,
+                old.name,
+                old.columnIds,
+                old.schemaId,
+                old.databaseId,
+                old.ownerId,
+                old.ownerName,
+                old.tableType,
+                ((CatalogMaterialized) old).getQuery(),
+                old.primaryKey,
+                old.placementsByAdapter,
+                old.modifiable,
+                old.partitionType,
+                old.partitionColumnId,
+                old.isPartitioned,
+                old.partitionProperty,
+                ((CatalogMaterialized) old).getRelCollation(),
+                old.connectedViews,
+                ((CatalogMaterialized) old).getUnderlyingTables(),
+                ((CatalogMaterialized) old).getLanguage(),
+                materializedCriteria,
+                ((CatalogMaterialized) old).isOrdered() );
+
+        synchronized ( this ) {
+            tables.replace( tableId, catalogMaterialized );
+            tableNames.replace( new Object[]{ catalogMaterialized.databaseId, catalogMaterialized.schemaId, catalogMaterialized.name }, catalogMaterialized );
+        }
+        listeners.firePropertyChange( "table", old, catalogMaterialized );
+
     }
 
 

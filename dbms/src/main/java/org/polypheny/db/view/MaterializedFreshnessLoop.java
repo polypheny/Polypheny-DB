@@ -57,8 +57,6 @@ public class MaterializedFreshnessLoop implements Runnable {
                         if ( !manager.getIntervalToUpdate().contains( k ) ) {
                             manager.getIntervalToUpdate().add( k );
                         }
-
-                        //manager.prepareToUpdate( k );
                         manager.updateMaterializedTime( k );
                     }
                 }

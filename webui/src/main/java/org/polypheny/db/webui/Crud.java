@@ -118,6 +118,7 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
+import org.polypheny.db.catalog.entity.CatalogMaterialized;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -200,6 +201,7 @@ import org.polypheny.db.webui.models.HubMeta;
 import org.polypheny.db.webui.models.HubMeta.TableMapping;
 import org.polypheny.db.webui.models.HubResult;
 import org.polypheny.db.webui.models.Index;
+import org.polypheny.db.webui.models.MaterializedInfos;
 import org.polypheny.db.webui.models.PartitionFunctionModel;
 import org.polypheny.db.webui.models.PartitionFunctionModel.FieldType;
 import org.polypheny.db.webui.models.PartitionFunctionModel.PartitionFunctionColumn;
@@ -1481,6 +1483,43 @@ public class Crud implements InformationObserver {
             return new Result[]{ new Result( e ) };
         }
         return new Result[]{ new Result( "Could not retrieve exported Columns." ) };
+    }
+
+
+    MaterializedInfos getMaterializedInfo( final Request req, final Response res ) {
+        EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
+
+        try {
+            CatalogTable catalogTable = catalog.getTable( databaseName, request.schema, request.table );
+
+            if ( catalogTable.isMaterialized() ) {
+                CatalogMaterialized catalogMaterialized = (CatalogMaterialized) catalogTable;
+
+                MaterializedCriteria materializedCriteria = catalogMaterialized.getMaterializedCriteria();
+
+                ArrayList<String> materializedInfo = new ArrayList<>();
+                materializedInfo.add( materializedCriteria.getCriteriaType().toString() );
+                materializedInfo.add( materializedCriteria.getLastUpdate().toString() );
+                if ( materializedCriteria.getCriteriaType() == CriteriaType.INTERVAL ) {
+                    materializedInfo.add( materializedCriteria.getInterval().toString() );
+                    materializedInfo.add( materializedCriteria.getTimeUnit().name() );
+                } else if ( materializedCriteria.getCriteriaType() == CriteriaType.UPDATE ) {
+                    materializedInfo.add( materializedCriteria.getInterval().toString() );
+                    materializedInfo.add( "" );
+                } else {
+                    materializedInfo.add( "" );
+                    materializedInfo.add( "" );
+                }
+
+                return new MaterializedInfos( materializedInfo );
+            } else {
+                throw new RuntimeException( "only possible with materialized views" );
+            }
+
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
+            log.error( "Caught exception while fetching information about the materialized view", e );
+            return new MaterializedInfos( e );
+        }
     }
 
 
