@@ -74,9 +74,9 @@ public interface Transaction {
 
     DataMigrator getDataMigrator();
 
-    StatementEvent getMonitoringData();
+    StatementEvent getMonitoringEvent();
 
-    void setMonitoringData( StatementEvent event );
+    void setMonitoringEvent( StatementEvent event );
 
     /**
      * Flavor, how multimedia results should be returned from a store.

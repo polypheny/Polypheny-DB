@@ -19,6 +19,7 @@ package org.polypheny.db.routing.routers;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -77,8 +78,8 @@ public class SimpleRouter extends AbstractDqlRouter {
         List<Long> partitionIds = queryInformation.getAccessedPartitions().get( catalogTable.id );
 
         Map<Long, List<CatalogColumnPlacement>> placementDistribution = partitionIds != null
-                ? partitionManager.getFirstPlacements( catalogTable, partitionIds )
-                : partitionManager.getFirstPlacements( catalogTable, catalogTable.partitionProperty.partitionIds );
+                ? partitionManager.getRelevantPlacements( catalogTable, partitionIds, Collections.emptyList() )
+                : partitionManager.getRelevantPlacements( catalogTable, catalogTable.partitionProperty.partitionIds, Collections.emptyList() );
 
         // only one builder available
         builders.get( 0 ).addPhysicalInfo( placementDistribution );

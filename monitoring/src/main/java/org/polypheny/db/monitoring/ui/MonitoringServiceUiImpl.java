@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -64,24 +63,6 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
     }
 
 
-    @Override
-    public <T extends MonitoringDataPoint> void registerDataPointForUi( @NonNull Class<T> metricClass ) {
-        String className = metricClass.getName();
-        val informationGroup = new InformationGroup( informationPage, className );
-
-        // TODO: see todo below in {#link updateMetricInformationTable}
-        val fieldAsString = Arrays.stream( metricClass.getDeclaredFields() )
-                .map( Field::getName )
-                .filter( str -> !str.equals( "serialVersionUID" ) )
-                .collect( Collectors.toList() );
-        val informationTable = new InformationTable( informationGroup, fieldAsString );
-
-        // informationGroup.setRefreshFunction( () -> this.updateMetricInformationTable( informationTable, metricClass ) );
-
-        addInformationGroupTUi( informationGroup, Arrays.asList( informationTable ) );
-    }
-
-
     /**
      * Universal method to add arbitrary new information groups to UI
      */
@@ -91,37 +72,6 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
         for ( InformationTable informationTable : informationTables ) {
             im.registerInformation( informationTable );
-        }
-    }
-
-
-    private <T extends MonitoringDataPoint> void updateMetricInformationTable( InformationTable table, Class<T> metricClass ) {
-        List<T> elements = this.repo.getAllDataPoints( metricClass );
-        table.reset();
-
-        Field[] fields = metricClass.getDeclaredFields();
-        Method[] methods = metricClass.getMethods();
-        for ( T element : elements ) {
-            List<String> row = new LinkedList<>();
-
-            for ( Field field : fields ) {
-                // TODO: get declared fields and find corresponding Lombok getter to execute
-                //  Therefore, nothing needs to be done for serialVersionID
-                //  and neither do we need to hacky set the setAccessible flag for the fields
-                if ( field.getName().equals( "serialVersionUID" ) ) {
-                    continue;
-                }
-
-                try {
-                    field.setAccessible( true );
-                    val value = field.get( element );
-                    row.add( value.toString() );
-                } catch ( IllegalAccessException e ) {
-                    log.error( "Caught exception", e );
-                }
-            }
-
-            table.addRow( row );
         }
     }
 

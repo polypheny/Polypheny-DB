@@ -82,7 +82,7 @@ public class TransactionImpl implements Transaction, Comparable {
     private final boolean analyze;
 
 
-    private StatementEvent statementEventData;
+    private StatementEvent statementEvent;
 
     private final AtomicLong statementCounter = new AtomicLong();
 
@@ -275,14 +275,14 @@ public class TransactionImpl implements Transaction, Comparable {
 
 
     @Override
-    public StatementEvent getMonitoringData() {
-        return this.statementEventData;
+    public StatementEvent getMonitoringEvent() {
+        return this.statementEvent;
     }
 
 
     @Override
-    public void setMonitoringData( StatementEvent event ) {
-        this.statementEventData = event;
+    public void setMonitoringEvent( StatementEvent event ) {
+        this.statementEvent = event;
     }
 
     // For locking

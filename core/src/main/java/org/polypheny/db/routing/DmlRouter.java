@@ -17,7 +17,6 @@
 package org.polypheny.db.routing;
 
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.tools.RoutedRelBuilder;
 import org.polypheny.db.transaction.Statement;
 
 /**
@@ -28,7 +27,7 @@ public interface DmlRouter {
     /**
      * routes dml queries and returns a rel builder.
      */
-    RoutedRelBuilder routeDml( RelNode node, Statement statement );
+    RelNode routeDml( RelNode node, Statement statement );
 
     /**
      * routes conditional executes and directly returns a rel node.

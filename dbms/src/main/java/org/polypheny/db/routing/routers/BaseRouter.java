@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.polypheny.db.catalog.Catalog;
@@ -55,7 +57,21 @@ public abstract class BaseRouter {
     public static final Cache<Integer, RelNode> joinedTableScanCache = CacheBuilder.newBuilder()
             .maximumSize( RuntimeConfig.JOINED_TABLE_SCAN_CACHE_SIZE.getInteger() )
             .build();
+
     final static Catalog catalog = Catalog.getInstance();
+
+    // For reporting purposes
+    protected Map<Long, SelectedAdapterInfo> selectedAdapter;
+
+    @AllArgsConstructor
+    @Getter
+    protected static class SelectedAdapterInfo {
+
+        protected final String uniqueName;
+        protected final String physicalSchemaName;
+        protected final String physicalTableName;
+
+    }
 
 
     public RelNode recursiveCopy( RelNode node ) {
@@ -71,11 +87,16 @@ public abstract class BaseRouter {
 
     public RoutedRelBuilder handleTableScan(
             RoutedRelBuilder builder,
+            long tableId,
             String storeUniqueName,
             String logicalSchemaName,
             String logicalTableName,
             String physicalSchemaName,
+            String physicalTableName,
             long partitionId ) {
+        if ( selectedAdapter != null ) {
+            selectedAdapter.put( tableId, new SelectedAdapterInfo( storeUniqueName, physicalSchemaName, physicalTableName ) );
+        }
         return builder.scan( ImmutableList.of(
                 PolySchemaBuilder.buildAdapterSchemaName( storeUniqueName, logicalSchemaName, physicalSchemaName ),
                 logicalTableName + "_" + partitionId ) );
@@ -148,10 +169,12 @@ public abstract class BaseRouter {
 
                 builder = handleTableScan(
                         builder,
+                        ccp.tableId,
                         ccp.adapterUniqueName,
                         ccp.getLogicalSchemaName(),
                         ccp.getLogicalTableName(),
                         ccp.physicalSchemaName,
+                        cpp.physicalTableName,
                         cpp.partitionId );
                 // final project
                 ArrayList<RexNode> rexNodes = new ArrayList<>();
@@ -194,10 +217,12 @@ public abstract class BaseRouter {
 
                     handleTableScan(
                             builder,
+                            ccp.tableId,
                             ccp.adapterUniqueName,
                             ccp.getLogicalSchemaName(),
                             ccp.getLogicalTableName(),
                             ccp.physicalSchemaName,
+                            cpp.physicalTableName,
                             cpp.partitionId );
                     if ( first ) {
                         first = false;

@@ -248,7 +248,7 @@ public class LogicalRelAnalyzeShuttle extends RelShuttleImpl {
             filter.accept( whereClauseVisitor );
 
             if ( whereClauseVisitor.valueIdentified ) {
-                if ( !whereClauseVisitor.getValues().isEmpty() ) {
+                if ( !whereClauseVisitor.getValues().isEmpty() && !whereClauseVisitor.isUnsupportedFilter() ) {
                     filterMap.put( filter.getId(), whereClauseVisitor.getValues().stream()
                             .map( Object::toString )
                             .collect( Collectors.toList() ) );

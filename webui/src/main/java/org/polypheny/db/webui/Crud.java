@@ -150,10 +150,6 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
-import org.polypheny.db.monitoring.events.DmlEvent;
-import org.polypheny.db.monitoring.events.QueryEvent;
-import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.partition.PartitionFunctionInfo;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionManager;
@@ -842,7 +838,6 @@ public class Crud implements InformationObserver {
                     temp = System.nanoTime();
                     int numOfRows = executeSqlUpdate( transaction, query );
                     executionTime += System.nanoTime() - temp;
-                    transaction.getMonitoringData().setExecutionTime( executionTime );
 
                     result = new Result( numOfRows ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
                     results.add( result );
@@ -2794,7 +2789,7 @@ public class Crud implements InformationObserver {
         RelRoot root = new RelRoot( result, result.getRowType(), SqlKind.SELECT, fields, collation );
 
         // Prepare
-        PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( root );
+        PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( root, true );
 
         if ( request.createView ) {
 
@@ -3472,7 +3467,6 @@ public class Crud implements InformationObserver {
         List<List<Object>> rows;
         Iterator<Object> iterator = null;
         boolean hasMoreRows = false;
-        statement.getTransaction().setMonitoringData( new QueryEvent() );
 
         try {
             signature = processQuery( statement, sqlSelect );
@@ -3491,8 +3485,6 @@ public class Crud implements InformationObserver {
 
             long executionTime = stopWatch.getNanoTime();
             signature.getExecutionTimeMonitor().setExecutionTime( executionTime );
-
-            statement.getTransaction().getMonitoringData().setExecutionTime( executionTime );
 
         } catch ( Throwable t ) {
             if ( statement.getTransaction().isAnalyze() ) {
@@ -3570,9 +3562,6 @@ public class Crud implements InformationObserver {
             }
 
             ArrayList<String[]> data = computeResultData( rows, header, statement.getTransaction() );
-
-            statement.getTransaction().getMonitoringData().setRowCount( data.size() );
-            MonitoringServiceProvider.getInstance().monitorEvent( statement.getTransaction().getMonitoringData() );
 
             if ( tableType != null ) {
                 return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
@@ -3764,7 +3753,7 @@ public class Crud implements InformationObserver {
         } else {
             Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
             logicalRoot = sqlProcessor.translate( statement, validated.left );
-            signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
+            signature = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
         }
         return signature;
     }
@@ -3777,8 +3766,6 @@ public class Crud implements InformationObserver {
 
     private int executeSqlUpdate( final Statement statement, final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
         PolyphenyDbSignature<?> signature;
-
-        statement.getTransaction().setMonitoringData( new DmlEvent() );
 
         try {
             signature = processQuery( statement, sqlUpdate );
@@ -3831,11 +3818,6 @@ public class Crud implements InformationObserver {
                     throw new QueryExecutionException( e.getMessage(), e );
                 }
             }
-
-            StatementEvent ev = statement.getTransaction().getMonitoringData();
-            ev.setRowCount( rowsChanged );
-
-            MonitoringServiceProvider.getInstance().monitorEvent( ev );
 
             return rowsChanged;
         } else {

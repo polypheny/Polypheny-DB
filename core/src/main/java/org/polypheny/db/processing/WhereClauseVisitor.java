@@ -25,6 +25,7 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.transaction.Statement;
 
 /**
@@ -39,6 +40,8 @@ public class WhereClauseVisitor extends RexShuttle {
     @Getter
     protected boolean valueIdentified = false;
     private Object value = null;
+    @Getter
+    private boolean unsupportedFilter = false;
 
 
     public WhereClauseVisitor( Statement statement, long partitionColumnIndex ) {
@@ -47,40 +50,44 @@ public class WhereClauseVisitor extends RexShuttle {
         this.partitionColumnIndex = partitionColumnIndex;
     }
 
-
     @Override
     public RexNode visitCall( final RexCall call ) {
         super.visitCall( call );
 
         if ( call.operands.size() == 2 ) {
+            if( call.op.equals( SqlKind.EQUALS )) {
+                if ( call.operands.get( 0 ) instanceof RexInputRef ) {
+                    if ( ((RexInputRef) call.operands.get( 0 )).getIndex() == partitionColumnIndex ) {
+                        if ( call.operands.get( 1 ) instanceof RexLiteral ) {
+                            value = ((RexLiteral) call.operands.get( 1 )).getValueForQueryParameterizer();
+                            values.add( value );
+                            valueIdentified = true;
+                        } else if ( call.operands.get( 1 ) instanceof RexDynamicParam ) {
+                            long index = ((RexDynamicParam) call.operands.get( 1 )).getIndex();
+                            value = statement.getDataContext().getParameterValue( index );//.get("?" + index);
+                            values.add( value );
+                            valueIdentified = true;
+                        }
+                    }
+                } else if ( call.operands.get( 1 ) instanceof RexInputRef ) {
 
-            if ( call.operands.get( 0 ) instanceof RexInputRef ) {
-                if ( ((RexInputRef) call.operands.get( 0 )).getIndex() == partitionColumnIndex ) {
-                    if ( call.operands.get( 1 ) instanceof RexLiteral ) {
-                        value = ((RexLiteral) call.operands.get( 1 )).getValueForQueryParameterizer();
-                        values.add( value );
-                        valueIdentified = true;
-                    } else if ( call.operands.get( 1 ) instanceof RexDynamicParam ) {
-                        long index = ((RexDynamicParam) call.operands.get( 1 )).getIndex();
-                        value = statement.getDataContext().getParameterValue( index );//.get("?" + index);
-                        values.add( value );
-                        valueIdentified = true;
+                    if ( ((RexInputRef) call.operands.get( 1 )).getIndex() == partitionColumnIndex ) {
+                        if ( call.operands.get( 0 ) instanceof RexLiteral ) {
+                            value = ((RexLiteral) call.operands.get( 0 )).getValueForQueryParameterizer();
+                            values.add( value );
+                            valueIdentified = true;
+                        } else if ( call.operands.get( 0 ) instanceof RexDynamicParam ) {
+                            long index = ((RexDynamicParam) call.operands.get( 0 )).getIndex();
+                            value = statement.getDataContext().getParameterValue( index );//get("?" + index); //.getParameterValues //
+                            values.add( value );
+                            valueIdentified = true;
+                        }
                     }
                 }
-            } else if ( call.operands.get( 1 ) instanceof RexInputRef ) {
-
-                if ( ((RexInputRef) call.operands.get( 1 )).getIndex() == partitionColumnIndex ) {
-                    if ( call.operands.get( 0 ) instanceof RexLiteral ) {
-                        value = ((RexLiteral) call.operands.get( 0 )).getValueForQueryParameterizer();
-                        values.add( value );
-                        valueIdentified = true;
-                    } else if ( call.operands.get( 0 ) instanceof RexDynamicParam ) {
-                        long index = ((RexDynamicParam) call.operands.get( 0 )).getIndex();
-                        value = statement.getDataContext().getParameterValue( index );//get("?" + index); //.getParameterValues //
-                        values.add( value );
-                        valueIdentified = true;
-                    }
-                }
+            }
+            else {
+                //Enable worstcase routing
+                unsupportedFilter = true;
             }
         }
         return call;

@@ -16,8 +16,6 @@
 
 package org.polypheny.db.ddl;
 
-import static org.reflections.Reflections.log;
-
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -321,8 +319,6 @@ public class DdlManagerImpl extends DdlManager {
                     throw new RuntimeException( "Trying to drop a table located on a data source which is not of table type SOURCE. This should not happen!" );
                 }
 
-                // Inform routing
-                statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnAdapterPerTable( catalogAdapter.id, table.id ) );
                 // Delete column placement in catalog
                 for ( Long columnId : table.columnIds ) {
                     if ( catalog.checkIfExistsColumnPlacement( catalogAdapter.id, columnId ) ) {
@@ -965,8 +961,6 @@ public class DdlManagerImpl extends DdlManager {
         }
         // Physically delete the data from the store
         storeInstance.dropTable( statement.getPrepareContext(), catalogTable, catalog.getPartitionsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id ) );
-        // Inform routing
-        statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id ) );
         // Delete placement in the catalog
         List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id );
         for ( CatalogColumnPlacement placement : placements ) {
@@ -1479,7 +1473,7 @@ public class DdlManagerImpl extends DdlManager {
 
         if ( stores == null ) {
             // Ask router on which store(s) the table should be placed
-            stores = statement.getRouter().createTable( schemaId, statement );
+            stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable();
         }
 
         prepareView( relNode );
@@ -2156,9 +2150,6 @@ public class DdlManagerImpl extends DdlManager {
             catalog.getPartitionPlacementByTable( storeId, catalogTable.id ).forEach( p -> partitionIdsOnStore.add( p.partitionId ) );
 
             AdapterManager.getInstance().getStore( storeId ).dropTable( statement.getPrepareContext(), catalogTable, partitionIdsOnStore );
-            // Inform routing
-            // TODO: CEM
-            RoutingManager.getInstance()statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnAdapterPerTable( storeId, catalogTable.id ) );
             // Delete column placement in catalog
             for ( Long columnId : catalogTable.columnIds ) {
                 if ( catalog.checkIfExistsColumnPlacement( storeId, columnId ) ) {
