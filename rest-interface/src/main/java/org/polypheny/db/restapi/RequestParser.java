@@ -85,7 +85,7 @@ public class RequestParser {
 
 
     public RequestParser( final TransactionManager transactionManager, final Authenticator authenticator, final String databaseName, final String userName ) {
-        this( Catalog.getInstance(), transactionManager, authenticator, databaseName, userName );
+        this( Catalog.getInstance(), transactionManager, authenticator, userName, databaseName );
     }
 
 
