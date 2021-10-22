@@ -44,6 +44,7 @@ import java.util.Map;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -82,7 +83,7 @@ public class CsvSchema extends AbstractSchema {
     }
 
 
-    public Table createCsvTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CsvSource csvSource ) {
+    public Table createCsvTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CsvSource csvSource, CatalogPartitionPlacement partitionPlacement ) {
         final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<CsvFieldType> fieldTypes = new LinkedList<>();
@@ -107,7 +108,7 @@ public class CsvSchema extends AbstractSchema {
         }
         int[] fields = fieldIds.stream().mapToInt( i -> i ).toArray();
         CsvTable table = createTable( source, RelDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, csvSource );
-        tableMap.put( catalogTable.name, table );
+        tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
         return table;
     }
 

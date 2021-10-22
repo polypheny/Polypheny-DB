@@ -59,6 +59,11 @@ public class MonitoringQueueImpl implements MonitoringQueue {
      * Processed events since restart.
      */
     private long processedEvents;
+    private long processedEventsTotal;
+
+    // endregion
+
+    // region ctors
 
     // endregion
 
@@ -131,9 +136,17 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
 
     @Override
-    public long getNumberOfProcessedEvents() {
+    public long getNumberOfProcessedEvents( boolean all ) {
+        if ( all ) {
+            return processedEventsTotal;
+        }
+        //returns only processed events since last restart
         return processedEvents;
     }
+
+    // endregion
+
+    // region private helper methods
 
 
     private void startBackgroundTask() {
@@ -177,6 +190,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
                 queueIds.remove( event.get().getId() );
             }
             processedEvents += countEvents;
+            processedEventsTotal += countEvents;
         } finally {
             this.processingQueueLock.unlock();
         }
@@ -190,4 +204,5 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         return Optional.empty();
     }
 
+    // endregion
 }

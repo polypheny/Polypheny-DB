@@ -235,7 +235,6 @@ public class StatisticQueryProcessor {
         List<List<Object>> rows;
         Iterator<Object> iterator = null;
 
-
         try {
             signature = processQuery( statement, sqlSelect );
             final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
@@ -255,7 +254,7 @@ public class StatisticQueryProcessor {
                     log.error( "Exception while closing result iterator", e );
                 }
             }
-             throw new QueryExecutionException( t );
+            throw new QueryExecutionException( t );
         }
 
         try {

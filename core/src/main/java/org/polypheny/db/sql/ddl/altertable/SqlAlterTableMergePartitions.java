@@ -76,20 +76,11 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
         // Check if table is even partitioned
         if ( catalogTable.partitionType != Catalog.PartitionType.NONE ) {
 
-
             if ( log.isDebugEnabled() ) {
                 log.debug( "Merging partitions for table: {} with id {} on schema: {}", catalogTable.name, catalogTable.id, catalogTable.getSchemaName() );
             }
 
-            // TODO : Data Migrate needed.
-            //  We have partitioned data throughout many stores. And now want to merge all partitions.
-            //  Currently although the table isn't partitioned anymore, the old data stays partitioned on the store.
-            //  Therefore we need to make sure(maybe with migrator?) to gather all data from all partitions, and stores. That at the end of mergeTable()
-            //  there aren't any partitioned chunks of data left on a single store.
-
-
             DdlManager.getInstance().removePartitioning( catalogTable, statement );
-
 
             if ( log.isDebugEnabled() ) {
                 log.debug( "Table: '{}' has been merged", catalogTable.name );

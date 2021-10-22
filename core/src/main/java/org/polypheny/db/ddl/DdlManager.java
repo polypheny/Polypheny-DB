@@ -371,7 +371,16 @@ public abstract class DdlManager {
      */
     public abstract void modifyColumnPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement ) throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException;
 
-    public abstract void modifyPartitionPlacement(CatalogTable catalogTable, List<Long> partitionGroupIds, DataStore storeInstance, Statement statement);
+    /**
+     * Modified the partition distribution on the selected store. Can be used to add or remove partitions on a store.
+     * Which consequently alters the Partition Placments.
+     *
+     * @param catalogTable the table
+     * @param partitionGroupIds the desired target state of partition groups which should remain on this store
+     * @param storeInstance the data store on which the partition placements should be altered
+     * @param statement the used statement
+     */
+    public abstract void modifyPartitionPlacement( CatalogTable catalogTable, List<Long> partitionGroupIds, DataStore storeInstance, Statement statement );
 
     /**
      * Add a column placement for a specified column on a specified data store. If the store already contains a placement of
@@ -436,7 +445,6 @@ public abstract class DdlManager {
      */
     public abstract void createTable( long schemaId, String tableName, List<ColumnInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws TableAlreadyExistsException, ColumnNotExistsException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException;
 
-
     /**
      * Create a new view
      *
@@ -452,7 +460,7 @@ public abstract class DdlManager {
      *
      * @param partitionInfo the information concerning the partition
      */
-    public abstract void addPartitioning( PartitionInformation partitionInfo,List<DataStore> stores,  Statement statement) throws GenericCatalogException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException;
+    public abstract void addPartitioning( PartitionInformation partitionInfo, List<DataStore> stores, Statement statement ) throws GenericCatalogException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException;
 
     /**
      * Removes partitioning from Table
@@ -460,8 +468,7 @@ public abstract class DdlManager {
      * @param catalogTable teh table to be merged
      * @param statement the used Statement
      */
-    public abstract void removePartitioning( CatalogTable catalogTable, Statement statement);
-
+    public abstract void removePartitioning( CatalogTable catalogTable, Statement statement );
 
     /**
      * Adds a new constraint to a table
@@ -636,7 +643,7 @@ public abstract class DdlManager {
                 int numberOfPartitionGroups,
                 int numberOfPartitions,
                 List<List<String>> qualifiers,
-                RawPartitionInformation rawPartitionInformation) {
+                RawPartitionInformation rawPartitionInformation ) {
             this.table = table;
             this.typeName = typeName;
             this.columnName = columnName;
@@ -656,7 +663,7 @@ public abstract class DdlManager {
                 int numberOfPartitionGroups,
                 int numberOfPartitions,
                 List<List<SqlNode>> partitionQualifierList,
-                RawPartitionInformation rawPartitionInformation) {
+                RawPartitionInformation rawPartitionInformation ) {
             List<String> names = partitionGroupNames
                     .stream()
                     .map( SqlIdentifier::getSimple )
@@ -672,10 +679,11 @@ public abstract class DdlManager {
         /**
          * Needed to modify strings otherwise the SQL-input 'a' will be also added as the value "'a'" and not as "a" as intended
          * Essentially removes " ' " at the start and end of value
+         *
          * @param node Node to be modified
          * @return String
          */
-        public static String getValueOfSqlNode(SqlNode node) {
+        public static String getValueOfSqlNode( SqlNode node ) {
 
             if ( node instanceof SqlLiteral ) {
                 return ((SqlLiteral) node).toValue();

@@ -16,7 +16,6 @@
 
 package org.polypheny.db.partition.raw;
 
-
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -32,10 +31,9 @@ public class RawPartitionInformation {
     public SqlIdentifier partitionType;
 
     public List<SqlIdentifier> partitionNamesList;
-    public List< List<SqlNode>> partitionQualifierList;
+    public List<List<SqlNode>> partitionQualifierList;
 
     public long numPartitionGroups;
     public long numPartitions;
-
 
 }

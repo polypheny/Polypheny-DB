@@ -32,14 +32,9 @@ public interface PartitionManager {
 
     boolean probePartitionGroupDistributionChange( CatalogTable catalogTable, int storeId, long columnId, int threshold );
 
-    /**
-     * Returns the first found placement of catalogTable and partitionIds
-     * @param catalogTable The table we are looking for placements.
-     * @param partitionIds List of all asked partitions ids
-     * @return Returns map of PartitionsId -> needed Columns Placements
-     */
-    Map<Long, List<CatalogColumnPlacement>> getFirstPlacements( CatalogTable catalogTable, List<Long> partitionIds );
+    Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds, List<Integer> excludedAdapters );
 
+    boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, CatalogColumn partitionColumn );
     /**
      * Returns all placements of catalogTable and partitionIds
      * @param catalogTable The table we are looking for placements.
@@ -48,13 +43,13 @@ public interface PartitionManager {
      */
     Map<Integer, Map<Long, List<CatalogColumnPlacement>>> getAllPlacements( CatalogTable catalogTable, List<Long> partitionIds );
 
-    boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, CatalogColumn partitionColumn );
-
-    int getNumberOfPartitionsPerGroup( int numberOfPartitions);
+    int getNumberOfPartitionsPerGroup( int numberOfPartitions );
 
     boolean requiresUnboundPartitionGroup();
 
     boolean supportsColumnOfType( PolyType type );
+
+    String getUnifiedNullValue();
 
     /**
      * Returns an instance of PartitionFunctionInfo specifying the available parameters of the partition function.

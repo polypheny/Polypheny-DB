@@ -44,6 +44,8 @@ import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.information.HostInformation;
 import org.polypheny.db.information.JavaInformation;
+import org.polypheny.db.monitoring.core.MonitoringService;
+import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.partition.FrequencyMap;
 import org.polypheny.db.partition.FrequencyMapImpl;
 import org.polypheny.db.partition.PartitionManagerFactory;
@@ -60,6 +62,8 @@ import org.polypheny.db.util.FileSystemManager;
 import org.polypheny.db.webui.ConfigServer;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.InformationServer;
+import org.polypheny.db.webui.UiTestingConfigPage;
+import org.polypheny.db.webui.UiTestingMonitoringPage;
 
 
 @Command(name = "polypheny-db", description = "Polypheny-DB command line hook.")
@@ -88,6 +92,7 @@ public class PolyphenyDb {
     // required for unit tests to determine when the system is ready to process queries
     @Getter
     private volatile boolean isReady = false;
+
 
     public static void main( final String[] args ) {
         try {
@@ -209,9 +214,6 @@ public class PolyphenyDb {
         // Initialize interface manager
         QueryInterfaceManager.initialize( transactionManager, authenticator );
 
-        //Initialize PartitionMangerFactory
-        PartitionManagerFactory.setAndGetInstance( new PartitionManagerFactoryImpl() );
-
         // Startup and restore catalog
         Catalog catalog;
         Transaction trx = null;
@@ -243,8 +245,9 @@ public class PolyphenyDb {
         // Initialize DdlManager
         DdlManager.setAndGetInstance( new DdlManagerImpl( catalog ) );
 
-        // Initialize Frequency Map
-        FrequencyMap.setAndGetInstance( new FrequencyMapImpl(catalog) );
+        // Initialize PartitionMangerFactory
+        PartitionManagerFactory.setAndGetInstance( new PartitionManagerFactoryImpl() );
+        FrequencyMap.setAndGetInstance( new FrequencyMapImpl( catalog ) );
 
         // Start Polypheny UI
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator );
@@ -255,9 +258,6 @@ public class PolyphenyDb {
         } catch ( InterruptedException e ) {
             log.warn( "Interrupted on join()", e );
         }
-
-        // initialize Routing
-        // RoutingManager.initialize();
 
         // Create internal query interfaces
         final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );
@@ -272,13 +272,20 @@ public class PolyphenyDb {
             throw new RuntimeException( "Something went wrong while initializing index manager.", e );
         }
 
-
         // Call DockerManager once to remove old containers
         DockerManager.getInstance();
 
         final ExploreQueryProcessor exploreQueryProcessor = new ExploreQueryProcessor( transactionManager, authenticator ); // Explore-by-Example
         ExploreManager explore = ExploreManager.getInstance();
         explore.setExploreQueryProcessor( exploreQueryProcessor );
+
+        // Add config and monitoring test page for UI testing
+        if ( testMode ) {
+            new UiTestingConfigPage();
+            new UiTestingMonitoringPage();
+        }
+
+        MonitoringService monitoringService = MonitoringServiceProvider.getInstance();
 
         log.info( "****************************************************************************************************" );
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );

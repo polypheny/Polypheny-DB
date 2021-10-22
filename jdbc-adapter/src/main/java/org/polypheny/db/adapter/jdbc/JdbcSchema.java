@@ -157,6 +157,7 @@ public class JdbcSchema implements Schema {
             logicalColumnNames.add( catalogColumn.name );
             physicalColumnNames.add( placement.physicalColumnName );
         }
+
         JdbcTable table = new JdbcTable(
                 this,
                 catalogTable.getSchemaName(),

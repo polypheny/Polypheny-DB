@@ -25,6 +25,7 @@ public abstract class PartitionManagerFactory {
 
     public static PartitionManagerFactory INSTANCE = null;
 
+
     public static PartitionManagerFactory setAndGetInstance( PartitionManagerFactory factory ) {
         if ( INSTANCE != null ) {
             throw new RuntimeException( "Setting the PartitionManager, when already set is not permitted." );
@@ -33,6 +34,7 @@ public abstract class PartitionManagerFactory {
         return INSTANCE;
     }
 
+
     public static PartitionManagerFactory getInstance() {
         if ( INSTANCE == null ) {
             throw new RuntimeException( "PartitionManager was not set correctly on Polypheny-DB start-up" );
@@ -40,5 +42,7 @@ public abstract class PartitionManagerFactory {
         return INSTANCE;
     }
 
+
     public abstract PartitionManager getPartitionManager( Catalog.PartitionType partitionType );
+
 }

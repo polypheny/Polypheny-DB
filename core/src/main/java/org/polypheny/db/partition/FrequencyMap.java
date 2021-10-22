@@ -16,13 +16,13 @@
 
 package org.polypheny.db.partition;
 
-
 import org.polypheny.db.catalog.entity.CatalogTable;
 
 
 public abstract class FrequencyMap {
 
     public static FrequencyMap INSTANCE = null;
+
 
     public static FrequencyMap setAndGetInstance( FrequencyMap frequencyMap ) {
         if ( INSTANCE != null ) {
@@ -31,6 +31,7 @@ public abstract class FrequencyMap {
         INSTANCE = frequencyMap;
         return INSTANCE;
     }
+
 
     public abstract void initialize();
 

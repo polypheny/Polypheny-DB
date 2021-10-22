@@ -113,7 +113,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
      */
     MongoTable( CatalogTable catalogTable, MongoSchema schema, RelProtoDataType proto, TransactionProvider transactionProvider, int storeId, CatalogPartitionPlacement partitionPlacement ) {
         super( Object[].class );
-        this.collectionName =  MongoStore.getPhysicalTableName( catalogTable.id, partitionPlacement.partitionId );;
+        this.collectionName = MongoStore.getPhysicalTableName( catalogTable.id, partitionPlacement.partitionId );
         this.transactionProvider = transactionProvider;
         this.catalogTable = catalogTable;
         this.protoRowType = proto;

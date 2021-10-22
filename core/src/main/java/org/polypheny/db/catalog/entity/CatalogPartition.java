@@ -16,7 +16,6 @@
 
 package org.polypheny.db.catalog.entity;
 
-
 import java.io.Serializable;
 import java.util.List;
 import lombok.EqualsAndHashCode;
@@ -24,8 +23,7 @@ import lombok.Getter;
 
 
 @EqualsAndHashCode
-public class CatalogPartition implements CatalogEntity{
-
+public class CatalogPartition implements CatalogEntity {
 
     private static final long serialVersionUID = 6187228972854325431L;
 
@@ -34,10 +32,7 @@ public class CatalogPartition implements CatalogEntity{
     @Getter
     public final List<String> partitionQualifiers;
 
-
-
-
-    //To be checked if even needed
+    // To be checked if even needed
     @Getter
     public final long partitionGroupId;
     public final long tableId;
@@ -53,7 +48,7 @@ public class CatalogPartition implements CatalogEntity{
             final long databaseId,
             final List<String> partitionQualifiers,
             final boolean isUnbound,
-            final long partitionGroupId) {
+            final long partitionGroupId ) {
         this.id = id;
         this.tableId = tableId;
         this.schemaId = schemaId;
@@ -64,10 +59,9 @@ public class CatalogPartition implements CatalogEntity{
     }
 
 
-
-
     @Override
     public Serializable[] getParameterArray() {
         throw new RuntimeException( "Not implemented" );
     }
+
 }

@@ -150,6 +150,10 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
+import org.polypheny.db.monitoring.events.DmlEvent;
+import org.polypheny.db.monitoring.events.QueryEvent;
+import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.partition.PartitionFunctionInfo;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionManager;
@@ -245,58 +249,6 @@ public class Crud implements InformationObserver {
         this.databaseName = databaseName;
         this.userName = userName;
         registerStatisticObserver();
-    }
-
-
-    /**
-     * Converts a String, such as "'12:00:00'" into a valid SQL statement, such as "TIME '12:00:00'"
-     */
-    public static String uiValueToSql( final String value, final PolyType type, final PolyType collectionsType ) {
-        if ( value == null ) {
-            return "NULL";
-        }
-        if ( collectionsType == PolyType.ARRAY ) {
-            return "ARRAY " + value;
-        }
-        switch ( type ) {
-            case TIME:
-                return String.format( "TIME '%s'", value );
-            case DATE:
-                return String.format( "DATE '%s'", value );
-            case TIMESTAMP:
-                return String.format( "TIMESTAMP '%s'", value );
-        }
-        if ( type.getFamily() == PolyTypeFamily.CHARACTER ) {
-            return String.format( "'%s'", value );
-        }
-        return value;
-    }
-
-
-    /**
-     * Helper method to zip a directory
-     * from https://stackoverflow.com/questions/2403830
-     */
-    private static void zipDirectory( String basePath, File dir, ZipOutputStream zipOut ) throws IOException {
-        byte[] buffer = new byte[4096];
-        File[] files = dir.listFiles();
-        for ( File file : files ) {
-            if ( file.isDirectory() ) {
-                String path = basePath + file.getName() + "/";
-                zipOut.putNextEntry( new ZipEntry( path ) );
-                zipDirectory( path, file, zipOut );
-                zipOut.closeEntry();
-            } else {
-                FileInputStream fin = new FileInputStream( file );
-                zipOut.putNextEntry( new ZipEntry( basePath + file.getName() ) );
-                int length;
-                while ( (length = fin.read( buffer )) > 0 ) {
-                    zipOut.write( buffer, 0, length );
-                }
-                zipOut.closeEntry();
-                fin.close();
-            }
-        }
     }
 
 
@@ -890,6 +842,7 @@ public class Crud implements InformationObserver {
                     temp = System.nanoTime();
                     int numOfRows = executeSqlUpdate( transaction, query );
                     executionTime += System.nanoTime() - temp;
+                    transaction.getMonitoringData().setExecutionTime( executionTime );
 
                     result = new Result( numOfRows ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
                     results.add( result );
@@ -1158,6 +1111,31 @@ public class Crud implements InformationObserver {
         Explore explore = e.exploreData( exploreData.id, exploreData.classified, dataType );
 
         return new ExploreResult( exploreData.header, explore.getDataAfterClassification(), explore.getId(), explore.getBuildGraph() );
+    }
+
+
+    /**
+     * Converts a String, such as "'12:00:00'" into a valid SQL statement, such as "TIME '12:00:00'"
+     */
+    public static String uiValueToSql( final String value, final PolyType type, final PolyType collectionsType ) {
+        if ( value == null ) {
+            return "NULL";
+        }
+        if ( collectionsType == PolyType.ARRAY ) {
+            return "ARRAY " + value;
+        }
+        switch ( type ) {
+            case TIME:
+                return String.format( "TIME '%s'", value );
+            case DATE:
+                return String.format( "DATE '%s'", value );
+            case TIMESTAMP:
+                return String.format( "TIMESTAMP '%s'", value );
+        }
+        if ( type.getFamily() == PolyTypeFamily.CHARACTER ) {
+            return String.format( "'%s'", value );
+        }
+        return value;
     }
 
 
@@ -2180,8 +2158,8 @@ public class Crud implements InformationObserver {
 
                 String defaultValue = currentColumn.getDefaultValue();
 
-                //Used specifically for Temp-Partitoning since number of selected partitions remains 2 but chunks change
-                //enables user to used selected "number of partitions" beeing used as default value for "number of interal data chunks"
+                //Used specifically for Temp-Partitioning since number of selected partitions remains 2 but chunks change
+                //enables user to used selected "number of partitions" being used as default value for "number of interal data chunks"
                 if ( request.method.equals( PartitionType.TEMPERATURE ) ) {
 
                     if ( type.equals( FieldType.STRING ) && currentColumn.getDefaultValue().equals( "-04071993" ) ) {
@@ -2232,7 +2210,6 @@ public class Crud implements InformationObserver {
             for ( int i = 0; i < rowsBefore.size(); i++ ) {
                 rows.add( buildPartitionFunctionRow( request, rowsBefore.get( i ) ) );
             }
-
         }
 
         if ( infoJson.has( "dynamicRows" ) ) {
@@ -2817,7 +2794,7 @@ public class Crud implements InformationObserver {
         RelRoot root = new RelRoot( result, result.getRowType(), SqlKind.SELECT, fields, collation );
 
         // Prepare
-        PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( root , true);
+        PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( root );
 
         if ( request.createView ) {
 
@@ -3454,10 +3431,6 @@ public class Crud implements InformationObserver {
         return "";
     }
 
-    // -----------------------------------------------------------------------
-    //                                Helper
-    // -----------------------------------------------------------------------
-
 
     String getDirectory( File dir, Response res ) {
         res.header( "Content-Type", "application/zip" );
@@ -3481,6 +3454,10 @@ public class Crud implements InformationObserver {
         return "";
     }
 
+    // -----------------------------------------------------------------------
+    //                                Helper
+    // -----------------------------------------------------------------------
+
 
     /**
      * Execute a select statement with default limit
@@ -3495,6 +3472,7 @@ public class Crud implements InformationObserver {
         List<List<Object>> rows;
         Iterator<Object> iterator = null;
         boolean hasMoreRows = false;
+        statement.getTransaction().setMonitoringData( new QueryEvent() );
 
         try {
             signature = processQuery( statement, sqlSelect );
@@ -3513,6 +3491,9 @@ public class Crud implements InformationObserver {
 
             long executionTime = stopWatch.getNanoTime();
             signature.getExecutionTimeMonitor().setExecutionTime( executionTime );
+
+            statement.getTransaction().getMonitoringData().setExecutionTime( executionTime );
+
         } catch ( Throwable t ) {
             if ( statement.getTransaction().isAnalyze() ) {
                 InformationManager analyzer = statement.getTransaction().getQueryAnalyzer();
@@ -3589,6 +3570,9 @@ public class Crud implements InformationObserver {
             }
 
             ArrayList<String[]> data = computeResultData( rows, header, statement.getTransaction() );
+
+            statement.getTransaction().getMonitoringData().setRowCount( data.size() );
+            MonitoringServiceProvider.getInstance().monitorEvent( statement.getTransaction().getMonitoringData() );
 
             if ( tableType != null ) {
                 return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
@@ -3777,13 +3761,10 @@ public class Crud implements InformationObserver {
         RelRoot logicalRoot = null;
         if ( parsed.isA( SqlKind.DDL ) ) {
             signature = sqlProcessor.prepareDdl( statement, parsed );
-
         } else {
-
             Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
             logicalRoot = sqlProcessor.translate( statement, validated.left );
-            signature = statement.getQueryProcessor().prepareQuery( logicalRoot , true);
-
+            signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
         }
         return signature;
     }
@@ -3796,6 +3777,8 @@ public class Crud implements InformationObserver {
 
     private int executeSqlUpdate( final Statement statement, final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
         PolyphenyDbSignature<?> signature;
+
+        statement.getTransaction().setMonitoringData( new DmlEvent() );
 
         try {
             signature = processQuery( statement, sqlUpdate );
@@ -3848,6 +3831,11 @@ public class Crud implements InformationObserver {
                     throw new QueryExecutionException( e.getMessage(), e );
                 }
             }
+
+            StatementEvent ev = statement.getTransaction().getMonitoringData();
+            ev.setRowCount( rowsChanged );
+
+            MonitoringServiceProvider.getInstance().monitorEvent( ev );
 
             return rowsChanged;
         } else {
@@ -4000,6 +3988,33 @@ public class Crud implements InformationObserver {
      */
     public Map<Integer, List<Integer>> getUsedDockerPorts( Request req, Response res ) {
         return DockerManager.getInstance().getUsedPortsSorted();
+    }
+
+
+    /**
+     * Helper method to zip a directory
+     * from https://stackoverflow.com/questions/2403830
+     */
+    private static void zipDirectory( String basePath, File dir, ZipOutputStream zipOut ) throws IOException {
+        byte[] buffer = new byte[4096];
+        File[] files = dir.listFiles();
+        for ( File file : files ) {
+            if ( file.isDirectory() ) {
+                String path = basePath + file.getName() + "/";
+                zipOut.putNextEntry( new ZipEntry( path ) );
+                zipDirectory( path, file, zipOut );
+                zipOut.closeEntry();
+            } else {
+                FileInputStream fin = new FileInputStream( file );
+                zipOut.putNextEntry( new ZipEntry( basePath + file.getName() ) );
+                int length;
+                while ( (length = fin.read( buffer )) > 0 ) {
+                    zipOut.write( buffer, 0, length );
+                }
+                zipOut.closeEntry();
+                fin.close();
+            }
+        }
     }
 
 

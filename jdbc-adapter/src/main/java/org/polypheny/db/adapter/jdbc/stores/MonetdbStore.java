@@ -81,7 +81,7 @@ public class MonetdbStore extends AbstractJdbcStore {
         DockerManager.Container container = new ContainerBuilder( getAdapterId(), "topaztechnology/monetdb:11.37.11", getUniqueName(), dockerInstanceId )
                 .withMappedPort( 50000, Integer.parseInt( settings.get( "port" ) ) )
                 .withEnvironmentVariables( Arrays.asList( "MONETDB_PASSWORD=" + settings.get( "password" ), "MONET_DATABASE=monetdb" ) )
-                .withReadyTest( this::testDockerConnection, 15000 )
+                .withReadyTest( this::testConnection, 15000 )
                 .build();
 
         host = container.getHost();
@@ -96,12 +96,14 @@ public class MonetdbStore extends AbstractJdbcStore {
     }
 
 
-
     @Override
     protected ConnectionFactory deployRemote() {
         host = settings.get( "host" );
         database = settings.get( "database" );
         username = settings.get( "username" );
+        if ( !testConnection() ) {
+            throw new RuntimeException( "Unable to connect" );
+        }
         ConnectionFactory connectionFactory = createConnectionFactory();
         createDefaultSchema( connectionFactory );
         return connectionFactory;
@@ -214,7 +216,7 @@ public class MonetdbStore extends AbstractJdbcStore {
                     .append( dialect.quoteIdentifier( tmpColName ) );
             executeUpdate( builder, context );
         }
-            Catalog.getInstance().updateColumnPlacementPhysicalPosition( getAdapterId(), catalogColumn.id );
+        Catalog.getInstance().updateColumnPlacementPhysicalPosition( getAdapterId(), catalogColumn.id );
 
     }
 
@@ -232,13 +234,13 @@ public class MonetdbStore extends AbstractJdbcStore {
 
 
     @Override
-    public void addIndex( Context context, CatalogIndex catalogIndex ) {
+    public void addIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
         throw new RuntimeException( "MonetDB adapter does not support adding indexes" );
     }
 
 
     @Override
-    public void dropIndex( Context context, CatalogIndex catalogIndex ) {
+    public void dropIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
         throw new RuntimeException( "MonetDB adapter does not support dropping indexes" );
     }
 
@@ -320,7 +322,7 @@ public class MonetdbStore extends AbstractJdbcStore {
     }
 
 
-    private boolean testDockerConnection() {
+    private boolean testConnection() {
         ConnectionFactory connectionFactory = null;
         ConnectionHandler handler = null;
         try {

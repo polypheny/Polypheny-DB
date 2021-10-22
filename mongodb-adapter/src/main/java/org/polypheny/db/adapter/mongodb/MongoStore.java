@@ -55,7 +55,6 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.mongodb.util.MongoTypeUtil;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
@@ -170,7 +169,7 @@ public class MongoStore extends DataStore {
     public void truncate( Context context, CatalogTable table ) {
         commitAll();
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
-        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable(getAdapterId(), table.id) ) {
+        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable( getAdapterId(), table.id ) ) {
             // DDL is auto-committed
             currentSchema.database.getCollection( partitionPlacement.physicalTableName ).deleteMany( new Document() );
         }
@@ -220,21 +219,16 @@ public class MongoStore extends DataStore {
         commitAll();
         //ClientSession session = transactionProvider.startTransaction( context.getStatement().getTransaction().getXid() );
         //context.getStatement().getTransaction().registerInvolvedAdapter( this );
-        if (partitionIds.size() != 1){
-            throw new RuntimeException("MongoDB Store can't be partitioned but number of specified partitions where: " + partitionIds.size());
-        }
 
         for ( long partitionId : partitionIds ) {
-
-
-            String physicalTableName = getPhysicalTableName(catalogTable.id,partitionId);
+            String physicalTableName = getPhysicalTableName( catalogTable.id, partitionId );
             this.currentSchema.database.createCollection( physicalTableName );
 
             catalog.updatePartitionPlacementPhysicalNames(
                     getAdapterId(),
                     partitionId,
                     catalogTable.getSchemaName(),
-                    physicalTableName);
+                    physicalTableName );
 
             for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ) ) {
                 catalog.updateColumnPlacementPhysicalNames(
@@ -254,7 +248,7 @@ public class MongoStore extends DataStore {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         //transactionProvider.startTransaction();
         List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-        partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id )) );
+        partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
 
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
             catalog.deletePartitionPlacement( getAdapterId(), partitionPlacement.partitionId );
@@ -271,7 +265,7 @@ public class MongoStore extends DataStore {
         // updates all columns with this field if a default value is provided
 
         List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-        catalogTable.partitionProperty.partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id )) );
+        catalogTable.partitionProperty.partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
 
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
             Document field;
@@ -340,7 +334,7 @@ public class MongoStore extends DataStore {
 
 
     @Override
-    public void addIndex( Context context, CatalogIndex catalogIndex ) {
+    public void addIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
         commitAll();
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         HASH_FUNCTION type = HASH_FUNCTION.valueOf( catalogIndex.method.toUpperCase( Locale.ROOT ) );
@@ -372,7 +366,6 @@ public class MongoStore extends DataStore {
 
 
     private void addCompositeIndex( CatalogIndex catalogIndex, List<String> columns ) {
-
         for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable( getAdapterId(), catalogIndex.key.tableId ) ) {
             Document doc = new Document();
             columns.forEach( name -> doc.append( name, 1 ) );
@@ -388,12 +381,14 @@ public class MongoStore extends DataStore {
     }
 
 
-
     @Override
-    public void dropIndex( Context context, CatalogIndex catalogIndex ) {
+    public void dropIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
+        List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
+        partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
+
         commitAll();
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
-        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable( getAdapterId(), catalogIndex.key.tableId ) ) {
+        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
             this.currentSchema.database.getCollection( partitionPlacement.physicalTableName ).dropIndex( catalogIndex.name );
         }
     }
@@ -439,9 +434,8 @@ public class MongoStore extends DataStore {
 
 
     public static String getPhysicalTableName( long tableId, long partitionId ) {
-
-        String physicalTableName ="tab-" + tableId;
-        if ( partitionId >= 0  ) {
+        String physicalTableName = "tab-" + tableId;
+        if ( partitionId >= 0 ) {
             physicalTableName += "_part" + partitionId;
         }
         return physicalTableName;

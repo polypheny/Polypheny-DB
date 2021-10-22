@@ -16,7 +16,6 @@
 
 package org.polypheny.db.partition;
 
-
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,14 +50,14 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public Map<Long, List<CatalogColumnPlacement>> getFirstPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
+    public Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds, List<Integer> excludedAdapters ) {
         // Get partition manager
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager(
                 ((TemperaturePartitionProperty) catalogTable.partitionProperty).getInternalPartitionFunction()
         );
 
-        return partitionManager.getFirstPlacements( catalogTable, partitionIds );
+        return partitionManager.getRelevantPlacements( catalogTable, partitionIds, excludedAdapters );
     }
 
 
@@ -73,7 +72,6 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
         return partitionManager.getAllPlacements( catalogTable, partitionIds );
     }
 
-
     @Override
     public boolean requiresUnboundPartitionGroup() {
         return REQUIRES_UNBOUND_PARTITION_GROUP;
@@ -86,7 +84,6 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
     }
 
 
-    //ToDo place everything on COLD and then on later on by distribution on HOT
     @Override
     public int getNumberOfPartitionsPerGroup( int numberOfPartitions ) {
         return 1;
@@ -97,16 +94,12 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
     public boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, CatalogColumn partitionColumn ) {
         super.validatePartitionGroupSetup( partitionGroupQualifiers, numPartitionGroups, partitionGroupNames, partitionColumn );
 
-        // VALUES for HOT in & COLD out cannot be ambigious or overlapping
-        // Percentage of HOt to COLD has to be truly greater than HOT in
-
         return true;
     }
 
 
     @Override
     public PartitionFunctionInfo getPartitionFunctionInfo() {
-
         List<List<PartitionFunctionInfoColumn>> rowsBefore = new ArrayList<>();
 
         //ROW for HOT partition infos about custom name & hot-label,
@@ -162,7 +155,6 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
                 .defaultValue( "% Threshold into HOT" )
                 .build() );
 
-        //TODO get Thresholds from central configuration, as well as standard internal partitioning
         rowInHot.add( PartitionFunctionInfoColumn.builder()
                 .fieldType( PartitionFunctionInfoColumnType.STRING )
                 .mandatory( false )
@@ -199,8 +191,8 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
         rowsBefore.add( coldRow );
         rowsBefore.add( rowOutHot );
 
-        //COST MODEL
-        //Fixed rows to display after dynamically generated ones
+        // COST MODEL
+        // Fixed rows to display after dynamically generated ones
         List<List<PartitionFunctionInfoColumn>> rowsAfter = new ArrayList<>();
 
         List<PartitionFunctionInfoColumn> costRow = new ArrayList<>();
@@ -303,7 +295,7 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
         rowsAfter.add( chunkRow );
         rowsAfter.add( unboundRow );
 
-        //Bring all rows and columns together
+        // Bring all rows and columns together
         PartitionFunctionInfo uiObject = PartitionFunctionInfo.builder()
                 .functionTitle( FUNCTION_TITLE )
                 .description( "Automatically partitions data into HOT and COLD based on a selected cost model which is automatically applied to "

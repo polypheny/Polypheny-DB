@@ -18,6 +18,7 @@ package org.polypheny.db.processing;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -61,9 +62,9 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.LimitIterator;
 
+
 @Slf4j
 public class DataMigratorImpl implements DataMigrator {
-
 
     @Override
     public void copyData( Transaction transaction, CatalogAdapter store, List<CatalogColumn> columns, List<Long> partitionIds ) {
@@ -91,17 +92,16 @@ public class DataMigratorImpl implements DataMigrator {
         if ( table.isPartitioned ) {
             PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
             PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( table.partitionProperty.partitionType );
-            placementDistribution = partitionManager.getFirstPlacements( table, partitionIds );
+            placementDistribution = partitionManager.getRelevantPlacements( table, partitionIds, new ArrayList<>( Arrays.asList( store.id ) ) );
         } else {
             placementDistribution.put( table.partitionProperty.partitionIds.get( 0 ), selectSourcePlacements( table, selectColumnList, targetColumnPlacements.get( 0 ).adapterId ) );
         }
 
         for ( long partitionId : partitionIds ) {
-
             Statement sourceStatement = transaction.createStatement();
             Statement targetStatement = transaction.createStatement();
 
-            RelRoot sourceRel = getSourceIterator( sourceStatement, placementDistribution.get( partitionId ), partitionId );
+            RelRoot sourceRel = getSourceIterator( sourceStatement, placementDistribution );
             RelRoot targetRel;
             if ( Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( store.id, table.id ).size() == columns.size() ) {
                 // There have been no placements for this table on this store before. Build insert statement
@@ -113,7 +113,7 @@ public class DataMigratorImpl implements DataMigrator {
 
             // Execute Query
             try {
-                PolyphenyDbSignature signature = sourceStatement.getQueryProcessor().prepareQuery( sourceRel, sourceRel.rel.getCluster().getTypeFactory().builder().build(), true , false);
+                PolyphenyDbSignature signature = sourceStatement.getQueryProcessor().prepareQuery( sourceRel, sourceRel.rel.getCluster().getTypeFactory().builder().build(), true );
                 final Enumerable enumerable = signature.enumerable( sourceStatement.getDataContext() );
                 //noinspection unchecked
                 Iterator<Object> sourceIterator = enumerable.iterator();
@@ -131,7 +131,10 @@ public class DataMigratorImpl implements DataMigrator {
 
                 int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
                 while ( sourceIterator.hasNext() ) {
-                    List<List<Object>> rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
+                    List<List<Object>> rows = MetaImpl.collect(
+                            signature.cursorFactory,
+                            LimitIterator.of( sourceIterator, batchSize ),
+                            new ArrayList<>() );
                     Map<Long, List<Object>> values = new HashMap<>();
                     for ( List<Object> list : rows ) {
                         for ( Map.Entry<Long, Integer> entry : resultColMapping.entrySet() ) {
@@ -145,7 +148,7 @@ public class DataMigratorImpl implements DataMigrator {
                         targetStatement.getDataContext().addParameterValues( v.getKey(), null, v.getValue() );
                     }
                     Iterator iterator = targetStatement.getQueryProcessor()
-                            .prepareQuery( targetRel, sourceRel.validatedRowType, true , false)
+                            .prepareQuery( targetRel, sourceRel.validatedRowType, true )
                             .enumerable( targetStatement.getDataContext() )
                             .iterator();
                     //noinspection WhileLoopReplaceableByForEach
@@ -157,7 +160,6 @@ public class DataMigratorImpl implements DataMigrator {
             } catch ( Throwable t ) {
                 throw new RuntimeException( t );
             }
-
         }
     }
 
@@ -201,7 +203,7 @@ public class DataMigratorImpl implements DataMigrator {
 
     private RelRoot buildUpdateStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId ) {
         List<String> qualifiedTableName = ImmutableList.of(
-                PolySchemaBuilder.buildAdapterSchemaName( to.get( 0 ).adapterUniqueName,to.get( 0 ).getLogicalSchemaName(), to.get( 0 ).physicalSchemaName ),
+                PolySchemaBuilder.buildAdapterSchemaName( to.get( 0 ).adapterUniqueName, to.get( 0 ).getLogicalSchemaName(), to.get( 0 ).physicalSchemaName ),
                 to.get( 0 ).getLogicalTableName() + "_" + partitionId );
         RelOptTable physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
         ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
@@ -263,19 +265,7 @@ public class DataMigratorImpl implements DataMigrator {
     }
 
 
-    private RelRoot getSourceIterator( Statement statement, List<CatalogColumnPlacement> placements, long partitionId ) {
-        // Get map of placements by adapter
-        Map<String, List<CatalogColumnPlacement>> placementsByAdapter = new HashMap<>();
-        long tableId = -1;
-        for ( CatalogColumnPlacement p : placements ) {
-            placementsByAdapter.putIfAbsent( p.getAdapterUniqueName(), new LinkedList<>() );
-            placementsByAdapter.get( p.getAdapterUniqueName() ).add( p );
-
-            if ( tableId == -1 ) {
-                tableId = p.tableId;
-            }
-        }
-
+    private RelRoot getSourceIterator( Statement statement, Map<Long, List<CatalogColumnPlacement>> placementDistribution ) {
         // Build Query
         RelOptCluster cluster = RelOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),
@@ -285,6 +275,7 @@ public class DataMigratorImpl implements DataMigrator {
         distributionPlacements.put( partitionId, placements );
 
         RelNode node = RoutingManager.getInstance().getFallbackRouter().buildJoinedTableScan( statement, cluster, distributionPlacements );
+        RelNode node = statement.getRouter().buildJoinedTableScan( statement, cluster, placementDistribution );
         return RelRoot.of( node, SqlKind.SELECT );
     }
 
@@ -323,6 +314,262 @@ public class DataMigratorImpl implements DataMigrator {
         }
 
         return placementList;
+    }
+
+
+    /**
+     * Currently used to to transfer data if partitioned table is about to be merged.
+     * For Table Partitioning use {@link #copyPartitionData(Transaction, CatalogAdapter, CatalogTable, CatalogTable, List, List, List)}  } instead
+     *
+     * @param transaction Transactional scope
+     * @param store Target Store where data should be migrated to
+     * @param sourceTable Source Table from where data is queried
+     * @param targetTable Source Table from where data is queried
+     * @param columns Necessary columns on target
+     * @param placementDistribution Pre computed mapping of partitions and the necessary column placements
+     * @param targetPartitionIds Target Partitions where data should be inserted
+     */
+    @Override
+    public void copySelectiveData( Transaction transaction, CatalogAdapter store, CatalogTable sourceTable, CatalogTable targetTable, List<CatalogColumn> columns, Map<Long, List<CatalogColumnPlacement>> placementDistribution, List<Long> targetPartitionIds ) {
+        CatalogPrimaryKey sourcePrimaryKey = Catalog.getInstance().getPrimaryKey( sourceTable.primaryKey );
+
+        // Check Lists
+        List<CatalogColumnPlacement> targetColumnPlacements = new LinkedList<>();
+        for ( CatalogColumn catalogColumn : columns ) {
+            targetColumnPlacements.add( Catalog.getInstance().getColumnPlacement( store.id, catalogColumn.id ) );
+        }
+
+        List<CatalogColumn> selectColumnList = new LinkedList<>( columns );
+
+        // Add primary keys to select column list
+        for ( long cid : sourcePrimaryKey.columnIds ) {
+            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( cid );
+            if ( !selectColumnList.contains( catalogColumn ) ) {
+                selectColumnList.add( catalogColumn );
+            }
+        }
+
+        Statement sourceStatement = transaction.createStatement();
+        Statement targetStatement = transaction.createStatement();
+
+        RelRoot sourceRel = getSourceIterator( sourceStatement, placementDistribution );
+        RelRoot targetRel;
+        if ( Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( store.id, targetTable.id ).size() == columns.size() ) {
+            // There have been no placements for this table on this store before. Build insert statement
+            targetRel = buildInsertStatement( targetStatement, targetColumnPlacements, targetPartitionIds.get( 0 ) );
+        } else {
+            // Build update statement
+            targetRel = buildUpdateStatement( targetStatement, targetColumnPlacements, targetPartitionIds.get( 0 ) );
+        }
+
+        // Execute Query
+        try {
+            PolyphenyDbSignature signature = sourceStatement.getQueryProcessor().prepareQuery( sourceRel, sourceRel.rel.getCluster().getTypeFactory().builder().build(), true );
+            final Enumerable enumerable = signature.enumerable( sourceStatement.getDataContext() );
+            //noinspection unchecked
+            Iterator<Object> sourceIterator = enumerable.iterator();
+
+            Map<Long, Integer> resultColMapping = new HashMap<>();
+            for ( CatalogColumn catalogColumn : selectColumnList ) {
+                int i = 0;
+                for ( ColumnMetaData metaData : signature.columns ) {
+                    if ( metaData.columnName.equalsIgnoreCase( catalogColumn.name ) ) {
+                        resultColMapping.put( catalogColumn.id, i );
+                    }
+                    i++;
+                }
+            }
+
+            int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
+            while ( sourceIterator.hasNext() ) {
+                List<List<Object>> rows = MetaImpl.collect(
+                        signature.cursorFactory,
+                        LimitIterator.of( sourceIterator, batchSize ),
+                        new ArrayList<>() );
+                Map<Long, List<Object>> values = new HashMap<>();
+                for ( List<Object> list : rows ) {
+                    for ( Map.Entry<Long, Integer> entry : resultColMapping.entrySet() ) {
+                        if ( !values.containsKey( entry.getKey() ) ) {
+                            values.put( entry.getKey(), new LinkedList<>() );
+                        }
+                        values.get( entry.getKey() ).add( list.get( entry.getValue() ) );
+                    }
+                }
+                for ( Map.Entry<Long, List<Object>> v : values.entrySet() ) {
+                    targetStatement.getDataContext().addParameterValues( v.getKey(), null, v.getValue() );
+                }
+                Iterator iterator = targetStatement.getQueryProcessor()
+                        .prepareQuery( targetRel, sourceRel.validatedRowType, true )
+                        .enumerable( targetStatement.getDataContext() )
+                        .iterator();
+
+                //noinspection WhileLoopReplaceableByForEach
+                while ( iterator.hasNext() ) {
+                    iterator.next();
+                }
+                targetStatement.getDataContext().resetParameterValues();
+            }
+        } catch ( Throwable t ) {
+            throw new RuntimeException( t );
+        }
+    }
+
+
+    /**
+     * Currently used to to transfer data if unpartitioned is about to be partitioned.
+     * For Table Merge use {@link #copySelectiveData(Transaction, CatalogAdapter, CatalogTable, CatalogTable, List, Map, List)}   } instead
+     *
+     * @param transaction Transactional scope
+     * @param store Target Store where data should be migrated to
+     * @param sourceTable Source Table from where data is queried
+     * @param targetTable Target Table where data is to be inserted
+     * @param columns Necessary columns on target
+     * @param sourcePartitionIds Source Partitions which need to be considered for querying
+     * @param targetPartitionIds Target Partitions where data should be inserted
+     */
+    @Override
+    public void copyPartitionData( Transaction transaction, CatalogAdapter store, CatalogTable sourceTable, CatalogTable targetTable, List<CatalogColumn> columns, List<Long> sourcePartitionIds, List<Long> targetPartitionIds ) {
+        if ( sourceTable.id != targetTable.id ) {
+            throw new RuntimeException( "Unsupported migration scenario. Table ID mismatch" );
+        }
+
+        CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( sourceTable.primaryKey );
+
+        // Check Lists
+        List<CatalogColumnPlacement> targetColumnPlacements = new LinkedList<>();
+        for ( CatalogColumn catalogColumn : columns ) {
+            targetColumnPlacements.add( Catalog.getInstance().getColumnPlacement( store.id, catalogColumn.id ) );
+        }
+
+        List<CatalogColumn> selectColumnList = new LinkedList<>( columns );
+
+        // Add primary keys to select column list
+        for ( long cid : primaryKey.columnIds ) {
+            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( cid );
+            if ( !selectColumnList.contains( catalogColumn ) ) {
+                selectColumnList.add( catalogColumn );
+            }
+        }
+
+        // Add partition columns to select column list
+        long partitionColumnId = targetTable.partitionProperty.partitionColumnId;
+        CatalogColumn partitionColumn = Catalog.getInstance().getColumn( partitionColumnId );
+        if ( !selectColumnList.contains( partitionColumn ) ) {
+            selectColumnList.add( partitionColumn );
+        }
+
+        PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
+        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( targetTable.partitionProperty.partitionType );
+
+        //We need a columnPlacement for every partition
+        Map<Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
+
+        placementDistribution.put( sourceTable.partitionProperty.partitionIds.get( 0 ), selectSourcePlacements( sourceTable, selectColumnList, -1 ) );
+
+        Statement sourceStatement = transaction.createStatement();
+
+        //Map PartitionId to TargetStatementQueue
+        Map<Long, Statement> targetStatements = new HashMap<>();
+
+        //Creates queue of target Statements depending
+        targetPartitionIds.forEach( id -> targetStatements.put( id, transaction.createStatement() ) );
+
+        Map<Long, RelRoot> targetRels = new HashMap<>();
+
+        RelRoot sourceRel = getSourceIterator( sourceStatement, placementDistribution );
+        if ( Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( store.id, sourceTable.id ).size() == columns.size() ) {
+            // There have been no placements for this table on this store before. Build insert statement
+            targetPartitionIds.forEach( id -> targetRels.put( id, buildInsertStatement( targetStatements.get( id ), targetColumnPlacements, id ) ) );
+        } else {
+            // Build update statement
+            targetPartitionIds.forEach( id -> targetRels.put( id, buildUpdateStatement( targetStatements.get( id ), targetColumnPlacements, id ) ) );
+        }
+
+        // Execute Query
+        try {
+            PolyphenyDbSignature signature = sourceStatement.getQueryProcessor().prepareQuery( sourceRel, sourceRel.rel.getCluster().getTypeFactory().builder().build(), true );
+            final Enumerable enumerable = signature.enumerable( sourceStatement.getDataContext() );
+            //noinspection unchecked
+            Iterator<Object> sourceIterator = enumerable.iterator();
+
+            Map<Long, Integer> resultColMapping = new HashMap<>();
+            for ( CatalogColumn catalogColumn : selectColumnList ) {
+                int i = 0;
+                for ( ColumnMetaData metaData : signature.columns ) {
+                    if ( metaData.columnName.equalsIgnoreCase( catalogColumn.name ) ) {
+                        resultColMapping.put( catalogColumn.id, i );
+                    }
+                    i++;
+                }
+            }
+
+            int partitionColumnIndex = -1;
+            String parsedValue = null;
+            String nullifiedPartitionValue = partitionManager.getUnifiedNullValue();
+            if ( targetTable.isPartitioned ) {
+                if ( resultColMapping.containsKey( targetTable.partitionProperty.partitionColumnId ) ) {
+                    partitionColumnIndex = resultColMapping.get( targetTable.partitionProperty.partitionColumnId );
+                } else {
+                    parsedValue = nullifiedPartitionValue;
+                }
+            }
+
+            int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
+            while ( sourceIterator.hasNext() ) {
+                List<List<Object>> rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
+
+                Map<Long, Map<Long, List<Object>>> partitionValues = new HashMap<>();
+
+                for ( List<Object> row : rows ) {
+                    long currentPartitionId = -1;
+                    if ( partitionColumnIndex >= 0 ) {
+                        parsedValue = nullifiedPartitionValue;
+                        if ( row.get( partitionColumnIndex ) != null ) {
+                            parsedValue = row.get( partitionColumnIndex ).toString();
+                        }
+                    }
+
+                    currentPartitionId = partitionManager.getTargetPartitionId( targetTable, parsedValue );
+
+                    for ( Map.Entry<Long, Integer> entry : resultColMapping.entrySet() ) {
+                        if ( entry.getKey() == partitionColumn.id && !columns.contains( partitionColumn ) ) {
+                            continue;
+                        }
+                        if ( !partitionValues.containsKey( currentPartitionId ) ) {
+                            partitionValues.put( currentPartitionId, new HashMap<>() );
+                        }
+                        if ( !partitionValues.get( currentPartitionId ).containsKey( entry.getKey() ) ) {
+                            partitionValues.get( currentPartitionId ).put( entry.getKey(), new LinkedList<>() );
+                        }
+                        partitionValues.get( currentPartitionId ).get( entry.getKey() ).add( row.get( entry.getValue() ) );
+                    }
+                }
+
+                // Iterate over partitionValues in that way we don't even execute a statement which has no rows
+                for ( Map.Entry<Long, Map<Long, List<Object>>> dataOnPartition : partitionValues.entrySet() ) {
+                    long partitionId = dataOnPartition.getKey();
+                    Map<Long, List<Object>> values = dataOnPartition.getValue();
+                    Statement currentTargetStatement = targetStatements.get( partitionId );
+
+                    for ( Map.Entry<Long, List<Object>> columnDataOnPartition : values.entrySet() ) {
+                        // Check partitionValue
+                        currentTargetStatement.getDataContext().addParameterValues( columnDataOnPartition.getKey(), null, columnDataOnPartition.getValue() );
+                    }
+
+                    Iterator iterator = currentTargetStatement.getQueryProcessor()
+                            .prepareQuery( targetRels.get( partitionId ), sourceRel.validatedRowType, true )
+                            .enumerable( currentTargetStatement.getDataContext() )
+                            .iterator();
+                    //noinspection WhileLoopReplaceableByForEach
+                    while ( iterator.hasNext() ) {
+                        iterator.next();
+                    }
+                    currentTargetStatement.getDataContext().resetParameterValues();
+                }
+            }
+        } catch ( Throwable t ) {
+            throw new RuntimeException( t );
+        }
     }
 
 }

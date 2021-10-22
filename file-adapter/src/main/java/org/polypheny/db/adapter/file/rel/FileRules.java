@@ -57,7 +57,7 @@ public class FileRules {
                 new FileProjectRule( out, RelFactories.LOGICAL_BUILDER ),
                 new FileValuesRule( out, RelFactories.LOGICAL_BUILDER ),
                 new FileTableModificationRule( out, RelFactories.LOGICAL_BUILDER ),
-                new FileUnionRule( out, RelFactories.LOGICAL_BUILDER ),
+                //new FileUnionRule( out, RelFactories.LOGICAL_BUILDER ),
                 new FileFilterRule( out, RelFactories.LOGICAL_BUILDER )
         );
     }

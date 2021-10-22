@@ -339,14 +339,14 @@ public class CassandraStore extends DataStore {
 
 
     @Override
-    public void addIndex( Context context, CatalogIndex catalogIndex ) {
+    public void addIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
         throw new RuntimeException( "Cassandra adapter does not support adding indexes" );
     }
 
 
     @Override
-    public void dropIndex( Context context, CatalogIndex catalogIndex ) {
-        throw new RuntimeException( "Cassandra adaper does not support dropping indexes" );
+    public void dropIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
+        throw new RuntimeException( "Cassandra adapter does not support dropping indexes" );
     }
 
 

@@ -32,6 +32,8 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 @Slf4j
 public abstract class AbstractPartitionManager implements PartitionManager {
 
+
+    // Returns the Index of the partition where to place the object
     protected final Catalog catalog = Catalog.getInstance();
 
 
@@ -42,7 +44,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
     @Override
     public boolean probePartitionGroupDistributionChange( CatalogTable catalogTable, int storeId, long columnId, int threshold ) {
-        //Check for the specified columnId if we still have a ColumnPlacement for every partitionGroup
+        // Check for the specified columnId if we still have a ColumnPlacement for every partitionGroup
         for ( Long partitionGroupId : catalogTable.partitionProperty.partitionGroupIds ) {
             List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartitionGroup( catalogTable.id, partitionGroupId, columnId );
             if ( ccps.size() <= threshold ) {
@@ -58,33 +60,9 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
 
     @Override
-    public boolean validatePartitionGroupSetup(
-            List<List<String>> partitionGroupQualifiers,
-            long numPartitionGroups,
-            List<String> partitionGroupNames,
-            CatalogColumn partitionColumn ) {
-        if ( numPartitionGroups == 0 && partitionGroupNames.size() < 2 ) {
-            throw new RuntimeException( "Partitioning of table failed! Can't partition table with less than 2 partitions/names" );
-        }
-        return true;
-    }
+    public Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds, List<Integer> excludedAdapters ) {
+        Catalog catalog = Catalog.getInstance();
 
-
-    //Returns 1 for most PartitionFunctions since they have a 1:1 relation between Groups and Internal Partitions
-    //In that case the input of numberOfPartitions is ommitted
-    @Override
-    public int getNumberOfPartitionsPerGroup( int numberOfPartitions ) {
-        return 1;
-    }
-
-
-    @Override
-    public abstract PartitionFunctionInfo getPartitionFunctionInfo();
-
-
-    // Relevant for select
-    @Override
-    public Map<Long, List<CatalogColumnPlacement>> getFirstPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
         Map<Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
 
         if ( partitionIds != null ) {
@@ -95,6 +73,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
                 for ( long columnId : catalogTable.columnIds ) {
                     List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartitionGroup( catalogTable.id, catalogPartition.partitionGroupId, columnId );
+                    ccps.removeIf( ccp -> excludedAdapters.contains( ccp.adapterId ) );
                     if ( !ccps.isEmpty() ) {
                         //get first column placement which contains partition
                         relevantCcps.add( ccps.get( 0 ) );
@@ -112,6 +91,41 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
 
     @Override
+    public boolean validatePartitionGroupSetup(
+            List<List<String>> partitionGroupQualifiers,
+            long numPartitionGroups,
+            List<String> partitionGroupNames,
+            CatalogColumn partitionColumn ) {
+        if ( numPartitionGroups == 0 && partitionGroupNames.size() < 2 ) {
+            throw new RuntimeException( "Partitioning of table failed! Can't partition table with less than 2 partitions/names" );
+        }
+        return true;
+    }
+
+
+    // Returns 1 for most PartitionFunctions since they have a 1:1 relation between Groups and Internal Partitions
+    // In that case the input of numberOfPartitions is omitted
+    @Override
+    public int getNumberOfPartitionsPerGroup( int numberOfPartitions ) {
+        return 1;
+    }
+
+
+    /**
+     * Returns the unified null value for all partition managers.
+     * Such that every partionValue occurence of null ist treated equally
+     *
+     * @return null String
+     */
+    @Override
+    public String getUnifiedNullValue() {
+        return "null";
+    }
+
+
+    @Override
+    public abstract PartitionFunctionInfo getPartitionFunctionInfo();
+
     public Map<Integer, Map<Long, List<CatalogColumnPlacement>>> getAllPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
         Map<Integer, Map<Long, List<CatalogColumnPlacement>>> adapterPlacements = new HashMap<>(); // adapterId -> partitionId ; placements
         if ( partitionIds != null ) {

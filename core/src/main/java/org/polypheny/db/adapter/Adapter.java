@@ -299,6 +299,7 @@ public abstract class Adapter {
         return properties.name();
     }
 
+
     public abstract void createNewSchema( SchemaPlus rootSchema, String name );
 
     public abstract Table createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement );
@@ -444,11 +445,11 @@ public abstract class Adapter {
             Catalog.getInstance().getColumnPlacementsOnAdapter( adapterId ).forEach( placement -> {
                 List<CatalogPartitionPlacement> cpps = Catalog.getInstance().getPartitionPlacementsByAdapter( adapterId );
                 cpps.forEach( cpp ->
-                                physicalColumnNames.addRow(
-                                        placement.columnId,
-                                        Catalog.getInstance().getColumn( placement.columnId ).name,
-                                        cpp.physicalSchemaName + "." + cpp.physicalTableName + "." + placement.physicalColumnName )
-                        );
+                        physicalColumnNames.addRow(
+                                placement.columnId,
+                                Catalog.getInstance().getColumn( placement.columnId ).name,
+                                cpp.physicalSchemaName + "." + cpp.physicalTableName + "." + placement.physicalColumnName )
+                );
             } );
         } );
 

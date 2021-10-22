@@ -16,25 +16,23 @@
 
 package org.polypheny.db.partition.properties;
 
-
-import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.catalog.Catalog.PartitionType;
-import org.polypheny.db.partition.properties.PartitionProperty;
+
 
 @SuperBuilder
 @Getter
 public class TemperaturePartitionProperty extends PartitionProperty {
 
-    //Cost Model, Access Frequency: ALL, READ FREQUENCY, WRITE FREQUENCY
+    // Cost Model, Access Frequency: ALL, READ FREQUENCY, WRITE FREQUENCY
     public enum PartitionCostIndication {ALL, READ, WRITE}
+
 
     private final PartitionCostIndication partitionCostIndication;
     private final PartitionType internalPartitionFunction;
 
-    //Maybe get default if left empty, centrally by configuration
+    // Maybe get default if left empty, centrally by configuration
     private final int hotAccessPercentageIn;
     private final int hotAccessPercentageOut;
 
@@ -42,12 +40,5 @@ public class TemperaturePartitionProperty extends PartitionProperty {
 
     private final long hotPartitionGroupId;
     private final long coldPartitionGroupId;
-
-
-
-    /* TODO @HENNLO Maybe extend later on with Records
-    private final long hotAccessRecordsIn;
-    private final long hotAccessRecordsOut;
-    */
 
 }

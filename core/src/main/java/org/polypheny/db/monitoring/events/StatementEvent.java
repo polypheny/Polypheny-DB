@@ -38,6 +38,7 @@ import org.polypheny.db.transaction.Statement;
 @Getter
 public abstract class StatementEvent extends BaseEvent {
 
+    protected String monitoringType;
     protected RelRoot routed;
     protected PolyphenyDbSignature signature;
     protected Statement statement;

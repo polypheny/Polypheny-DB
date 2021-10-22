@@ -16,13 +16,12 @@
 
 package org.polypheny.db.catalog.entity;
 
-
 import java.io.Serializable;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 
 
-public class CatalogPartitionPlacement implements CatalogEntity{
+public class CatalogPartitionPlacement implements CatalogEntity {
 
     private static final long serialVersionUID = 3035193464866141590L;
 
@@ -35,6 +34,7 @@ public class CatalogPartitionPlacement implements CatalogEntity{
     public final String physicalSchemaName;
     public final String physicalTableName;
 
+
     public CatalogPartitionPlacement(
             final long tableId,
             final int adapterId,
@@ -42,8 +42,7 @@ public class CatalogPartitionPlacement implements CatalogEntity{
             @NonNull final PlacementType placementType,
             final String physicalSchemaName,
             final String physicalTableName,
-            final long partitionId){
-
+            final long partitionId ) {
         this.tableId = tableId;
         this.adapterId = adapterId;
         this.adapterUniqueName = adapterUniqueName;
@@ -53,8 +52,10 @@ public class CatalogPartitionPlacement implements CatalogEntity{
         this.partitionId = partitionId;
     }
 
+
     @Override
     public Serializable[] getParameterArray() {
         return new Serializable[0];
     }
+
 }
