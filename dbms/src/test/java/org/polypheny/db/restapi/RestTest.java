@@ -18,7 +18,9 @@ package org.polypheny.db.restapi;
 
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -186,8 +188,8 @@ public class RestTest {
 
         // Update
         Map<String, String> where = new LinkedHashMap<>();
-        where.put( "test.resttest.tsmallint", "=" + 45 );
-        request = buildRestUpdate( "test.resttest", getTestRow( 1 ), where );
+        where.put( "restschema.resttest.tsmallint", "=" + 45 );
+        request = buildRestUpdate( "restschema.resttest", getTestRow( 1 ), where );
         Assert.assertEquals(
                 "{\"result\":[{\"ROWCOUNT\":1}],\"size\":1}",
                 executeRest( request ).getBody() );
@@ -203,9 +205,12 @@ public class RestTest {
         // Get
         request = Unirest.get( "{protocol}://{host}:{port}/restapi/v1/res/restschema.resttest" )
                 .queryString( "restschema.resttest.ttinyint", "=" + 22 );
+
+        String expected = "{\"result\":[{\"restschema.resttest.tsmallint\":45,\"restschema.resttest.tdecimal\":123.45,\"restschema.resttest.ttinyint\":22,\"restschema.resttest.treal\":0.3333,\"restschema.resttest.tinteger\":9876,\"restschema.resttest.ttime\":\"43505000\",\"restschema.resttest.tbigint\":1234,\"restschema.resttest.tboolean\":true,\"restschema.resttest.tdate\":18466,\"restschema.resttest.tdouble\":1.999999,\"restschema.resttest.tvarchar\":\"hallo\",\"restschema.resttest.ttimestamp\":\"2020-07-23T12:05:05\"}],\"size\":1}";
+        JsonElement jsonExpected = JsonParser.parseString( expected );
+        JsonElement jsonResult = JsonParser.parseString( executeRest( request ).getBody() );
         Assert.assertEquals(
-                "{\"result\":[{\"test.resttest.tsmallint\":45,\"restschema.resttest.tdecimal\":123.45,\"test.resttest.ttinyint\":22,\"test.resttest.treal\":0.3333,\"test.resttest.tinteger\":9876,\"test.resttest.ttime\":\"43505000\",\"test.resttest.tbigint\":1234,\"test.resttest.tboolean\":true,\"test.resttest.tdate\":18466,\"test.resttest.tdouble\":1.999999,\"test.resttest.tvarchar\":\"hallo\",\"test.resttest.ttimestamp\":\"2020-07-23T12:05:05\"}],\"size\":1}",
-                executeRest( request ).getBody() );
+                jsonExpected, jsonResult );
 
         // Delete
         where = new LinkedHashMap<>();
