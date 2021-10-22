@@ -30,7 +30,6 @@ import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -105,10 +104,10 @@ public class DataMigratorImpl implements DataMigrator {
             RelRoot targetRel;
             if ( Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( store.id, table.id ).size() == columns.size() ) {
                 // There have been no placements for this table on this store before. Build insert statement
-                targetRel = buildInsertStatement( targetStatement, targetColumnPlacements, partitionId, table.getSchemaType() );
+                targetRel = buildInsertStatement( targetStatement, targetColumnPlacements, partitionId );
             } else {
                 // Build update statement
-                targetRel = buildUpdateStatement( targetStatement, targetColumnPlacements, partitionId, table.getSchemaType() );
+                targetRel = buildUpdateStatement( targetStatement, targetColumnPlacements, partitionId );
             }
 
             // Execute Query
@@ -164,7 +163,7 @@ public class DataMigratorImpl implements DataMigrator {
     }
 
 
-    private RelRoot buildInsertStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId, SchemaType schemaType ) {
+    private RelRoot buildInsertStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId ) {
         List<String> qualifiedTableName = ImmutableList.of(
                 PolySchemaBuilder.buildAdapterSchemaName( to.get( 0 ).adapterUniqueName, to.get( 0 ).getLogicalSchemaName(), to.get( 0 ).physicalSchemaName ),
                 to.get( 0 ).getLogicalTableName() + "_" + partitionId );
@@ -197,13 +196,11 @@ public class DataMigratorImpl implements DataMigrator {
                 null,
                 true
         );
-        RelRoot root = RelRoot.of( node, SqlKind.INSERT );
-        root.usesDocumentModel = schemaType == SchemaType.DOCUMENT;
-        return root;
+        return RelRoot.of( node, SqlKind.INSERT );
     }
 
 
-    private RelRoot buildUpdateStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId, SchemaType schemaType ) {
+    private RelRoot buildUpdateStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId ) {
         List<String> qualifiedTableName = ImmutableList.of(
                 PolySchemaBuilder.buildAdapterSchemaName( to.get( 0 ).adapterUniqueName, to.get( 0 ).getLogicalSchemaName(), to.get( 0 ).physicalSchemaName ),
                 to.get( 0 ).getLogicalTableName() + "_" + partitionId );
@@ -263,9 +260,7 @@ public class DataMigratorImpl implements DataMigrator {
                 relRoot.rel.getCluster().getRexBuilder(),
                 ViewExpanders.toRelContext( statement.getQueryProcessor(), relRoot.rel.getCluster() ),
                 true );
-        RelRoot root = relRoot.withRel( typeFlattener.rewrite( relRoot.rel ) );
-        root.usesDocumentModel = schemaType == SchemaType.DOCUMENT;
-        return root;
+        return relRoot.withRel( typeFlattener.rewrite( relRoot.rel ) );
     }
 
 
@@ -356,10 +351,10 @@ public class DataMigratorImpl implements DataMigrator {
         RelRoot targetRel;
         if ( Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( store.id, targetTable.id ).size() == columns.size() ) {
             // There have been no placements for this table on this store before. Build insert statement
-            targetRel = buildInsertStatement( targetStatement, targetColumnPlacements, targetPartitionIds.get( 0 ), sourceTable.getSchemaType() );
+            targetRel = buildInsertStatement( targetStatement, targetColumnPlacements, targetPartitionIds.get( 0 ) );
         } else {
             // Build update statement
-            targetRel = buildUpdateStatement( targetStatement, targetColumnPlacements, targetPartitionIds.get( 0 ), sourceTable.getSchemaType() );
+            targetRel = buildUpdateStatement( targetStatement, targetColumnPlacements, targetPartitionIds.get( 0 ) );
         }
 
         // Execute Query
@@ -479,10 +474,10 @@ public class DataMigratorImpl implements DataMigrator {
         RelRoot sourceRel = getSourceIterator( sourceStatement, placementDistribution );
         if ( Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( store.id, sourceTable.id ).size() == columns.size() ) {
             // There have been no placements for this table on this store before. Build insert statement
-            targetPartitionIds.forEach( id -> targetRels.put( id, buildInsertStatement( targetStatements.get( id ), targetColumnPlacements, id, sourceTable.getSchemaType() ) ) );
+            targetPartitionIds.forEach( id -> targetRels.put( id, buildInsertStatement( targetStatements.get( id ), targetColumnPlacements, id ) ) );
         } else {
             // Build update statement
-            targetPartitionIds.forEach( id -> targetRels.put( id, buildUpdateStatement( targetStatements.get( id ), targetColumnPlacements, id, sourceTable.getSchemaType() ) ) );
+            targetPartitionIds.forEach( id -> targetRels.put( id, buildUpdateStatement( targetStatements.get( id ), targetColumnPlacements, id ) ) );
         }
 
         // Execute Query

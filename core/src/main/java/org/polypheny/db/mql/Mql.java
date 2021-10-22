@@ -31,15 +31,15 @@ public class Mql {
             Type.DROP_DATABASE,
             Type.RENAME_COLLECTION );
     static List<Type> DQL = Arrays.asList(
-            Type.AGGREGATE
-    );
-    static List<Type> DML = Arrays.asList(
             Type.SELECT,
             Type.FIND,
+            Type.AGGREGATE,
+            Type.EXPLAIN
+    );
+    static List<Type> DML = Arrays.asList(
             Type.UPDATE,
             Type.INSERT,
             Type.DELETE,
-            Type.EXPLAIN,
             Type.FIND_DELETE,
             Type.FIND_UPDATE,
             Type.FIND_MODIFY,
