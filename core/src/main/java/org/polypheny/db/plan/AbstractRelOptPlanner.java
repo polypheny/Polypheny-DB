@@ -157,6 +157,7 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
                 throw new AssertionError( "Rule should not already be registered" );
             } else {
                 // This rule has the same description as one previously registered, yet it is not equal. You may need to fix the rule's equals and hashCode methods.
+                System.out.println( "Rule's description should be unique; existing rule=" + existingRule + "; new rule=" + rule );
                 throw new AssertionError( "Rule's description should be unique; existing rule=" + existingRule + "; new rule=" + rule );
             }
         }
