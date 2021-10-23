@@ -193,8 +193,10 @@ public class CatalogImpl extends Catalog {
 
     Comparator<CatalogColumn> columnComparator = Comparator.comparingInt( o -> o.position );
 
+    // RelNode used to create view and materialized view
     @Getter
     private final Map<Long, RelNode> nodeInfo = new HashMap<>();
+    // RelDataTypes used to create view and materialized view
     @Getter
     private final Map<Long, RelDataType> relTypeInfo = new HashMap<>();
 
@@ -428,6 +430,10 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * on restart all RelNodes used in views and materialized views need to be recreated
+     * depending on the query language different methods are used
+     */
     @Override
     public void restoreViews( Transaction transaction ) {
         Statement statement = transaction.createStatement();
@@ -471,15 +477,9 @@ public class CatalogImpl extends Catalog {
                         break;
                     case MONGOQL:
                         throw new NotImplementedException();
-
                 }
-
-
             }
-
-
         }
-
     }
 
 
@@ -1471,6 +1471,24 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * Adds a materialized view to a specified schema.
+     *
+     * @param name of the view to add
+     * @param schemaId id of the schema
+     * @param ownerId id of the owner
+     * @param tableType type of table
+     * @param modifiable Whether the content of the table can be modified
+     * @param definition RelNode used to create Views
+     * @param relCollation relCollation used for materialized view
+     * @param underlyingTables all tables and columns used within the view
+     * @param fieldList all columns used within the View
+     * @param materializedCriteria Information like freshness and last updated
+     * @param query used to define materialized view
+     * @param language query language used to define materialized view
+     * @param ordered if materialized view is ordered or not
+     * @return id of the inserted materialized view
+     */
     @Override
     public long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException {
         long id = tableIdBuilder.getAndIncrement();
@@ -1525,6 +1543,9 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * update all information after the addition of all kind of tables
+     */
     private void updateTableLogistics( String name, long schemaId, long id, CatalogSchema schema, CatalogTable table ) {
         synchronized ( this ) {
             tables.put( id, table );
@@ -2022,9 +2043,14 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * updates the last time a materialized view was updated
+     *
+     * @param materializedId to update
+     */
     @Override
-    public void updateMaterialized( long tableId ) {
-        CatalogMaterialized old = (CatalogMaterialized) getTable( tableId );
+    public void updateMaterialized( long materializedId ) {
+        CatalogMaterialized old = (CatalogMaterialized) getTable( materializedId );
 
         MaterializedCriteria materializedCriteria = old.getMaterializedCriteria();
         materializedCriteria.setLastUpdate( new Timestamp( System.currentTimeMillis() ) );
@@ -2038,7 +2064,7 @@ public class CatalogImpl extends Catalog {
                 old.ownerId,
                 old.ownerName,
                 old.tableType,
-                ((CatalogMaterialized) old).getQuery(),
+                old.getQuery(),
                 old.primaryKey,
                 old.placementsByAdapter,
                 old.modifiable,
@@ -2046,15 +2072,15 @@ public class CatalogImpl extends Catalog {
                 old.partitionColumnId,
                 old.isPartitioned,
                 old.partitionProperty,
-                ((CatalogMaterialized) old).getRelCollation(),
+                old.getRelCollation(),
                 old.connectedViews,
-                ((CatalogMaterialized) old).getUnderlyingTables(),
-                ((CatalogMaterialized) old).getLanguage(),
+                old.getUnderlyingTables(),
+                old.getLanguage(),
                 materializedCriteria,
-                ((CatalogMaterialized) old).isOrdered() );
+                old.isOrdered() );
 
         synchronized ( this ) {
-            tables.replace( tableId, catalogMaterialized );
+            tables.replace( materializedId, catalogMaterialized );
             tableNames.replace( new Object[]{ catalogMaterialized.databaseId, catalogMaterialized.schemaId, catalogMaterialized.name }, catalogMaterialized );
         }
         listeners.firePropertyChange( "table", old, catalogMaterialized );

@@ -151,6 +151,9 @@ public abstract class Catalog {
      */
     public abstract void restoreColumnPlacements( Transaction transaction );
 
+    /**
+     * Restores all views and materialized views after restart
+     */
     public abstract void restoreViews( Transaction transaction );
 
 
@@ -393,7 +396,25 @@ public abstract class Catalog {
     public abstract long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, String query, QueryLanguage language );
 
 
-    public abstract long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean orderd ) throws GenericCatalogException;
+    /**
+     * Adds a materialized view to a specified schema.
+     *
+     * @param name of the view to add
+     * @param schemaId id of the schema
+     * @param ownerId id of the owner
+     * @param tableType type of table
+     * @param modifiable Whether the content of the table can be modified
+     * @param definition RelNode used to create Views
+     * @param relCollation relCollation used for materialized view
+     * @param underlyingTables all tables and columns used within the view
+     * @param fieldList all columns used within the View
+     * @param materializedCriteria Information like freshness and last updated
+     * @param query used to define materialized view
+     * @param language query language used to define materialized view
+     * @param ordered if materialized view is ordered or not
+     * @return id of the inserted materialized view
+     */
+    public abstract long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException;
 
 
     /**
@@ -1409,7 +1430,12 @@ public abstract class Catalog {
      */
     public abstract void deleteViewDependencies( CatalogView catalogView );
 
-    public abstract void updateMaterialized( long tableId );
+    /**
+     * updates the last time a materialized view was updated
+     *
+     * @param materializedId to update
+     */
+    public abstract void updateMaterialized( long materializedId );
 
 
     public enum TableType {

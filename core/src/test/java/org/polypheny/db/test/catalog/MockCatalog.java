@@ -255,7 +255,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean isOrdered ) {
+    public long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) {
         throw new NotImplementedException();
     }
 
@@ -399,7 +399,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void updateMaterialized( long tableId ) {
+    public void updateMaterialized( long materializedId ) {
         throw new NotImplementedException();
     }
 

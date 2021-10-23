@@ -92,6 +92,11 @@ public class MaterializedManagerImpl extends MaterializedManager {
     }
 
 
+    /**
+     * updates the materialized Info
+     *
+     * @return updated materializedInfo
+     */
     public synchronized Map<Long, MaterializedCriteria> updateMaterializedViewInfo() {
         List<Long> toRemove = new ArrayList<>();
         for ( Long id : materializedInfo.keySet() ) {
@@ -104,12 +109,22 @@ public class MaterializedManagerImpl extends MaterializedManager {
     }
 
 
+    /**
+     * removes a materialized view from the materializedInfo
+     *
+     * @param materializedId id from materialized view
+     */
     @Override
-    public synchronized void deleteMaterializedViewFromInfo( Long tableId ) {
-        materializedInfo.remove( tableId );
+    public synchronized void deleteMaterializedViewFromInfo( Long materializedId ) {
+        materializedInfo.remove( materializedId );
     }
 
 
+    /**
+     * updates the materializedInfo and the CatalogMaterialized with the time of the last update
+     *
+     * @param materializedId id from materialized view
+     */
     public synchronized void updateMaterializedTime( Long materializedId ) {
         if ( materializedInfo.containsKey( materializedId ) ) {
             materializedInfo.get( materializedId ).setLastUpdate( new Timestamp( System.currentTimeMillis() ) );
@@ -118,16 +133,36 @@ public class MaterializedManagerImpl extends MaterializedManager {
     }
 
 
+    /**
+     * is used by materialized views with freshness update
+     * updates how many updates were carried out on the underlying tables
+     *
+     * @param materializedId id from materialized view
+     * @param updates number of updates
+     */
     public synchronized void updateMaterializedUpdate( Long materializedId, int updates ) {
         materializedInfo.get( materializedId ).setTimesUpdated( updates );
     }
 
 
-    public synchronized void addMaterializedInfo( Long tableId, MaterializedCriteria matViewCritera ) {
-        materializedInfo.put( tableId, matViewCritera );
+    /**
+     * add materialized view to materializedInfo
+     *
+     * @param materializedId id from materialized view
+     * @param matViewCritera information about the materialized view
+     */
+    public synchronized void addMaterializedInfo( Long materializedId, MaterializedCriteria matViewCritera ) {
+        materializedInfo.put( materializedId, matViewCritera );
     }
 
 
+    /**
+     * if a change is committed to the transactionId and the tableId are saved as potential interesting for
+     * materialized view with freshness update
+     *
+     * @param transaction transaction of the commit
+     * @param tableNames table that was changed
+     */
     @Override
     public void addTables( Transaction transaction, List<String> tableNames ) {
         if ( tableNames.size() > 1 ) {
@@ -170,6 +205,11 @@ public class MaterializedManagerImpl extends MaterializedManager {
     }
 
 
+    /**
+     * checks if materialized view  with freshness update needs to be updated after a change on the underlying table
+     *
+     * @param potentialInteresting id of underlying table that was updated
+     */
     public void materializedUpdate( Long potentialInteresting ) {
         Catalog catalog = Catalog.getInstance();
         CatalogTable catalogTable = catalog.getTable( potentialInteresting );
@@ -196,11 +236,11 @@ public class MaterializedManagerImpl extends MaterializedManager {
     /**
      * starts transition and acquires a global schema lock before the materialized view is updated
      *
-     * @param viewId of materialized view, which is updated
+     * @param materializedId of materialized view, which is updated
      */
-    public void prepareToUpdate( Long viewId ) {
+    public void prepareToUpdate( Long materializedId ) {
         Catalog catalog = Catalog.getInstance();
-        CatalogTable catalogTable = catalog.getTable( viewId );
+        CatalogTable catalogTable = catalog.getTable( materializedId );
 
         try {
             Transaction transaction = getTransactionManager().startTransaction( catalogTable.ownerName, catalog.getDatabase( catalogTable.databaseId ).name, false, "Materialized View" );
@@ -211,16 +251,19 @@ public class MaterializedManagerImpl extends MaterializedManager {
             } catch ( DeadlockException e ) {
                 throw new RuntimeException( "DeadLock while locking for materialized view update", e );
             }
-            updateData( transaction, viewId );
+            updateData( transaction, materializedId );
             commitTransaction( transaction );
 
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Not possible to create Transaction for Materialized View update", e );
         }
-        updateMaterializedTime( viewId );
+        updateMaterializedTime( materializedId );
     }
 
 
+    /**
+     * is used if a materialized view is created in order to add the data from the underlying tables to the materialized view
+     */
     @Override
     public void addData( Transaction transaction, List<DataStore> stores, Map<Integer, List<CatalogColumn>> columns, RelRoot sourceRel, CatalogMaterialized materializedView ) {
         addMaterializedInfo( materializedView.id, materializedView.getMaterializedCriteria() );
@@ -243,8 +286,14 @@ public class MaterializedManagerImpl extends MaterializedManager {
     }
 
 
+    /**
+     * deletes all the data from a materialized view and adds the newest data to the materialized view
+     *
+     * @param transaction that is used
+     * @param materializedId id from materialized view
+     */
     @Override
-    public void updateData( Transaction transaction, Long viewId ) {
+    public void updateData( Transaction transaction, Long materializedId ) {
         Catalog catalog = Catalog.getInstance();
 
         DataMigrator dataMigrator = transaction.getDataMigrator();
@@ -253,8 +302,8 @@ public class MaterializedManagerImpl extends MaterializedManager {
         Map<Integer, List<CatalogColumn>> columns = new HashMap<>();
 
         List<Integer> ids = new ArrayList<>();
-        if ( catalog.checkIfExistsTable( viewId ) && materializedInfo.containsKey( viewId ) ) {
-            CatalogMaterialized catalogMaterialized = (CatalogMaterialized) catalog.getTable( viewId );
+        if ( catalog.checkIfExistsTable( materializedId ) && materializedInfo.containsKey( materializedId ) ) {
+            CatalogMaterialized catalogMaterialized = (CatalogMaterialized) catalog.getTable( materializedId );
             for ( int id : catalogMaterialized.placementsByAdapter.keySet() ) {
                 ids.add( id );
                 List<CatalogColumn> catalogColumns = new ArrayList<>();
@@ -286,7 +335,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
                 RelNode insertRel = insertRelBuilder.push( catalogMaterialized.getDefinition() ).build();
 
                 //check if materialized view was dropped
-                if ( materializedInfo.containsKey( viewId ) ) {
+                if ( materializedInfo.containsKey( materializedId ) ) {
                     Statement targetStatementDelete = transaction.createStatement();
                     //delete all data
                     targetRel = dataMigrator.buildDeleteStatement( targetStatementDelete, columnPlacements, Catalog.getInstance().getPartitionsOnDataPlacement( id, catalogMaterialized.id ).get( 0 ) );
