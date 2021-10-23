@@ -296,13 +296,13 @@ public class TransactionImpl implements Transaction, Comparable {
 
 
     @Override
-    public void setCacheUse( boolean useCache ) {
+    public void setUseCache( boolean useCache ) {
         this.useCache = useCache;
     }
 
 
     @Override
-    public boolean usesCache() {
+    public boolean getUsesCache() {
         return this.useCache;
     }
 

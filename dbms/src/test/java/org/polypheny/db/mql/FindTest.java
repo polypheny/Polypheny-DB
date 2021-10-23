@@ -51,7 +51,7 @@ public class FindTest extends MqlTestTemplate {
 
     private final List<String> DATA_4 = Arrays.asList(
             "{\"test\":\"test2\", \"key\": 3}",
-            "{\"test\":\"T 1\", \"key\": 2}",
+            "{\"test\":\"T1\", \"key\": 2}",
             "{\"test\":\"t1\", \"key\": 2.3}",
             "{\"test\":\"test\", \"key\": 1.1}" );
 
@@ -559,7 +559,7 @@ public class FindTest extends MqlTestTemplate {
     public void exprTest() {
         insertMany( DATA_3 );
 
-        Result result = find( "{\"$expr\":{ \"$gt\": [\"$test\",  \"$key\"]}}", "{}" );
+        Result result = find( "{\"test\": {\"$type\": \"number\"}, \"key\": {\"$type\": \"number\"},\"$expr\":{ \"$gt\": [\"$test\",  \"$key\"]}}", "{}" );
 
         assertTrue(
                 MongoConnection.checkResultSet(
@@ -601,16 +601,17 @@ public class FindTest extends MqlTestTemplate {
                 MongoConnection.checkResultSet(
                         result,
                         ImmutableList.of(
+                                new String[]{ "_id", "{\"test\":\"test2\", \"key\": 3}" },
                                 new String[]{ "_id", "{\"test\":\"test\", \"key\": 1.1}" }
                         ) ) );
 
-        result = find( "{\"test\": {\"$regex\": 't1', \"$options\": \"ix\"}}", "{}" );
+        result = find( "{\"test\": {\"$regex\": 't1', \"$options\": \"i\"}}", "{}" );
 
         assertTrue(
                 MongoConnection.checkResultSet(
                         result,
                         ImmutableList.of(
-                                new String[]{ "_id", "{\"test\":\"T 1\", \"key\": 2}" },
+                                new String[]{ "_id", "{\"test\":\"T1\", \"key\": 2}" },
                                 new String[]{ "_id", "{\"test\":\"t1\", \"key\": 2.3}" }
                         ) ) );
 

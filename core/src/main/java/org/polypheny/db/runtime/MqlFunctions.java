@@ -366,6 +366,7 @@ public class MqlFunctions {
         if ( input instanceof String ) {
             String comp = (String) input;
             int flags = 0;
+            flags |= Pattern.DOTALL;
             if ( isInsensitive ) {
                 flags |= Pattern.CASE_INSENSITIVE;
             }
@@ -380,7 +381,7 @@ public class MqlFunctions {
                 flags |= Pattern.DOTALL;
             }
 
-            return Pattern.compile( regex, flags ).matcher( comp ).matches();
+            return Pattern.compile( ".*" + regex + ".*", flags ).matcher( comp ).matches();
         }
         return false;
     }

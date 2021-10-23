@@ -1219,9 +1219,9 @@ public enum SqlKind {
     OTHER_DDL,
 
     /**
-     * Document model document values
+     * Document model single selected value of field
      */
-    DOC_DOCUMENTS,
+    DOC_FIELD,
 
     /**
      * Document model item operator, which retrieves from any underlying array
@@ -1421,7 +1421,7 @@ public enum SqlKind {
     public static final Set<SqlKind> COMPARISON = EnumSet.of( IN, EQUALS, NOT_EQUALS, LESS_THAN, GREATER_THAN, GREATER_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL );
 
     public static final Set<SqlKind> DOC_KIND = EnumSet.of(
-            DOC_DOCUMENTS,
+            DOC_FIELD,
             DOC_ITEM,
             DOC_SIZE_MATCH,
             DOC_REGEX_MATCH,

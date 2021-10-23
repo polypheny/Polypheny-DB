@@ -22,7 +22,6 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -395,44 +394,6 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
                         newValues[i] );
             }
         }
-    }
-
-
-    /**
-     * Add
-     */
-    private void createMissingColumns( SqlInsert insert, SqlNodeList oldColumnList, CatalogTable catalogTable, Statement statement ) {
-        List<String> columnNames = catalogTable.getColumnNames();
-        Catalog catalog = Catalog.getInstance();
-
-        for ( int entry = 0; entry < ((SqlBasicCall) insert.getSource()).getOperands().length; entry++ ) {
-            for ( SqlNode column : oldColumnList.getList() ) {
-                // check if column is part of c
-                String name = ((SqlIdentifier) column).names.get( 0 );
-
-                if ( !(columnNames.contains( name )) ) {
-                    //catalog.addDocumentColumn( catalogTable.id, name, statement );
-                }
-            }
-        }
-    }
-
-
-    /**
-     * Filters column names which are being added in this query
-     *
-     * @return set of new column names
-     */
-    private HashSet<String> getNewColumns( SqlInsert insert, SqlNodeList oldColumnList, CatalogTable catalogTable ) {
-        HashSet<String> newCols = new HashSet<>();
-        List<String> columnNames = catalogTable.getColumnNames();
-        for ( SqlNode column : oldColumnList.getList() ) {
-            String name = ((SqlIdentifier) column).names.get( 0 );
-            if ( !(columnNames.contains( name )) ) {
-                newCols.add( name );
-            }
-        }
-        return newCols;
     }
 
 
