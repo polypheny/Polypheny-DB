@@ -125,7 +125,7 @@ public class DataMigratorImpl implements DataMigrator {
         try {
             PolyphenyDbSignature signature;
             if ( isMaterializedView ) {
-                signature = sourceStatement.getQueryProcessor().prepareQuery( sourceRel, sourceRel.validatedRowType, false, false );
+                signature = sourceStatement.getQueryProcessor().prepareQuery( sourceRel, sourceRel.rel.getCluster().getTypeFactory().builder().build(), false, false );
             } else {
                 signature = sourceStatement.getQueryProcessor().prepareQuery( sourceRel, sourceRel.rel.getCluster().getTypeFactory().builder().build(), true );
             }
