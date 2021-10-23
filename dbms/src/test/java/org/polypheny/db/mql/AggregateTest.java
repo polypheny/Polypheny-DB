@@ -26,6 +26,7 @@ import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
+import org.polypheny.db.excluded.CottontailExcluded;
 import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.mongoql.model.Result;
 
@@ -316,6 +317,8 @@ public class AggregateTest extends MqlTestTemplate {
 
 
     @Test
+    @Category(CottontailExcluded.class) // cottontail does not support skips/offset queries
+    // without a limit therefore this test cannot be performed correctly using this adapter
     public void skipTest() {
         List<String[]> expected = ImmutableList.of(
                 new String[]{ "_id", "{\"test\":1.3,\"key\":{\"key\":\"val\"}}" },

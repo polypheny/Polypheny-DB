@@ -1388,6 +1388,10 @@ public class MqlToRelConverter {
 
                 } else if ( singleMathOperators.containsKey( key ) ) {
                     return convertSingleMath( key, bsonValue, rowType );
+                } else if ( key.equals( "$mod" ) ) {
+                    RexNode id = getIdentifier( parentKey, rowType );
+
+                    return convertMod( id, bsonValue, rowType );
 
                 } else if ( mathOperators.containsKey( key ) ) {
 
@@ -1402,6 +1406,7 @@ public class MqlToRelConverter {
 
                     if ( losesContext && id != null ) {
                         RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
+
                         return new RexCall( type, MqlStdOperatorTable.DOC_EQ, Arrays.asList( id, node ) );
                     } else {
                         return node;
@@ -1432,6 +1437,46 @@ public class MqlToRelConverter {
         }
 
         return getFixedCall( operands, SqlStdOperatorTable.AND, PolyType.BOOLEAN );
+    }
+
+
+    private RexNode convertMod( RexNode id, BsonValue bsonValue, RelDataType rowType ) {
+        String msg = "$mod requires an array of two values or documents.";
+        if ( !bsonValue.isArray() && bsonValue.asArray().size() != 2 ) {
+            throw new RuntimeException( msg );
+        }
+
+        BsonValue divider = bsonValue.asArray().get( 0 );
+        RexNode rexDiv;
+        if ( divider.isDocument() ) {
+            rexDiv = translateDocument( divider.asDocument(), rowType, null );
+        } else if ( divider.isNumber() ) {
+            rexDiv = convertLiteral( divider );
+        } else {
+            throw new RuntimeException( msg );
+        }
+
+        BsonValue remainder = bsonValue.asArray().get( 1 );
+        RexNode rexRemainder;
+        if ( remainder.isDocument() ) {
+            rexRemainder = translateDocument( remainder.asDocument(), rowType, null );
+        } else if ( remainder.isNumber() ) {
+            rexRemainder = convertLiteral( remainder );
+        } else {
+            throw new RuntimeException( msg );
+        }
+
+        RexNode node = new RexCall(
+                this.cluster.getTypeFactory().createPolyType( PolyType.INTEGER ),
+                SqlStdOperatorTable.MOD,
+                Arrays.asList(
+                        this.builder.makeCast( cluster.getTypeFactory().createPolyType( PolyType.INTEGER ), id ),
+                        rexDiv ) );
+
+        RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
+
+        return new RexCall( type, MqlStdOperatorTable.DOC_EQ, Arrays.asList( node, rexRemainder ) );
+
     }
 
 
@@ -1558,7 +1603,7 @@ public class MqlToRelConverter {
                 if ( notActive ) {
                     throw new RuntimeException( "$logical operations inside $not operations are not possible." );
                 }
-                op = SqlStdOperatorTable.OR;
+                op = SqlStdOperatorTable.AND;
                 return convertLogicalArray( parentKey, bsonValue, rowType, op, true );
             case "$not":
                 this.notActive = true;
@@ -1622,6 +1667,8 @@ public class MqlToRelConverter {
                 List<RexNode> arr = convertArray( parentKey, bsonValue.asArray(), true, rowType, "" );
                 nodes.add( getArray( arr,
                         cluster.getTypeFactory().createArrayType( nullableAny, arr.size() ) ) );
+            } else if ( bsonValue.isRegularExpression() ) {
+                return convertRegex( bsonValue, parentKey, rowType );
             } else {
                 nodes.add( convertLiteral( bsonValue ) );
             }
@@ -1753,25 +1800,34 @@ public class MqlToRelConverter {
      *      { <field>: { $regex: /pattern/<options> } }
      * </pre>
      *
-     * @param bsonDocument the regex information as BSON document
+     * @param bson the regex information as BSON,
+     * which is either a document with the necessary keys ($regex, $options) or BsonRegularExpression
      * @param parentKey the key of the parent document
      * @param rowType the rowType of the node which is filtered by regex
      * @return the filtered node
      */
-    private RexNode convertRegex( BsonDocument bsonDocument, String parentKey, RelDataType rowType ) {
+    private RexNode convertRegex( BsonValue bson, String parentKey, RelDataType rowType ) {
         String options = "";
-        if ( bsonDocument.size() == 2 && bsonDocument.containsKey( "$regex" ) && bsonDocument.containsKey( "$options" ) ) {
-            options = bsonDocument.get( "$options" ).isString() ? bsonDocument.get( "$options" ).asString().getValue() : "";
+        BsonValue regex;
+        if ( bson.isDocument() ) {
+            BsonDocument bsonDocument = bson.asDocument();
+            if ( bsonDocument.size() == 2 && bsonDocument.containsKey( "$regex" ) && bsonDocument.containsKey( "$options" ) ) {
+                options = bsonDocument.get( "$options" ).isString() ? bsonDocument.get( "$options" ).asString().getValue() : "";
+            }
+            regex = bsonDocument.get( "$regex" );
+        } else if ( bson.isRegularExpression() ) {
+            regex = bson;
+        } else {
+            throw new RuntimeException( "$regex either needs to be either a document or a regular expression." );
         }
-        BsonValue regex = bsonDocument.get( "$regex" );
 
         String stringRegex;
         if ( regex.isString() ) {
             stringRegex = regex.asString().getValue();
         } else if ( regex.isRegularExpression() ) {
-            BsonRegularExpression bson = regex.asRegularExpression();
-            stringRegex = bson.getPattern();
-            options += bson.getOptions();
+            BsonRegularExpression regbson = regex.asRegularExpression();
+            stringRegex = regbson.getPattern();
+            options += regbson.getOptions();
         } else {
             throw new RuntimeException( "$regex needs to be either a regular expression or a string" );
         }

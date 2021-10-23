@@ -44,6 +44,22 @@ public class FindTest extends MqlTestTemplate {
             "{\"test\":{\"sub\":1.3,\"sub2\":[1,23]},\"key\":\"val\"}",
             "{\"test\":\"test\",\"key\":13}" );
 
+    private final List<String> DATA_3 = Arrays.asList(
+            "{\"test\":1, \"key\": 2}",
+            "{\"test\":2, \"key\": 1}",
+            "{\"test\":\"test\",\"key\":13}" );
+
+    private final List<String> DATA_4 = Arrays.asList(
+            "{\"test\":\"test2\", \"key\": 3}",
+            "{\"test\":\"T 1\", \"key\": 2}",
+            "{\"test\":\"t1\", \"key\": 2.3}",
+            "{\"test\":\"test\", \"key\": 1.1}" );
+
+    private final List<String> DATA_5 = Arrays.asList(
+            "{\"test\": [3, 1, \"test\"], \"key\": 3}",
+            "{\"test\": [\"test\"], \"key\": 2}",
+            "{\"test\": [3,1], \"key\": 2}" );
+
 
     @Test
     public void filterSingleNumberTest() {
@@ -357,9 +373,8 @@ public class FindTest extends MqlTestTemplate {
                         true ) );
     }
 
+
     // nin
-
-
     @Test
     public void ninTest() {
         insertMany( DATA_0 );
@@ -374,28 +389,293 @@ public class FindTest extends MqlTestTemplate {
                         ) ) );
     }
 
+
     // exits
+    @Test
+    public void existsTest() {
+        insertMany( DATA_0 );
+
+        Result result = find( "{\"test\":{\"$exists\": true}}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        ImmutableList.of(
+                                new String[]{ "_id", "{\"test\":1}" },
+                                new String[]{ "_id", "{\"test\":1.3,\"key\":\"val\"}" },
+                                new String[]{ "_id", "{\"test\":\"test\",\"key\":13}" }
+                        ) ) );
+
+        result = find( "{\"key\":{\"$exists\": true}}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        ImmutableList.of(
+                                new String[]{ "_id", "{\"test\":1.3,\"key\":\"val\"}" },
+                                new String[]{ "_id", "{\"test\":\"test\",\"key\":13}" }
+                        ) ) );
+
+        result = find( "{\"key\":{\"$exists\": false}}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        ImmutableList.of(
+                                new String[]{ "_id", "{\"test\":1}" }
+                        ) ) );
+    }
+
 
     // type
+    @Test
+    public void typeTest() {
+        insertMany( DATA_0 );
+
+        // 2 is String
+        Result result = find( "{\"key\":{\"$type\": 2}}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        ImmutableList.of(
+                                new String[]{ "_id", "{\"test\":1.3,\"key\":\"val\"}" }
+                        ) ) );
+
+        result = find( "{\"key\":{\"$type\": \"string\"}}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        ImmutableList.of(
+                                new String[]{ "_id", "{\"test\":1.3,\"key\":\"val\"}" }
+                        ) ) );
+
+        // 1 is double
+        result = find( "{\"test\":{\"$type\": 1}}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        ImmutableList.of(
+                                new String[]{ "_id", "{\"test\":1.3,\"key\":\"val\"}" }
+                        ) ) );
+
+        result = find( "{\"test\":{\"$type\": \"number\"}}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        ImmutableList.of(
+                                new String[]{ "_id", "{\"test\":1}" },
+                                new String[]{ "_id", "{\"test\":1.3,\"key\":\"val\"}" }
+                        ) ) );
+    }
 
     // and
 
+
+    @Test
+    public void andTest() {
+        insertMany( DATA_0 );
+
+        Result result = find( "{\"$and\": [ {\"key\": {\"$exists\": true}}, {\"key\": {\"$type\": 2}} ]}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        ImmutableList.of(
+                                new String[]{ "_id", "{\"test\":1.3,\"key\":\"val\"}" }
+                        ) ) );
+
+        // implicit $and
+        result = find( "{\"key\": {\"$exists\": true}, \"key\": {\"$type\": 2}}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        ImmutableList.of(
+                                new String[]{ "_id", "{\"test\":1.3,\"key\":\"val\"}" }
+                        ) ) );
+    }
+
+
     // not
+    @Test
+    public void notTest() {
+        insertMany( DATA_0 );
+
+        Result result = find( "{\"key\": { \"$not\": {\"$exists\": true}}}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        ImmutableList.of(
+                                new String[]{ "_id", "{\"test\":1}" }
+                        ) ) );
+    }
+
 
     // nor
+    @Test
+    public void norTest() {
+        insertMany( DATA_0 );
+
+        // neither double nor string
+        Result result = find( "{\"$nor\": [ {\"test\": {\"$type\": 2}}, {\"test\": {\"$type\": 1}} ]}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        ImmutableList.of(
+                                new String[]{ "_id", "{\"test\":1}" }
+                        ) ) );
+
+    }
+
 
     // or
+    @Test
+    public void orTest() {
+        insertMany( DATA_0 );
+
+        // neither double nor string
+        Result result = find( "{\"$or\": [ {\"test\": {\"$type\": 2}}, {\"test\": {\"$type\": 1}} ]}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        ImmutableList.of(
+
+                                new String[]{ "_id", "{\"test\":1.3,\"key\":\"val\"}" },
+                                new String[]{ "_id", "{\"test\":\"test\",\"key\":13}" }
+                        ) ) );
+
+    }
+
 
     // expr
+    @Test
+    public void exprTest() {
+        insertMany( DATA_3 );
+
+        Result result = find( "{\"$expr\":{ \"$gt\": [\"$test\",  \"$key\"]}}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        ImmutableList.of(
+                                new String[]{ "_id", "{\"test\":2, \"key\": 1}" }
+                        ) ) );
+    }
 
     // mod
 
+
+    @Test
+    public void modTest() {
+        insertMany( DATA_3 );
+
+        Result result = find( "{\"key\": {\"$mod\": [2, 1]}}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        ImmutableList.of(
+                                new String[]{ "_id", "{\"test\":2, \"key\": 1}" },
+                                new String[]{ "_id", "{\"test\":\"test\",\"key\":13}" }
+                        ) ) );
+
+    }
+
     // regex
+
+
+    @Test
+    public void regexTest() {
+        insertMany( DATA_4 );
+
+        Result result = find( "{\"test\": {\"$regex\": 'test'}}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        ImmutableList.of(
+                                new String[]{ "_id", "{\"test\":\"test\", \"key\": 1.1}" }
+                        ) ) );
+
+        result = find( "{\"test\": {\"$regex\": 't1', \"$options\": \"ix\"}}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        ImmutableList.of(
+                                new String[]{ "_id", "{\"test\":\"T 1\", \"key\": 2}" },
+                                new String[]{ "_id", "{\"test\":\"t1\", \"key\": 2.3}" }
+                        ) ) );
+
+    }
 
     // all
 
+
+    @Test
+    public void allTest() {
+        insertMany( DATA_5 );
+
+        Result result = find( "{\"test\": {\"$all\": [1,3]}}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        ImmutableList.of(
+                                new String[]{ "_id", "{\"test\": [3, 1, \"test\"], \"key\": 3}" },
+                                new String[]{ "_id", "{\"test\": [3,1], \"key\": 2}" }
+                        ) ) );
+
+        result = find( "{\"test\": {\"$all\": [\"test\"]}}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        ImmutableList.of(
+                                new String[]{ "_id", "{\"test\": [3, 1, \"test\"], \"key\": 3}" },
+                                new String[]{ "_id", "{\"test\": [\"test\"], \"key\": 2}" }
+                        ) ) );
+    }
+
+
     // elemMatch
+    @Test
+    public void elemMatchTest() {
+        insertMany( DATA_5 );
+
+        Result result = find( "{\"test\": {\"$elemMatch\": {\"$gt\": 2}}}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        ImmutableList.of(
+                                new String[]{ "_id", "{\"test\": [3, 1, \"test\"], \"key\": 3}" },
+                                new String[]{ "_id", "{\"test\": [3, 1], \"key\": 2}" }
+                        ) ) );
+    }
 
     // size
+
+
+    @Test
+    public void sizeTest() {
+        insertMany( DATA_5 );
+
+        Result result = find( "{\"test\": {\"$size\": 1}}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        ImmutableList.of(
+                                new String[]{ "_id", "{\"test\": [\"test\"], \"key\": 2}" }
+                        ) ) );
+    }
 
 }

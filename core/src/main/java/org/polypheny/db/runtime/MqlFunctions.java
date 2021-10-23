@@ -364,6 +364,7 @@ public class MqlFunctions {
     @SuppressWarnings("UnusedDeclaration")
     public static boolean docRegexMatch( Object input, String regex, boolean isInsensitive, boolean isMultiline, boolean doesIgnoreWhitespace, boolean allowsDot ) {
         if ( input instanceof String ) {
+            String comp = (String) input;
             int flags = 0;
             if ( isInsensitive ) {
                 flags |= Pattern.CASE_INSENSITIVE;
@@ -372,13 +373,14 @@ public class MqlFunctions {
                 flags |= Pattern.MULTILINE;
             }
             if ( doesIgnoreWhitespace ) {
-                throw new RuntimeException( "NOT SUPPORTED" );
+                regex = regex.replaceAll( "\\s", "" );
+                comp = comp.replaceAll( "\\s", "" );
             }
             if ( allowsDot ) {
                 flags |= Pattern.DOTALL;
             }
 
-            return Pattern.compile( regex, flags ).matcher( (String) input ).matches();
+            return Pattern.compile( regex, flags ).matcher( comp ).matches();
         }
         return false;
     }
