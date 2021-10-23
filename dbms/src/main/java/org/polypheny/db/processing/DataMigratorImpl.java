@@ -212,7 +212,6 @@ public class DataMigratorImpl implements DataMigrator {
                         to.get( 0 ).physicalSchemaName ),
                 to.get( 0 ).getLogicalTableName() + "_" + partitionId );
         RelOptTable physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
-        System.out.println( "physical: " + physical );
         ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
         RelOptCluster cluster = RelOptCluster.create(

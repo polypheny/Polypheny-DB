@@ -59,7 +59,9 @@ public class SqlDropMaterializedView extends SqlDropObject {
                 throw e;
             }
         }
+
         MaterializedManager materializedManager = MaterializedManager.getInstance();
+        materializedManager.isDroppingMaterialized = true;
         materializedManager.deleteMaterializedViewFromInfo( table.id );
 
         try {
@@ -67,6 +69,7 @@ public class SqlDropMaterializedView extends SqlDropObject {
         } catch ( DdlOnSourceException e ) {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.ddlOnSourceTable() );
         }
+        materializedManager.isDroppingMaterialized = false;
     }
 
 }

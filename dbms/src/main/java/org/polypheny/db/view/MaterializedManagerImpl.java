@@ -324,31 +324,29 @@ public class MaterializedManagerImpl extends MaterializedManager {
                 prepareSourceRel( sourceStatement, catalogMaterialized.getRelCollation(), catalogMaterialized.getDefinition() );
 
                 columnPlacements.clear();
-                if ( catalog.checkIfExistsTable( materializedId ) && materializedInfo.containsKey( materializedId ) ) {
-                    columns.get( id ).forEach( column -> columnPlacements.add( Catalog.getInstance().getColumnPlacement( id, column.id ) ) );
 
-                    //Build RelNode to build delete Statement from materialized view
-                    RelBuilder deleteRelBuilder = RelBuilder.create( deleteStatement );
-                    RelNode deleteRel = deleteRelBuilder.scan( catalogMaterialized.name ).build();
+                columns.get( id ).forEach( column -> columnPlacements.add( Catalog.getInstance().getColumnPlacement( id, column.id ) ) );
 
-                    //Build RelNode to build insert Statement from materialized view
-                    RelBuilder insertRelBuilder = RelBuilder.create( insertStatement );
-                    RelNode insertRel = insertRelBuilder.push( catalogMaterialized.getDefinition() ).build();
+                //Build RelNode to build delete Statement from materialized view
+                RelBuilder deleteRelBuilder = RelBuilder.create( deleteStatement );
+                RelNode deleteRel = deleteRelBuilder.scan( catalogMaterialized.name ).build();
 
-                    //check if materialized view was dropped
-                    if ( materializedInfo.containsKey( materializedId ) ) {
-                        Statement targetStatementDelete = transaction.createStatement();
-                        //delete all data
-                        targetRel = dataMigrator.buildDeleteStatement( targetStatementDelete, columnPlacements, Catalog.getInstance().getPartitionsOnDataPlacement( id, catalogMaterialized.id ).get( 0 ) );
-                        dataMigrator.executeQuery( columns.get( id ), RelRoot.of( deleteRel, SqlKind.SELECT ), deleteStatement, targetStatementDelete, targetRel, true );
+                //Build RelNode to build insert Statement from materialized view
+                RelBuilder insertRelBuilder = RelBuilder.create( insertStatement );
+                RelNode insertRel = insertRelBuilder.push( catalogMaterialized.getDefinition() ).build();
 
-                        Statement targetStatementInsert = transaction.createStatement();
+                Statement targetStatementDelete = transaction.createStatement();
+                //delete all data
+                targetRel = dataMigrator.buildDeleteStatement( targetStatementDelete, columnPlacements, Catalog.getInstance().getPartitionsOnDataPlacement( id, catalogMaterialized.id ).get( 0 ) );
+                dataMigrator.executeQuery( columns.get( id ), RelRoot.of( deleteRel, SqlKind.SELECT ), deleteStatement, targetStatementDelete, targetRel, true );
 
-                        //insert new data
-                        targetRel = dataMigrator.buildInsertStatement( targetStatementInsert, columnPlacements, Catalog.getInstance().getPartitionsOnDataPlacement( id, catalogMaterialized.id ).get( 0 ) );
-                        dataMigrator.executeQuery( columns.get( id ), RelRoot.of( insertRel, SqlKind.SELECT ), sourceStatement, targetStatementInsert, targetRel, true );
-                    }
-                }
+                Statement targetStatementInsert = transaction.createStatement();
+
+                //insert new data
+                targetRel = dataMigrator.buildInsertStatement( targetStatementInsert, columnPlacements, Catalog.getInstance().getPartitionsOnDataPlacement( id, catalogMaterialized.id ).get( 0 ) );
+                dataMigrator.executeQuery( columns.get( id ), RelRoot.of( insertRel, SqlKind.SELECT ), sourceStatement, targetStatementInsert, targetRel, true );
+
+
             }
         }
 

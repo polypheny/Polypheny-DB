@@ -37,6 +37,7 @@ import org.polypheny.db.transaction.Transaction;
 public abstract class MaterializedManager {
 
     public static MaterializedManager INSTANCE = null;
+    public boolean isDroppingMaterialized = false;
 
 
     public static MaterializedManager setAndGetInstance( MaterializedManager transaction ) {
