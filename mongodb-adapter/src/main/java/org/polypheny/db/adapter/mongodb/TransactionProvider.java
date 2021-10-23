@@ -134,7 +134,6 @@ public class TransactionProvider {
                 synchronized ( this ) {
                     sessions.remove( xid );
                 }
-
             }
         } else {
             log.info( "No-op rollback" );

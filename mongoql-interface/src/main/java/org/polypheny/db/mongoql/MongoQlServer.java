@@ -189,8 +189,6 @@ public class MongoQlServer extends QueryInterface {
             }
             return gson.toJson( e.toString() );
         }
-
-
     }
 
 

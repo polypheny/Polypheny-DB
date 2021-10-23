@@ -224,7 +224,6 @@ public class MongoFilter extends Filter implements MongoRel {
          * Translates a condition that may be an AND of other conditions. Gathers together conditions that apply to the same field.
          */
         private void translateAnd( RexNode node0 ) {
-
             for ( RexNode node : RelOptUtil.conjunctions( node0 ) ) {
                 Map<String, List<BsonValue>> shallowCopy = new HashMap<>( this.map );
                 this.map = new HashMap<>();
@@ -378,7 +377,6 @@ public class MongoFilter extends Filter implements MongoRel {
 
 
         private void mergeMaps( Map<String, List<BsonValue>> newValueMap, Map<String, List<BsonValue>> finalValueMap, String op ) {
-
             if ( !op.equals( "$or" ) && !op.equals( "$and" ) ) {
                 for ( Entry<String, List<BsonValue>> values : newValueMap.entrySet() ) {
                     BsonValue entry = asCondition( values.getValue(), values.getKey() );
@@ -646,7 +644,6 @@ public class MongoFilter extends Filter implements MongoRel {
 
 
         private String getParamAsKey( RexNode node ) {
-
             if ( node.isA( INPUT_REF ) ) {
                 return rowType.getFieldNames().get( ((RexInputRef) node).getIndex() );
             } else {
@@ -657,7 +654,6 @@ public class MongoFilter extends Filter implements MongoRel {
 
         @Nullable
         private BsonValue getParamAsValue( RexNode node ) {
-
             if ( node.isA( INPUT_REF ) ) {
                 return new BsonString( "$" + rowType.getFieldNames().get( ((RexInputRef) node).getIndex() ) );
             } else if ( node.isA( DYNAMIC_PARAM ) ) {
@@ -775,7 +771,6 @@ public class MongoFilter extends Filter implements MongoRel {
 
 
         private boolean translateExpr( String op, RexNode left, RexNode right ) {
-
             if ( left.isA( INPUT_REF ) && right.isA( INPUT_REF ) ) {
                 BsonValue l = new BsonString( "$" + getPhysicalName( (RexInputRef) left ) );
                 BsonValue r = new BsonString( "$" + getPhysicalName( (RexInputRef) right ) );

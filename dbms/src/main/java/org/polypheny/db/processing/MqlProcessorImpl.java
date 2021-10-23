@@ -222,5 +222,4 @@ public class MqlProcessorImpl implements MqlProcessor, ViewExpander {
         return null;
     }
 
-
 }

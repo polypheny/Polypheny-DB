@@ -34,7 +34,6 @@ import org.polypheny.db.mongoql.model.Result;
 @Category({ AdapterTestSuite.class, FileExcluded.class, CassandraExcluded.class })
 public class FindTest extends MqlTestTemplate {
 
-
     private final List<String> DATA_0 = Arrays.asList(
             "{\"test\":1}",
             "{\"test\":1.3,\"key\":\"val\"}",
@@ -57,7 +56,6 @@ public class FindTest extends MqlTestTemplate {
                 MongoConnection.checkResultSet(
                         result,
                         ImmutableList.of( new Object[]{ "id_", expected } ) ) );
-
     }
 
 
@@ -73,7 +71,6 @@ public class FindTest extends MqlTestTemplate {
                 MongoConnection.checkResultSet(
                         result,
                         ImmutableList.of( new Object[]{ "id_", expected } ) ) );
-
     }
 
 
@@ -115,7 +112,6 @@ public class FindTest extends MqlTestTemplate {
                                 .map( e -> new String[]{ "_id", e } )
                                 .collect( Collectors.toList() ),
                         true ) );
-
     }
 
 
@@ -134,11 +130,10 @@ public class FindTest extends MqlTestTemplate {
         assertTrue(
                 MongoConnection.checkUnorderedResultSet(
                         result,
-                        expected
-                                .stream()
+                        expected.stream()
                                 .map( e -> new String[]{ "_id", e } )
-                                .collect( Collectors.toList() ), true ) );
-
+                                .collect( Collectors.toList() ),
+                        true ) );
     }
 
 
@@ -152,10 +147,7 @@ public class FindTest extends MqlTestTemplate {
 
         Result result = find( "{}", "{\"_id\":0}" );
 
-        assertTrue(
-                MongoConnection.checkUnorderedResultSet(
-                        result,
-                        expected, false ) );
+        assertTrue( MongoConnection.checkUnorderedResultSet( result, expected, false ) );
     }
 
 
@@ -169,11 +161,7 @@ public class FindTest extends MqlTestTemplate {
 
         Result result = find( "{}", "{\"test\":0}" );
 
-        assertTrue(
-                MongoConnection.checkUnorderedResultSet(
-                        result,
-                        expected,
-                        true ) );
+        assertTrue( MongoConnection.checkUnorderedResultSet( result, expected, true ) );
     }
 
 
@@ -187,10 +175,7 @@ public class FindTest extends MqlTestTemplate {
 
         Result result = find( "{}", "{\"test.sub\":0}" );
 
-        assertTrue(
-                MongoConnection.checkUnorderedResultSet(
-                        result,
-                        expected, true ) );
+        assertTrue( MongoConnection.checkUnorderedResultSet( result, expected, true ) );
     }
 
 
@@ -204,10 +189,7 @@ public class FindTest extends MqlTestTemplate {
 
         Result result = find( "{}", "{\"test\":1,\"key\":1}" );
 
-        assertTrue(
-                MongoConnection.checkUnorderedResultSet(
-                        result,
-                        expected, true ) );
+        assertTrue( MongoConnection.checkUnorderedResultSet( result, expected, true ) );
     }
 
 
@@ -221,10 +203,7 @@ public class FindTest extends MqlTestTemplate {
 
         Result result = find( "{}", "{\"test\":1,\"key\":1,\"newName\":\"$test\"}" );
 
-        assertTrue(
-                MongoConnection.checkUnorderedResultSet(
-                        result,
-                        expected, true ) );
+        assertTrue( MongoConnection.checkUnorderedResultSet( result, expected, true ) );
     }
 
     // eq
@@ -263,7 +242,8 @@ public class FindTest extends MqlTestTemplate {
                         result,
                         ImmutableList.of(
                                 new String[]{ "id_", "{\"test\":1}" },
-                                new String[]{ "id_", "{\"test\":\"test\",\"key\":13}" } ), true ) );
+                                new String[]{ "id_", "{\"test\":\"test\",\"key\":13}" } ),
+                        true ) );
     }
 
     // gt
@@ -275,10 +255,7 @@ public class FindTest extends MqlTestTemplate {
 
         Result result = find( "{\"test\":{\"$gt\": 1.3}}", "{}" );
 
-        assertTrue(
-                MongoConnection.checkResultSet(
-                        result,
-                        ImmutableList.of() ) );
+        assertTrue( MongoConnection.checkResultSet( result, ImmutableList.of() ) );
     }
 
 
@@ -294,7 +271,8 @@ public class FindTest extends MqlTestTemplate {
                         ImmutableList.of(
                                 new String[]{ "_id", "{\"test\":1}" },
                                 new String[]{ "_id", "{\"test\":1.3,\"key\":\"val\"}" }
-                        ), true ) );
+                        ),
+                        true ) );
     }
 
 
@@ -321,10 +299,7 @@ public class FindTest extends MqlTestTemplate {
 
         Result result = find( "{\"test\":{\"$lt\": 1.0}}", "{}" );
 
-        assertTrue(
-                MongoConnection.checkResultSet(
-                        result,
-                        ImmutableList.of() ) );
+        assertTrue( MongoConnection.checkResultSet( result, ImmutableList.of() ) );
     }
 
 
@@ -361,10 +336,7 @@ public class FindTest extends MqlTestTemplate {
 
         Result result = find( "{\"test\":{\"$in\": [16, \"key\"]}}", "{}" );
 
-        assertTrue(
-                MongoConnection.checkResultSet(
-                        result,
-                        ImmutableList.of() ) );
+        assertTrue( MongoConnection.checkResultSet( result, ImmutableList.of() ) );
     }
 
 
@@ -381,7 +353,8 @@ public class FindTest extends MqlTestTemplate {
                         ImmutableList.of(
                                 new String[]{ "_id", "{\"test\":1.3,\"key\":\"val\"}" },
                                 new String[]{ "_id", "{\"test\":\"test\",\"key\":13}" }
-                        ), true ) );
+                        ),
+                        true ) );
     }
 
     // nin
@@ -424,6 +397,5 @@ public class FindTest extends MqlTestTemplate {
     // elemMatch
 
     // size
-
 
 }

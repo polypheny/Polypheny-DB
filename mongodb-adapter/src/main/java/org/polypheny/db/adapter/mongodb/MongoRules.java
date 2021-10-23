@@ -33,9 +33,6 @@
 
 package org.polypheny.db.adapter.mongodb;
 
-
-import static org.polypheny.db.sql.fun.SqlStdOperatorTable.SUBSTRING;
-
 import com.google.common.collect.ImmutableList;
 import com.mongodb.client.gridfs.GridFSBucket;
 import java.util.AbstractList;
@@ -259,7 +256,7 @@ public class MongoRules {
             MONGO_OPERATORS.put( SqlStdOperatorTable.LOG10, "$log10" );
             MONGO_OPERATORS.put( SqlStdOperatorTable.ABS, "$abs" );
             MONGO_OPERATORS.put( SqlStdOperatorTable.CHAR_LENGTH, "$strLenCP" );
-            MONGO_OPERATORS.put( SUBSTRING, "$substrCP" );
+            MONGO_OPERATORS.put( SqlStdOperatorTable.SUBSTRING, "$substrCP" );
             MONGO_OPERATORS.put( SqlStdOperatorTable.ROUND, "$round" );
             MONGO_OPERATORS.put( SqlStdOperatorTable.ACOS, "$acos" );
             MONGO_OPERATORS.put( SqlStdOperatorTable.TAN, "$tan" );
@@ -318,7 +315,7 @@ public class MongoRules {
             }
             String stdOperator = MONGO_OPERATORS.get( call.getOperator() );
             if ( stdOperator != null ) {
-                if ( call.getOperator() == SUBSTRING ) {
+                if ( call.getOperator() == SqlStdOperatorTable.SUBSTRING ) {
                     String first = strings.get( 1 );
                     first = "{\"$subtract\":[" + first + ", 1]}";
                     strings.remove( 1 );

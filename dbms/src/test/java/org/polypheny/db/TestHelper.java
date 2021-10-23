@@ -288,7 +288,6 @@ public class TestHelper {
 
 
         public static boolean checkResultSet( Result result, List<Object[]> expected ) {
-
             assertEquals( expected.size(), result.getData().length );
 
             int j = 0;
@@ -350,7 +349,6 @@ public class TestHelper {
 
 
         public static boolean checkUnorderedResultSet( Result result, List<String[]> expected, boolean excludeId ) {
-
             assertEquals( expected.size(), result.getData().length );
 
             List<List<String>> parsedResults = new ArrayList<>();
@@ -382,9 +380,7 @@ public class TestHelper {
             assertTrue( parsedExpected.containsAll( parsedResults ) );
             assertTrue( parsedResults.containsAll( parsedExpected ) );
             return true;
-
         }
-
     }
 
 

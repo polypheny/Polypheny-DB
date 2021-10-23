@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2020 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -462,7 +462,6 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                         throw validator.newValidationError( identifier, Static.RESOURCE.columnNotFound( name ) );
                     }
                     final RelDataTypeField field0 = step.rowType.getFieldList().get( step.i );
-
                     final String fieldName = field0.getName();
                     switch ( step.kind ) {
                         case PEEK_FIELDS:
@@ -553,5 +552,4 @@ public abstract class DelegatingScope implements SqlValidatorScope {
     public SqlValidatorScope getParent() {
         return parent;
     }
-
 }

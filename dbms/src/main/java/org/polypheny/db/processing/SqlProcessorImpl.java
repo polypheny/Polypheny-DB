@@ -426,11 +426,8 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
     private HashSet<String> getNewColumns( SqlInsert insert, SqlNodeList oldColumnList, CatalogTable catalogTable ) {
         HashSet<String> newCols = new HashSet<>();
         List<String> columnNames = catalogTable.getColumnNames();
-
         for ( SqlNode column : oldColumnList.getList() ) {
-
             String name = ((SqlIdentifier) column).names.get( 0 );
-
             if ( !(columnNames.contains( name )) ) {
                 newCols.add( name );
             }

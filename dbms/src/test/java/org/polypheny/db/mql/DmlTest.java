@@ -30,12 +30,11 @@ import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.mongoql.model.Result;
 
+
 /**
  * Integration tests, which use the MongoQL-interface to observe
  * correctness of the MongoQL language and the document model
  */
-
-
 @Category({ AdapterTestSuite.class, CassandraExcluded.class })
 public class DmlTest extends MqlTestTemplate {
 
@@ -65,12 +64,9 @@ public class DmlTest extends MqlTestTemplate {
         assertTrue(
                 MongoConnection.checkResultSet(
                         result,
-                        data
-                                .stream()
+                        data.stream()
                                 .map( d -> new Object[]{ "id_", d } )
                                 .collect( Collectors.toList() ) ) );
-
     }
-
 
 }
