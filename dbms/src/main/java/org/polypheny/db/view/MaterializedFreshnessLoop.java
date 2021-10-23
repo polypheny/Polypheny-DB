@@ -54,6 +54,7 @@ public class MaterializedFreshnessLoop implements Runnable {
 
                 if ( v.getCriteriaType() == CriteriaType.INTERVAL ) {
                     if ( v.getLastUpdate().getTime() + v.getTimeInMillis() < System.currentTimeMillis() ) {
+                        System.out.println( "Testing if Thread is still running." );
                         manager.prepareToUpdate( k );
                        /* if ( !manager.getIntervalToUpdate().contains( k ) ) {
                             manager.getIntervalToUpdate().add( k );

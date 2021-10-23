@@ -152,6 +152,7 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
         assert !INTEGER_PATTERN.matcher( description ).matches() : "Rule's description should not be an integer: " + rule.getClass().getName() + ", " + description;
 
         RelOptRule existingRule = mapDescToRule.put( description, rule );
+        System.out.println( "TEST; existing rule=" + existingRule + "; new rule=" + rule );
         if ( existingRule != null ) {
             if ( existingRule == rule ) {
                 throw new AssertionError( "Rule should not already be registered" );
