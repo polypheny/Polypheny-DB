@@ -225,25 +225,9 @@ public class AggregateTest extends MqlTestTemplate {
         MongoConnection.checkUnorderedResultSet( result, expected, false );
     }
 
-    /*
-    $addToSet
-    $avg
-    $count
-    $first
-    $last
-    $max
-    $mergeObjects
-    $min
-    $push
-    $stdDevPop
-    $stdDevSamp
-    $sum
-    */
-
     //$limit
-
-
     @Test
+    @Category(CottontailExcluded.class)
     public void limitTest() {
         List<String[]> expected = ImmutableList.of(
                 new String[]{ "{\"test\":\"val1\",\"key\":1}" } );

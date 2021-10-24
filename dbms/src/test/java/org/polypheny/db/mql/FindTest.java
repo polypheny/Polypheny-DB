@@ -228,13 +228,13 @@ public class FindTest extends MqlTestTemplate {
     @Test
     public void eqTest() {
         insertMany( DATA_0 );
-        // if both are active old result is returned TODO dl fix
-        /*Result result = find( "{\"test\":{\"$eq\":1}}", "{}" );
+        // if both are active old result is returned
+        Result result = find( "{\"test\":{\"$eq\":1}}", "{}" );
 
         assertTrue(
                 MongoConnection.checkResultSet(
                         result,
-                        ImmutableList.of( new Object[]{ "id_", "{\"test\":1}" } ) ) );*/
+                        ImmutableList.of( new Object[]{ "id_", "{\"test\":1}" } ) ) );
 
         Result result1 = find( "{\"test\":{\"$eq\": 1.3}}", "{}" );
 

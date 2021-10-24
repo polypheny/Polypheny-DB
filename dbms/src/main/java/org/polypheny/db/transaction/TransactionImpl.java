@@ -96,7 +96,7 @@ public class TransactionImpl implements Transaction, Comparable {
     private final List<Adapter> involvedAdapters = new CopyOnWriteArrayList<>();
 
     private final Set<Lock> lockList = new HashSet<>();
-    private boolean useCache = false;
+    private boolean useCache = true;
 
 
     TransactionImpl(

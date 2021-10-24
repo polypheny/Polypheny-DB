@@ -16,7 +16,9 @@
 
 package org.polypheny.db.mql;
 
+import java.util.stream.Collectors;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.ddl.DdlManager;
@@ -46,10 +48,22 @@ public class MqlDrop extends MqlCollectionStatement implements MqlExecutableStat
         Catalog catalog = Catalog.getInstance();
 
         try {
+            if ( catalog.getSchemas( Catalog.defaultDatabaseId, new Pattern( database ) ).size() != 1 ) {
+                // dropping a document database( Polyschema ), which does not exist, which is a no-op
+                return;
+            }
+
+            if ( !catalog.getTables( Catalog.defaultDatabaseId, new Pattern( database ), null )
+                    .stream()
+                    .map( name -> name.name )
+                    .collect( Collectors.toList() ).contains( getCollection() ) ) {
+                // dropping a collection, which does not exist, which is a no-op
+                return;
+            }
             CatalogTable table = catalog.getTable( Catalog.defaultDatabaseId, database, getCollection() );
             ddlManager.dropTable( table, statement );
         } catch ( DdlOnSourceException | UnknownTableException e ) {
-            throw new RuntimeException( "An error occurred while dropping the database (Polypheny Schema): ", e );
+            throw new RuntimeException( "An error occurred while dropping the database (Polypheny Schema): " + e.getMessage(), e );
         }
     }
 
