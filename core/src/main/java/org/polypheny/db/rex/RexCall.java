@@ -33,9 +33,6 @@
 
 package org.polypheny.db.rex;
 
-
-import static org.polypheny.db.sql.SqlKind.DOC_KIND;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import java.util.EnumSet;
@@ -276,7 +273,7 @@ public class RexCall extends RexNode {
 
     @Override
     public int hashCode() {
-        if ( DOC_KIND.contains( op.getKind() ) || op instanceof MqlFunctionOperator ) {
+        if ( SqlKind.DOC_KIND.contains( op.getKind() ) || op instanceof MqlFunctionOperator ) {
             return (op + "[" + operands.stream().map( rexNode -> Integer.toString( rexNode.hashCode() ) ).collect( Collectors.joining( "," ) ) + "]").hashCode();
         } else {
             return toString().hashCode();
