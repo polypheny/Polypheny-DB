@@ -37,6 +37,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import kong.unirest.HttpRequest;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
@@ -377,8 +378,23 @@ public class TestHelper {
                 expected.forEach( row -> parsedExpected.add( Arrays.asList( row ).subList( 1, Arrays.asList( row ).size() ) ) );
             }
 
-            assertTrue( parsedExpected.containsAll( parsedResults ) );
-            assertTrue( parsedResults.containsAll( parsedExpected ) );
+            List<List<String>> finalExpected = parsedExpected
+                    .stream()
+                    .map(
+                            list -> list
+                                    .stream()
+                                    .map( e -> {
+                                        if ( e != null ) {
+                                            return e.replace( " ", "" );
+                                        } else {
+                                            return null;
+                                        }
+                                    } )
+                                    .collect( Collectors.toList() ) )
+                    .collect( Collectors.toList() );
+
+            assertTrue( finalExpected.containsAll( parsedResults ) );
+            assertTrue( parsedResults.containsAll( finalExpected ) );
             return true;
         }
     }

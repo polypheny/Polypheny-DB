@@ -398,23 +398,23 @@ public class FindTest extends MqlTestTemplate {
         Result result = find( "{\"test\":{\"$exists\": true}}", "{}" );
 
         assertTrue(
-                MongoConnection.checkResultSet(
+                MongoConnection.checkUnorderedResultSet(
                         result,
                         ImmutableList.of(
                                 new String[]{ "_id", "{\"test\":1}" },
                                 new String[]{ "_id", "{\"test\":1.3,\"key\":\"val\"}" },
                                 new String[]{ "_id", "{\"test\":\"test\",\"key\":13}" }
-                        ) ) );
+                        ), true ) );
 
         result = find( "{\"key\":{\"$exists\": true}}", "{}" );
 
         assertTrue(
-                MongoConnection.checkResultSet(
+                MongoConnection.checkUnorderedResultSet(
                         result,
                         ImmutableList.of(
                                 new String[]{ "_id", "{\"test\":1.3,\"key\":\"val\"}" },
                                 new String[]{ "_id", "{\"test\":\"test\",\"key\":13}" }
-                        ) ) );
+                        ), true ) );
 
         result = find( "{\"key\":{\"$exists\": false}}", "{}" );
 
@@ -464,12 +464,12 @@ public class FindTest extends MqlTestTemplate {
         result = find( "{\"test\":{\"$type\": \"number\"}}", "{}" );
 
         assertTrue(
-                MongoConnection.checkResultSet(
+                MongoConnection.checkUnorderedResultSet(
                         result,
                         ImmutableList.of(
                                 new String[]{ "_id", "{\"test\":1}" },
                                 new String[]{ "_id", "{\"test\":1.3,\"key\":\"val\"}" }
-                        ) ) );
+                        ), true ) );
     }
 
     // and
@@ -543,13 +543,13 @@ public class FindTest extends MqlTestTemplate {
         Result result = find( "{\"$or\": [ {\"test\": {\"$type\": 2}}, {\"test\": {\"$type\": 1}} ]}", "{}" );
 
         assertTrue(
-                MongoConnection.checkResultSet(
+                MongoConnection.checkUnorderedResultSet(
                         result,
                         ImmutableList.of(
 
                                 new String[]{ "_id", "{\"test\":1.3,\"key\":\"val\"}" },
                                 new String[]{ "_id", "{\"test\":\"test\",\"key\":13}" }
-                        ) ) );
+                        ), true ) );
 
     }
 
@@ -579,12 +579,12 @@ public class FindTest extends MqlTestTemplate {
         Result result = find( "{\"key\": {\"$mod\": [2, 1]}}", "{}" );
 
         assertTrue(
-                MongoConnection.checkResultSet(
+                MongoConnection.checkUnorderedResultSet(
                         result,
                         ImmutableList.of(
                                 new String[]{ "_id", "{\"test\":2, \"key\": 1}" },
                                 new String[]{ "_id", "{\"test\":\"test\",\"key\":13}" }
-                        ) ) );
+                        ), true ) );
 
     }
 
@@ -608,12 +608,12 @@ public class FindTest extends MqlTestTemplate {
         result = find( "{\"test\": {\"$regex\": 't1', \"$options\": \"i\"}}", "{}" );
 
         assertTrue(
-                MongoConnection.checkResultSet(
+                MongoConnection.checkUnorderedResultSet(
                         result,
                         ImmutableList.of(
                                 new String[]{ "_id", "{\"test\":\"T1\", \"key\": 2}" },
                                 new String[]{ "_id", "{\"test\":\"t1\", \"key\": 2.3}" }
-                        ) ) );
+                        ), true ) );
 
     }
 
@@ -627,22 +627,22 @@ public class FindTest extends MqlTestTemplate {
         Result result = find( "{\"test\": {\"$all\": [1,3]}}", "{}" );
 
         assertTrue(
-                MongoConnection.checkResultSet(
+                MongoConnection.checkUnorderedResultSet(
                         result,
                         ImmutableList.of(
                                 new String[]{ "_id", "{\"test\": [3, 1, \"test\"], \"key\": 3}" },
                                 new String[]{ "_id", "{\"test\": [3,1], \"key\": 2}" }
-                        ) ) );
+                        ), true ) );
 
         result = find( "{\"test\": {\"$all\": [\"test\"]}}", "{}" );
 
         assertTrue(
-                MongoConnection.checkResultSet(
+                MongoConnection.checkUnorderedResultSet(
                         result,
                         ImmutableList.of(
                                 new String[]{ "_id", "{\"test\": [3, 1, \"test\"], \"key\": 3}" },
                                 new String[]{ "_id", "{\"test\": [\"test\"], \"key\": 2}" }
-                        ) ) );
+                        ), true ) );
     }
 
 
@@ -654,12 +654,12 @@ public class FindTest extends MqlTestTemplate {
         Result result = find( "{\"test\": {\"$elemMatch\": {\"$gt\": 2}}}", "{}" );
 
         assertTrue(
-                MongoConnection.checkResultSet(
+                MongoConnection.checkUnorderedResultSet(
                         result,
                         ImmutableList.of(
                                 new String[]{ "_id", "{\"test\": [3, 1, \"test\"], \"key\": 3}" },
                                 new String[]{ "_id", "{\"test\": [3, 1], \"key\": 2}" }
-                        ) ) );
+                        ), true ) );
     }
 
     // size
