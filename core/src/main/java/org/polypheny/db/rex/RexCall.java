@@ -277,7 +277,7 @@ public class RexCall extends RexNode {
     @Override
     public int hashCode() {
         if ( DOC_KIND.contains( op.getKind() ) || op instanceof MqlFunctionOperator ) {
-            return operands.stream().map( rexNode -> Integer.toString( rexNode.hashCode() ) ).collect( Collectors.joining( "," ) ).hashCode();
+            return (op + "[" + operands.stream().map( rexNode -> Integer.toString( rexNode.hashCode() ) ).collect( Collectors.joining( "," ) ) + "]").hashCode();
         } else {
             return toString().hashCode();
         }
