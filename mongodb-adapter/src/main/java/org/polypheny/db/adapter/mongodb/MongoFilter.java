@@ -1062,6 +1062,10 @@ public class MongoFilter extends Filter implements MongoRel {
             if ( left.getKind() == SqlKind.OTHER_FUNCTION ) {
                 return translateItem( op, (RexCall) left, right );
             }
+            if ( left.getKind() == SqlKind.MOD ) {
+                return translateMod( (RexCall) left, right );
+            }
+
             if ( left.getKind() == SqlKind.DOC_FIELD ) {
                 return translateDocValue( op, (RexCall) left, right );
             }
