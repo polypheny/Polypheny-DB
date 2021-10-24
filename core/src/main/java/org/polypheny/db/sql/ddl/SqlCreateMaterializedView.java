@@ -155,23 +155,20 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
 
         MaterializedCriteria materializedCriteria;
 
+        //depending on the freshness type different information is needed
         if ( freshnessType != null ) {
             switch ( freshnessType ) {
                 case "UPDATE":
                     materializedCriteria = new MaterializedCriteria( CriteriaType.UPDATE, freshnessTime );
-                    System.out.println( freshnessType );
                     break;
                 case "INTERVAL":
                     materializedCriteria = new MaterializedCriteria( CriteriaType.INTERVAL, freshnessTime, getFreshnessType( freshnessId.toString().toLowerCase( Locale.ROOT ) ) );
-                    System.out.println( freshnessType );
                     break;
                 case "MANUAL":
                     materializedCriteria = new MaterializedCriteria( CriteriaType.MANUAL );
-                    System.out.println( freshnessType );
                     break;
                 default:
                     materializedCriteria = new MaterializedCriteria();
-                    System.out.println( freshnessType );
                     break;
             }
         } else {
@@ -182,7 +179,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
 
         try {
             DdlManager.getInstance().createMaterializedView(
-                    viewName.replaceAll("[^A-Za-z0-9]", "_"),
+                    viewName.replaceAll( "[^A-Za-z0-9]", "_" ),
                     schemaId,
                     relRoot,
                     replace,

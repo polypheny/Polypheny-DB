@@ -70,6 +70,10 @@ public abstract class MaterializedManager {
 
     public abstract void updateMaterializedTime( Long materializedId );
 
+
+    /**
+     * to trek updates on tables for materialized views with update freshness
+     */
     public static class TableUpdateVisitor extends RelShuttleImpl {
 
         @Getter
@@ -89,13 +93,10 @@ public abstract class MaterializedManager {
                         } else {
                             names.addAll( qualifiedName );
                         }
-
                     }
                 }
-
             }
             return super.visit( other );
-
         }
 
     }
