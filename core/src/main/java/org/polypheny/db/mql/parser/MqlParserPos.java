@@ -194,6 +194,7 @@ public class MqlParserPos implements Serializable {
         return Iterables.transform( nodes, MqlNode::getParserPosition );
     }
 
+
     /**
      * Combines the parser positions of a list of nodes to create a position which spans from the beginning of the first to the end of the last.
      */
