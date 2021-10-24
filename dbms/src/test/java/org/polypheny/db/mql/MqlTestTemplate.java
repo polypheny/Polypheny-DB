@@ -185,7 +185,8 @@ public class MqlTestTemplate {
 
 
     protected static void dropDatabase( String database ) {
-        MongoConnection.executeGetResponse( "db." + database + ".drop()" );
+        MongoConnection.executeGetResponse( "use " + database );
+        MongoConnection.executeGetResponse( "db.dropDatabase()" );
     }
 
 }
