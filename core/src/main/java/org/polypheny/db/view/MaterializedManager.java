@@ -38,6 +38,7 @@ public abstract class MaterializedManager {
 
     public static MaterializedManager INSTANCE = null;
     public boolean isDroppingMaterialized = false;
+    public boolean isCreatingMaterialized = false;
 
 
     public static MaterializedManager setAndGetInstance( MaterializedManager transaction ) {

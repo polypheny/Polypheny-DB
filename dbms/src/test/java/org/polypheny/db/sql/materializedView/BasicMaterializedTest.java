@@ -887,9 +887,9 @@ public class BasicMaterializedTest {
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
                 statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
-                statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestDep AS SELECT * FROM viewTestDepTable FRESHNESS INTERVAL 500 \"milliseconds\"" );
+                statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestDep AS SELECT * FROM viewTestDepTable FRESHNESS INTERVAL 50 \"milliseconds\"" );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 100 \"milliseconds\" " );
-                statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp1 AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 800 \"milliseconds\" " );
+                statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp1 AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 80 \"milliseconds\" " );
                 waiter.await( 1, TimeUnit.SECONDS );
                 try {
 
