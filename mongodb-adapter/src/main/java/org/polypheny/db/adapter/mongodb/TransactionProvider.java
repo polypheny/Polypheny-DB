@@ -16,8 +16,6 @@
 
 package org.polypheny.db.adapter.mongodb;
 
-import static org.reflections.Reflections.log;
-
 import com.mongodb.MongoClientException;
 import com.mongodb.MongoCommandException;
 import com.mongodb.TransactionOptions;
@@ -27,6 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.transaction.PolyXid;
 
 /**
@@ -34,6 +33,7 @@ import org.polypheny.db.transaction.PolyXid;
  * it starts new sessions, for transactions and exposes the functionality to
  * commit or rollback these transactions
  */
+@Slf4j
 public class TransactionProvider {
 
     @Setter

@@ -83,7 +83,7 @@ public interface Transaction {
 
     void setUseCache( boolean useCache );
 
-    boolean getUsesCache();
+    boolean getUseCache();
 
     /**
      * Flavor, how multimedia results should be returned from a store.

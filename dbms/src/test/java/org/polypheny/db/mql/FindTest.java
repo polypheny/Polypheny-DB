@@ -404,7 +404,8 @@ public class FindTest extends MqlTestTemplate {
                                 new String[]{ "_id", "{\"test\":1}" },
                                 new String[]{ "_id", "{\"test\":1.3,\"key\":\"val\"}" },
                                 new String[]{ "_id", "{\"test\":\"test\",\"key\":13}" }
-                        ), true ) );
+                        ),
+                        true ) );
 
         result = find( "{\"key\":{\"$exists\": true}}", "{}" );
 
@@ -414,7 +415,8 @@ public class FindTest extends MqlTestTemplate {
                         ImmutableList.of(
                                 new String[]{ "_id", "{\"test\":1.3,\"key\":\"val\"}" },
                                 new String[]{ "_id", "{\"test\":\"test\",\"key\":13}" }
-                        ), true ) );
+                        ),
+                        true ) );
 
         result = find( "{\"key\":{\"$exists\": false}}", "{}" );
 
@@ -469,7 +471,8 @@ public class FindTest extends MqlTestTemplate {
                         ImmutableList.of(
                                 new String[]{ "_id", "{\"test\":1}" },
                                 new String[]{ "_id", "{\"test\":1.3,\"key\":\"val\"}" }
-                        ), true ) );
+                        ),
+                        true ) );
     }
 
     // and
@@ -530,7 +533,6 @@ public class FindTest extends MqlTestTemplate {
                         ImmutableList.of(
                                 new String[]{ "_id", "{\"test\":1}" }
                         ) ) );
-
     }
 
 
@@ -549,8 +551,8 @@ public class FindTest extends MqlTestTemplate {
 
                                 new String[]{ "_id", "{\"test\":1.3,\"key\":\"val\"}" },
                                 new String[]{ "_id", "{\"test\":\"test\",\"key\":13}" }
-                        ), true ) );
-
+                        ),
+                        true ) );
     }
 
 
@@ -584,8 +586,8 @@ public class FindTest extends MqlTestTemplate {
                         ImmutableList.of(
                                 new String[]{ "_id", "{\"test\":2, \"key\": 1}" },
                                 new String[]{ "_id", "{\"test\":\"test\",\"key\":13}" }
-                        ), true ) );
-
+                        ),
+                        true ) );
     }
 
     // regex
@@ -613,8 +615,8 @@ public class FindTest extends MqlTestTemplate {
                         ImmutableList.of(
                                 new String[]{ "_id", "{\"test\":\"T1\", \"key\": 2}" },
                                 new String[]{ "_id", "{\"test\":\"t1\", \"key\": 2.3}" }
-                        ), true ) );
-
+                        ),
+                        true ) );
     }
 
     // all
@@ -632,7 +634,8 @@ public class FindTest extends MqlTestTemplate {
                         ImmutableList.of(
                                 new String[]{ "_id", "{\"test\": [3, 1, \"test\"], \"key\": 3}" },
                                 new String[]{ "_id", "{\"test\": [3,1], \"key\": 2}" }
-                        ), true ) );
+                        ),
+                        true ) );
 
         result = find( "{\"test\": {\"$all\": [\"test\"]}}", "{}" );
 
@@ -642,7 +645,8 @@ public class FindTest extends MqlTestTemplate {
                         ImmutableList.of(
                                 new String[]{ "_id", "{\"test\": [3, 1, \"test\"], \"key\": 3}" },
                                 new String[]{ "_id", "{\"test\": [\"test\"], \"key\": 2}" }
-                        ), true ) );
+                        ),
+                        true ) );
     }
 
 
@@ -659,7 +663,8 @@ public class FindTest extends MqlTestTemplate {
                         ImmutableList.of(
                                 new String[]{ "_id", "{\"test\": [3, 1, \"test\"], \"key\": 3}" },
                                 new String[]{ "_id", "{\"test\": [3, 1], \"key\": 2}" }
-                        ), true ) );
+                        ),
+                        true ) );
     }
 
     // size

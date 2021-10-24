@@ -302,11 +302,13 @@ public class TransactionImpl implements Transaction, Comparable {
 
 
     @Override
-    public boolean getUsesCache() {
+    public boolean getUseCache() {
         return this.useCache;
     }
 
+    //
     // For locking
+    //
 
 
     Set<Lock> getLocks() {

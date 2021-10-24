@@ -1390,11 +1390,8 @@ public class MqlToRelConverter {
                     return convertSingleMath( key, bsonValue, rowType );
                 } else if ( key.equals( "$mod" ) ) {
                     RexNode id = getIdentifier( parentKey, rowType );
-
                     return convertMod( id, bsonValue, rowType );
-
                 } else if ( mathOperators.containsKey( key ) ) {
-
                     // special cases have to id in the array, like $arrayElem
                     boolean losesContext = parentKey != null;
                     RexNode id = null;
@@ -1403,15 +1400,12 @@ public class MqlToRelConverter {
                         id = getIdentifier( parentKey, rowType );
                     }
                     RexNode node = convertMath( key, null, bsonValue, rowType, false );
-
                     if ( losesContext && id != null ) {
                         RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
-
                         return new RexCall( type, MqlStdOperatorTable.DOC_EQ, Arrays.asList( id, node ) );
                     } else {
                         return node;
                     }
-
                 } else {
                     if ( key.equals( "$exists" ) ) {
                         return convertExists( bsonValue, parentKey, rowType );
@@ -1429,13 +1423,10 @@ public class MqlToRelConverter {
                     } else if ( key.equals( "$size" ) ) {
                         return convertSize( bsonValue, parentKey, rowType );
                     }
-
                     return translateLogical( key, parentKey, bsonValue, rowType );
                 }
             }  // handle others
-
         }
-
         return getFixedCall( operands, SqlStdOperatorTable.AND, PolyType.BOOLEAN );
     }
 
@@ -1476,7 +1467,6 @@ public class MqlToRelConverter {
         RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
 
         return new RexCall( type, MqlStdOperatorTable.DOC_EQ, Arrays.asList( node, rexRemainder ) );
-
     }
 
 
