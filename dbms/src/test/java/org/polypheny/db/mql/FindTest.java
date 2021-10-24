@@ -236,12 +236,19 @@ public class FindTest extends MqlTestTemplate {
                         result,
                         ImmutableList.of( new Object[]{ "id_", "{\"test\":1}" } ) ) );
 
-        Result result1 = find( "{\"test\":{\"$eq\": 1.3}}", "{}" );
+        result = find( "{\"test\":{\"$eq\": \"test\"}}", "{}" );
 
         assertTrue(
                 MongoConnection.checkResultSet(
-                        result1,
-                        ImmutableList.of( new Object[]{ "id_", "{\"test\":1.3,\"key\":\"val\"}" } ) ) );
+                        result,
+                        ImmutableList.of( new Object[]{ "id_", "{\"test\":\"test\",\"key\":13}" } ) ) );
+
+        result = find( "{\"test\":{\"$eq\": 1 }}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        ImmutableList.of( new Object[]{ "id_", "{\"test\":1}" } ) ) );
     }
 
     // ne
