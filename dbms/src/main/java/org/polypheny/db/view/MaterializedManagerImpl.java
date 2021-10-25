@@ -190,7 +190,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
         if ( potentialInteresting.containsKey( xid ) ) {
             materializedUpdate( potentialInteresting.remove( xid ) );
         }
-
+/*
         List<Long> intervalUpdate = ImmutableList.copyOf( intervalToUpdate );
         intervalToUpdate.clear();
         if ( !intervalUpdate.isEmpty() ) {
@@ -201,7 +201,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
                 }
             }
         }
-         
+         */
     }
 
 
@@ -222,8 +222,10 @@ public class MaterializedManagerImpl extends MaterializedManager {
                 if ( materializedCriteria.getCriteriaType() == CriteriaType.UPDATE ) {
                     int numberUpdated = materializedCriteria.getTimesUpdated();
                     if ( numberUpdated == (materializedCriteria.getInterval() - 1) ) {
+                        isUpdatingMaterialized = true;
                         prepareToUpdate( view.id );
                         updateMaterializedUpdate( view.id, 0 );
+                        isUpdatingMaterialized = false;
                     } else {
                         updateMaterializedUpdate( view.id, numberUpdated + 1 );
                     }

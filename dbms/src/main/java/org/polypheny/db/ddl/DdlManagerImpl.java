@@ -63,6 +63,7 @@ import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.CatalogView.QueryLanguage;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
+import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.SchemaAlreadyExistsException;
@@ -1550,6 +1551,16 @@ public class DdlManagerImpl extends DdlManager {
         RelDataType fieldList = relRoot.rel.getRowType();
 
         Map<Long, List<Long>> underlyingTables = new HashMap<>();
+        Map<Long, List<Long>> underlying = findUnderlyingTablesOfView( relRoot.rel, underlyingTables, fieldList );
+
+        if ( materializedCriteria.getCriteriaType() == CriteriaType.UPDATE ) {
+            List<TableType> tableTypes = new ArrayList<>();
+            underlying.keySet().forEach( t -> tableTypes.add( catalog.getTable( t ).tableType ) );
+            if ( !(tableTypes.contains( TableType.TABLE )) ) {
+                throw new GenericCatalogException( "Not possible to use Materialized View with Update Freshness if underlying table does not include a modifiable table." );
+            }
+        }
+
         long tableId = catalog.addMaterializedView(
                 viewName,
                 schemaId,
@@ -1558,7 +1569,7 @@ public class DdlManagerImpl extends DdlManager {
                 false,
                 relRoot.rel,
                 relRoot.collation,
-                findUnderlyingTablesOfView( relRoot.rel, underlyingTables, fieldList ),
+                underlying,
                 fieldList,
                 materializedCriteria,
                 query,

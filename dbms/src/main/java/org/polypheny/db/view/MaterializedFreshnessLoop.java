@@ -54,18 +54,17 @@ public class MaterializedFreshnessLoop implements Runnable {
 
                 if ( v.getCriteriaType() == CriteriaType.INTERVAL ) {
                     if ( v.getLastUpdate().getTime() + v.getTimeInMillis() < System.currentTimeMillis() ) {
-                        /*
-                        if ( !manager.isDroppingMaterialized && !manager.isCreatingMaterialized ) {
+                        if ( !manager.isDroppingMaterialized && !manager.isCreatingMaterialized && !manager.isUpdatingMaterialized ) {
                             manager.prepareToUpdate( k );
                             manager.updateMaterializedTime( k );
                         }
-
-                         */
-
+/*
                         if ( !manager.getIntervalToUpdate().contains( k ) ) {
                             manager.getIntervalToUpdate().add( k );
                         }
                         manager.updateMaterializedTime( k );
+
+                         */
 
                     }
                 }
