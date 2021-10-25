@@ -190,7 +190,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
         if ( potentialInteresting.containsKey( xid ) ) {
             materializedUpdate( potentialInteresting.remove( xid ) );
         }
-        /*
+
         List<Long> intervalUpdate = ImmutableList.copyOf( intervalToUpdate );
         intervalToUpdate.clear();
         if ( !intervalUpdate.isEmpty() ) {
@@ -201,7 +201,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
                 }
             }
         }
-         */
+         
     }
 
 
