@@ -245,14 +245,17 @@ public class MaterializedManagerImpl extends MaterializedManager {
         try {
             Transaction transaction = getTransactionManager().startTransaction( catalogTable.ownerName, catalog.getDatabase( catalogTable.databaseId ).name, false, "Materialized View" );
 
-            try {
-                // Get a exclusive global schema lock
-                LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) transaction, LockMode.EXCLUSIVE );
-            } catch ( DeadlockException e ) {
-                throw new RuntimeException( "DeadLock while locking for materialized view update", e );
+            if ( !(LockManager.INSTANCE.hasLock( (TransactionImpl) transaction, LockManager.GLOBAL_LOCK )) ) {
+                try {
+                    // Get a exclusive global schema lock
+                    LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) transaction, LockMode.EXCLUSIVE );
+                } catch ( DeadlockException e ) {
+                    throw new RuntimeException( "DeadLock while locking for materialized view update", e );
+                }
+                updateData( transaction, materializedId );
+                commitTransaction( transaction );
+
             }
-            updateData( transaction, materializedId );
-            commitTransaction( transaction );
 
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Not possible to create Transaction for Materialized View update", e );
