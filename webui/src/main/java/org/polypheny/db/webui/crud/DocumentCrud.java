@@ -33,6 +33,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.eclipse.jetty.websocket.api.Session;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -201,7 +202,7 @@ public class DocumentCrud {
 
             ArrayList<String[]> data = Crud.computeResultData( rows, header, statement.getTransaction() );
 
-            return Collections.singletonList( new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows ) );
+            return Collections.singletonList( new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setSchemaType( SchemaType.DOCUMENT ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows ) );
         } finally {
             try {
                 ((AutoCloseable) iterator).close();
