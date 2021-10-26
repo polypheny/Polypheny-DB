@@ -39,14 +39,14 @@ import org.polypheny.db.util.ImmutableNullableList;
 public class SqlAlterMaterializedViewRenameColumn extends SqlAlterMaterializedView {
 
 
-    private final SqlIdentifier materializedview;
+    private final SqlIdentifier materializedView;
     private final SqlIdentifier columnOldName;
     private final SqlIdentifier columnNewName;
 
 
-    public SqlAlterMaterializedViewRenameColumn( SqlParserPos pos, SqlIdentifier materializedview, SqlIdentifier columnOldName, SqlIdentifier columnNewName ) {
+    public SqlAlterMaterializedViewRenameColumn( SqlParserPos pos, SqlIdentifier materializedView, SqlIdentifier columnOldName, SqlIdentifier columnNewName ) {
         super( pos );
-        this.materializedview = Objects.requireNonNull( materializedview );
+        this.materializedView = Objects.requireNonNull( materializedView );
         this.columnOldName = Objects.requireNonNull( columnOldName );
         this.columnNewName = Objects.requireNonNull( columnNewName );
     }
@@ -54,7 +54,7 @@ public class SqlAlterMaterializedViewRenameColumn extends SqlAlterMaterializedVi
 
     @Override
     public List<SqlNode> getOperandList() {
-        return ImmutableNullableList.of( materializedview, columnNewName, columnOldName );
+        return ImmutableNullableList.of( materializedView, columnNewName, columnOldName );
     }
 
 
@@ -62,7 +62,7 @@ public class SqlAlterMaterializedViewRenameColumn extends SqlAlterMaterializedVi
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
         writer.keyword( "MATERIALIZED VIEW" );
-        materializedview.unparse( writer, leftPrec, rightPrec );
+        materializedView.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "RENAME" );
         writer.keyword( "COLUMN" );
         columnOldName.unparse( writer, leftPrec, rightPrec );
@@ -73,7 +73,7 @@ public class SqlAlterMaterializedViewRenameColumn extends SqlAlterMaterializedVi
 
     @Override
     public void execute( Context context, Statement statement ) {
-        CatalogTable catalogTable = getCatalogTable( context, materializedview );
+        CatalogTable catalogTable = getCatalogTable( context, materializedView );
         CatalogMaterialized catalogView;
         if ( catalogTable.tableType == TableType.MATERIALIZEDVIEW ) {
             catalogView = (CatalogMaterialized) catalogTable;

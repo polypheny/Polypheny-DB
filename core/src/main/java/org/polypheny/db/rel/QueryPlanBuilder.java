@@ -62,7 +62,7 @@ public class QueryPlanBuilder {
     /**
      * Build a tree using the RelBuilder
      *
-     * @param topNode   top node from the tree from the user interface, with its children
+     * @param topNode top node from the tree from the user interface, with its children
      * @param statement transaction
      */
     public static RelNode buildFromTree( final UIRelNode topNode, final Statement statement ) {

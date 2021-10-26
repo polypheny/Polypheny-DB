@@ -54,7 +54,7 @@ import org.polypheny.db.schema.LogicalTable;
 
 public class ViewManager {
 
-    private static LogicalSort orderMaterialzed( RelNode other ) {
+    private static LogicalSort orderMaterialized( RelNode other ) {
         int positionPrimary = other.getRowType().getFieldList().size() - 1;
         RelFieldCollation relFieldCollation = new RelFieldCollation( positionPrimary, Direction.ASCENDING );
         RelCollations.of( relFieldCollation );
@@ -253,7 +253,7 @@ public class ViewManager {
                         CatalogTable catalogtable = Catalog.getInstance().getTable( tableId );
 
                         if ( catalogtable.isMaterialized() && ((CatalogMaterialized) catalogtable).isOrdered() ) {
-                            return orderMaterialzed( other );
+                            return orderMaterialized( other );
                         }
                     }
 

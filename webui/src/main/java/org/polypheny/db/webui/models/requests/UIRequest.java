@@ -62,12 +62,14 @@ public class UIRequest {
      */
     public boolean noLimit;
 
+
     public String getSchemaName() {
         if ( tableId != null ) {
             return tableId.split( "\\." )[0];
         }
         return null;
     }
+
 
     public String getTableName() {
         if ( tableId != null ) {

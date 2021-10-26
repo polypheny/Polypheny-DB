@@ -88,6 +88,7 @@ public class SqlDdlNodes {
         return new SqlCreateView( pos, replace, name, columnList, query );
     }
 
+
     /**
      * Creates a CREATE MATERIALIZED VIEW.
      */

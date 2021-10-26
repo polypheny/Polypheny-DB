@@ -16,7 +16,6 @@
 
 package org.polypheny.db.sql.ddl;
 
-import static org.polypheny.db.sql.SqlKind.ORDER;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.ArrayList;
@@ -155,7 +154,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
 
         MaterializedCriteria materializedCriteria;
 
-        //depending on the freshness type different information is needed
+        // Depending on the freshness type different information is needed
         if ( freshnessType != null ) {
             switch ( freshnessType ) {
                 case "UPDATE":
@@ -175,7 +174,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
             materializedCriteria = new MaterializedCriteria();
         }
 
-        boolean ordered = query.getKind().belongsTo( ORDER );
+        boolean ordered = query.getKind().belongsTo( SqlKind.ORDER );
 
         try {
             DdlManager.getInstance().createMaterializedView(
@@ -194,15 +193,12 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
                     ordered );
         } catch ( TableAlreadyExistsException e ) {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( viewName ) );
-        } catch ( GenericCatalogException | UnknownColumnException e ) {
+        } catch ( GenericCatalogException | UnknownColumnException | ColumnNotExistsException | ColumnAlreadyExistsException e ) {
             // we just added the table/column so it has to exist or we have a internal problem
             throw new RuntimeException( e );
-        } catch ( ColumnNotExistsException | ColumnAlreadyExistsException e ) {
-            e.printStackTrace();
         }
 
         MaterializedManager.getInstance().isCreatingMaterialized = false;
-
     }
 
 

@@ -41,7 +41,7 @@ public class MaterializedFreshnessLoop implements Runnable {
                 startEventLoop();
             }
         } catch ( InterruptedException e ) {
-            e.printStackTrace();
+            log.error( "Interrupted", e );
         }
     }
 

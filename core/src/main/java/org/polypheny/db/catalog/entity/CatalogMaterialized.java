@@ -196,6 +196,7 @@ public class CatalogMaterialized extends CatalogView {
     }
 
 
+    @Override
     public RelNode getDefinition() {
         return Catalog.getInstance().getNodeInfo().get( id );
     }

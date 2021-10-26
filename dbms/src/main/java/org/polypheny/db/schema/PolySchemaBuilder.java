@@ -112,7 +112,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                             RelDataTypeImpl.proto( fieldInfo.build() ) );
                     s.add( catalogTable.name, view );
                     tableMap.put( catalogTable.name, view );
-                } else if ( catalogTable.tableType == TableType.TABLE || catalogTable.tableType == TableType.SOURCE || catalogTable.tableType == TableType.MATERIALIZEDVIEW) {
+                } else if ( catalogTable.tableType == TableType.TABLE || catalogTable.tableType == TableType.SOURCE || catalogTable.tableType == TableType.MATERIALIZEDVIEW ) {
                     LogicalTable table = new LogicalTable(
                             catalogTable.id,
                             catalogTable.getSchemaName(),

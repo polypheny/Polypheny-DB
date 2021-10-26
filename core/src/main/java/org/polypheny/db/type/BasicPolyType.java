@@ -127,7 +127,7 @@ public class BasicPolyType extends AbstractPolyType {
 
 
     /**
-     * Constructs a type with nullablity.
+     * Constructs a type with nullability.
      */
     BasicPolyType createWithNullability( boolean nullable ) {
         if ( nullable == this.isNullable ) {

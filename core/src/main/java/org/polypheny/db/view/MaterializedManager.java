@@ -67,7 +67,7 @@ public abstract class MaterializedManager {
 
     public abstract void updateData( Transaction transaction, Long viewId );
 
-    public abstract void updateCommitedXid( PolyXid xid );
+    public abstract void updateCommittedXid( PolyXid xid );
 
     public abstract void updateMaterializedTime( Long materializedId );
 

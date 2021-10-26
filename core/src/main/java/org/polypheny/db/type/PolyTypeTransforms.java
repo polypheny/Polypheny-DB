@@ -57,11 +57,11 @@ public abstract class PolyTypeTransforms {
      * if any of a calls operands is nullable
      */
     public static final PolyTypeTransform TO_NULLABLE =
-             ( opBinding, typeToTransform ) ->
-                     PolyTypeUtil.makeNullableIfOperandsAre(
-                             opBinding.getTypeFactory(),
-                             opBinding.collectOperandTypes(),
-                             Objects.requireNonNull( typeToTransform ) );
+            ( opBinding, typeToTransform ) ->
+                    PolyTypeUtil.makeNullableIfOperandsAre(
+                            opBinding.getTypeFactory(),
+                            opBinding.collectOperandTypes(),
+                            Objects.requireNonNull( typeToTransform ) );
 
     /**
      * Parameter type-inference transform strategy where a derived type is transformed into the same type, but nullable if

@@ -84,7 +84,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
     public MaterializedManagerImpl( TransactionManager transactionManager ) {
         this.transactionManager = transactionManager;
         this.materializedInfo = new ConcurrentHashMap<>();
-        this.potentialInteresting = new HashMap<PolyXid, Long>();
+        this.potentialInteresting = new HashMap<>();
         this.intervalToUpdate = Collections.synchronizedList( new ArrayList<>() );
         MaterializedFreshnessLoop materializedFreshnessLoop = new MaterializedFreshnessLoop( this );
         Thread t = new Thread( materializedFreshnessLoop );
@@ -125,6 +125,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
      *
      * @param materializedId id from materialized view
      */
+    @Override
     public synchronized void updateMaterializedTime( Long materializedId ) {
         if ( materializedInfo.containsKey( materializedId ) ) {
             materializedInfo.get( materializedId ).setLastUpdate( new Timestamp( System.currentTimeMillis() ) );
@@ -149,10 +150,10 @@ public class MaterializedManagerImpl extends MaterializedManager {
      * add materialized view to materializedInfo
      *
      * @param materializedId id from materialized view
-     * @param matViewCritera information about the materialized view
+     * @param matViewCriteria information about the materialized view
      */
-    public synchronized void addMaterializedInfo( Long materializedId, MaterializedCriteria matViewCritera ) {
-        materializedInfo.put( materializedId, matViewCritera );
+    public synchronized void addMaterializedInfo( Long materializedId, MaterializedCriteria matViewCriteria ) {
+        materializedInfo.put( materializedId, matViewCriteria );
     }
 
 
@@ -186,7 +187,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
      * @param xid of committed transaction
      */
     @Override
-    public void updateCommitedXid( PolyXid xid ) {
+    public void updateCommittedXid( PolyXid xid ) {
         if ( potentialInteresting.containsKey( xid ) ) {
             materializedUpdate( potentialInteresting.remove( xid ) );
         }

@@ -203,6 +203,7 @@ public class CatalogView extends CatalogTable {
         }
     }
 
+
     public RelNode getDefinition() {
         return Catalog.getInstance().getNodeInfo().get( id );
     }

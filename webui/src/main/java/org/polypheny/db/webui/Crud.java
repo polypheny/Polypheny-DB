@@ -2969,12 +2969,15 @@ public class Crud implements InformationObserver {
                             false
                     );
                 } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
-                    log.error( "Not possible to create View because the Name is already used", e );
+                    log.error( "Not possible to create Materialized View because the name is already used", e );
                     Result finalResult = new Result( e );
                     finalResult.setGeneratedQuery( "Execute logical query plan" );
                     return finalResult;
                 } catch ( ColumnNotExistsException | ColumnAlreadyExistsException e ) {
-                    e.printStackTrace();
+                    log.error( "Error while creating materialized view", e );
+                    Result finalResult = new Result( e );
+                    finalResult.setGeneratedQuery( "Execute logical query plan" );
+                    return finalResult;
                 }
 
             } else {
@@ -2986,7 +2989,7 @@ public class Crud implements InformationObserver {
                 List<String> columns = new ArrayList<>();
                 root.rel.getRowType().getFieldList().forEach( f -> columns.add( f.getName() ) );
 
-                //default Schema
+                // Default Schema
                 long schemaId = transaction.getDefaultSchema().id;
 
                 Gson gson = new Gson();
@@ -3024,11 +3027,13 @@ public class Crud implements InformationObserver {
                 }
                 throw new RuntimeException( e );
             } catch ( NoTablePrimaryKeyException e ) {
-                e.printStackTrace();
+                log.error( "Error while creating materialized view", e );
+                Result finalResult = new Result( e );
+                finalResult.setGeneratedQuery( "Execute logical query plan" );
+                return finalResult;
             }
 
             return new Result().setGeneratedQuery( "Created " + viewType + " \"" + viewName + "\" from logical query plan" );
-
         }
 
         List<List<Object>> rows;

@@ -114,6 +114,7 @@ public class RelRoot {
         this.collation = Objects.requireNonNull( collation );
     }
 
+
     /**
      * Creates a simple RelRoot.
      */

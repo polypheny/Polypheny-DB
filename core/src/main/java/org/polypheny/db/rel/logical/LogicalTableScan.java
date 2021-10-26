@@ -80,6 +80,7 @@ public final class LogicalTableScan extends TableScan {
         super( cluster, traitSet, table );
     }
 
+
     /**
      * Creates a LogicalTableScan by parsing serialized output.
      */
