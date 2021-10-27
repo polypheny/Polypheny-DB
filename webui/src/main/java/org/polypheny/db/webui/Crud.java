@@ -2791,6 +2791,7 @@ public class Crud implements InformationObserver {
     Result executeRelAlg( final RelAlgRequest request, Session session ) {
         Transaction transaction = getTransaction( true );
         transaction.getQueryAnalyzer().setSession( session );
+        transaction.setUseCache( request.useCache );
         Statement statement = transaction.createStatement();
         long executionTime = 0;
         long temp = 0;

@@ -1295,6 +1295,10 @@ public class MqlToRelConverter {
             node = wrapLimit( node, 1 );
         }
 
+        if ( query.getLimit() != null ) {
+            node = wrapLimit( node, query.getLimit() );
+        }
+
         return node;
     }
 

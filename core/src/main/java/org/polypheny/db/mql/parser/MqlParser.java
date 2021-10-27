@@ -35,11 +35,13 @@ package org.polypheny.db.mql.parser;
 
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
+import java.util.regex.Pattern;
+import org.polypheny.db.mql.MqlCollectionStatement;
 import org.polypheny.db.mql.MqlNode;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
-import org.polypheny.db.sql.SqlSelect;
-import org.polypheny.db.sql.parser.SqlParseException;
 import org.polypheny.db.util.SourceStringReader;
 
 
@@ -49,35 +51,53 @@ import org.polypheny.db.util.SourceStringReader;
 public class MqlParser {
 
     public static final int DEFAULT_IDENTIFIER_MAX_LENGTH = 128;
+    private static final Pattern pattern = Pattern.compile( "limit\\(\\s*[0-9]*\\s*\\)" );
 
     private final MqlAbstractParserImpl parser;
+    private final Integer limit;
 
 
-    private MqlParser( MqlAbstractParserImpl parser ) {
+    private MqlParser( MqlAbstractParserImpl parser, Integer limit ) {
+        this.limit = limit;
         this.parser = parser;
     }
 
 
-    public static MqlParser create( String sql, MqlParserConfig mqlParserConfig ) {
-        return create( new SourceStringReader( sql ), mqlParserConfig );
+    public static MqlParser create( String mql, MqlParserConfig mqlParserConfig ) {
+        return create( new SourceStringReader( mql ), mqlParserConfig );
     }
 
 
     public static MqlParser create( Reader reader, MqlParserConfig mqlParserConfig ) {
-        MqlAbstractParserImpl parser = mqlParserConfig.parserFactory().getParser( reader );
+        String mql = ((SourceStringReader) reader).getSourceString();
+        List<String> splits = Arrays.asList( mql.split( "\\." ) );
+        Integer limit = null;
+        String last = splits.get( splits.size() - 1 );
+        if ( pattern.matcher( last ).matches() ) {
+            mql = mql.replace( "." + last, "" );
+            limit = Integer.parseInt( last
+                    .replace( "limit(", "" )
+                    .replace( ")", "" )
+                    .trim() );
+        }
+        MqlAbstractParserImpl parser = mqlParserConfig.parserFactory().getParser( new SourceStringReader( mql ) );
 
-        return new MqlParser( parser );
+        return new MqlParser( parser, limit );
     }
 
 
     /**
      * Parses a SQL expression.
      *
-     * @throws SqlParseException if there is a parse error
+     * @throws MqlParseException if there is a parse error
      */
     public MqlNode parseExpression() throws MqlParseException {
         try {
-            return parser.parseMqlExpressionEof();
+            MqlNode node = parser.parseMqlExpressionEof();
+            if ( node instanceof MqlCollectionStatement && limit != null ) {
+                ((MqlCollectionStatement) node).setLimit( limit );
+            }
+            return node;
         } catch ( Throwable ex ) {
             if ( ex instanceof PolyphenyDbContextException ) {
                 final String originalMql = parser.getOriginalMql();
@@ -93,12 +113,15 @@ public class MqlParser {
     /**
      * Parses a <code>SELECT</code> statement.
      *
-     * @return A {@link SqlSelect} for a regular <code>SELECT</code> statement; a {@link org.polypheny.db.sql.SqlBinaryOperator} for a <code>UNION</code>, <code>INTERSECT</code>, or <code>EXCEPT</code>.
-     * @throws SqlParseException if there is a parse error
+     * @throws MqlParseException if there is a parse error
      */
     public MqlNode parseQuery() throws MqlParseException {
         try {
-            return parser.parseMqlStmtEof();
+            MqlNode node = parser.parseMqlStmtEof();
+            if ( node instanceof MqlCollectionStatement && limit != null ) {
+                ((MqlCollectionStatement) node).setLimit( limit );
+            }
+            return node;
         } catch ( Throwable ex ) {
             if ( ex instanceof PolyphenyDbContextException ) {
                 final String originalMql = parser.getOriginalMql();

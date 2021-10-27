@@ -30,7 +30,7 @@ public abstract class MqlCollectionStatement extends MqlNode {
     @Setter
     @Getter
     @Accessors(chain = true)
-    private int limit = 10;
+    private Integer limit = null;
 
 
     public MqlCollectionStatement( String collection, MqlParserPos pos ) {
