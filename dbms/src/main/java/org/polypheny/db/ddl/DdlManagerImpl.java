@@ -769,6 +769,8 @@ public class DdlManagerImpl extends DdlManager {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( catalogTable.tableType );
 
+        checkModelLogic( catalogTable );
+
         try {
             CatalogPrimaryKey oldPk = catalog.getPrimaryKey( catalogTable.primaryKey );
 
@@ -811,6 +813,8 @@ public class DdlManagerImpl extends DdlManager {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( catalogTable.tableType );
 
+        checkModelLogic( catalogTable, null );
+
         try {
             List<Long> columnIds = new LinkedList<>();
             for ( String columnName : columnNames ) {
@@ -838,7 +842,7 @@ public class DdlManagerImpl extends DdlManager {
 
         CatalogColumn column = getCatalogColumn( catalogTable.id, columnName );
 
-        // Check if column is part of an key
+        // Check if column is part of a key
         for ( CatalogKey key : catalog.getTableKeys( catalogTable.id ) ) {
             if ( key.columnIds.contains( column.id ) ) {
                 if ( catalog.isPrimaryKey( key.id ) ) {
@@ -877,10 +881,17 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    private void checkModelLogic( CatalogTable catalogTable ) {
+        if ( catalogTable.getSchemaType() == SchemaType.DOCUMENT ) {
+            throw new RuntimeException( "Modification operation is not allowed by schema type DOCUMENT" );
+        }
+    }
+
+
     private void checkModelLogic( CatalogTable catalogTable, String columnName ) {
         if ( catalogTable.getSchemaType() == SchemaType.DOCUMENT
                 && (columnName.equals( "_data" ) || columnName.equals( "_id" )) ) {
-            throw new RuntimeException( "Cannot modify structure of schema type DOCUMENT" );
+            throw new RuntimeException( "Modification operation is not allowed by schema type DOCUMENT" );
         }
     }
 
@@ -1705,8 +1716,14 @@ public class DdlManagerImpl extends DdlManager {
 
             }
 
+            // remove any primaries
+            List<ConstraintInformation> primaries = constraints.stream().filter( c -> c.type == ConstraintType.PRIMARY ).collect( Collectors.toList() );
+            if ( primaries.size() > 0 ) {
+                primaries.forEach( constraints::remove );
+            }
+
             // add constraint for _id as primary if necessary
-            if ( constraints.stream().noneMatch( c -> c.type.getId() == 2 ) ) {
+            if ( constraints.stream().noneMatch( c -> c.type == ConstraintType.PRIMARY ) ) {
                 constraints.add( new ConstraintInformation( "primary", ConstraintType.PRIMARY, Collections.singletonList( "_id" ) ) );
             }
 

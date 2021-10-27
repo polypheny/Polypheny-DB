@@ -257,7 +257,7 @@ public class MqlToRelConverter {
         Mql.Type kind = query.getKind();
         RelOptTable table = getTable( query, defaultDatabase );
         if ( table == null ) {
-            throw new RuntimeException( "The used document database ( Polypheny Schema ) does not exist." );
+            throw new RuntimeException( "The used collection does not exist." );
         }
 
         RelNode node;
