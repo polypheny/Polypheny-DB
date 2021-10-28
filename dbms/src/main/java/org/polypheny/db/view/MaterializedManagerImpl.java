@@ -17,6 +17,7 @@
 package org.polypheny.db.view;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,6 +42,7 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -65,6 +67,9 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
+import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
+import org.polypheny.db.util.background.BackgroundTaskManager;
 
 @Slf4j
 public class MaterializedManagerImpl extends MaterializedManager {
@@ -86,9 +91,11 @@ public class MaterializedManagerImpl extends MaterializedManager {
         this.materializedInfo = new ConcurrentHashMap<>();
         this.potentialInteresting = new HashMap<>();
         this.intervalToUpdate = Collections.synchronizedList( new ArrayList<>() );
+        registerFreshnessLoop();
+                /*
         MaterializedFreshnessLoop materializedFreshnessLoop = new MaterializedFreshnessLoop( this );
         Thread t = new Thread( materializedFreshnessLoop );
-        t.start();
+        t.start();*/
     }
 
 
@@ -416,5 +423,39 @@ public class MaterializedManagerImpl extends MaterializedManager {
         }
     }
 
+
+    private void registerFreshnessLoop() {
+        BackgroundTaskManager.INSTANCE.registerTask(
+                MaterializedManagerImpl.this::updatingIntervalMaterialized,
+                "Update Materialized View with freshness type interval if it is time.",
+                TaskPriority.HIGH,
+                (TaskSchedulingType) RuntimeConfig.FRESHNESSLOOP_RATE.getEnum() );
+    }
+
+
+    private void updatingIntervalMaterialized() {
+        Map<Long, MaterializedCriteria> materializedViewInfo;
+        materializedViewInfo = ImmutableMap.copyOf( updateMaterializedViewInfo() );
+        materializedViewInfo.forEach( ( k, v ) -> {
+            System.out.println( "inside Loop" );
+            if ( v.getCriteriaType() == CriteriaType.INTERVAL ) {
+                if ( v.getLastUpdate().getTime() + v.getTimeInMillis() < System.currentTimeMillis() ) {
+                    if ( !isDroppingMaterialized && !isCreatingMaterialized && !isUpdatingMaterialized ) {
+                        System.out.println( "inside Loop chaning" );
+                        prepareToUpdate( k );
+                        updateMaterializedTime( k );
+                    }
+/*
+                        if ( !manager.getIntervalToUpdate().contains( k ) ) {
+                            manager.getIntervalToUpdate().add( k );
+                        }
+                        manager.updateMaterializedTime( k );
+
+                         */
+
+                }
+            }
+        } );
+    }
 
 }

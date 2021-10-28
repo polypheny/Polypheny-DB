@@ -56,7 +56,7 @@ public interface RelDataType {
     /**
      * Queries whether this is a structured type.
      *
-     * @return whether this type has fields; examples include Frows and user-defined structured types in SQL, and classes in Java
+     * @return whether this type has fields; examples include rows and user-defined structured types in SQL, and classes in Java
      */
     boolean isStruct();
 

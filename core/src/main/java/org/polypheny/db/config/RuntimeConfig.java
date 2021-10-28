@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.util.background.BackgroundTask;
+import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
 
 public enum RuntimeConfig {
@@ -186,6 +187,11 @@ public enum RuntimeConfig {
     STATISTIC_RATE( "statistics/passiveTrackingRate",
             "Rate of passive tracking of statistics.",
             BackgroundTask.TaskSchedulingType.EVERY_THIRTY_SECONDS,
+            ConfigType.ENUM ),
+
+    FRESHNESSLOOP_RATE( "materializedView/freshnessLoopRate",
+            "Rate of freshness Loop for Materialized Views with update type interval.",
+            TaskSchedulingType.EVERY_SECOND,
             ConfigType.ENUM ),
 
     EXPLORE_BY_EXAMPLE_TO_SQL( "exploreByExample/classificationToSQL",
