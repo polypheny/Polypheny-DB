@@ -199,7 +199,7 @@ TOKEN : /* IDENTIFIERS */ // for nested documents check out Document_Splits()
 |
 < DOCUMENT: "{" (<LETTER>|<DIGIT>|<SYMBOL>)* "}" >
 |
-< COMMANDS: "(" (~[])+ ")">
+< COMMANDS: "(" (~[])* ")">
 |
 < ARRAY: "[" (<LETTER>|<DIGIT>|<SYMBOL>)* "]" >
 |
@@ -795,7 +795,11 @@ List<BsonValue> Bson_Splits():
 {
     t=< COMMANDS >
     {
-        return BsonArray.parse( BsonUtil.fixBson( "[" + t.image.substring(1, t.image.length() - 1 ) + "]" ) );
+        if( t.image.trim().equals("") ){
+            return new BsonArray();
+        }else {
+            return BsonArray.parse( BsonUtil.fixBson( "[" + t.image.substring(1, t.image.length() - 1 ) + "]" ) );
+        }
     }
 }
 
