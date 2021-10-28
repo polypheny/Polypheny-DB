@@ -182,7 +182,6 @@ public class BasicMaterializedTest {
 
                 try {
                     statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
-                    //statement.executeUpdate( "ALTER TABLE viewTestEmp RENAME COLUMN empId TO employeeId" );
                     statement.executeUpdate( "ALTER MATERIALIZED VIEW viewTestEmp RENAME COLUMN firstName TO fName" );
                     statement.executeUpdate( "ALTER MATERIALIZED VIEW viewTestEmp RENAME COLUMN lastName TO lName" );
                     statement.executeUpdate( "ALTER MATERIALIZED VIEW viewTestEmp RENAME COLUMN depId TO departmentId" );
@@ -227,11 +226,9 @@ public class BasicMaterializedTest {
                 statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
                 statement.executeUpdate( VIEWTESTDEPTABLE_DATA_SQL );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
-                //statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestDep AS SELECT * FROM viewTestDepTable" );
 
                 try {
                     statement.executeUpdate( "ALTER MATERIALIZED VIEW viewTestEmp RENAME TO viewRenameEmpTest" );
-                    //statement.executeUpdate( "ALTER TABLE viewTestDep RENAME TO viewRenameDepTest" );
 
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewRenameEmpTest" ),
@@ -244,7 +241,6 @@ public class BasicMaterializedTest {
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP MATERIALIZED VIEW viewRenameEmpTest" );
-                    //statement.executeUpdate( "DROP VIEW viewRenameDepTest" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
                     statement.executeUpdate( "DROP TABLE viewTestDepTable" );
                     dropTables( statement );

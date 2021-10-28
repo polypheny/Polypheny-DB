@@ -92,10 +92,6 @@ public class MaterializedManagerImpl extends MaterializedManager {
         this.potentialInteresting = new HashMap<>();
         this.intervalToUpdate = Collections.synchronizedList( new ArrayList<>() );
         registerFreshnessLoop();
-                /*
-        MaterializedFreshnessLoop materializedFreshnessLoop = new MaterializedFreshnessLoop( this );
-        Thread t = new Thread( materializedFreshnessLoop );
-        t.start();*/
     }
 
 
@@ -198,18 +194,6 @@ public class MaterializedManagerImpl extends MaterializedManager {
         if ( potentialInteresting.containsKey( xid ) ) {
             materializedUpdate( potentialInteresting.remove( xid ) );
         }
-/*
-        List<Long> intervalUpdate = ImmutableList.copyOf( intervalToUpdate );
-        intervalToUpdate.clear();
-        if ( !intervalUpdate.isEmpty() ) {
-
-            for ( long id : intervalUpdate ) {
-                if ( Catalog.getInstance().checkIfExistsTable( id ) ) {
-                    prepareToUpdate( id );
-                }
-            }
-        }
-         */
     }
 
 
@@ -240,6 +224,37 @@ public class MaterializedManagerImpl extends MaterializedManager {
                 }
             }
         }
+    }
+
+
+    /**
+     * Register the freshnessLoop as BackgroundTask to update interval Materialized Views after a given time
+     */
+    private void registerFreshnessLoop() {
+        BackgroundTaskManager.INSTANCE.registerTask(
+                MaterializedManagerImpl.this::updatingIntervalMaterialized,
+                "Update Materialized View with freshness type interval if it is time.",
+                TaskPriority.HIGH,
+                (TaskSchedulingType) RuntimeConfig.FRESHNESSLOOP_RATE.getEnum() );
+    }
+
+
+    /**
+     * Update Materialized Views with freshness type interval if it is time to update them
+     */
+    private void updatingIntervalMaterialized() {
+        Map<Long, MaterializedCriteria> materializedViewInfo;
+        materializedViewInfo = ImmutableMap.copyOf( updateMaterializedViewInfo() );
+        materializedViewInfo.forEach( ( k, v ) -> {
+            if ( v.getCriteriaType() == CriteriaType.INTERVAL ) {
+                if ( v.getLastUpdate().getTime() + v.getTimeInMillis() < System.currentTimeMillis() ) {
+                    if ( !isDroppingMaterialized && !isCreatingMaterialized && !isUpdatingMaterialized ) {
+                        prepareToUpdate( k );
+                        updateMaterializedTime( k );
+                    }
+                }
+            }
+        } );
     }
 
 
@@ -421,41 +436,6 @@ public class MaterializedManagerImpl extends MaterializedManager {
         if ( viewLogicalRoot instanceof LogicalViewTableScan ) {
             prepareNode( ((LogicalViewTableScan) viewLogicalRoot).getRelNode(), relOptCluster, relCollation );
         }
-    }
-
-
-    private void registerFreshnessLoop() {
-        BackgroundTaskManager.INSTANCE.registerTask(
-                MaterializedManagerImpl.this::updatingIntervalMaterialized,
-                "Update Materialized View with freshness type interval if it is time.",
-                TaskPriority.HIGH,
-                (TaskSchedulingType) RuntimeConfig.FRESHNESSLOOP_RATE.getEnum() );
-    }
-
-
-    private void updatingIntervalMaterialized() {
-        Map<Long, MaterializedCriteria> materializedViewInfo;
-        materializedViewInfo = ImmutableMap.copyOf( updateMaterializedViewInfo() );
-        materializedViewInfo.forEach( ( k, v ) -> {
-            System.out.println( "inside Loop" );
-            if ( v.getCriteriaType() == CriteriaType.INTERVAL ) {
-                if ( v.getLastUpdate().getTime() + v.getTimeInMillis() < System.currentTimeMillis() ) {
-                    if ( !isDroppingMaterialized && !isCreatingMaterialized && !isUpdatingMaterialized ) {
-                        System.out.println( "inside Loop chaning" );
-                        prepareToUpdate( k );
-                        updateMaterializedTime( k );
-                    }
-/*
-                        if ( !manager.getIntervalToUpdate().contains( k ) ) {
-                            manager.getIntervalToUpdate().add( k );
-                        }
-                        manager.updateMaterializedTime( k );
-
-                         */
-
-                }
-            }
-        } );
     }
 
 }
