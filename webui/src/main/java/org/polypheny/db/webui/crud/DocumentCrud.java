@@ -125,7 +125,7 @@ public class DocumentCrud {
                 // Prepare
                 signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
 
-                results.add( getResults( statement, request, signature, noLimit ) );
+                results.add( getResult( statement, request, query, signature, noLimit ) );
             }
 
             if ( parsed instanceof MqlUseDatabase ) {
@@ -151,7 +151,7 @@ public class DocumentCrud {
 
 
     @NotNull
-    private static Result getResults( Statement statement, QueryRequest request, PolyphenyDbSignature<?> signature, final boolean noLimit ) {
+    private static Result getResult( Statement statement, QueryRequest request, String query, PolyphenyDbSignature<?> signature, final boolean noLimit ) {
         Catalog catalog = Catalog.getInstance();
 
         Iterator<Object> iterator;
@@ -226,7 +226,11 @@ public class DocumentCrud {
 
             ArrayList<String[]> data = Crud.computeResultData( rows, header, statement.getTransaction() );
 
-            return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setSchemaType( SchemaType.DOCUMENT ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
+            return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) )
+                    .setSchemaType( SchemaType.DOCUMENT )
+                    .setAffectedRows( data.size() )
+                    .setHasMoreRows( hasMoreRows )
+                    .setGeneratedQuery( query );
         } finally {
             try {
                 ((AutoCloseable) iterator).close();
