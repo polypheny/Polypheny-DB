@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.rel;
+package org.polypheny.db.webui.models;
 
 
 /**

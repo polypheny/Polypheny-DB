@@ -112,7 +112,7 @@ public class ParameterValueValidator extends RelShuttleImpl {
                         valid = o instanceof Date || o instanceof Integer;
                         break;
                     case TIME:
-                        valid = o instanceof Time;
+                        valid = o instanceof Time || o instanceof Integer;
                         break;
                     case TIMESTAMP:
                         valid = o instanceof Timestamp || o instanceof Long;

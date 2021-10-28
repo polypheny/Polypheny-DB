@@ -19,7 +19,6 @@ package org.polypheny.db.webui.models;
 
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import org.polypheny.db.rel.SortState;
 
 
 /**

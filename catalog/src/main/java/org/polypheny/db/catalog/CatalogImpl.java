@@ -99,12 +99,10 @@ import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.processing.SqlProcessor;
-import org.polypheny.db.rel.QueryPlanBuilder;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.UIRelNode;
 import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlKind;
@@ -116,6 +114,8 @@ import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.FileSystemManager;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.webui.QueryPlanBuilder;
+import org.polypheny.db.webui.models.UIRelNode;
 
 
 @Slf4j
@@ -462,6 +462,7 @@ public class CatalogImpl extends Catalog {
                         break;
                     case RELALG:
                         Gson gson = new Gson();
+
                         RelNode result = QueryPlanBuilder.buildFromTree( gson.fromJson( query, UIRelNode.class ), statement );
 
                         final RelDataType rowType = result.getRowType();

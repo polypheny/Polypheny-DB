@@ -17,7 +17,7 @@
 package org.polypheny.db.webui.models.requests;
 
 
-import org.polypheny.db.rel.UIRelNode;
+import org.polypheny.db.webui.models.UIRelNode;
 
 
 public class RelAlgRequest extends UIRequest {
