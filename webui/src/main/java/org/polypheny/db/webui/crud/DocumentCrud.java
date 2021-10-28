@@ -135,6 +135,8 @@ public class DocumentCrud {
             executionTime = System.nanoTime() - executionTime;
             try {
                 statement.getTransaction().commit();
+                transaction = crud.getTransaction( request.analyze );
+                statement = transaction.createStatement();
             } catch ( TransactionException e ) {
                 throw new RuntimeException( "error while committing" );
             }
