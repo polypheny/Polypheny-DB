@@ -38,10 +38,12 @@ import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
-import org.polypheny.db.monitoring.events.MonitoringEvent;
+import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
+import org.polypheny.db.processing.MqlProcessor;
+import org.polypheny.db.processing.MqlProcessorImpl;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.processing.SqlProcessorImpl;
 import org.polypheny.db.schema.PolySchemaBuilder;
@@ -80,12 +82,21 @@ public class TransactionImpl implements Transaction, Comparable {
 
     @Getter
     private final boolean analyze;
+
+
+    private StatementEvent statementEventData;
+
+    private final AtomicLong statementCounter = new AtomicLong();
+
     private final List<Statement> statements = new ArrayList<>();
+
     private final List<String> changedTables = new ArrayList<>();
+
     @Getter
     private final List<Adapter> involvedAdapters = new CopyOnWriteArrayList<>();
+
     private final Set<Lock> lockList = new HashSet<>();
-    private MonitoringEvent monitoringEvent;
+    private boolean useCache = true;
 
 
     TransactionImpl(
@@ -222,6 +233,12 @@ public class TransactionImpl implements Transaction, Comparable {
 
 
     @Override
+    public MqlProcessor getMqlProcessor() {
+        return new MqlProcessorImpl();
+    }
+
+
+    @Override
     public StatementImpl createStatement() {
         StatementImpl statement = new StatementImpl( this );
         statements.add( statement );
@@ -232,7 +249,9 @@ public class TransactionImpl implements Transaction, Comparable {
     @Override
     public void addChangedTable( String qualifiedTableName ) {
         if ( !this.changedTables.contains( qualifiedTableName ) ) {
-            log.debug( "Add changed table: {}", qualifiedTableName );
+            if ( log.isDebugEnabled() ) {
+                log.debug( "Add changed table: {}", qualifiedTableName );
+            }
             this.changedTables.add( qualifiedTableName );
         }
     }
@@ -265,17 +284,31 @@ public class TransactionImpl implements Transaction, Comparable {
 
 
     @Override
-    public MonitoringEvent getMonitoringEvent() {
-        return this.monitoringEvent;
+    public StatementEvent getMonitoringData() {
+        return this.statementEventData;
     }
 
 
     @Override
-    public void setMonitoringEvent( MonitoringEvent event ) {
-        this.monitoringEvent = event;
+    public void setMonitoringData( StatementEvent event ) {
+        this.statementEventData = event;
     }
 
+
+    @Override
+    public void setUseCache( boolean useCache ) {
+        this.useCache = useCache;
+    }
+
+
+    @Override
+    public boolean getUseCache() {
+        return this.useCache;
+    }
+
+    //
     // For locking
+    //
 
 
     Set<Lock> getLocks() {

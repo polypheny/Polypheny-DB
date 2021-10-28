@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,8 @@
 
 package org.polypheny.db.schema;
 
-
 import com.google.common.collect.ImmutableList;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.rel.type.RelProtoDataType;
 
 
@@ -75,7 +75,7 @@ public interface SchemaPlus extends Schema {
     /**
      * Adds a schema as a sub-schema of this schema, and returns the wrapped object.
      */
-    SchemaPlus add( String name, Schema schema );
+    SchemaPlus add( String name, Schema schema, SchemaType schemaType );
 
     /**
      * Adds a table to this schema.
@@ -105,5 +105,5 @@ public interface SchemaPlus extends Schema {
     void setCacheEnabled( boolean cache );
 
     boolean isCacheEnabled();
-}
 
+}

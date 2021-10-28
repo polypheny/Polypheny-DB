@@ -23,6 +23,7 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
@@ -40,6 +41,9 @@ import org.polypheny.db.rex.RexNode;
 public class LogicalTable extends AbstractQueryableTable implements TranslatableTable, ScannableTable, ModifiableTable {
 
     private RelProtoDataType protoRowType;
+
+    @Getter
+    private final SchemaType schemaType;
 
     @Getter
     private final String logicalSchemaName;
@@ -60,7 +64,8 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
             String logicalTableName,
             List<Long> columnIds,
             List<String> logicalColumnNames,
-            RelProtoDataType protoRowType ) {
+            RelProtoDataType protoRowType,
+            SchemaType schemaType ) {
         super( Object[].class );
         this.tableId = tableId;
         this.logicalSchemaName = logicalSchemaName;
@@ -68,6 +73,7 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
         this.columnIds = columnIds;
         this.logicalColumnNames = logicalColumnNames;
         this.protoRowType = protoRowType;
+        this.schemaType = schemaType;
     }
 
 

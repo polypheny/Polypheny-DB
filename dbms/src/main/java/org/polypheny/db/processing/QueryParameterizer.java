@@ -30,7 +30,9 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.core.TableModify;
+import org.polypheny.db.rel.logical.LogicalDocuments;
 import org.polypheny.db.rel.logical.LogicalFilter;
+import org.polypheny.db.rel.logical.LogicalModifyCollect;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalValues;
@@ -49,6 +51,7 @@ import org.polypheny.db.rex.RexRangeRef;
 import org.polypheny.db.rex.RexSubQuery;
 import org.polypheny.db.rex.RexTableInputRef;
 import org.polypheny.db.rex.RexVisitor;
+import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
@@ -110,20 +113,30 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
                 }
             }
             RelNode input = modify.getInput();
-            if ( input instanceof LogicalValues ) {
+            if ( input instanceof LogicalValues && !(input instanceof LogicalDocuments) ) { //todo dl: handle documents differently
                 List<RexNode> projects = new ArrayList<>();
                 boolean firstRow = true;
+                HashMap<Integer, Integer> idxMapping = new HashMap<>();
                 for ( ImmutableList<RexLiteral> node : ((LogicalValues) input).getTuples() ) {
                     int i = 0;
                     for ( RexLiteral literal : node ) {
-                        int idx = index.getAndIncrement();
-                        RelDataType type = input.getRowType().getFieldList().get( i++ ).getValue();
-                        if ( firstRow ) {
-                            types.add( type );
-                            projects.add( new RexDynamicParam( type, idx ) );
-                            values.put( i, new ArrayList<>( ((LogicalValues) input).getTuples().size() ) );
+                        int idx;
+                        if ( !idxMapping.containsKey( i ) ) {
+                            idx = index.getAndIncrement();
+                            idxMapping.put( i, idx );
+                        } else {
+                            idx = idxMapping.get( i );
                         }
-                        values.get( i ).add( new ParameterValue( idx, type, literal.getValueForQueryParameterizer() ) );
+                        RelDataType type = input.getRowType().getFieldList().get( i ).getValue();
+                        if ( firstRow ) {
+                            projects.add( new RexDynamicParam( type, idx ) );
+                        }
+                        if ( !values.containsKey( idx ) ) {
+                            types.add( type );
+                            values.put( idx, new ArrayList<>( ((LogicalValues) input).getTuples().size() ) );
+                        }
+                        values.get( idx ).add( new ParameterValue( idx, type, literal.getValueForQueryParameterizer() ) );
+                        i++;
                     }
                     firstRow = false;
                 }
@@ -146,6 +159,17 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
                     modify.getUpdateColumnList(),
                     newSourceExpression,
                     modify.isFlattened() );
+        } else if ( other instanceof LogicalModifyCollect ) {
+            List<RelNode> inputs = new ArrayList<>( other.getInputs().size() );
+            for ( RelNode node : other.getInputs() ) {
+                inputs.add( visit( node ) );
+            }
+            return new LogicalModifyCollect(
+                    other.getCluster(),
+                    other.getTraitSet(),
+                    inputs,
+                    ((LogicalModifyCollect) other).all
+            );
         } else {
             return super.visit( other );
         }
@@ -182,7 +206,9 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
 
     @Override
     public RexNode visitCall( RexCall call ) {
-        if ( call.op instanceof SqlArrayValueConstructor ) {
+        if ( call.getKind().belongsTo( SqlKind.DOC_KIND ) ) {
+            return call;
+        } else if ( call.op instanceof SqlArrayValueConstructor ) {
             int i = index.getAndIncrement();
             List<Object> list = createListForArrays( call.operands );
             values.put( i, Collections.singletonList( new ParameterValue( i, call.type, list ) ) );

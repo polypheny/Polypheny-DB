@@ -310,6 +310,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
             case DOUBLE:
             case CHAR:
             case VARCHAR:
+            case JSON:
             case DECIMAL:
                 // Polypheny uses BigDecimal internally to represent DECIMAL values.
                 // BigDecimal#toString gives an exact and unique representation of the value.
@@ -378,6 +379,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                 return Types.lookupMethod( Linq4JFixer.class, "getDoubleData", Object.class );
             case CHAR:
             case VARCHAR:
+            case JSON:
                 return Types.lookupMethod( Linq4JFixer.class, "getStringData", Object.class );
             case NULL:
                 return Types.lookupMethod( Linq4JFixer.class, "getNullData", Object.class );

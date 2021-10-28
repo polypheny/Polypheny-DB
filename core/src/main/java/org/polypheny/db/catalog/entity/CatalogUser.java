@@ -20,6 +20,7 @@ package org.polypheny.db.catalog.entity;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
+import org.polypheny.db.catalog.Catalog;
 
 
 @EqualsAndHashCode
@@ -30,12 +31,19 @@ public final class CatalogUser implements CatalogEntity, Comparable<CatalogUser>
     public final int id;
     public final String name;
     public final String password;
+    public final long defaultSchema;
 
 
-    public CatalogUser( final int id, final String name, final String password ) {
+    public CatalogUser( final int id, final String name, final String password, long defaultSchema ) {
         this.id = id;
         this.name = name;
         this.password = password;
+        this.defaultSchema = defaultSchema;
+    }
+
+
+    public CatalogSchema getDefaultSchema() {
+        return Catalog.getInstance().getSchema( defaultSchema );
     }
 
 
@@ -59,5 +67,7 @@ public final class CatalogUser implements CatalogEntity, Comparable<CatalogUser>
     public static class PrimitiveCatalogUser {
 
         public final String name;
+
     }
+
 }

@@ -32,12 +32,14 @@ public class QueryEventAnalyzer {
         QueryDataPoint metric = QueryDataPoint
                 .builder()
                 .description( queryEvent.getDescription() )
+                .monitoringType( queryEvent.getMonitoringType() )
                 .Id( queryEvent.getId() )
                 .fieldNames( queryEvent.getFieldNames() )
                 .executionTime( queryEvent.getExecutionTime() )
                 .rowCount( queryEvent.getRowCount() )
                 .isSubQuery( queryEvent.isSubQuery() )
                 .recordedTimestamp( queryEvent.getRecordedTimestamp() )
+                .accessedPartitions( queryEvent.getAccessedPartitions() )
                 .build();
 
         RelRoot relRoot = queryEvent.getRouted();
@@ -57,7 +59,6 @@ public class QueryEventAnalyzer {
 
     private static void processDurationInfo( QueryEvent queryEvent, QueryDataPoint metric ) {
         InformationDuration duration = new Gson().fromJson( queryEvent.getDurations(), InformationDuration.class );
-        getDurationInfo( metric, "Plan Caching", duration );
         getDurationInfo( metric, "Index Lookup Rewrite", duration );
         getDurationInfo( metric, "Constraint Enforcement", duration );
         getDurationInfo( metric, "Implementation Caching", duration );

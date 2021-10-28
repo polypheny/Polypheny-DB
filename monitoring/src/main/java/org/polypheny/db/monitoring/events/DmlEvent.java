@@ -20,16 +20,15 @@ import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.events.analyzer.DmlEventAnalyzer;
 import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
-import org.polypheny.db.monitoring.exceptions.GenericEventAnalyzeRuntimeException;
 
 
 @Getter
 @Setter
-@Slf4j
 public class DmlEvent extends StatementEvent {
+
+    private String eventType = "DML EVENT";
 
 
     @Override
@@ -40,11 +39,7 @@ public class DmlEvent extends StatementEvent {
 
     @Override
     public List<MonitoringDataPoint> analyze() {
-        try {
-            return Arrays.asList( DmlEventAnalyzer.analyze( this ) );
-        } catch ( Exception e ) {
-            throw new GenericEventAnalyzeRuntimeException( "Could not analyze dml event" );
-        }
+        return Arrays.asList( DmlEventAnalyzer.analyze( this ) );
     }
 
 }

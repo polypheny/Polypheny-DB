@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.webui.models.requests.UIRequest;
 
 
@@ -90,6 +91,12 @@ public class Result {
     private ResultType type;
 
     /**
+     * schema type of result DOCUMENT/RELATIONAL
+     */
+    @Setter
+    private SchemaType schemaType = SchemaType.RELATIONAL;
+
+    /**
      * Indicate that only a subset of the specified query is being displayed.
      */
     @Setter
@@ -143,6 +150,7 @@ public class Result {
         this.header = header;
         this.data = data;
     }
+
 
     /**
      * Build a Result object containing the error message of a failed query

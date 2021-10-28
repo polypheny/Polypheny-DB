@@ -110,6 +110,7 @@ import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
@@ -150,6 +151,11 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
+import org.polypheny.db.monitoring.events.DmlEvent;
+import org.polypheny.db.monitoring.events.QueryEvent;
+import org.polypheny.db.monitoring.events.StatementEvent;
+import org.polypheny.db.mql.parser.BsonUtil;
 import org.polypheny.db.partition.PartitionFunctionInfo;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionManager;
@@ -179,6 +185,7 @@ import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonColumn;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonTable;
+import org.polypheny.db.webui.crud.DocumentCrud;
 import org.polypheny.db.webui.models.AdapterModel;
 import org.polypheny.db.webui.models.DbColumn;
 import org.polypheny.db.webui.models.DbTable;
@@ -226,13 +233,14 @@ import spark.utils.IOUtils;
 @Slf4j
 public class Crud implements InformationObserver {
 
-    private final Gson gson = new Gson();
+    private static final Gson gson = new Gson();
     private final TransactionManager transactionManager;
     private final String databaseName;
     private final String userName;
     private final StatisticsManager<?> statisticsManager = StatisticsManager.getInstance();
-    private final Catalog catalog = Catalog.getInstance();
+    public final DocumentCrud documentCrud;
     private boolean isActiveTracking = false;
+    private final Catalog catalog = Catalog.getInstance();
 
 
     /**
@@ -244,6 +252,7 @@ public class Crud implements InformationObserver {
         this.transactionManager = transactionManager;
         this.databaseName = databaseName;
         this.userName = userName;
+        this.documentCrud = new DocumentCrud( this );
         registerStatisticObserver();
     }
 
@@ -326,6 +335,7 @@ public class Crud implements InformationObserver {
         CatalogTable catalogTable;
         try {
             catalogTable = catalog.getTable( this.databaseName, t[0], t[1] );
+            result.setSchemaType( catalogTable.getSchemaType() );
             if ( catalogTable.modifiable ) {
                 result.setType( ResultType.TABLE );
             } else {
@@ -398,7 +408,7 @@ public class Crud implements InformationObserver {
 
         List<CatalogSchema> schemas = catalog.getSchemas( new Catalog.Pattern( databaseName ), null );
         for ( CatalogSchema schema : schemas ) {
-            SidebarElement schemaTree = new SidebarElement( schema.name, schema.name, "", "cui-layers" );
+            SidebarElement schemaTree = new SidebarElement( schema.name, schema.name, schema.schemaType, "", schema.schemaType == SchemaType.RELATIONAL ? "cui-layers" : "cui-folder" );
 
             if ( request.depth > 1 ) {
                 ArrayList<SidebarElement> tableTree = new ArrayList<>();
@@ -412,11 +422,15 @@ public class Crud implements InformationObserver {
                     } else if ( table.tableType == TableType.VIEW ) {
                         icon = "icon-eye";
                     }
-                    SidebarElement tableElement = new SidebarElement( schema.name + "." + table.name, table.name, request.routerLinkRoot, icon );
+                    if ( table.tableType != TableType.VIEW && schema.schemaType == SchemaType.DOCUMENT ) {
+                        icon = "cui-description";
+                    }
+
+                    SidebarElement tableElement = new SidebarElement( schema.name + "." + table.name, table.name, schema.schemaType, request.routerLinkRoot, icon );
                     if ( request.depth > 2 ) {
                         List<CatalogColumn> columns = catalog.getColumns( table.id );
                         for ( CatalogColumn column : columns ) {
-                            tableElement.addChild( new SidebarElement( schema.name + "." + table.name + "." + column.name, column.name, request.routerLinkRoot ).setCssClass( "sidebarColumn" ) );
+                            tableElement.addChild( new SidebarElement( schema.name + "." + table.name + "." + column.name, column.name, schema.schemaType, request.routerLinkRoot, icon ).setCssClass( "sidebarColumn" ) );
                         }
                     }
 
@@ -441,7 +455,9 @@ public class Crud implements InformationObserver {
 
 
                 /*if ( request.showTable ) {
-                    schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tableTree ).setRouterLink( "" ) );
+                    String collection = schema.schemaType == SchemaType.RELATIONAL ? "tables" : "collections";
+
+                    schemaTree.addChild( new SidebarElement( schema.name + ".tables", collection, request.routerLinkRoot, "fa fa-table" ).addChildren( tableTree ).setRouterLink( "" ) );
                 } else {
                     schemaTree.addChildren( tableTree ).setRouterLink( "" );
                 }
@@ -454,7 +470,7 @@ public class Crud implements InformationObserver {
 
                 }*/
                 if ( request.showTable ) {
-                    schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( collectionTree ).setRouterLink( "" ) );
+                    schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", schema.schemaType, request.routerLinkRoot, "fa fa-table" ).addChildren( collectionTree ).setRouterLink( "" ) );
                 } else {
                     schemaTree.addChildren( collectionTree ).setRouterLink( "" );
                 }
@@ -691,6 +707,11 @@ public class Crud implements InformationObserver {
                     columns.add( "\"" + catalogColumn.name + "\"" );
                     if ( part.getSubmittedFileName() == null ) {
                         String value = new BufferedReader( new InputStreamReader( part.getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
+                        if ( catalogColumn.name.equals( "_id" ) ) {
+                            if ( value.length() == 0 ) {
+                                value = BsonUtil.getObjectId();
+                            }
+                        }
                         values.add( uiValueToSql( value, catalogColumn.type, catalogColumn.collectionsType ) );
                     } else {
                         values.add( "?" );
@@ -838,6 +859,7 @@ public class Crud implements InformationObserver {
                     temp = System.nanoTime();
                     int numOfRows = executeSqlUpdate( transaction, query );
                     executionTime += System.nanoTime() - temp;
+                    transaction.getMonitoringData().setExecutionTime( executionTime );
 
                     result = new Result( numOfRows ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
                     results.add( result );
@@ -873,25 +895,30 @@ public class Crud implements InformationObserver {
         }
 
         if ( queryAnalyzer != null ) {
-            InformationPage p1 = new InformationPage( "Query analysis", "Analysis of the query." );
-            InformationGroup g1 = new InformationGroup( p1, "Execution time" );
-            InformationText text;
-            if ( executionTime < 1e4 ) {
-                text = new InformationText( g1, String.format( "Execution time: %d nanoseconds", executionTime ) );
-            } else {
-                long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
-                // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444
-                //noinspection SuspiciousDateFormat
-                DateFormat df = new SimpleDateFormat( "m 'min' s 'sec' S 'ms'" );
-                String durationText = df.format( new Date( millis ) );
-                text = new InformationText( g1, String.format( "Execution time: %s", durationText ) );
-            }
-            queryAnalyzer.addPage( p1 );
-            queryAnalyzer.addGroup( g1 );
-            queryAnalyzer.registerInformation( text );
+            attachQueryAnalyzer( queryAnalyzer, executionTime );
         }
 
         return results;
+    }
+
+
+    public static void attachQueryAnalyzer( InformationManager queryAnalyzer, long executionTime ) {
+        InformationPage p1 = new InformationPage( "Query analysis", "Analysis of the query." );
+        InformationGroup g1 = new InformationGroup( p1, "Execution time" );
+        InformationText text;
+        if ( executionTime < 1e4 ) {
+            text = new InformationText( g1, String.format( "Execution time: %d nanoseconds", executionTime ) );
+        } else {
+            long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
+            // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444
+            //noinspection SuspiciousDateFormat
+            DateFormat df = new SimpleDateFormat( "m 'min' s 'sec' S 'ms'" );
+            String durationText = df.format( new Date( millis ) );
+            text = new InformationText( g1, String.format( "Execution time: %s", durationText ) );
+        }
+        queryAnalyzer.addPage( p1 );
+        queryAnalyzer.addGroup( g1 );
+        queryAnalyzer.registerInformation( text );
     }
 
 
@@ -1390,15 +1417,15 @@ public class Crud implements InformationObserver {
                 }
                 return new Result( columns.toArray( new DbColumn[0] ), null ).setType( ResultType.VIEW );
             } else {
-                if ( catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).size() != 1 ) {
+                if ( catalog.getColumnPlacement( catalogTable.columnIds.get( 0 ) ).size() != 1 ) {
                     throw new RuntimeException( "The table has an unexpected number of placements!" );
                 }
 
-                int adapterId = catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).get( 0 ).adapterId;
+                int adapterId = catalog.getColumnPlacement( catalogTable.columnIds.get( 0 ) ).get( 0 ).adapterId;
                 CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
                 List<String> pkColumnNames = primaryKey.getColumnNames();
                 List<DbColumn> columns = new ArrayList<>();
-                for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapter( adapterId, catalogTable.id ) ) {
+                for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapterPerTable( adapterId, catalogTable.id ) ) {
                     CatalogColumn col = catalog.getColumn( ccp.columnId );
                     columns.add( new DbColumn(
                             col.name,
@@ -2045,7 +2072,7 @@ public class Crud implements InformationObserver {
         String tableName = index.getTable();
         try {
             CatalogTable table = catalog.getTable( databaseName, schemaName, tableName );
-            Placement p = new Placement( table.isPartitioned, catalog.getPartitionNames( table.id ), table.tableType );
+            Placement p = new Placement( table.isPartitioned, catalog.getPartitionGroupNames( table.id ), table.tableType );
             if ( table.tableType == TableType.VIEW ) {
 
                 return p;
@@ -2053,20 +2080,19 @@ public class Crud implements InformationObserver {
                 long pkid = table.primaryKey;
                 List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
                 CatalogColumn pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );
-                List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacements( pkColumn.id );
+                List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacement( pkColumn.id );
                 for ( CatalogColumnPlacement placement : pkPlacements ) {
                     Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
                     p.addAdapter( new Placement.Store(
                             adapter.getUniqueName(),
                             adapter.getAdapterName(),
-                            catalog.getColumnPlacementsOnAdapter( adapter.getAdapterId(), table.id ),
-                            catalog.getPartitionsIndexOnDataPlacement( placement.adapterId, placement.tableId ),
-                            table.numPartitions,
-                            table.partitionType ) );
+                            catalog.getColumnPlacementsOnAdapterPerTable( adapter.getAdapterId(), table.id ),
+                            catalog.getPartitionGroupsIndexOnDataPlacement( placement.adapterId, placement.tableId ),
+                            table.partitionProperty.numPartitionGroups,
+                            table.partitionProperty.partitionType ) );
                 }
                 return p;
             }
-
         } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             log.error( "Caught exception while getting placements", e );
             return new Placement( e );
@@ -2122,7 +2148,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    private List<PartitionFunctionColumn> buildPartitionFunctionRow( List<PartitionFunctionInfoColumn> columnList ) {
+    private List<PartitionFunctionColumn> buildPartitionFunctionRow( PartitioningRequest request, List<PartitionFunctionInfoColumn> columnList ) {
         List<PartitionFunctionColumn> constructedRow = new ArrayList<>();
 
         for ( PartitionFunctionInfoColumn currentColumn : columnList ) {
@@ -2151,7 +2177,19 @@ public class Crud implements InformationObserver {
                         .setSqlPrefix( currentColumn.getSqlPrefix() )
                         .setSqlSuffix( currentColumn.getSqlSuffix() ) );
             } else {
-                constructedRow.add( new PartitionFunctionColumn( type, currentColumn.getDefaultValue() )
+
+                String defaultValue = currentColumn.getDefaultValue();
+
+                //Used specifically for Temp-Partitioning since number of selected partitions remains 2 but chunks change
+                //enables user to used selected "number of partitions" being used as default value for "number of interal data chunks"
+                if ( request.method.equals( PartitionType.TEMPERATURE ) ) {
+
+                    if ( type.equals( FieldType.STRING ) && currentColumn.getDefaultValue().equals( "-04071993" ) ) {
+                        defaultValue = String.valueOf( request.numPartitions );
+                    }
+                }
+
+                constructedRow.add( new PartitionFunctionColumn( type, defaultValue )
                         .setModifiable( currentColumn.isModifiable() )
                         .setMandatory( currentColumn.isMandatory() )
                         .setSqlPrefix( currentColumn.getSqlPrefix() )
@@ -2167,8 +2205,8 @@ public class Crud implements InformationObserver {
         PartitioningRequest request = gson.fromJson( req.body(), PartitioningRequest.class );
 
         // Get correct partition function
-        PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
-        PartitionManager partitionManager = partitionManagerFactory.getInstance( request.method );
+        PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
+        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( request.method );
 
         // Check whether the selected partition function supports the selected partition column
         CatalogColumn partitionColumn;
@@ -2192,14 +2230,14 @@ public class Crud implements InformationObserver {
             // Insert Rows Before
             List<List<PartitionFunctionInfoColumn>> rowsBefore = functionInfo.getRowsBefore();
             for ( int i = 0; i < rowsBefore.size(); i++ ) {
-                rows.add( buildPartitionFunctionRow( rowsBefore.get( i ) ) );
+                rows.add( buildPartitionFunctionRow( request, rowsBefore.get( i ) ) );
             }
         }
 
         if ( infoJson.has( "dynamicRows" ) ) {
             // Build as many dynamic rows as requested per num Partitions
             for ( int i = 0; i < request.numPartitions; i++ ) {
-                rows.add( buildPartitionFunctionRow( functionInfo.getDynamicRows() ) );
+                rows.add( buildPartitionFunctionRow( request, functionInfo.getDynamicRows() ) );
             }
         }
 
@@ -2207,7 +2245,7 @@ public class Crud implements InformationObserver {
             // Insert Rows After
             List<List<PartitionFunctionInfoColumn>> rowsAfter = functionInfo.getRowsAfter();
             for ( int i = 0; i < rowsAfter.size(); i++ ) {
-                rows.add( buildPartitionFunctionRow( rowsAfter.get( i ) ) );
+                rows.add( buildPartitionFunctionRow( request, rowsAfter.get( i ) ) );
             }
         }
 
@@ -2225,10 +2263,10 @@ public class Crud implements InformationObserver {
         PartitionFunctionModel request = gson.fromJson( req.body(), PartitionFunctionModel.class );
 
         // Get correct partition function
-        PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
+        PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = null;
         try {
-            partitionManager = partitionManagerFactory.getInstance( PartitionType.getByName( request.functionName ) );
+            partitionManager = partitionManagerFactory.getPartitionManager( PartitionType.getByName( request.functionName ) );
         } catch ( UnknownPartitionTypeException e ) {
             throw new RuntimeException( e );
         }
@@ -2753,6 +2791,7 @@ public class Crud implements InformationObserver {
     Result executeRelAlg( final RelAlgRequest request, Session session ) {
         Transaction transaction = getTransaction( true );
         transaction.getQueryAnalyzer().setSession( session );
+        transaction.setUseCache( request.useCache );
         Statement statement = transaction.createStatement();
         long executionTime = 0;
         long temp = 0;
@@ -2901,7 +2940,12 @@ public class Crud implements InformationObserver {
 
         // create schema
         if ( schema.isCreate() && !schema.isDrop() ) {
-            StringBuilder query = new StringBuilder( "CREATE SCHEMA " );
+            StringBuilder query = new StringBuilder( "CREATE " );
+            if ( schema.getType() == SchemaType.DOCUMENT ) {
+                query.append( "DOCUMENT " );
+            }
+            query.append( "SCHEMA " );
+
             query.append( "\"" ).append( schema.getName() ).append( "\"" );
             if ( schema.getAuthorization() != null && !schema.getAuthorization().equals( "" ) ) {
                 query.append( " AUTHORIZATION " ).append( schema.getAuthorization() );
@@ -2985,7 +3029,7 @@ public class Crud implements InformationObserver {
     public void observePageList( final InformationPage[] pages, final String analyzerId, final Session session ) {
         ArrayList<SidebarElement> nodes = new ArrayList<>();
         for ( InformationPage page : pages ) {
-            nodes.add( new SidebarElement( page.getId(), page.getName(), analyzerId + "/", page.getIcon() ).setLabel( page.getLabel() ) );
+            nodes.add( new SidebarElement( page.getId(), page.getName(), SchemaType.RELATIONAL, analyzerId + "/", page.getIcon() ).setLabel( page.getLabel() ) );
         }
         WebSocket.sendMessage( session, this.gson.toJson( nodes.toArray( new SidebarElement[0] ) ) );
     }
@@ -3456,6 +3500,7 @@ public class Crud implements InformationObserver {
         List<List<Object>> rows;
         Iterator<Object> iterator = null;
         boolean hasMoreRows = false;
+        statement.getTransaction().setMonitoringData( new QueryEvent() );
 
         try {
             signature = processQuery( statement, sqlSelect );
@@ -3471,7 +3516,12 @@ public class Crud implements InformationObserver {
             }
             hasMoreRows = iterator.hasNext();
             stopWatch.stop();
-            signature.getExecutionTimeMonitor().setExecutionTime( stopWatch.getNanoTime() );
+
+            long executionTime = stopWatch.getNanoTime();
+            signature.getExecutionTimeMonitor().setExecutionTime( executionTime );
+
+            statement.getTransaction().getMonitoringData().setExecutionTime( executionTime );
+
         } catch ( Throwable t ) {
             if ( statement.getTransaction().isAnalyze() ) {
                 InformationManager analyzer = statement.getTransaction().getQueryAnalyzer();
@@ -3549,6 +3599,9 @@ public class Crud implements InformationObserver {
 
             ArrayList<String[]> data = computeResultData( rows, header, statement.getTransaction() );
 
+            statement.getTransaction().getMonitoringData().setRowCount( data.size() );
+            MonitoringServiceProvider.getInstance().monitorEvent( statement.getTransaction().getMonitoringData() );
+
             if ( tableType != null ) {
                 return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
             } else {
@@ -3574,7 +3627,7 @@ public class Crud implements InformationObserver {
      * @param rows Rows from the enumerable iterator
      * @param header Header from the UI-ResultSet
      */
-    ArrayList<String[]> computeResultData( final List<List<Object>> rows, final List<DbColumn> header, final Transaction transaction ) {
+    public static ArrayList<String[]> computeResultData( final List<List<Object>> rows, final List<DbColumn> header, final Transaction transaction ) {
         ArrayList<String[]> data = new ArrayList<>();
         for ( List<Object> row : rows ) {
             String[] temp = new String[row.size()];
@@ -3745,13 +3798,15 @@ public class Crud implements InformationObserver {
     }
 
 
-    private int executeSqlUpdate( final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
+    public int executeSqlUpdate( final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
         return executeSqlUpdate( transaction.createStatement(), transaction, sqlUpdate );
     }
 
 
     private int executeSqlUpdate( final Statement statement, final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
         PolyphenyDbSignature<?> signature;
+
+        statement.getTransaction().setMonitoringData( new DmlEvent() );
 
         try {
             signature = processQuery( statement, sqlUpdate );
@@ -3804,6 +3859,11 @@ public class Crud implements InformationObserver {
                     throw new QueryExecutionException( e.getMessage(), e );
                 }
             }
+
+            StatementEvent ev = statement.getTransaction().getMonitoringData();
+            ev.setRowCount( rowsChanged );
+
+            MonitoringServiceProvider.getInstance().monitorEvent( ev );
 
             return rowsChanged;
         } else {
@@ -3888,12 +3948,12 @@ public class Crud implements InformationObserver {
     }
 
 
-    private Transaction getTransaction() {
+    public Transaction getTransaction() {
         return getTransaction( false );
     }
 
 
-    private Transaction getTransaction( boolean analyze ) {
+    public Transaction getTransaction( boolean analyze ) {
         try {
             return transactionManager.startTransaction( userName, databaseName, analyze, "Polypheny-UI", MultimediaFlavor.FILE );
         } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
@@ -3936,6 +3996,11 @@ public class Crud implements InformationObserver {
             }
         }
         return directoryToBeDeleted.delete();
+    }
+
+
+    public Map<String, SchemaType> getTypeSchemas( Request request, Response response ) {
+        return catalog.getSchemas( 1, null ).stream().collect( Collectors.toMap( CatalogSchema::getName, CatalogSchema::getSchemaType ) );
     }
 
 
@@ -3986,7 +4051,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    static class QueryExecutionException extends Exception {
+    public static class QueryExecutionException extends Exception {
 
         QueryExecutionException( String message ) {
             super( message );

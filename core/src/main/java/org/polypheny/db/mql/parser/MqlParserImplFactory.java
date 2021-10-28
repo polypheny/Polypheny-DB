@@ -14,8 +14,24 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.ddl.exception;
+package org.polypheny.db.mql.parser;
 
-public class PartitionNamesNotUniqueException extends Exception {
+import java.io.Reader;
+import org.polypheny.db.tools.Planner;
+
+
+/**
+ * Factory for {@link MqlAbstractParserImpl} objects.
+ *
+ * A parser factory allows you to include a custom parser in {@link Planner} created through {@code Frameworks}.
+ */
+public interface MqlParserImplFactory {
+
+    /**
+     * Get the underlying parser implementation.
+     *
+     * @return {@link MqlAbstractParserImpl} object.
+     */
+    MqlAbstractParserImpl getParser( Reader stream );
 
 }

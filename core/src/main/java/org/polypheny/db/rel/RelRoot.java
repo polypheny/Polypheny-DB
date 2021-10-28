@@ -98,6 +98,7 @@ public class RelRoot implements Serializable {
     public final SqlKind kind;
     public final ImmutableList<Pair<Integer, String>> fields;
     public final RelCollation collation;
+    public boolean usesDocumentModel = false;
 
 
     /**

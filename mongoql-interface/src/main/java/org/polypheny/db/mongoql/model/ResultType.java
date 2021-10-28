@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.exceptions;
+package org.polypheny.db.mongoql.model;
 
 
-public class UnknownPartitionIdRuntimeException extends CatalogRuntimeException {
-
-    public UnknownPartitionIdRuntimeException( long partitionId ) {
-        super( "There is no partition with id '" + partitionId + "'." );
-    }
-
+/**
+ * Describes where the data in the Result is coming from.
+ * If it is from a table, a view or from an arbitrary query
+ */
+public enum ResultType {
+    TABLE,
+    VIEW,
+    QUERY
 }

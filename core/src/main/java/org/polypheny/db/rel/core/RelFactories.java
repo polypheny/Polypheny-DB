@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import javax.annotation.Nonnull;
+import org.bson.BsonValue;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -55,6 +56,7 @@ import org.polypheny.db.rel.core.ConditionalExecute.Condition;
 import org.polypheny.db.rel.logical.LogicalAggregate;
 import org.polypheny.db.rel.logical.LogicalConditionalExecute;
 import org.polypheny.db.rel.logical.LogicalCorrelate;
+import org.polypheny.db.rel.logical.LogicalDocuments;
 import org.polypheny.db.rel.logical.LogicalExchange;
 import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalIntersect;
@@ -110,6 +112,8 @@ public class RelFactories {
     public static final ValuesFactory DEFAULT_VALUES_FACTORY = new ValuesFactoryImpl();
 
     public static final TableScanFactory DEFAULT_TABLE_SCAN_FACTORY = new TableScanFactoryImpl();
+
+    public static final DocumentsFactory DEFAULT_DOCUMENTS_FACTORY = new DocumentsFactoryImpl();
 
     public static final ConditionalExecuteFactory DEFAULT_CONDITIONAL_EXECUTE_FACTORY = new ConditionalExecuteFactoryImpl();
 
@@ -457,6 +461,31 @@ public class RelFactories {
     }
 
 
+    public interface DocumentsFactory {
+
+        RelNode createDocuments(
+                RelOptCluster cluster,
+                ImmutableList<BsonValue> tuples,
+                RelDataType rowType,
+                ImmutableList<ImmutableList<RexLiteral>> normalizedTuple );
+
+    }
+
+
+    private static class DocumentsFactoryImpl implements DocumentsFactory {
+
+        @Override
+        public RelNode createDocuments(
+                RelOptCluster cluster,
+                ImmutableList<BsonValue> tuples,
+                RelDataType rowType,
+                ImmutableList<ImmutableList<RexLiteral>> normalizedTuple ) {
+            return LogicalDocuments.create( cluster, ImmutableList.copyOf( tuples ), rowType, ImmutableList.copyOf( normalizedTuple ) );
+        }
+
+    }
+
+
     /**
      * Can create a {@link TableScan} of the appropriate type for a rule's calling convention.
      */
@@ -590,4 +619,3 @@ public class RelFactories {
     }
 
 }
-

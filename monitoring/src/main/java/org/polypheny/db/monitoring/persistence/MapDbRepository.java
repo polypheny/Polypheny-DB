@@ -126,16 +126,19 @@ public class MapDbRepository implements MonitoringRepository {
             simpleBackendDb.close();
         }
 
-        File folder = FileSystemManager.getInstance().registerNewFolder( folderName );
+        synchronized ( this ) {
+            File folder = FileSystemManager.getInstance().registerNewFolder( folderName );
 
-        simpleBackendDb = DBMaker.fileDB( new File( folder, filePath ) )
-                .closeOnJvmShutdown()
-                .transactionEnable()
-                .fileMmapEnableIfSupported()
-                .fileMmapPreclearDisable()
-                .make();
+            simpleBackendDb = DBMaker
+                    .fileDB( new File( folder, filePath ) )
+                    .closeOnJvmShutdown()
+                    .transactionEnable()
+                    .fileMmapEnableIfSupported()
+                    .fileMmapPreclearDisable()
+                    .make();
 
-        simpleBackendDb.getStore().fileLoad();
+            simpleBackendDb.getStore().fileLoad();
+        }
     }
 
 

@@ -285,6 +285,7 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
                     return data.getDoubleData();
                 case CHAR:
                 case VARCHAR:
+                case JSON:
                     return data.getStringData();
                 case NULL:
                     return null;

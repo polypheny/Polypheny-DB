@@ -41,6 +41,7 @@ import org.polypheny.db.adapter.jdbc.rel2sql.RelToSqlConverter;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.util.Util;
 
 
@@ -97,11 +98,16 @@ public class JdbcImplementor extends RelToSqlConverter {
     @Override
     public SqlIdentifier getPhysicalColumnName( List<String> tableNames, String columnName ) {
         if ( tableNames.size() == 1 ) {
-            // only table name
+            // only column name
             return schema.getTableMap().get( tableNames.get( 0 ) ).physicalColumnName( columnName );
         } else if ( tableNames.size() == 2 ) {
-            // schema name and table name
-            return schema.getTableMap().get( tableNames.get( 1 ) ).physicalColumnName( columnName );
+            // table name and column name
+            JdbcTable table = schema.getTableMap().get( tableNames.get( 1 ) );
+            if ( table.hasPhysicalColumnName( columnName ) ) {
+                return schema.getTableMap().get( tableNames.get( 1 ) ).physicalColumnName( columnName );
+            } else {
+                return new SqlIdentifier( "_" + columnName, SqlParserPos.ZERO );
+            }
         } else {
             throw new RuntimeException( "Unexpected number of names: " + tableNames.size() );
         }

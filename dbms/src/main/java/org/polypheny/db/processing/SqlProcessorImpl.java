@@ -21,7 +21,9 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import java.util.ArrayList;
 import java.util.List;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaSeverity;
 import org.apache.calcite.avatica.Meta;
@@ -29,6 +31,7 @@ import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -90,6 +93,7 @@ import org.polypheny.db.util.SourceStringReader;
 public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
     private static final SqlParserConfig parserConfig;
+    @Setter
     private PolyphenyDbSqlValidator validator;
 
 
@@ -115,7 +119,9 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         }
         stopWatch.start();
         SqlNode parsed;
-        log.debug( "SQL: {}", sql );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "SQL: {}", sql );
+        }
 
         try {
             final SqlParser parser = SqlParser.create( new SourceStringReader( sql ), parserConfig );
@@ -279,12 +285,25 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
     // Add default values for unset fields
     private void addDefaultValues( Transaction transaction, SqlInsert insert ) {
         SqlNodeList oldColumnList = insert.getTargetColumnList();
+
         if ( oldColumnList != null ) {
             CatalogTable catalogTable = getCatalogTable( transaction, (SqlIdentifier) insert.getTargetTable() );
+            SchemaType schemaType = Catalog.getInstance().getSchema( catalogTable.schemaId ).schemaType;
+
+            catalogTable = getCatalogTable( transaction, (SqlIdentifier) insert.getTargetTable() );
+
             SqlNodeList newColumnList = new SqlNodeList( SqlParserPos.ZERO );
-            SqlNode[][] newValues = new SqlNode[((SqlBasicCall) insert.getSource()).getOperands().length][catalogTable.columnIds.size()];
+            int size = (int) catalogTable.columnIds.size();
+            if ( schemaType == SchemaType.DOCUMENT ) {
+                List<String> columnNames = catalogTable.getColumnNames();
+                size += oldColumnList.getList().stream().filter( column -> !columnNames.contains( ((SqlIdentifier) column).names.get( 0 ) ) ).count();
+            }
+
+            SqlNode[][] newValues = new SqlNode[((SqlBasicCall) insert.getSource()).getOperands().length][size];
             int pos = 0;
-            for ( CatalogColumn column : Catalog.getInstance().getColumns( catalogTable.id ) ) {
+            List<CatalogColumn> columns = Catalog.getInstance().getColumns( catalogTable.id );
+            for ( CatalogColumn column : columns ) {
+
                 // Add column
                 newColumnList.add( new SqlIdentifier( column.name, SqlParserPos.ZERO ) );
 
@@ -337,6 +356,33 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
                 }
                 pos++;
             }
+
+            // add doc values back TODO DL: change
+            if ( schemaType == SchemaType.DOCUMENT ) {
+                List<SqlIdentifier> documentColumns = new ArrayList<>();
+                for ( SqlNode column : oldColumnList.getList() ) {
+                    if ( newColumnList.getList()
+                            .stream()
+                            .filter( c -> c instanceof SqlIdentifier )
+                            .map( c -> ((SqlIdentifier) c).names.get( 0 ) )
+                            .noneMatch( c -> c.equals( ((SqlIdentifier) column).names.get( 0 ) ) ) ) {
+                        documentColumns.add( (SqlIdentifier) column );
+                    }
+                }
+
+                for ( SqlIdentifier doc : documentColumns ) {
+                    int i = 0;
+                    newColumnList.add( doc );
+
+                    for ( SqlNode sqlNode : ((SqlBasicCall) insert.getSource()).getOperands() ) {
+                        int position = getPositionInSqlNodeList( oldColumnList, doc.getSimple() );
+                        newValues[i][pos] = ((SqlBasicCall) sqlNode).getOperands()[position];
+                    }
+                    pos++;
+                }
+
+            }
+
             // Add new column list
             insert.setColumnList( newColumnList );
             // Replace value in parser tree

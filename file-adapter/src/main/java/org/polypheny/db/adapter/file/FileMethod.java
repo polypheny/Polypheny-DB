@@ -29,9 +29,9 @@ import org.polypheny.db.type.PolyType;
 
 public enum FileMethod {
 
-    EXECUTE( FileStoreSchema.class, "execute", Operation.class, Integer.class, DataContext.class, String.class, Long[].class, PolyType[].class, List.class, Integer[].class, Condition.class, Value[].class ),
-    EXECUTE_MODIFY( FileStoreSchema.class, "executeModify", Operation.class, Integer.class, DataContext.class, String.class, Long[].class, PolyType[].class, List.class, Boolean.class, Object[].class, Condition.class ),
-    EXECUTE_QFS( QfsSchema.class, "execute", Operation.class, Integer.class, DataContext.class, String.class, Long[].class, PolyType[].class, List.class, Integer[].class, Condition.class, Value[].class );
+    EXECUTE( FileStoreSchema.class, "execute", Operation.class, Integer.class, Long.class, DataContext.class, String.class, Long[].class, PolyType[].class, List.class, Integer[].class, Condition.class, Value[].class ),
+    EXECUTE_MODIFY( FileStoreSchema.class, "executeModify", Operation.class, Integer.class, Long.class, DataContext.class, String.class, Long[].class, PolyType[].class, List.class, Boolean.class, Object[].class, Condition.class ),
+    EXECUTE_QFS( QfsSchema.class, "execute", Operation.class, Integer.class, Long.class, DataContext.class, String.class, Long[].class, PolyType[].class, List.class, Integer[].class, Condition.class, Value[].class );
 
     public final Method method;
     public static final ImmutableMap<Method, FileMethod> MAP;

@@ -39,11 +39,17 @@ SqlCreate SqlCreateSchema(Span s, boolean replace) :
 {
     final boolean ifNotExists;
     final SqlIdentifier id;
+    final SchemaType schemaType;
 }
 {
+    (
+        <DOCUMENT> { schemaType = SchemaType.DOCUMENT; }
+        |
+        { schemaType = SchemaType.RELATIONAL; }
+    )
     <SCHEMA> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
     {
-        return SqlDdlNodes.createSchema(s.end(this), replace, ifNotExists, id);
+        return SqlDdlNodes.createSchema(s.end(this), replace, ifNotExists, id, schemaType);
     }
 }
 
@@ -264,12 +270,16 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     SqlIdentifier store = null;
     SqlIdentifier partitionColumn = null;
     SqlIdentifier partitionType = null;
+    int numPartitionGroups = 0;
     int numPartitions = 0;
     List<SqlIdentifier> partitionNamesList = new ArrayList<SqlIdentifier>();
     SqlIdentifier partitionName = null;
     List< List<SqlNode>> partitionQualifierList = new ArrayList<List<SqlNode>>();
     List<SqlNode> partitionQualifiers = new ArrayList<SqlNode>();
     SqlNode partitionValues = null;
+    SqlIdentifier tmpIdent = null;
+    int tmpInt = 0;
+    RawPartitionInformation rawPartitionInfo;
 }
 {
     <TABLE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
@@ -281,11 +291,58 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
                                 partitionType = SimpleIdentifier()
                             |
                                 <RANGE> { partitionType = new SqlIdentifier( "RANGE", s.end(this) );}
+                            |
+                                <TEMPERATURE> { partitionType = new SqlIdentifier( "TEMPERATURE", s.end(this) );
+                                    rawPartitionInfo = new RawTemperaturePartitionInformation();
+                                    rawPartitionInfo.setPartitionType( partitionType );
+                                    }
+                                <LPAREN> partitionColumn = SimpleIdentifier() { rawPartitionInfo.setPartitionColumn( partitionColumn ); } <RPAREN>
+                                        <LPAREN>
+                                            <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                                <VALUES> <LPAREN>
+                                                            partitionValues = Literal()
+                                                                {
+                                                                    partitionQualifiers.add(partitionValues);
+                                                                    ((RawTemperaturePartitionInformation)rawPartitionInfo).setHotAccessPercentageIn( partitionValues );
+                                                                } <PERCENT_REMAINDER>
+                                                        <RPAREN> {partitionQualifierList.add(partitionQualifiers); partitionQualifiers = new ArrayList<SqlNode>();}
+                                                        <COMMA>
+                                            <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                                <VALUES> <LPAREN>
+                                                        partitionValues = Literal()
+                                                            {
+                                                                partitionQualifiers.add(partitionValues);
+                                                                ((RawTemperaturePartitionInformation)rawPartitionInfo).setHotAccessPercentageOut( partitionValues );
+                                                            } <PERCENT_REMAINDER>
+                                                <RPAREN> {partitionQualifierList.add(partitionQualifiers); partitionQualifiers = new ArrayList<SqlNode>();}
+                                        <RPAREN>
+                                            <USING> <FREQUENCY>
+
+                                                        (
+                                                            <ALL> { ((RawTemperaturePartitionInformation)rawPartitionInfo).setAccessPattern( new SqlIdentifier( "ALL", s.end(this) ) ); tmpIdent = null; }
+                                                        |
+                                                            <WRITE> { ((RawTemperaturePartitionInformation)rawPartitionInfo).setAccessPattern( new SqlIdentifier( "WRITE", s.end(this) ) ); tmpIdent = null; }
+                                                        |
+                                                            <READ> { ((RawTemperaturePartitionInformation)rawPartitionInfo).setAccessPattern( new SqlIdentifier( "READ", s.end(this) ) ); tmpIdent = null;}
+                                                        )
+                                                    <INTERVAL>
+                                                            tmpInt = UnsignedIntLiteral() { ((RawTemperaturePartitionInformation)rawPartitionInfo).setInterval( tmpInt ); tmpInt = 0; }
+                                                            tmpIdent = SimpleIdentifier() { ((RawTemperaturePartitionInformation)rawPartitionInfo).setIntervalUnit( tmpIdent ); tmpIdent = null; }
+                                            <WITH>  numPartitions = UnsignedIntLiteral() {rawPartitionInfo.setNumPartitions( numPartitions );}
+                                                tmpIdent = SimpleIdentifier() {
+                                                        ((RawTemperaturePartitionInformation)rawPartitionInfo).setInternalPartitionFunction( tmpIdent ); tmpIdent = null;
+                                                } <PARTITIONS>
+                                        {
+                                            rawPartitionInfo.setPartitionNamesList( partitionNamesList );
+                                            rawPartitionInfo.setPartitionQualifierList( partitionQualifierList );
+
+                                            return SqlDdlNodes.createTable(s.end(this), replace, ifNotExists, id, tableElementList, query, store, partitionType, partitionColumn, numPartitionGroups, numPartitions, partitionNamesList, partitionQualifierList, rawPartitionInfo);
+                                        }
                        )
         <LPAREN> partitionColumn = SimpleIdentifier() <RPAREN>
         [
             (
-                    <PARTITIONS> numPartitions = UnsignedIntLiteral()
+                    <PARTITIONS> numPartitionGroups = UnsignedIntLiteral()
                 |
                     <WITH> <LPAREN>
                             partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
@@ -318,7 +375,8 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
         ]
     ]
     {
-        return SqlDdlNodes.createTable(s.end(this), replace, ifNotExists, id, tableElementList, query, store, partitionType, partitionColumn, numPartitions, partitionNamesList, partitionQualifierList);
+        rawPartitionInfo = new RawPartitionInformation();
+        return SqlDdlNodes.createTable(s.end(this), replace, ifNotExists, id, tableElementList, query, store, partitionType, partitionColumn, numPartitionGroups, numPartitions, partitionNamesList, partitionQualifierList, rawPartitionInfo);
     }
 }
 

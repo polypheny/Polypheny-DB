@@ -58,8 +58,9 @@ import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.ddl.DdlManager.ConstraintInformation;
 import org.polypheny.db.ddl.DdlManager.PartitionInformation;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
-import org.polypheny.db.ddl.exception.PartitionNamesNotUniqueException;
+import org.polypheny.db.ddl.exception.PartitionGroupNamesNotUniqueException;
 import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.partition.raw.RawPartitionInformation;
 import org.polypheny.db.sql.SqlCreate;
 import org.polypheny.db.sql.SqlExecutableStatement;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -88,8 +89,10 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
     private final SqlIdentifier store;
     private final SqlIdentifier partitionColumn;
     private final SqlIdentifier partitionType;
+    private final int numPartitionGroups;
     private final int numPartitions;
-    private final List<SqlIdentifier> partitionNamesList;
+    private final List<SqlIdentifier> partitionGroupNamesList;
+    private final RawPartitionInformation rawPartitionInfo;
 
     private final List<List<SqlNode>> partitionQualifierList;
 
@@ -109,9 +112,11 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             SqlIdentifier store,
             SqlIdentifier partitionType,
             SqlIdentifier partitionColumn,
+            int numPartitionGroups,
             int numPartitions,
-            List<SqlIdentifier> partitionNamesList,
-            List<List<SqlNode>> partitionQualifierList ) {
+            List<SqlIdentifier> partitionGroupNamesList,
+            List<List<SqlNode>> partitionQualifierList,
+            RawPartitionInformation rawPartitionInfo ) {
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
         this.columnList = columnList; // May be null
@@ -119,9 +124,11 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         this.store = store; // ON STORE [store name]; may be null
         this.partitionType = partitionType; // PARTITION BY (HASH | RANGE | LIST); may be null
         this.partitionColumn = partitionColumn; // May be null
-        this.numPartitions = numPartitions; // May be null and can only be used in association with PARTITION BY
-        this.partitionNamesList = partitionNamesList; // May be null and can only be used in association with PARTITION BY and PARTITIONS
+        this.numPartitionGroups = numPartitionGroups; // May be null and can only be used in association with PARTITION BY
+        this.numPartitions = numPartitions;
+        this.partitionGroupNamesList = partitionGroupNamesList; // May be null and can only be used in association with PARTITION BY and PARTITIONS
         this.partitionQualifierList = partitionQualifierList;
+        this.rawPartitionInfo = rawPartitionInfo;
     }
 
 
@@ -133,19 +140,6 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
-        // TODO @HENNLO: The partition part is still incomplete
-        /** There are several possible ways to unparse the partition section.
-         The To Do is deferred until we have decided if parsing of partition functions will be
-         self contained or not. If not than we need to unparse
-         `WITH PARTITIONS 3`
-         or something like
-         `(
-         PARTITION a892_233 VALUES(892, 233),
-         PARTITION a1001_1002 VALUES(1001, 1002),
-         PARTITION a8000_4003 VALUES(8000, 4003),
-         PARTITION a900_999 VALUES(900, 999)
-         )`*/
-
         writer.keyword( "CREATE" );
         writer.keyword( "TABLE" );
         if ( ifNotExists ) {
@@ -174,6 +168,36 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             writer.keyword( " BY" );
             SqlWriter.Frame frame = writer.startList( "(", ")" );
             partitionColumn.unparse( writer, 0, 0 );
+
+            switch ( partitionType.getSimple() ) {
+                case "HASH":
+                    writer.keyword( "WITH" );
+                    frame = writer.startList( "(", ")" );
+                    for ( SqlIdentifier name : partitionGroupNamesList ) {
+                        writer.sep( "," );
+                        name.unparse( writer, 0, 0 );
+                    }
+                    break;
+                case "RANGE":
+                case "LIST":
+                    writer.keyword( "(" );
+                    for ( int i = 0; i < partitionGroupNamesList.size(); i++ ) {
+                        writer.keyword( "PARTITION" );
+                        partitionGroupNamesList.get( i ).unparse( writer, 0, 0 );
+                        writer.keyword( "VALUES" );
+                        writer.keyword( "(" );
+                        partitionQualifierList.get( i ).get( 0 ).unparse( writer, 0, 0 );
+                        writer.sep( "," );
+                        partitionQualifierList.get( i ).get( 1 ).unparse( writer, 0, 0 );
+                        writer.keyword( ")" );
+
+                        if ( i + 1 < partitionGroupNamesList.size() ) {
+                            writer.sep( "," );
+                        }
+                    }
+                    writer.keyword( ")" );
+                    break;
+            }
             writer.endList( frame );
         }
     }
@@ -189,7 +213,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         long schemaId;
 
         try {
-            // cannot use getTable here, as table does not yet exist
+            // Cannot use getTable() here since table does not yet exist
             if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
                 schemaId = catalog.getSchema( name.names.get( 0 ), name.names.get( 1 ) ).id;
                 tableName = name.names.get( 2 );
@@ -231,13 +255,18 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                     statement );
 
             if ( partitionType != null ) {
-                DdlManager.getInstance().addPartition( PartitionInformation.fromSqlLists(
-                        getCatalogTable( context, new SqlIdentifier( tableName, SqlParserPos.ZERO ) ),
-                        partitionType.getSimple(),
-                        partitionColumn.getSimple(),
-                        partitionNamesList,
-                        numPartitions,
-                        partitionQualifierList ) );
+                DdlManager.getInstance().addPartitioning(
+                        PartitionInformation.fromSqlLists(
+                                getCatalogTable( context, new SqlIdentifier( tableName, SqlParserPos.ZERO ) ),
+                                partitionType.getSimple(),
+                                partitionColumn.getSimple(),
+                                partitionGroupNamesList,
+                                numPartitionGroups,
+                                numPartitions,
+                                partitionQualifierList,
+                                rawPartitionInfo ),
+                        stores,
+                        statement );
             }
 
         } catch ( TableAlreadyExistsException e ) {
@@ -246,18 +275,18 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             throw SqlUtil.newContextException( partitionColumn.getParserPosition(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
         } catch ( UnknownPartitionTypeException e ) {
             throw SqlUtil.newContextException( partitionType.getParserPosition(), RESOURCE.unknownPartitionType( partitionType.getSimple() ) );
-        } catch ( PartitionNamesNotUniqueException e ) {
+        } catch ( PartitionGroupNamesNotUniqueException e ) {
             throw SqlUtil.newContextException( partitionColumn.getParserPosition(), RESOURCE.partitionNamesNotUnique() );
         } catch ( GenericCatalogException | UnknownColumnException e ) {
-            // we just added the table/column so it has to exist or we have a internal problem
+            // We just added the table/column so it has to exist or we have an internal problem
             throw new RuntimeException( e );
         }
     }
 
 
     private Pair<List<ColumnInformation>, List<ConstraintInformation>> separateColumnList() {
-        List<ColumnInformation> columnInformations = new ArrayList<>();
-        List<ConstraintInformation> constraintInformations = new ArrayList<>();
+        List<ColumnInformation> columnInformation = new ArrayList<>();
+        List<ConstraintInformation> constraintInformation = new ArrayList<>();
 
         int position = 1;
         for ( Ord<SqlNode> c : Ord.zip( columnList ) ) {
@@ -266,7 +295,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
                 String defaultValue = columnDeclaration.getExpression() == null ? null : columnDeclaration.getExpression().toString();
 
-                columnInformations.add(
+                columnInformation.add(
                         new ColumnInformation(
                                 columnDeclaration.getName().getSimple(),
                                 ColumnTypeInformation.fromSqlDataTypeSpec( columnDeclaration.getDataType() ),
@@ -278,14 +307,21 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 SqlKeyConstraint constraint = (SqlKeyConstraint) c.e;
                 String constraintName = constraint.getName() != null ? constraint.getName().getSimple() : null;
 
-                constraintInformations.add( new ConstraintInformation( constraintName, constraint.getConstraintType(), constraint.getColumnList().getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ) ) );
+                ConstraintInformation ci = new ConstraintInformation(
+                        constraintName,
+                        constraint.getConstraintType(),
+                        constraint.getColumnList().getList().stream()
+                                .map( SqlNode::toString )
+                                .collect( Collectors.toList() )
+                );
+                constraintInformation.add( ci );
             } else {
                 throw new AssertionError( c.e.getClass() );
             }
             position++;
         }
 
-        return new Pair<>( columnInformations, constraintInformations );
+        return new Pair<>( columnInformation, constraintInformation );
 
     }
 

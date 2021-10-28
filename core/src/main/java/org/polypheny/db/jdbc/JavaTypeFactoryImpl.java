@@ -180,6 +180,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
         }
         if ( type instanceof BasicPolyType || type instanceof IntervalPolyType ) {
             switch ( type.getPolyType() ) {
+                case JSON:
                 case VARCHAR:
                 case CHAR:
                     return String.class;

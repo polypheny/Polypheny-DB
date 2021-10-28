@@ -1193,6 +1193,8 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
 
     public static final SqlJsonValueExpressionOperator JSON_VALUE_EXPRESSION = new SqlJsonValueExpressionOperator( "JSON_VALUE_EXPRESSION", false );
 
+    public static final SqlJsonValueExpressionOperator JSON_VALUE_EXPRESSION_EXCLUDED = new SqlJsonValueExpressionOperator( "JSON_VALUE_EXPRESSION_EXCLUDE", false );
+
     public static final SqlJsonValueExpressionOperator JSON_STRUCTURED_VALUE_EXPRESSION = new SqlJsonValueExpressionOperator( "JSON_STRUCTURED_VALUE_EXPRESSION", true );
 
     public static final SqlJsonApiCommonSyntaxOperator JSON_API_COMMON_SYNTAX = new SqlJsonApiCommonSyntaxOperator();
@@ -1228,6 +1230,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
     public static final SqlSpecialOperator NOT_SIMILAR_TO = new SqlLikeOperator( "NOT SIMILAR TO", SqlKind.SIMILAR, true );
 
     public static final SqlSpecialOperator SIMILAR_TO = new SqlLikeOperator( "SIMILAR TO", SqlKind.SIMILAR, false );
+
 
     /**
      * Internal operator used to represent the ESCAPE clause of a LIKE or SIMILAR TO expression.

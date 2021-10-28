@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@
 
 package org.polypheny.db.schema;
 
-
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.sql.SqlCall;
@@ -92,5 +92,11 @@ public interface Table {
      * @return true iff the given aggregate call is valid
      */
     boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent );
+
+
+    default SchemaType getSchemaType() {
+        return SchemaType.RELATIONAL;
+    }
+
 }
 
