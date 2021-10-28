@@ -53,7 +53,7 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
-import org.polypheny.db.adapter.mongodb.util.MongoTypeUtil;
+import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -67,6 +67,7 @@ import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.mql.parser.BsonUtil;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
@@ -99,7 +100,7 @@ public class MongoStore extends DataStore {
 
         this.port = Integer.parseInt( settings.get( "port" ) );
 
-        DockerManager.Container container = new ContainerBuilder( getAdapterId(), "mongo:latest", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
+        DockerManager.Container container = new ContainerBuilder( getAdapterId(), "mongo:4.4.7", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
                 .withMappedPort( 27017, port )
                 .withInitCommands( Arrays.asList( "mongod", "--replSet", "poly" ) )
                 .withReadyTest( this::testConnection, 20000 )
@@ -119,7 +120,14 @@ public class MongoStore extends DataStore {
         this.transactionProvider = new TransactionProvider( this.client );
         MongoDatabase db = this.client.getDatabase( "admin" );
         Document configs = new Document( "setParameter", 1 );
-        configs.put( "transactionLifetimeLimitSeconds", Integer.parseInt( settings.get( "trxLifetimeLimit" ) ) );
+        String trxLifetimeLimit;
+        if ( settings.containsKey( "trxLifetimeLimit" ) ) {
+            trxLifetimeLimit = settings.get( "trxLifetimeLimit" );
+        } else {
+            trxLifetimeLimit = Adapter.MONGODB.getDefaultSettings().get( "trxLifetimeLimit" );
+        }
+        configs.put( "transactionLifetimeLimitSeconds", Integer.parseInt( trxLifetimeLimit ) );
+        configs.put( "cursorTimeoutMillis", 6 * 600000 );
         db.runCommand( configs );
     }
 
@@ -148,7 +156,10 @@ public class MongoStore extends DataStore {
     @Override
     public void createNewSchema( SchemaPlus rootSchema, String name ) {
         String[] splits = name.split( "_" );
-        String database = splits[0] + "_" + splits[1];
+        String database = name;
+        if ( splits.length >= 2 ) {
+            database = splits[0] + "_" + splits[1];
+        }
         currentSchema = new MongoSchema( database, this.client, transactionProvider );
     }
 
@@ -217,8 +228,10 @@ public class MongoStore extends DataStore {
     public void createTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
         Catalog catalog = Catalog.getInstance();
         commitAll();
-        //ClientSession session = transactionProvider.startTransaction( context.getStatement().getTransaction().getXid() );
-        //context.getStatement().getTransaction().registerInvolvedAdapter( this );
+
+        if ( this.currentSchema == null ) {
+            createNewSchema( null, Catalog.getInstance().getSchema( catalogTable.schemaId ).getName() );
+        }
 
         for ( long partitionId : partitionIds ) {
             String physicalTableName = getPhysicalTableName( catalogTable.id, partitionId );
@@ -299,9 +312,9 @@ public class MongoStore extends DataStore {
                     throw new RuntimeException( "Default values are not supported for array types" );
                 }
 
-                field = new Document().append( getPhysicalColumnName( catalogColumn.id ), value );
+                field = new Document().append( getPhysicalColumnName( catalogColumn ), value );
             } else {
-                field = new Document().append( getPhysicalColumnName( catalogColumn.id ), null );
+                field = new Document().append( getPhysicalColumnName( catalogColumn ), null );
             }
             Document update = new Document().append( "$set", field );
 
@@ -313,9 +326,19 @@ public class MongoStore extends DataStore {
                     getAdapterId(),
                     catalogColumn.id,
                     currentSchema.getDatabase().getName(),
-                    getPhysicalColumnName( catalogColumn.id ),
+                    getPhysicalColumnName( catalogColumn ),
                     false );
         }
+    }
+
+
+    private String getPhysicalColumnName( CatalogColumn catalogColumn ) {
+        return getPhysicalColumnName( catalogColumn.name, catalogColumn.id );
+    }
+
+
+    private String getPhysicalColumnName( CatalogColumnPlacement columnPlacement ) {
+        return getPhysicalColumnName( columnPlacement.getLogicalColumnName(), columnPlacement.columnId );
     }
 
 
@@ -401,7 +424,7 @@ public class MongoStore extends DataStore {
         BsonDocument filter = new BsonDocument();
         List<BsonDocument> updates = Collections.singletonList( new BsonDocument( "$set", new BsonDocument( name, new BsonDocument( "$convert", new BsonDocument()
                 .append( "input", new BsonString( "$" + name ) )
-                .append( "to", new BsonInt32( MongoTypeUtil.getTypeNumber( catalogColumn.type ) ) ) ) ) ) );
+                .append( "to", new BsonInt32( BsonUtil.getTypeNumber( catalogColumn.type ) ) ) ) ) ) );
 
         this.currentSchema.database.getCollection( partitionPlacement.physicalTableName ).updateMany( filter, updates );
     }
@@ -427,7 +450,10 @@ public class MongoStore extends DataStore {
     }
 
 
-    public static String getPhysicalColumnName( long id ) {
+    public static String getPhysicalColumnName( String name, long id ) {
+        if ( name.startsWith( "_" ) ) {
+            return name;
+        }
         // we can simply use ids as our physical column names as MongoDB allows this
         return "col" + id;
     }

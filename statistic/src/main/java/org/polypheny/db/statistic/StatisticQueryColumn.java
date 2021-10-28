@@ -39,14 +39,14 @@ public class StatisticQueryColumn extends QueryColumn {
      * @param type db type of the column
      * @param data map consisting of different values to a given statistic
      */
-    public StatisticQueryColumn( String schemaTableName, final PolyType type, final PolyType collectionType, final String[] data ) {
-        super( schemaTableName, type, collectionType );
+    public StatisticQueryColumn( String schemaTableName, final PolyType type, final String[] data ) {
+        super( schemaTableName, type );
         this.data = data;
     }
 
 
-    public StatisticQueryColumn( String schema, String table, String name, final PolyType type, final PolyType collectionType, final String[] data ) {
-        super( schema, table, name, type, collectionType );
+    public StatisticQueryColumn( String schema, String table, String name, final PolyType type, final String[] data ) {
+        super( schema, table, name, type );
         this.data = data;
     }
 

@@ -60,6 +60,7 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.document.util.DataModelShuttle;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -196,6 +197,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             logicalRoot = logicalRoot.tryExpandView();
         }
 
+        logicalRoot.rel.accept( new DataModelShuttle() );
+
         ExecutionTimeMonitor executionTimeMonitor = new ExecutionTimeMonitor();
 
         final Convention resultConvention =
@@ -300,7 +303,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         if ( isAnalyze ) {
             statement.getDuration().start( "Implementation Caching" );
         }
-        if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
+        if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && statement.getTransaction().getUseCache() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
             PreparedResult preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.rel );
             if ( preparedResult != null ) {
                 PolyphenyDbSignature signature = createSignature( preparedResult, routedRoot, resultConvention, executionTimeMonitor );
@@ -337,7 +340,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             statement.getDuration().start( "Plan Caching" );
         }
         RelNode optimalNode;
-        if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
+        if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && statement.getTransaction().getUseCache() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
             optimalNode = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRoot.rel );
         } else {
             parameterizedRoot = routedRoot;
@@ -359,7 +362,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             //    optimalRoot = optimalRoot.withKind( sqlNodeOriginal.getKind() );
             //}
 
-            if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
+            if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && statement.getTransaction().getUseCache() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
                 QueryPlanCache.INSTANCE.put( parameterizedRoot.rel, optimalNode );
             }
         }
@@ -378,7 +381,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         PreparedResult preparedResult = implement( optimalRoot, parameterRowType );
 
         // Cache implementation
-        if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
+        if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && statement.getTransaction().getUseCache() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
             if ( optimalRoot.rel.isImplementationCacheable() ) {
                 ImplementationCache.INSTANCE.put( parameterizedRoot.rel, preparedResult );
             } else {

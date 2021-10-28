@@ -17,8 +17,13 @@
 package org.polypheny.db;
 
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -32,6 +37,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import kong.unirest.HttpRequest;
+import kong.unirest.HttpResponse;
+import kong.unirest.Unirest;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
@@ -40,6 +49,7 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.mongoql.model.Result;
 import org.polypheny.db.runtime.SqlFunctions;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
@@ -266,6 +276,128 @@ public class TestHelper {
             return lhsStr.compareTo( rhsStr );
         } );
         return list;
+    }
+
+
+    public static class MongoConnection {
+
+        static Gson gson = new Gson();
+
+
+        private MongoConnection() {
+        }
+
+
+        public static boolean checkResultSet( Result result, List<Object[]> expected ) {
+            assertEquals( expected.size(), result.getData().length );
+
+            int j = 0;
+            for ( String[] data : result.getData() ) {
+                int i = 0;
+                for ( String entry : data ) {
+                    if ( !result.getHeader()[i].name.equals( "_id" ) ) {
+                        if ( entry != null && expected.get( j )[i] != null ) {
+                            assertEquals( ((String) expected.get( j )[i]).replace( " ", "" ), entry.replace( " ", "" ) );
+                        } else {
+                            assertEquals( expected.get( j )[i], entry );
+                        }
+                    }
+                    i++;
+                }
+                j++;
+            }
+
+            return true;
+        }
+
+
+        private static HttpRequest<?> buildQuery( String mql ) {
+            JsonObject data = new JsonObject();
+            data.addProperty( "query", mql );
+            data.addProperty( "database", "test" );
+
+            return Unirest.post( "{protocol}://{host}:{port}/mongo" )
+                    .header( "Content-Type", "application/json" )
+                    .body( data );
+
+        }
+
+
+        public static Result executeGetResponse( String mongoQl ) {
+            return getBody( execute( mongoQl ) );
+        }
+
+
+        private static HttpResponse<String> execute( String mql ) {
+            HttpRequest<?> request = MongoConnection.buildQuery( mql );
+            request.basicAuth( "pa", "" );
+            request.routeParam( "protocol", "http" );
+            request.routeParam( "host", "127.0.0.1" );
+            request.routeParam( "port", "2717" );
+            return request.asString();
+        }
+
+
+        private static Result getBody( HttpResponse<String> res ) {
+            try {
+                return gson.fromJson( res.getBody(), Result.class );
+            } catch ( JsonSyntaxException e ) {
+                log.warn( "{}\nmessage: {}", res.getBody(), e.getMessage() );
+                fail();
+                throw new RuntimeException( "This cannot happen" );
+            }
+        }
+
+
+        public static boolean checkUnorderedResultSet( Result result, List<String[]> expected, boolean excludeId ) {
+            assertEquals( expected.size(), result.getData().length );
+
+            List<List<String>> parsedResults = new ArrayList<>();
+            int j = 0;
+            for ( String[] data : result.getData() ) {
+                int i = 0;
+                List<String> row = new ArrayList<>();
+                for ( String entry : data ) {
+                    if ( !result.getHeader()[i].name.equals( "_id" ) ) {
+                        if ( entry != null ) {
+                            row.add( entry.replace( " ", "" ) );
+                        } else {
+                            row.add( null );
+                        }
+                    }
+                    i++;
+                }
+                parsedResults.add( row );
+                j++;
+            }
+            List<List<String>> parsedExpected = new ArrayList<>();
+
+            if ( !excludeId ) {
+                expected.forEach( row -> parsedExpected.add( Arrays.asList( row ) ) );
+            } else {
+                expected.forEach( row -> parsedExpected.add( Arrays.asList( row ).subList( 1, Arrays.asList( row ).size() ) ) );
+            }
+
+            List<List<String>> finalExpected = parsedExpected
+                    .stream()
+                    .map(
+                            list -> list
+                                    .stream()
+                                    .map( e -> {
+                                        if ( e != null ) {
+                                            return e.replace( " ", "" );
+                                        } else {
+                                            return null;
+                                        }
+                                    } )
+                                    .collect( Collectors.toList() ) )
+                    .collect( Collectors.toList() );
+
+            assertTrue( finalExpected.containsAll( parsedResults ) );
+            assertTrue( parsedResults.containsAll( finalExpected ) );
+            return true;
+        }
+
     }
 
 

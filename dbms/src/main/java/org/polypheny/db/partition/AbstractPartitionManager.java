@@ -110,7 +110,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
     /**
      * Returns the unified null value for all partition managers.
-     * Such that every partionValue occurence of null ist treated equally
+     * Such that every partitionValue occurrence of null ist treated equally
      *
      * @return null String
      */

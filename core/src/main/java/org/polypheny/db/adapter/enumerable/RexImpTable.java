@@ -82,6 +82,7 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
+import org.polypheny.db.mql.fun.MqlStdOperatorTable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
@@ -94,6 +95,7 @@ import org.polypheny.db.schema.ImplementableFunction;
 import org.polypheny.db.schema.impl.AggregateFunctionImpl;
 import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.SqlBinaryOperator;
+import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.OracleSqlOperatorTable;
 import org.polypheny.db.sql.fun.SqlJsonArrayAggAggFunction;
@@ -290,6 +292,7 @@ public class RexImpTable {
 
         // Json Operators
         defineMethod( SqlStdOperatorTable.JSON_VALUE_EXPRESSION, BuiltInMethod.JSON_VALUE_EXPRESSION.method, NullPolicy.STRICT );
+        defineMethod( SqlStdOperatorTable.JSON_VALUE_EXPRESSION_EXCLUDED, BuiltInMethod.JSON_VALUE_EXPRESSION_EXCLUDE.method, NullPolicy.STRICT );
         defineMethod( SqlStdOperatorTable.JSON_STRUCTURED_VALUE_EXPRESSION, BuiltInMethod.JSON_STRUCTURED_VALUE_EXPRESSION.method, NullPolicy.STRICT );
         defineMethod( SqlStdOperatorTable.JSON_API_COMMON_SYNTAX, BuiltInMethod.JSON_API_COMMON_SYNTAX.method, NullPolicy.NONE );
         defineMethod( SqlStdOperatorTable.JSON_EXISTS, BuiltInMethod.JSON_EXISTS.method, NullPolicy.NONE );
@@ -307,6 +310,32 @@ public class RexImpTable {
         defineImplementor( SqlStdOperatorTable.IS_NOT_JSON_OBJECT, NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_OBJECT.method ) ), false );
         defineImplementor( SqlStdOperatorTable.IS_NOT_JSON_ARRAY, NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_ARRAY.method ) ), false );
         defineImplementor( SqlStdOperatorTable.IS_NOT_JSON_SCALAR, NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_SCALAR.method ) ), false );
+
+        defineBinary( MqlStdOperatorTable.DOC_ITEM, ExpressionType.Parameter, NullPolicy.STRICT, "docItem" );
+        defineImplementor( MqlStdOperatorTable.DOC_EQ, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_EQ.method ), false );
+        defineImplementor( MqlStdOperatorTable.DOC_GT, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_GT.method ), false );
+        defineImplementor( MqlStdOperatorTable.DOC_GTE, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_GTE.method ), false );
+        defineImplementor( MqlStdOperatorTable.DOC_LT, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_LT.method ), false );
+        defineImplementor( MqlStdOperatorTable.DOC_LTE, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_LTE.method ), false );
+        defineImplementor( MqlStdOperatorTable.DOC_SIZE_MATCH, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_SIZE_MATCH.method ), false );
+        defineImplementor( MqlStdOperatorTable.DOC_REGEX_MATCH, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_REGEX_MATCH.method ), false );
+        defineImplementor( MqlStdOperatorTable.DOC_JSON_MATCH, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_JSON_MATCH.method ), false );
+        defineImplementor( MqlStdOperatorTable.DOC_TYPE_MATCH, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_TYPE_MATCH.method ), false );
+        defineMethod( MqlStdOperatorTable.DOC_SLICE, BuiltInMethod.DOC_SLICE.method, NullPolicy.STRICT );
+        defineMethod( MqlStdOperatorTable.DOC_QUERY_VALUE, BuiltInMethod.DOC_QUERY_VALUE.method, NullPolicy.STRICT );
+        defineMethod( MqlStdOperatorTable.DOC_QUERY_EXCLUDE, BuiltInMethod.DOC_QUERY_EXCLUDE.method, NullPolicy.STRICT );
+        defineMethod( MqlStdOperatorTable.DOC_ADD_FIELDS, BuiltInMethod.DOC_ADD_FIELDS.method, NullPolicy.STRICT );
+
+        defineMethod( MqlStdOperatorTable.DOC_UPDATE_MIN, BuiltInMethod.DOC_UPDATE_MIN.method, NullPolicy.STRICT );
+        defineMethod( MqlStdOperatorTable.DOC_UPDATE_MAX, BuiltInMethod.DOC_UPDATE_MAX.method, NullPolicy.STRICT );
+        defineMethod( MqlStdOperatorTable.DOC_UPDATE_ADD_TO_SET, BuiltInMethod.DOC_UPDATE_ADD_TO_SET.method, NullPolicy.STRICT );
+        defineMethod( MqlStdOperatorTable.DOC_UPDATE_RENAME, BuiltInMethod.DOC_UPDATE_RENAME.method, NullPolicy.STRICT );
+        defineMethod( MqlStdOperatorTable.DOC_UPDATE_REPLACE, BuiltInMethod.DOC_UPDATE_REPLACE.method, NullPolicy.STRICT );
+        defineMethod( MqlStdOperatorTable.DOC_UPDATE_REMOVE, BuiltInMethod.DOC_UPDATE_REMOVE.method, NullPolicy.STRICT );
+        defineMethod( MqlStdOperatorTable.DOC_EXISTS, BuiltInMethod.DOC_EXISTS.method, NullPolicy.STRICT );
+        defineMethod( MqlStdOperatorTable.DOC_JSONIZE, BuiltInMethod.DOC_JSONIZE.method, NullPolicy.STRICT );
+        map.put( MqlStdOperatorTable.DOC_ELEM_MATCH, new ElemMatchImplementor() );
+        map.put( MqlStdOperatorTable.DOC_UNWIND, new UnwindImplementor() );
 
         // System functions
         final SystemFunctionImplementor systemFunctionImplementor = new SystemFunctionImplementor();
@@ -2384,6 +2413,115 @@ public class RexImpTable {
                 default:
                     return new MethodImplementor( BuiltInMethod.ANY_ITEM.method );
             }
+        }
+
+    }
+
+
+    private static class UnwindImplementor implements CallImplementor {
+
+        @Override
+        public Expression implement( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
+            final ParameterExpression i_ = Expressions.parameter( int.class, "_i" );
+            final ParameterExpression list_ = Expressions.parameter( Types.of( List.class, Object.class ), "_callList" );
+            final ParameterExpression unset_ = Expressions.parameter( boolean.class, "_unset" );
+            final ParameterExpression el_ = Expressions.parameter( Object.class, "_el" );
+            translator.getUnwindContext().activateUnwind( i_, list_, unset_ );
+
+            BlockBuilder else_ = new BlockBuilder();
+            else_.add( Expressions.ifThen(
+                    unset_,
+                    Expressions.block(
+                            Expressions.statement( Expressions.assign( list_, Expressions.call( BuiltInMethod.DOC_GET_ARRAY.method, translator.translate( call.getOperands().get( 0 ) ) ) ) ),
+                            Expressions.statement( Expressions.assign( i_, Expressions.call( list_, "size" ) ) ),
+                            Expressions.statement( Expressions.assign( unset_, Expressions.constant( false ) ) )
+                    )
+            ) );
+            else_.add( Expressions.ifThen(
+                    Expressions.greaterThan( i_, Expressions.constant( 0 ) ),
+                    Expressions.statement( Expressions.assign( el_, Expressions.call( list_, "get", Expressions.subtract( Expressions.call( list_, "size" ), i_ ) ) ) ) ) );
+
+            BlockBuilder outer = new BlockBuilder();
+            outer.add( Expressions.declare( 0, el_, Expressions.constant( null ) ) );
+            outer.add( Expressions.ifThenElse(
+                    Expressions.greaterThan( i_, Expressions.constant( 0 ) ),
+                    Expressions.statement( Expressions.assign( el_, Expressions.call( list_, "get", Expressions.subtract( Expressions.call( list_, "size" ), i_ ) ) ) ),
+                    else_.toBlock()
+            ) );
+            translator.getList().append( "unwind", outer.toBlock() );
+
+            return el_;
+        }
+
+    }
+
+
+    private static class ElemMatchImplementor implements CallImplementor {
+
+        @Override
+        public Expression implement( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
+            BlockBuilder builder = new BlockBuilder();
+
+            final ParameterExpression i_ = Expressions.parameter( int.class, "i" );
+            final ParameterExpression predicate = Expressions.parameter( boolean.class, "predicate" );
+            final ParameterExpression _list = Expressions.parameter( Types.of( List.class, Object.class ), "_list" );
+            final ParameterExpression par = Expressions.parameter( Object.class, "_arr" );
+            final ParameterExpression get_ = Expressions.parameter( Object.class, "_get" );
+            builder.add( Expressions.declare( 0, par, translator.translate( call.getOperands().get( 0 ), NullAs.NOT_POSSIBLE, null ) ) );
+            builder.add(
+                    Expressions.declare( 0, predicate, Expressions.constant( false ) ) );
+            builder.add(
+                    Expressions.declare( 0, _list, Expressions.call( BuiltInMethod.DOC_GET_ARRAY.method, par ) )
+            );
+            builder.add(
+                    Expressions.for_(
+                            Expressions.declare(
+                                    0, i_, Expressions.constant( 0 ) ),
+                            Expressions.lessThan( i_, Expressions.call( _list, "size" ) ),
+                            Expressions.postIncrementAssign( i_ ),
+                            Expressions.block(
+                                    Expressions.declare( 0, get_, Expressions.call( _list, "get", i_ ) ),
+                                    Expressions.ifThen(
+                                            startSubstitute( translator, call.getOperands().get( 1 ), 0, get_ ),
+                                            Expressions.block( Expressions.return_( null, Expressions.constant( true ) ) ) )
+                            )
+                    ) );
+            builder.add( Expressions.return_( null, predicate ) );
+            translator.getList().append( "forLoop", builder.toBlock() );
+            return predicate;
+        }
+
+
+        private Expression startSubstitute( RexToLixTranslator translator, RexNode node, int pos, Expression el ) {
+            RexNode n = substitute( translator, node, pos );
+            translator.setDoSubstitute( true );
+            translator.getReplace().put( n, el );
+            Expression expr = translator.translate( node, NullAs.NOT_POSSIBLE, null );
+            translator.setDoSubstitute( false );
+            translator.getReplace().clear();
+            return expr;
+        }
+
+
+        private RexNode substitute( RexToLixTranslator translator, RexNode node, int pos ) {
+            RexNode transformed = node;
+            if ( node.isA( SqlKind.LOCAL_REF ) ) {
+                transformed = translator.deref( node );
+            }
+            if ( transformed instanceof RexCall ) {
+                int i = 0;
+
+                for ( RexNode operand : ((RexCall) transformed).getOperands() ) {
+                    RexNode n = substitute( translator, operand, i );
+                    if ( n != null ) {
+                        return n;
+                    }
+                    i++;
+                }
+            } else if ( pos == 0 ) {
+                return node;
+            }
+            return null;
         }
 
     }

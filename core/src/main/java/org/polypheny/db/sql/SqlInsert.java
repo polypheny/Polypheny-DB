@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,9 +33,9 @@
 
 package org.polypheny.db.sql;
 
-
 import java.util.List;
 import lombok.Setter;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
@@ -87,7 +87,8 @@ public class SqlInsert extends SqlCall {
     /**
      * Returns whether this is an UPSERT statement.
      *
-     * In SQL, this is represented using the {@code UPSERT} keyword rather than {@code INSERT}; in the abstract syntax tree, an UPSERT is indicated by the presence of a {@link SqlInsertKeyword#UPSERT} keyword.
+     * In SQL, this is represented using the {@code UPSERT} keyword rather than {@code INSERT};
+     * in the abstract syntax tree, an UPSERT is indicated by the presence of a {@link SqlInsertKeyword#UPSERT} keyword.
      */
     public final boolean isUpsert() {
         return getModifierNode( SqlInsertKeyword.UPSERT ) != null;
@@ -177,5 +178,11 @@ public class SqlInsert extends SqlCall {
     public void validate( SqlValidator validator, SqlValidatorScope scope ) {
         validator.validateInsert( this );
     }
+
+
+    public SchemaType getSchemaType() {
+        return SchemaType.RELATIONAL;
+    }
+
 }
 

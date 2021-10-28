@@ -140,7 +140,7 @@ public class StatisticQueryProcessor {
         List<QueryColumn> columns = new ArrayList<>();
 
         List<CatalogColumn> catalogColumns = catalog.getColumns( new Pattern( databaseName ), null, null, null );
-        columns.addAll( catalogColumns.stream().map( c -> new QueryColumn( c.getSchemaName(), c.getTableName(), c.name, c.type, c.collectionsType ) ).collect( Collectors.toList() ) );
+        columns.addAll( catalogColumns.stream().map( c -> new QueryColumn( c.getSchemaName(), c.getTableName(), c.name, c.type ) ).collect( Collectors.toList() ) );
 
         return columns;
     }

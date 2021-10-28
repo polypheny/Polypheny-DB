@@ -36,6 +36,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -62,6 +63,7 @@ import org.polypheny.db.rel.core.SetOp;
 import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rel.core.TableModify.Operation;
 import org.polypheny.db.rel.logical.LogicalConditionalExecute;
+import org.polypheny.db.rel.logical.LogicalDocuments;
 import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalModifyCollect;
 import org.polypheny.db.rel.logical.LogicalProject;
@@ -518,7 +520,7 @@ public abstract class AbstractRouter implements Router {
 
                                         /* TODO add possibility to substitute the update as a insert into target partition from all source partitions
                                         // IS currently blocked
-                                        //needs to to a insert into target partition select from all other partitoins first and then delete on source partiitons
+                                        //needs to to a insert into target partition select from all other partitions first and then delete on source partitions
                                         worstCaseRouting = false;
                                         log.debug( "oldValue and new value reside on same partition: " + identifiedPartitionForSetValue );
 
@@ -986,6 +988,10 @@ public abstract class AbstractRouter implements Router {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
             }
         } else if ( node instanceof LogicalValues ) {
+            if ( node.getModel() == SchemaType.DOCUMENT ) {
+                return handleDocuments( (LogicalDocuments) node, builder );
+            }
+
             builder = handleValues( (LogicalValues) node, builder );
             if ( catalogTable.columnIds.size() == placements.size() ) { // full placement, no additional checks required
                 return builder;
@@ -1272,6 +1278,11 @@ public abstract class AbstractRouter implements Router {
         return builder.scan( ImmutableList.of(
                 PolySchemaBuilder.buildAdapterSchemaName( storeUniqueName, logicalSchemaName, physicalSchemaName ),
                 logicalTableName + "_" + partitionId ) );
+    }
+
+
+    protected RelBuilder handleDocuments( LogicalDocuments node, RelBuilder builder ) {
+        return builder.documents( node.getDocumentTuples(), node.getRowType(), node.getTuples() );
     }
 
 

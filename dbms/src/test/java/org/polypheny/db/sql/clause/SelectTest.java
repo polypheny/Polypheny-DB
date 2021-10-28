@@ -32,7 +32,6 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.CottontailExcluded;
 import org.polypheny.db.excluded.FileExcluded;
-import org.polypheny.db.excluded.MongodbExcluded;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -93,7 +92,7 @@ public class SelectTest {
 
 
     @Test
-    @Category({ FileExcluded.class, CottontailExcluded.class, MongodbExcluded.class })
+    @Category({ FileExcluded.class, CottontailExcluded.class })
     public void nestedSelect() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

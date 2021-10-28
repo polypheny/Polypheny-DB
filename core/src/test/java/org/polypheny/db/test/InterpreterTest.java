@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.interpreter.Interpreter;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
@@ -142,12 +143,13 @@ public class InterpreterTest {
         public List<Map<Long, Object>> getParameterValues() {
             throw new UnsupportedOperationException();
         }
+
     }
 
 
     @Before
     public void setUp() {
-        rootSchema = Frameworks.createRootSchema( true ).add( "hr", new ReflectiveSchema( new HrSchema() ) );
+        rootSchema = Frameworks.createRootSchema( true ).add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( SqlParserConfig.DEFAULT )
@@ -374,5 +376,6 @@ public class InterpreterTest {
         final Interpreter interpreter = new Interpreter( dataContext, convert );
         assertRows( interpreter, "[0]", "[10]", "[20]", "[30]" );
     }
+
 }
 

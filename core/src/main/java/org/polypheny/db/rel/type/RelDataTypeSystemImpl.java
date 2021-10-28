@@ -84,6 +84,7 @@ public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem, Serial
             case CHAR:
             case BINARY:
                 return 1;
+            case JSON:
             case VARCHAR:
             case VARBINARY:
                 return RelDataType.PRECISION_NOT_SPECIFIED;
@@ -139,6 +140,7 @@ public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem, Serial
         switch ( typeName ) {
             case DECIMAL:
                 return getMaxNumericPrecision();
+            case JSON:
             case VARCHAR:
             case CHAR:
                 return 65536;
@@ -187,6 +189,7 @@ public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem, Serial
         switch ( typeName ) {
             case VARBINARY:
             case VARCHAR:
+            case JSON:
             case CHAR:
                 return "'";
             case BINARY:
@@ -228,6 +231,7 @@ public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem, Serial
     public boolean isCaseSensitive( PolyType typeName ) {
         switch ( typeName ) {
             case CHAR:
+            case JSON:
             case VARCHAR:
                 return true;
             default:

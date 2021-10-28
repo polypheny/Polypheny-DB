@@ -29,6 +29,7 @@ import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.adapter.jdbc.rel2sql.RelToSqlConverter.PlainRelToSqlConverter;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -98,7 +99,7 @@ public class RelToSqlConverterTest {
     private Sql sql( String sql ) {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "foodmart", new ReflectiveSchema( new FoodmartSchema() ) );
+                .add( "foodmart", new ReflectiveSchema( new FoodmartSchema() ), SchemaType.RELATIONAL );
         return new Sql( schema, sql, PolyphenyDbSqlDialect.DEFAULT, DEFAULT_REL_CONFIG, ImmutableList.of() );
     }
 
@@ -153,7 +154,7 @@ public class RelToSqlConverterTest {
      */
     private static RelBuilder relBuilder() {
         // Creates a config based on the "scott" schema.
-        final SchemaPlus schema = Frameworks.createRootSchema( true ).add( "scott", new ReflectiveSchema( new ScottSchema() ) );
+        final SchemaPlus schema = Frameworks.createRootSchema( true ).add( "scott", new ReflectiveSchema( new ScottSchema() ), SchemaType.RELATIONAL );
         Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder()
                 .parserConfig( SqlParserConfig.DEFAULT )
                 .defaultSchema( schema )

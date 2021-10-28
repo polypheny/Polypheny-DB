@@ -230,7 +230,7 @@ public class StatisticsManager<T extends Comparable<T>> {
      * Method to sort a column into the different kinds of column types and hands it to the specific reevaluation
      */
     private StatisticColumn<T> reevaluateColumn( QueryColumn column ) {
-        if ( column.getCollectionType() != null || !this.sqlQueryInterface.hasData( column.getSchema(), column.getTable(), column.getName() ) ) {
+        if ( !this.sqlQueryInterface.hasData( column.getSchema(), column.getTable(), column.getName() ) ) {
             return null;
         }
         if ( column.getType().getFamily() == PolyTypeFamily.NUMERIC ) {
@@ -298,9 +298,7 @@ public class StatisticsManager<T extends Comparable<T>> {
 
         StatisticQueryColumn unique = this.getUniqueValues( column );
         for ( int idx = 0; idx < unique.getData().length; idx++ ) {
-            if ( unique.getData()[idx] != null )
-            //noinspection unchecked
-            {
+            if ( unique.getData()[idx] != null ) {
                 unique.getData()[idx] = DateTimeStringUtils.longToAdjustedString( Long.parseLong( unique.getData()[idx] ), column.getType() );
             }
         }
