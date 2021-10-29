@@ -16,6 +16,7 @@
 
 package org.polypheny.db.mql;
 
+import java.util.Arrays;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.polypheny.db.catalog.Catalog;
@@ -84,12 +85,17 @@ public class MqlCreateView extends MqlNode implements MqlExecutableStatement {
                     true,
                     statement,
                     placementType,
-                    null,
-                    pipeline.toString(),
+                    Arrays.asList( "_id", "_data" ),
+                    buildQuery( pipeline ),
                     QueryLanguage.MONGOQL );
         } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
             throw new RuntimeException( e );
-        } // we just added the table/column so it has to exist or we have a internal problem
+        } // we just added the table/column, so it has to exist, or we have an internal problem
+    }
+
+
+    private String buildQuery( BsonArray pipeline ) {
+        return "db.createView(" + String.join( ",", Arrays.asList( name, source, pipeline.toString() ) ) + ")";
     }
 
 

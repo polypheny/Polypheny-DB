@@ -3046,16 +3046,12 @@ public class SqlToRelConverter {
         final List<String> targetFields = targetTable.getRowType().getFieldNames();
         for ( String targetColumnName : targetColumnNames ) {
             final int i = targetFields.indexOf( targetColumnName );
-            if ( i != -1 ) { // TODO DL: change
-                switch ( strategies.get( i ) ) {
-                    case STORED:
-                    case VIRTUAL:
-                        break;
-                    default:
-                        nameToNodeMap.put( targetColumnName, rexBuilder.makeFieldAccess( sourceRef, j++ ) );
-                }
-            } else {
-                nameToNodeMap.put( targetColumnName, rexBuilder.makeFieldAccess( sourceRef, j++ ) );
+            switch ( strategies.get( i ) ) {
+                case STORED:
+                case VIRTUAL:
+                    break;
+                default:
+                    nameToNodeMap.put( targetColumnName, rexBuilder.makeFieldAccess( sourceRef, j++ ) );
             }
         }
         return createBlackboard( null, nameToNodeMap, false );

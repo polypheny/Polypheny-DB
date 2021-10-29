@@ -36,7 +36,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.NotImplementedException;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DBException.SerializationError;
@@ -94,10 +93,12 @@ import org.polypheny.db.catalog.exceptions.UnknownTableIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.exceptions.UnknownUserIdRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.mql.MqlNode;
 import org.polypheny.db.partition.FrequencyMap;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.processing.MqlProcessor;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
@@ -477,7 +478,15 @@ public class CatalogImpl extends Catalog {
                         relTypeInfo.put( c.id, root.validatedRowType );
                         break;
                     case MONGOQL:
-                        throw new NotImplementedException();
+                        MqlProcessor mqlProcessor = statement.getTransaction().getMqlProcessor();
+                        MqlNode mqlNode = mqlProcessor.parse( query );
+                        RelRoot mqlRel = mqlProcessor.translate(
+                                statement,
+                                mqlNode,
+                                getSchema( defaultDatabaseId ).name );
+                        nodeInfo.put( c.id, mqlRel.rel );
+                        relTypeInfo.put( c.id, mqlRel.validatedRowType );
+                        break;
                 }
             }
         }

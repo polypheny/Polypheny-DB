@@ -123,7 +123,6 @@ public class BasicPolyType extends AbstractPolyType {
         this.scale = scale;
 
         if ( typeName == PolyType.JSON ) {
-            // TODO DL move
             this.collation = SqlCollation.IMPLICIT;
             this.wrappedCharset = SerializableCharset.forCharset( StandardCharsets.ISO_8859_1 );
         } else {
