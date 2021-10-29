@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
@@ -60,6 +61,7 @@ import org.polypheny.db.util.Util;
  */
 public class MockCatalogReaderSimple extends MockCatalogReader {
 
+    @Getter
     private final Fixture fixture;
 
 
@@ -369,4 +371,5 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
         return this;
 
     }
+
 }

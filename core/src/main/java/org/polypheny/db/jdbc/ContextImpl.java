@@ -84,4 +84,5 @@ public class ContextImpl implements Context {
         final boolean enable = RuntimeConfig.SPARK_ENGINE.getBoolean();
         return PolyphenyDbPrepare.Dummy.getSparkHandler( enable );
     }
+
 }

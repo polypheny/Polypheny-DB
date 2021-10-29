@@ -172,7 +172,7 @@ public class MongoAggregate extends Aggregate implements MongoRel {
             final String inName = inNames.get( args.get( 0 ) );
             implementor.physicalMapper.add( inName );
             return "{$max: " + MongoRules.maybeQuote( "$" + inName ) + "}";
-        } else if ( aggregation == SqlStdOperatorTable.AVG ) {
+        } else if ( aggregation == SqlStdOperatorTable.AVG || aggregation.kind == SqlStdOperatorTable.AVG.kind ) {
             assert args.size() == 1;
             final String inName = inNames.get( args.get( 0 ) );
             implementor.physicalMapper.add( inName );

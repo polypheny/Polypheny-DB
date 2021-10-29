@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,5 +28,20 @@ public class QueryRequest extends UIRequest {
      * TRUE if information about the query execution should be added to the Query Analyzer (InformationManager)
      */
     public boolean analyze;
+
+    /**
+     * TRUE if the query should use the cache
+     */
+    public boolean cache;
+
+    /**
+     * This flag defines which language was used for this query
+     */
+    public String language;
+
+    /**
+     * This flag defines the default Polypheny schema (document database) to use
+     */
+    public String database;
 
 }

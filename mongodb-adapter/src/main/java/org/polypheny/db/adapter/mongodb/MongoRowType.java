@@ -50,7 +50,7 @@ public class MongoRowType extends RelRecordType {
 
 
     public String getPhysicalName( String name, Implementor implementor ) {
-        String id = MongoStore.getPhysicalColumnName( getId( name ) );
+        String id = MongoStore.getPhysicalColumnName( name, getId( name ) );
         implementor.physicalMapper.add( id );
         return id;
     }

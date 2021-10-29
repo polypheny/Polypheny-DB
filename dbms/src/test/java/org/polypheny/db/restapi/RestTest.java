@@ -18,7 +18,9 @@ package org.polypheny.db.restapi;
 
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -72,8 +74,8 @@ public class RestTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "CREATE SCHEMA test" );
-                statement.executeUpdate( "CREATE TABLE test.resttest( "
+                statement.executeUpdate( "CREATE SCHEMA restschema" );
+                statement.executeUpdate( "CREATE TABLE restschema.resttest( "
                         + "tbigint BIGINT NOT NULL, "
                         + "tboolean BOOLEAN NOT NULL, "
                         + "tdate DATE NOT NULL, "
@@ -87,8 +89,8 @@ public class RestTest {
                         + "ttinyint TINYINT NOT NULL, "
                         + "tvarchar VARCHAR(20) NOT NULL, "
                         + "PRIMARY KEY (tinteger) )" );
-                statement.executeUpdate( "CREATE VIEW test.viewtest AS SELECT * FROM test.resttest" );
-                statement.executeUpdate( "CREATE MATERIALIZED VIEW test.materializedtest AS SELECT test.resttest.tinteger FROM test.resttest FRESHNESS INTERVAL 10 \"seconds\" " );
+                statement.executeUpdate( "CREATE VIEW restschema.viewtest AS SELECT * FROM restschema.resttest" );
+                statement.executeUpdate( "CREATE MATERIALIZED VIEW restschema.materializedtest AS SELECT restschema.resttest.tinteger FROM restschema.resttest FRESHNESS MANUAL " );
                 connection.commit();
             }
         }
@@ -100,13 +102,13 @@ public class RestTest {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 try {
-                    statement.executeUpdate( "DROP MATERIALIZED VIEW test.materializedtest" );
-                    statement.executeUpdate( "DROP VIEW test.viewtest" );
-                    statement.executeUpdate( "DROP TABLE test.resttest" );
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW restschema.materializedtest" );
+                    statement.executeUpdate( "DROP VIEW restschema.viewtest" );
+                    statement.executeUpdate( "DROP TABLE restschema.resttest" );
                 } catch ( SQLException e ) {
                     log.error( "Exception while deleting old data", e );
                 }
-                statement.executeUpdate( "DROP SCHEMA test" );
+                statement.executeUpdate( "DROP SCHEMA restschema" );
                 connection.commit();
             }
         } catch ( SQLException e ) {
@@ -181,56 +183,59 @@ public class RestTest {
     @Category({ CassandraExcluded.class })
     public void testOperations() {
         // Insert
-        HttpRequest<?> request = buildRestInsert( "test.resttest", ImmutableList.of( getTestRow() ) );
+        HttpRequest<?> request = buildRestInsert( "restschema.resttest", ImmutableList.of( getTestRow() ) );
         Assert.assertEquals(
                 "{\"result\":[{\"ROWCOUNT\":1}],\"size\":1}",
                 executeRest( request ).getBody() );
 
         // Update
         Map<String, String> where = new LinkedHashMap<>();
-        where.put( "test.resttest.tsmallint", "=" + 45 );
-        request = buildRestUpdate( "test.resttest", getTestRow( 1 ), where );
+        where.put( "restschema.resttest.tsmallint", "=" + 45 );
+        request = buildRestUpdate( "restschema.resttest", getTestRow( 1 ), where );
         Assert.assertEquals(
                 "{\"result\":[{\"ROWCOUNT\":1}],\"size\":1}",
                 executeRest( request ).getBody() );
 
         // Update
         Map<String, String> where2 = new LinkedHashMap<>();
-        where.put( "test.resttest.tsmallint", "=" + 46 );
-        request = buildRestUpdate( "test.resttest", getTestRow( 0 ), where2 );
+        where.put( "restschema.resttest.tsmallint", "=" + 46 );
+        request = buildRestUpdate( "restschema.resttest", getTestRow( 0 ), where2 );
         Assert.assertEquals(
                 "{\"result\":[{\"ROWCOUNT\":1}],\"size\":1}",
                 executeRest( request ).getBody() );
 
         // Get
-        request = Unirest.get( "{protocol}://{host}:{port}/restapi/v1/res/test.resttest" )
-                .queryString( "test.resttest.ttinyint", "=" + 22 );
+        request = Unirest.get( "{protocol}://{host}:{port}/restapi/v1/res/restschema.resttest" )
+                .queryString( "restschema.resttest.ttinyint", "=" + 22 );
+
+        String expected = "{\"result\":[{\"restschema.resttest.tsmallint\":45,\"restschema.resttest.tdecimal\":123.45,\"restschema.resttest.ttinyint\":22,\"restschema.resttest.treal\":0.3333,\"restschema.resttest.tinteger\":9876,\"restschema.resttest.ttime\":\"43505000\",\"restschema.resttest.tbigint\":1234,\"restschema.resttest.tboolean\":true,\"restschema.resttest.tdate\":18466,\"restschema.resttest.tdouble\":1.999999,\"restschema.resttest.tvarchar\":\"hallo\",\"restschema.resttest.ttimestamp\":\"2020-07-23T12:05:05\"}],\"size\":1}";
+        JsonElement jsonExpected = JsonParser.parseString( expected );
+        JsonElement jsonResult = JsonParser.parseString( executeRest( request ).getBody() );
         Assert.assertEquals(
-                "{\"result\":[{\"test.resttest.tsmallint\":45,\"test.resttest.tdecimal\":123.45,\"test.resttest.ttinyint\":22,\"test.resttest.treal\":0.3333,\"test.resttest.tinteger\":9876,\"test.resttest.ttime\":\"43505000\",\"test.resttest.tbigint\":1234,\"test.resttest.tboolean\":true,\"test.resttest.tdate\":18466,\"test.resttest.tdouble\":1.999999,\"test.resttest.tvarchar\":\"hallo\",\"test.resttest.ttimestamp\":\"2020-07-23T12:05:05\"}],\"size\":1}",
-                executeRest( request ).getBody() );
+                jsonExpected, jsonResult );
 
         // Delete
         where = new LinkedHashMap<>();
-        where.put( "test.resttest.tvarchar", "=" + "hallo" );
-        request = buildRestDelete( "test.resttest", where );
+        where.put( "restschema.resttest.tvarchar", "=" + "hallo" );
+        request = buildRestDelete( "restschema.resttest", where );
         Assert.assertEquals(
                 "{\"result\":[{\"ROWCOUNT\":1}],\"size\":1}",
                 executeRest( request ).getBody() );
 
         // Select
-        request = Unirest.get( "{protocol}://{host}:{port}/restapi/v1/res/test.resttest" )
-                .queryString( "test.resttest.tinteger", "=" + 9876 );
+        request = Unirest.get( "{protocol}://{host}:{port}/restapi/v1/res/restschema.resttest" )
+                .queryString( "restschema.resttest.tinteger", "=" + 9876 );
         Assert.assertEquals(
                 "{\"result\":[],\"size\":0}",
                 executeRest( request ).getBody() );
 
         //Select View
-        request = Unirest.get( "{protocol}://{host}:{port}/restapi/v1/res/test.viewtest" ).
-                queryString( "test.viewtest.tinteger", "=" + 9876 );
+        request = Unirest.get( "{protocol}://{host}:{port}/restapi/v1/res/restschema.viewtest" ).
+                queryString( "restschema.viewtest.tinteger", "=" + 9876 );
         Assert.assertEquals( "{\"result\":[],\"size\":0}",
                 executeRest( request ).getBody() );
 
-        request = Unirest.get( "{protocol}://{host}:{port}/restapi/v1/res/test.materializedtest" ).queryString( "test.materializedtest.tinteger", "=" + 9876 );
+        request = Unirest.get( "{protocol}://{host}:{port}/restapi/v1/res/restschema.materializedtest" ).queryString( "restschema.materializedtest.tinteger", "=" + 9876 );
         Assert.assertEquals( "{\"result\":[],\"size\":0}",
                 executeRest( request ).getBody() );
     }
@@ -244,40 +249,40 @@ public class RestTest {
     private JsonObject getTestRow( int change ) {
         JsonObject row = new JsonObject();
         row.add(
-                "test.resttest.tbigint",
+                "restschema.resttest.tbigint",
                 new JsonPrimitive( 1234L + change ) );
         row.add(
-                "test.resttest.tboolean",
+                "restschema.resttest.tboolean",
                 new JsonPrimitive( true ) );
         row.add(
-                "test.resttest.tdate",
+                "restschema.resttest.tdate",
                 new JsonPrimitive( LocalDate.of( 2020, 7, 23 ).format( DateTimeFormatter.ISO_LOCAL_DATE ) ) );
         row.add(
-                "test.resttest.tdecimal",
+                "restschema.resttest.tdecimal",
                 new JsonPrimitive( new BigDecimal( "123.45" ) ) );
         row.add(
-                "test.resttest.tdouble",
+                "restschema.resttest.tdouble",
                 new JsonPrimitive( 1.999999 ) );
         row.add(
-                "test.resttest.tinteger",
+                "restschema.resttest.tinteger",
                 new JsonPrimitive( 9876 ) );
         row.add(
-                "test.resttest.treal",
+                "restschema.resttest.treal",
                 new JsonPrimitive( 0.3333 ) );
         row.add(
-                "test.resttest.tsmallint",
+                "restschema.resttest.tsmallint",
                 new JsonPrimitive( 45 + change ) );
         row.add(
-                "test.resttest.ttime",
+                "restschema.resttest.ttime",
                 new JsonPrimitive( LocalTime.of( 12, 5, 5 ).format( DateTimeFormatter.ISO_LOCAL_TIME ) ) );
         row.add(
-                "test.resttest.ttimestamp",
+                "restschema.resttest.ttimestamp",
                 new JsonPrimitive( LocalDateTime.of( 2020, 7, 23, 12, 5, 5 ).format( DateTimeFormatter.ISO_LOCAL_DATE_TIME ) ) );
         row.add(
-                "test.resttest.ttinyint",
+                "restschema.resttest.ttinyint",
                 new JsonPrimitive( 22 ) );
         row.add(
-                "test.resttest.tvarchar",
+                "restschema.resttest.tvarchar",
                 new JsonPrimitive( "hallo" ) );
         return row;
     }

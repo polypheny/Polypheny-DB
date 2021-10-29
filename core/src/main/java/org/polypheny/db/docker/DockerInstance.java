@@ -136,7 +136,7 @@ public class DockerInstance extends DockerManager {
                     }
 
                     int adapterId = Integer.parseInt( unparsedAdapterId );
-                    if ( !catalog.checkIfExistsAdapter( adapterId ) || !catalog.getAdapter( adapterId ).uniqueName.equals( splits[0] ) || isTestContainer ) {
+                    if ( !catalog.checkIfExistsAdapter( adapterId ) || !catalog.getAdapter( adapterId ).uniqueName.equals( splits[0] ) || isTestContainer || Catalog.resetDocker ) {
                         idsToRemove.put( container.getId(), container.getState().equalsIgnoreCase( "running" ) );
                         // as we remove this container later we skip the name and port adding
                         continue outer;

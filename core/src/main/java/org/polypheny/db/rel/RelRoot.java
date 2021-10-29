@@ -97,6 +97,7 @@ public class RelRoot {
     public final SqlKind kind;
     public final ImmutableList<Pair<Integer, String>> fields;
     public final RelCollation collation;
+    public boolean usesDocumentModel = false;
 
 
     /**

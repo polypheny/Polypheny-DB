@@ -29,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PartitionType;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.partition.properties.PartitionProperty;
 
@@ -88,7 +89,7 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
         this.partitionType = PartitionType.NONE;
         this.partitionColumnId = 0;
         this.partitionProperty = partitionProperty;
-        this.connectedViews = ImmutableList.<Long>builder().build();
+        this.connectedViews = ImmutableList.of();
 
         if ( type == TableType.TABLE && !modifiable ) {
             throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
@@ -230,6 +231,12 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
     @SneakyThrows
     public String getSchemaName() {
         return Catalog.getInstance().getSchema( schemaId ).name;
+    }
+
+
+    @SneakyThrows
+    public SchemaType getSchemaType() {
+        return Catalog.getInstance().getSchema( schemaId ).schemaType;
     }
 
 

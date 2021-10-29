@@ -1231,7 +1231,87 @@ public enum SqlKind {
      *
      * <b>Note to other projects</b>: If you are extending Polypheny-DB's SQL parser and have your own object types you no doubt want to define CREATE and DROP commands for them. Use OTHER_DDL in the short term, but we are happy to add new enum values for your object types. Just ask!
      */
-    OTHER_DDL;
+    OTHER_DDL,
+
+    /**
+     * Document model single selected value of field
+     */
+    DOC_FIELD,
+
+    /**
+     * Document model item operator, which retrieves from any underlying array
+     */
+    DOC_ITEM,
+
+    /**
+     * Document model {@code $size} operator
+     */
+    DOC_SIZE_MATCH,
+
+    /**
+     * Document model {@code $regex} operator
+     */
+    DOC_REGEX_MATCH,
+
+    /**
+     * Document model {@code $type} operator
+     */
+    DOC_TYPE_MATCH,
+
+    /**
+     * Document model {@code $slice} operator
+     */
+    DOC_SLICE,
+
+    /**
+     * Document model exclusive project {@code $project: 0}
+     */
+    DOC_EXCLUDE,
+
+    /**
+     * ocument model {@code $elemMatch} operator
+     */
+    DOC_ELEM_MATCH,
+
+    /**
+     * Document model {@code $unwind} operator
+     */
+    DOC_UNWIND,
+
+    /**
+     * Document model {@code UPDATE} operator, which handles only REPLACE during updates
+     * // TODO DL: REFACTOR AFTER DML ENUMERABLE
+     */
+    DOC_UPDATE_REPLACE,
+
+    /**
+     * Document model {@code UPDATE} operator, which handles new DOCUMENTS during updates
+     * // TODO DL: REFACTOR AFTER DML ENUMERABLE
+     */
+    DOC_UPDATE_ADD,
+
+    /**
+     * Document model {@code UPDATE} operator, which handles removing DOCUMENTS during updates
+     * // TODO DL: REFACTOR AFTER DML ENUMERABLE
+     */
+    DOC_UPDATE_REMOVE,
+
+    /**
+     * Document model {@code UPDATE} operator, which handles rename DOCUMENTS during updates
+     * // TODO DL: REFACTOR AFTER DML ENUMERABLE
+     */
+    DOC_UPDATE_RENAME,
+
+    /**
+     * Document model {@code UPDATE} operator, which wrapes the other UPDATE operations
+     * // TODO DL: REFACTOR AFTER DML ENUMERABLE
+     */
+    DOC_UPDATE,
+
+    /**
+     * Document model {@code $exists} operator
+     */
+    DOC_EXISTS;
 
     // Most of the static fields are categories, aggregating several kinds into a set.
 
@@ -1356,6 +1436,23 @@ public enum SqlKind {
     public static final Set<SqlKind> COMPARISON = EnumSet.of( IN, EQUALS, NOT_EQUALS, LESS_THAN, GREATER_THAN, GREATER_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL );
 
     public static final Set<SqlKind> ORDER = EnumSet.of( ORDER_BY );
+
+    public static final Set<SqlKind> DOC_KIND = EnumSet.of(
+            DOC_FIELD,
+            DOC_ITEM,
+            DOC_SIZE_MATCH,
+            DOC_REGEX_MATCH,
+            DOC_TYPE_MATCH,
+            DOC_SLICE,
+            DOC_EXCLUDE,
+            DOC_ELEM_MATCH,
+            DOC_UNWIND,
+            DOC_UPDATE_REPLACE,
+            DOC_UPDATE_ADD,
+            DOC_UPDATE_REMOVE,
+            DOC_UPDATE_RENAME,
+            DOC_UPDATE,
+            DOC_EXISTS );
 
     /**
      * Lower-case name.

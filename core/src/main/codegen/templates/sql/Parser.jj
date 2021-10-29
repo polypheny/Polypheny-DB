@@ -4541,6 +4541,8 @@ PolyType PolyType(Span s) :
 |
     <VARCHAR> { return PolyType.VARCHAR; }
 |
+    <JSON> { return PolyType.JSON; }
+|
     <DATE> { return PolyType.DATE; }
 |
     <TIME> { return PolyType.TIME; }
@@ -4628,6 +4630,7 @@ SqlJdbcDataTypeName JdbcOdbcDataTypeName() :
 |   <SQL_INTERVAL_MINUTE> { return SqlJdbcDataTypeName.SQL_INTERVAL_MINUTE; }
 |   <SQL_INTERVAL_MINUTE_TO_SECOND> { return SqlJdbcDataTypeName.SQL_INTERVAL_MINUTE_TO_SECOND; }
 |   <SQL_INTERVAL_SECOND> { return SqlJdbcDataTypeName.SQL_INTERVAL_SECOND; }
+|   <SQL_JSON> { return SqlJdbcDataTypeName.SQL_JSON; }
 }
 
 SqlLiteral JdbcOdbcDataType() :
@@ -6235,6 +6238,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < DISCONNECT: "DISCONNECT" >
 |   < DISPATCH: "DISPATCH" >
 |   < DISTINCT: "DISTINCT" >
+|   < DOCUMENT: "DOCUMENT" >
 |   < DOMAIN: "DOMAIN" >
 |   < DOUBLE: "DOUBLE" >
 |   < DOW: "DOW" >
@@ -6608,6 +6612,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < SQL_DECIMAL: "SQL_DECIMAL" >
 |   < SQL_DOUBLE: "SQL_DOUBLE" >
 |   < SQL_FLOAT: "SQL_FLOAT" >
+|   < SQL_JSON: "SQL_JSON" >
 |   < SQL_INTEGER: "SQL_INTEGER" >
 |   < SQL_INTERVAL_DAY: "SQL_INTERVAL_DAY" >
 |   < SQL_INTERVAL_DAY_TO_HOUR: "SQL_INTERVAL_DAY_TO_HOUR" >

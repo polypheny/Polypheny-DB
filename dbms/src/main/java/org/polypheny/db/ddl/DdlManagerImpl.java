@@ -19,6 +19,7 @@ package org.polypheny.db.ddl;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -88,6 +89,7 @@ import org.polypheny.db.ddl.exception.IndexPreventsRemovalException;
 import org.polypheny.db.ddl.exception.LastPlacementException;
 import org.polypheny.db.ddl.exception.MissingColumnPlacementException;
 import org.polypheny.db.ddl.exception.NotNullAndDefaultValueException;
+import org.polypheny.db.ddl.exception.NotViewException;
 import org.polypheny.db.ddl.exception.PartitionGroupNamesNotUniqueException;
 import org.polypheny.db.ddl.exception.PlacementAlreadyExistsException;
 import org.polypheny.db.ddl.exception.PlacementIsPrimaryException;
@@ -131,6 +133,13 @@ public class DdlManagerImpl extends DdlManager {
 
     public DdlManagerImpl( Catalog catalog ) {
         this.catalog = catalog;
+    }
+
+
+    private void checkIfDdlPossible( TableType tableType ) throws DdlOnSourceException {
+        if ( tableType == TableType.SOURCE ) {
+            throw new DdlOnSourceException();
+        }
     }
 
 
@@ -400,7 +409,7 @@ public class DdlManagerImpl extends DdlManager {
         CatalogColumn afterColumn = afterColumnName == null ? null : getCatalogColumn( catalogTable.id, afterColumnName );
 
         // Make sure that the table is of table type SOURCE
-        checkIfTableType( catalogTable.tableType );
+        checkIfDdlPossible( catalogTable.tableType );
 
         // Make sure there is only one adapter
         if ( catalog.getColumnPlacement( catalogTable.columnIds.get( 0 ) ).size() != 1 ) {
@@ -793,7 +802,9 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void addPrimaryKey( CatalogTable catalogTable, List<String> columnNames, Statement statement ) throws DdlOnSourceException {
         // Make sure that this is a table of type TABLE (and not SOURCE)
-        checkIfTableType( catalogTable.tableType );
+        checkIfDdlPossible( catalogTable.tableType );
+
+        checkModelLogic( catalogTable );
 
         try {
             CatalogPrimaryKey oldPk = catalog.getPrimaryKey( catalogTable.primaryKey );
@@ -835,7 +846,9 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void addUniqueConstraint( CatalogTable catalogTable, List<String> columnNames, String constraintName ) throws DdlOnSourceException {
         // Make sure that this is a table of type TABLE (and not SOURCE)
-        checkIfTableType( catalogTable.tableType );
+        checkIfDdlPossible( catalogTable.tableType );
+
+        checkModelLogic( catalogTable, null );
 
         try {
             List<Long> columnIds = new LinkedList<>();
@@ -856,12 +869,15 @@ public class DdlManagerImpl extends DdlManager {
             throw new RuntimeException( "Cannot drop sole column of table " + catalogTable.name );
         }
 
+        // check if model permits operation
+        checkModelLogic( catalogTable, columnName );
+
         //check if views are dependent from this view
         checkViewDependencies( catalogTable );
 
         CatalogColumn column = getCatalogColumn( catalogTable.id, columnName );
 
-        // Check if column is part of an key
+        // Check if column is part of a key
         for ( CatalogKey key : catalog.getTableKeys( catalogTable.id ) ) {
             if ( key.columnIds.contains( column.id ) ) {
                 if ( catalog.isPrimaryKey( key.id ) ) {
@@ -900,10 +916,25 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    private void checkModelLogic( CatalogTable catalogTable ) {
+        if ( catalogTable.getSchemaType() == SchemaType.DOCUMENT ) {
+            throw new RuntimeException( "Modification operation is not allowed by schema type DOCUMENT" );
+        }
+    }
+
+
+    private void checkModelLogic( CatalogTable catalogTable, String columnName ) {
+        if ( catalogTable.getSchemaType() == SchemaType.DOCUMENT
+                && (columnName.equals( "_data" ) || columnName.equals( "_id" )) ) {
+            throw new RuntimeException( "Modification operation is not allowed by schema type DOCUMENT" );
+        }
+    }
+
+
     @Override
     public void dropConstraint( CatalogTable catalogTable, String constraintName ) throws DdlOnSourceException {
         // Make sure that this is a table of type TABLE (and not SOURCE)
-        checkIfTableType( catalogTable.tableType );
+        checkIfDdlPossible( catalogTable.tableType );
 
         try {
             CatalogConstraint constraint = catalog.getConstraint( catalogTable.id, constraintName );
@@ -917,7 +948,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void dropForeignKey( CatalogTable catalogTable, String foreignKeyName ) throws DdlOnSourceException {
         // Make sure that this is a table of type TABLE (and not SOURCE)
-        checkIfTableType( catalogTable.tableType );
+        checkIfDdlPossible( catalogTable.tableType );
 
         try {
             CatalogForeignKey foreignKey = catalog.getForeignKey( catalogTable.id, foreignKeyName );
@@ -931,7 +962,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void dropIndex( CatalogTable catalogTable, String indexName, Statement statement ) throws DdlOnSourceException {
         // Make sure that this is a table of type TABLE (and not SOURCE)
-        checkIfTableType( catalogTable.tableType );
+        checkIfDdlPossible( catalogTable.tableType );
 
         try {
             CatalogIndex index = catalog.getIndex( catalogTable.id, indexName );
@@ -1000,7 +1031,7 @@ public class DdlManagerImpl extends DdlManager {
     public void dropPrimaryKey( CatalogTable catalogTable ) throws DdlOnSourceException {
         try {
             // Make sure that this is a table of type TABLE (and not SOURCE)
-            checkIfTableType( catalogTable.tableType );
+            checkIfDdlPossible( catalogTable.tableType );
             catalog.deletePrimaryKey( catalogTable.id );
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
@@ -1011,7 +1042,10 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void setColumnType( CatalogTable catalogTable, String columnName, ColumnTypeInformation type, Statement statement ) throws DdlOnSourceException, ColumnNotExistsException, GenericCatalogException {
         // Make sure that this is a table of type TABLE (and not SOURCE)
-        checkIfTableType( catalogTable.tableType );
+        checkIfDdlPossible( catalogTable.tableType );
+
+        // check if model permits operation
+        checkModelLogic( catalogTable, columnName );
 
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
 
@@ -1041,7 +1075,10 @@ public class DdlManagerImpl extends DdlManager {
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
 
         // Make sure that this is a table of type TABLE (and not SOURCE)
-        checkIfTableType( catalogTable.tableType );
+        checkIfDdlPossible( catalogTable.tableType );
+
+        // check if model permits operation
+        checkModelLogic( catalogTable, columnName );
 
         catalog.setNullable( catalogColumn.id, nullable );
 
@@ -1052,6 +1089,9 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void setColumnPosition( CatalogTable catalogTable, String columnName, String beforeColumnName, String afterColumnName, Statement statement ) throws ColumnNotExistsException {
+        // check if model permits operation
+        checkModelLogic( catalogTable, columnName );
+
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
 
         int targetPosition;
@@ -1102,8 +1142,11 @@ public class DdlManagerImpl extends DdlManager {
     public void setColumnCollation( CatalogTable catalogTable, String columnName, Collation collation, Statement statement ) throws ColumnNotExistsException, DdlOnSourceException {
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
 
+        // check if model permits operation
+        checkModelLogic( catalogTable, columnName );
+
         // Make sure that this is a table of type TABLE (and not SOURCE)
-        checkIfTableType( catalogTable.tableType );
+        checkIfDdlPossible( catalogTable.tableType );
 
         catalog.setCollation( catalogColumn.id, collation );
 
@@ -1116,6 +1159,9 @@ public class DdlManagerImpl extends DdlManager {
     public void setDefaultValue( CatalogTable catalogTable, String columnName, String defaultValue, Statement statement ) throws ColumnNotExistsException {
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
 
+        // check if model permits operation
+        checkModelLogic( catalogTable, columnName );
+
         addDefaultValue( defaultValue, catalogColumn.id );
 
         // Rest plan cache and implementation cache (not sure if required in this case)
@@ -1126,6 +1172,9 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void dropDefaultValue( CatalogTable catalogTable, String columnName, Statement statement ) throws ColumnNotExistsException {
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
+
+        // check if model permits operation
+        checkModelLogic( catalogTable, columnName );
 
         catalog.deleteDefaultValue( catalogColumn.id );
 
@@ -1760,6 +1809,8 @@ public class DdlManagerImpl extends DdlManager {
                 }
             }
 
+            checkDocumentModel( schemaId, columns, constraints );
+
             boolean foundPk = false;
             for ( ConstraintInformation constraintInformation : constraints ) {
                 if ( constraintInformation.type == ConstraintType.PRIMARY ) {
@@ -1814,6 +1865,49 @@ public class DdlManagerImpl extends DdlManager {
 
         } catch ( GenericCatalogException | UnknownColumnException | UnknownCollationException e ) {
             throw new RuntimeException( e );
+        }
+    }
+
+
+    private void checkDocumentModel( long schemaId, List<ColumnInformation> columns, List<ConstraintInformation> constraints ) {
+        if ( catalog.getSchema( schemaId ).schemaType == SchemaType.DOCUMENT ) {
+            List<String> names = columns.stream().map( c -> c.name ).collect( Collectors.toList() );
+
+            if ( names.contains( "_id" ) ) {
+                int index = names.indexOf( "_id" );
+                columns.remove( index );
+                constraints.remove( index );
+                names.remove( "_id" );
+            }
+
+            // add _id column if necessary
+            if ( !names.contains( "_id" ) ) {
+                ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.VARCHAR, PolyType.VARCHAR, 24, null, null, null, false );
+                columns.add( new ColumnInformation( "_id", typeInformation, Collation.CASE_INSENSITIVE, null, 0 ) );
+
+            }
+
+            // remove any primaries
+            List<ConstraintInformation> primaries = constraints.stream().filter( c -> c.type == ConstraintType.PRIMARY ).collect( Collectors.toList() );
+            if ( primaries.size() > 0 ) {
+                primaries.forEach( constraints::remove );
+            }
+
+            // add constraint for _id as primary if necessary
+            if ( constraints.stream().noneMatch( c -> c.type == ConstraintType.PRIMARY ) ) {
+                constraints.add( new ConstraintInformation( "primary", ConstraintType.PRIMARY, Collections.singletonList( "_id" ) ) );
+            }
+
+            if ( names.contains( "_data" ) ) {
+                columns.remove( names.indexOf( "_data" ) );
+                names.remove( "_data" );
+            }
+
+            // add _data column if necessary
+            if ( !names.contains( "_data" ) ) {
+                ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.JSON, PolyType.JSON, 1024, null, null, null, false );
+                columns.add( new ColumnInformation( "_data", typeInformation, Collation.CASE_INSENSITIVE, null, 1 ) );
+            }
         }
     }
 
@@ -2239,7 +2333,9 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void dropView( CatalogTable catalogView, Statement statement ) throws DdlOnSourceException {
         // Make sure that this is a table of type VIEW
-        checkIfViewType( catalogView.tableType );
+        if ( catalogView.tableType != TableType.VIEW ) {
+            throw new NotViewException();
+        }
 
         // Check if views are dependent from this view
         checkViewDependencies( catalogView );
@@ -2276,7 +2372,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void dropTable( CatalogTable catalogTable, Statement statement ) throws DdlOnSourceException {
         // Make sure that this is a table of type TABLE (and not SOURCE)
-        checkIfTableType( catalogTable.tableType );
+        checkIfDdlPossible( catalogTable.tableType );
 
         // Check if views dependent on this table
         checkViewDependencies( catalogTable );

@@ -75,6 +75,18 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
+    public int addUser( String name, String password ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void setUserSchema( int userId, long schemaId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
     public void rollback() {
         throw new NotImplementedException();
     }
@@ -974,7 +986,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     /**
-     * Delets a placement for a partition.
+     * Deletes a placement for a partition.
      *
      * @param adapterId The adapter on which the table should be placed on
      */

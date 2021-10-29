@@ -86,6 +86,9 @@ public abstract class Catalog {
 
     public static Adapter defaultStore;
     public static Adapter defaultSource;
+    public static int defaultUser = 0;
+    public static long defaultDatabaseId = 0;
+    public static boolean resetDocker;
     protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
     public boolean isPersistent = false;
     public static Catalog INSTANCE = null;
@@ -160,6 +163,11 @@ public abstract class Catalog {
     protected final boolean isValidIdentifier( final String str ) {
         return str.length() <= 100 && str.matches( "^[a-z_][a-z0-9_]*$" ) && !str.isEmpty();
     }
+
+
+    public abstract int addUser( String name, String password );
+
+    public abstract void setUserSchema( int userId, long schemaId );
 
 
     /**
@@ -1183,7 +1191,7 @@ public abstract class Catalog {
      * Assign the partition to a new partitionGroup
      *
      * @param partitionId Partition to move
-     * @param partitionGroupId New target gorup to move the partion to
+     * @param partitionGroupId New target group to move the partition to
      */
     public abstract void updatePartition( long partitionId, Long partitionGroupId );
 
@@ -1515,7 +1523,13 @@ public abstract class Catalog {
         }
 
 
-        public static SchemaType getById( final int id ) {
+        public static SchemaType getDefault() {
+            //return (SchemaType) ConfigManager.getInstance().getConfig( "runtime/defaultSchemaModel" ).getEnum();
+            return SchemaType.RELATIONAL;
+        }
+
+
+        public static SchemaType getById( final int id ) throws UnknownSchemaTypeException {
             for ( SchemaType t : values() ) {
                 if ( t.id == id ) {
                     return t;

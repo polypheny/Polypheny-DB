@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,7 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rel.type.RelDataTypeFieldImpl;
+import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.schema.CustomColumnResolvingTable;
 import org.polypheny.db.schema.ExtensibleTable;
 import org.polypheny.db.schema.PolyphenyDbSchema;
@@ -75,6 +76,8 @@ import org.polypheny.db.sql.SqlOperatorTable;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.type.BasicPolyType;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Litmus;
@@ -466,6 +469,11 @@ public class SqlValidatorUtil {
     }
 
 
+    public static RelDataTypeField getTargetField( RelDataType rowType, RelDataTypeFactory typeFactory, SqlIdentifier id, SqlValidatorCatalogReader catalogReader, RelOptTable table ) {
+        return getTargetField( rowType, typeFactory, id, catalogReader, table, false );
+    }
+
+
     /**
      * Resolve a target column name in the target table.
      *
@@ -474,11 +482,18 @@ public class SqlValidatorUtil {
      * @param table the target table or null if it is not a RelOptTable instance
      * @return the target field or null if the name cannot be resolved
      */
-    public static RelDataTypeField getTargetField( RelDataType rowType, RelDataTypeFactory typeFactory, SqlIdentifier id, SqlValidatorCatalogReader catalogReader, RelOptTable table ) {
+    public static RelDataTypeField getTargetField( RelDataType rowType, RelDataTypeFactory typeFactory, SqlIdentifier id, SqlValidatorCatalogReader catalogReader, RelOptTable table, boolean isDocument ) {
         final Table t = table == null ? null : table.unwrap( Table.class );
+
         if ( !(t instanceof CustomColumnResolvingTable) ) {
             final SqlNameMatcher nameMatcher = catalogReader.nameMatcher();
-            return nameMatcher.field( rowType, id.getSimple() );
+            RelDataTypeField typeField = nameMatcher.field( rowType, id.getSimple() );
+
+            if ( typeField == null && isDocument ) {
+                return new RelDataTypeFieldImpl( id.getSimple(), -1, new BasicPolyType( RelDataTypeSystem.DEFAULT, PolyType.JSON, 300 ) );
+            }
+
+            return typeField;
         }
 
         final List<Pair<RelDataTypeField, List<String>>> entries = ((CustomColumnResolvingTable) t).resolveColumn( rowType, typeFactory, id.names );
@@ -941,6 +956,7 @@ public class SqlValidatorUtil {
     public interface Suggester {
 
         String apply( String original, int attempt, int size );
+
     }
 
 
@@ -974,6 +990,8 @@ public class SqlValidatorUtil {
             // TODO: create an expression that could have no other source
             return SqlLiteral.createCharString( "xyz" + groupCount++, SqlParserPos.ZERO );
         }
+
     }
+
 }
 

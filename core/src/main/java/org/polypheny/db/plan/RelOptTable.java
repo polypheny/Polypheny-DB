@@ -46,6 +46,7 @@ import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.schema.ColumnStrategy;
+import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.util.ImmutableBitSet;
 
@@ -131,6 +132,11 @@ public interface RelOptTable extends Wrapper {
      * Returns a list describing how each column is populated. The list has the same number of entries as there are fields, and is immutable.
      */
     List<ColumnStrategy> getColumnStrategies();
+
+
+    default Table getTable() {
+        return null;
+    }
 
     /**
      * Can expand a view into relational expressions.

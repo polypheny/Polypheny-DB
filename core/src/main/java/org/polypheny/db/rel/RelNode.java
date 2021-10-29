@@ -36,6 +36,7 @@ package org.polypheny.db.rel;
 
 import java.util.List;
 import java.util.Set;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelImplementor;
 import org.polypheny.db.plan.RelOptCost;
@@ -336,6 +337,10 @@ public interface RelNode extends RelOptNode, Cloneable {
             isCacheable &= child.isImplementationCacheable();
         }
         return isCacheable;
+    }
+
+    default SchemaType getModel() {
+        return SchemaType.RELATIONAL;
     }
 
     /**

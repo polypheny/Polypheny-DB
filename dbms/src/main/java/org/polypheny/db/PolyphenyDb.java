@@ -79,6 +79,9 @@ public class PolyphenyDb {
     @Option(name = { "-resetCatalog" }, description = "Reset the catalog")
     public boolean resetCatalog = false;
 
+    @Option(name = { "-resetDocker" }, description = "Removes all Docker instances, which are from previous Polypheny runs.")
+    public boolean resetDocker = false;
+
     @Option(name = { "-memoryCatalog" }, description = "Store catalog only in-memory")
     public boolean memoryCatalog = false;
 
@@ -115,6 +118,10 @@ public class PolyphenyDb {
 
 
     public void runPolyphenyDb() throws GenericCatalogException {
+        if ( resetDocker ) {
+            log.warn( "[-resetDocker] option is set, this option is only for development." );
+        }
+
         // Move data folder
         if ( FileSystemManager.getInstance().checkIfExists( "data.backup" ) ) {
             FileSystemManager.getInstance().recursiveDeleteFolder( "data" );
@@ -226,6 +233,7 @@ public class PolyphenyDb {
             Catalog.resetCatalog = resetCatalog;
             Catalog.memoryCatalog = memoryCatalog;
             Catalog.testMode = testMode;
+            Catalog.resetDocker = resetDocker;
             Catalog.defaultStore = Adapter.fromString( defaultStoreName );
             Catalog.defaultSource = Adapter.fromString( defaultSourceName );
             catalog = Catalog.setAndGetInstance( new CatalogImpl() );

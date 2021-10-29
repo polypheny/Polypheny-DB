@@ -42,6 +42,8 @@ import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
+import org.polypheny.db.processing.MqlProcessor;
+import org.polypheny.db.processing.MqlProcessorImpl;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.processing.SqlProcessorImpl;
 import org.polypheny.db.schema.PolySchemaBuilder;
@@ -95,6 +97,7 @@ public class TransactionImpl implements Transaction, Comparable {
     private final List<Adapter> involvedAdapters = new CopyOnWriteArrayList<>();
 
     private final Set<Lock> lockList = new HashSet<>();
+    private boolean useCache = true;
 
 
     TransactionImpl(
@@ -234,6 +237,12 @@ public class TransactionImpl implements Transaction, Comparable {
 
 
     @Override
+    public MqlProcessor getMqlProcessor() {
+        return new MqlProcessorImpl();
+    }
+
+
+    @Override
     public StatementImpl createStatement() {
         StatementImpl statement = new StatementImpl( this );
         statements.add( statement );
@@ -289,7 +298,21 @@ public class TransactionImpl implements Transaction, Comparable {
         this.statementEventData = event;
     }
 
+
+    @Override
+    public void setUseCache( boolean useCache ) {
+        this.useCache = useCache;
+    }
+
+
+    @Override
+    public boolean getUseCache() {
+        return this.useCache;
+    }
+
+    //
     // For locking
+    //
 
 
     Set<Lock> getLocks() {
