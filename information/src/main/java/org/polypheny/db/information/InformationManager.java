@@ -40,13 +40,13 @@ public class InformationManager {
     /**
      * Map of instances.
      */
-    private static ConcurrentMap<String, InformationManager> instances = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, InformationManager> instances = new ConcurrentHashMap<>();
 
     private final ConcurrentMap<String, Information> informationMap = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, InformationGroup> groups = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, InformationPage> pages = new ConcurrentHashMap<>();
 
-    private ConcurrentLinkedQueue<InformationObserver> observers = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<InformationObserver> observers = new ConcurrentLinkedQueue<>();
 
     /**
      * WebsocketConnection for notifications
