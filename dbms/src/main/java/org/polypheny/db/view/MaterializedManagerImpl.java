@@ -235,7 +235,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
                 MaterializedManagerImpl.this::updatingIntervalMaterialized,
                 "Update Materialized View with freshness type interval if it is time.",
                 TaskPriority.HIGH,
-                (TaskSchedulingType) RuntimeConfig.FRESHNESSLOOP_RATE.getEnum() );
+                (TaskSchedulingType) RuntimeConfig.FRESHNESSLOOP.getEnum() );
     }
 
 

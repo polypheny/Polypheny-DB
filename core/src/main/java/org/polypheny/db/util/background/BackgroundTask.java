@@ -15,22 +15,31 @@ public interface BackgroundTask {
 
 
     enum TaskSchedulingType {
-        EVERY_SECOND( 1000 ),
-        EVERY_FIVE_SECONDS( 5000 ),
-        EVERY_TEN_SECONDS( 10000 ),
-        EVERY_THIRTY_SECONDS( 30000 ),
-        EVERY_MINUTE( 60000 ),
-        EVERY_TEN_MINUTES( 600000 ),
-        EVERY_FIFTEEN_MINUTES( 900000 ),
-        EVERY_THIRTY_MINUTES( 1800000 );
+        EVERY_SECOND( 1000, TaskDelayType.DELAYED ),
+        EVERY_FIVE_SECONDS( 5000, TaskDelayType.FIXED ),
+        EVERY_TEN_SECONDS( 10000, TaskDelayType.FIXED ),
+        EVERY_THIRTY_SECONDS( 30000, TaskDelayType.FIXED ),
+        EVERY_MINUTE( 60000, TaskDelayType.FIXED ),
+        EVERY_TEN_MINUTES( 600000, TaskDelayType.FIXED ),
+        EVERY_FIFTEEN_MINUTES( 900000, TaskDelayType.FIXED ),
+        EVERY_THIRTY_MINUTES( 1800000, TaskDelayType.FIXED );
 
+        @Getter
+        private final TaskDelayType delayType;
         @Getter
         private long millis;
 
 
-        TaskSchedulingType( long millis ) {
+        TaskSchedulingType( long millis, TaskDelayType delayType ) {
             this.millis = millis;
+            this.delayType = delayType;
         }
+
+    }
+
+
+    enum TaskDelayType {
+        FIXED, DELAYED
     }
 
 }

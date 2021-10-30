@@ -189,7 +189,7 @@ public enum RuntimeConfig {
             BackgroundTask.TaskSchedulingType.EVERY_THIRTY_SECONDS,
             ConfigType.ENUM ),
 
-    FRESHNESSLOOP_RATE( "materializedView/freshnessLoopRate",
+    FRESHNESSLOOP( "materializedView/freshnessLoopRate",
             "Rate of freshness Loop for Materialized Views with update type interval.",
             TaskSchedulingType.EVERY_SECOND,
             ConfigType.ENUM ),
