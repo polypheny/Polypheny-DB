@@ -214,8 +214,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         check if the relRoot includes Views or Materialized Views and replaces what necessary
         View: replace LogicalViewTableScan with underlying information
         Materialized View: add order by if Materialized View includes Order by */
-        ViewVisitor materializedVisitor = new ViewVisitor( doesSubstituteOrderBy );
-        logicalRoot.rel.accept( materializedVisitor );
+        ViewVisitor viewVisitor = new ViewVisitor( doesSubstituteOrderBy );
+        logicalRoot = viewVisitor.startSubstitution( logicalRoot );
 
         //Update which tables where changed used for Materialized Views
         TableUpdateVisitor visitor = new TableUpdateVisitor();

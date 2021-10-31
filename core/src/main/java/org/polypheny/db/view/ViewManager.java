@@ -27,6 +27,7 @@ import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelFieldCollation;
 import org.polypheny.db.rel.RelFieldCollation.Direction;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.SingleRel;
 import org.polypheny.db.rel.core.Project;
@@ -240,7 +241,7 @@ public class ViewManager {
         }
 
 
-        private RelNode checkNode( RelNode other ) {
+        public RelNode checkNode( RelNode other ) {
 
             if ( other instanceof LogicalViewTableScan ) {
                 return expandViewNode( other );
@@ -261,6 +262,27 @@ public class ViewManager {
             }
             handleNodeType( other );
             return other;
+        }
+
+
+        /**
+         * This method sends the visitor of into the RelNode to replace
+         * <code>LogicalViewTableScan</code> with <code>LogicalTableScan</code>
+         *
+         * As there is the possibility for the root RelNode to be already be a view
+         * it has to start with the RelRoot and replace the initial RelNode
+         *
+         * @param logicalRoot the RelRoot before the transformation
+         * @return the RelRoot after replacing all <code>LogicalViewTableScan</code>s
+         */
+        public RelRoot startSubstitution( RelRoot logicalRoot ) {
+            if ( logicalRoot.rel instanceof LogicalViewTableScan ) {
+                RelNode node = checkNode( logicalRoot.rel );
+                return RelRoot.of( node, logicalRoot.kind );
+            } else {
+                logicalRoot.rel.accept( this );
+                return logicalRoot;
+            }
         }
 
     }
