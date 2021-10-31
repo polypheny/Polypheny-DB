@@ -75,7 +75,7 @@ public class MqlCreateView extends MqlNode implements MqlExecutableStatement {
         RelNode relNode = relRoot.rel;
         RelCollation relCollation = relRoot.collation;
 
-        //TODO IG and DL check what is needed in projectedColumns and the query
+
         try {
             DdlManager.getInstance().createView(
                     name,
@@ -85,7 +85,7 @@ public class MqlCreateView extends MqlNode implements MqlExecutableStatement {
                     true,
                     statement,
                     placementType,
-                    Arrays.asList( "_id", "_data" ),
+                    relRoot.rel.getRowType().getFieldNames(),
                     buildQuery( pipeline ),
                     QueryLanguage.MONGOQL );
         } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
