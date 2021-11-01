@@ -25,5 +25,6 @@ include 'explore-by-example'
 include 'rest-interface'
 include 'cottontail-adapter'
 include 'ethereum-adapter'
+include 'cql-interface'
 
 include 'dbms'

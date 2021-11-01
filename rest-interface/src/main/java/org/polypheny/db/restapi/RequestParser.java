@@ -84,18 +84,18 @@ public class RequestParser {
             "^(?<column>[a-zA-Z]\\w*(?:\\.[a-zA-Z]\\w*\\.[a-zA-Z]\\w*)?)(?:@(?<dir>ASC|DESC))?$" );
 
 
-    public RequestParser( final TransactionManager transactionManager, final Authenticator authenticator, final String databaseName, final String userName ) {
+    public RequestParser( final TransactionManager transactionManager, final Authenticator authenticator, final String userName, final String databaseName ) {
         this( Catalog.getInstance(), transactionManager, authenticator, userName, databaseName );
     }
 
 
     @VisibleForTesting
-    RequestParser( Catalog catalog, TransactionManager transactionManager, Authenticator authenticator, String databaseName, String userName ) {
+    RequestParser( Catalog catalog, TransactionManager transactionManager, Authenticator authenticator, String userName, String databaseName ) {
         this.catalog = catalog;
         this.transactionManager = transactionManager;
         this.authenticator = authenticator;
-        this.databaseName = databaseName;
         this.userName = userName;
+        this.databaseName = databaseName;
     }
 
 
