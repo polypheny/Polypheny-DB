@@ -79,6 +79,7 @@ public class HttpRestServer extends QueryInterface {
     private final RequestParser requestParser;
     private final int port;
     private final String uniqueName;
+    private final String databaseName = "APP";
 
     // Counter
     private final AtomicLong deleteCounter = new AtomicLong();
@@ -110,7 +111,7 @@ public class HttpRestServer extends QueryInterface {
         restServer = Service.ignite();
         restServer.port( port );
 
-        Rest rest = new Rest( transactionManager, "pa", "APP" );
+        Rest rest = new Rest( transactionManager, "pa", databaseName );
         restRoutes( restServer, rest );
 
         log.info( "{} started and is listening on port {}.", INTERFACE_NAME, port );
