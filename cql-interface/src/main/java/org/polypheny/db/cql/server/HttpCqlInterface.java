@@ -165,7 +165,7 @@ public class HttpCqlInterface extends QueryInterface {
     }
 
 
-    String executeAndTransformRelAlg( RelRoot relRoot, final Statement statement, final Response res ) {
+    public String executeAndTransformRelAlg( RelRoot relRoot, final Statement statement, final Response res ) {
         Result result;
         try {
             // Prepare
