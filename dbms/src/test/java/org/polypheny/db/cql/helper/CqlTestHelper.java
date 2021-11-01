@@ -33,11 +33,17 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 @Slf4j
 public class CqlTestHelper {
 
+    static boolean interfaceRunning = false;
+
 
     @BeforeClass
     public static void setup() throws SQLException {
         TestHelper.getInstance();
-        deployCqlInterface();
+        if ( !interfaceRunning ) {
+            deployCqlInterface();
+            interfaceRunning = true;
+        }
+
         createTestSchema();
         addTestData();
     }
@@ -46,7 +52,7 @@ public class CqlTestHelper {
     @AfterClass
     public static void teardown() {
         deleteTestData();
-        removeCqlInterface();
+        //removeCqlInterface();
     }
 
 
