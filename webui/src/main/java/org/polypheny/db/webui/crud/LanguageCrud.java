@@ -102,14 +102,14 @@ public class LanguageCrud {
             RelRoot relRoot = cql2RelConverter.convert2Rel( relBuilder, rexBuilder );
             PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( relRoot );
 
-            return getResult( statement, request, cqlQueryStr, signature, request.noLimit );
+            return getResult( SchemaType.RELATIONAL, statement, request, cqlQueryStr, signature, request.noLimit );
         } catch ( Exception e ) {
             throw new RuntimeException( e );
         }
     }
 
 
-    public List<Result> anyQuery( Session session, QueryRequest request, Crud crud ) {
+    public List<Result> anyMongoQuery( Session session, QueryRequest request, Crud crud ) {
 
         Transaction transaction = crud.getTransaction( request.analyze );
 
@@ -160,7 +160,7 @@ public class LanguageCrud {
                 // Prepare
                 signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
 
-                results.add( getResult( statement, request, query, signature, noLimit ) );
+                results.add( getResult( SchemaType.DOCUMENT, statement, request, query, signature, noLimit ) );
             }
 
             if ( parsed instanceof MqlUseDatabase ) {
@@ -186,7 +186,7 @@ public class LanguageCrud {
 
 
     @NotNull
-    private static Result getResult( Statement statement, QueryRequest request, String query, PolyphenyDbSignature<?> signature, final boolean noLimit ) {
+    private static Result getResult( SchemaType schemaType, Statement statement, QueryRequest request, String query, PolyphenyDbSignature<?> signature, final boolean noLimit ) {
         Catalog catalog = Catalog.getInstance();
 
         Iterator<Object> iterator;
@@ -262,7 +262,7 @@ public class LanguageCrud {
             ArrayList<String[]> data = Crud.computeResultData( rows, header, statement.getTransaction() );
 
             return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) )
-                    .setSchemaType( SchemaType.DOCUMENT )
+                    .setSchemaType( SchemaType.RELATIONAL )
                     .setAffectedRows( data.size() )
                     .setHasMoreRows( hasMoreRows )
                     .setGeneratedQuery( query );

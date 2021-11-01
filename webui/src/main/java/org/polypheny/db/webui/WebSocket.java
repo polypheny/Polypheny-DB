@@ -109,7 +109,7 @@ public class WebSocket {
                 List<Result> results;
                 if ( queryRequest.language.equals( "mql" ) ) {
                     try {
-                        results = crud.documentCrud.anyQuery( session, queryRequest, crud );
+                        results = crud.documentCrud.anyMongoQuery( session, queryRequest, crud );
                     } catch ( Throwable t ) {
                         sendMessage( session, new Result[]{ new Result( t ) } );
                         return;
