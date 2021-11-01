@@ -123,14 +123,19 @@ public class EnumerableTableModify extends TableModify implements EnumerableRel 
         switch ( getOperation() ) {
             case INSERT:
                 method = BuiltInMethod.INTO.method;
+                builder.add( Expressions.statement( Expressions.call( convertedChildExp, method, collectionParameter ) ) );
                 break;
             case DELETE:
                 method = BuiltInMethod.REMOVE_ALL.method;
+                builder.add( Expressions.statement( Expressions.call( convertedChildExp, method, collectionParameter ) ) );
+                break;
+            case UPDATE:
+                builder.add( buildUpdateEnumerable( builder ) );
                 break;
             default:
                 throw new AssertionError( getOperation() );
         }
-        builder.add( Expressions.statement( Expressions.call( convertedChildExp, method, collectionParameter ) ) );
+
         final Expression updatedCountParameter =
                 builder.append(
                         "updatedCount",
@@ -154,7 +159,13 @@ public class EnumerableTableModify extends TableModify implements EnumerableRel 
                         pref == Prefer.ARRAY
                                 ? JavaRowFormat.ARRAY
                                 : JavaRowFormat.SCALAR );
+        System.out.println( builder.toBlock().toString() );
         return implementor.result( physType, builder.toBlock() );
+    }
+
+
+    private Expression buildUpdateEnumerable( BlockBuilder builder ) {
+        return Expressions.parameter( String.class, builder.newName( "test..test" ) );
     }
 
 }
