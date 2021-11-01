@@ -85,24 +85,53 @@ public class LanguageCrud {
             String cqlQueryStr = request.query;
             if ( cqlQueryStr.equals( "" ) ) {
                 throw new RuntimeException( "CQL query is an empty string!" );
+
             }
+
             CqlParser cqlParser = new CqlParser( cqlQueryStr, "APP" );
             CqlQuery cqlQuery = cqlParser.parse();
 
             log.debug( "Starting to process CQL resource request. Session ID: {}.", session );
             //requestCounter.incrementAndGet();
-            Transaction transaction = this.crud.getTransaction();
+            Transaction transaction = this.crud.getTransaction( request.analyze );
+
+            if ( request.analyze ) {
+                transaction.getQueryAnalyzer().setSession( session );
+            }
+
+            boolean autoCommit = true;
+
+            // This is not a nice solution. In case of a sql script with auto commit only the first statement is analyzed
+            // and in case of auto commit of, the information is overwritten
+            InformationManager queryAnalyzer = null;
+            if ( request.analyze ) {
+                queryAnalyzer = transaction.getQueryAnalyzer().observe( crud );
+            }
+
             Statement statement = transaction.createStatement();
             RelBuilder relBuilder = RelBuilder.create( statement );
             JavaTypeFactory typeFactory = transaction.getTypeFactory();
             RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
+            long executionTime = System.nanoTime();
+
             Cql2RelConverter cql2RelConverter = new Cql2RelConverter( cqlQuery );
 
             RelRoot relRoot = cql2RelConverter.convert2Rel( relBuilder, rexBuilder );
-            PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( relRoot );
+            PolyphenyDbSignature<?> signature = statement.getQueryProcessor().prepareQuery( relRoot );
 
-            return getResult( SchemaType.RELATIONAL, statement, request, cqlQueryStr, signature, request.noLimit );
+            Result result = getResult( SchemaType.RELATIONAL, statement, request, cqlQueryStr, signature, request.noLimit );
+            try {
+                statement.getTransaction().commit();
+            } catch ( TransactionException e ) {
+                throw new RuntimeException( "Error while committing.", e );
+            }
+            executionTime = System.nanoTime() - executionTime;
+            if ( queryAnalyzer != null ) {
+                Crud.attachQueryAnalyzer( queryAnalyzer, executionTime );
+            }
+
+            return result;
         } catch ( Exception e ) {
             throw new RuntimeException( e );
         }
@@ -262,7 +291,7 @@ public class LanguageCrud {
             ArrayList<String[]> data = Crud.computeResultData( rows, header, statement.getTransaction() );
 
             return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) )
-                    .setSchemaType( SchemaType.RELATIONAL )
+                    .setSchemaType( schemaType )
                     .setAffectedRows( data.size() )
                     .setHasMoreRows( hasMoreRows )
                     .setGeneratedQuery( query );
