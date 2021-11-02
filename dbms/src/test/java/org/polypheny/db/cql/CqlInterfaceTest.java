@@ -31,49 +31,49 @@ public class CqlInterfaceTest extends CqlTestHelper {
 
     @Test
     public void testRestCqlEmptyQueryReturnsException() {
-        JsonNode expectedJsonNode = new JsonNode("{\"Exception\":\"CQL query is an empty string!\"}");
-        cqlInterfaceTestHelper("", expectedJsonNode);
+        JsonNode expectedJsonNode = new JsonNode( "{\"Exception\":\"CQL query is an empty string!\"}" );
+        cqlInterfaceTestHelper( "", expectedJsonNode );
     }
 
 
     @Test
     public void testRestCqlFilterOnlyQuery() {
-        JsonNode expectedJsonNode = new JsonNode("{\"result\":[{\"test.employee.married\":false,"
+        JsonNode expectedJsonNode = new JsonNode( "{\"result\":[{\"test.employee.married\":false,"
                 + "\"test.employee.empname\":\"Anagha\",\"test.employee.empno\":18,"
                 + "\"test.employee.joining_date\":18914,\"test.employee.dob\":11244,"
-                + "\"test.employee.salary\":90000.0,\"test.employee.deptno\":5}],\"size\":1}");
+                + "\"test.employee.salary\":90000.0,\"test.employee.deptno\":5}],\"size\":1}" );
 
-        cqlInterfaceTestHelper("test.employee.empname == \"Anagha\"", expectedJsonNode);
+        cqlInterfaceTestHelper( "test.employee.empname == \"Anagha\"", expectedJsonNode );
     }
 
 
     @Test
     public void testRestCqlFiltersOnlyQueryWithANDOperator() {
-        JsonNode expectedJsonNode = new JsonNode("{\"result\":[{\"test.employee.married\":true,"
+        JsonNode expectedJsonNode = new JsonNode( "{\"result\":[{\"test.employee.married\":true,"
                 + "\"test.employee.empname\":\"Holt\",\"test.dept.deptno\":6,\"test.employee.empno\":21,"
                 + "\"test.employee.joining_date\":7305,\"test.employee.dob\":-4328,\"test.employee.salary\":87000.0,"
                 + "\"test.employee.deptno\":6,\"test.dept.deptname\":\"IT\"},{\"test.employee.married\":true,"
                 + "\"test.employee.empname\":\"Mando\",\"test.dept.deptno\":6,\"test.employee.empno\":23,"
                 + "\"test.employee.joining_date\":7305,\"test.employee.dob\":-763,\"test.employee.salary\":35700.0,"
-                + "\"test.employee.deptno\":6,\"test.dept.deptname\":\"IT\"}],\"size\":2}");
+                + "\"test.employee.deptno\":6,\"test.dept.deptname\":\"IT\"}],\"size\":2}" );
 
-        cqlInterfaceTestHelper("test.dept.deptname = \"IT\" and test.employee.married = TRUE", expectedJsonNode);
+        cqlInterfaceTestHelper( "test.dept.deptname = \"IT\" and test.employee.married = TRUE", expectedJsonNode );
     }
 
 
     @Test
     public void testRestCqlFiltersOnlyQueryWithOROperator() {
-        JsonNode expectedJsonNode = new JsonNode("{\"result\":[{\"test.dept.deptno\":1,"
+        JsonNode expectedJsonNode = new JsonNode( "{\"result\":[{\"test.dept.deptno\":1,"
                 + "\"test.dept.deptname\":\"Human Resources\"},{\"test.dept.deptno\":6,"
-                + "\"test.dept.deptname\":\"IT\"}],\"size\":2}");
+                + "\"test.dept.deptname\":\"IT\"}],\"size\":2}" );
 
-        cqlInterfaceTestHelper("test.dept.deptname = \"IT\" or test.dept.deptname = \"Human Resources\"", expectedJsonNode);
+        cqlInterfaceTestHelper( "test.dept.deptname = \"IT\" or test.dept.deptname = \"Human Resources\"", expectedJsonNode );
     }
 
 
     @Test
     public void testRestCqlFiltersOnlyQueryWithNOTOperator() {
-        JsonNode expectedJsonNode = new JsonNode("{\"result\":[{\"test.employee.married\":true,"
+        JsonNode expectedJsonNode = new JsonNode( "{\"result\":[{\"test.employee.married\":true,"
                 + "\"test.employee.empname\":\"Imane\",\"test.dept.deptno\":2,\"test.employee.empno\":5,"
                 + "\"test.employee.joining_date\":11627,\"test.employee.dob\":7001,\"test.employee.salary\":27000.0,"
                 + "\"test.employee.deptno\":2,\"test.dept.deptname\":\"Marketing\"},{\"test.employee.married\":false,"
@@ -138,36 +138,36 @@ public class CqlInterfaceTest extends CqlTestHelper {
                 + "{\"test.employee.married\":false,\"test.employee.empname\":\"Vader\",\"test.dept.deptno\":6,"
                 + "\"test.employee.empno\":24,\"test.employee.joining_date\":7305,\"test.employee.dob\":-3672,"
                 + "\"test.employee.salary\":3000.0,\"test.employee.deptno\":6,\"test.dept.deptname\":\"IT\"}],"
-                + "\"size\":20}");
+                + "\"size\":20}" );
 
-        cqlInterfaceTestHelper("test.employee.empno >= 1 NOT test.dept.deptname = \"Human Resources\"", expectedJsonNode);
+        cqlInterfaceTestHelper( "test.employee.empno >= 1 NOT test.dept.deptname = \"Human Resources\"", expectedJsonNode );
     }
 
 
     @Test
     public void testRestCqlFiltersOnlyQueryWithPROXOperator() {
-        JsonNode expectedJsonNode = new JsonNode("{\"Exception\": \"'PROX' boolean operator not implemented.\"}");
-        cqlInterfaceTestHelper("test.dept.deptname = \"IT\" PROX test.dept.deptname = \"Human Resources\"", expectedJsonNode);
+        JsonNode expectedJsonNode = new JsonNode( "{\"Exception\": \"'PROX' boolean operator not implemented.\"}" );
+        cqlInterfaceTestHelper( "test.dept.deptname = \"IT\" PROX test.dept.deptname = \"Human Resources\"", expectedJsonNode );
     }
 
 
     @Test
     public void testRestCqlRelationOnlyQuery() {
-        JsonNode expectedJsonNode = new JsonNode("{\"result\":[{\"test.dept.deptno\":1,"
+        JsonNode expectedJsonNode = new JsonNode( "{\"result\":[{\"test.dept.deptno\":1,"
                 + "\"test.dept.deptname\":\"Human Resources\"},{\"test.dept.deptno\":2,"
                 + "\"test.dept.deptname\":\"Marketing\"},{\"test.dept.deptno\":3,"
                 + "\"test.dept.deptname\":\"Production\"},{\"test.dept.deptno\":4,"
                 + "\"test.dept.deptname\":\"Research and Development\"},{\"test.dept.deptno\":5,"
                 + "\"test.dept.deptname\":\"Accounting and Finance\"},{\"test.dept.deptno\":6,"
-                + "\"test.dept.deptname\":\"IT\"}],\"size\":6}");
+                + "\"test.dept.deptname\":\"IT\"}],\"size\":6}" );
 
-        cqlInterfaceTestHelper("relation test.dept", expectedJsonNode);
+        cqlInterfaceTestHelper( "relation test.dept", expectedJsonNode );
     }
 
 
     @Test
     public void testRestCqlRelationOnlyQueryWithANDOperator() {
-        JsonNode expectedJsonNode = new JsonNode("{\"result\":[{\"test.employee.married\":true,"
+        JsonNode expectedJsonNode = new JsonNode( "{\"result\":[{\"test.employee.married\":true,"
                 + "\"test.employee.empname\":\"Joe\",\"test.dept.deptno\":1,\"test.employee.empno\":1,"
                 + "\"test.employee.joining_date\":7456,\"test.employee.dob\":33,\"test.employee.salary\":10000.0,"
                 + "\"test.employee.deptno\":1,\"test.dept.deptname\":\"Human Resources\"},"
@@ -245,24 +245,24 @@ public class CqlInterfaceTest extends CqlTestHelper {
                 + "\"test.employee.deptno\":6,\"test.dept.deptname\":\"IT\"},{\"test.employee.married\":false,"
                 + "\"test.employee.empname\":\"Vader\",\"test.dept.deptno\":6,\"test.employee.empno\":24,"
                 + "\"test.employee.joining_date\":7305,\"test.employee.dob\":-3672,\"test.employee.salary\":3000.0,"
-                + "\"test.employee.deptno\":6,\"test.dept.deptname\":\"IT\"}],\"size\":24}");
+                + "\"test.employee.deptno\":6,\"test.dept.deptname\":\"IT\"}],\"size\":24}" );
 
-        cqlInterfaceTestHelper("relation test.dept and test.employee", expectedJsonNode);
+        cqlInterfaceTestHelper( "relation test.dept and test.employee", expectedJsonNode );
     }
 
 
     @Test
     public void testRestCqlRelationOnlyQueryWithOROperator() {
-        HttpResponse<JsonNode> response = executeCQL("relation test.dept or test.employee");
-        String actualSize = response.getBody().getObject().getString("size");
+        HttpResponse<JsonNode> response = executeCQL( "relation test.dept or test.employee" );
+        String actualSize = response.getBody().getObject().getString( "size" );
 
-        Assert.assertEquals("144", actualSize);
+        Assert.assertEquals( "144", actualSize );
     }
 
 
     @Test
     public void testRestCqlFilterAndRelationQuery() {
-        JsonNode expectedJsonNode = new JsonNode("{\"result\":[{\"test.employee.married\":false,"
+        JsonNode expectedJsonNode = new JsonNode( "{\"result\":[{\"test.employee.married\":false,"
                 + "\"test.employee.empname\":\"Rhody\",\"test.dept.deptno\":2,\"test.employee.empno\":6,"
                 + "\"test.employee.joining_date\":9812,\"test.employee.dob\":201,\"test.employee.salary\":67500.0,"
                 + "\"test.employee.deptno\":2,\"test.dept.deptname\":\"Marketing\"},{\"test.employee.married\":false,"
@@ -278,17 +278,17 @@ public class CqlInterfaceTest extends CqlTestHelper {
                 + "\"test.dept.deptname\":\"Research and Development\"},{\"test.employee.married\":false,"
                 + "\"test.employee.empname\":\"Anagha\",\"test.dept.deptno\":5,\"test.employee.empno\":18,"
                 + "\"test.employee.joining_date\":18914,\"test.employee.dob\":11244,\"test.employee.salary\":90000.0,"
-                + "\"test.employee.deptno\":5,\"test.dept.deptname\":\"Accounting and Finance\"}],\"size\":5}");
+                + "\"test.employee.deptno\":5,\"test.dept.deptname\":\"Accounting and Finance\"}],\"size\":5}" );
 
         cqlInterfaceTestHelper(
                 "test.employee.salary >= 50000 and test.employee.married == FALSE relation test.dept and test.employee",
-                expectedJsonNode);
+                expectedJsonNode );
     }
 
 
     @Test
     public void testRestCqlProjectionQuery() {
-        JsonNode expectedJsonNode = new JsonNode("{\"result\":[{\"test.employee.empname\":\"Joe\"},"
+        JsonNode expectedJsonNode = new JsonNode( "{\"result\":[{\"test.employee.empname\":\"Joe\"},"
                 + "{\"test.employee.empname\":\"Amy\"},{\"test.employee.empname\":\"Charlie\"},"
                 + "{\"test.employee.empname\":\"Ravi\"},{\"test.employee.empname\":\"Imane\"},"
                 + "{\"test.employee.empname\":\"Rhody\"},{\"test.employee.empname\":\"Cryer\"},"
@@ -300,22 +300,22 @@ public class CqlInterfaceTest extends CqlTestHelper {
                 + "{\"test.employee.empname\":\"Anagha\"},{\"test.employee.empname\":\"Diana\"},"
                 + "{\"test.employee.empname\":\"Matt\"},{\"test.employee.empname\":\"Holt\"},"
                 + "{\"test.employee.empname\":\"Peralta\"},{\"test.employee.empname\":\"Mando\"},"
-                + "{\"test.employee.empname\":\"Vader\"}],\"size\":24}");
+                + "{\"test.employee.empname\":\"Vader\"}],\"size\":24}" );
 
-        cqlInterfaceTestHelper("relation test.dept and test.employee project test.employee.empname", expectedJsonNode);
+        cqlInterfaceTestHelper( "relation test.dept and test.employee project test.employee.empname", expectedJsonNode );
     }
 
 
     @Test
     public void testRestCqlProjectionQueryWithAggregation() {
-        JsonNode expectedJsonNode = new JsonNode("{\"result\":[{\"COUNT( test.employee.empno )\":24}],\"size\":1}");
-        cqlInterfaceTestHelper("relation test.employee project test.employee.empno/count", expectedJsonNode);
+        JsonNode expectedJsonNode = new JsonNode( "{\"result\":[{\"COUNT( test.employee.empno )\":24}],\"size\":1}" );
+        cqlInterfaceTestHelper( "relation test.employee project test.employee.empno/count", expectedJsonNode );
     }
 
 
     @Test
     public void testRestCqlProjectionQueryWithAggregationAndGrouping() {
-        JsonNode expectedJsonNode = new JsonNode("{\"result\":[{\"test.employee.married\":true,"
+        JsonNode expectedJsonNode = new JsonNode( "{\"result\":[{\"test.employee.married\":true,"
                 + "\"COUNT( test.employee.empno )\":2,\"test.dept.deptname\":\"Human Resources\"},"
                 + "{\"test.employee.married\":false,\"COUNT( test.employee.empno )\":2,"
                 + "\"test.dept.deptname\":\"Human Resources\"},{\"test.employee.married\":true,"
@@ -333,17 +333,17 @@ public class CqlInterfaceTest extends CqlTestHelper {
                 + "\"test.dept.deptname\":\"Accounting and Finance\"},{\"test.employee.married\":true,"
                 + "\"COUNT( test.employee.empno )\":2,\"test.dept.deptname\":\"IT\"},"
                 + "{\"test.employee.married\":false,\"COUNT( test.employee.empno )\":2,"
-                + "\"test.dept.deptname\":\"IT\"}],\"size\":12}");
+                + "\"test.dept.deptname\":\"IT\"}],\"size\":12}" );
 
         cqlInterfaceTestHelper(
                 "relation test.employee and test.dept project test.employee.empno/count test.employee.married test.dept.deptname ",
-                expectedJsonNode);
+                expectedJsonNode );
     }
 
 
     @Test
     public void testRestCqlSortingQuery() {
-        JsonNode expectedJsonNode = new JsonNode("{\"result\":[{\"test.employee.empname\":\"Amy\"},"
+        JsonNode expectedJsonNode = new JsonNode( "{\"result\":[{\"test.employee.empname\":\"Amy\"},"
                 + "{\"test.employee.empname\":\"Anagha\"},{\"test.employee.empname\":\"Charlie\"},"
                 + "{\"test.employee.empname\":\"Cryer\"},{\"test.employee.empname\":\"Debby\"},"
                 + "{\"test.employee.empname\":\"Diana\"},{\"test.employee.empname\":\"Happy\"},"
@@ -355,45 +355,45 @@ public class CqlInterfaceTest extends CqlTestHelper {
                 + "{\"test.employee.empname\":\"Ravi\"},{\"test.employee.empname\":\"Rhody\"},"
                 + "{\"test.employee.empname\":\"Rich\"},{\"test.employee.empname\":\"Rose\"},"
                 + "{\"test.employee.empname\":\"Roy\"},{\"test.employee.empname\":\"Troy\"},"
-                + "{\"test.employee.empname\":\"Vader\"}],\"size\":24}");
+                + "{\"test.employee.empname\":\"Vader\"}],\"size\":24}" );
 
         cqlInterfaceTestHelper(
                 "relation test.employee sortby test.employee.empname project test.employee.empname",
-                expectedJsonNode);
+                expectedJsonNode );
     }
 
 
     @Test
     public void testCqlFiltersWithJoinsAndProjection() {
-        JsonNode expectedJsonNode = new JsonNode("{\"result\":[{\"test.employee.empname\":\"Imane\"}," +
+        JsonNode expectedJsonNode = new JsonNode( "{\"result\":[{\"test.employee.empname\":\"Imane\"}," +
                 "{\"test.employee.empname\":\"Rhody\"},{\"test.employee.empname\":\"Cryer\"}," +
                 "{\"test.employee.empname\":\"Lily\"},{\"test.employee.empname\":\"Holt\"}," +
                 "{\"test.employee.empname\":\"Peralta\"},{\"test.employee.empname\":\"Mando\"}," +
-                "{\"test.employee.empname\":\"Vader\"}],\"size\":8}");
+                "{\"test.employee.empname\":\"Vader\"}],\"size\":8}" );
 
         cqlInterfaceTestHelper(
                 "test.dept.deptname == \"IT\" or test.dept.deptname == \"Marketing\" " +
                         "relation test.dept and test.employee project test.employee.empname",
-                expectedJsonNode);
+                expectedJsonNode );
     }
 
 
-    private void cqlInterfaceTestHelper(String cqlQuery, JsonNode expectedJsonNode) {
-        HttpResponse<JsonNode> response = executeCQL(cqlQuery);
-        Assert.assertEquals(expectedJsonNode.getObject(), response.getBody().getObject());
+    private void cqlInterfaceTestHelper( String cqlQuery, JsonNode expectedJsonNode ) {
+        HttpResponse<JsonNode> response = executeCQL( cqlQuery );
+        Assert.assertEquals( expectedJsonNode.getObject(), response.getBody().getObject() );
     }
 
 
-    private HttpResponse<JsonNode> executeCQL(String cqlQuery) {
-        HttpRequestWithBody request = Unirest.post("{protocol}://{host}:{port}/");
-        request.basicAuth("pa", "");
-        request.routeParam("protocol", "http");
-        request.routeParam("host", "127.0.0.1");
-        request.routeParam("port", "8087");
-        if (log.isDebugEnabled()) {
-            log.debug(request.getUrl());
+    private HttpResponse<JsonNode> executeCQL( String cqlQuery ) {
+        HttpRequestWithBody request = Unirest.post( "{protocol}://{host}:{port}/" );
+        request.basicAuth( "pa", "" );
+        request.routeParam( "protocol", "http" );
+        request.routeParam( "host", "127.0.0.1" );
+        request.routeParam( "port", "8087" );
+        if ( log.isDebugEnabled() ) {
+            log.debug( request.getUrl() );
         }
-        return request.body(cqlQuery).asJson();
+        return request.body( cqlQuery ).asJson();
     }
 
 }

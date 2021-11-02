@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.cql.utils.ExclusiveComparisons;
 import org.polypheny.db.rel.RelCollations;
@@ -195,7 +194,7 @@ public class Projections {
         List<String> aliases = new ArrayList<>();
         RelNode _baseNode = relBuilder.peek();
 
-        Consumer<Map<Long, Integer>> generateProjections = (ordinalites ) -> {
+        Consumer<Map<Long, Integer>> generateProjections = ( ordinalites ) -> {
             for ( Projection projection : projections ) {
                 int ordinality = ordinalites.get( projection.getColumnId() );
                 RexNode inputRef = projection.createRexNode( rexBuilder, _baseNode, ordinality );
