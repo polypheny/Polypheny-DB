@@ -31,6 +31,7 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.commons.lang3.time.StopWatch;
 import org.eclipse.jetty.websocket.api.Session;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -41,6 +42,9 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.cql.Cql2RelConverter;
+import org.polypheny.db.cql.CqlQuery;
+import org.polypheny.db.cql.parser.CqlParser;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.mql.Mql.Family;
@@ -49,6 +53,8 @@ import org.polypheny.db.mql.MqlNode;
 import org.polypheny.db.mql.MqlUseDatabase;
 import org.polypheny.db.processing.MqlProcessor;
 import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -64,17 +70,75 @@ import spark.Request;
 import spark.Response;
 
 @Slf4j
-public class DocumentCrud {
+public class LanguageCrud {
 
     Crud crud;
 
 
-    public DocumentCrud( Crud crud ) {
+    public LanguageCrud( Crud crud ) {
         this.crud = crud;
     }
 
 
-    public List<Result> anyQuery( Session session, QueryRequest request, Crud crud ) {
+    public Result processCqlRequest( Session session, QueryRequest request ) {
+        try {
+            String cqlQueryStr = request.query;
+            if ( cqlQueryStr.equals( "" ) ) {
+                throw new RuntimeException( "CQL query is an empty string!" );
+
+            }
+
+            CqlParser cqlParser = new CqlParser( cqlQueryStr, "APP" );
+            CqlQuery cqlQuery = cqlParser.parse();
+
+            log.debug( "Starting to process CQL resource request. Session ID: {}.", session );
+            //requestCounter.incrementAndGet();
+            Transaction transaction = this.crud.getTransaction( request.analyze );
+
+            if ( request.analyze ) {
+                transaction.getQueryAnalyzer().setSession( session );
+            }
+
+            boolean autoCommit = true;
+
+            // This is not a nice solution. In case of a sql script with auto commit only the first statement is analyzed
+            // and in case of auto commit of, the information is overwritten
+            InformationManager queryAnalyzer = null;
+            if ( request.analyze ) {
+                queryAnalyzer = transaction.getQueryAnalyzer().observe( crud );
+            }
+
+            Statement statement = transaction.createStatement();
+            RelBuilder relBuilder = RelBuilder.create( statement );
+            JavaTypeFactory typeFactory = transaction.getTypeFactory();
+            RexBuilder rexBuilder = new RexBuilder( typeFactory );
+
+            long executionTime = System.nanoTime();
+
+            Cql2RelConverter cql2RelConverter = new Cql2RelConverter( cqlQuery );
+
+            RelRoot relRoot = cql2RelConverter.convert2Rel( relBuilder, rexBuilder );
+            PolyphenyDbSignature<?> signature = statement.getQueryProcessor().prepareQuery( relRoot );
+
+            Result result = getResult( SchemaType.RELATIONAL, statement, request, cqlQueryStr, signature, request.noLimit );
+            try {
+                statement.getTransaction().commit();
+            } catch ( TransactionException e ) {
+                throw new RuntimeException( "Error while committing.", e );
+            }
+            executionTime = System.nanoTime() - executionTime;
+            if ( queryAnalyzer != null ) {
+                Crud.attachQueryAnalyzer( queryAnalyzer, executionTime );
+            }
+
+            return result;
+        } catch ( Exception e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    public List<Result> anyMongoQuery( Session session, QueryRequest request, Crud crud ) {
 
         Transaction transaction = crud.getTransaction( request.analyze );
 
@@ -123,7 +187,7 @@ public class DocumentCrud {
                 // Prepare
                 signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
 
-                results.add( getResult( statement, request, query, signature, noLimit ) );
+                results.add( getResult( SchemaType.DOCUMENT, statement, request, query, signature, noLimit ) );
             }
 
             if ( parsed instanceof MqlUseDatabase ) {
@@ -149,7 +213,7 @@ public class DocumentCrud {
 
 
     @NotNull
-    private static Result getResult( Statement statement, QueryRequest request, String query, PolyphenyDbSignature<?> signature, final boolean noLimit ) {
+    private static Result getResult( SchemaType schemaType, Statement statement, QueryRequest request, String query, PolyphenyDbSignature<?> signature, final boolean noLimit ) {
         Catalog catalog = Catalog.getInstance();
 
         Iterator<Object> iterator;
@@ -225,7 +289,7 @@ public class DocumentCrud {
             ArrayList<String[]> data = Crud.computeResultData( rows, header, statement.getTransaction() );
 
             return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) )
-                    .setSchemaType( SchemaType.DOCUMENT )
+                    .setSchemaType( schemaType )
                     .setAffectedRows( data.size() )
                     .setHasMoreRows( hasMoreRows )
                     .setGeneratedQuery( query );
