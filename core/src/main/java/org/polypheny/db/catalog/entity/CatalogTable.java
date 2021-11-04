@@ -288,17 +288,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
         return -1;
     }
 
-
-    public boolean isView() {
-        return this.tableType == TableType.VIEW;
-    }
-
-
-    public boolean isMaterialized() {
-        return this.tableType == TableType.MATERIALIZEDVIEW;
-    }
-
-
     public CatalogTable getRenamed( String newName ) {
         return new CatalogTable(
                 id,

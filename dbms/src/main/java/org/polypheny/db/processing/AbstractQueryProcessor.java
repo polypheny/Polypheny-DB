@@ -163,26 +163,24 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
     @Override
     public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot ) {
-        return prepareQuery(
-                logicalRoot,
-                logicalRoot.rel.getCluster().getTypeFactory().builder().build(),
-                false );
+        return prepareQuery( logicalRoot, logicalRoot.rel.getCluster().getTypeFactory().builder().build(), false );
     }
 
 
     @Override
     public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted ) {
-        return prepareQuery( logicalRoot, parameterRowType, isRouted, false, true );
+        return prepareQuery( logicalRoot, parameterRowType, isRouted, false );
     }
 
 
     @Override
-    public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean doesSubstituteOrderBy ) {
-        return prepareQuery( logicalRoot, parameterRowType, isRouted, false, doesSubstituteOrderBy );
+    public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery ) {
+        return prepareQuery( logicalRoot, parameterRowType, isRouted, isSubquery, false );
     }
 
 
-    protected PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery, boolean doesSubstituteOrderBy ) {
+    @Override
+    public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery, boolean doesSubstituteOrderBy ) {
         boolean isAnalyze = statement.getTransaction().isAnalyze() && !isSubquery;
         boolean lock = !isSubquery;
 

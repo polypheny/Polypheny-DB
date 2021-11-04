@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.ddl.exception;
+package org.polypheny.db.processing;
 
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.transaction.Statement;
 
-public class NotViewException extends RuntimeException {
+public interface JsonRelProcessor {
 
-    public NotViewException() {
-        super( "The provided entity is not a view." );
-    }
+    RelNode parseJsonRel( Statement statement, String query );
 
 }

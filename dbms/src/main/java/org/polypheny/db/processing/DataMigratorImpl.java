@@ -115,17 +115,17 @@ public class DataMigratorImpl implements DataMigrator {
             }
 
             // Execute Query
-            executeQuery( selectColumnList, sourceRel, sourceStatement, targetStatement, targetRel, false );
+            executeQuery( selectColumnList, sourceRel, sourceStatement, targetStatement, targetRel, false, false );
         }
     }
 
 
     @Override
-    public void executeQuery( List<CatalogColumn> selectColumnList, RelRoot sourceRel, Statement sourceStatement, Statement targetStatement, RelRoot targetRel, boolean isMaterializedView ) {
+    public void executeQuery( List<CatalogColumn> selectColumnList, RelRoot sourceRel, Statement sourceStatement, Statement targetStatement, RelRoot targetRel, boolean isMaterializedView, boolean doesSubstituteOrderBy ) {
         try {
             PolyphenyDbSignature signature;
             if ( isMaterializedView ) {
-                signature = sourceStatement.getQueryProcessor().prepareQuery( sourceRel, sourceRel.rel.getCluster().getTypeFactory().builder().build(), false, false );
+                signature = sourceStatement.getQueryProcessor().prepareQuery( sourceRel, sourceRel.rel.getCluster().getTypeFactory().builder().build(), false, false, doesSubstituteOrderBy );
             } else {
                 signature = sourceStatement.getQueryProcessor().prepareQuery( sourceRel, sourceRel.rel.getCluster().getTypeFactory().builder().build(), true );
             }

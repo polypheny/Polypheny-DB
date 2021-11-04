@@ -47,8 +47,10 @@ class BackgroundTaskHandle implements Runnable {
         ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
         if ( schedulingType.getDelayType() == TaskDelayType.FIXED ) {
             this.runner = exec.scheduleAtFixedRate( this, 0, schedulingType.getMillis(), TimeUnit.MILLISECONDS );
-        } else {
+        } else if ( schedulingType.getDelayType() == TaskDelayType.DELAYED ) {
             this.runner = exec.scheduleWithFixedDelay( this, 0, schedulingType.getMillis(), TimeUnit.MILLISECONDS );
+        } else {
+            throw new RuntimeException( "A not known TaskDelayType was used. Only TaskDelayType.FIXED and TaskDelayType.DELAYED are implemented." );
         }
 
     }

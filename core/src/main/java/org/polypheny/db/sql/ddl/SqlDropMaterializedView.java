@@ -18,6 +18,7 @@ package org.polypheny.db.sql.ddl;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
@@ -47,10 +48,10 @@ public class SqlDropMaterializedView extends SqlDropObject {
 
     @Override
     public void execute( Context context, Statement statement ) {
-        final CatalogTable table;
+        final CatalogTable catalogTable;
 
         try {
-            table = getCatalogTable( context, name );
+            catalogTable = getCatalogTable( context, name );
         } catch ( PolyphenyDbContextException e ) {
             if ( ifExists ) {
                 // It is ok that there is no database / schema / table with this name because "IF EXISTS" was specified
@@ -60,12 +61,16 @@ public class SqlDropMaterializedView extends SqlDropObject {
             }
         }
 
+        if ( catalogTable.tableType != TableType.MATERIALIZEDVIEW ) {
+            throw new RuntimeException( "Not Possible to use DROP MATERIALIZED VIEW because " + catalogTable.name + " is not a Materialized View." );
+        }
+
         MaterializedManager materializedManager = MaterializedManager.getInstance();
         materializedManager.isDroppingMaterialized = true;
-        materializedManager.deleteMaterializedViewFromInfo( table.id );
+        materializedManager.deleteMaterializedViewFromInfo( catalogTable.id );
 
         try {
-            DdlManager.getInstance().dropMaterializedView( table, statement );
+            DdlManager.getInstance().dropMaterializedView( catalogTable, statement );
         } catch ( DdlOnSourceException e ) {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.ddlOnSourceTable() );
         }

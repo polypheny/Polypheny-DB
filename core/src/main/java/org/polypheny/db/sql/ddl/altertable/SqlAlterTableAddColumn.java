@@ -22,6 +22,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.ddl.DdlManager;
@@ -113,8 +114,8 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
 
-        if ( catalogTable.isView() || catalogTable.isMaterialized() ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE with Views or Materialized Views." );
+        if ( catalogTable.tableType != TableType.TABLE ) {
+            throw new RuntimeException( "Not Possible to use ALTER TABLE because" + catalogTable.name + " is not a table." );
         }
 
         if ( column.names.size() != 1 ) {

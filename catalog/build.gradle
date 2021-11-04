@@ -7,7 +7,6 @@ version = versionMajor + "." + versionMinor + versionQualifier
 
 dependencies {
     implementation project(":core")
-    implementation project(":webui")
 
     implementation group: "org.mapdb", name: "mapdb", version: mapdb_version  // Apache 2.0
 

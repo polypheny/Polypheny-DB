@@ -18,7 +18,6 @@ package org.polypheny.db.catalog;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.gson.Gson;
 import java.io.File;
 import java.io.IOException;
 import java.sql.Timestamp;
@@ -98,6 +97,7 @@ import org.polypheny.db.partition.FrequencyMap;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.processing.JsonRelProcessor;
 import org.polypheny.db.processing.MqlProcessor;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.rel.RelCollation;
@@ -115,8 +115,6 @@ import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.FileSystemManager;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.webui.QueryPlanBuilder;
-import org.polypheny.db.webui.models.UIRelNode;
 
 
 @Slf4j
@@ -372,7 +370,8 @@ public class CatalogImpl extends Catalog {
             List<CatalogColumnPlacement> placements = getColumnPlacement( c.id );
             CatalogTable catalogTable = getTable( c.tableId );
 
-            if ( !catalogTable.isView() ) {
+            //no column placements need to be restored if it is a view
+            if ( catalogTable.tableType != TableType.VIEW ) {
                 if ( placements.size() == 0 ) {
                     // no placements shouldn't happen
                     throw new RuntimeException( "There seems to be no placement for the column with the id " + c.id );
@@ -462,9 +461,8 @@ public class CatalogImpl extends Catalog {
                         relTypeInfo.put( c.id, relRoot.validatedRowType );
                         break;
                     case RELALG:
-                        Gson gson = new Gson();
-
-                        RelNode result = QueryPlanBuilder.buildFromTree( gson.fromJson( query, UIRelNode.class ), statement );
+                        JsonRelProcessor jsonRelProcessor = statement.getTransaction().getJasonProcessor();
+                        RelNode result = jsonRelProcessor.parseJsonRel( statement, query );
 
                         final RelDataType rowType = result.getRowType();
                         final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
@@ -1817,21 +1815,21 @@ public class CatalogImpl extends Catalog {
                         ((CatalogMaterialized) old).getMaterializedCriteria(),
                         ((CatalogMaterialized) old).isOrdered() );
             } else {
-                table = new CatalogTable( old.id
-                        , old.name
-                        , old.columnIds
-                        , old.schemaId
-                        , old.databaseId
-                        , old.ownerId
-                        , old.ownerName
-                        , old.tableType
-                        , keyId
-                        , old.placementsByAdapter
-                        , old.modifiable
-                        , old.partitionType
-                        , old.partitionColumnId
-                        , old.partitionProperty
-                        , old.connectedViews );
+                table = new CatalogTable( old.id,
+                        old.name,
+                        old.columnIds,
+                        old.schemaId,
+                        old.databaseId,
+                        old.ownerId,
+                        old.ownerName,
+                        old.tableType,
+                        keyId,
+                        old.placementsByAdapter,
+                        old.modifiable,
+                        old.partitionType,
+                        old.partitionColumnId,
+                        old.partitionProperty,
+                        old.connectedViews );
             }
 
         } else {

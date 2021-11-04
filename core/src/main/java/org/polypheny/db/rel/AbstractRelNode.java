@@ -116,13 +116,6 @@ public abstract class AbstractRelNode implements RelNode {
     @Setter
     protected RelTraitSet traitSet;
 
-
-    public AbstractRelNode() {
-        super();
-        this.id = NEXT_ID.getAndIncrement();
-    }
-
-
     /**
      * Creates an <code>AbstractRelNode</code>.
      */

@@ -42,6 +42,8 @@ import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
+import org.polypheny.db.processing.JsonRelProcessor;
+import org.polypheny.db.processing.JsonRelProcessorImpl;
 import org.polypheny.db.processing.MqlProcessor;
 import org.polypheny.db.processing.MqlProcessorImpl;
 import org.polypheny.db.processing.SqlProcessor;
@@ -239,6 +241,12 @@ public class TransactionImpl implements Transaction, Comparable {
     @Override
     public MqlProcessor getMqlProcessor() {
         return new MqlProcessorImpl();
+    }
+
+
+    @Override
+    public JsonRelProcessor getJasonProcessor() {
+        return new JsonRelProcessorImpl();
     }
 
 

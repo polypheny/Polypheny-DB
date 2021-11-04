@@ -30,7 +30,9 @@ public interface QueryProcessor extends ViewExpander {
 
     PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameters, boolean isRouted );
 
-    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameters, boolean isRouted, boolean doesSubstituteOrderBy );
+    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery );
+
+    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameters, boolean isRouted, boolean isSubquery, boolean doesSubstituteOrderBy );
 
     RelOptPlanner getPlanner();
 

@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
@@ -66,11 +67,10 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement ) {
-        Catalog catalog = Catalog.getInstance();
         CatalogTable catalogTable = getCatalogTable( context, table );
 
-        if ( catalogTable.isView() || catalogTable.isMaterialized() ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE with Views or Materialized Views." );
+        if ( catalogTable.tableType != TableType.TABLE ) {
+            throw new RuntimeException( "Not Possible to use ALTER TABLE because" + catalogTable.name + " is not a table." );
         }
 
         // Check if table is even partitioned

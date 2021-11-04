@@ -19,6 +19,7 @@ package org.polypheny.db.view;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogMaterialized;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.prepare.RelOptTableImpl;
@@ -253,7 +254,7 @@ public class ViewManager {
 
                         CatalogTable catalogtable = Catalog.getInstance().getTable( tableId );
 
-                        if ( catalogtable.isMaterialized() && ((CatalogMaterialized) catalogtable).isOrdered() ) {
+                        if ( catalogtable.tableType == TableType.MATERIALIZEDVIEW && ((CatalogMaterialized) catalogtable).isOrdered() ) {
                             return orderMaterialized( other );
                         }
                     }

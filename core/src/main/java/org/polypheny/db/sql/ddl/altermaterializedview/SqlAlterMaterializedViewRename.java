@@ -21,7 +21,6 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogMaterialized;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.ddl.DdlManager;
@@ -72,10 +71,8 @@ public class SqlAlterMaterializedViewRename extends SqlAlterMaterializedView {
     @Override
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, oldName );
-        CatalogMaterialized catalogView;
-        if ( catalogTable.tableType == TableType.MATERIALIZEDVIEW ) {
-            catalogView = (CatalogMaterialized) catalogTable;
-        } else {
+
+        if ( catalogTable.tableType != TableType.MATERIALIZEDVIEW ) {
             throw new RuntimeException( "Not Possible to use ALTER MATERIALIZED VIEW because " + catalogTable.name + " is not a Materialized View." );
         }
 
@@ -83,7 +80,7 @@ public class SqlAlterMaterializedViewRename extends SqlAlterMaterializedView {
             throw new RuntimeException( "No FQDN allowed here: " + newName.toString() );
         }
         try {
-            DdlManager.getInstance().renameTable( catalogView, newName.getSimple(), statement );
+            DdlManager.getInstance().renameTable( catalogTable, newName.getSimple(), statement );
         } catch ( TableAlreadyExistsException e ) {
             throw SqlUtil.newContextException( oldName.getParserPosition(), RESOURCE.schemaExists( newName.getSimple() ) );
         }

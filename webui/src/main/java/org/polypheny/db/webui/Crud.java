@@ -129,7 +129,6 @@ import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -452,33 +451,9 @@ public class Crud implements InformationObserver {
                         }
                     }
 
-                    /*
-                    if ( table.tableType == TableType.TABLE || table.tableType == TableType.SOURCE ) {
-                        tableTree.add( tableElement );
-                    } else if ( request.views && table.tableType == TableType.VIEW ) {
-                        viewTree.add( tableElement );
-                    }
-                     */
                     collectionTree.add( tableElement );
                 }
 
-
-
-                /*if ( request.showTable ) {
-                    String collection = schema.schemaType == SchemaType.RELATIONAL ? "tables" : "collections";
-
-                    schemaTree.addChild( new SidebarElement( schema.name + ".tables", collection, request.routerLinkRoot, "fa fa-table" ).addChildren( tableTree ).setRouterLink( "" ) );
-                } else {
-                    schemaTree.addChildren( tableTree ).setRouterLink( "" );
-                }
-                if ( request.views ) {
-                    if ( request.showTable ) {
-                        schemaTree.addChild( new SidebarElement( schema.name + ".views", "views", request.routerLinkRoot, "icon-eye" ).addChildren( viewTree ).setRouterLink( "" ) );
-                    } else {
-                        schemaTree.addChildren( viewTree ).setRouterLink( "" );
-                    }
-
-                }*/
                 if ( request.showTable ) {
                     schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", schema.schemaType, request.routerLinkRoot, "fa fa-table" ).addChildren( collectionTree ).setRouterLink( "" ) );
                 } else {
@@ -1513,7 +1488,7 @@ public class Crud implements InformationObserver {
         try {
             CatalogTable catalogTable = catalog.getTable( databaseName, request.schema, request.table );
 
-            if ( catalogTable.isMaterialized() ) {
+            if ( catalogTable.tableType == TableType.MATERIALIZEDVIEW ) {
                 CatalogMaterialized catalogMaterialized = (CatalogMaterialized) catalogTable;
 
                 MaterializedCriteria materializedCriteria = catalogMaterialized.getMaterializedCriteria();
@@ -3039,7 +3014,6 @@ public class Crud implements InformationObserver {
             }
             try {
                 transaction.commit();
-                Catalog.getInstance().commit();
             } catch ( TransactionException e ) {
                 log.error( "Caught exception while creating View from Planbuilder.", e );
                 try {
@@ -3048,11 +3022,6 @@ public class Crud implements InformationObserver {
                     log.error( "Exception while rollback", transactionException );
                 }
                 throw new RuntimeException( e );
-            } catch ( NoTablePrimaryKeyException e ) {
-                log.error( "Error while creating materialized view", e );
-                Result finalResult = new Result( e );
-                finalResult.setGeneratedQuery( "Execute logical query plan" );
-                return finalResult;
             }
 
             return new Result().setGeneratedQuery( "Created " + viewType + " \"" + viewName + "\" from logical query plan" );

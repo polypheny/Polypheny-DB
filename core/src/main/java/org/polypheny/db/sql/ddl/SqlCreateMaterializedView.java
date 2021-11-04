@@ -16,6 +16,7 @@
 
 package org.polypheny.db.sql.ddl;
 
+import static org.polypheny.db.sql.ddl.SqlCreateView.DIALECT;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.ArrayList;
@@ -187,14 +188,14 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
                     placementType,
                     columns,
                     materializedCriteria,
-                    query.toString().replaceAll( "`", "\"" ),
+                    String.valueOf( query.toSqlString( DIALECT ) ),
                     QueryLanguage.SQL,
                     ifNotExists,
                     ordered );
         } catch ( TableAlreadyExistsException e ) {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( viewName ) );
         } catch ( GenericCatalogException | UnknownColumnException | ColumnNotExistsException | ColumnAlreadyExistsException e ) {
-            // we just added the table/column so it has to exist or we have a internal problem
+            // we just added the table/column, so it has to exist, or we have an internal problem
             throw new RuntimeException( e );
         }
 

@@ -20,6 +20,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
@@ -67,8 +68,8 @@ public class SqlAlterMaterializedDropIndex extends SqlAlterMaterializedView {
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
 
-        if ( catalogTable.isView() ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE with Views." );
+        if ( catalogTable.tableType != TableType.MATERIALIZEDVIEW ) {
+            throw new RuntimeException( "Not Possible to use ALTER MATERIALIZED VIEW because " + catalogTable.name + " is not a Materialized View." );
         }
 
         try {

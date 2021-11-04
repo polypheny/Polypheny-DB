@@ -63,6 +63,9 @@ import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.TableAccessMap;
+import org.polypheny.db.transaction.TableAccessMap.Mode;
+import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionImpl;
@@ -235,7 +238,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
                 MaterializedManagerImpl.this::updatingIntervalMaterialized,
                 "Update Materialized View with freshness type interval if it is time.",
                 TaskPriority.HIGH,
-                (TaskSchedulingType) RuntimeConfig.FRESHNESSLOOP.getEnum() );
+                (TaskSchedulingType) RuntimeConfig.MATERIALIZED_VIEW_LOOP.getEnum() );
     }
 
 
@@ -270,17 +273,29 @@ public class MaterializedManagerImpl extends MaterializedManager {
         try {
             Transaction transaction = getTransactionManager().startTransaction( catalogTable.ownerName, catalog.getDatabase( catalogTable.databaseId ).name, false, "Materialized View" );
 
-            if ( !(LockManager.INSTANCE.hasLock( (TransactionImpl) transaction, LockManager.GLOBAL_LOCK )) ) {
-                try {
-                    // Get a exclusive global schema lock
-                    LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) transaction, LockMode.EXCLUSIVE );
-                } catch ( DeadlockException e ) {
-                    throw new RuntimeException( "DeadLock while locking for materialized view update", e );
-                }
-                updateData( transaction, materializedId );
-                commitTransaction( transaction );
+            try {
 
+                Statement statement = transaction.createStatement();
+                // Get a shared global schema lock (only DDLs acquire a exclusive global schema lock)
+                LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
+                // Get locks for individual tables
+                TableAccessMap accessMap = new TableAccessMap( ((CatalogMaterialized) catalogTable).getDefinition() );
+                for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
+                    Mode mode = accessMap.getTableAccessMode( tableIdentifier );
+                    if ( mode == Mode.READ_ACCESS ) {
+                        LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
+                    } else if ( mode == Mode.WRITE_ACCESS || mode == Mode.READWRITE_ACCESS ) {
+                        LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
+                    }
+                }
+
+
+            } catch ( DeadlockException e ) {
+                throw new RuntimeException( "DeadLock while locking for materialized view update", e );
             }
+            updateData( transaction, materializedId );
+            commitTransaction( transaction );
+
 
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Not possible to create Transaction for Materialized View update", e );
@@ -309,7 +324,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
             //if partitions should be allowed for materialized views this needs to be changed that all partitions are considered
             RelRoot targetRel = dataMigrator.buildInsertStatement( targetStatement, columnPlacements, Catalog.getInstance().getPartitionsOnDataPlacement( id, materializedView.id ).get( 0 ) );
 
-            dataMigrator.executeQuery( columns.get( id ), sourceRel, sourceStatement, targetStatement, targetRel, true );
+            dataMigrator.executeQuery( columns.get( id ), sourceRel, sourceStatement, targetStatement, targetRel, true, materializedView.isOrdered() );
         }
     }
 
@@ -366,18 +381,16 @@ public class MaterializedManagerImpl extends MaterializedManager {
                 Statement targetStatementDelete = transaction.createStatement();
                 //delete all data
                 targetRel = dataMigrator.buildDeleteStatement( targetStatementDelete, columnPlacements, Catalog.getInstance().getPartitionsOnDataPlacement( id, catalogMaterialized.id ).get( 0 ) );
-                dataMigrator.executeQuery( columns.get( id ), RelRoot.of( deleteRel, SqlKind.SELECT ), deleteStatement, targetStatementDelete, targetRel, true );
+                dataMigrator.executeQuery( columns.get( id ), RelRoot.of( deleteRel, SqlKind.SELECT ), deleteStatement, targetStatementDelete, targetRel, true, catalogMaterialized.isOrdered() );
 
                 Statement targetStatementInsert = transaction.createStatement();
 
                 //insert new data
                 targetRel = dataMigrator.buildInsertStatement( targetStatementInsert, columnPlacements, Catalog.getInstance().getPartitionsOnDataPlacement( id, catalogMaterialized.id ).get( 0 ) );
-                dataMigrator.executeQuery( columns.get( id ), RelRoot.of( insertRel, SqlKind.SELECT ), sourceStatement, targetStatementInsert, targetRel, true );
-
+                dataMigrator.executeQuery( columns.get( id ), RelRoot.of( insertRel, SqlKind.SELECT ), sourceStatement, targetStatementInsert, targetRel, true, catalogMaterialized.isOrdered() );
 
             }
         }
-
     }
 
 

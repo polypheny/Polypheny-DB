@@ -88,6 +88,7 @@ import org.polypheny.db.ddl.exception.IndexExistsException;
 import org.polypheny.db.ddl.exception.IndexPreventsRemovalException;
 import org.polypheny.db.ddl.exception.LastPlacementException;
 import org.polypheny.db.ddl.exception.MissingColumnPlacementException;
+import org.polypheny.db.ddl.exception.NotMaterializedViewException;
 import org.polypheny.db.ddl.exception.NotNullAndDefaultValueException;
 import org.polypheny.db.ddl.exception.NotViewException;
 import org.polypheny.db.ddl.exception.PartitionGroupNamesNotUniqueException;
@@ -141,28 +142,6 @@ public class DdlManagerImpl extends DdlManager {
             throw new DdlOnSourceException();
         }
     }
-
-
-    private void checkIfTableType( TableType tableType ) throws DdlOnSourceException {
-        if ( tableType != TableType.TABLE && tableType != TableType.MATERIALIZEDVIEW ) {
-            throw new DdlOnSourceException();
-        }
-    }
-
-
-    private void checkIfViewType( TableType tableType ) throws DdlOnSourceException {
-        if ( tableType != TableType.VIEW ) {
-            throw new DdlOnSourceException();
-        }
-    }
-
-
-    private void checkIfMaterializedViewType( TableType tableType ) throws DdlOnSourceException {
-        if ( tableType != TableType.MATERIALIZEDVIEW ) {
-            throw new DdlOnSourceException();
-        }
-    }
-
 
     private void checkViewDependencies( CatalogTable catalogTable ) {
         if ( catalogTable.connectedViews.size() > 0 ) {
@@ -578,8 +557,8 @@ public class DdlManagerImpl extends DdlManager {
         IndexType type = IndexType.MANUAL;
 
         // Make sure that this is a table of type TABLE (and not SOURCE)
-        if ( !(catalogTable.tableType == TableType.TABLE || catalogTable.tableType == TableType.MATERIALIZEDVIEW) ) {
-            throw new AlterSourceException();
+        if ( catalogTable.tableType != TableType.TABLE && catalogTable.tableType != TableType.MATERIALIZEDVIEW ) {
+            throw new RuntimeException( "It is only possible to add an Index if it is a table or a materialized view." );
         }
 
         // Check if there is already an index with this name for this table
@@ -2333,7 +2312,9 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void dropView( CatalogTable catalogView, Statement statement ) throws DdlOnSourceException {
         // Make sure that this is a table of type VIEW
-        if ( catalogView.tableType != TableType.VIEW ) {
+        if ( catalogView.tableType == TableType.VIEW ) {
+            //empty on purpose
+        } else {
             throw new NotViewException();
         }
 
@@ -2357,9 +2338,13 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropMaterializedView( CatalogTable materializedView, Statement statement ) throws DdlOnSourceException {
-        // Make sure that this is a table of type VIEW
-        checkIfMaterializedViewType( materializedView.tableType );
 
+        // Make sure that this is a table of type Materialized View
+        if ( materializedView.tableType == TableType.MATERIALIZEDVIEW ) {
+            //empty on purpose
+        } else {
+            throw new NotMaterializedViewException();
+        }
         // Check if views are dependent from this view
         checkViewDependencies( materializedView );
 
@@ -2372,7 +2357,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void dropTable( CatalogTable catalogTable, Statement statement ) throws DdlOnSourceException {
         // Make sure that this is a table of type TABLE (and not SOURCE)
-        checkIfDdlPossible( catalogTable.tableType );
+        //checkIfDdlPossible( catalogTable.tableType );
 
         // Check if views dependent on this table
         checkViewDependencies( catalogTable );

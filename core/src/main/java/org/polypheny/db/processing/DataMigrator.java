@@ -78,7 +78,7 @@ public interface DataMigrator {
     RelRoot buildInsertStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId );
 
     //is used within copyData
-    void executeQuery( List<CatalogColumn> columns, RelRoot sourceRel, Statement sourceStatement, Statement targetStatement, RelRoot targetRel, boolean isMaterializedView );
+    void executeQuery( List<CatalogColumn> columns, RelRoot sourceRel, Statement sourceStatement, Statement targetStatement, RelRoot targetRel, boolean isMaterializedView, boolean doesSubstituteOrderBy );
 
     RelRoot buildDeleteStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId );
 

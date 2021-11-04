@@ -17,6 +17,7 @@
 package org.polypheny.db.webui;
 
 
+import com.google.gson.Gson;
 import java.util.ArrayList;
 import org.apache.commons.lang.math.NumberUtils;
 import org.polypheny.db.rel.RelNode;
@@ -73,6 +74,13 @@ public class QueryPlanBuilder {
         RelBuilder b = createRelBuilder( statement );
         buildStep( b, topNode );
         return b.build();
+    }
+
+
+    public static RelNode buildFromJsonRel( Statement statement, String query ) {
+        Gson gson = new Gson();
+        RelBuilder b = createRelBuilder( statement );
+        return buildFromTree( gson.fromJson( query, UIRelNode.class ), statement );
     }
 
 

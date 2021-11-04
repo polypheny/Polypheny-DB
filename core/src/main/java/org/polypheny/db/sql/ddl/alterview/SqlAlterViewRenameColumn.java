@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
@@ -73,15 +72,13 @@ public class SqlAlterViewRenameColumn extends SqlAlterView {
     @Override
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, view );
-        CatalogView catalogView;
-        if ( catalogTable.tableType == TableType.VIEW ) {
-            catalogView = (CatalogView) catalogTable;
-        } else {
+
+        if ( catalogTable.tableType != TableType.VIEW ) {
             throw new RuntimeException( "Not Possible to use ALTER VIEW because " + catalogTable.name + " is not a View." );
         }
 
         try {
-            DdlManager.getInstance().renameColumn( catalogView, columnOldName.getSimple(), columnNewName.getSimple(), statement );
+            DdlManager.getInstance().renameColumn( catalogTable, columnOldName.getSimple(), columnNewName.getSimple(), statement );
         } catch ( ColumnAlreadyExistsException e ) {
             throw SqlUtil.newContextException( columnNewName.getParserPosition(), RESOURCE.columnExists( columnNewName.getSimple() ) );
         } catch ( ColumnNotExistsException e ) {

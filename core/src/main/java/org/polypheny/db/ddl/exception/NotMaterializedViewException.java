@@ -16,11 +16,12 @@
 
 package org.polypheny.db.ddl.exception;
 
+public class NotMaterializedViewException extends RuntimeException {
 
-public class NotViewException extends RuntimeException {
-
-    public NotViewException() {
+    public NotMaterializedViewException() {
         super( "The provided entity is not a view." );
     }
 
 }
+
+

@@ -186,12 +186,12 @@ public enum RuntimeConfig {
 
     STATISTIC_RATE( "statistics/passiveTrackingRate",
             "Rate of passive tracking of statistics.",
-            BackgroundTask.TaskSchedulingType.EVERY_THIRTY_SECONDS,
+            BackgroundTask.TaskSchedulingType.EVERY_THIRTY_SECONDS_FIXED,
             ConfigType.ENUM ),
 
-    FRESHNESSLOOP( "materializedView/freshnessLoopRate",
+    MATERIALIZED_VIEW_LOOP( "materializedView/freshnessLoopRate",
             "Rate of freshness Loop for Materialized Views with update type interval.",
-            TaskSchedulingType.EVERY_SECOND,
+            TaskSchedulingType.EVERY_SECOND_FIXED,
             ConfigType.ENUM ),
 
     EXPLORE_BY_EXAMPLE_TO_SQL( "exploreByExample/classificationToSQL",
@@ -337,7 +337,7 @@ public enum RuntimeConfig {
 
     QUEUE_PROCESSING_INTERVAL( "runtime/queueProcessingInterval",
             "Rate of passive tracking of statistics.",
-            BackgroundTask.TaskSchedulingType.EVERY_TEN_SECONDS,
+            BackgroundTask.TaskSchedulingType.EVERY_TEN_SECONDS_FIXED,
             ConfigType.ENUM,
             "monitoringSettingsQueueGroup" ),
 
@@ -349,7 +349,7 @@ public enum RuntimeConfig {
 
     TEMPERATURE_FREQUENCY_PROCESSING_INTERVAL( "runtime/partitionFrequencyProcessingInterval",
             "Time interval in seconds, how often the access frequency of all TEMPERATURE-partitioned tables is analyzed and redistributed",
-            BackgroundTask.TaskSchedulingType.EVERY_MINUTE,
+            BackgroundTask.TaskSchedulingType.EVERY_MINUTE_FIXED,
             ConfigType.ENUM,
             "temperaturePartitionProcessingSettingsGroup" );
 

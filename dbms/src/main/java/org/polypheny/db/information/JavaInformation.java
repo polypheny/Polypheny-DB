@@ -102,7 +102,7 @@ public class JavaInformation {
                 },
                 "Update Java runtime information",
                 TaskPriority.LOW,
-                TaskSchedulingType.EVERY_MINUTE
+                TaskSchedulingType.EVERY_MINUTE_FIXED
         );
     }
 
