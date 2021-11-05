@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.polypheny.db.catalog.Catalog.LanguageType;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.webui.models.requests.UIRequest;
 
@@ -95,6 +96,12 @@ public class Result {
      */
     @Setter
     private SchemaType schemaType = SchemaType.RELATIONAL;
+
+    /**
+     * language type of result MQL/SQL/CQL
+     */
+    @Setter
+    private LanguageType languageType = LanguageType.SQL;
 
     /**
      * Indicate that only a subset of the specified query is being displayed.

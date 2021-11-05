@@ -1502,6 +1502,28 @@ public abstract class Catalog {
     }
 
 
+    public enum LanguageType {
+        @SerializedName("sql")
+        SQL( 1 ),
+        @SerializedName("mql")
+        MQL( 2 ),
+        @SerializedName("cql")
+        CQL( 3 );
+
+        private final int id;
+
+
+        LanguageType( int id ) {
+            this.id = id;
+        }
+
+
+        public int getId() {
+            return id;
+        }
+    }
+
+
     public enum SchemaType {
         @SerializedName("relational")
         RELATIONAL( 1 ),
