@@ -83,10 +83,17 @@ public class LogicalRelAnalyzeShuttle extends RelShuttleImpl {
             return this.availableColumns;
         }
 
-        return this.rexShuttle.usedIds.stream()
-                .collect( Collectors.toMap(
-                        index -> availableColumnKeys.get( index ),
-                        index -> availableColumnNames.get( index ) ) );
+        Map<Long, String> result = new HashMap<>();
+        for ( val usedId : this.rexShuttle.usedIds ) {
+            if ( availableColumnKeys.contains( usedId ) && availableColumnNames.contains( usedId ) ) {
+                result.put(
+                        availableColumnKeys.get( usedId ),
+                        availableColumnNames.get( usedId )
+                );
+            }
+        }
+
+        return result;
     }
 
 
@@ -235,12 +242,11 @@ public class LogicalRelAnalyzeShuttle extends RelShuttleImpl {
             return;
         }
 
-        LogicalTable logicalTable = ((LogicalTable) table.getTable());
-        if ( logicalTable == null ) {
+        val logicalTable = table.getTable();
+        if(!(logicalTable instanceof LogicalTable)){
             return;
         }
-
-        CatalogTable catalogTable = Catalog.getInstance().getTable( logicalTable.getTableId() );
+        CatalogTable catalogTable = Catalog.getInstance().getTable( ((LogicalTable) logicalTable).getTableId());
 
         // only if table is partitioned
         if ( catalogTable.isPartitioned ) {
