@@ -38,7 +38,6 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import lombok.var;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta.CursorFactory;
@@ -1261,7 +1260,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // get partitions of logical information
         List<String> partitionValues = analyzeRelShuttle.filterMap.values().stream().flatMap( Collection::stream ).collect( Collectors.toList() );
-        var accessedPartitionMap = this.getAccessedPartitionsPerTable( logicalRoot.rel, partitionValues );
+        val accessedPartitionMap = this.getAccessedPartitionsPerTable( logicalRoot.rel, partitionValues );
 
         // build queryClass from query-name and partitions.
         String queryClass = analyzeRelShuttle.getQueryName() + accessedPartitionMap;
@@ -1437,7 +1436,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         val approximatedCosts = routingPlansCached.stream().map( CachedProposedRoutingPlan::getPreCosts ).collect( Collectors.toList() );
-        var planPair = routingPlanSelector.selectPlanBasedOnCosts(
+        val planPair = routingPlanSelector.selectPlanBasedOnCosts(
                 routingPlansCached,
                 approximatedCosts,
                 queryId,

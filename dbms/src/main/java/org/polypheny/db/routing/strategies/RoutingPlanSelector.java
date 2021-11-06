@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import lombok.var;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.plan.RelOptCost;
@@ -143,9 +142,9 @@ public class RoutingPlanSelector {
 
 
     private Pair<Optional<PolyphenyDbSignature>, RoutingPlan> selectBestPlan( List<? extends RoutingPlan> routingPlans, Optional<List<PolyphenyDbSignature>> signatures, List<Double> effectiveCosts ) {
-        var currentPlan = routingPlans.get( 0 );
+        RoutingPlan currentPlan = routingPlans.get( 0 );
         Optional<PolyphenyDbSignature> currentSignature = signatures.map( polyphenyDbSignatures -> polyphenyDbSignatures.get( 0 ) );
-        var currentCost = effectiveCosts.get( 0 );
+        Double currentCost = effectiveCosts.get( 0 );
 
         for ( int i = 1; i < routingPlans.size(); i++ ) {
             val cost = effectiveCosts.get( i );

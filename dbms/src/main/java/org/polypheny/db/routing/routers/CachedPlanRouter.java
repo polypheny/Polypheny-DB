@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import lombok.var;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -46,7 +45,7 @@ public class CachedPlanRouter extends BaseRouter {
 
 
     public RoutedRelBuilder routeCached( RelRoot logicalRoot, CachedProposedRoutingPlan routingPlanCached, Statement statement ) {
-        var builder = RoutedRelBuilder.create( statement, logicalRoot.rel.getCluster() );
+        val builder = RoutedRelBuilder.create( statement, logicalRoot.rel.getCluster() );
         return buildCachedSelect( logicalRoot.rel, builder, statement, logicalRoot.rel.getCluster(), routingPlanCached );
     }
 

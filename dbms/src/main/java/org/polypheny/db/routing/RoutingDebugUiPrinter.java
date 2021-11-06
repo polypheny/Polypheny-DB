@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Optional;
 import lombok.val;
-import lombok.var;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -77,7 +76,7 @@ public class RoutingDebugUiPrinter {
 
     public InformationPage printBaseOutput( String titel, Integer numberOfPlans, Statement statement ) {
         InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-        var page = new InformationPage( titel );
+        val page = new InformationPage( titel );
         page.fullWidth();
         queryAnalyzer.addPage( page );
 
