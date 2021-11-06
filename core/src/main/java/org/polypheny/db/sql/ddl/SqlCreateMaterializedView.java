@@ -16,7 +16,6 @@
 
 package org.polypheny.db.sql.ddl;
 
-import static org.polypheny.db.sql.ddl.SqlCreateView.DIALECT;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.ArrayList;
@@ -54,6 +53,7 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
+import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
@@ -188,7 +188,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
                     placementType,
                     columns,
                     materializedCriteria,
-                    String.valueOf( query.toSqlString( DIALECT ) ),
+                    String.valueOf( query.toSqlString( PolyphenyDbSqlDialect.DEFAULT ) ),
                     QueryLanguage.SQL,
                     ifNotExists,
                     ordered );

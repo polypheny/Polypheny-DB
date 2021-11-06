@@ -411,7 +411,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void updateMaterialized( long materializedId ) {
+    public void updateMaterializedViewUpdateTime( long materializedId ) {
         throw new NotImplementedException();
     }
 

@@ -136,7 +136,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
     public synchronized void updateMaterializedTime( Long materializedId ) {
         if ( materializedInfo.containsKey( materializedId ) ) {
             materializedInfo.get( materializedId ).setLastUpdate( new Timestamp( System.currentTimeMillis() ) );
-            Catalog.getInstance().updateMaterialized( materializedId );
+            Catalog.getInstance().updateMaterializedViewUpdateTime( materializedId );
         }
     }
 

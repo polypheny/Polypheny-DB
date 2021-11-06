@@ -1620,9 +1620,9 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * deletes all View dependencies after a view is dropped
+     * Deletes all the dependencies of a view. This is used when deleting a view.
      *
-     * @param catalogView view to be deleted
+     * @param catalogView view for which to delete its dependencies
      */
     @Override
     public void deleteViewDependencies( CatalogView catalogView ) {
@@ -2083,13 +2083,13 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * updates the last time a materialized view was updated
+     * Updates the last time a materialized view was updated.
      *
-     * @param materializedId to update
+     * @param materializedViewId id of the materialized view
      */
     @Override
-    public void updateMaterialized( long materializedId ) {
-        CatalogMaterializedView old = (CatalogMaterializedView) getTable( materializedId );
+    public void updateMaterializedViewUpdateTime( long materializedViewId ) {
+        CatalogMaterializedView old = (CatalogMaterializedView) getTable( materializedViewId );
 
         MaterializedCriteria materializedCriteria = old.getMaterializedCriteria();
         materializedCriteria.setLastUpdate( new Timestamp( System.currentTimeMillis() ) );
@@ -2119,11 +2119,12 @@ public class CatalogImpl extends Catalog {
                 old.isOrdered() );
 
         synchronized ( this ) {
-            tables.replace( materializedId, catalogMaterializedView );
-            tableNames.replace( new Object[]{ catalogMaterializedView.databaseId, catalogMaterializedView.schemaId, catalogMaterializedView.name }, catalogMaterializedView );
+            tables.replace( materializedViewId, catalogMaterializedView );
+            tableNames.replace(
+                    new Object[]{ catalogMaterializedView.databaseId, catalogMaterializedView.schemaId, catalogMaterializedView.name },
+                    catalogMaterializedView );
         }
         listeners.firePropertyChange( "table", old, catalogMaterializedView );
-
     }
 
 
