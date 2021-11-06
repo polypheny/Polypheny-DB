@@ -48,7 +48,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.util.ImmutableNullableList;
 
-public class SqlAlterMaterializedAddIndex extends SqlAlterMaterializedView {
+public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
 
 
     private final SqlIdentifier table;
@@ -59,7 +59,7 @@ public class SqlAlterMaterializedAddIndex extends SqlAlterMaterializedView {
     private final SqlIdentifier storeName;
 
 
-    public SqlAlterMaterializedAddIndex(
+    public SqlAlterMaterializedViewAddIndex(
             SqlParserPos pos,
             SqlIdentifier table,
             SqlNodeList columnList,
@@ -86,7 +86,7 @@ public class SqlAlterMaterializedAddIndex extends SqlAlterMaterializedView {
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
-        writer.keyword( "TABLE" );
+        writer.keyword( "MATERIALIZED VIEW" );
         table.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "ADD" );
         if ( unique ) {

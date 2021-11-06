@@ -158,13 +158,13 @@ SqlAlterMaterializedView SqlAlterMaterializedView(Span s) :
             { storeName = null; }
             )
             {
-            return new SqlAlterMaterializedAddIndex(s.end(this), materializedview, columnList, unique, indexMethod, indexName, storeName);
+            return new SqlAlterMaterializedViewAddIndex(s.end(this), materializedview, columnList, unique, indexMethod, indexName, storeName);
             }
     |
         <DROP> <INDEX>
             indexName = SimpleIdentifier()
             {
-            return new SqlAlterMaterializedDropIndex(s.end(this), materializedview, indexName);
+            return new SqlAlterMaterializedViewDropIndex(s.end(this), materializedview, indexName);
             }
 
     )

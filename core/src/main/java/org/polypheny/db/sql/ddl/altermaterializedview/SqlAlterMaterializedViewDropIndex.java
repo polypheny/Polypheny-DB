@@ -34,13 +34,13 @@ import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
-public class SqlAlterMaterializedDropIndex extends SqlAlterMaterializedView {
+public class SqlAlterMaterializedViewDropIndex extends SqlAlterMaterializedView {
 
     private final SqlIdentifier table;
     private final SqlIdentifier indexName;
 
 
-    public SqlAlterMaterializedDropIndex( SqlParserPos pos, SqlIdentifier table, SqlIdentifier indexName ) {
+    public SqlAlterMaterializedViewDropIndex( SqlParserPos pos, SqlIdentifier table, SqlIdentifier indexName ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.indexName = Objects.requireNonNull( indexName );
@@ -56,7 +56,7 @@ public class SqlAlterMaterializedDropIndex extends SqlAlterMaterializedView {
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
-        writer.keyword( "TABLE" );
+        writer.keyword( "MATERIALIZED VIEW" );
         table.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "DROP" );
         writer.keyword( "INDEX" );
