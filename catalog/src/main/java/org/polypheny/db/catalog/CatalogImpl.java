@@ -439,7 +439,7 @@ public class CatalogImpl extends Catalog {
         Statement statement = transaction.createStatement();
 
         for ( CatalogTable c : tables.values() ) {
-            if ( c.tableType == TableType.VIEW || c.tableType == TableType.MATERIALIZEDVIEW ) {
+            if ( c.tableType == TableType.VIEW || c.tableType == TableType.MATERIALIZED_VIEW ) {
                 String query;
                 QueryLanguage language;
                 if ( c.tableType == TableType.VIEW ) {
@@ -1546,7 +1546,7 @@ public class CatalogImpl extends Catalog {
                 .reliesOnPeriodicChecks( false )
                 .build();
 
-        if ( tableType == TableType.MATERIALIZEDVIEW ) {
+        if ( tableType == TableType.MATERIALIZED_VIEW ) {
             CatalogMaterializedView materializedViewTable = new CatalogMaterializedView(
                     id,
                     name,
@@ -1573,9 +1573,8 @@ public class CatalogImpl extends Catalog {
             relTypeInfo.put( id, fieldList );
             nodeInfo.put( id, definition );
         } else {
-
             //Should not happen, addViewTable is only called with TableType.View
-            throw new RuntimeException( "addMaterializedViewTable is only possible with TableType = MATERIALIZEDVIEW" );
+            throw new RuntimeException( "addMaterializedViewTable is only possible with TableType = MATERIALIZED_VIEW" );
         }
         return id;
     }
@@ -1932,7 +1931,7 @@ public class CatalogImpl extends Catalog {
                 if ( log.isDebugEnabled() ) {
                     log.debug( " Table '{}' is partitioned.", old.name );
                 }
-                if ( old.tableType == TableType.MATERIALIZEDVIEW ) {
+                if ( old.tableType == TableType.MATERIALIZED_VIEW ) {
                     table = new CatalogMaterializedView(
                             old.id,
                             old.name,
@@ -1976,7 +1975,7 @@ public class CatalogImpl extends Catalog {
                             old.connectedViews );
                 }
             } else {
-                if ( old.tableType == TableType.MATERIALIZEDVIEW ) {
+                if ( old.tableType == TableType.MATERIALIZED_VIEW ) {
                     table = new CatalogMaterializedView(
                             old.id,
                             old.name,

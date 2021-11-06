@@ -76,7 +76,7 @@ import org.polypheny.db.util.background.BackgroundTaskManager;
 
 
 @Slf4j
-public class MaterializedManagerImpl extends MaterializedManager {
+public class MaterializedViewManagerImpl extends AbstractMaterializedViewManager {
 
     @Getter
     private final Map<Long, MaterializedCriteria> materializedInfo;
@@ -87,10 +87,10 @@ public class MaterializedManagerImpl extends MaterializedManager {
     @Getter
     private final List<Long> intervalToUpdate;
 
-    Map<PolyXid, Long> potentialInteresting;
+    final Map<PolyXid, Long> potentialInteresting;
 
 
-    public MaterializedManagerImpl( TransactionManager transactionManager ) {
+    public MaterializedViewManagerImpl( TransactionManager transactionManager ) {
         this.transactionManager = transactionManager;
         this.materializedInfo = new ConcurrentHashMap<>();
         this.potentialInteresting = new HashMap<>();
@@ -213,7 +213,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
 
         for ( Long id : connectedViews ) {
             CatalogTable view = catalog.getTable( id );
-            if ( view.tableType == TableType.MATERIALIZEDVIEW ) {
+            if ( view.tableType == TableType.MATERIALIZED_VIEW ) {
                 MaterializedCriteria materializedCriteria = materializedInfo.get( view.id );
                 if ( materializedCriteria.getCriteriaType() == CriteriaType.UPDATE ) {
                     int numberUpdated = materializedCriteria.getTimesUpdated();
@@ -236,7 +236,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
      */
     private void registerFreshnessLoop() {
         BackgroundTaskManager.INSTANCE.registerTask(
-                MaterializedManagerImpl.this::updatingIntervalMaterialized,
+                MaterializedViewManagerImpl.this::updatingIntervalMaterialized,
                 "Update Materialized View with freshness type interval if it is time.",
                 TaskPriority.HIGH,
                 (TaskSchedulingType) RuntimeConfig.MATERIALIZED_VIEW_LOOP.getEnum() );

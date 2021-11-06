@@ -113,7 +113,7 @@ public class SqlAlterMaterializedAddIndex extends SqlAlterMaterializedView {
 
         CatalogTable catalogTable = getCatalogTable( context, table );
 
-        if ( catalogTable.tableType != TableType.MATERIALIZEDVIEW ) {
+        if ( catalogTable.tableType != TableType.MATERIALIZED_VIEW ) {
             throw new RuntimeException( "Not Possible to use ALTER MATERIALIZED VIEW because " + catalogTable.name + " is not a Materialized View." );
         }
 

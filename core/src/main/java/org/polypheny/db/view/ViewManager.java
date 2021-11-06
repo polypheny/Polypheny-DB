@@ -92,7 +92,7 @@ public class ViewManager {
     public static class ViewVisitor extends RelShuttleImpl {
 
         int depth = 0;
-        boolean doesSubstituteOrderBy;
+        final boolean doesSubstituteOrderBy;
 
 
         public ViewVisitor( boolean doesSubstituteOrderBy ) {
@@ -249,7 +249,7 @@ public class ViewManager {
                     if ( other.getTable().getTable() instanceof LogicalTable ) {
                         long tableId = ((LogicalTable) ((RelOptTableImpl) other.getTable()).getTable()).getTableId();
                         CatalogTable catalogtable = Catalog.getInstance().getTable( tableId );
-                        if ( catalogtable.tableType == TableType.MATERIALIZEDVIEW && ((CatalogMaterializedView) catalogtable).isOrdered() ) {
+                        if ( catalogtable.tableType == TableType.MATERIALIZED_VIEW && ((CatalogMaterializedView) catalogtable).isOrdered() ) {
                             return orderMaterialized( other );
                         }
                     }

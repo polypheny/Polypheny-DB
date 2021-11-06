@@ -51,7 +51,7 @@ import org.polypheny.db.processing.SqlProcessorImpl;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.statistic.StatisticsManager;
-import org.polypheny.db.view.MaterializedManager;
+import org.polypheny.db.view.AbstractMaterializedViewManager;
 
 
 @Slf4j
@@ -182,7 +182,7 @@ public class TransactionImpl implements Transaction, Comparable {
         transactionManager.removeTransaction( xid );
 
         // Handover information about commit to Materialized Manager
-        MaterializedManager.getInstance().updateCommittedXid( xid );
+        AbstractMaterializedViewManager.getInstance().updateCommittedXid( xid );
     }
 
 

@@ -60,7 +60,7 @@ public class SqlAlterMaterializedViewFreshnessManual extends SqlAlterMaterialize
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, name );
 
-        if ( catalogTable.tableType != TableType.MATERIALIZEDVIEW ) {
+        if ( catalogTable.tableType != TableType.MATERIALIZED_VIEW ) {
             throw new RuntimeException( "Not Possible to use ALTER MATERIALIZED VIEW because " + catalogTable.name + " is not a Materialized View." );
         }
 

@@ -1450,7 +1450,7 @@ public abstract class Catalog {
         TABLE( 1 ),
         SOURCE( 2 ),
         VIEW( 3 ),
-        MATERIALIZEDVIEW( 4 );
+        MATERIALIZED_VIEW( 4 );
         // STREAM, ...
 
         private final int id;

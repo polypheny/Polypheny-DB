@@ -117,7 +117,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
 
         CatalogTable catalogTable = getCatalogTable( context, table );
 
-        if ( catalogTable.tableType != TableType.TABLE && catalogTable.tableType != TableType.MATERIALIZEDVIEW ) {
+        if ( catalogTable.tableType != TableType.TABLE && catalogTable.tableType != TableType.MATERIALIZED_VIEW ) {
             throw new RuntimeException( "Not possible to use ALTER TABLE ADD INDEX because" + catalogTable.name + " is not a table or materialized view." );
         }
 

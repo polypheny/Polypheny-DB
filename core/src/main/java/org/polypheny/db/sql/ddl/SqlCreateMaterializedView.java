@@ -57,7 +57,7 @@ import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
-import org.polypheny.db.view.MaterializedManager;
+import org.polypheny.db.view.AbstractMaterializedViewManager;
 
 public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutableStatement {
 
@@ -67,7 +67,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
     @Getter
     private final SqlNode query;
     private final List<SqlIdentifier> store;
-    private String freshnessType;
+    private final String freshnessType;
     private final Integer freshnessTime;
     private final SqlIdentifier freshnessId;
 
@@ -111,7 +111,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
         long schemaId;
         String viewName;
 
-        MaterializedManager.getInstance().isCreatingMaterialized = true;
+        AbstractMaterializedViewManager.getInstance().isCreatingMaterialized = true;
 
         try {
             if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
@@ -199,7 +199,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
             throw new RuntimeException( e );
         }
 
-        MaterializedManager.getInstance().isCreatingMaterialized = false;
+        AbstractMaterializedViewManager.getInstance().isCreatingMaterialized = false;
     }
 
 
