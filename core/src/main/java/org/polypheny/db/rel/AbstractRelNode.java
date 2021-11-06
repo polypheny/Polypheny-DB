@@ -116,6 +116,7 @@ public abstract class AbstractRelNode implements RelNode {
     @Setter
     protected RelTraitSet traitSet;
 
+
     /**
      * Creates an <code>AbstractRelNode</code>.
      */

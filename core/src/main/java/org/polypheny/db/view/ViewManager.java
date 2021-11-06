@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogMaterialized;
+import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.BiRel;
@@ -54,6 +54,7 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.LogicalTable;
 
+
 public class ViewManager {
 
     private static LogicalSort orderMaterialized( RelNode other ) {
@@ -66,7 +67,6 @@ public class ViewManager {
 
 
     public static RelNode expandViewNode( RelNode other ) {
-
         RexBuilder rexBuilder = other.getCluster().getRexBuilder();
         final List<RexNode> exprs = new ArrayList<>();
         final RelDataType rowType = other.getRowType();
@@ -225,7 +225,6 @@ public class ViewManager {
 
         @Override
         public RelNode visit( RelNode other ) {
-
             handleNodeType( other );
             depth++;
             return other;
@@ -243,22 +242,17 @@ public class ViewManager {
 
 
         public RelNode checkNode( RelNode other ) {
-
             if ( other instanceof LogicalViewTableScan ) {
                 return expandViewNode( other );
             } else if ( doesSubstituteOrderBy && other instanceof LogicalTableScan ) {
-
                 if ( other.getTable() instanceof RelOptTableImpl ) {
-                    if ( ((RelOptTableImpl) other.getTable()).getTable() instanceof LogicalTable ) {
+                    if ( other.getTable().getTable() instanceof LogicalTable ) {
                         long tableId = ((LogicalTable) ((RelOptTableImpl) other.getTable()).getTable()).getTableId();
-
                         CatalogTable catalogtable = Catalog.getInstance().getTable( tableId );
-
-                        if ( catalogtable.tableType == TableType.MATERIALIZEDVIEW && ((CatalogMaterialized) catalogtable).isOrdered() ) {
+                        if ( catalogtable.tableType == TableType.MATERIALIZEDVIEW && ((CatalogMaterializedView) catalogtable).isOrdered() ) {
                             return orderMaterialized( other );
                         }
                     }
-
                 }
             }
             handleNodeType( other );

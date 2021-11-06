@@ -179,7 +179,6 @@ public abstract class AbstractJdbcStore extends DataStore {
 
             createColumnDefinition( catalogColumn, builder );
         }
-
         builder.append( " )" );
         return builder;
     }

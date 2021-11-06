@@ -75,7 +75,6 @@ public class MqlCreateView extends MqlNode implements MqlExecutableStatement {
         RelNode relNode = relRoot.rel;
         RelCollation relCollation = relRoot.collation;
 
-
         try {
             DdlManager.getInstance().createView(
                     name,

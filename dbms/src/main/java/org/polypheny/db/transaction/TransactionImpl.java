@@ -181,7 +181,7 @@ public class TransactionImpl implements Transaction, Comparable {
         // Remove transaction
         transactionManager.removeTransaction( xid );
 
-        //handover information about commit to Materialized Manager
+        // Handover information about commit to Materialized Manager
         MaterializedManager.getInstance().updateCommittedXid( xid );
     }
 

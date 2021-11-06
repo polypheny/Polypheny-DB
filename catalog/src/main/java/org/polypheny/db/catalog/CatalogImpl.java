@@ -55,7 +55,7 @@ import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.CatalogMaterialized;
+import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
@@ -446,8 +446,8 @@ public class CatalogImpl extends Catalog {
                     query = ((CatalogView) c).getQuery();
                     language = ((CatalogView) c).getLanguage();
                 } else {
-                    query = ((CatalogMaterialized) c).getQuery();
-                    language = ((CatalogMaterialized) c).getLanguage();
+                    query = ((CatalogMaterializedView) c).getQuery();
+                    language = ((CatalogMaterializedView) c).getLanguage();
                 }
 
                 switch ( language ) {
@@ -1547,7 +1547,7 @@ public class CatalogImpl extends Catalog {
                 .build();
 
         if ( tableType == TableType.MATERIALIZEDVIEW ) {
-            CatalogMaterialized materializedViewTable = new CatalogMaterialized(
+            CatalogMaterializedView materializedViewTable = new CatalogMaterializedView(
                     id,
                     name,
                     ImmutableList.of(),
@@ -1790,8 +1790,8 @@ public class CatalogImpl extends Catalog {
 
         CatalogTable table;
         if ( old.isPartitioned ) {
-            if ( old instanceof CatalogMaterialized ) {
-                table = new CatalogMaterialized(
+            if ( old instanceof CatalogMaterializedView ) {
+                table = new CatalogMaterializedView(
                         old.id,
                         old.name,
                         old.columnIds,
@@ -1800,7 +1800,7 @@ public class CatalogImpl extends Catalog {
                         old.ownerId,
                         old.ownerName,
                         old.tableType,
-                        ((CatalogMaterialized) old).getQuery(),
+                        ((CatalogMaterializedView) old).getQuery(),
                         keyId,
                         old.placementsByAdapter,
                         old.modifiable,
@@ -1808,12 +1808,12 @@ public class CatalogImpl extends Catalog {
                         old.partitionColumnId,
                         old.isPartitioned,
                         old.partitionProperty,
-                        ((CatalogMaterialized) old).getRelCollation(),
+                        ((CatalogMaterializedView) old).getRelCollation(),
                         old.connectedViews,
-                        ((CatalogMaterialized) old).getUnderlyingTables(),
-                        ((CatalogMaterialized) old).getLanguage(),
-                        ((CatalogMaterialized) old).getMaterializedCriteria(),
-                        ((CatalogMaterialized) old).isOrdered() );
+                        ((CatalogMaterializedView) old).getUnderlyingTables(),
+                        ((CatalogMaterializedView) old).getLanguage(),
+                        ((CatalogMaterializedView) old).getMaterializedCriteria(),
+                        ((CatalogMaterializedView) old).isOrdered() );
             } else {
                 table = new CatalogTable( old.id,
                         old.name,
@@ -1833,8 +1833,8 @@ public class CatalogImpl extends Catalog {
             }
 
         } else {
-            if ( old instanceof CatalogMaterialized ) {
-                table = new CatalogMaterialized(
+            if ( old instanceof CatalogMaterializedView ) {
+                table = new CatalogMaterializedView(
                         old.id,
                         old.name,
                         old.columnIds,
@@ -1843,15 +1843,15 @@ public class CatalogImpl extends Catalog {
                         old.ownerId,
                         old.ownerName,
                         old.tableType,
-                        ((CatalogMaterialized) old).getQuery(),
+                        ((CatalogMaterializedView) old).getQuery(),
                         keyId,
                         old.placementsByAdapter,
                         old.modifiable,
-                        ((CatalogMaterialized) old).getRelCollation(),
-                        ((CatalogMaterialized) old).getUnderlyingTables(),
-                        ((CatalogMaterialized) old).getLanguage(),
-                        ((CatalogMaterialized) old).getMaterializedCriteria(),
-                        ((CatalogMaterialized) old).isOrdered(),
+                        ((CatalogMaterializedView) old).getRelCollation(),
+                        ((CatalogMaterializedView) old).getUnderlyingTables(),
+                        ((CatalogMaterializedView) old).getLanguage(),
+                        ((CatalogMaterializedView) old).getMaterializedCriteria(),
+                        ((CatalogMaterializedView) old).isOrdered(),
                         old.partitionProperty );
             } else {
                 table = new CatalogTable(
@@ -1933,7 +1933,7 @@ public class CatalogImpl extends Catalog {
                     log.debug( " Table '{}' is partitioned.", old.name );
                 }
                 if ( old.tableType == TableType.MATERIALIZEDVIEW ) {
-                    table = new CatalogMaterialized(
+                    table = new CatalogMaterializedView(
                             old.id,
                             old.name,
                             old.columnIds,
@@ -1942,7 +1942,7 @@ public class CatalogImpl extends Catalog {
                             old.ownerId,
                             old.ownerName,
                             old.tableType,
-                            ((CatalogMaterialized) old).getQuery(),
+                            ((CatalogMaterializedView) old).getQuery(),
                             old.primaryKey,
                             ImmutableMap.copyOf( placementsByStore ),
                             old.modifiable,
@@ -1950,12 +1950,12 @@ public class CatalogImpl extends Catalog {
                             old.partitionColumnId,
                             old.isPartitioned,
                             old.partitionProperty,
-                            ((CatalogMaterialized) old).getRelCollation(),
+                            ((CatalogMaterializedView) old).getRelCollation(),
                             old.connectedViews,
-                            ((CatalogMaterialized) old).getUnderlyingTables(),
-                            ((CatalogMaterialized) old).getLanguage(),
-                            ((CatalogMaterialized) old).getMaterializedCriteria(),
-                            ((CatalogMaterialized) old).isOrdered()
+                            ((CatalogMaterializedView) old).getUnderlyingTables(),
+                            ((CatalogMaterializedView) old).getLanguage(),
+                            ((CatalogMaterializedView) old).getMaterializedCriteria(),
+                            ((CatalogMaterializedView) old).isOrdered()
                     );
                 } else {
                     table = new CatalogTable(
@@ -1977,7 +1977,7 @@ public class CatalogImpl extends Catalog {
                 }
             } else {
                 if ( old.tableType == TableType.MATERIALIZEDVIEW ) {
-                    table = new CatalogMaterialized(
+                    table = new CatalogMaterializedView(
                             old.id,
                             old.name,
                             old.columnIds,
@@ -1986,7 +1986,7 @@ public class CatalogImpl extends Catalog {
                             old.ownerId,
                             old.ownerName,
                             old.tableType,
-                            ((CatalogMaterialized) old).getQuery(),
+                            ((CatalogMaterializedView) old).getQuery(),
                             old.primaryKey,
                             ImmutableMap.copyOf( placementsByStore ),
                             old.modifiable,
@@ -1994,12 +1994,12 @@ public class CatalogImpl extends Catalog {
                             old.partitionColumnId,
                             old.isPartitioned,
                             old.partitionProperty,
-                            ((CatalogMaterialized) old).getRelCollation(),
+                            ((CatalogMaterializedView) old).getRelCollation(),
                             old.connectedViews,
-                            ((CatalogMaterialized) old).getUnderlyingTables(),
-                            ((CatalogMaterialized) old).getLanguage(),
-                            ((CatalogMaterialized) old).getMaterializedCriteria(),
-                            ((CatalogMaterialized) old).isOrdered()
+                            ((CatalogMaterializedView) old).getUnderlyingTables(),
+                            ((CatalogMaterializedView) old).getLanguage(),
+                            ((CatalogMaterializedView) old).getMaterializedCriteria(),
+                            ((CatalogMaterializedView) old).isOrdered()
                     );
                 } else {
                     table = new CatalogTable(
@@ -2088,12 +2088,12 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void updateMaterialized( long materializedId ) {
-        CatalogMaterialized old = (CatalogMaterialized) getTable( materializedId );
+        CatalogMaterializedView old = (CatalogMaterializedView) getTable( materializedId );
 
         MaterializedCriteria materializedCriteria = old.getMaterializedCriteria();
         materializedCriteria.setLastUpdate( new Timestamp( System.currentTimeMillis() ) );
 
-        CatalogMaterialized catalogMaterialized = new CatalogMaterialized(
+        CatalogMaterializedView catalogMaterializedView = new CatalogMaterializedView(
                 old.id,
                 old.name,
                 old.columnIds,
@@ -2118,10 +2118,10 @@ public class CatalogImpl extends Catalog {
                 old.isOrdered() );
 
         synchronized ( this ) {
-            tables.replace( materializedId, catalogMaterialized );
-            tableNames.replace( new Object[]{ catalogMaterialized.databaseId, catalogMaterialized.schemaId, catalogMaterialized.name }, catalogMaterialized );
+            tables.replace( materializedId, catalogMaterializedView );
+            tableNames.replace( new Object[]{ catalogMaterializedView.databaseId, catalogMaterializedView.schemaId, catalogMaterializedView.name }, catalogMaterializedView );
         }
-        listeners.firePropertyChange( "table", old, catalogMaterialized );
+        listeners.firePropertyChange( "table", old, catalogMaterializedView );
 
     }
 

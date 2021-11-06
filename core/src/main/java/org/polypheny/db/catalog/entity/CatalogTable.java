@@ -288,6 +288,7 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
         return -1;
     }
 
+
     public CatalogTable getRenamed( String newName ) {
         return new CatalogTable(
                 id,

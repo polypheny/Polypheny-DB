@@ -22,8 +22,7 @@ import java.util.Map;
 import lombok.Getter;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogMaterialized;
-import org.polypheny.db.prepare.RelOptTableImpl;
+import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.RelShuttleImpl;
@@ -33,6 +32,7 @@ import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
+
 
 public abstract class MaterializedManager {
 
@@ -61,7 +61,12 @@ public abstract class MaterializedManager {
 
     public abstract void deleteMaterializedViewFromInfo( Long tableId );
 
-    public abstract void addData( Transaction transaction, List<DataStore> stores, Map<Integer, List<CatalogColumn>> addedColumns, RelRoot relRoot, CatalogMaterialized materializedView );
+    public abstract void addData(
+            Transaction transaction,
+            List<DataStore> stores,
+            Map<Integer, List<CatalogColumn>> addedColumns,
+            RelRoot relRoot,
+            CatalogMaterializedView materializedView );
 
     public abstract void addTables( Transaction transaction, List<String> names );
 
@@ -83,14 +88,13 @@ public abstract class MaterializedManager {
 
         @Override
         public RelNode visit( RelNode other ) {
-
             if ( other instanceof LogicalTableModify ) {
                 if ( ((TableModify) other).getOperation() != Operation.MERGE ) {
-                    if ( (((RelOptTableImpl) other.getTable()).getTable() instanceof LogicalTable) ) {
+                    if ( (other.getTable().getTable() instanceof LogicalTable) ) {
                         List<String> qualifiedName = other.getTable().getQualifiedName();
                         if ( qualifiedName.size() < 2 ) {
-                            names.add( ((LogicalTable) ((RelOptTableImpl) other.getTable()).getTable()).getLogicalSchemaName() );
-                            names.add( ((LogicalTable) ((RelOptTableImpl) other.getTable()).getTable()).getLogicalTableName() );
+                            names.add( ((LogicalTable) other.getTable().getTable()).getLogicalSchemaName() );
+                            names.add( ((LogicalTable) other.getTable().getTable()).getLogicalTableName() );
                         } else {
                             names.addAll( qualifiedName );
                         }
@@ -101,6 +105,5 @@ public abstract class MaterializedManager {
         }
 
     }
-
 
 }
