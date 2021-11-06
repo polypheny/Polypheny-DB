@@ -115,6 +115,7 @@ import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.FileSystemManager;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.view.MaterializedViewManager;
 
 
 @Slf4j
@@ -487,6 +488,12 @@ public class CatalogImpl extends Catalog {
                         nodeInfo.put( c.id, mqlRel.rel );
                         relTypeInfo.put( c.id, mqlRel.validatedRowType );
                         break;
+                }
+                if ( c.tableType == TableType.MATERIALIZED_VIEW ) {
+                    MaterializedViewManager materializedManager = MaterializedViewManager.getInstance();
+                    materializedManager.addMaterializedInfo( c.id, ((CatalogMaterializedView) c).getMaterializedCriteria() );
+                    materializedManager.updateData( statement.getTransaction(), c.id );
+                    materializedManager.updateMaterializedTime( c.id );
                 }
             }
         }

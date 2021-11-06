@@ -159,6 +159,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      * @param materializedId id from materialized view
      * @param matViewCriteria information about the materialized view
      */
+    @Override
     public synchronized void addMaterializedInfo( Long materializedId, MaterializedCriteria matViewCriteria ) {
         materializedInfo.put( materializedId, matViewCriteria );
     }

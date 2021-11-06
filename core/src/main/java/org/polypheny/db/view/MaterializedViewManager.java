@@ -23,6 +23,7 @@ import lombok.Getter;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
+import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.RelShuttleImpl;
@@ -75,6 +76,8 @@ public abstract class MaterializedViewManager {
     public abstract void updateCommittedXid( PolyXid xid );
 
     public abstract void updateMaterializedTime( Long materializedId );
+
+    public abstract void addMaterializedInfo( Long materializedId, MaterializedCriteria matViewCriteria );
 
 
     /**
