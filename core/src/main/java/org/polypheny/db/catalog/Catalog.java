@@ -1429,11 +1429,11 @@ public abstract class Catalog {
     public abstract void deleteViewDependencies( CatalogView catalogView );
 
     /**
-     * Updates the last time a materialized view was updated.
+     * Updates the last time a materialized view has been refreshed.
      *
      * @param materializedViewId id of the materialized view
      */
-    public abstract void updateMaterializedViewUpdateTime( long materializedViewId );
+    public abstract void updateMaterializedViewRefreshTime( long materializedViewId );
 
 
     /*

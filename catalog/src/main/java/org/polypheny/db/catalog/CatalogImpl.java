@@ -2083,12 +2083,12 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Updates the last time a materialized view was updated.
+     * Updates the last time a materialized view has been refreshed.
      *
      * @param materializedViewId id of the materialized view
      */
     @Override
-    public void updateMaterializedViewUpdateTime( long materializedViewId ) {
+    public void updateMaterializedViewRefreshTime( long materializedViewId ) {
         CatalogMaterializedView old = (CatalogMaterializedView) getTable( materializedViewId );
 
         MaterializedCriteria materializedCriteria = old.getMaterializedCriteria();
