@@ -91,5 +91,4 @@ public class MaterializedCriteria implements Serializable {
         UPDATE, INTERVAL, MANUAL
     }
 
-
 }

@@ -1249,5 +1249,4 @@ public class JdbcRules {
 
     }
 
-
 }

@@ -70,7 +70,6 @@ public class DataMigratorImpl implements DataMigrator {
 
     @Override
     public void copyData( Transaction transaction, CatalogAdapter store, List<CatalogColumn> columns, List<Long> partitionIds ) {
-
         CatalogTable table = Catalog.getInstance().getTable( columns.get( 0 ).tableId );
         CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( table.primaryKey );
 
@@ -125,9 +124,17 @@ public class DataMigratorImpl implements DataMigrator {
         try {
             PolyphenyDbSignature signature;
             if ( isMaterializedView ) {
-                signature = sourceStatement.getQueryProcessor().prepareQuery( sourceRel, sourceRel.rel.getCluster().getTypeFactory().builder().build(), false, false, doesSubstituteOrderBy );
+                signature = sourceStatement.getQueryProcessor().prepareQuery(
+                        sourceRel,
+                        sourceRel.rel.getCluster().getTypeFactory().builder().build(),
+                        false,
+                        false,
+                        doesSubstituteOrderBy );
             } else {
-                signature = sourceStatement.getQueryProcessor().prepareQuery( sourceRel, sourceRel.rel.getCluster().getTypeFactory().builder().build(), true );
+                signature = sourceStatement.getQueryProcessor().prepareQuery(
+                        sourceRel,
+                        sourceRel.rel.getCluster().getTypeFactory().builder().build(),
+                        true );
             }
             final Enumerable enumerable = signature.enumerable( sourceStatement.getDataContext() );
             //noinspection unchecked

@@ -28,6 +28,7 @@ import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
+
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 public class BasicMaterializedTest {
@@ -428,7 +429,7 @@ public class BasicMaterializedTest {
                             )
                     );
                 } catch ( InterruptedException e ) {
-                    e.printStackTrace();
+                    log.warn( "Interrupted", e );
                 } finally {
                     statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
@@ -457,7 +458,6 @@ public class BasicMaterializedTest {
                                     new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
                             )
                     );
-
                 } finally {
                     statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
@@ -476,8 +476,8 @@ public class BasicMaterializedTest {
                 statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 100 \"milliseconds\" " );
                 waiter.await( 2, TimeUnit.SECONDS );
-                try {
 
+                try {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                     connection.commit();
 
@@ -500,14 +500,13 @@ public class BasicMaterializedTest {
                                     new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
                             )
                     );
-
                 } finally {
                     statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
                     dropTables( statement );
                 }
             } catch ( InterruptedException e ) {
-                e.printStackTrace();
+                log.warn( "Interrupted", e );
             }
         }
     }
@@ -526,8 +525,8 @@ public class BasicMaterializedTest {
 
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable ON STORE \"store3\" FRESHNESS INTERVAL 100 \"milliseconds\" " );
                 waiter.await( 2, TimeUnit.SECONDS );
-                try {
 
+                try {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                     connection.commit();
 
@@ -550,7 +549,6 @@ public class BasicMaterializedTest {
                                     new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
                             )
                     );
-
                 } finally {
                     statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
@@ -558,7 +556,7 @@ public class BasicMaterializedTest {
                     dropTables( statement );
                 }
             } catch ( InterruptedException e ) {
-                e.printStackTrace();
+                log.warn( "Interrupted", e );
             }
         }
     }
@@ -580,8 +578,8 @@ public class BasicMaterializedTest {
 
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable ON STORE \"store2\", \"store3\" FRESHNESS MANUAL" );
                 waiter.await( 2, TimeUnit.SECONDS );
-                try {
 
+                try {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                     connection.commit();
                     statement.executeUpdate( "ALTER MATERIALIZED VIEW viewTestEmp FRESHNESS MANUAL" );
@@ -616,7 +614,7 @@ public class BasicMaterializedTest {
                     dropTables( statement );
                 }
             } catch ( InterruptedException e ) {
-                e.printStackTrace();
+                log.warn( "Interrupted", e );
             }
         }
     }
@@ -629,8 +627,8 @@ public class BasicMaterializedTest {
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS UPDATE 2 " );
-                try {
 
+                try {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                     connection.commit();
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
@@ -658,9 +656,8 @@ public class BasicMaterializedTest {
                                     new Object[]{ 1, "Max", "Muster", 1, 0 }
                             )
                     );
-
                 } catch ( InterruptedException e ) {
-                    e.printStackTrace();
+                    log.warn( "Interrupted", e );
                 } finally {
                     statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
@@ -678,15 +675,14 @@ public class BasicMaterializedTest {
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS MANUAL " );
-                try {
 
+                try {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                     connection.commit();
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
                     connection.commit();
 
                     waiter.await( 1, TimeUnit.SECONDS );
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of()
@@ -703,10 +699,8 @@ public class BasicMaterializedTest {
                                     new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
                             )
                     );
-
-
                 } catch ( InterruptedException e ) {
-                    e.printStackTrace();
+                    log.warn( "Interrupted", e );
                 } finally {
                     statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
@@ -724,15 +718,14 @@ public class BasicMaterializedTest {
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 10 \"min\"" );
-                try {
 
+                try {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                     connection.commit();
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
                     connection.commit();
 
                     waiter.await( 1, TimeUnit.SECONDS );
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of()
@@ -749,10 +742,8 @@ public class BasicMaterializedTest {
                                     new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
                             )
                     );
-
-
                 } catch ( InterruptedException e ) {
-                    e.printStackTrace();
+                    log.warn( "Interrupted", e );
                 } finally {
                     statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
@@ -770,15 +761,14 @@ public class BasicMaterializedTest {
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS UPDATE 5" );
-                try {
 
+                try {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                     connection.commit();
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
                     connection.commit();
 
                     waiter.await( 1, TimeUnit.SECONDS );
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of()
@@ -795,10 +785,8 @@ public class BasicMaterializedTest {
                                     new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
                             )
                     );
-
-
                 } catch ( InterruptedException e ) {
-                    e.printStackTrace();
+                    log.warn( "Interrupted", e );
                 } finally {
                     statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
@@ -816,13 +804,12 @@ public class BasicMaterializedTest {
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS MANUAL " );
-                try {
 
+                try {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                     connection.commit();
 
                     waiter.await( 1, TimeUnit.SECONDS );
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of()
@@ -863,9 +850,8 @@ public class BasicMaterializedTest {
                                     new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
                             )
                     );
-
                 } catch ( InterruptedException e ) {
-                    e.printStackTrace();
+                    log.warn( "Interrupted", e );
                 } finally {
                     statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
@@ -887,8 +873,8 @@ public class BasicMaterializedTest {
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 100 \"milliseconds\" " );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp1 AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 200 \"milliseconds\" " );
                 waiter.await( 2, TimeUnit.SECONDS );
-                try {
 
+                try {
                     statement.executeUpdate( "INSERT INTO viewTestDepTable VALUES ( 1, 'IT', 1)" );
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                     connection.commit();
@@ -942,7 +928,6 @@ public class BasicMaterializedTest {
                                     new Object[]{ 2, "Sales", 2, 1 },
                                     new Object[]{ 3, "HR", 3, 2 }
                             ) );
-
                 } finally {
                     statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
                     statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp1" );
@@ -952,7 +937,7 @@ public class BasicMaterializedTest {
                     dropTables( statement );
                 }
             } catch ( InterruptedException e ) {
-                e.printStackTrace();
+                log.warn( "Interrupted", e );
             }
         }
     }
@@ -967,15 +952,14 @@ public class BasicMaterializedTest {
                 statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestDep AS SELECT * FROM viewTestDepTable FRESHNESS UPDATE 2 " );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS UPDATE 2 " );
-                try {
 
+                try {
                     statement.executeUpdate( "INSERT INTO viewTestDepTable VALUES ( 1, 'IT', 1)" );
                     connection.commit();
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                     connection.commit();
 
                     waiter.await( 2, TimeUnit.SECONDS );
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of()
@@ -1040,7 +1024,7 @@ public class BasicMaterializedTest {
                     dropTables( statement );
                 }
             } catch ( InterruptedException e ) {
-                e.printStackTrace();
+                log.warn( "Interrupted", e );
             }
         }
     }
@@ -1057,8 +1041,8 @@ public class BasicMaterializedTest {
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 100 \"milliseconds\" " );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp1 AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 400 \"milliseconds\" " );
                 waiter.await( 2, TimeUnit.SECONDS );
-                try {
 
+                try {
                     statement.executeUpdate( "INSERT INTO viewTestDepTable VALUES ( 1, 'IT', 1)" );
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                     connection.commit();
@@ -1165,7 +1149,7 @@ public class BasicMaterializedTest {
                     dropTables( statement );
                 }
             } catch ( InterruptedException e ) {
-                e.printStackTrace();
+                log.warn( "Interrupted", e );
             }
         }
     }
@@ -1180,8 +1164,8 @@ public class BasicMaterializedTest {
                 statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 100 \"milliseconds\" " );
                 waiter.await( 2, TimeUnit.SECONDS );
-                try {
 
+                try {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
@@ -1196,14 +1180,13 @@ public class BasicMaterializedTest {
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of()
                     );
-
                 } finally {
                     statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
                     dropTables( statement );
                 }
             } catch ( InterruptedException e ) {
-                e.printStackTrace();
+                log.warn( "Interrupted", e );
             }
         }
     }
@@ -1262,6 +1245,5 @@ public class BasicMaterializedTest {
             }
         }
     }
-
 
 }

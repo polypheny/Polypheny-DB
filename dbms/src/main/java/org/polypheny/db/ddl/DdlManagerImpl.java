@@ -558,7 +558,7 @@ public class DdlManagerImpl extends DdlManager {
 
         // Make sure that this is a table of type TABLE (and not SOURCE)
         if ( catalogTable.tableType != TableType.TABLE && catalogTable.tableType != TableType.MATERIALIZEDVIEW ) {
-            throw new RuntimeException( "It is only possible to add an Index if it is a table or a materialized view." );
+            throw new RuntimeException( "It is only possible to add an index to a " + catalogTable.tableType.name() );
         }
 
         // Check if there is already an index with this name for this table
@@ -1056,7 +1056,7 @@ public class DdlManagerImpl extends DdlManager {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( catalogTable.tableType );
 
-        // check if model permits operation
+        // Check if model permits operation
         checkModelLogic( catalogTable, columnName );
 
         catalog.setNullable( catalogColumn.id, nullable );
@@ -1068,7 +1068,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void setColumnPosition( CatalogTable catalogTable, String columnName, String beforeColumnName, String afterColumnName, Statement statement ) throws ColumnNotExistsException {
-        // check if model permits operation
+        // Check if model permits operation
         checkModelLogic( catalogTable, columnName );
 
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
@@ -1121,7 +1121,7 @@ public class DdlManagerImpl extends DdlManager {
     public void setColumnCollation( CatalogTable catalogTable, String columnName, Collation collation, Statement statement ) throws ColumnNotExistsException, DdlOnSourceException {
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
 
-        // check if model permits operation
+        // Check if model permits operation
         checkModelLogic( catalogTable, columnName );
 
         // Make sure that this is a table of type TABLE (and not SOURCE)
@@ -1138,7 +1138,7 @@ public class DdlManagerImpl extends DdlManager {
     public void setDefaultValue( CatalogTable catalogTable, String columnName, String defaultValue, Statement statement ) throws ColumnNotExistsException {
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
 
-        // check if model permits operation
+        // Check if model permits operation
         checkModelLogic( catalogTable, columnName );
 
         addDefaultValue( defaultValue, catalogColumn.id );
@@ -1482,7 +1482,7 @@ public class DdlManagerImpl extends DdlManager {
         if ( catalog.checkIfExistsTable( catalogTable.schemaId, newTableName ) ) {
             throw new TableAlreadyExistsException();
         }
-        //check if views are dependent from this view
+        // Check if views are dependent from this view
         checkViewDependencies( catalogTable );
 
         catalog.renameTable( catalogTable.id, newTableName );
@@ -1499,7 +1499,7 @@ public class DdlManagerImpl extends DdlManager {
         if ( catalog.checkIfExistsColumn( catalogColumn.tableId, newColumnName ) ) {
             throw new ColumnAlreadyExistsException( newColumnName, catalogColumn.getTableName() );
         }
-        //check if views are dependent from this view
+        // Check if views are dependent from this view
         checkViewDependencies( catalogTable );
 
         catalog.renameColumn( catalogColumn.id, newColumnName );
@@ -1605,7 +1605,7 @@ public class DdlManagerImpl extends DdlManager {
                 ordered
         );
 
-        //creates a list with all columns, tableId is needed to creat the primary key
+        // Creates a list with all columns, tableId is needed to creat the primary key
         List<ColumnInformation> columns = getColumnInformation( projectedColumns, fieldList, true, tableId );
         Map<Integer, List<CatalogColumn>> addedColumns = new HashMap<>();
 
@@ -1625,7 +1625,7 @@ public class DdlManagerImpl extends DdlManager {
                     column.typeInformation.nullable,
                     column.collation );
 
-            //created primary key is added to list
+            // Created primary key is added to list
             if ( column.name.startsWith( "_matid_" ) ) {
                 columnIds.add( columnId );
             }
@@ -1652,7 +1652,7 @@ public class DdlManagerImpl extends DdlManager {
             }
 
         }
-        //sets previously created primary key
+        // Sets previously created primary key
         catalog.addPrimaryKey( tableId, columnIds );
 
         CatalogMaterialized catalogMaterialized = (CatalogMaterialized) catalog.getTable( tableId );
@@ -1670,7 +1670,7 @@ public class DdlManagerImpl extends DdlManager {
             store.createTable( statement.getPrepareContext(), catalogMaterialized, catalogMaterialized.partitionProperty.partitionIds );
         }
 
-        //selected data from tables is added into the newly crated materialized view
+        // Selected data from tables is added into the newly crated materialized view
         MaterializedManager materializedManager = MaterializedManager.getInstance();
         materializedManager.addData( statement.getTransaction(), stores, addedColumns, relRoot, catalogMaterialized );
     }
@@ -1859,20 +1859,20 @@ public class DdlManagerImpl extends DdlManager {
                 names.remove( "_id" );
             }
 
-            // add _id column if necessary
+            // Add _id column if necessary
             if ( !names.contains( "_id" ) ) {
                 ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.VARCHAR, PolyType.VARCHAR, 24, null, null, null, false );
                 columns.add( new ColumnInformation( "_id", typeInformation, Collation.CASE_INSENSITIVE, null, 0 ) );
 
             }
 
-            // remove any primaries
+            // Remove any primaries
             List<ConstraintInformation> primaries = constraints.stream().filter( c -> c.type == ConstraintType.PRIMARY ).collect( Collectors.toList() );
             if ( primaries.size() > 0 ) {
                 primaries.forEach( constraints::remove );
             }
 
-            // add constraint for _id as primary if necessary
+            // Add constraint for _id as primary if necessary
             if ( constraints.stream().noneMatch( c -> c.type == ConstraintType.PRIMARY ) ) {
                 constraints.add( new ConstraintInformation( "primary", ConstraintType.PRIMARY, Collections.singletonList( "_id" ) ) );
             }
@@ -1882,7 +1882,7 @@ public class DdlManagerImpl extends DdlManager {
                 names.remove( "_data" );
             }
 
-            // add _data column if necessary
+            // Add _data column if necessary
             if ( !names.contains( "_data" ) ) {
                 ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.JSON, PolyType.JSON, 1024, null, null, null, false );
                 columns.add( new ColumnInformation( "_data", typeInformation, Collation.CASE_INSENSITIVE, null, 1 ) );
@@ -2136,7 +2136,7 @@ public class DdlManagerImpl extends DdlManager {
                     unPartitionedTable.partitionProperty.partitionIds,
                     partitionedTable.partitionProperty.partitionIds );
         }
-        //Remove old tables
+        // Remove old tables
         stores.forEach( store -> store.dropTable( statement.getPrepareContext(), unPartitionedTable, unPartitionedTable.partitionProperty.partitionIds ) );
         catalog.deletePartitionGroup( unPartitionedTable.id, unPartitionedTable.schemaId, unPartitionedTable.partitionProperty.partitionGroupIds.get( 0 ) );
     }
@@ -2274,7 +2274,6 @@ public class DdlManagerImpl extends DdlManager {
             if ( constraintName == null ) {
                 constraintName = NameGenerator.generateConstraintName();
             }
-
             catalog.addUniqueConstraint( tableId, constraintName, columnIds );
         }
     }
@@ -2338,10 +2337,9 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropMaterializedView( CatalogTable materializedView, Statement statement ) throws DdlOnSourceException {
-
         // Make sure that this is a table of type Materialized View
         if ( materializedView.tableType == TableType.MATERIALIZEDVIEW ) {
-            //empty on purpose
+            // Empty on purpose
         } else {
             throw new NotMaterializedViewException();
         }

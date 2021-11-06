@@ -16,6 +16,7 @@
 
 package org.polypheny.db.ddl.exception;
 
+
 public class NotMaterializedViewException extends RuntimeException {
 
     public NotMaterializedViewException() {
@@ -23,5 +24,3 @@ public class NotMaterializedViewException extends RuntimeException {
     }
 
 }
-
-
