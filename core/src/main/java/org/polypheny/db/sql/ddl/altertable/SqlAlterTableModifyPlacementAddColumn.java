@@ -90,7 +90,7 @@ public class SqlAlterTableModifyPlacementAddColumn extends SqlAlterTable {
         DataStore storeInstance = getDataStoreInstance( storeName );
 
         if ( catalogTable.tableType != TableType.TABLE ) {
-            throw new RuntimeException( "Not Possible to use ALTER TABLE because" + catalogTable.name + " is not a table." );
+            throw new RuntimeException( "Not possible to use ALTER TABLE because" + catalogTable.name + " is not a table." );
         }
 
         try {

@@ -111,7 +111,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
         CatalogTable catalogTable = getCatalogTable( context, table );
 
         if ( catalogTable.tableType != TableType.TABLE ) {
-            throw new RuntimeException( "Not Possible to use ALTER TABLE because" + catalogTable.name + " is not a table." );
+            throw new RuntimeException( "Not possible to use ALTER TABLE because" + catalogTable.name + " is not a table." );
         }
 
         // You can't partition placements if the table is not partitioned
