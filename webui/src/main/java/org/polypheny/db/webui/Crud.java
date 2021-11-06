@@ -185,7 +185,7 @@ import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonColumn;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonTable;
-import org.polypheny.db.webui.crud.DocumentCrud;
+import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.AdapterModel;
 import org.polypheny.db.webui.models.DbColumn;
 import org.polypheny.db.webui.models.DbTable;
@@ -238,7 +238,7 @@ public class Crud implements InformationObserver {
     private final String databaseName;
     private final String userName;
     private final StatisticsManager<?> statisticsManager = StatisticsManager.getInstance();
-    public final DocumentCrud documentCrud;
+    public final LanguageCrud documentCrud;
     private boolean isActiveTracking = false;
     private final Catalog catalog = Catalog.getInstance();
 
@@ -252,7 +252,7 @@ public class Crud implements InformationObserver {
         this.transactionManager = transactionManager;
         this.databaseName = databaseName;
         this.userName = userName;
-        this.documentCrud = new DocumentCrud( this );
+        this.documentCrud = new LanguageCrud( this );
         registerStatisticObserver();
     }
 
@@ -747,7 +747,7 @@ public class Crud implements InformationObserver {
      * Run any query coming from the SQL console
      */
     ArrayList<Result> anyQuery( final QueryRequest request, final Session session ) {
-        Transaction transaction = getTransaction( request.analyze );
+        Transaction transaction = getTransaction( request.analyze, request.cache );
 
         if ( request.analyze ) {
             transaction.getQueryAnalyzer().setSession( session );
@@ -787,14 +787,14 @@ public class Crud implements InformationObserver {
         for ( String query : queries ) {
             Result result;
             if ( !transaction.isActive() ) {
-                transaction = getTransaction( request.analyze );
+                transaction = getTransaction( request.analyze, request.cache );
             }
             if ( Pattern.matches( "(?si:[\\s]*COMMIT.*)", query ) ) {
                 try {
                     temp = System.nanoTime();
                     transaction.commit();
                     executionTime += System.nanoTime() - temp;
-                    transaction = getTransaction( request.analyze );
+                    transaction = getTransaction( request.analyze, request.cache );
                     results.add( new Result().setGeneratedQuery( query ) );
                 } catch ( TransactionException e ) {
                     log.error( "Caught exception while committing a query from the console", e );
@@ -806,7 +806,7 @@ public class Crud implements InformationObserver {
                     temp = System.nanoTime();
                     transaction.rollback();
                     executionTime += System.nanoTime() - temp;
-                    transaction = getTransaction( request.analyze );
+                    transaction = getTransaction( request.analyze, request.cache );
                     results.add( new Result().setGeneratedQuery( query ) );
                 } catch ( TransactionException e ) {
                     log.error( "Caught exception while rolling back a query from the console", e );
@@ -841,7 +841,7 @@ public class Crud implements InformationObserver {
                     results.add( result );
                     if ( autoCommit ) {
                         transaction.commit();
-                        transaction = getTransaction( request.analyze );
+                        transaction = getTransaction( request.analyze, request.cache );
                     }
                 } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
                     log.error( "Caught exception while executing a query from the console", e );
@@ -865,7 +865,7 @@ public class Crud implements InformationObserver {
                     results.add( result );
                     if ( autoCommit ) {
                         transaction.commit();
-                        transaction = getTransaction( request.analyze );
+                        transaction = getTransaction( request.analyze, request.cache );
                     }
                 } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
                     log.error( "Caught exception while executing a query from the console", e );
@@ -1079,7 +1079,7 @@ public class Crud implements InformationObserver {
     public Result createInitialExploreQuery( Request req, Response res ) {
         QueryExplorationRequest queryExplorationRequest = this.gson.fromJson( req.body(), QueryExplorationRequest.class );
         ExploreManager exploreManager = ExploreManager.getInstance();
-        Transaction transaction = getTransaction( queryExplorationRequest.analyze );
+        Transaction transaction = getTransaction( queryExplorationRequest.analyze, true );
         Statement statement = transaction.createStatement();
 
         Result result;
@@ -2789,9 +2789,9 @@ public class Crud implements InformationObserver {
      * Execute a logical plan coming from the Web-Ui plan builder
      */
     Result executeRelAlg( final RelAlgRequest request, Session session ) {
-        Transaction transaction = getTransaction( true );
+        Transaction transaction = getTransaction( true, request.useCache );
         transaction.getQueryAnalyzer().setSession( session );
-        transaction.setUseCache( request.useCache );
+
         Statement statement = transaction.createStatement();
         long executionTime = 0;
         long temp = 0;
@@ -3230,7 +3230,7 @@ public class Crud implements InformationObserver {
      */
     Result exportTable( final Request req, final Response res ) {
         HubRequest request = gson.fromJson( req.body(), HubRequest.class );
-        Transaction transaction = getTransaction( false );
+        Transaction transaction = getTransaction( false, true );
         Statement statement = transaction.createStatement();
         HubMeta metaData = new HubMeta( request.schema );
 
@@ -3949,13 +3949,15 @@ public class Crud implements InformationObserver {
 
 
     public Transaction getTransaction() {
-        return getTransaction( false );
+        return getTransaction( false, true );
     }
 
 
-    public Transaction getTransaction( boolean analyze ) {
+    public Transaction getTransaction( boolean analyze, boolean useCache ) {
         try {
-            return transactionManager.startTransaction( userName, databaseName, analyze, "Polypheny-UI", MultimediaFlavor.FILE );
+            Transaction transaction = transactionManager.startTransaction( userName, databaseName, analyze, "Polypheny-UI", MultimediaFlavor.FILE );
+            transaction.setUseCache( useCache );
+            return transaction;
         } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
