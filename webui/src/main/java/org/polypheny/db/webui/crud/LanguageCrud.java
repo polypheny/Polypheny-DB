@@ -100,8 +100,6 @@ public class LanguageCrud {
                 transaction.getQueryAnalyzer().setSession( session );
             }
 
-            boolean autoCommit = true;
-
             // This is not a nice solution. In case of a sql script with auto commit only the first statement is analyzed
             // and in case of auto commit of, the information is overwritten
             InformationManager queryAnalyzer = null;
