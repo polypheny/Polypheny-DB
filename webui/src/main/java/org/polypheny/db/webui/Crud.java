@@ -119,7 +119,7 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.CatalogMaterialized;
+import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -1489,9 +1489,9 @@ public class Crud implements InformationObserver {
             CatalogTable catalogTable = catalog.getTable( databaseName, request.schema, request.table );
 
             if ( catalogTable.tableType == TableType.MATERIALIZEDVIEW ) {
-                CatalogMaterialized catalogMaterialized = (CatalogMaterialized) catalogTable;
+                CatalogMaterializedView catalogMaterializedView = (CatalogMaterializedView) catalogTable;
 
-                MaterializedCriteria materializedCriteria = catalogMaterialized.getMaterializedCriteria();
+                MaterializedCriteria materializedCriteria = catalogMaterializedView.getMaterializedCriteria();
 
                 ArrayList<String> materializedInfo = new ArrayList<>();
                 materializedInfo.add( materializedCriteria.getCriteriaType().toString() );

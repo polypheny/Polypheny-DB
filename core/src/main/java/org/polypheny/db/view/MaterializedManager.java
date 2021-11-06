@@ -22,7 +22,7 @@ import java.util.Map;
 import lombok.Getter;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogMaterialized;
+import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.RelShuttleImpl;
@@ -66,7 +66,7 @@ public abstract class MaterializedManager {
             List<DataStore> stores,
             Map<Integer, List<CatalogColumn>> addedColumns,
             RelRoot relRoot,
-            CatalogMaterialized materializedView );
+            CatalogMaterializedView materializedView );
 
     public abstract void addTables( Transaction transaction, List<String> names );
 
@@ -103,6 +103,7 @@ public abstract class MaterializedManager {
             }
             return super.visit( other );
         }
+
     }
 
 }

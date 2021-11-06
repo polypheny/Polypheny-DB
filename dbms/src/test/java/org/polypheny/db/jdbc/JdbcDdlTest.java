@@ -353,7 +353,6 @@ public class JdbcDdlTest {
     }
 
 
-
     @Test
     public void nullTest() throws SQLException {
         // Check if there are new types missing in this test

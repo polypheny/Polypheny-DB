@@ -33,7 +33,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogMaterialized;
+import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
@@ -283,7 +283,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
                 // Get a shared global schema lock (only DDLs acquire a exclusive global schema lock)
                 LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
                 // Get locks for individual tables
-                TableAccessMap accessMap = new TableAccessMap( ((CatalogMaterialized) catalogTable).getDefinition() );
+                TableAccessMap accessMap = new TableAccessMap( ((CatalogMaterializedView) catalogTable).getDefinition() );
                 for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
                     Mode mode = accessMap.getTableAccessMode( tableIdentifier );
                     if ( mode == Mode.READ_ACCESS ) {
@@ -308,7 +308,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
      * Is used if a materialized view is created in order to add the data from the underlying tables to the materialized view
      */
     @Override
-    public void addData( Transaction transaction, List<DataStore> stores, Map<Integer, List<CatalogColumn>> columns, RelRoot sourceRel, CatalogMaterialized materializedView ) {
+    public void addData( Transaction transaction, List<DataStore> stores, Map<Integer, List<CatalogColumn>> columns, RelRoot sourceRel, CatalogMaterializedView materializedView ) {
         addMaterializedInfo( materializedView.id, materializedView.getMaterializedCriteria() );
 
         List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
@@ -346,12 +346,12 @@ public class MaterializedManagerImpl extends MaterializedManager {
 
         List<Integer> ids = new ArrayList<>();
         if ( catalog.checkIfExistsTable( materializedId ) && materializedInfo.containsKey( materializedId ) ) {
-            CatalogMaterialized catalogMaterialized = (CatalogMaterialized) catalog.getTable( materializedId );
-            for ( int id : catalogMaterialized.placementsByAdapter.keySet() ) {
+            CatalogMaterializedView catalogMaterializedView = (CatalogMaterializedView) catalog.getTable( materializedId );
+            for ( int id : catalogMaterializedView.placementsByAdapter.keySet() ) {
                 ids.add( id );
                 List<CatalogColumn> catalogColumns = new ArrayList<>();
-                if ( catalogMaterialized.placementsByAdapter.containsKey( id ) ) {
-                    catalogMaterialized.placementsByAdapter.get( id ).forEach( col ->
+                if ( catalogMaterializedView.placementsByAdapter.containsKey( id ) ) {
+                    catalogMaterializedView.placementsByAdapter.get( id ).forEach( col ->
                             catalogColumns.add( catalog.getColumn( col ) )
                     );
                     columns.put( id, catalogColumns );
@@ -364,7 +364,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
                 Statement sourceStatement = transaction.createStatement();
                 Statement deleteStatement = transaction.createStatement();
                 Statement insertStatement = transaction.createStatement();
-                prepareSourceRel( sourceStatement, catalogMaterialized.getRelCollation(), catalogMaterialized.getDefinition() );
+                prepareSourceRel( sourceStatement, catalogMaterializedView.getRelCollation(), catalogMaterializedView.getDefinition() );
 
                 columnPlacements.clear();
 
@@ -372,18 +372,18 @@ public class MaterializedManagerImpl extends MaterializedManager {
 
                 // Build RelNode to build delete Statement from materialized view
                 RelBuilder deleteRelBuilder = RelBuilder.create( deleteStatement );
-                RelNode deleteRel = deleteRelBuilder.scan( catalogMaterialized.name ).build();
+                RelNode deleteRel = deleteRelBuilder.scan( catalogMaterializedView.name ).build();
 
                 // Build RelNode to build insert Statement from materialized view
                 RelBuilder insertRelBuilder = RelBuilder.create( insertStatement );
-                RelNode insertRel = insertRelBuilder.push( catalogMaterialized.getDefinition() ).build();
+                RelNode insertRel = insertRelBuilder.push( catalogMaterializedView.getDefinition() ).build();
 
                 Statement targetStatementDelete = transaction.createStatement();
                 // Delete all data
                 targetRel = dataMigrator.buildDeleteStatement(
                         targetStatementDelete,
                         columnPlacements,
-                        Catalog.getInstance().getPartitionsOnDataPlacement( id, catalogMaterialized.id ).get( 0 ) );
+                        Catalog.getInstance().getPartitionsOnDataPlacement( id, catalogMaterializedView.id ).get( 0 ) );
                 dataMigrator.executeQuery(
                         columns.get( id ),
                         RelRoot.of( deleteRel, SqlKind.SELECT ),
@@ -391,7 +391,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
                         targetStatementDelete,
                         targetRel,
                         true,
-                        catalogMaterialized.isOrdered() );
+                        catalogMaterializedView.isOrdered() );
 
                 Statement targetStatementInsert = transaction.createStatement();
 
@@ -399,7 +399,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
                 targetRel = dataMigrator.buildInsertStatement(
                         targetStatementInsert,
                         columnPlacements,
-                        Catalog.getInstance().getPartitionsOnDataPlacement( id, catalogMaterialized.id ).get( 0 ) );
+                        Catalog.getInstance().getPartitionsOnDataPlacement( id, catalogMaterializedView.id ).get( 0 ) );
                 dataMigrator.executeQuery(
                         columns.get( id ),
                         RelRoot.of( insertRel, SqlKind.SELECT ),
@@ -407,7 +407,7 @@ public class MaterializedManagerImpl extends MaterializedManager {
                         targetStatementInsert,
                         targetRel,
                         true,
-                        catalogMaterialized.isOrdered() );
+                        catalogMaterializedView.isOrdered() );
             }
         }
     }

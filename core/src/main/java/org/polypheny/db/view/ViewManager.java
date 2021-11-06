@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogMaterialized;
+import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.BiRel;
@@ -249,7 +249,7 @@ public class ViewManager {
                     if ( other.getTable().getTable() instanceof LogicalTable ) {
                         long tableId = ((LogicalTable) ((RelOptTableImpl) other.getTable()).getTable()).getTableId();
                         CatalogTable catalogtable = Catalog.getInstance().getTable( tableId );
-                        if ( catalogtable.tableType == TableType.MATERIALIZEDVIEW && ((CatalogMaterialized) catalogtable).isOrdered() ) {
+                        if ( catalogtable.tableType == TableType.MATERIALIZEDVIEW && ((CatalogMaterializedView) catalogtable).isOrdered() ) {
                             return orderMaterialized( other );
                         }
                     }

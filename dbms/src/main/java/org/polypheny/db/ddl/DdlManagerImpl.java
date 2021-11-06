@@ -54,7 +54,7 @@ import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.CatalogMaterialized;
+import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
@@ -142,6 +142,7 @@ public class DdlManagerImpl extends DdlManager {
             throw new DdlOnSourceException();
         }
     }
+
 
     private void checkViewDependencies( CatalogTable catalogTable ) {
         if ( catalogTable.connectedViews.size() > 0 ) {
@@ -1655,24 +1656,24 @@ public class DdlManagerImpl extends DdlManager {
         // Sets previously created primary key
         catalog.addPrimaryKey( tableId, columnIds );
 
-        CatalogMaterialized catalogMaterialized = (CatalogMaterialized) catalog.getTable( tableId );
+        CatalogMaterializedView catalogMaterializedView = (CatalogMaterializedView) catalog.getTable( tableId );
         PolySchemaBuilder.getInstance().getCurrent();
 
         for ( DataStore store : stores ) {
             catalog.addPartitionPlacement(
                     store.getAdapterId(),
                     tableId,
-                    catalogMaterialized.partitionProperty.partitionIds.get( 0 ),
+                    catalogMaterializedView.partitionProperty.partitionIds.get( 0 ),
                     PlacementType.AUTOMATIC,
                     null,
                     null );
 
-            store.createTable( statement.getPrepareContext(), catalogMaterialized, catalogMaterialized.partitionProperty.partitionIds );
+            store.createTable( statement.getPrepareContext(), catalogMaterializedView, catalogMaterializedView.partitionProperty.partitionIds );
         }
 
         // Selected data from tables is added into the newly crated materialized view
         MaterializedManager materializedManager = MaterializedManager.getInstance();
-        materializedManager.addData( statement.getTransaction(), stores, addedColumns, relRoot, catalogMaterialized );
+        materializedManager.addData( statement.getTransaction(), stores, addedColumns, relRoot, catalogMaterializedView );
     }
 
 

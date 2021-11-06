@@ -29,7 +29,8 @@ import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelNode;
 
-public class CatalogMaterialized extends CatalogView {
+
+public class CatalogMaterializedView extends CatalogView {
 
     private static final long serialVersionUID = -303234050987260484L;
 
@@ -52,7 +53,7 @@ public class CatalogMaterialized extends CatalogView {
     private final boolean ordered;
 
 
-    public CatalogMaterialized(
+    public CatalogMaterializedView(
             long id,
             @NonNull String name,
             ImmutableList<Long> columnIds,
@@ -72,7 +73,8 @@ public class CatalogMaterialized extends CatalogView {
             boolean ordered,
             PartitionProperty partitionProperty
     ) {
-        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, query, primaryKey, placementsByAdapter, modifiable, relCollation, underlyingTables, language, partitionProperty );
+        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, query, primaryKey, placementsByAdapter,
+                modifiable, relCollation, underlyingTables, language, partitionProperty );
         this.query = query;
         this.relCollation = relCollation;
         this.underlyingTables = underlyingTables;
@@ -82,7 +84,7 @@ public class CatalogMaterialized extends CatalogView {
     }
 
 
-    public CatalogMaterialized(
+    public CatalogMaterializedView(
             long id,
             String name,
             ImmutableList<Long> columnIds,
@@ -106,7 +108,9 @@ public class CatalogMaterialized extends CatalogView {
             MaterializedCriteria materializedCriteria,
             boolean ordered
     ) {
-        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, query, primaryKey, placementsByAdapter, modifiable, partitionType, partitionColumnId, isPartitioned, partitionProperty, relCollation, connectedViews, underlyingTables, language );
+        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, query, primaryKey,
+                placementsByAdapter, modifiable, partitionType, partitionColumnId, isPartitioned, partitionProperty,
+                relCollation, connectedViews, underlyingTables, language );
         this.query = query;
         this.relCollation = relCollation;
         this.underlyingTables = underlyingTables;
@@ -118,7 +122,7 @@ public class CatalogMaterialized extends CatalogView {
 
     @Override
     public CatalogTable getTableWithColumns( ImmutableList<Long> newColumnIds ) {
-        return new CatalogMaterialized(
+        return new CatalogMaterializedView(
                 id,
                 name,
                 newColumnIds,
@@ -142,7 +146,7 @@ public class CatalogMaterialized extends CatalogView {
 
     @Override
     public CatalogTable getConnectedViews( ImmutableList<Long> newConnectedViews ) {
-        return new CatalogMaterialized(
+        return new CatalogMaterializedView(
                 id,
                 name,
                 columnIds,
@@ -170,7 +174,7 @@ public class CatalogMaterialized extends CatalogView {
 
     @Override
     public CatalogTable getRenamed( String newName ) {
-        return new CatalogMaterialized(
+        return new CatalogMaterializedView(
                 id,
                 newName,
                 columnIds,
