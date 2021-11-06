@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableProject;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
@@ -58,7 +59,7 @@ import org.polypheny.db.tools.ValidationException;
 public class LexCaseSensitiveTest {
 
     private static Planner getPlanner( List<RelTraitDef> traitDefs, SqlParserConfig parserConfig, Program... programs ) {
-        final SchemaPlus schema = Frameworks.createRootSchema( true ).add( "hr", new ReflectiveSchema( new HrSchema() ) );
+        final SchemaPlus schema = Frameworks.createRootSchema( true ).add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
                 .defaultSchema( schema )
@@ -222,4 +223,5 @@ public class LexCaseSensitiveTest {
                 + "(select * from emps where emps.deptno < 200) s on t.empid = s.empid";
         runProjectQueryWithLex( Lex.JAVA, sql );
     }
+
 }

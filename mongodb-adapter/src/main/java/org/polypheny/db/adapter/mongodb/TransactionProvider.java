@@ -16,21 +16,16 @@
 
 package org.polypheny.db.adapter.mongodb;
 
-import static org.reflections.Reflections.log;
-
 import com.mongodb.MongoClientException;
 import com.mongodb.MongoCommandException;
-import com.mongodb.ReadConcern;
-import com.mongodb.ReadPreference;
 import com.mongodb.TransactionOptions;
-import com.mongodb.WriteConcern;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoClient;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.transaction.PolyXid;
 
 /**
@@ -38,6 +33,7 @@ import org.polypheny.db.transaction.PolyXid;
  * it starts new sessions, for transactions and exposes the functionality to
  * commit or rollback these transactions
  */
+@Slf4j
 public class TransactionProvider {
 
     @Setter
@@ -59,15 +55,17 @@ public class TransactionProvider {
      */
     public ClientSession startTransaction( PolyXid xid ) {
         TransactionOptions options = TransactionOptions.builder()
-                .readPreference( ReadPreference.primary() )
+                /*.readPreference( ReadPreference.primary() )
                 .readConcern( ReadConcern.LOCAL )
-                .maxCommitTime( 2L, TimeUnit.MINUTES )
-                .writeConcern( WriteConcern.MAJORITY ).build();
+                .maxCommitTime( 3L, TimeUnit.MINUTES )
+                .writeConcern( WriteConcern.MAJORITY )*/.build();
         ClientSession session;
         if ( !sessions.containsKey( xid ) ) {
             session = client.startSession();
             session.startTransaction( options );
-            sessions.put( xid, session );
+            synchronized ( this ) {
+                sessions.put( xid, session );
+            }
         } else {
             session = sessions.get( xid );
             if ( !session.hasActiveTransaction() ) {
@@ -99,7 +97,9 @@ public class TransactionProvider {
                 }
             } finally {
                 session.close();
-                sessions.remove( xid );
+                synchronized ( this ) {
+                    sessions.remove( xid );
+                }
             }
         } else {
             log.info( "No-op commit" );
@@ -130,7 +130,10 @@ public class TransactionProvider {
             } catch ( MongoClientException e ) {
                 // empty on purpose
             } finally {
-                sessions.remove( xid );
+                sessions.get( xid ).close();
+                synchronized ( this ) {
+                    sessions.remove( xid );
+                }
             }
         } else {
             log.info( "No-op rollback" );

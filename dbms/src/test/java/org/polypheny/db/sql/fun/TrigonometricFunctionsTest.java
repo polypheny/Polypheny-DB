@@ -32,12 +32,11 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.MonetdbExcluded;
-import org.polypheny.db.excluded.MongodbExcluded;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-@Category({ AdapterTestSuite.class, CassandraExcluded.class, MongodbExcluded.class })
+@Category({ AdapterTestSuite.class, CassandraExcluded.class })
 public class TrigonometricFunctionsTest {
 
 

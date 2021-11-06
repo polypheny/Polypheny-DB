@@ -606,6 +606,7 @@ public class CatalogImpl extends Catalog {
         if ( !userNames.containsKey( "pa" ) ) {
             addUser( "pa", "" );
         }
+        Catalog.defaultUser = systemId;
 
         //////////////
         // init database
@@ -615,13 +616,14 @@ public class CatalogImpl extends Catalog {
         } else {
             databaseId = getDatabase( "APP" ).id;
         }
+        Catalog.defaultDatabaseId = databaseId;
 
         //////////////
         // init schema
 
         long schemaId;
         if ( !schemaNames.containsKey( new Object[]{ databaseId, "public" } ) ) {
-            schemaId = addSchema( "public", databaseId, 1, SchemaType.RELATIONAL );
+            schemaId = addSchema( "public", databaseId, 1, SchemaType.getDefault() );
         } else {
             schemaId = getSchema( "APP", "public" ).id;
         }
@@ -668,6 +670,12 @@ public class CatalogImpl extends Catalog {
             restSettings.put( "port", "8089" );
             restSettings.put( "maxUploadSizeMb", "10000" );
             addQueryInterface( "rest", "org.polypheny.db.restapi.HttpRestServer", restSettings );
+
+            // Add REST interface
+            Map<String, String> mongoSettings = new HashMap<>();
+            mongoSettings.put( "port", "2717" );
+            mongoSettings.put( "maxUploadSizeMb", "10000" );
+            addQueryInterface( "mongo", "org.polypheny.db.mongoql.MongoQlServer", mongoSettings );
         }
 
         try {
@@ -686,38 +694,38 @@ public class CatalogImpl extends Catalog {
         CatalogSchema schema = getSchema( "APP", "public" );
         CatalogTable depts = getTable( schema.id, "depts" );
 
-        addDefaultColumn( csv, depts, "deptno", PolyType.INTEGER, null, 1, null );
-        addDefaultColumn( csv, depts, "name", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 2, 20 );
+        addDefaultCsvColumn( csv, depts, "deptno", PolyType.INTEGER, null, 1, null );
+        addDefaultCsvColumn( csv, depts, "name", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 2, 20 );
 
         CatalogTable emps = getTable( schema.id, "emps" );
-        addDefaultColumn( csv, emps, "empid", PolyType.INTEGER, null, 1, null );
-        addDefaultColumn( csv, emps, "deptno", PolyType.INTEGER, null, 2, null );
-        addDefaultColumn( csv, emps, "name", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
-        addDefaultColumn( csv, emps, "salary", PolyType.INTEGER, null, 4, null );
-        addDefaultColumn( csv, emps, "commission", PolyType.INTEGER, null, 5, null );
+        addDefaultCsvColumn( csv, emps, "empid", PolyType.INTEGER, null, 1, null );
+        addDefaultCsvColumn( csv, emps, "deptno", PolyType.INTEGER, null, 2, null );
+        addDefaultCsvColumn( csv, emps, "name", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
+        addDefaultCsvColumn( csv, emps, "salary", PolyType.INTEGER, null, 4, null );
+        addDefaultCsvColumn( csv, emps, "commission", PolyType.INTEGER, null, 5, null );
 
         CatalogTable emp = getTable( schema.id, "emp" );
-        addDefaultColumn( csv, emp, "employeeno", PolyType.INTEGER, null, 1, null );
-        addDefaultColumn( csv, emp, "age", PolyType.INTEGER, null, 2, null );
-        addDefaultColumn( csv, emp, "gender", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
-        addDefaultColumn( csv, emp, "maritalstatus", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 4, 20 );
-        addDefaultColumn( csv, emp, "worklifebalance", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 5, 20 );
-        addDefaultColumn( csv, emp, "education", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 6, 20 );
-        addDefaultColumn( csv, emp, "monthlyincome", PolyType.INTEGER, null, 7, null );
-        addDefaultColumn( csv, emp, "relationshipjoy", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 8, 20 );
-        addDefaultColumn( csv, emp, "workingyears", PolyType.INTEGER, null, 9, null );
-        addDefaultColumn( csv, emp, "yearsatcompany", PolyType.INTEGER, null, 10, null );
+        addDefaultCsvColumn( csv, emp, "employeeno", PolyType.INTEGER, null, 1, null );
+        addDefaultCsvColumn( csv, emp, "age", PolyType.INTEGER, null, 2, null );
+        addDefaultCsvColumn( csv, emp, "gender", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
+        addDefaultCsvColumn( csv, emp, "maritalstatus", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 4, 20 );
+        addDefaultCsvColumn( csv, emp, "worklifebalance", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 5, 20 );
+        addDefaultCsvColumn( csv, emp, "education", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 6, 20 );
+        addDefaultCsvColumn( csv, emp, "monthlyincome", PolyType.INTEGER, null, 7, null );
+        addDefaultCsvColumn( csv, emp, "relationshipjoy", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 8, 20 );
+        addDefaultCsvColumn( csv, emp, "workingyears", PolyType.INTEGER, null, 9, null );
+        addDefaultCsvColumn( csv, emp, "yearsatcompany", PolyType.INTEGER, null, 10, null );
 
         CatalogTable work = getTable( schema.id, "work" );
-        addDefaultColumn( csv, work, "employeeno", PolyType.INTEGER, null, 1, null );
-        addDefaultColumn( csv, work, "educationfield", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 2, 20 );
-        addDefaultColumn( csv, work, "jobinvolvement", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
-        addDefaultColumn( csv, work, "joblevel", PolyType.INTEGER, null, 4, null );
-        addDefaultColumn( csv, work, "jobrole", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 5, 30 );
-        addDefaultColumn( csv, work, "businesstravel", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 6, 20 );
-        addDefaultColumn( csv, work, "department", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 7, 25 );
-        addDefaultColumn( csv, work, "attrition", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 8, 20 );
-        addDefaultColumn( csv, work, "dailyrate", PolyType.INTEGER, null, 9, null );
+        addDefaultCsvColumn( csv, work, "employeeno", PolyType.INTEGER, null, 1, null );
+        addDefaultCsvColumn( csv, work, "educationfield", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 2, 20 );
+        addDefaultCsvColumn( csv, work, "jobinvolvement", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
+        addDefaultCsvColumn( csv, work, "joblevel", PolyType.INTEGER, null, 4, null );
+        addDefaultCsvColumn( csv, work, "jobrole", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 5, 30 );
+        addDefaultCsvColumn( csv, work, "businesstravel", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 6, 20 );
+        addDefaultCsvColumn( csv, work, "department", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 7, 25 );
+        addDefaultCsvColumn( csv, work, "attrition", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 8, 20 );
+        addDefaultCsvColumn( csv, work, "dailyrate", PolyType.INTEGER, null, 9, null );
 
         // set all needed primary keys
         addPrimaryKey( depts.id, Collections.singletonList( getColumn( depts.id, "deptno" ).id ) );
@@ -745,7 +753,7 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    private void addDefaultColumn( CatalogAdapter csv, CatalogTable table, String name, PolyType type, Collation collation, int position, Integer length ) {
+    private void addDefaultCsvColumn( CatalogAdapter csv, CatalogTable table, String name, PolyType type, Collation collation, int position, Integer length ) {
         if ( !checkIfExistsColumn( table.id, name ) ) {
             long colId = addColumn( name, table.id, position, type, null, length, null, null, null, false, collation );
             String filename = table.name + ".csv";
@@ -758,6 +766,15 @@ public class CatalogImpl extends Catalog {
 
             long partitionId = getPartitionsOnDataPlacement( csv.id, table.id ).get( 0 );
             addPartitionPlacement( csv.id, table.id, partitionId, PlacementType.AUTOMATIC, filename, table.name );
+        }
+    }
+
+
+    private void addDefaultColumn( CatalogAdapter adapter, CatalogTable table, String name, PolyType type, Collation collation, int position, Integer length ) {
+        if ( !checkIfExistsColumn( table.id, name ) ) {
+            long colId = addColumn( name, table.id, position, type, null, length, null, null, null, false, collation );
+            addColumnPlacement( adapter.id, colId, PlacementType.AUTOMATIC, "col" + colId, table.name, name, null );
+            updateColumnPlacementPhysicalPosition( adapter.id, colId, position );
         }
     }
 
@@ -838,14 +855,27 @@ public class CatalogImpl extends Catalog {
      * @param password of the user
      * @return the id of the created user
      */
+    @Override
     public int addUser( String name, String password ) {
-        CatalogUser user = new CatalogUser( userIdBuilder.getAndIncrement(), name, password );
+        CatalogUser user = new CatalogUser( userIdBuilder.getAndIncrement(), name, password, 1 );
         synchronized ( this ) {
             users.put( user.id, user );
             userNames.put( user.name, user );
         }
         listeners.firePropertyChange( "user", null, user );
         return user.id;
+    }
+
+
+    @Override
+    public void setUserSchema( int userId, long schemaId ) {
+        CatalogUser user = getUser( userId );
+        CatalogUser newUser = new CatalogUser( user.id, user.name, user.password, schemaId );
+        synchronized ( this ) {
+            users.put( user.id, newUser );
+            userNames.put( user.name, newUser );
+        }
+        listeners.firePropertyChange( "user", null, user );
     }
 
 
@@ -3499,7 +3529,7 @@ public class CatalogImpl extends Catalog {
      * Assign the partition to a new partitionGroup
      *
      * @param partitionId Partition to move
-     * @param partitionGroupId New target gorup to move the partion to
+     * @param partitionGroupId New target group to move the partition to
      */
     @Override
     public void updatePartition( long partitionId, Long partitionGroupId ) {
@@ -4161,9 +4191,9 @@ public class CatalogImpl extends Catalog {
     /**
      * Returns a specific partition entity which is placed on a store.
      *
-     * @param adapterId The adapter on which the requested partitions palcement resides
+     * @param adapterId The adapter on which the requested partitions placement resides
      * @param partitionId The id of the requested partition
-     * @return The requested PartitionPlacement on that store for agiven is
+     * @return The PartitionPlacement on the specified store
      */
     @Override
     public CatalogPartitionPlacement getPartitionPlacement( int adapterId, long partitionId ) {
@@ -4178,7 +4208,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns a list of all Partition Placements which currently reside on a adpater, disregarded of the table.
+     * Returns a list of all Partition Placements which currently reside on an adapter, disregarded of the table.
      *
      * @param adapterId The adapter on which the requested partition placements reside
      * @return A list of all Partition Placements, that are currently located  on that specific store

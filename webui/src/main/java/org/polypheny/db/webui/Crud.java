@@ -110,6 +110,7 @@ import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
@@ -150,6 +151,11 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
+import org.polypheny.db.monitoring.events.DmlEvent;
+import org.polypheny.db.monitoring.events.QueryEvent;
+import org.polypheny.db.monitoring.events.StatementEvent;
+import org.polypheny.db.mql.parser.BsonUtil;
 import org.polypheny.db.partition.PartitionFunctionInfo;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionManager;
@@ -179,6 +185,7 @@ import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonColumn;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonTable;
+import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.AdapterModel;
 import org.polypheny.db.webui.models.DbColumn;
 import org.polypheny.db.webui.models.DbTable;
@@ -226,13 +233,14 @@ import spark.utils.IOUtils;
 @Slf4j
 public class Crud implements InformationObserver {
 
-    private final Gson gson = new Gson();
+    private static final Gson gson = new Gson();
     private final TransactionManager transactionManager;
     private final String databaseName;
     private final String userName;
     private final StatisticsManager<?> statisticsManager = StatisticsManager.getInstance();
-    private final Catalog catalog = Catalog.getInstance();
+    public final LanguageCrud documentCrud;
     private boolean isActiveTracking = false;
+    private final Catalog catalog = Catalog.getInstance();
 
 
     /**
@@ -244,6 +252,7 @@ public class Crud implements InformationObserver {
         this.transactionManager = transactionManager;
         this.databaseName = databaseName;
         this.userName = userName;
+        this.documentCrud = new LanguageCrud( this );
         registerStatisticObserver();
     }
 
@@ -326,6 +335,7 @@ public class Crud implements InformationObserver {
         CatalogTable catalogTable;
         try {
             catalogTable = catalog.getTable( this.databaseName, t[0], t[1] );
+            result.setSchemaType( catalogTable.getSchemaType() );
             if ( catalogTable.modifiable ) {
                 result.setType( ResultType.TABLE );
             } else {
@@ -398,7 +408,7 @@ public class Crud implements InformationObserver {
 
         List<CatalogSchema> schemas = catalog.getSchemas( new Catalog.Pattern( databaseName ), null );
         for ( CatalogSchema schema : schemas ) {
-            SidebarElement schemaTree = new SidebarElement( schema.name, schema.name, "", "cui-layers" );
+            SidebarElement schemaTree = new SidebarElement( schema.name, schema.name, schema.schemaType, "", schema.schemaType == SchemaType.RELATIONAL ? "cui-layers" : "cui-folder" );
 
             if ( request.depth > 1 ) {
                 ArrayList<SidebarElement> tableTree = new ArrayList<>();
@@ -412,11 +422,15 @@ public class Crud implements InformationObserver {
                     } else if ( table.tableType == TableType.VIEW ) {
                         icon = "icon-eye";
                     }
-                    SidebarElement tableElement = new SidebarElement( schema.name + "." + table.name, table.name, request.routerLinkRoot, icon );
+                    if ( table.tableType != TableType.VIEW && schema.schemaType == SchemaType.DOCUMENT ) {
+                        icon = "cui-description";
+                    }
+
+                    SidebarElement tableElement = new SidebarElement( schema.name + "." + table.name, table.name, schema.schemaType, request.routerLinkRoot, icon );
                     if ( request.depth > 2 ) {
                         List<CatalogColumn> columns = catalog.getColumns( table.id );
                         for ( CatalogColumn column : columns ) {
-                            tableElement.addChild( new SidebarElement( schema.name + "." + table.name + "." + column.name, column.name, request.routerLinkRoot ).setCssClass( "sidebarColumn" ) );
+                            tableElement.addChild( new SidebarElement( schema.name + "." + table.name + "." + column.name, column.name, schema.schemaType, request.routerLinkRoot, icon ).setCssClass( "sidebarColumn" ) );
                         }
                     }
 
@@ -441,7 +455,9 @@ public class Crud implements InformationObserver {
 
 
                 /*if ( request.showTable ) {
-                    schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tableTree ).setRouterLink( "" ) );
+                    String collection = schema.schemaType == SchemaType.RELATIONAL ? "tables" : "collections";
+
+                    schemaTree.addChild( new SidebarElement( schema.name + ".tables", collection, request.routerLinkRoot, "fa fa-table" ).addChildren( tableTree ).setRouterLink( "" ) );
                 } else {
                     schemaTree.addChildren( tableTree ).setRouterLink( "" );
                 }
@@ -454,7 +470,7 @@ public class Crud implements InformationObserver {
 
                 }*/
                 if ( request.showTable ) {
-                    schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( collectionTree ).setRouterLink( "" ) );
+                    schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", schema.schemaType, request.routerLinkRoot, "fa fa-table" ).addChildren( collectionTree ).setRouterLink( "" ) );
                 } else {
                     schemaTree.addChildren( collectionTree ).setRouterLink( "" );
                 }
@@ -691,6 +707,11 @@ public class Crud implements InformationObserver {
                     columns.add( "\"" + catalogColumn.name + "\"" );
                     if ( part.getSubmittedFileName() == null ) {
                         String value = new BufferedReader( new InputStreamReader( part.getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
+                        if ( catalogColumn.name.equals( "_id" ) ) {
+                            if ( value.length() == 0 ) {
+                                value = BsonUtil.getObjectId();
+                            }
+                        }
                         values.add( uiValueToSql( value, catalogColumn.type, catalogColumn.collectionsType ) );
                     } else {
                         values.add( "?" );
@@ -726,7 +747,7 @@ public class Crud implements InformationObserver {
      * Run any query coming from the SQL console
      */
     ArrayList<Result> anyQuery( final QueryRequest request, final Session session ) {
-        Transaction transaction = getTransaction( request.analyze );
+        Transaction transaction = getTransaction( request.analyze, request.cache );
 
         if ( request.analyze ) {
             transaction.getQueryAnalyzer().setSession( session );
@@ -766,14 +787,14 @@ public class Crud implements InformationObserver {
         for ( String query : queries ) {
             Result result;
             if ( !transaction.isActive() ) {
-                transaction = getTransaction( request.analyze );
+                transaction = getTransaction( request.analyze, request.cache );
             }
             if ( Pattern.matches( "(?si:[\\s]*COMMIT.*)", query ) ) {
                 try {
                     temp = System.nanoTime();
                     transaction.commit();
                     executionTime += System.nanoTime() - temp;
-                    transaction = getTransaction( request.analyze );
+                    transaction = getTransaction( request.analyze, request.cache );
                     results.add( new Result().setGeneratedQuery( query ) );
                 } catch ( TransactionException e ) {
                     log.error( "Caught exception while committing a query from the console", e );
@@ -785,7 +806,7 @@ public class Crud implements InformationObserver {
                     temp = System.nanoTime();
                     transaction.rollback();
                     executionTime += System.nanoTime() - temp;
-                    transaction = getTransaction( request.analyze );
+                    transaction = getTransaction( request.analyze, request.cache );
                     results.add( new Result().setGeneratedQuery( query ) );
                 } catch ( TransactionException e ) {
                     log.error( "Caught exception while rolling back a query from the console", e );
@@ -820,7 +841,7 @@ public class Crud implements InformationObserver {
                     results.add( result );
                     if ( autoCommit ) {
                         transaction.commit();
-                        transaction = getTransaction( request.analyze );
+                        transaction = getTransaction( request.analyze, request.cache );
                     }
                 } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
                     log.error( "Caught exception while executing a query from the console", e );
@@ -843,7 +864,7 @@ public class Crud implements InformationObserver {
                     results.add( result );
                     if ( autoCommit ) {
                         transaction.commit();
-                        transaction = getTransaction( request.analyze );
+                        transaction = getTransaction( request.analyze, request.cache );
                     }
                 } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
                     log.error( "Caught exception while executing a query from the console", e );
@@ -873,25 +894,30 @@ public class Crud implements InformationObserver {
         }
 
         if ( queryAnalyzer != null ) {
-            InformationPage p1 = new InformationPage( "Query analysis", "Analysis of the query." );
-            InformationGroup g1 = new InformationGroup( p1, "Execution time" );
-            InformationText text;
-            if ( executionTime < 1e4 ) {
-                text = new InformationText( g1, String.format( "Execution time: %d nanoseconds", executionTime ) );
-            } else {
-                long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
-                // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444
-                //noinspection SuspiciousDateFormat
-                DateFormat df = new SimpleDateFormat( "m 'min' s 'sec' S 'ms'" );
-                String durationText = df.format( new Date( millis ) );
-                text = new InformationText( g1, String.format( "Execution time: %s", durationText ) );
-            }
-            queryAnalyzer.addPage( p1 );
-            queryAnalyzer.addGroup( g1 );
-            queryAnalyzer.registerInformation( text );
+            attachQueryAnalyzer( queryAnalyzer, executionTime );
         }
 
         return results;
+    }
+
+
+    public static void attachQueryAnalyzer( InformationManager queryAnalyzer, long executionTime ) {
+        InformationPage p1 = new InformationPage( "Query analysis", "Analysis of the query." );
+        InformationGroup g1 = new InformationGroup( p1, "Execution time" );
+        InformationText text;
+        if ( executionTime < 1e4 ) {
+            text = new InformationText( g1, String.format( "Execution time: %d nanoseconds", executionTime ) );
+        } else {
+            long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
+            // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444
+            //noinspection SuspiciousDateFormat
+            DateFormat df = new SimpleDateFormat( "m 'min' s 'sec' S 'ms'" );
+            String durationText = df.format( new Date( millis ) );
+            text = new InformationText( g1, String.format( "Execution time: %s", durationText ) );
+        }
+        queryAnalyzer.addPage( p1 );
+        queryAnalyzer.addGroup( g1 );
+        queryAnalyzer.registerInformation( text );
     }
 
 
@@ -1052,7 +1078,7 @@ public class Crud implements InformationObserver {
     public Result createInitialExploreQuery( Request req, Response res ) {
         QueryExplorationRequest queryExplorationRequest = this.gson.fromJson( req.body(), QueryExplorationRequest.class );
         ExploreManager exploreManager = ExploreManager.getInstance();
-        Transaction transaction = getTransaction( queryExplorationRequest.analyze );
+        Transaction transaction = getTransaction( queryExplorationRequest.analyze, true );
         Statement statement = transaction.createStatement();
 
         Result result;
@@ -2762,8 +2788,9 @@ public class Crud implements InformationObserver {
      * Execute a logical plan coming from the Web-Ui plan builder
      */
     Result executeRelAlg( final RelAlgRequest request, Session session ) {
-        Transaction transaction = getTransaction( true );
+        Transaction transaction = getTransaction( true, request.useCache );
         transaction.getQueryAnalyzer().setSession( session );
+
         Statement statement = transaction.createStatement();
         long executionTime = 0;
         long temp = 0;
@@ -2912,7 +2939,12 @@ public class Crud implements InformationObserver {
 
         // create schema
         if ( schema.isCreate() && !schema.isDrop() ) {
-            StringBuilder query = new StringBuilder( "CREATE SCHEMA " );
+            StringBuilder query = new StringBuilder( "CREATE " );
+            if ( schema.getType() == SchemaType.DOCUMENT ) {
+                query.append( "DOCUMENT " );
+            }
+            query.append( "SCHEMA " );
+
             query.append( "\"" ).append( schema.getName() ).append( "\"" );
             if ( schema.getAuthorization() != null && !schema.getAuthorization().equals( "" ) ) {
                 query.append( " AUTHORIZATION " ).append( schema.getAuthorization() );
@@ -2996,7 +3028,7 @@ public class Crud implements InformationObserver {
     public void observePageList( final InformationPage[] pages, final String analyzerId, final Session session ) {
         ArrayList<SidebarElement> nodes = new ArrayList<>();
         for ( InformationPage page : pages ) {
-            nodes.add( new SidebarElement( page.getId(), page.getName(), analyzerId + "/", page.getIcon() ).setLabel( page.getLabel() ) );
+            nodes.add( new SidebarElement( page.getId(), page.getName(), SchemaType.RELATIONAL, analyzerId + "/", page.getIcon() ).setLabel( page.getLabel() ) );
         }
         WebSocket.sendMessage( session, this.gson.toJson( nodes.toArray( new SidebarElement[0] ) ) );
     }
@@ -3197,7 +3229,7 @@ public class Crud implements InformationObserver {
      */
     Result exportTable( final Request req, final Response res ) {
         HubRequest request = gson.fromJson( req.body(), HubRequest.class );
-        Transaction transaction = getTransaction( false );
+        Transaction transaction = getTransaction( false, true );
         Statement statement = transaction.createStatement();
         HubMeta metaData = new HubMeta( request.schema );
 
@@ -3588,7 +3620,7 @@ public class Crud implements InformationObserver {
      * @param rows Rows from the enumerable iterator
      * @param header Header from the UI-ResultSet
      */
-    ArrayList<String[]> computeResultData( final List<List<Object>> rows, final List<DbColumn> header, final Transaction transaction ) {
+    public static ArrayList<String[]> computeResultData( final List<List<Object>> rows, final List<DbColumn> header, final Transaction transaction ) {
         ArrayList<String[]> data = new ArrayList<>();
         for ( List<Object> row : rows ) {
             String[] temp = new String[row.size()];
@@ -3759,7 +3791,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    private int executeSqlUpdate( final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
+    public int executeSqlUpdate( final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
         return executeSqlUpdate( transaction.createStatement(), transaction, sqlUpdate );
     }
 
@@ -3902,14 +3934,16 @@ public class Crud implements InformationObserver {
     }
 
 
-    private Transaction getTransaction() {
-        return getTransaction( false );
+    public Transaction getTransaction() {
+        return getTransaction( false, true );
     }
 
 
-    private Transaction getTransaction( boolean analyze ) {
+    public Transaction getTransaction( boolean analyze, boolean useCache ) {
         try {
-            return transactionManager.startTransaction( userName, databaseName, analyze, "Polypheny-UI", MultimediaFlavor.FILE );
+            Transaction transaction = transactionManager.startTransaction( userName, databaseName, analyze, "Polypheny-UI", MultimediaFlavor.FILE );
+            transaction.setUseCache( useCache );
+            return transaction;
         } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
@@ -3950,6 +3984,11 @@ public class Crud implements InformationObserver {
             }
         }
         return directoryToBeDeleted.delete();
+    }
+
+
+    public Map<String, SchemaType> getTypeSchemas( Request request, Response response ) {
+        return catalog.getSchemas( 1, null ).stream().collect( Collectors.toMap( CatalogSchema::getName, CatalogSchema::getSchemaType ) );
     }
 
 
@@ -4000,7 +4039,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    static class QueryExecutionException extends Exception {
+    public static class QueryExecutionException extends Exception {
 
         QueryExecutionException( String message ) {
             super( message );

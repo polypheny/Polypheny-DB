@@ -39,11 +39,17 @@ SqlCreate SqlCreateSchema(Span s, boolean replace) :
 {
     final boolean ifNotExists;
     final SqlIdentifier id;
+    final SchemaType schemaType;
 }
 {
+    (
+        <DOCUMENT> { schemaType = SchemaType.DOCUMENT; }
+        |
+        { schemaType = SchemaType.RELATIONAL; }
+    )
     <SCHEMA> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
     {
-        return SqlDdlNodes.createSchema(s.end(this), replace, ifNotExists, id);
+        return SqlDdlNodes.createSchema(s.end(this), replace, ifNotExists, id, schemaType);
     }
 }
 

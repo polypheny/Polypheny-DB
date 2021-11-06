@@ -92,6 +92,8 @@ public class HttpServer implements Runnable {
     private void crudRoutes( Service webuiServer, Crud crud ) {
         webuiServer.post( "/getSchemaTree", crud::getSchemaTree, gson::toJson );
 
+        webuiServer.get( "/getTypeSchemas", crud::getTypeSchemas, gson::toJson );
+
         webuiServer.post( "/insertRow", "multipart/form-data", crud::insertRow, gson::toJson );
 
         webuiServer.post( "/deleteRow", crud::deleteRow, gson::toJson );
@@ -129,6 +131,8 @@ public class HttpServer implements Runnable {
         webuiServer.post( "/dropTruncateTable", crud::dropTruncateTable, gson::toJson );
 
         webuiServer.post( "/createTable", crud::createTable, gson::toJson );
+
+        webuiServer.post( "/createCollection", crud.documentCrud::createCollection, gson::toJson );
 
         webuiServer.get( "/getGeneratedNames", crud::getGeneratedNames, gson::toJson );
 
@@ -209,6 +213,8 @@ public class HttpServer implements Runnable {
         webuiServer.get( "/testDockerInstance/:dockerId", crud::testDockerInstance );
 
         webuiServer.get( "/usedDockerPorts", crud::getUsedDockerPorts, gsonExpose::toJson );
+
+        webuiServer.get( "/getDocumentDatabases", crud.documentCrud::getDocumentDatabases, gson::toJson );
 
     }
 

@@ -59,6 +59,11 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.document.util.DataModelShuttle;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
@@ -256,6 +261,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         if ( logicalRoot.rel.hasView() ) {
             logicalRoot = logicalRoot.tryExpandView();
         }
+
+        logicalRoot.rel.accept( new DataModelShuttle() );
 
         //
         // Analyze step
@@ -1234,7 +1241,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private boolean isQueryPlanCachingActive( Statement statement, RelRoot relRoot ) {
-        return RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() &&
+        return RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && statement.getTransaction().getUseCache() &&
                 (
                         !relRoot.kind.belongsTo( SqlKind.DML ) ||
                                 RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() ||
@@ -1244,7 +1251,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private boolean isImplementationCachingActive( Statement statement, RelRoot relRoot ) {
-        return RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() &&
+        return RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && statement.getTransaction().getUseCache() &&
                 (
                         !relRoot.kind.belongsTo( SqlKind.DML ) ||
                                 RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() ||

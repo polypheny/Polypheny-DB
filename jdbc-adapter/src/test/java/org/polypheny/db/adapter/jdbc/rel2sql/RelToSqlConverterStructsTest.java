@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Set;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.junit.Test;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelDistribution;
 import org.polypheny.db.rel.RelReferentialConstraint;
@@ -208,7 +209,7 @@ public class RelToSqlConverterStructsTest {
         }
     };
 
-    private static final SchemaPlus ROOT_SCHEMA = AbstractPolyphenyDbSchema.createRootSchema( "" ).add( "myDb", SCHEMA ).plus();
+    private static final SchemaPlus ROOT_SCHEMA = AbstractPolyphenyDbSchema.createRootSchema( "" ).add( "myDb", SCHEMA, SchemaType.RELATIONAL ).plus();
 
 
     private RelToSqlConverterTest.Sql sql( String sql ) {
@@ -252,5 +253,6 @@ public class RelToSqlConverterStructsTest {
                 + "FROM \"myDb\".\"myTable\"";
         sql( query ).ok( expected );
     }
+
 }
 

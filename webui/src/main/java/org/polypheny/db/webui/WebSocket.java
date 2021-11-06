@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,10 @@ package org.polypheny.db.webui;
 
 import com.google.gson.Gson;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -105,12 +106,28 @@ public class WebSocket {
         switch ( request.requestType ) {
             case "QueryRequest":
                 QueryRequest queryRequest = gson.fromJson( message, QueryRequest.class );
-                ArrayList<Result> results;
-                try {
-                    results = crud.anyQuery( queryRequest, session );
-                } catch ( Throwable t ) {
-                    sendMessage( session, new Result[]{ new Result( t ) } );
-                    return;
+                List<Result> results;
+                if ( queryRequest.language.equals( "mql" ) ) {
+                    try {
+                        results = crud.documentCrud.anyMongoQuery( session, queryRequest, crud );
+                    } catch ( Throwable t ) {
+                        sendMessage( session, new Result[]{ new Result( t ) } );
+                        return;
+                    }
+                } else if ( queryRequest.language.equals( "cql" ) ) {
+                    try {
+                        results = Collections.singletonList( crud.documentCrud.processCqlRequest( session, queryRequest ) );
+                    } catch ( Throwable t ) {
+                        sendMessage( session, new Result[]{ new Result( t ) } );
+                        return;
+                    }
+                } else {
+                    try {
+                        results = crud.anyQuery( queryRequest, session );
+                    } catch ( Throwable t ) {
+                        sendMessage( session, new Result[]{ new Result( t ) } );
+                        return;
+                    }
                 }
                 for ( Result result : results ) {
                     if ( result.getXid() != null ) {
@@ -119,6 +136,7 @@ public class WebSocket {
                 }
                 sendMessage( session, results );
                 break;
+
             case "RelAlgRequest":
             case "TableRequest":
                 Result result;

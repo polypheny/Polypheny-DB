@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import org.junit.Test;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.rel.RelNode;
@@ -64,7 +65,7 @@ public class RelOptUtilTest {
     private static Frameworks.ConfigBuilder config() {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( false )
-                .add( "scott", new ReflectiveSchema( new ScottSchema() ) );
+                .add( "scott", new ReflectiveSchema( new ScottSchema() ), SchemaType.RELATIONAL );
 
         return Frameworks.newConfigBuilder()
                 .parserConfig( SqlParserConfig.DEFAULT )
@@ -234,5 +235,6 @@ public class RelOptUtilTest {
         assertEquals( expLeftKeys, actLeftKeys );
         assertEquals( expRightKeys, actRightKeys );
     }
+
 }
 

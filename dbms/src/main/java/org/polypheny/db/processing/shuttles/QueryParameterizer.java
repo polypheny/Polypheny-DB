@@ -30,6 +30,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.core.TableModify;
+import org.polypheny.db.rel.logical.LogicalDocuments;
 import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalModifyCollect;
 import org.polypheny.db.rel.logical.LogicalProject;
@@ -50,6 +51,7 @@ import org.polypheny.db.rex.RexRangeRef;
 import org.polypheny.db.rex.RexSubQuery;
 import org.polypheny.db.rex.RexTableInputRef;
 import org.polypheny.db.rex.RexVisitor;
+import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
@@ -111,7 +113,7 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
                 }
             }
             RelNode input = modify.getInput();
-            if ( input instanceof LogicalValues ) {
+            if ( input instanceof LogicalValues && !(input instanceof LogicalDocuments) ) { //todo dl: handle documents differently
                 List<RexNode> projects = new ArrayList<>();
                 boolean firstRow = true;
                 HashMap<Integer, Integer> idxMapping = new HashMap<>();
@@ -204,7 +206,9 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
 
     @Override
     public RexNode visitCall( RexCall call ) {
-        if ( call.op instanceof SqlArrayValueConstructor ) {
+        if ( call.getKind().belongsTo( SqlKind.DOC_KIND ) ) {
+            return call;
+        } else if ( call.op instanceof SqlArrayValueConstructor ) {
             int i = index.getAndIncrement();
             List<Object> list = createListForArrays( call.operands );
             values.put( i, Collections.singletonList( new ParameterValue( i, call.type, list ) ) );

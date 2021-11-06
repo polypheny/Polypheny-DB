@@ -80,6 +80,7 @@ import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
@@ -683,6 +684,9 @@ public class SqlFunctions {
      * SQL <code>=</code> operator applied to Object values (including String; neither side may be null).
      */
     public static boolean eq( Object b0, Object b1 ) {
+        if ( b0 == null || b1 == null ) {
+            return false;
+        }
         return b0.equals( b1 );
     }
 
@@ -771,6 +775,11 @@ public class SqlFunctions {
      */
     public static boolean lt( BigDecimal b0, BigDecimal b1 ) {
         return b0.compareTo( b1 ) < 0;
+    }
+
+
+    public static boolean lt( Object b0, Object b1 ) {
+        return ltAny( b0, b1 );
     }
 
 
@@ -1423,6 +1432,19 @@ public class SqlFunctions {
     public static BigDecimal mod( BigDecimal b0, BigDecimal b1 ) {
         final BigDecimal[] bigDecimals = b0.divideAndRemainder( b1 );
         return bigDecimals[1];
+    }
+
+
+    public static Object mod( Object b0, Object b1 ) {
+        if ( b0 == null || b1 == null ) {
+            return null;
+        }
+
+        if ( allAssignable( Number.class, b0, b1 ) ) {
+            return mod( toBigDecimal( (Number) b0 ), toBigDecimal( (Number) b1 ) );
+        }
+
+        throw notArithmetic( "mod", b0, b1 );
     }
 
     // FLOOR
@@ -3306,6 +3328,47 @@ public class SqlFunctions {
         } catch ( Exception e ) {
             return e;
         }
+    }
+
+
+    public static Object jsonValueExpressionExclude( String input, List<String> excluded ) {
+        try {
+            List<List<String>> collect = excluded.stream().map( e -> Arrays.asList( e.split( "\\." ) ) ).collect( Collectors.toList() );
+
+            Map<String, ?> map = (Map<String, ?>) dejsonize( input );
+            return rebuildMap( map, collect ); // TODO DL: exchange with a direct filter on deserialization
+        } catch ( Exception e ) {
+            return e;
+        }
+    }
+
+
+    private static Map<String, ?> rebuildMap( Map<String, ?> map, List<List<String>> collect ) {
+        Map<String, Object> newMap = new HashMap<>();
+        List<String> firsts = collect.stream().map( c -> c.get( 0 ) ).collect( Collectors.toList() );
+        for ( Entry<String, ?> entry : map.entrySet() ) {
+            if ( firsts.contains( entry.getKey() ) ) {
+                List<List<String>> entries = new ArrayList<>();
+                for ( List<String> excludes : collect ) {
+                    if ( excludes.get( 0 ).equals( entry.getKey() ) && entry.getValue() instanceof Map ) {
+                        // if it matches but has more child-keys we have to go deeper
+                        if ( excludes.size() > 1 ) {
+                            entries.add( excludes.subList( 1, excludes.size() ) );
+                        }
+                    }
+                }
+                if ( entries.size() > 0 ) {
+                    Map rebuild = rebuildMap( (Map<String, ?>) entry.getValue(), entries );
+                    if ( rebuild.size() > 0 ) {
+                        newMap.put( entry.getKey(), rebuild );
+                    }
+                }
+
+            } else {
+                newMap.put( entry.getKey(), entry.getValue() );
+            }
+        }
+        return newMap;
     }
 
 

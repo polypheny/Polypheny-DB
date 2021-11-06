@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ package org.polypheny.db.webui.models;
 import java.util.ArrayList;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 
 
 /**
@@ -29,6 +30,7 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class SidebarElement {
 
+    private final SchemaType schemaType;
     private String id;
     private String name;
     @Setter
@@ -46,29 +48,19 @@ public class SidebarElement {
      *
      * @param id unique id for the SidebarElement, e.g. of the form "schemaName.tableName.columnName"
      * @param name the name of the SidebarElement that will be displayed in the UI
+     * @param schemaType the schema type of the sidebar element, this is nullable for non-database elements
      * @param routerLinkRoot routerLink to the view where the Sidebar is displayed. When clicking on a SidebarElement, the user will be directed to the page "routerLinkRoot/id" (id of the SidebarElement)
+     * @param icon class name of the icon that will be displayed left of the id, e.g. "fa fa-table"
      */
-    public SidebarElement( final String id, final String name, final String routerLinkRoot ) {
+    public SidebarElement( final String id, final String name, SchemaType schemaType, final String routerLinkRoot, String icon ) {
         this.id = id;
         this.name = name;
+        this.schemaType = schemaType;
         if ( !routerLinkRoot.equals( "" ) ) {
             this.routerLink = routerLinkRoot + id;
         } else {
             this.routerLink = "";
         }
-    }
-
-
-    /**
-     * Constructor
-     *
-     * @param id unique id for the SidebarElement, e.g. of the form "schemaName.tableName.columnName"
-     * @param name the name of the SidebarElement that will be displayed in the UI
-     * @param routerLinkRoot routerLink to the view where the Sidebar is displayed. When clicking on a SidebarElement, the user will be directed to the page "routerLinkRoot/id" (id of the SidebarElement)
-     * @param icon class name of the icon that will be displayed left of the id, e.g. "fa fa-table"
-     */
-    public SidebarElement( final String id, final String name, final String routerLinkRoot, final String icon ) {
-        this( id, name, routerLinkRoot );
         this.icon = icon;
     }
 
