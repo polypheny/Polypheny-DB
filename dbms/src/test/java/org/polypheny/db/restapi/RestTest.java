@@ -122,7 +122,9 @@ public class RestTest {
         request.routeParam( "protocol", "http" );
         request.routeParam( "host", "127.0.0.1" );
         request.routeParam( "port", "8089" );
-        log.debug( request.getUrl() );
+        if ( log.isDebugEnabled() ) {
+            log.debug( request.getUrl() );
+        }
         try {
             HttpResponse<String> result = request.asString();
             if ( !result.isSuccess() ) {

@@ -439,7 +439,7 @@ public class CatalogImpl extends Catalog {
         Statement statement = transaction.createStatement();
 
         for ( CatalogTable c : tables.values() ) {
-            if ( c.tableType == TableType.VIEW || c.tableType == TableType.MATERIALIZEDVIEW ) {
+            if ( c.tableType == TableType.VIEW || c.tableType == TableType.MATERIALIZED_VIEW ) {
                 String query;
                 QueryLanguage language;
                 if ( c.tableType == TableType.VIEW ) {
@@ -460,8 +460,9 @@ public class CatalogImpl extends Catalog {
                         nodeInfo.put( c.id, relRoot.rel );
                         relTypeInfo.put( c.id, relRoot.validatedRowType );
                         break;
+
                     case RELALG:
-                        JsonRelProcessor jsonRelProcessor = statement.getTransaction().getJasonProcessor();
+                        JsonRelProcessor jsonRelProcessor = statement.getTransaction().getJsonRelProcessor();
                         RelNode result = jsonRelProcessor.parseJsonRel( statement, query );
 
                         final RelDataType rowType = result.getRowType();
@@ -475,6 +476,7 @@ public class CatalogImpl extends Catalog {
                         nodeInfo.put( c.id, root.rel );
                         relTypeInfo.put( c.id, root.validatedRowType );
                         break;
+
                     case MONGOQL:
                         MqlProcessor mqlProcessor = statement.getTransaction().getMqlProcessor();
                         MqlNode mqlNode = mqlProcessor.parse( query );
@@ -1546,7 +1548,7 @@ public class CatalogImpl extends Catalog {
                 .reliesOnPeriodicChecks( false )
                 .build();
 
-        if ( tableType == TableType.MATERIALIZEDVIEW ) {
+        if ( tableType == TableType.MATERIALIZED_VIEW ) {
             CatalogMaterializedView materializedViewTable = new CatalogMaterializedView(
                     id,
                     name,
@@ -1573,9 +1575,8 @@ public class CatalogImpl extends Catalog {
             relTypeInfo.put( id, fieldList );
             nodeInfo.put( id, definition );
         } else {
-
             //Should not happen, addViewTable is only called with TableType.View
-            throw new RuntimeException( "addMaterializedViewTable is only possible with TableType = MATERIALIZEDVIEW" );
+            throw new RuntimeException( "addMaterializedViewTable is only possible with TableType = MATERIALIZED_VIEW" );
         }
         return id;
     }
@@ -1619,9 +1620,9 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * deletes all View dependencies after a view is dropped
+     * Deletes all the dependencies of a view. This is used when deleting a view.
      *
-     * @param catalogView view to be deleted
+     * @param catalogView view for which to delete its dependencies
      */
     @Override
     public void deleteViewDependencies( CatalogView catalogView ) {
@@ -1932,7 +1933,7 @@ public class CatalogImpl extends Catalog {
                 if ( log.isDebugEnabled() ) {
                     log.debug( " Table '{}' is partitioned.", old.name );
                 }
-                if ( old.tableType == TableType.MATERIALIZEDVIEW ) {
+                if ( old.tableType == TableType.MATERIALIZED_VIEW ) {
                     table = new CatalogMaterializedView(
                             old.id,
                             old.name,
@@ -1976,7 +1977,7 @@ public class CatalogImpl extends Catalog {
                             old.connectedViews );
                 }
             } else {
-                if ( old.tableType == TableType.MATERIALIZEDVIEW ) {
+                if ( old.tableType == TableType.MATERIALIZED_VIEW ) {
                     table = new CatalogMaterializedView(
                             old.id,
                             old.name,
@@ -2082,13 +2083,13 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * updates the last time a materialized view was updated
+     * Updates the last time a materialized view was updated.
      *
-     * @param materializedId to update
+     * @param materializedViewId id of the materialized view
      */
     @Override
-    public void updateMaterialized( long materializedId ) {
-        CatalogMaterializedView old = (CatalogMaterializedView) getTable( materializedId );
+    public void updateMaterializedViewUpdateTime( long materializedViewId ) {
+        CatalogMaterializedView old = (CatalogMaterializedView) getTable( materializedViewId );
 
         MaterializedCriteria materializedCriteria = old.getMaterializedCriteria();
         materializedCriteria.setLastUpdate( new Timestamp( System.currentTimeMillis() ) );
@@ -2118,11 +2119,12 @@ public class CatalogImpl extends Catalog {
                 old.isOrdered() );
 
         synchronized ( this ) {
-            tables.replace( materializedId, catalogMaterializedView );
-            tableNames.replace( new Object[]{ catalogMaterializedView.databaseId, catalogMaterializedView.schemaId, catalogMaterializedView.name }, catalogMaterializedView );
+            tables.replace( materializedViewId, catalogMaterializedView );
+            tableNames.replace(
+                    new Object[]{ catalogMaterializedView.databaseId, catalogMaterializedView.schemaId, catalogMaterializedView.name },
+                    catalogMaterializedView );
         }
         listeners.firePropertyChange( "table", old, catalogMaterializedView );
-
     }
 
 

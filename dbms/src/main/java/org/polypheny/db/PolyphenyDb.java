@@ -59,8 +59,8 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.TransactionManagerImpl;
 import org.polypheny.db.util.FileSystemManager;
-import org.polypheny.db.view.MaterializedManager;
-import org.polypheny.db.view.MaterializedManagerImpl;
+import org.polypheny.db.view.MaterializedViewManager;
+import org.polypheny.db.view.MaterializedViewManagerImpl;
 import org.polypheny.db.webui.ConfigServer;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.InformationServer;
@@ -224,7 +224,7 @@ public class PolyphenyDb {
         QueryInterfaceManager.initialize( transactionManager, authenticator );
 
         //Initialize MaterializedViewManager
-        MaterializedManager.setAndGetInstance( new MaterializedManagerImpl( transactionManager ) );
+        MaterializedViewManager.setAndGetInstance( new MaterializedViewManagerImpl( transactionManager ) );
 
         // Startup and restore catalog
         Catalog catalog;

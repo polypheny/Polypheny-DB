@@ -59,7 +59,7 @@ public interface Transaction {
 
     MqlProcessor getMqlProcessor();
 
-    JsonRelProcessor getJasonProcessor();
+    JsonRelProcessor getJsonRelProcessor();
 
     boolean isAnalyze();
 

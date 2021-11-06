@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.materializedView;
+package org.polypheny.db.sql.view;
 
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
@@ -31,24 +31,24 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-public class BasicMaterializedTest {
+public class BasicMaterializedViewTest {
 
     private final CountDownLatch waiter = new CountDownLatch( 1 );
 
-    private final static String VIEWTESTEMPTABLE_SQL = "CREATE TABLE viewTestEmpTable ("
+    private final static String VIEW_TEST_EMP_TABLE_SQL = "CREATE TABLE viewTestEmpTable ("
             + "empId INTEGER NOT NULL,"
             + "firstName VARCHAR(20),"
             + "lastName VARCHAR(20),"
             + "depId INTEGER NOT NULL,"
             + "PRIMARY KEY (empId))";
 
-    private final static String VIEWTESTDEPTABLE_SQL = "CREATE TABLE viewTestDepTable ("
+    private final static String VIEW_TEST_DEP_TABLE_SQL = "CREATE TABLE viewTestDepTable ("
             + "depId INTEGER NOT NULL,"
             + "depName VARCHAR(20),"
             + "locationId INTEGER NOT NULL,"
             + "PRIMARY KEY (depId))";
 
-    private final static String VIEWTESTLOCTABLE_SQL = "CREATE TABLE viewTestLocTable ("
+    private final static String VIEW_TEST_LOC_TABLE_SQL = "CREATE TABLE viewTestLocTable ("
             + "locationId INTEGER NOT NULL,"
             + "address VARCHAR(20),"
             + "postcode INTEGER,"
@@ -56,17 +56,17 @@ public class BasicMaterializedTest {
             + "country VARCHAR(20),"
             + "PRIMARY KEY (locationId))";
 
-    private final static String VIEWTESTEMPTABLE_DATA_SQL = "INSERT INTO viewTestEmpTable VALUES"
+    private final static String VIEW_TEST_EMP_TABLE_DATA_SQL = "INSERT INTO viewTestEmpTable VALUES"
             + " ( 1, 'Max', 'Muster', 1 ),"
             + "( 2, 'Ernst', 'Walter', 2),"
             + "( 3, 'Elsa', 'Kuster', 3 )";
 
-    private final static String VIEWTESTDEPTABLE_DATA_SQL = "INSERT INTO viewTestDepTable VALUES"
+    private final static String VIEW_TEST_DEP_TABLE_DATA_SQL = "INSERT INTO viewTestDepTable VALUES"
             + "( 1, 'IT', 1),"
             + "( 2, 'Sales', 2),"
             + "( 3, 'HR', 3)";
 
-    private final static String VIEWTESTLOCTABLE_DATA_SQL = "INSERT INTO viewTestLocTable VALUES"
+    private final static String VIEW_TEST_LOC_TABLE_DATA_SQL = "INSERT INTO viewTestLocTable VALUES"
             + "(1, 'Bergstrasse 15', 4058, 'Basel', 'Switzerland'),"
             + "(2, 'Waldstrasse 11', 99900, 'Singen', 'Germany'),"
             + "(3, '5th Avenue 1234', 10001, 'New York', 'USA') ";
@@ -97,10 +97,10 @@ public class BasicMaterializedTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_DATA_SQL );
 
                 try {
                     statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS MANUAL" );
@@ -147,8 +147,8 @@ public class BasicMaterializedTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_DATA_SQL );
 
                 try {
                     statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS MANUAL" );
@@ -178,8 +178,8 @@ public class BasicMaterializedTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_DATA_SQL );
 
                 try {
                     statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
@@ -222,10 +222,10 @@ public class BasicMaterializedTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_DATA_SQL );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
 
                 try {
@@ -256,12 +256,12 @@ public class BasicMaterializedTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_DATA_SQL );
-                statement.executeUpdate( VIEWTESTLOCTABLE_SQL );
-                statement.executeUpdate( VIEWTESTLOCTABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_LOC_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_LOC_TABLE_DATA_SQL );
 
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestDep AS SELECT * FROM viewTestDepTable" );
@@ -309,10 +309,10 @@ public class BasicMaterializedTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_DATA_SQL );
 
                 try {
                     statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
@@ -342,10 +342,10 @@ public class BasicMaterializedTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_DATA_SQL );
 
                 try {
                     statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
@@ -377,10 +377,10 @@ public class BasicMaterializedTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_DATA_SQL );
 
                 try {
                     statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
@@ -414,8 +414,8 @@ public class BasicMaterializedTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_DATA_SQL );
 
                 try {
                     statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 100 \"milliseconds\" " );
@@ -445,8 +445,8 @@ public class BasicMaterializedTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_DATA_SQL );
 
                 try {
                     statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS UPDATE 2 " );
@@ -473,7 +473,7 @@ public class BasicMaterializedTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 100 \"milliseconds\" " );
                 waiter.await( 2, TimeUnit.SECONDS );
 
@@ -521,7 +521,7 @@ public class BasicMaterializedTest {
                 statement.executeUpdate( "ALTER ADAPTERS ADD \"store3\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
                         + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
 
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable ON STORE \"store3\" FRESHNESS INTERVAL 100 \"milliseconds\" " );
                 waiter.await( 2, TimeUnit.SECONDS );
@@ -574,7 +574,7 @@ public class BasicMaterializedTest {
                 statement.executeUpdate( "ALTER ADAPTERS ADD \"store3\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
                         + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
 
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable ON STORE \"store2\", \"store3\" FRESHNESS MANUAL" );
                 waiter.await( 2, TimeUnit.SECONDS );
@@ -625,7 +625,7 @@ public class BasicMaterializedTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS UPDATE 2 " );
 
                 try {
@@ -673,7 +673,7 @@ public class BasicMaterializedTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS MANUAL " );
 
                 try {
@@ -716,7 +716,7 @@ public class BasicMaterializedTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 10 \"min\"" );
 
                 try {
@@ -759,7 +759,7 @@ public class BasicMaterializedTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS UPDATE 5" );
 
                 try {
@@ -802,7 +802,7 @@ public class BasicMaterializedTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS MANUAL " );
 
                 try {
@@ -867,8 +867,8 @@ public class BasicMaterializedTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_SQL );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestDep AS SELECT * FROM viewTestDepTable FRESHNESS INTERVAL 150 \"milliseconds\"" );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 100 \"milliseconds\" " );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp1 AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 200 \"milliseconds\" " );
@@ -948,8 +948,8 @@ public class BasicMaterializedTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_SQL );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestDep AS SELECT * FROM viewTestDepTable FRESHNESS UPDATE 2 " );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS UPDATE 2 " );
 
@@ -1035,8 +1035,8 @@ public class BasicMaterializedTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_SQL );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestDep AS SELECT * FROM viewTestDepTable FRESHNESS INTERVAL 500 \"milliseconds\"" );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 100 \"milliseconds\" " );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp1 AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 400 \"milliseconds\" " );
@@ -1160,7 +1160,7 @@ public class BasicMaterializedTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
                 statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 100 \"milliseconds\" " );
                 waiter.await( 2, TimeUnit.SECONDS );
@@ -1197,10 +1197,10 @@ public class BasicMaterializedTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_DATA_SQL );
 
                 try {
                     statement.executeUpdate( "CREATE VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );

@@ -228,7 +228,9 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             this.timeout = (Long) timeout;
         } else {
             if ( timeout != null ) {
-                log.debug( "Variable.TIMEOUT should be `long`. Given value was {}", timeout );
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "Variable.TIMEOUT should be `long`. Given value was {}", timeout );
+                }
             }
             this.timeout = 0;
         }

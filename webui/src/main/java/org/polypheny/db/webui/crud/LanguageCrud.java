@@ -73,7 +73,7 @@ import spark.Response;
 @Slf4j
 public class LanguageCrud {
 
-    Crud crud;
+    final Crud crud;
 
 
     public LanguageCrud( Crud crud ) {
@@ -92,7 +92,9 @@ public class LanguageCrud {
             CqlParser cqlParser = new CqlParser( cqlQueryStr, "APP" );
             CqlQuery cqlQuery = cqlParser.parse();
 
-            log.debug( "Starting to process CQL resource request. Session ID: {}.", session );
+            if ( log.isDebugEnabled() ) {
+                log.debug( "Starting to process CQL resource request. Session ID: {}.", session );
+            }
             //requestCounter.incrementAndGet();
             Transaction transaction = this.crud.getTransaction( request.analyze );
 

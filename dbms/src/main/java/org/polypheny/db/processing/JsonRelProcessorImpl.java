@@ -23,8 +23,8 @@ import org.polypheny.db.webui.QueryPlanBuilder;
 public class JsonRelProcessorImpl implements JsonRelProcessor {
 
     @Override
-    public RelNode parseJsonRel( Statement statement, String query ) {
-        return QueryPlanBuilder.buildFromJsonRel( statement, query );
+    public RelNode parseJsonRel( Statement statement, String json ) {
+        return QueryPlanBuilder.buildFromJsonRel( statement, json );
     }
 
 }

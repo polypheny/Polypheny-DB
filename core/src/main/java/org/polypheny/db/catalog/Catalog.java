@@ -1421,6 +1421,20 @@ public abstract class Catalog {
      */
     public abstract boolean checkIfExistsPartitionPlacement( int adapterId, long partitionId );
 
+    /**
+     * Deletes all the dependencies of a view. This is used when deleting a view.
+     *
+     * @param catalogView view for which to delete its dependencies
+     */
+    public abstract void deleteViewDependencies( CatalogView catalogView );
+
+    /**
+     * Updates the last time a materialized view was updated.
+     *
+     * @param materializedViewId id of the materialized view
+     */
+    public abstract void updateMaterializedViewUpdateTime( long materializedViewId );
+
 
     /*
      *
@@ -1431,26 +1445,12 @@ public abstract class Catalog {
 
     public abstract void clear();
 
-    /**
-     * Deletes all the dependencies before deleting a View
-     *
-     * @param catalogView view to be deleted
-     */
-    public abstract void deleteViewDependencies( CatalogView catalogView );
-
-    /**
-     * updates the last time a materialized view was updated
-     *
-     * @param materializedId to update
-     */
-    public abstract void updateMaterialized( long materializedId );
-
 
     public enum TableType {
         TABLE( 1 ),
         SOURCE( 2 ),
         VIEW( 3 ),
-        MATERIALIZEDVIEW( 4 );
+        MATERIALIZED_VIEW( 4 );
         // STREAM, ...
 
         private final int id;

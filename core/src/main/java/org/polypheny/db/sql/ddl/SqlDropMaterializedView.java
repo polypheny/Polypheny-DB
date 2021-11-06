@@ -31,7 +31,7 @@ import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.view.MaterializedManager;
+import org.polypheny.db.view.MaterializedViewManager;
 
 public class SqlDropMaterializedView extends SqlDropObject {
 
@@ -61,11 +61,11 @@ public class SqlDropMaterializedView extends SqlDropObject {
             }
         }
 
-        if ( catalogTable.tableType != TableType.MATERIALIZEDVIEW ) {
+        if ( catalogTable.tableType != TableType.MATERIALIZED_VIEW ) {
             throw new RuntimeException( "Not Possible to use DROP MATERIALIZED VIEW because " + catalogTable.name + " is not a Materialized View." );
         }
 
-        MaterializedManager materializedManager = MaterializedManager.getInstance();
+        MaterializedViewManager materializedManager = MaterializedViewManager.getInstance();
         materializedManager.isDroppingMaterialized = true;
         materializedManager.deleteMaterializedViewFromInfo( catalogTable.id );
 

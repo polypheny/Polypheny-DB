@@ -35,20 +35,20 @@ import org.polypheny.db.excluded.CassandraExcluded;
 @Category({ AdapterTestSuite.class, CassandraExcluded.class })
 public class ViewTest {
 
-    private final static String VIEWTESTEMPTABLE_SQL = "CREATE TABLE viewTestEmpTable ("
+    private final static String VIEW_TEST_EMP_TABLE_SQL = "CREATE TABLE viewTestEmpTable ("
             + "empId INTEGER NOT NULL,"
             + "firstName VARCHAR(20),"
             + "lastName VARCHAR(20),"
             + "depId INTEGER NOT NULL,"
             + "PRIMARY KEY (empId))";
 
-    private final static String VIEWTESTDEPTABLE_SQL = "CREATE TABLE viewTestDepTable ("
+    private final static String VIEW_TEST_DEP_TABLE_SQL = "CREATE TABLE viewTestDepTable ("
             + "depId INTEGER NOT NULL,"
             + "depName VARCHAR(20),"
             + "locationId INTEGER NOT NULL,"
             + "PRIMARY KEY (depId))";
 
-    private final static String VIEWTESTLOCTABLE_SQL = "CREATE TABLE viewTestLocTable ("
+    private final static String VIEW_TEST_LOC_TABLE_SQL = "CREATE TABLE viewTestLocTable ("
             + "locationId INTEGER NOT NULL,"
             + "address VARCHAR(20),"
             + "postcode INTEGER,"
@@ -56,17 +56,17 @@ public class ViewTest {
             + "country VARCHAR(20),"
             + "PRIMARY KEY (locationId))";
 
-    private final static String VIEWTESTEMPTABLE_DATA_SQL = "INSERT INTO viewTestEmpTable VALUES"
+    private final static String VIEW_TEST_EMP_TABLE_DATA_SQL = "INSERT INTO viewTestEmpTable VALUES"
             + " ( 1, 'Max', 'Muster', 1 ),"
             + "( 2, 'Ernst', 'Walter', 2),"
             + "( 3, 'Elsa', 'Kuster', 3 )";
 
-    private final static String VIEWTESTDEPTABLE_DATA_SQL = "INSERT INTO viewTestDepTable VALUES"
+    private final static String VIEW_TEST_DEP_TABLE_DATA_SQL = "INSERT INTO viewTestDepTable VALUES"
             + "( 1, 'IT', 1),"
             + "( 2, 'Sales', 2),"
             + "( 3, 'HR', 3)";
 
-    private final static String VIEWTESTLOCTABLE_DATA_SQL = "INSERT INTO viewTestLocTable VALUES"
+    private final static String VIEW_TEST_LOC_TABLE_DATA_SQL = "INSERT INTO viewTestLocTable VALUES"
             + "(1, 'Bergstrasse 15', 4058, 'Basel', 'Switzerland'),"
             + "(2, 'Waldstrasse 11', 99900, 'Singen', 'Germany'),"
             + "(3, '5th Avenue 1234', 10001, 'New York', 'USA') ";
@@ -85,10 +85,10 @@ public class ViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_DATA_SQL );
 
                 try {
                     statement.executeUpdate( "CREATE VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
@@ -135,8 +135,8 @@ public class ViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_DATA_SQL );
 
                 try {
                     statement.executeUpdate( "CREATE VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
@@ -188,10 +188,10 @@ public class ViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_DATA_SQL );
                 statement.executeUpdate( "CREATE VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
                 statement.executeUpdate( "CREATE VIEW viewTestDep AS SELECT * FROM viewTestDepTable" );
 
@@ -235,10 +235,10 @@ public class ViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_DATA_SQL );
-                statement.executeUpdate( VIEWTESTLOCTABLE_SQL );
-                statement.executeUpdate( VIEWTESTLOCTABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_LOC_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_LOC_TABLE_DATA_SQL );
 
                 try {
                     TestHelper.checkResultSet(
@@ -262,12 +262,12 @@ public class ViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_DATA_SQL );
-                statement.executeUpdate( VIEWTESTLOCTABLE_SQL );
-                statement.executeUpdate( VIEWTESTLOCTABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_LOC_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_LOC_TABLE_DATA_SQL );
 
                 statement.executeUpdate( "CREATE VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
                 statement.executeUpdate( "CREATE VIEW viewTestDep AS SELECT * FROM viewTestDepTable" );
@@ -314,10 +314,10 @@ public class ViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_DATA_SQL );
 
                 try {
                     statement.executeUpdate( "CREATE VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
@@ -346,10 +346,10 @@ public class ViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_DATA_SQL );
 
                 try {
                     statement.executeUpdate( "CREATE VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
@@ -381,8 +381,8 @@ public class ViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_DATA_SQL );
 
                 try {
                     statement.executeUpdate( "CREATE VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
@@ -411,10 +411,10 @@ public class ViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( VIEWTESTEMPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTEMPTABLE_DATA_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_SQL );
-                statement.executeUpdate( VIEWTESTDEPTABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_DATA_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_SQL );
+                statement.executeUpdate( VIEW_TEST_DEP_TABLE_DATA_SQL );
 
                 try {
                     statement.executeUpdate( "CREATE VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );

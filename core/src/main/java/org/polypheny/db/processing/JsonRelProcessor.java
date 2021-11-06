@@ -21,6 +21,6 @@ import org.polypheny.db.transaction.Statement;
 
 public interface JsonRelProcessor {
 
-    RelNode parseJsonRel( Statement statement, String query );
+    RelNode parseJsonRel( Statement statement, String json );
 
 }

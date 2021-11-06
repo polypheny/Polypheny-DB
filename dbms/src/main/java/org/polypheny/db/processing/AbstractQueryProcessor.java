@@ -139,8 +139,8 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
-import org.polypheny.db.view.MaterializedManager;
-import org.polypheny.db.view.MaterializedManager.TableUpdateVisitor;
+import org.polypheny.db.view.MaterializedViewManager;
+import org.polypheny.db.view.MaterializedViewManager.TableUpdateVisitor;
 import org.polypheny.db.view.ViewManager.ViewVisitor;
 
 
@@ -218,7 +218,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         //Update which tables where changed used for Materialized Views
         TableUpdateVisitor visitor = new TableUpdateVisitor();
         logicalRoot.rel.accept( visitor );
-        MaterializedManager.getInstance().addTables( statement.getTransaction(), visitor.getNames() );
+        MaterializedViewManager.getInstance().addTables( statement.getTransaction(), visitor.getNames() );
 
         if ( isAnalyze ) {
             statement.getProcessingDuration().stop( "Prepare Views" );

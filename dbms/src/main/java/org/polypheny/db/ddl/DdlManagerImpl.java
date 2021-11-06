@@ -123,7 +123,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.view.MaterializedManager;
+import org.polypheny.db.view.MaterializedViewManager;
 
 
 @Slf4j
@@ -299,7 +299,7 @@ public class DdlManagerImpl extends DdlManager {
 
             Set<Long> temp = tablesToDrop;
             for ( Long id : temp ) {
-                if ( catalog.getTable( id ).tableType != TableType.MATERIALIZEDVIEW ) {
+                if ( catalog.getTable( id ).tableType != TableType.MATERIALIZED_VIEW ) {
                     tablesToDrop.add( id );
                 }
             }
@@ -558,7 +558,7 @@ public class DdlManagerImpl extends DdlManager {
         IndexType type = IndexType.MANUAL;
 
         // Make sure that this is a table of type TABLE (and not SOURCE)
-        if ( catalogTable.tableType != TableType.TABLE && catalogTable.tableType != TableType.MATERIALIZEDVIEW ) {
+        if ( catalogTable.tableType != TableType.TABLE && catalogTable.tableType != TableType.MATERIALIZED_VIEW ) {
             throw new RuntimeException( "It is only possible to add an index to a " + catalogTable.tableType.name() );
         }
 
@@ -1594,7 +1594,7 @@ public class DdlManagerImpl extends DdlManager {
                 viewName,
                 schemaId,
                 statement.getPrepareContext().getCurrentUserId(),
-                TableType.MATERIALIZEDVIEW,
+                TableType.MATERIALIZED_VIEW,
                 false,
                 relRoot.rel,
                 relRoot.collation,
@@ -1672,14 +1672,14 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Selected data from tables is added into the newly crated materialized view
-        MaterializedManager materializedManager = MaterializedManager.getInstance();
+        MaterializedViewManager materializedManager = MaterializedViewManager.getInstance();
         materializedManager.addData( statement.getTransaction(), stores, addedColumns, relRoot, catalogMaterializedView );
     }
 
 
     @Override
     public void refreshView( Statement statement, Long materializedId ) {
-        MaterializedManager materializedManager = MaterializedManager.getInstance();
+        MaterializedViewManager materializedManager = MaterializedViewManager.getInstance();
         materializedManager.updateData( statement.getTransaction(), materializedId );
         materializedManager.updateMaterializedTime( materializedId );
     }
@@ -2339,7 +2339,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void dropMaterializedView( CatalogTable materializedView, Statement statement ) throws DdlOnSourceException {
         // Make sure that this is a table of type Materialized View
-        if ( materializedView.tableType == TableType.MATERIALIZEDVIEW ) {
+        if ( materializedView.tableType == TableType.MATERIALIZED_VIEW ) {
             // Empty on purpose
         } else {
             throw new NotMaterializedViewException();

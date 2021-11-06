@@ -446,7 +446,7 @@ public class Crud implements InformationObserver {
                             tableElement.setTableType( "TABLE" );
                         } else if ( table.tableType == TableType.VIEW ) {
                             tableElement.setTableType( "VIEW" );
-                        } else if ( table.tableType == TableType.MATERIALIZEDVIEW ) {
+                        } else if ( table.tableType == TableType.MATERIALIZED_VIEW ) {
                             tableElement.setTableType( "MATERIALIZED" );
                         }
                     }
@@ -1363,7 +1363,7 @@ public class Crud implements InformationObserver {
             result = new Result( cols.toArray( new DbColumn[0] ), null );
             if ( catalogTable.tableType == TableType.TABLE ) {
                 result.setType( ResultType.TABLE );
-            } else if ( catalogTable.tableType == TableType.MATERIALIZEDVIEW ) {
+            } else if ( catalogTable.tableType == TableType.MATERIALIZED_VIEW ) {
                 result.setType( ResultType.MATERIALIZED );
             } else {
                 result.setType( ResultType.VIEW );
@@ -1488,7 +1488,7 @@ public class Crud implements InformationObserver {
         try {
             CatalogTable catalogTable = catalog.getTable( databaseName, request.schema, request.table );
 
-            if ( catalogTable.tableType == TableType.MATERIALIZEDVIEW ) {
+            if ( catalogTable.tableType == TableType.MATERIALIZED_VIEW ) {
                 CatalogMaterializedView catalogMaterializedView = (CatalogMaterializedView) catalogTable;
 
                 MaterializedCriteria materializedCriteria = catalogMaterializedView.getMaterializedCriteria();

@@ -57,7 +57,6 @@ import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.sql.SqlCreate;
-import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.SqlExecutableStatement;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlKind;
@@ -67,6 +66,7 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
+import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
@@ -77,7 +77,6 @@ import org.polypheny.db.util.ImmutableNullableList;
  */
 public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
 
-    public static final SqlDialect DIALECT = new SqlDialect( SqlDialect.EMPTY_CONTEXT.withIdentifierQuoteString( "\"" ) );
     private final SqlIdentifier name;
     private final SqlNodeList columnList;
     @Getter
@@ -157,7 +156,7 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
                     statement,
                     placementType,
                     columns,
-                    String.valueOf( query.toSqlString( DIALECT ) ),
+                    String.valueOf( query.toSqlString( PolyphenyDbSqlDialect.DEFAULT ) ),
                     QueryLanguage.SQL );
         } catch ( TableAlreadyExistsException e ) {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( viewName ) );

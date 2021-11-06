@@ -73,7 +73,7 @@ public class SqlAlterTableDropIndex extends SqlAlterTable {
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
 
-        if ( catalogTable.tableType != TableType.TABLE && catalogTable.tableType != TableType.MATERIALIZEDVIEW ) {
+        if ( catalogTable.tableType != TableType.TABLE && catalogTable.tableType != TableType.MATERIALIZED_VIEW ) {
             throw new RuntimeException( "Not possible to use ALTER TABLE DROP INDEX because" + catalogTable.name + " is not a table or materialized view." );
         }
 

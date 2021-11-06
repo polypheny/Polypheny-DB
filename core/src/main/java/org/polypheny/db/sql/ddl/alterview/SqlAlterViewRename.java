@@ -44,9 +44,7 @@ public class SqlAlterViewRename extends SqlAlterView {
 
 
     /**
-     * Creates a SqlAlterSchema.
-     *
-     * @param pos
+     * Creates a SqlAlterViewRename.
      */
     public SqlAlterViewRename( SqlParserPos pos, SqlIdentifier oldName, SqlIdentifier newName ) {
         super( pos );
