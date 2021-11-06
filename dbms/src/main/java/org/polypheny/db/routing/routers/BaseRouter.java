@@ -41,6 +41,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.JoinRelType;
+import org.polypheny.db.rel.logical.LogicalDocuments;
 import org.polypheny.db.rel.logical.LogicalValues;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.PolySchemaBuilder;
@@ -113,6 +114,10 @@ public abstract class BaseRouter {
     }
 
 
+    protected RoutedRelBuilder handleDocuments( LogicalDocuments node, RoutedRelBuilder builder ) {
+        return builder.documents( node.getDocumentTuples(), node.getRowType(), node.getTuples() );
+    }
+
     public RoutedRelBuilder handleGeneric( RelNode node, RoutedRelBuilder builder ) {
         val result = handleGeneric( node, Lists.newArrayList( builder ) );
         if ( result.size() > 1 ) {
@@ -136,6 +141,8 @@ public abstract class BaseRouter {
         }
         return builders;
     }
+
+
 
 
     public RelNode buildJoinedTableScan( Statement statement, RelOptCluster cluster, Map<Long, List<CatalogColumnPlacement>> placements ) {

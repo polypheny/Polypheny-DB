@@ -16,6 +16,7 @@
 
 package org.polypheny.db.tools;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.HashMap;
 import java.util.List;
@@ -23,6 +24,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.val;
+import org.bson.BsonValue;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
@@ -81,6 +83,12 @@ public class RoutedRelBuilder extends RelBuilder {
 
     public RoutedRelBuilder push( RelNode node ) {
         super.push( node );
+        return this;
+    }
+
+
+    public RoutedRelBuilder documents( ImmutableList<BsonValue> tuples, RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
+        super.documents( tuples, rowType, normalizedTuples );
         return this;
     }
 

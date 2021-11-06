@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -45,6 +46,7 @@ import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rel.core.TableModify.Operation;
 import org.polypheny.db.rel.logical.LogicalConditionalExecute;
+import org.polypheny.db.rel.logical.LogicalDocuments;
 import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalModifyCollect;
 import org.polypheny.db.rel.logical.LogicalProject;
@@ -254,7 +256,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                                         /* TODO add possibility to substitute the update as a insert into target partitoin from all source parttions
                                         // IS currently blocked
-                                        // needs to to a insert into target partition select from all other partitoins first and then delte on source partiitons
+                                        // needs to to a insert into target partitions select from all other partitions first and then delete on source partitions
                                         worstCaseRouting = false;
                                         log.debug( "oldValue and new value reside on same partition: " + identifiedPartitionForSetValue );
 
@@ -746,6 +748,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
             }
         } else if ( node instanceof LogicalValues ) {
+            if ( node.getModel() == SchemaType.DOCUMENT ) {
+                return handleDocuments( (LogicalDocuments) node, builder );
+            }
             builder = super.handleValues( (LogicalValues) node, builder );
             if ( catalogTable.columnIds.size() == placements.size() ) { // full placement, no additional checks required
                 return builder;

@@ -169,7 +169,7 @@ public class HttpCqlInterface extends QueryInterface {
         Result result;
         try {
             // Prepare
-            PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( relRoot );
+            PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( relRoot, false);
             log.debug( "RelRoot was prepared." );
 
             @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( statement.getDataContext() );

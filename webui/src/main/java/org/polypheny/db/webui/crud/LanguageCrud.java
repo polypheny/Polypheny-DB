@@ -118,7 +118,7 @@ public class LanguageCrud {
             Cql2RelConverter cql2RelConverter = new Cql2RelConverter( cqlQuery );
 
             RelRoot relRoot = cql2RelConverter.convert2Rel( relBuilder, rexBuilder );
-            PolyphenyDbSignature<?> signature = statement.getQueryProcessor().prepareQuery( relRoot );
+            PolyphenyDbSignature<?> signature = statement.getQueryProcessor().prepareQuery( relRoot, false );
 
             Result result = getResult( SchemaType.RELATIONAL, statement, request, cqlQueryStr, signature, request.noLimit );
             try {
@@ -187,7 +187,7 @@ public class LanguageCrud {
                 RelRoot logicalRoot = mqlProcessor.translate( statement, parsed, database );
 
                 // Prepare
-                signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
+                signature = statement.getQueryProcessor().prepareQuery( logicalRoot, false );
 
                 results.add( getResult( SchemaType.DOCUMENT, statement, request, query, signature, noLimit ) );
             }

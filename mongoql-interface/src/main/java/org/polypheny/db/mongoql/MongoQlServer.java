@@ -169,7 +169,7 @@ public class MongoQlServer extends QueryInterface {
                 RelRoot logicalRoot = mqlProcessor.translate( statement, parsed, query.database );
 
                 // Prepare
-                signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
+                signature = statement.getQueryProcessor().prepareQuery( logicalRoot, false);
 
                 results = getResults( statement, query, signature );
             }
