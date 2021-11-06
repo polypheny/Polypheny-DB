@@ -77,10 +77,10 @@ public class QueryPlanBuilder {
     }
 
 
-    public static RelNode buildFromJsonRel( Statement statement, String query ) {
+    public static RelNode buildFromJsonRel( Statement statement, String json ) {
         Gson gson = new Gson();
         RelBuilder b = createRelBuilder( statement );
-        return buildFromTree( gson.fromJson( query, UIRelNode.class ), statement );
+        return buildFromTree( gson.fromJson( json, UIRelNode.class ), statement );
     }
 
 

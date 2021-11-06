@@ -76,7 +76,7 @@ import org.polypheny.db.util.background.BackgroundTaskManager;
 
 
 @Slf4j
-public class MaterializedViewManagerImpl extends AbstractMaterializedViewManager {
+public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
     @Getter
     private final Map<Long, MaterializedCriteria> materializedInfo;

@@ -123,7 +123,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.view.AbstractMaterializedViewManager;
+import org.polypheny.db.view.MaterializedViewManager;
 
 
 @Slf4j
@@ -1672,14 +1672,14 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Selected data from tables is added into the newly crated materialized view
-        AbstractMaterializedViewManager materializedManager = AbstractMaterializedViewManager.getInstance();
+        MaterializedViewManager materializedManager = MaterializedViewManager.getInstance();
         materializedManager.addData( statement.getTransaction(), stores, addedColumns, relRoot, catalogMaterializedView );
     }
 
 
     @Override
     public void refreshView( Statement statement, Long materializedId ) {
-        AbstractMaterializedViewManager materializedManager = AbstractMaterializedViewManager.getInstance();
+        MaterializedViewManager materializedManager = MaterializedViewManager.getInstance();
         materializedManager.updateData( statement.getTransaction(), materializedId );
         materializedManager.updateMaterializedTime( materializedId );
     }

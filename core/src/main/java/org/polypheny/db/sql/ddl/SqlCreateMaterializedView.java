@@ -57,7 +57,7 @@ import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
-import org.polypheny.db.view.AbstractMaterializedViewManager;
+import org.polypheny.db.view.MaterializedViewManager;
 
 public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutableStatement {
 
@@ -111,7 +111,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
         long schemaId;
         String viewName;
 
-        AbstractMaterializedViewManager.getInstance().isCreatingMaterialized = true;
+        MaterializedViewManager.getInstance().isCreatingMaterialized = true;
 
         try {
             if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
@@ -199,7 +199,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
             throw new RuntimeException( e );
         }
 
-        AbstractMaterializedViewManager.getInstance().isCreatingMaterialized = false;
+        MaterializedViewManager.getInstance().isCreatingMaterialized = false;
     }
 
 

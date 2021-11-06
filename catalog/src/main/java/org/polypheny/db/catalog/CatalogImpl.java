@@ -460,8 +460,9 @@ public class CatalogImpl extends Catalog {
                         nodeInfo.put( c.id, relRoot.rel );
                         relTypeInfo.put( c.id, relRoot.validatedRowType );
                         break;
+
                     case RELALG:
-                        JsonRelProcessor jsonRelProcessor = statement.getTransaction().getJasonProcessor();
+                        JsonRelProcessor jsonRelProcessor = statement.getTransaction().getJsonRelProcessor();
                         RelNode result = jsonRelProcessor.parseJsonRel( statement, query );
 
                         final RelDataType rowType = result.getRowType();
@@ -475,6 +476,7 @@ public class CatalogImpl extends Catalog {
                         nodeInfo.put( c.id, root.rel );
                         relTypeInfo.put( c.id, root.validatedRowType );
                         break;
+
                     case MONGOQL:
                         MqlProcessor mqlProcessor = statement.getTransaction().getMqlProcessor();
                         MqlNode mqlNode = mqlProcessor.parse( query );

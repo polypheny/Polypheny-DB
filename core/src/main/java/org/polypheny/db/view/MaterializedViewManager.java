@@ -34,15 +34,15 @@ import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
 
 
-public abstract class AbstractMaterializedViewManager {
+public abstract class MaterializedViewManager {
 
-    public static AbstractMaterializedViewManager INSTANCE = null;
+    public static MaterializedViewManager INSTANCE = null;
     public boolean isDroppingMaterialized = false;
     public boolean isCreatingMaterialized = false;
     public boolean isUpdatingMaterialized = false;
 
 
-    public static AbstractMaterializedViewManager setAndGetInstance( AbstractMaterializedViewManager transaction ) {
+    public static MaterializedViewManager setAndGetInstance( MaterializedViewManager transaction ) {
         if ( INSTANCE != null ) {
             throw new RuntimeException( "Overwriting the MaterializedViewManager, when already set is not permitted." );
         }
@@ -51,7 +51,7 @@ public abstract class AbstractMaterializedViewManager {
     }
 
 
-    public static AbstractMaterializedViewManager getInstance() {
+    public static MaterializedViewManager getInstance() {
         if ( INSTANCE == null ) {
             throw new RuntimeException( "MaterializedViewManager was not set correctly on Polypheny-DB start-up" );
         }
