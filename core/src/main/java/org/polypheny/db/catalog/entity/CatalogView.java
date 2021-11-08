@@ -24,6 +24,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PartitionType;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.RelOptCluster;
@@ -208,9 +209,5 @@ public class CatalogView extends CatalogTable {
         return Catalog.getInstance().getNodeInfo().get( id );
     }
 
-
-    public enum QueryLanguage {
-        SQL, MONGOQL, RELALG
-    }
 
 }

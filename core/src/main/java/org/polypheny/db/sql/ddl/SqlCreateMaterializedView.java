@@ -28,7 +28,6 @@ import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
-import org.polypheny.db.catalog.entity.CatalogView.QueryLanguage;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
@@ -189,7 +188,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
                     columns,
                     materializedCriteria,
                     String.valueOf( query.toSqlString( PolyphenyDbSqlDialect.DEFAULT ) ),
-                    QueryLanguage.SQL,
+                    Catalog.QueryLanguage.SQL,
                     ifNotExists,
                     ordered );
         } catch ( TableAlreadyExistsException e ) {

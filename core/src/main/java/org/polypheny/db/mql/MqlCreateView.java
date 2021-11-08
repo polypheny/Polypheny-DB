@@ -20,7 +20,6 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
-import org.polypheny.db.catalog.entity.CatalogView.QueryLanguage;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -85,7 +84,7 @@ public class MqlCreateView extends MqlNode implements MqlExecutableStatement {
                     placementType,
                     relRoot.rel.getRowType().getFieldNames(),
                     buildQuery(),
-                    QueryLanguage.MONGOQL );
+                    Catalog.QueryLanguage.MONGOQL );
         } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         } // we just added the table/column, so it has to exist, or we have an internal problem

@@ -23,6 +23,7 @@ import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
@@ -43,7 +44,6 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
-import org.polypheny.db.catalog.entity.CatalogView.QueryLanguage;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
@@ -1568,6 +1568,21 @@ public abstract class Catalog {
                 }
             }
             throw new UnknownSchemaTypeException( name );
+        }
+    }
+
+
+    public enum QueryLanguage {
+        SQL( SchemaType.RELATIONAL ),
+        MONGOQL( SchemaType.DOCUMENT ),
+        RELALG( SchemaType.RELATIONAL );
+
+        @Getter
+        private final SchemaType schemaType;
+
+
+        QueryLanguage( SchemaType schemaType ) {
+            this.schemaType = schemaType;
         }
     }
 

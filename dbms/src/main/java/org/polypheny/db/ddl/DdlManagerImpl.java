@@ -43,6 +43,7 @@ import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.IndexType;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.NameGenerator;
@@ -62,7 +63,6 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
-import org.polypheny.db.catalog.entity.CatalogView.QueryLanguage;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
@@ -1533,7 +1533,7 @@ public class DdlManagerImpl extends DdlManager {
         findUnderlyingTablesOfView( relNode, underlyingTables, fieldList );
 
         // add check if underlying table is of model document -> mql, relational -> sql
-        // todo ig or dl
+        underlyingTables.keySet().forEach( tableId -> checkModelLangCompatibility( language, tableId ) );
 
         long tableId = catalog.addView(
                 viewName,
@@ -1587,6 +1587,9 @@ public class DdlManagerImpl extends DdlManager {
 
         Map<Long, List<Long>> underlyingTables = new HashMap<>();
         Map<Long, List<Long>> underlying = findUnderlyingTablesOfView( relRoot.rel, underlyingTables, fieldList );
+
+        // add check if underlying table is of model document -> mql, relational -> sql
+        underlying.keySet().forEach( tableId -> checkModelLangCompatibility( language, tableId ) );
 
         if ( materializedCriteria.getCriteriaType() == CriteriaType.UPDATE ) {
             List<TableType> tableTypes = new ArrayList<>();
@@ -1680,6 +1683,17 @@ public class DdlManagerImpl extends DdlManager {
         // Selected data from tables is added into the newly crated materialized view
         MaterializedViewManager materializedManager = MaterializedViewManager.getInstance();
         materializedManager.addData( statement.getTransaction(), stores, addedColumns, relRoot, catalogMaterializedView );
+    }
+
+
+    private void checkModelLangCompatibility( QueryLanguage language, Long tableId ) {
+        CatalogTable catalogTable = catalog.getTable( tableId );
+        if ( catalogTable.getSchemaType() != language.getSchemaType() ) {
+            throw new RuntimeException(
+                    String.format(
+                            "The used language cannot execute schema changing queries on this entity with the data model %s.",
+                            catalogTable.getSchemaType() ) );
+        }
     }
 
 

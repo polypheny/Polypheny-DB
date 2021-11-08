@@ -124,7 +124,6 @@ import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogView;
-import org.polypheny.db.catalog.entity.CatalogView.QueryLanguage;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
@@ -2961,7 +2960,7 @@ public class Crud implements InformationObserver {
                             columns,
                             materializedCriteria,
                             gson.toJson( request.topNode ),
-                            QueryLanguage.RELALG,
+                            Catalog.QueryLanguage.RELALG,
                             false,
                             false
                     );
@@ -3002,7 +3001,7 @@ public class Crud implements InformationObserver {
                             placementType,
                             columns,
                             gson.toJson( request.topNode ),
-                            QueryLanguage.RELALG
+                            Catalog.QueryLanguage.RELALG
                     );
                 } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
                     log.error( "Not possible to create View because the Name is already used", e );
