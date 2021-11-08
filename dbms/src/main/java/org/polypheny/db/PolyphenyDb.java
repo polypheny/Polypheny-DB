@@ -223,7 +223,7 @@ public class PolyphenyDb {
         // Initialize interface manager
         QueryInterfaceManager.initialize( transactionManager, authenticator );
 
-        //Initialize MaterializedViewManager
+        // Initialize MaterializedViewManager
         MaterializedViewManager.setAndGetInstance( new MaterializedViewManagerImpl( transactionManager ) );
 
         // Startup and restore catalog

@@ -491,6 +491,7 @@ public class CatalogImpl extends Catalog {
                         break;
                 }
                 if ( c.tableType == TableType.MATERIALIZED_VIEW ) {
+                    log.info( "Updating materialized view: {}", c.getSchemaName() + "." + c.name );
                     MaterializedViewManager materializedManager = MaterializedViewManager.getInstance();
                     materializedManager.addMaterializedInfo( c.id, ((CatalogMaterializedView) c).getMaterializedCriteria() );
                     materializedManager.updateData( statement.getTransaction(), c.id );

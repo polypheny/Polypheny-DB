@@ -100,7 +100,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
 
     /**
-     * updates the materialized Info
+     * Updates the materialized Info
      *
      * @return updated materializedInfo
      */
@@ -142,8 +142,8 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
 
     /**
-     * Is used by materialized views with freshness update
-     * updates how many updates were carried out on the underlying tables
+     * Is used by materialized views with freshness update.
+     * Updates how many updates were carried out on the underlying tables
      *
      * @param materializedId id from materialized view
      * @param updates number of updates

@@ -45,7 +45,7 @@ public abstract class MaterializedViewManager {
 
     public static MaterializedViewManager setAndGetInstance( MaterializedViewManager transaction ) {
         if ( INSTANCE != null ) {
-            throw new RuntimeException( "Overwriting the MaterializedViewManager, when already set is not permitted." );
+            throw new RuntimeException( "Overwriting the MaterializedViewManager is not permitted." );
         }
         INSTANCE = transaction;
         return INSTANCE;
@@ -86,7 +86,7 @@ public abstract class MaterializedViewManager {
     public static class TableUpdateVisitor extends RelShuttleImpl {
 
         @Getter
-        List<String> names = new ArrayList<>();
+        private final List<String> names = new ArrayList<>();
 
 
         @Override
