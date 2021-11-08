@@ -73,7 +73,7 @@ import spark.Response;
 @Slf4j
 public class LanguageCrud {
 
-    final Crud crud;
+    private final Crud crud;
 
 
     public LanguageCrud( Crud crud ) {
@@ -84,7 +84,7 @@ public class LanguageCrud {
     public Result processCqlRequest( Session session, QueryRequest request ) {
         try {
             String cqlQueryStr = request.query;
-            if ( cqlQueryStr.equals( "" ) ) {
+            if ( cqlQueryStr.trim().equals( "" ) ) {
                 throw new RuntimeException( "CQL query is an empty string!" );
             }
 
@@ -141,7 +141,7 @@ public class LanguageCrud {
     public Result processCqlRequest( Session session, QueryRequest request, Crud crud ) {
         try {
             String cqlQueryStr = request.query;
-            if ( cqlQueryStr.equals( "" ) ) {
+            if ( cqlQueryStr.trim().equals( "" ) ) {
                 throw new RuntimeException( "CQL query is an empty string!" );
 
             }
