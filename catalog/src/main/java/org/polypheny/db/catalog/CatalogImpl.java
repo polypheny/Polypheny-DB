@@ -481,6 +481,7 @@ public class CatalogImpl extends Catalog {
                     case MONGOQL:
                         MqlProcessor mqlProcessor = statement.getTransaction().getMqlProcessor();
                         MqlNode mqlNode = mqlProcessor.parse( query );
+
                         RelRoot mqlRel = mqlProcessor.translate(
                                 statement,
                                 mqlNode,

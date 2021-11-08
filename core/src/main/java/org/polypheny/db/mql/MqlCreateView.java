@@ -16,7 +16,6 @@
 
 package org.polypheny.db.mql;
 
-import java.util.Arrays;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.polypheny.db.catalog.Catalog;
@@ -61,11 +60,11 @@ public class MqlCreateView extends MqlNode implements MqlExecutableStatement {
         } catch ( UnknownSchemaException e ) {
             throw new RuntimeException( "Poly schema was not found." );
         }
-        String json = new BsonDocument( "key", this.pipeline ).toJson();
+        String json = getTransformedPipeline();
 
         MqlNode mqlNode = statement.getTransaction()
                 .getMqlProcessor()
-                .parse( "db." + source + ".aggregate(" + json.substring( 8, json.length() - 1 ) + ")" );
+                .parse( buildQuery() );
 
         RelRoot relRoot = statement.getTransaction()
                 .getMqlProcessor()
@@ -85,7 +84,7 @@ public class MqlCreateView extends MqlNode implements MqlExecutableStatement {
                     statement,
                     placementType,
                     relRoot.rel.getRowType().getFieldNames(),
-                    buildQuery( pipeline ),
+                    buildQuery(),
                     QueryLanguage.MONGOQL );
         } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
             throw new RuntimeException( e );
@@ -93,8 +92,14 @@ public class MqlCreateView extends MqlNode implements MqlExecutableStatement {
     }
 
 
-    private String buildQuery( BsonArray pipeline ) {
-        return "db.createView(" + String.join( ",", Arrays.asList( name, source, pipeline.toString() ) ) + ")";
+    private String getTransformedPipeline() {
+        String json = new BsonDocument( "key", this.pipeline ).toJson();
+        return json.substring( 8, json.length() - 1 );
+    }
+
+
+    private String buildQuery() {
+        return "db." + source + ".aggregate(" + getTransformedPipeline() + ")";
     }
 
 

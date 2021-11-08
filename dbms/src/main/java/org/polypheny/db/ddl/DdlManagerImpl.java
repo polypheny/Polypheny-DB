@@ -1529,6 +1529,12 @@ public class DdlManagerImpl extends DdlManager {
         List<ColumnInformation> columns = getColumnInformation( projectedColumns, fieldList );
 
         Map<Long, List<Long>> underlyingTables = new HashMap<>();
+
+        findUnderlyingTablesOfView( relNode, underlyingTables, fieldList );
+
+        // add check if underlying table is of model document -> mql, relational -> sql
+        // todo ig or dl
+
         long tableId = catalog.addView(
                 viewName,
                 schemaId,
@@ -1537,7 +1543,7 @@ public class DdlManagerImpl extends DdlManager {
                 false,
                 relNode,
                 relCollation,
-                findUnderlyingTablesOfView( relNode, underlyingTables, fieldList ),
+                underlyingTables,
                 fieldList,
                 query,
                 language
