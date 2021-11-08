@@ -34,6 +34,7 @@ import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
+
 public class SqlAlterMaterializedViewDropIndex extends SqlAlterMaterializedView {
 
     private final SqlIdentifier table;
