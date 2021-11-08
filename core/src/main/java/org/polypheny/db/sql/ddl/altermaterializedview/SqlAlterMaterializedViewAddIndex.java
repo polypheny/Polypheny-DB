@@ -48,6 +48,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.util.ImmutableNullableList;
 
+
 public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
 
 
@@ -110,9 +111,7 @@ public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
 
     @Override
     public void execute( Context context, Statement statement ) {
-
         CatalogTable catalogTable = getCatalogTable( context, table );
-
         if ( catalogTable.tableType != TableType.MATERIALIZED_VIEW ) {
             throw new RuntimeException( "Not Possible to use ALTER MATERIALIZED VIEW because " + catalogTable.name + " is not a Materialized View." );
         }
@@ -120,7 +119,6 @@ public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
         DataStore storeInstance = null;
         if ( storeName != null ) {
             storeInstance = getDataStoreInstance( storeName );
-
             if ( storeInstance == null ) {
                 throw SqlUtil.newContextException(
                         storeName.getParserPosition(),

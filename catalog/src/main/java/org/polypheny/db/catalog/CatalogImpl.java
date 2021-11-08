@@ -309,7 +309,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * checks if a file can be created on the system, accessed and changed
+     * Checks if a file can be created on the system, accessed and changed
      *
      * @return if it was possible
      */
@@ -371,10 +371,10 @@ public class CatalogImpl extends Catalog {
             List<CatalogColumnPlacement> placements = getColumnPlacement( c.id );
             CatalogTable catalogTable = getTable( c.tableId );
 
-            //no column placements need to be restored if it is a view
+            // No column placements need to be restored if it is a view
             if ( catalogTable.tableType != TableType.VIEW ) {
                 if ( placements.size() == 0 ) {
-                    // no placements shouldn't happen
+                    // No placements shouldn't happen
                     throw new RuntimeException( "There seems to be no placement for the column with the id " + c.id );
                 } else if ( placements.size() == 1 ) {
                     Adapter adapter = manager.getAdapter( placements.get( 0 ).adapterId );
@@ -432,8 +432,8 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * on restart all RelNodes used in views and materialized views need to be recreated
-     * depending on the query language different methods are used
+     * On restart, all RelNodes used in views and materialized views need to be recreated.
+     * Depending on the query language, different methods are used.
      */
     @Override
     public void restoreViews( Transaction transaction ) {
