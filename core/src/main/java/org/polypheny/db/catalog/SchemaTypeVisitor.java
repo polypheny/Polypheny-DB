@@ -25,6 +25,8 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.core.TableScan;
+import org.polypheny.db.schema.LogicalTable;
+import org.polypheny.db.schema.Table;
 
 public class SchemaTypeVisitor extends RelShuttleImpl {
 
@@ -51,9 +53,18 @@ public class SchemaTypeVisitor extends RelShuttleImpl {
             if ( names.size() == 3 ) {
                 schema = Catalog.getInstance().getSchema( names.get( 0 ), names.get( 1 ) );
             } else if ( names.size() == 2 ) {
-                schema = Catalog.getInstance().getSchema( Catalog.defaultDatabaseId, names.get( 0 ) );
+                if ( names.get( 0 ).contains( "_" ) ) {
+                    schema = Catalog.getInstance().getSchema( Catalog.defaultDatabaseId, names.get( 0 ).split( "_" )[names.size() - 1] );
+                } else {
+                    schema = Catalog.getInstance().getSchema( Catalog.defaultDatabaseId, names.get( 0 ) );
+                }
             } else {
-                throw new RuntimeException( "The used table did not use a full name." );
+                Table logicalTable = scan.getTable().getTable();
+                if ( logicalTable instanceof LogicalTable ) {
+                    schema = Catalog.getInstance().getSchema( Catalog.defaultDatabaseId, ((LogicalTable) logicalTable).getLogicalSchemaName() );
+                } else {
+                    throw new RuntimeException( "The used table did not use a full name." );
+                }
             }
             schemaTypes.add( schema.getSchemaType() );
         } catch ( UnknownSchemaException | UnknownDatabaseException e ) {
