@@ -54,6 +54,8 @@ import org.polypheny.db.adapter.index.Index;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.SchemaTypeVisitor;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -183,6 +185,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery, boolean doesSubstituteOrderBy ) {
         boolean isAnalyze = statement.getTransaction().isAnalyze() && !isSubquery;
         boolean lock = !isSubquery;
+        SchemaType schemaType = null;
 
         final StopWatch stopWatch = new StopWatch();
 
@@ -219,6 +222,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         TableUpdateVisitor visitor = new TableUpdateVisitor();
         logicalRoot.rel.accept( visitor );
         MaterializedViewManager.getInstance().addTables( statement.getTransaction(), visitor.getNames() );
+
+        SchemaTypeVisitor schemaTypeVisitor = new SchemaTypeVisitor();
+        logicalRoot.rel.accept( schemaTypeVisitor );
+        schemaType = schemaTypeVisitor.getSchemaTypes();
 
         if ( isAnalyze ) {
             statement.getProcessingDuration().stop( "Prepare Views" );
@@ -413,6 +420,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         }
 
         PolyphenyDbSignature signature = createSignature( preparedResult, optimalRoot, resultConvention, executionTimeMonitor );
+        signature.setSchemaType( schemaType );
 
         if ( isAnalyze ) {
             statement.getProcessingDuration().stop( "Implementation" );

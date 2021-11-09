@@ -34,7 +34,6 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.LanguageType;
-import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -120,7 +119,7 @@ public class LanguageCrud {
             RelRoot relRoot = cql2RelConverter.convert2Rel( relBuilder, rexBuilder );
             PolyphenyDbSignature<?> signature = statement.getQueryProcessor().prepareQuery( relRoot );
 
-            Result result = getResult( SchemaType.RELATIONAL, LanguageType.CQL, statement, request, cqlQueryStr, signature, request.noLimit );
+            Result result = getResult( LanguageType.CQL, statement, request, cqlQueryStr, signature, request.noLimit );
             try {
                 statement.getTransaction().commit();
             } catch ( TransactionException e ) {
@@ -187,7 +186,7 @@ public class LanguageCrud {
                 // Prepare
                 signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
 
-                results.add( getResult( SchemaType.DOCUMENT, LanguageType.MQL, statement, request, query, signature, noLimit ) );
+                results.add( getResult( LanguageType.MQL, statement, request, query, signature, noLimit ) );
             }
 
             if ( parsed instanceof MqlUseDatabase ) {
@@ -213,7 +212,7 @@ public class LanguageCrud {
 
 
     @NotNull
-    private static Result getResult( SchemaType schemaType, LanguageType languageType, Statement statement, QueryRequest request, String query, PolyphenyDbSignature<?> signature, final boolean noLimit ) {
+    private static Result getResult( LanguageType languageType, Statement statement, QueryRequest request, String query, PolyphenyDbSignature<?> signature, final boolean noLimit ) {
         Catalog catalog = Catalog.getInstance();
 
         Iterator<Object> iterator;
@@ -289,7 +288,7 @@ public class LanguageCrud {
             ArrayList<String[]> data = Crud.computeResultData( rows, header, statement.getTransaction() );
 
             return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) )
-                    .setSchemaType( schemaType )
+                    .setSchemaType( signature.getSchemaType() )
                     .setLanguageType( languageType )
                     .setAffectedRows( data.size() )
                     .setHasMoreRows( hasMoreRows )

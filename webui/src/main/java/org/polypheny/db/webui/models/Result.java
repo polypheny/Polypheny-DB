@@ -160,6 +160,20 @@ public class Result {
 
 
     /**
+     * Build a Result object containing the data from the ResultSet, including the headers of the columns
+     *
+     * @param header columns of the result
+     * @param data data of the result
+     */
+    public Result( final DbColumn[] header, final String[][] data, SchemaType schemaType, LanguageType languageType ) {
+        this.header = header;
+        this.data = data;
+        this.schemaType = schemaType;
+        this.languageType = languageType;
+    }
+
+
+    /**
      * Build a Result object containing the error message of a failed query
      *
      * @param error error message of the query
