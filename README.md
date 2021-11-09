@@ -1,3 +1,7 @@
+<a href="https://polypheny.org/">
+    <img align="right" width="200" height="200" src="https://polypheny.org/community/logo/logo.png" alt="Resume application project app icon">
+</a>
+
 # Polypheny-DB
 
 _Polypheny-DB_ is a self-adaptive Polystore that provides cost- and workload aware access to heterogeneous data. As a Polystore, Polypheny-DB seamlessly combines different underlying data storage engines to provide good query performance independent of the type of workload.

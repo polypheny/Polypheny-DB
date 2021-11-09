@@ -725,8 +725,8 @@ public class Mql2RelFindTest extends Mql2RelTest {
             // test json value
             testJsonValue( assertRexCall(, 0 ), key );
         } else {*/
-            // test json value
-            testJsonValue( assertRexCall( condition, 0 ), key );
+        // test json value
+        testJsonValue( assertRexCall( condition, 0 ), key );
         //}
 
         // test initial comp value

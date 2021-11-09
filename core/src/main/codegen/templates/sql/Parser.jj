@@ -6291,6 +6291,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < FRAME_ROW: "FRAME_ROW" >
 |   < FREE: "FREE" >
 |   < FREQUENCY: "FREQUENCY" >
+|  < FRESHNESS: "FRESHNESS">
 |   < FROM: "FROM" >
 |   < FULL: "FULL" >
 |   < FUNCTION: "FUNCTION" >
@@ -6382,12 +6383,14 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < LOCATOR: "LOCATOR" >
 |   < LOWER: "LOWER" >
 |   < M: "M" >
+|   < MANUAL: "MANUAL">
 |   < MAP: "MAP" >
 |   < MATCH: "MATCH" >
 |   < MATCHED: "MATCHED" >
 |   < MATCHES: "MATCHES" >
 |   < MATCH_NUMBER: "MATCH_NUMBER">
 |   < MATCH_RECOGNIZE: "MATCH_RECOGNIZE">
+|   < MATERIALIZED: "MATERIALIZED">
 |   < MAX: "MAX" >
 |   < MAXVALUE: "MAXVALUE" >
 |   < MEASURES: "MEASURES" >

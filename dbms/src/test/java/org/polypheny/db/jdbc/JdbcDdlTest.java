@@ -227,6 +227,133 @@ public class JdbcDdlTest {
 
 
     @Test
+    public void materializedTestTime() throws SQLException {
+        // Check if there are new types missing in this test
+        Assert.assertEquals( "Unexpected number of available types", PolyType.availableTypes().size(), 17 );
+
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                // Create ddltest table and insert data
+                statement.executeUpdate( "CREATE TABLE ddltest( "
+                        + "ttime TIME NOT NULL, "
+                        + "PRIMARY KEY (ttime) )" );
+                statement.executeUpdate( "INSERT INTO ddltest VALUES ("
+                        + "time '11:59:32'"
+                        + ")" );
+                statement.executeUpdate( "CREATE MATERIALIZED VIEW ddltestMaterialized as SELECT * FROM ddltest FRESHNESS MANUAL" );
+
+                try {
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT ttime FROM ddltestMaterialized" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[8] } ) );
+
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW ddltestMaterialized" );
+                    statement.executeUpdate( "DROP TABLE ddltest" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void materializedTestTimeStamp() throws SQLException {
+        // Check if there are new types missing in this test
+        Assert.assertEquals( "Unexpected number of available types", PolyType.availableTypes().size(), 17 );
+
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                // Create ddltest table and insert data
+                statement.executeUpdate( "CREATE TABLE ddltest( "
+                        + "ttimestamp TIMESTAMP NOT NULL, "
+                        + "PRIMARY KEY (ttimestamp))" );
+                statement.executeUpdate( "INSERT INTO ddltest VALUES ("
+                        + "timestamp '2021-01-01 10:11:15'"
+                        + ")" );
+                statement.executeUpdate( "CREATE MATERIALIZED VIEW ddltestMaterialized as SELECT * FROM ddltest FRESHNESS MANUAL" );
+
+                try {
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT ttimestamp FROM ddltestMaterialized" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[9] } ) );
+
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW ddltestMaterialized" );
+                    statement.executeUpdate( "DROP TABLE ddltest" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void materializedTestTypes() throws SQLException {
+        // Check if there are new types missing in this test
+        Assert.assertEquals( "Unexpected number of available types", PolyType.availableTypes().size(), 17 );
+
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                // Create ddltest table and insert data
+                statement.executeUpdate( DDLTEST_SQL );
+                statement.executeUpdate( DDLTEST_DATA_SQL );
+                statement.executeUpdate( "CREATE MATERIALIZED VIEW ddltestMaterialized as SELECT * FROM ddltest FRESHNESS MANUAL" );
+
+                try {
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tbigint FROM ddltestMaterialized" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[0] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tboolean FROM ddltestMaterialized" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[1] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tdate FROM ddltestMaterialized" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[2] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tdecimal FROM ddltestMaterialized" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[3] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tdouble FROM ddltestMaterialized" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[4] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tinteger FROM ddltestMaterialized" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[5] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT treal FROM ddltestMaterialized" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[6] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tsmallint FROM ddltestMaterialized" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[7] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT ttime FROM ddltestMaterialized" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[8] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT ttimestamp FROM ddltestMaterialized" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[9] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT ttinyint FROM ddltestMaterialized" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[10] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tvarchar FROM ddltestMaterialized" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[11] } ) );
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW ddltestMaterialized" );
+                    statement.executeUpdate( "DROP TABLE ddltest" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    @Test
     public void nullTest() throws SQLException {
         // Check if there are new types missing in this test
         Assert.assertEquals( "Unexpected number of available types", PolyType.availableTypes().size(), 17 );

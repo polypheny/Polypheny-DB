@@ -36,14 +36,14 @@ public class InformationWebSocket {
 
     @OnWebSocketConnect
     public void connected( final Session session ) {
-        log.debug( "UI connected to websocket" );
+        log.debug( "UI connected to WebSocket" );
         sessions.add( session );
     }
 
 
     @OnWebSocketClose
     public void closed( final Session session, final int statusCode, final String reason ) {
-        log.debug( "UI disconnected from websocket" );
+        log.debug( "UI disconnected from WebSocket" );
         sessions.remove( session );
     }
 

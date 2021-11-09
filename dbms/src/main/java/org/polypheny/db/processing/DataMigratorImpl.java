@@ -25,6 +25,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.MetaImpl;
@@ -47,6 +48,7 @@ import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.TableModify.Operation;
 import org.polypheny.db.rel.logical.LogicalValues;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -64,6 +66,7 @@ import org.polypheny.db.util.LimitIterator;
 
 @Slf4j
 public class DataMigratorImpl implements DataMigrator {
+
 
     @Override
     public void copyData( Transaction transaction, CatalogAdapter store, List<CatalogColumn> columns, List<Long> partitionIds ) {
@@ -111,61 +114,151 @@ public class DataMigratorImpl implements DataMigrator {
             }
 
             // Execute Query
-            try {
-                PolyphenyDbSignature signature = sourceStatement.getQueryProcessor().prepareQuery( sourceRel, sourceRel.rel.getCluster().getTypeFactory().builder().build(), true );
-                final Enumerable enumerable = signature.enumerable( sourceStatement.getDataContext() );
-                //noinspection unchecked
-                Iterator<Object> sourceIterator = enumerable.iterator();
-
-                Map<Long, Integer> resultColMapping = new HashMap<>();
-                for ( CatalogColumn catalogColumn : selectColumnList ) {
-                    int i = 0;
-                    for ( ColumnMetaData metaData : signature.columns ) {
-                        if ( metaData.columnName.equalsIgnoreCase( catalogColumn.name ) ) {
-                            resultColMapping.put( catalogColumn.id, i );
-                        }
-                        i++;
-                    }
-                }
-
-                int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
-                while ( sourceIterator.hasNext() ) {
-                    List<List<Object>> rows = MetaImpl.collect(
-                            signature.cursorFactory,
-                            LimitIterator.of( sourceIterator, batchSize ),
-                            new ArrayList<>() );
-                    Map<Long, List<Object>> values = new HashMap<>();
-                    for ( List<Object> list : rows ) {
-                        for ( Map.Entry<Long, Integer> entry : resultColMapping.entrySet() ) {
-                            if ( !values.containsKey( entry.getKey() ) ) {
-                                values.put( entry.getKey(), new LinkedList<>() );
-                            }
-                            values.get( entry.getKey() ).add( list.get( entry.getValue() ) );
-                        }
-                    }
-                    for ( Map.Entry<Long, List<Object>> v : values.entrySet() ) {
-                        targetStatement.getDataContext().addParameterValues( v.getKey(), null, v.getValue() );
-                    }
-                    Iterator iterator = targetStatement.getQueryProcessor()
-                            .prepareQuery( targetRel, sourceRel.validatedRowType, true )
-                            .enumerable( targetStatement.getDataContext() )
-                            .iterator();
-                    //noinspection WhileLoopReplaceableByForEach
-                    while ( iterator.hasNext() ) {
-                        iterator.next();
-                    }
-                    targetStatement.getDataContext().resetParameterValues();
-                }
-            } catch ( Throwable t ) {
-                throw new RuntimeException( t );
-            }
+            executeQuery( selectColumnList, sourceRel, sourceStatement, targetStatement, targetRel, false, false );
         }
     }
 
 
-    private RelRoot buildInsertStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId ) {
+    @Override
+    public void executeQuery( List<CatalogColumn> selectColumnList, RelRoot sourceRel, Statement sourceStatement, Statement targetStatement, RelRoot targetRel, boolean isMaterializedView, boolean doesSubstituteOrderBy ) {
+        try {
+            PolyphenyDbSignature signature;
+            if ( isMaterializedView ) {
+                signature = sourceStatement.getQueryProcessor().prepareQuery(
+                        sourceRel,
+                        sourceRel.rel.getCluster().getTypeFactory().builder().build(),
+                        false,
+                        false,
+                        doesSubstituteOrderBy );
+            } else {
+                signature = sourceStatement.getQueryProcessor().prepareQuery(
+                        sourceRel,
+                        sourceRel.rel.getCluster().getTypeFactory().builder().build(),
+                        true );
+            }
+            final Enumerable enumerable = signature.enumerable( sourceStatement.getDataContext() );
+            //noinspection unchecked
+            Iterator<Object> sourceIterator = enumerable.iterator();
+
+            Map<Long, Integer> resultColMapping = new HashMap<>();
+            for ( CatalogColumn catalogColumn : selectColumnList ) {
+                int i = 0;
+                for ( ColumnMetaData metaData : signature.columns ) {
+                    if ( metaData.columnName.equalsIgnoreCase( catalogColumn.name ) ) {
+                        resultColMapping.put( catalogColumn.id, i );
+                    }
+                    i++;
+                }
+            }
+            if ( isMaterializedView ) {
+                for ( CatalogColumn catalogColumn : selectColumnList ) {
+                    if ( !resultColMapping.containsKey( catalogColumn.id ) ) {
+                        int i = resultColMapping.values().stream().mapToInt( v -> v ).max().orElseThrow( NoSuchElementException::new );
+                        resultColMapping.put( catalogColumn.id, i + 1 );
+                    }
+                }
+            }
+
+            int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
+            int i = 0;
+            while ( sourceIterator.hasNext() ) {
+                List<List<Object>> rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
+                Map<Long, List<Object>> values = new HashMap<>();
+
+                for ( List<Object> list : rows ) {
+                    for ( Map.Entry<Long, Integer> entry : resultColMapping.entrySet() ) {
+                        if ( !values.containsKey( entry.getKey() ) ) {
+                            values.put( entry.getKey(), new LinkedList<>() );
+                        }
+                        if ( isMaterializedView ) {
+                            if ( entry.getValue() > list.size() - 1 ) {
+                                values.get( entry.getKey() ).add( i );
+                                i++;
+                            } else {
+                                values.get( entry.getKey() ).add( list.get( entry.getValue() ) );
+                            }
+                        } else {
+                            values.get( entry.getKey() ).add( list.get( entry.getValue() ) );
+                        }
+                    }
+                }
+                List<RelDataTypeField> fields;
+                if ( isMaterializedView ) {
+                    fields = targetRel.rel.getTable().getRowType().getFieldList();
+                } else {
+                    fields = sourceRel.validatedRowType.getFieldList();
+                }
+                int pos = 0;
+                for ( Map.Entry<Long, List<Object>> v : values.entrySet() ) {
+                    targetStatement.getDataContext().addParameterValues( v.getKey(), fields.get( resultColMapping.get( v.getKey() ) ).getType(), v.getValue() );
+                    pos++;
+                }
+
+                Iterator iterator = targetStatement.getQueryProcessor()
+                        .prepareQuery( targetRel, sourceRel.validatedRowType, true )
+                        .enumerable( targetStatement.getDataContext() )
+                        .iterator();
+                //noinspection WhileLoopReplaceableByForEach
+                while ( iterator.hasNext() ) {
+                    iterator.next();
+                }
+                targetStatement.getDataContext().resetParameterValues();
+            }
+        } catch ( Throwable t ) {
+            throw new RuntimeException( t );
+        }
+    }
+
+
+    @Override
+    public RelRoot buildDeleteStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId ) {
         List<String> qualifiedTableName = ImmutableList.of(
-                PolySchemaBuilder.buildAdapterSchemaName( to.get( 0 ).adapterUniqueName, to.get( 0 ).getLogicalSchemaName(), to.get( 0 ).physicalSchemaName ),
+                PolySchemaBuilder.buildAdapterSchemaName(
+                        to.get( 0 ).adapterUniqueName,
+                        to.get( 0 ).getLogicalSchemaName(),
+                        to.get( 0 ).physicalSchemaName ),
+                to.get( 0 ).getLogicalTableName() + "_" + partitionId );
+        RelOptTable physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
+        ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
+
+        RelOptCluster cluster = RelOptCluster.create(
+                statement.getQueryProcessor().getPlanner(),
+                new RexBuilder( statement.getTransaction().getTypeFactory() ) );
+        RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+
+        List<String> columnNames = new LinkedList<>();
+        List<RexNode> values = new LinkedList<>();
+        for ( CatalogColumnPlacement ccp : to ) {
+            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( ccp.columnId );
+            columnNames.add( ccp.getLogicalColumnName() );
+            values.add( new RexDynamicParam( catalogColumn.getRelDataType( typeFactory ), (int) catalogColumn.id ) );
+        }
+        RelBuilder builder = RelBuilder.create( statement, cluster );
+        builder.push( LogicalValues.createOneRow( cluster ) );
+        builder.project( values, columnNames );
+
+        RelNode node = modifiableTable.toModificationRel(
+                cluster,
+                physical,
+                statement.getTransaction().getCatalogReader(),
+                builder.build(),
+                Operation.DELETE,
+                null,
+                null,
+                true
+        );
+
+        return RelRoot.of( node, SqlKind.DELETE );
+    }
+
+
+    @Override
+    public RelRoot buildInsertStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId ) {
+        List<String> qualifiedTableName = ImmutableList.of(
+                PolySchemaBuilder.buildAdapterSchemaName(
+                        to.get( 0 ).adapterUniqueName,
+                        to.get( 0 ).getLogicalSchemaName(),
+                        to.get( 0 ).physicalSchemaName ),
                 to.get( 0 ).getLogicalTableName() + "_" + partitionId );
         RelOptTable physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
         ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
@@ -202,7 +295,10 @@ public class DataMigratorImpl implements DataMigrator {
 
     private RelRoot buildUpdateStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId ) {
         List<String> qualifiedTableName = ImmutableList.of(
-                PolySchemaBuilder.buildAdapterSchemaName( to.get( 0 ).adapterUniqueName, to.get( 0 ).getLogicalSchemaName(), to.get( 0 ).physicalSchemaName ),
+                PolySchemaBuilder.buildAdapterSchemaName(
+                        to.get( 0 ).adapterUniqueName,
+                        to.get( 0 ).getLogicalSchemaName(),
+                        to.get( 0 ).physicalSchemaName ),
                 to.get( 0 ).getLogicalTableName() + "_" + partitionId );
         RelOptTable physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
         ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
@@ -264,7 +360,9 @@ public class DataMigratorImpl implements DataMigrator {
     }
 
 
-    private RelRoot getSourceIterator( Statement statement, Map<Long, List<CatalogColumnPlacement>> placementDistribution ) {
+    @Override
+    public RelRoot getSourceIterator( Statement statement, Map<Long, List<CatalogColumnPlacement>> placementDistribution ) {
+
         // Build Query
         RelOptCluster cluster = RelOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),

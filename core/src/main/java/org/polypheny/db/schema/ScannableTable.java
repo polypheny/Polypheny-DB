@@ -34,7 +34,6 @@
 package org.polypheny.db.schema;
 
 
-import java.io.Serializable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.polypheny.db.adapter.DataContext;
 
@@ -42,7 +41,7 @@ import org.polypheny.db.adapter.DataContext;
 /**
  * Table that can be scanned without creating an intermediate relational expression.
  */
-public interface ScannableTable extends Table, Serializable {
+public interface ScannableTable extends Table {
 
     /**
      * Returns an enumerator over the rows in this Table. Each row is represented as an array of its column values.

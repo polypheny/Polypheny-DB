@@ -20,7 +20,7 @@ package org.polypheny.db.ddl.exception;
 public class NotViewException extends RuntimeException {
 
     public NotViewException() {
-        super( "The provided entity to drop is not a view." );
+        super( "The provided entity is not a view." );
     }
 
 }

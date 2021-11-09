@@ -104,10 +104,6 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
         CatalogTable catalogTable = getCatalogTable( context, table );
         CatalogTable refTable = getCatalogTable( context, referencesTable );
 
-        if ( catalogTable.isView() || refTable.isView() ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE with Views" );
-        }
-
         // Make sure that this is a table of type TABLE (and not SOURCE)
         if ( catalogTable.tableType != TableType.TABLE ) {
             throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.ddlOnSourceTable() );

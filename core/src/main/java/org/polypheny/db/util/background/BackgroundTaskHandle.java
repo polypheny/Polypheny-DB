@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.time.StopWatch;
+import org.polypheny.db.util.background.BackgroundTask.TaskDelayType;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
@@ -44,7 +45,14 @@ class BackgroundTaskHandle implements Runnable {
 
         // Schedule
         ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
-        this.runner = exec.scheduleAtFixedRate( this, 0, schedulingType.getMillis(), TimeUnit.MILLISECONDS );
+        if ( schedulingType.getDelayType() == TaskDelayType.FIXED ) {
+            this.runner = exec.scheduleAtFixedRate( this, 0, schedulingType.getMillis(), TimeUnit.MILLISECONDS );
+        } else if ( schedulingType.getDelayType() == TaskDelayType.DELAYED ) {
+            this.runner = exec.scheduleWithFixedDelay( this, 0, schedulingType.getMillis(), TimeUnit.MILLISECONDS );
+        } else {
+            throw new RuntimeException( "Unknown TaskDelayType: " + schedulingType.getDelayType().name() );
+        }
+
     }
 
 

@@ -36,7 +36,6 @@ package org.polypheny.db.runtime;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import java.io.Serializable;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,7 +51,7 @@ import org.polypheny.db.util.ImmutableNullableList;
 /**
  * Space-efficient, comparable, immutable lists.
  */
-public class FlatLists implements Serializable {
+public class FlatLists {
 
     private FlatLists() {
     }
@@ -462,7 +461,7 @@ public class FlatLists implements Serializable {
      *
      * @param <T> Element type
      */
-    protected static class Flat2List<T> extends AbstractFlatList<T> implements ComparableList<T>, Serializable {
+    protected static class Flat2List<T> extends AbstractFlatList<T> implements ComparableList<T> {
 
         private final T t0;
         private final T t1;

@@ -59,6 +59,8 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.TransactionManagerImpl;
 import org.polypheny.db.util.FileSystemManager;
+import org.polypheny.db.view.MaterializedViewManager;
+import org.polypheny.db.view.MaterializedViewManagerImpl;
 import org.polypheny.db.webui.ConfigServer;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.InformationServer;
@@ -221,6 +223,9 @@ public class PolyphenyDb {
         // Initialize interface manager
         QueryInterfaceManager.initialize( transactionManager, authenticator );
 
+        // Initialize MaterializedViewManager
+        MaterializedViewManager.setAndGetInstance( new MaterializedViewManagerImpl( transactionManager ) );
+
         // Startup and restore catalog
         Catalog catalog;
         Transaction trx = null;
@@ -238,6 +243,7 @@ public class PolyphenyDb {
             trx.commit();
             trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );
             catalog.restoreColumnPlacements( trx );
+            catalog.restoreViews( trx );
             trx.commit();
         } catch ( UnknownDatabaseException | UnknownUserException | UnknownSchemaException | TransactionException e ) {
             if ( trx != null ) {

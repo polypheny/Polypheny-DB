@@ -55,14 +55,14 @@ public class WebSocket {
 
     @OnWebSocketConnect
     public void connected( final Session session ) {
-        log.debug( "UI connected to websocket" );
+        log.debug( "UI connected to WebSocket" );
         sessions.add( session );
     }
 
 
     @OnWebSocketClose
     public void closed( final Session session, final int statusCode, final String reason ) {
-        log.debug( "UI disconnected from websocket" );
+        log.debug( "UI disconnected from WebSocket" );
         sessions.remove( session );
         cleanup( session );
     }
@@ -82,7 +82,7 @@ public class WebSocket {
         try {
             session.getRemote().sendString( message );
         } catch ( IOException e ) {
-            log.error( "Could not send websocket message to UI", e );
+            log.error( "Could not send WebSocket message to UI", e );
         }
     }
 
@@ -163,7 +163,7 @@ public class WebSocket {
                 sendMessage( session, result );
                 break;
             default:
-                throw new RuntimeException( "Unexpected websocket request: " + request.requestType );
+                throw new RuntimeException( "Unexpected WebSocket request: " + request.requestType );
         }
         queryAnalyzers.put( session, xIds );
     }

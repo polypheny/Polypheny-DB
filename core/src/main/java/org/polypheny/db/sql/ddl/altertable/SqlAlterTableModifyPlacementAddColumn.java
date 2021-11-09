@@ -22,6 +22,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.ddl.DdlManager;
@@ -88,8 +89,8 @@ public class SqlAlterTableModifyPlacementAddColumn extends SqlAlterTable {
         CatalogTable catalogTable = getCatalogTable( context, table );
         DataStore storeInstance = getDataStoreInstance( storeName );
 
-        if ( catalogTable.isView() ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE with Views" );
+        if ( catalogTable.tableType != TableType.TABLE ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE because" + catalogTable.name + " is not a table." );
         }
 
         try {

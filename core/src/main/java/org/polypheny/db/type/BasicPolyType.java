@@ -53,7 +53,7 @@ public class BasicPolyType extends AbstractPolyType {
     private final int precision;
     private final int scale;
     private final RelDataTypeSystem typeSystem;
-    private final transient SqlCollation collation;
+    private final SqlCollation collation;
     private final SerializableCharset wrappedCharset;
 
 
@@ -123,7 +123,6 @@ public class BasicPolyType extends AbstractPolyType {
         this.scale = scale;
 
         if ( typeName == PolyType.JSON ) {
-            // TODO DL move
             this.collation = SqlCollation.IMPLICIT;
             this.wrappedCharset = SerializableCharset.forCharset( StandardCharsets.ISO_8859_1 );
         } else {
@@ -136,7 +135,7 @@ public class BasicPolyType extends AbstractPolyType {
 
 
     /**
-     * Constructs a type with nullablity.
+     * Constructs a type with nullability.
      */
     BasicPolyType createWithNullability( boolean nullable ) {
         if ( nullable == this.isNullable ) {

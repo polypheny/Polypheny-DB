@@ -33,7 +33,9 @@ public interface Statement {
 
     Context getPrepareContext();
 
-    InformationDuration getDuration();
+    InformationDuration getProcessingDuration();
+
+    InformationDuration getExecutionDuration();
 
     Router getRouter();
 

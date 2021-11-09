@@ -25,8 +25,10 @@ import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.SchemaAlreadyExistsException;
@@ -56,6 +58,7 @@ import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
 import org.polypheny.db.partition.raw.RawPartitionInformation;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlLiteral;
@@ -453,7 +456,19 @@ public abstract class DdlManager {
      * @param relNode the relNode which was built form the Select part of the view
      * @param statement the used Statement
      */
-    public abstract void createView( String viewName, long schemaId, RelNode relNode, RelCollation relCollation, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException;
+    public abstract void createView( String viewName, long schemaId, RelNode relNode, RelCollation relCollation, boolean replace, Statement statement, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException;
+
+
+    /**
+     * Create a new materialized view
+     *
+     * @param viewName the name of the new view
+     * @param schemaId the id of the schema to which the view belongs
+     * @param relRoot the relNode which was built form the Select part of the view
+     * @param statement the used Statement
+     */
+    public abstract void createMaterializedView( String viewName, long schemaId, RelRoot relRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException, ColumnNotExistsException, ColumnAlreadyExistsException;
+
 
     /**
      * Add new partitions for the column
@@ -503,6 +518,13 @@ public abstract class DdlManager {
      */
     public abstract void dropView( CatalogTable catalogTable, Statement statement ) throws DdlOnSourceException;
 
+
+    /**
+     * @param materializedView to be dropped
+     * @param statement the used statement
+     */
+    public abstract void dropMaterializedView( CatalogTable materializedView, Statement statement ) throws DdlOnSourceException;
+
     /**
      * Truncate a table
      *
@@ -530,6 +552,11 @@ public abstract class DdlManager {
      * Set a option
      */
     public abstract void setOption();
+
+    /**
+     * Refresh data in a Materialized View
+     */
+    public abstract void refreshView( Statement statement, Long materializedId );
 
 
     /**

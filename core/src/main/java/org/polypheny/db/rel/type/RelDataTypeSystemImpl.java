@@ -34,7 +34,6 @@
 package org.polypheny.db.rel.type;
 
 
-import java.io.Serializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 
@@ -50,7 +49,7 @@ import org.polypheny.db.type.PolyTypeFamily;
  * <tr><td>MAX_NUMERIC_SCALE</td> <td>19</td></tr>
  * </table>
  */
-public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem, Serializable {
+public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem {
 
     @Override
     public int getMaxScale( PolyType typeName ) {

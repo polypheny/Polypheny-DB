@@ -92,6 +92,85 @@ SqlAlterView SqlAlterView(Span s) :
 }
 
 /**
+* Parses a ALTER MATERIALIZED VIEW statement.
+**/
+SqlAlterMaterializedView SqlAlterMaterializedView(Span s) :
+{
+    final SqlIdentifier materializedview;
+    final SqlIdentifier name;
+    final SqlIdentifier column;
+    final SqlIdentifier store;
+    final SqlIdentifier indexName;
+    final SqlNodeList columnList;
+    final SqlIdentifier indexMethod;
+    final boolean unique;
+    final SqlIdentifier storeName;
+
+}
+{
+    <MATERIALIZED><VIEW>
+    materializedview = CompoundIdentifier()
+    (
+        <RENAME><TO>
+            name = SimpleIdentifier()
+            {
+            return new SqlAlterMaterializedViewRename(s.end(this), materializedview, name);
+            }
+    |
+        <RENAME> <COLUMN>
+            column = SimpleIdentifier()
+            <TO>
+            name = SimpleIdentifier()
+            {
+                return new SqlAlterMaterializedViewRenameColumn(s.end(this), materializedview, column, name);
+            }
+    |
+        <FRESHNESS><MANUAL>
+            {
+                return new SqlAlterMaterializedViewFreshnessManual(s.end(this), materializedview);
+            }
+    |
+        <ADD>
+            (
+            <UNIQUE> { unique = true; }
+            |
+            { unique = false; }
+            )
+            <INDEX>
+                indexName = SimpleIdentifier()
+            <ON>
+            (
+            columnList = ParenthesizedSimpleIdentifierList()
+            |
+            column = SimpleIdentifier()
+            {
+                columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
+            }
+            )
+            (
+            <USING> indexMethod = SimpleIdentifier()
+            |
+            { indexMethod = null; }
+            )
+            (
+            <ON> <STORE> storeName = SimpleIdentifier()
+            |
+            { storeName = null; }
+            )
+            {
+            return new SqlAlterMaterializedViewAddIndex(s.end(this), materializedview, columnList, unique, indexMethod, indexName, storeName);
+            }
+    |
+        <DROP> <INDEX>
+            indexName = SimpleIdentifier()
+            {
+            return new SqlAlterMaterializedViewDropIndex(s.end(this), materializedview, indexName);
+            }
+
+    )
+}
+
+/**
 * Parses a ALTER TABLE statement.
 */
 SqlAlterTable SqlAlterTable(Span s) :
