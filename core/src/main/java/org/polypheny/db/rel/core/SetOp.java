@@ -146,11 +146,5 @@ public abstract class SetOp extends AbstractRelNode {
         return true;
     }
 
-
-    @Override
-    public boolean hasView() {
-        return inputs.stream().anyMatch( RelNode::hasView );
-    }
-
 }
 

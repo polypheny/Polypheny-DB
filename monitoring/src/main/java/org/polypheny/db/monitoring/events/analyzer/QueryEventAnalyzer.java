@@ -48,10 +48,9 @@ public class QueryEventAnalyzer {
             processRelNode( node, queryEvent, metric );
         }
 
-        if ( queryEvent.isAnalyze() ) {
-            processDurationInfo( queryEvent, metric );
-
-        }
+        //if ( queryEvent.isAnalyze() ) {
+        //    processDurationInfo( queryEvent, metric );
+        //}
 
         return metric;
     }

@@ -35,7 +35,6 @@ package org.polypheny.db.prepare;
 
 
 import com.google.common.collect.ImmutableList;
-import java.io.Serializable;
 import java.util.AbstractList;
 import java.util.Collection;
 import java.util.List;
@@ -163,15 +162,15 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
     private static Function<Class, Expression> getClassExpressionFunction( final SchemaPlus schema, final String tableName, final Table table ) {
         if ( table instanceof QueryableTable ) {
             final QueryableTable queryableTable = (QueryableTable) table;
-            return (Function<Class, Expression> & Serializable) clazz -> queryableTable.getExpression( schema, tableName, clazz );
+            return clazz -> queryableTable.getExpression( schema, tableName, clazz );
         } else if ( table instanceof ScannableTable
                 || table instanceof FilterableTable
                 || table instanceof ProjectableFilterableTable ) {
-            return (Function<Class, Expression> & Serializable) clazz -> Schemas.tableExpression( schema, Object[].class, tableName, table.getClass() );
+            return clazz -> Schemas.tableExpression( schema, Object[].class, tableName, table.getClass() );
         } else if ( table instanceof StreamableTable ) {
             return getClassExpressionFunction( schema, tableName, ((StreamableTable) table).stream() );
         } else {
-            return (Function<Class, Expression> & Serializable) input -> {
+            return input -> {
                 throw new UnsupportedOperationException();
             };
         }

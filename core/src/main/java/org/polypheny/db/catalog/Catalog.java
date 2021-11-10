@@ -23,6 +23,7 @@ import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
@@ -43,6 +44,7 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
+import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
@@ -116,6 +118,10 @@ public abstract class Catalog {
 
     public abstract void rollback();
 
+    public abstract Map<Long, RelDataType> getRelTypeInfo();
+
+    public abstract Map<Long, RelNode> getNodeInfo();
+
 
     /**
      * Adds a listener which gets notified on updates
@@ -147,6 +153,11 @@ public abstract class Catalog {
      * Restores all columnPlacements in the dedicated store
      */
     public abstract void restoreColumnPlacements( Transaction transaction );
+
+    /**
+     * Restores all views and materialized views after restart
+     */
+    public abstract void restoreViews( Transaction transaction );
 
 
     protected final boolean isValidIdentifier( final String str ) {
@@ -390,7 +401,29 @@ public abstract class Catalog {
      * @param fieldList all columns used within the View
      * @return The id of the inserted table
      */
-    public abstract long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList );
+    public abstract long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, String query, QueryLanguage language );
+
+
+    /**
+     * Adds a materialized view to a specified schema.
+     *
+     * @param name of the view to add
+     * @param schemaId id of the schema
+     * @param ownerId id of the owner
+     * @param tableType type of table
+     * @param modifiable Whether the content of the table can be modified
+     * @param definition RelNode used to create Views
+     * @param relCollation relCollation used for materialized view
+     * @param underlyingTables all tables and columns used within the view
+     * @param fieldList all columns used within the View
+     * @param materializedCriteria Information like freshness and last updated
+     * @param query used to define materialized view
+     * @param language query language used to define materialized view
+     * @param ordered if materialized view is ordered or not
+     * @return id of the inserted materialized view
+     */
+    public abstract long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException;
+
 
     /**
      * Checks if there is a table with the specified name in the specified schema.
@@ -400,6 +433,15 @@ public abstract class Catalog {
      * @return true if there is a table with this name, false if not.
      */
     public abstract boolean checkIfExistsTable( long schemaId, String tableName );
+
+
+    /**
+     * Checks if there is a table with the specified id.
+     *
+     * @param tableId id of the table
+     * @return true if there is a table with this id, false if not.
+     */
+    public abstract boolean checkIfExistsTable( long tableId );
 
     /**
      * Renames a table
@@ -1379,6 +1421,20 @@ public abstract class Catalog {
      */
     public abstract boolean checkIfExistsPartitionPlacement( int adapterId, long partitionId );
 
+    /**
+     * Deletes all the dependencies of a view. This is used when deleting a view.
+     *
+     * @param catalogView view for which to delete its dependencies
+     */
+    public abstract void deleteViewDependencies( CatalogView catalogView );
+
+    /**
+     * Updates the last time a materialized view has been refreshed.
+     *
+     * @param materializedViewId id of the materialized view
+     */
+    public abstract void updateMaterializedViewRefreshTime( long materializedViewId );
+
 
     /*
      *
@@ -1389,18 +1445,12 @@ public abstract class Catalog {
 
     public abstract void clear();
 
-    /**
-     * Deletes all the dependencies before deleting a View
-     *
-     * @param catalogView view to be deleted
-     */
-    public abstract void deleteViewDependencies( CatalogView catalogView );
-
 
     public enum TableType {
         TABLE( 1 ),
         SOURCE( 2 ),
-        VIEW( 3 );
+        VIEW( 3 ),
+        MATERIALIZED_VIEW( 4 );
         // STREAM, ...
 
         private final int id;
@@ -1452,6 +1502,28 @@ public abstract class Catalog {
     }
 
 
+    public enum LanguageType {
+        @SerializedName("sql")
+        SQL( 1 ),
+        @SerializedName("mql")
+        MQL( 2 ),
+        @SerializedName("cql")
+        CQL( 3 );
+
+        private final int id;
+
+
+        LanguageType( int id ) {
+            this.id = id;
+        }
+
+
+        public int getId() {
+            return id;
+        }
+    }
+
+
     public enum SchemaType {
         @SerializedName("relational")
         RELATIONAL( 1 ),
@@ -1496,6 +1568,21 @@ public abstract class Catalog {
                 }
             }
             throw new UnknownSchemaTypeException( name );
+        }
+    }
+
+
+    public enum QueryLanguage {
+        SQL( SchemaType.RELATIONAL ),
+        MONGOQL( SchemaType.DOCUMENT ),
+        RELALG( SchemaType.RELATIONAL );
+
+        @Getter
+        private final SchemaType schemaType;
+
+
+        QueryLanguage( SchemaType schemaType ) {
+            this.schemaType = schemaType;
         }
     }
 

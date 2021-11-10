@@ -19,6 +19,7 @@ package org.polypheny.db.webui;
 
 import com.google.gson.Gson;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -54,14 +55,14 @@ public class WebSocket {
 
     @OnWebSocketConnect
     public void connected( final Session session ) {
-        log.debug( "UI connected to websocket" );
+        log.debug( "UI connected to WebSocket" );
         sessions.add( session );
     }
 
 
     @OnWebSocketClose
     public void closed( final Session session, final int statusCode, final String reason ) {
-        log.debug( "UI disconnected from websocket" );
+        log.debug( "UI disconnected from WebSocket" );
         sessions.remove( session );
         cleanup( session );
     }
@@ -81,7 +82,7 @@ public class WebSocket {
         try {
             session.getRemote().sendString( message );
         } catch ( IOException e ) {
-            log.error( "Could not send websocket message to UI", e );
+            log.error( "Could not send WebSocket message to UI", e );
         }
     }
 
@@ -108,7 +109,14 @@ public class WebSocket {
                 List<Result> results;
                 if ( queryRequest.language.equals( "mql" ) ) {
                     try {
-                        results = crud.documentCrud.anyQuery( session, queryRequest, crud );
+                        results = crud.documentCrud.anyMongoQuery( session, queryRequest, crud );
+                    } catch ( Throwable t ) {
+                        sendMessage( session, new Result[]{ new Result( t ) } );
+                        return;
+                    }
+                } else if ( queryRequest.language.equals( "cql" ) ) {
+                    try {
+                        results = Collections.singletonList( crud.documentCrud.processCqlRequest( session, queryRequest ) );
                     } catch ( Throwable t ) {
                         sendMessage( session, new Result[]{ new Result( t ) } );
                         return;
@@ -155,7 +163,7 @@ public class WebSocket {
                 sendMessage( session, result );
                 break;
             default:
-                throw new RuntimeException( "Unexpected websocket request: " + request.requestType );
+                throw new RuntimeException( "Unexpected WebSocket request: " + request.requestType );
         }
         queryAnalyzers.put( session, xIds );
     }

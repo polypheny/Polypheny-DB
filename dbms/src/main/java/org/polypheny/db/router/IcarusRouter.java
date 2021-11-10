@@ -390,7 +390,7 @@ public class IcarusRouter extends AbstractRouter {
                     this::process,
                     "Process query execution times and update Icarus routing table",
                     TaskPriority.LOW,
-                    TaskSchedulingType.EVERY_FIVE_SECONDS
+                    TaskSchedulingType.EVERY_FIVE_SECONDS_FIXED
             );
         }
 

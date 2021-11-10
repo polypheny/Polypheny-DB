@@ -90,6 +90,7 @@ public class RestTest {
                         + "tvarchar VARCHAR(20) NOT NULL, "
                         + "PRIMARY KEY (tinteger) )" );
                 statement.executeUpdate( "CREATE VIEW restschema.viewtest AS SELECT * FROM restschema.resttest" );
+                statement.executeUpdate( "CREATE MATERIALIZED VIEW restschema.materializedtest AS SELECT restschema.resttest.tinteger FROM restschema.resttest FRESHNESS MANUAL " );
                 connection.commit();
             }
         }
@@ -101,6 +102,7 @@ public class RestTest {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 try {
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW restschema.materializedtest" );
                     statement.executeUpdate( "DROP VIEW restschema.viewtest" );
                     statement.executeUpdate( "DROP TABLE restschema.resttest" );
                 } catch ( SQLException e ) {
@@ -120,7 +122,9 @@ public class RestTest {
         request.routeParam( "protocol", "http" );
         request.routeParam( "host", "127.0.0.1" );
         request.routeParam( "port", "8089" );
-        log.debug( request.getUrl() );
+        if ( log.isDebugEnabled() ) {
+            log.debug( request.getUrl() );
+        }
         try {
             HttpResponse<String> result = request.asString();
             if ( !result.isSuccess() ) {
@@ -233,6 +237,9 @@ public class RestTest {
         Assert.assertEquals( "{\"result\":[],\"size\":0}",
                 executeRest( request ).getBody() );
 
+        request = Unirest.get( "{protocol}://{host}:{port}/restapi/v1/res/restschema.materializedtest" ).queryString( "restschema.materializedtest.tinteger", "=" + 9876 );
+        Assert.assertEquals( "{\"result\":[],\"size\":0}",
+                executeRest( request ).getBody() );
     }
 
 

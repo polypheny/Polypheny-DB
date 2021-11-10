@@ -34,7 +34,6 @@
 package org.polypheny.db.type;
 
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.rel.type.RelDataType;
@@ -58,7 +57,7 @@ public abstract class PolyTypeTransforms {
      * if any of a calls operands is nullable
      */
     public static final PolyTypeTransform TO_NULLABLE =
-            (PolyTypeTransform & Serializable) ( opBinding, typeToTransform ) ->
+            ( opBinding, typeToTransform ) ->
                     PolyTypeUtil.makeNullableIfOperandsAre(
                             opBinding.getTypeFactory(),
                             opBinding.collectOperandTypes(),
@@ -68,7 +67,7 @@ public abstract class PolyTypeTransforms {
      * Parameter type-inference transform strategy where a derived type is transformed into the same type, but nullable if
      * and only if all of a call's operands are nullable.
      */
-    public static final PolyTypeTransform TO_NULLABLE_ALL = (PolyTypeTransform & Serializable) ( opBinding, type ) -> {
+    public static final PolyTypeTransform TO_NULLABLE_ALL = ( opBinding, type ) -> {
         final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
         return typeFactory.createTypeWithNullability( type, PolyTypeUtil.allNullable( opBinding.collectOperandTypes() ) );
     };
@@ -77,7 +76,7 @@ public abstract class PolyTypeTransforms {
      * Parameter type-inference transform strategy where a derived type is transformed into the same type but not nullable.
      */
     public static final PolyTypeTransform TO_NOT_NULLABLE =
-            (PolyTypeTransform & Serializable) ( opBinding, typeToTransform ) ->
+            ( opBinding, typeToTransform ) ->
                     opBinding.getTypeFactory().createTypeWithNullability(
                             Objects.requireNonNull( typeToTransform ),
                             false );
@@ -86,7 +85,7 @@ public abstract class PolyTypeTransforms {
      * Parameter type-inference transform strategy where a derived type is transformed into the same type with nulls allowed.
      */
     public static final PolyTypeTransform FORCE_NULLABLE =
-            (PolyTypeTransform & Serializable) ( opBinding, typeToTransform ) ->
+            ( opBinding, typeToTransform ) ->
                     opBinding.getTypeFactory().createTypeWithNullability(
                             Objects.requireNonNull( typeToTransform ),
                             true );
@@ -95,7 +94,7 @@ public abstract class PolyTypeTransforms {
      * Type-inference strategy whereby the result is NOT NULL if any of the arguments is NOT NULL; otherwise the type is unchanged.
      */
     public static final PolyTypeTransform LEAST_NULLABLE =
-            (PolyTypeTransform & Serializable) ( opBinding, typeToTransform ) -> {
+            ( opBinding, typeToTransform ) -> {
                 for ( RelDataType type : opBinding.collectOperandTypes() ) {
                     if ( !type.isNullable() ) {
                         return opBinding.getTypeFactory().createTypeWithNullability( typeToTransform, false );
@@ -168,7 +167,7 @@ public abstract class PolyTypeTransforms {
      * the returned type is the type of that field.
      */
     public static final PolyTypeTransform ONLY_COLUMN =
-            (PolyTypeTransform & Serializable) ( opBinding, typeToTransform ) -> {
+            ( opBinding, typeToTransform ) -> {
                 final List<RelDataTypeField> fields = typeToTransform.getFieldList();
                 assert fields.size() == 1;
                 return fields.get( 0 ).getType();

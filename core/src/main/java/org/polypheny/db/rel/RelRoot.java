@@ -35,7 +35,6 @@ package org.polypheny.db.rel;
 
 
 import com.google.common.collect.ImmutableList;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -91,7 +90,7 @@ import org.polypheny.db.util.mapping.Mappings;
  * }
  * </code></blockquote>
  */
-public class RelRoot implements Serializable {
+public class RelRoot {
 
     public final RelNode rel;
     public final RelDataType validatedRowType;
@@ -114,11 +113,6 @@ public class RelRoot implements Serializable {
         this.kind = kind;
         this.fields = ImmutableList.copyOf( fields );
         this.collation = Objects.requireNonNull( collation );
-    }
-
-
-    public RelRoot tryExpandView() {
-        return new RelRoot( rel.tryParentExpandView( rel ), validatedRowType, kind, fields, collation );
     }
 
 

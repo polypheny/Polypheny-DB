@@ -64,7 +64,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
         im.addPage( informationPage );
 
         initializeWorkloadInformationTable();
-        initializeQueueInformationTable();
+        //initializeQueueInformationTable();
     }
 
 

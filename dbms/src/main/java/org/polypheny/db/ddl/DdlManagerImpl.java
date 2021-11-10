@@ -43,6 +43,7 @@ import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.IndexType;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.NameGenerator;
@@ -54,6 +55,7 @@ import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
+import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
@@ -61,6 +63,8 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
+import org.polypheny.db.catalog.entity.MaterializedCriteria;
+import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.SchemaAlreadyExistsException;
@@ -84,6 +88,7 @@ import org.polypheny.db.ddl.exception.IndexExistsException;
 import org.polypheny.db.ddl.exception.IndexPreventsRemovalException;
 import org.polypheny.db.ddl.exception.LastPlacementException;
 import org.polypheny.db.ddl.exception.MissingColumnPlacementException;
+import org.polypheny.db.ddl.exception.NotMaterializedViewException;
 import org.polypheny.db.ddl.exception.NotNullAndDefaultValueException;
 import org.polypheny.db.ddl.exception.NotViewException;
 import org.polypheny.db.ddl.exception.PartitionGroupNamesNotUniqueException;
@@ -100,10 +105,10 @@ import org.polypheny.db.partition.properties.TemperaturePartitionProperty.Partit
 import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
 import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.processing.DataMigrator;
-import org.polypheny.db.rel.AbstractRelNode;
 import org.polypheny.db.rel.BiRel;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.SingleRel;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalViewTableScan;
@@ -118,6 +123,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.view.MaterializedViewManager;
 
 
 @Slf4j
@@ -287,8 +293,17 @@ public class DdlManagerImpl extends DdlManager {
         if ( catalogAdapter.type == AdapterType.SOURCE ) {
             Set<Long> tablesToDrop = new HashSet<>();
             for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapter( catalogAdapter.id ) ) {
+
                 tablesToDrop.add( ccp.tableId );
             }
+
+            Set<Long> temp = tablesToDrop;
+            for ( Long id : temp ) {
+                if ( catalog.getTable( id ).tableType != TableType.MATERIALIZED_VIEW ) {
+                    tablesToDrop.add( id );
+                }
+            }
+
             // Remove foreign keys
             for ( Long tableId : tablesToDrop ) {
                 for ( CatalogForeignKey fk : catalog.getForeignKeys( tableId ) ) {
@@ -543,8 +558,8 @@ public class DdlManagerImpl extends DdlManager {
         IndexType type = IndexType.MANUAL;
 
         // Make sure that this is a table of type TABLE (and not SOURCE)
-        if ( catalogTable.tableType != TableType.TABLE ) {
-            throw new AlterSourceException();
+        if ( catalogTable.tableType != TableType.TABLE && catalogTable.tableType != TableType.MATERIALIZED_VIEW ) {
+            throw new RuntimeException( "It is only possible to add an index to a " + catalogTable.tableType.name() );
         }
 
         // Check if there is already an index with this name for this table
@@ -1042,7 +1057,7 @@ public class DdlManagerImpl extends DdlManager {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( catalogTable.tableType );
 
-        // check if model permits operation
+        // Check if model permits operation
         checkModelLogic( catalogTable, columnName );
 
         catalog.setNullable( catalogColumn.id, nullable );
@@ -1054,7 +1069,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void setColumnPosition( CatalogTable catalogTable, String columnName, String beforeColumnName, String afterColumnName, Statement statement ) throws ColumnNotExistsException {
-        // check if model permits operation
+        // Check if model permits operation
         checkModelLogic( catalogTable, columnName );
 
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
@@ -1107,7 +1122,7 @@ public class DdlManagerImpl extends DdlManager {
     public void setColumnCollation( CatalogTable catalogTable, String columnName, Collation collation, Statement statement ) throws ColumnNotExistsException, DdlOnSourceException {
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
 
-        // check if model permits operation
+        // Check if model permits operation
         checkModelLogic( catalogTable, columnName );
 
         // Make sure that this is a table of type TABLE (and not SOURCE)
@@ -1124,7 +1139,7 @@ public class DdlManagerImpl extends DdlManager {
     public void setDefaultValue( CatalogTable catalogTable, String columnName, String defaultValue, Statement statement ) throws ColumnNotExistsException {
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
 
-        // check if model permits operation
+        // Check if model permits operation
         checkModelLogic( catalogTable, columnName );
 
         addDefaultValue( defaultValue, catalogColumn.id );
@@ -1468,7 +1483,7 @@ public class DdlManagerImpl extends DdlManager {
         if ( catalog.checkIfExistsTable( catalogTable.schemaId, newTableName ) ) {
             throw new TableAlreadyExistsException();
         }
-        //check if views are dependent from this view
+        // Check if views are dependent from this view
         checkViewDependencies( catalogTable );
 
         catalog.renameTable( catalogTable.id, newTableName );
@@ -1485,7 +1500,7 @@ public class DdlManagerImpl extends DdlManager {
         if ( catalog.checkIfExistsColumn( catalogColumn.tableId, newColumnName ) ) {
             throw new ColumnAlreadyExistsException( newColumnName, catalogColumn.getTableName() );
         }
-        //check if views are dependent from this view
+        // Check if views are dependent from this view
         checkViewDependencies( catalogTable );
 
         catalog.renameColumn( catalogColumn.id, newColumnName );
@@ -1496,7 +1511,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createView( String viewName, long schemaId, RelNode relNode, RelCollation relCollation, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns ) throws TableAlreadyExistsException {
+    public void createView( String viewName, long schemaId, RelNode relNode, RelCollation relCollation, boolean replace, Statement statement, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language ) throws TableAlreadyExistsException {
         if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
             if ( replace ) {
                 try {
@@ -1509,45 +1524,17 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        if ( stores == null ) {
-            // Ask router on which store(s) the table should be placed
-            stores = statement.getRouter().createTable( schemaId, statement );
-        }
-
-        prepareView( relNode );
         RelDataType fieldList = relNode.getRowType();
 
-        List<ColumnInformation> columns = new ArrayList<>();
-
-        int position = 1;
-        for ( RelDataTypeField rel : fieldList.getFieldList() ) {
-            RelDataType type = rel.getValue();
-            if ( rel.getType().getPolyType() == PolyType.ARRAY ) {
-                type = ((ArrayType) rel.getValue()).getComponentType();
-            }
-            String colName = rel.getName();
-            if ( projectedColumns != null ) {
-                colName = projectedColumns.get( position - 1 );
-            }
-
-            // type.getPrecision() == RelDataTypeSystemImpl.DEFAULT.getDefaultPrecision(type.getPolyType()) ? type.getPrecision() : -1,
-            columns.add( new ColumnInformation(
-                    colName.toLowerCase().replaceAll( "[^A-Za-z0-9]", "_" ),
-                    new ColumnTypeInformation(
-                            type.getPolyType(),
-                            rel.getType().getPolyType(),
-                            type.getRawPrecision(),
-                            type.getScale(),
-                            rel.getValue().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) rel.getValue()).getDimension() : -1,
-                            rel.getValue().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) rel.getValue()).getCardinality() : -1,
-                            rel.getValue().isNullable() ),
-                    Collation.getDefaultCollation(),
-                    null,
-                    position ) );
-            position++;
-        }
+        List<ColumnInformation> columns = getColumnInformation( projectedColumns, fieldList );
 
         Map<Long, List<Long>> underlyingTables = new HashMap<>();
+
+        findUnderlyingTablesOfView( relNode, underlyingTables, fieldList );
+
+        // add check if underlying table is of model document -> mql, relational -> sql
+        underlyingTables.keySet().forEach( tableId -> checkModelLangCompatibility( language, tableId ) );
+
         long tableId = catalog.addView(
                 viewName,
                 schemaId,
@@ -1556,13 +1543,14 @@ public class DdlManagerImpl extends DdlManager {
                 false,
                 relNode,
                 relCollation,
-                findUnderlyingTablesOfView( relNode, underlyingTables, fieldList ),
-                fieldList
+                underlyingTables,
+                fieldList,
+                query,
+                language
         );
 
         for ( ColumnInformation column : columns ) {
-            //addColumn( column.name, column.typeInformation, column.collation, column.defaultValue, tableId, column.position, stores, placementType );
-            long columnId = catalog.addColumn(
+            catalog.addColumn(
                     column.name,
                     tableId,
                     column.position,
@@ -1578,16 +1566,199 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private void prepareView( RelNode viewNode ) {
-        if ( viewNode instanceof AbstractRelNode ) {
-            ((AbstractRelNode) viewNode).setCluster( null );
+    @Override
+    public void createMaterializedView( String viewName, long schemaId, RelRoot relRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) throws TableAlreadyExistsException, GenericCatalogException, ColumnNotExistsException, ColumnAlreadyExistsException {
+        // Check if there is already a table with this name
+        if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
+            if ( ifNotExists ) {
+                // It is ok that there is already a table with this name because "IF NOT EXISTS" was specified
+                return;
+            } else {
+                throw new TableAlreadyExistsException();
+            }
         }
-        if ( viewNode instanceof BiRel ) {
-            prepareView( ((BiRel) viewNode).getLeft() );
-            prepareView( ((BiRel) viewNode).getRight() );
-        } else if ( viewNode instanceof SingleRel ) {
-            prepareView( ((SingleRel) viewNode).getInput() );
+
+        if ( stores == null ) {
+            // Ask router on which store(s) the table should be placed
+            stores = statement.getRouter().createTable( schemaId, statement );
         }
+
+        RelDataType fieldList = relRoot.rel.getRowType();
+
+        Map<Long, List<Long>> underlyingTables = new HashMap<>();
+        Map<Long, List<Long>> underlying = findUnderlyingTablesOfView( relRoot.rel, underlyingTables, fieldList );
+
+        // add check if underlying table is of model document -> mql, relational -> sql
+        underlying.keySet().forEach( tableId -> checkModelLangCompatibility( language, tableId ) );
+
+        if ( materializedCriteria.getCriteriaType() == CriteriaType.UPDATE ) {
+            List<TableType> tableTypes = new ArrayList<>();
+            underlying.keySet().forEach( t -> tableTypes.add( catalog.getTable( t ).tableType ) );
+            if ( !(tableTypes.contains( TableType.TABLE )) ) {
+                throw new GenericCatalogException( "Not possible to use Materialized View with Update Freshness if underlying table does not include a modifiable table." );
+            }
+        }
+
+        long tableId = catalog.addMaterializedView(
+                viewName,
+                schemaId,
+                statement.getPrepareContext().getCurrentUserId(),
+                TableType.MATERIALIZED_VIEW,
+                false,
+                relRoot.rel,
+                relRoot.collation,
+                underlying,
+                fieldList,
+                materializedCriteria,
+                query,
+                language,
+                ordered
+        );
+
+        // Creates a list with all columns, tableId is needed to creat the primary key
+        List<ColumnInformation> columns = getColumnInformation( projectedColumns, fieldList, true, tableId );
+        Map<Integer, List<CatalogColumn>> addedColumns = new HashMap<>();
+
+        List<Long> columnIds = new ArrayList<>();
+
+        for ( ColumnInformation column : columns ) {
+            long columnId = catalog.addColumn(
+                    column.name,
+                    tableId,
+                    column.position,
+                    column.typeInformation.type,
+                    column.typeInformation.collectionType,
+                    column.typeInformation.precision,
+                    column.typeInformation.scale,
+                    column.typeInformation.dimension,
+                    column.typeInformation.cardinality,
+                    column.typeInformation.nullable,
+                    column.collation );
+
+            // Created primary key is added to list
+            if ( column.name.startsWith( "_matid_" ) ) {
+                columnIds.add( columnId );
+            }
+
+            for ( DataStore s : stores ) {
+                int adapterId = s.getAdapterId();
+                catalog.addColumnPlacement(
+                        s.getAdapterId(),
+                        columnId,
+                        placementType,
+                        null,
+                        null,
+                        null,
+                        null );
+
+                List<CatalogColumn> catalogColumns;
+                if ( addedColumns.containsKey( adapterId ) ) {
+                    catalogColumns = addedColumns.get( adapterId );
+                } else {
+                    catalogColumns = new ArrayList<>();
+                }
+                catalogColumns.add( catalog.getColumn( columnId ) );
+                addedColumns.put( adapterId, catalogColumns );
+            }
+
+        }
+        // Sets previously created primary key
+        catalog.addPrimaryKey( tableId, columnIds );
+
+        CatalogMaterializedView catalogMaterializedView = (CatalogMaterializedView) catalog.getTable( tableId );
+        PolySchemaBuilder.getInstance().getCurrent();
+
+        for ( DataStore store : stores ) {
+            catalog.addPartitionPlacement(
+                    store.getAdapterId(),
+                    tableId,
+                    catalogMaterializedView.partitionProperty.partitionIds.get( 0 ),
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null );
+
+            store.createTable( statement.getPrepareContext(), catalogMaterializedView, catalogMaterializedView.partitionProperty.partitionIds );
+        }
+
+        // Selected data from tables is added into the newly crated materialized view
+        MaterializedViewManager materializedManager = MaterializedViewManager.getInstance();
+        materializedManager.addData( statement.getTransaction(), stores, addedColumns, relRoot, catalogMaterializedView );
+    }
+
+
+    private void checkModelLangCompatibility( QueryLanguage language, Long tableId ) {
+        CatalogTable catalogTable = catalog.getTable( tableId );
+        if ( catalogTable.getSchemaType() != language.getSchemaType() ) {
+            throw new RuntimeException(
+                    String.format(
+                            "The used language cannot execute schema changing queries on this entity with the data model %s.",
+                            catalogTable.getSchemaType() ) );
+        }
+    }
+
+
+    @Override
+    public void refreshView( Statement statement, Long materializedId ) {
+        MaterializedViewManager materializedManager = MaterializedViewManager.getInstance();
+        materializedManager.updateData( statement.getTransaction(), materializedId );
+        materializedManager.updateMaterializedTime( materializedId );
+    }
+
+
+    private List<ColumnInformation> getColumnInformation( List<String> projectedColumns, RelDataType fieldList ) {
+        return getColumnInformation( projectedColumns, fieldList, false, 0 );
+    }
+
+
+    private List<ColumnInformation> getColumnInformation( List<String> projectedColumns, RelDataType fieldList, boolean addPrimary, long tableId ) {
+        List<ColumnInformation> columns = new ArrayList<>();
+
+        int position = 1;
+        for ( RelDataTypeField rel : fieldList.getFieldList() ) {
+            RelDataType type = rel.getValue();
+            if ( rel.getType().getPolyType() == PolyType.ARRAY ) {
+                type = ((ArrayType) rel.getValue()).getComponentType();
+            }
+            String colName = rel.getName();
+            if ( projectedColumns != null ) {
+                colName = projectedColumns.get( position - 1 );
+            }
+
+            columns.add( new ColumnInformation(
+                    colName.toLowerCase().replaceAll( "[^A-Za-z0-9]", "_" ),
+                    new ColumnTypeInformation(
+                            type.getPolyType(),
+                            rel.getType().getPolyType(),
+                            type.getRawPrecision(),
+                            type.getScale(),
+                            rel.getValue().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) rel.getValue()).getDimension() : -1,
+                            rel.getValue().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) rel.getValue()).getCardinality() : -1,
+                            rel.getValue().isNullable() ),
+                    Collation.getDefaultCollation(),
+                    null,
+                    position ) );
+            position++;
+
+        }
+
+        if ( addPrimary ) {
+            String primaryName = "_matid_" + tableId;
+            columns.add( new ColumnInformation(
+                    primaryName,
+                    new ColumnTypeInformation(
+                            PolyType.INTEGER,
+                            PolyType.INTEGER,
+                            -1,
+                            -1,
+                            -1,
+                            -1,
+                            false ),
+                    Collation.getDefaultCollation(),
+                    null,
+                    position ) );
+        }
+
+        return columns;
     }
 
 
@@ -1709,20 +1880,20 @@ public class DdlManagerImpl extends DdlManager {
                 names.remove( "_id" );
             }
 
-            // add _id column if necessary
+            // Add _id column if necessary
             if ( !names.contains( "_id" ) ) {
                 ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.VARCHAR, PolyType.VARCHAR, 24, null, null, null, false );
                 columns.add( new ColumnInformation( "_id", typeInformation, Collation.CASE_INSENSITIVE, null, 0 ) );
 
             }
 
-            // remove any primaries
+            // Remove any primaries
             List<ConstraintInformation> primaries = constraints.stream().filter( c -> c.type == ConstraintType.PRIMARY ).collect( Collectors.toList() );
             if ( primaries.size() > 0 ) {
                 primaries.forEach( constraints::remove );
             }
 
-            // add constraint for _id as primary if necessary
+            // Add constraint for _id as primary if necessary
             if ( constraints.stream().noneMatch( c -> c.type == ConstraintType.PRIMARY ) ) {
                 constraints.add( new ConstraintInformation( "primary", ConstraintType.PRIMARY, Collections.singletonList( "_id" ) ) );
             }
@@ -1732,7 +1903,7 @@ public class DdlManagerImpl extends DdlManager {
                 names.remove( "_data" );
             }
 
-            // add _data column if necessary
+            // Add _data column if necessary
             if ( !names.contains( "_data" ) ) {
                 ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.JSON, PolyType.JSON, 1024, null, null, null, false );
                 columns.add( new ColumnInformation( "_data", typeInformation, Collation.CASE_INSENSITIVE, null, 1 ) );
@@ -1986,7 +2157,7 @@ public class DdlManagerImpl extends DdlManager {
                     unPartitionedTable.partitionProperty.partitionIds,
                     partitionedTable.partitionProperty.partitionIds );
         }
-        //Remove old tables
+        // Remove old tables
         stores.forEach( store -> store.dropTable( statement.getPrepareContext(), unPartitionedTable, unPartitionedTable.partitionProperty.partitionIds ) );
         catalog.deletePartitionGroup( unPartitionedTable.id, unPartitionedTable.schemaId, unPartitionedTable.partitionProperty.partitionGroupIds.get( 0 ) );
     }
@@ -2124,7 +2295,6 @@ public class DdlManagerImpl extends DdlManager {
             if ( constraintName == null ) {
                 constraintName = NameGenerator.generateConstraintName();
             }
-
             catalog.addUniqueConstraint( tableId, constraintName, columnIds );
         }
     }
@@ -2162,7 +2332,9 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void dropView( CatalogTable catalogView, Statement statement ) throws DdlOnSourceException {
         // Make sure that this is a table of type VIEW
-        if ( catalogView.tableType != TableType.VIEW ) {
+        if ( catalogView.tableType == TableType.VIEW ) {
+            //empty on purpose
+        } else {
             throw new NotViewException();
         }
 
@@ -2185,9 +2357,26 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
+    public void dropMaterializedView( CatalogTable materializedView, Statement statement ) throws DdlOnSourceException {
+        // Make sure that this is a table of type Materialized View
+        if ( materializedView.tableType == TableType.MATERIALIZED_VIEW ) {
+            // Empty on purpose
+        } else {
+            throw new NotMaterializedViewException();
+        }
+        // Check if views are dependent from this view
+        checkViewDependencies( materializedView );
+
+        catalog.deleteViewDependencies( (CatalogView) materializedView );
+
+        dropTable( materializedView, statement );
+    }
+
+
+    @Override
     public void dropTable( CatalogTable catalogTable, Statement statement ) throws DdlOnSourceException {
         // Make sure that this is a table of type TABLE (and not SOURCE)
-        checkIfDdlPossible( catalogTable.tableType );
+        //checkIfDdlPossible( catalogTable.tableType );
 
         // Check if views dependent on this table
         checkViewDependencies( catalogTable );

@@ -1162,6 +1162,21 @@ public enum SqlKind {
     DROP_VIEW,
 
     /**
+     * {@code CREATE MATERIALIZED VIEW} DDL statement.
+     */
+    CREATE_MATERIALIZED_VIEW,
+
+    /**
+     * {@code ALTER MATERIALIZED VIEW} DDL statement.
+     */
+    ALTER_MATERIALIZED_VIEW,
+
+    /**
+     * {@code DROP MATERIALIZED VIEW} DDL statement.
+     */
+    DROP_MATERIALIZED_VIEW,
+
+    /**
      * {@code CREATE SEQUENCE} DDL statement.
      */
     CREATE_SEQUENCE,
@@ -1333,7 +1348,7 @@ public enum SqlKind {
      * Category consisting of all DDL operators.
      */
     public static final EnumSet<SqlKind> DDL =
-            EnumSet.of( COMMIT, ROLLBACK, ALTER_SESSION, CREATE_SCHEMA, CREATE_FOREIGN_SCHEMA, DROP_SCHEMA, CREATE_TABLE, ALTER_TABLE, DROP_TABLE, CREATE_VIEW, ALTER_VIEW, DROP_VIEW, CREATE_SEQUENCE, ALTER_SEQUENCE, DROP_SEQUENCE, CREATE_INDEX, ALTER_INDEX, DROP_INDEX, CREATE_TYPE, DROP_TYPE, SET_OPTION, TRUNCATE, ALTER_SCHEMA, OTHER_DDL );
+            EnumSet.of( COMMIT, ROLLBACK, ALTER_SESSION, CREATE_SCHEMA, CREATE_FOREIGN_SCHEMA, DROP_SCHEMA, CREATE_TABLE, ALTER_TABLE, DROP_TABLE, CREATE_VIEW, ALTER_VIEW, DROP_VIEW, CREATE_MATERIALIZED_VIEW, ALTER_MATERIALIZED_VIEW, DROP_MATERIALIZED_VIEW, CREATE_SEQUENCE, ALTER_SEQUENCE, DROP_SEQUENCE, CREATE_INDEX, ALTER_INDEX, DROP_INDEX, CREATE_TYPE, DROP_TYPE, SET_OPTION, TRUNCATE, ALTER_SCHEMA, OTHER_DDL );
 
     /**
      * Category consisting of query node types.
@@ -1419,6 +1434,8 @@ public enum SqlKind {
      * {@link #GREATER_THAN_OR_EQUAL}.
      */
     public static final Set<SqlKind> COMPARISON = EnumSet.of( IN, EQUALS, NOT_EQUALS, LESS_THAN, GREATER_THAN, GREATER_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL );
+
+    public static final Set<SqlKind> ORDER = EnumSet.of( ORDER_BY );
 
     public static final Set<SqlKind> DOC_KIND = EnumSet.of(
             DOC_FIELD,

@@ -35,7 +35,9 @@ data: {
             "org.polypheny.db.sql.ddl.SqlAlterInterfacesDrop"
             "org.polypheny.db.sql.ddl.SqlAlterSchema"
             "org.polypheny.db.sql.ddl.SqlAlterView"
+            "org.polypheny.db.sql.ddl.SqlAlterMaterializedView"
             "org.polypheny.db.sql.ddl.alterview.*"
+            "org.polypheny.db.sql.ddl.altermaterializedview.*"
             "org.polypheny.db.sql.ddl.alterschema.*"
             "org.polypheny.db.sql.ddl.SqlAlterTable"
             "org.polypheny.db.sql.ddl.altertable.*"
@@ -181,6 +183,7 @@ data: {
             "M"
             "MAP"
             "MATCHED"
+            "MATERIALIZED"
             "MAXVALUE"
             "MICROSECOND"
             "MESSAGE_LENGTH"
@@ -396,6 +399,7 @@ data: {
             "SqlSetOption"
             "SqlAlterSchema"
             "SqlAlterView"
+            "SqlAlterMaterializedView"
             "SqlAlterTable"
             "SqlAlterConfig"
             "SqlAlterAdaptersAdd"
@@ -410,6 +414,7 @@ data: {
             "SqlCreateTable"
             "SqlCreateType"
             "SqlCreateView"
+            "SqlCreateMaterializedView"
             "SqlCreateFunction"
         ]
 
@@ -419,6 +424,7 @@ data: {
             "SqlDropTable"
             "SqlDropType"
             "SqlDropView"
+            "SqlDropMaterializedView"
             "SqlDropFunction"
         ]
 
@@ -438,3 +444,4 @@ data: {
 freemarkerLinks: {
     includes: includes/
 }
+

@@ -87,8 +87,4 @@ public abstract class MqlNode {
     }
 
 
-    public MqlParserPos getParserPosition() {
-        return new MqlParserPos( 0, 0, 0, 0 ); // todo dl fix
-    }
-
 }

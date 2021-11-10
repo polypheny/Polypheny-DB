@@ -225,6 +225,7 @@ public class AggregateTest extends MqlTestTemplate {
         MongoConnection.checkUnorderedResultSet( result, expected, false );
     }
 
+
     //$limit
     @Test
     @Category(CottontailExcluded.class)

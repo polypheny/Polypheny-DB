@@ -178,7 +178,7 @@ public class MqlParserPos implements Serializable {
         return new AbstractList<MqlParserPos>() {
             @Override
             public MqlParserPos get( int index ) {
-                return nodes[index].getParserPosition();
+                return nodes[index].pos();
             }
 
 
@@ -191,7 +191,7 @@ public class MqlParserPos implements Serializable {
 
 
     private static Iterable<MqlParserPos> toPos( Iterable<MqlNode> nodes ) {
-        return Iterables.transform( nodes, MqlNode::getParserPosition );
+        return Iterables.transform( nodes, MqlNode::pos );
     }
 
 
@@ -199,7 +199,7 @@ public class MqlParserPos implements Serializable {
      * Combines the parser positions of a list of nodes to create a position which spans from the beginning of the first to the end of the last.
      */
     public static MqlParserPos sum( final List<? extends MqlNode> nodes ) {
-        return sum( Lists.transform( nodes, MqlNode::getParserPosition ) );
+        return sum( Lists.transform( nodes, MqlNode::pos ) );
     }
 
 

@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
@@ -45,9 +44,7 @@ public class SqlAlterViewRename extends SqlAlterView {
 
 
     /**
-     * Creates a SqlAlterSchema.
-     *
-     * @param pos
+     * Creates a SqlAlterViewRename.
      */
     public SqlAlterViewRename( SqlParserPos pos, SqlIdentifier oldName, SqlIdentifier newName ) {
         super( pos );
@@ -76,10 +73,8 @@ public class SqlAlterViewRename extends SqlAlterView {
     @Override
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, oldName );
-        CatalogView catalogView;
-        if ( catalogTable.tableType == TableType.VIEW ) {
-            catalogView = (CatalogView) catalogTable;
-        } else {
+
+        if ( catalogTable.tableType != TableType.VIEW ) {
             throw new RuntimeException( "Not Possible to use ALTER VIEW because " + catalogTable.name + " is not a View." );
         }
 
@@ -87,7 +82,7 @@ public class SqlAlterViewRename extends SqlAlterView {
             throw new RuntimeException( "No FQDN allowed here: " + newName.toString() );
         }
         try {
-            DdlManager.getInstance().renameTable( catalogView, newName.getSimple(), statement );
+            DdlManager.getInstance().renameTable( catalogTable, newName.getSimple(), statement );
         } catch ( TableAlreadyExistsException e ) {
             throw SqlUtil.newContextException( oldName.getParserPosition(), RESOURCE.schemaExists( newName.getSimple() ) );
         }

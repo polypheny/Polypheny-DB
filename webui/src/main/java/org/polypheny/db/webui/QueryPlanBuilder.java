@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.polypheny.db.webui;
 
 
+import com.google.gson.Gson;
 import java.util.ArrayList;
 import org.apache.commons.lang.math.NumberUtils;
 import org.polypheny.db.rel.RelNode;
@@ -66,13 +67,20 @@ public class QueryPlanBuilder {
     /**
      * Build a tree using the RelBuilder
      *
-     * @param topNode   top node from the tree from the user interface, with its children
+     * @param topNode top node from the tree from the user interface, with its children
      * @param statement transaction
      */
     public static RelNode buildFromTree( final UIRelNode topNode, final Statement statement ) {
         RelBuilder b = createRelBuilder( statement );
         buildStep( b, topNode );
         return b.build();
+    }
+
+
+    public static RelNode buildFromJsonRel( Statement statement, String json ) {
+        Gson gson = new Gson();
+        RelBuilder b = createRelBuilder( statement );
+        return buildFromTree( gson.fromJson( json, UIRelNode.class ), statement );
     }
 
 

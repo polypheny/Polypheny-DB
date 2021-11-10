@@ -90,6 +90,14 @@ public class SqlDdlNodes {
 
 
     /**
+     * Creates a CREATE MATERIALIZED VIEW.
+     */
+    public static SqlCreateMaterializedView createMaterializedView( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query, List<SqlIdentifier> store, String freshnessType, Integer freshnessNumber, SqlIdentifier freshnessUnit ) {
+        return new SqlCreateMaterializedView( pos, replace, ifNotExists, name, columnList, query, store, freshnessType, freshnessNumber, freshnessUnit );
+    }
+
+
+    /**
      * Creates a CREATE FUNCTION.
      */
     public static SqlCreateFunction createFunction( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNode className, SqlNodeList usingList ) {
@@ -126,6 +134,14 @@ public class SqlDdlNodes {
      */
     public static SqlDrop dropView( SqlParserPos pos, boolean ifExists, SqlIdentifier name ) {
         return new SqlDropView( pos, ifExists, name );
+    }
+
+
+    /**
+     * Creates a DROP MATERIALIZED VIEW.
+     */
+    public static SqlDrop dropMaterializedView( SqlParserPos pos, boolean ifExists, SqlIdentifier name ) {
+        return new SqlDropMaterializedView( pos, ifExists, name );
     }
 
 
