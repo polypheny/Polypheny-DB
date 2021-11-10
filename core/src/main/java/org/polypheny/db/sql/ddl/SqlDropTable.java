@@ -46,7 +46,7 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -61,7 +61,7 @@ public class SqlDropTable extends SqlDropObject {
     /**
      * Creates a SqlDropTable.
      */
-    SqlDropTable( SqlParserPos pos, boolean ifExists, SqlIdentifier name ) {
+    SqlDropTable( ParserPos pos, boolean ifExists, SqlIdentifier name ) {
         super( OPERATOR, pos, ifExists, name );
     }
 
@@ -84,7 +84,7 @@ public class SqlDropTable extends SqlDropObject {
         try {
             DdlManager.getInstance().dropTable( table, statement );
         } catch ( DdlOnSourceException e ) {
-            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.ddlOnSourceTable() );
+            throw SqlUtil.newContextException( name.getPos(), RESOURCE.ddlOnSourceTable() );
         }
 
     }

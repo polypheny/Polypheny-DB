@@ -26,6 +26,7 @@ import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
@@ -37,7 +38,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -60,7 +60,7 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
 
 
     public SqlAlterTableModifyColumn(
-            SqlParserPos pos,
+            ParserPos pos,
             @NonNull SqlIdentifier tableName,
             @NonNull SqlIdentifier columnName,
             SqlDataTypeSpec type,
@@ -162,11 +162,11 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
 
 
         } catch ( DdlOnSourceException e ) {
-            throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.ddlOnSourceTable() );
+            throw SqlUtil.newContextException( tableName.getPos(), RESOURCE.ddlOnSourceTable() );
         } catch ( ColumnNotExistsException e ) {
-            throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
+            throw SqlUtil.newContextException( tableName.getPos(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
         } catch ( UnknownCollationException e ) {
-            throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.unknownCollation( collation ) );
+            throw SqlUtil.newContextException( tableName.getPos(), RESOURCE.unknownCollation( collation ) );
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         }

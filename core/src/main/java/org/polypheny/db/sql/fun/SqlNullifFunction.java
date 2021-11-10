@@ -42,7 +42,7 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -71,7 +71,7 @@ public class SqlNullifFunction extends SqlFunction {
     @Override
     public SqlNode rewriteCall( SqlValidator validator, SqlCall call ) {
         List<SqlNode> operands = call.getOperandList();
-        SqlParserPos pos = call.getParserPosition();
+        ParserPos pos = call.getPos();
 
         checkOperandCount( validator, getOperandTypeChecker(), call );
         assert operands.size() == 2;
@@ -79,7 +79,7 @@ public class SqlNullifFunction extends SqlFunction {
         SqlNodeList whenList = new SqlNodeList( pos );
         SqlNodeList thenList = new SqlNodeList( pos );
         whenList.add( operands.get( 1 ) );
-        thenList.add( SqlLiteral.createNull( SqlParserPos.ZERO ) );
+        thenList.add( SqlLiteral.createNull( ParserPos.ZERO ) );
         return SqlCase.createSwitched( pos, operands.get( 0 ), whenList, thenList, SqlNode.clone( operands.get( 0 ) ) );
     }
 }

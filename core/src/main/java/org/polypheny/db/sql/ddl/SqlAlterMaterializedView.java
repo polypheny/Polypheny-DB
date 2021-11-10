@@ -16,11 +16,11 @@
 
 package org.polypheny.db.sql.ddl;
 
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.SqlAlter;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
-import org.polypheny.db.sql.parser.SqlParserPos;
 
 
 /**
@@ -35,7 +35,7 @@ public abstract class SqlAlterMaterializedView extends SqlAlter {
     /**
      * Creates a SqlAlterSchema.
      */
-    public SqlAlterMaterializedView( SqlParserPos pos ) {
+    public SqlAlterMaterializedView( ParserPos pos ) {
         super( OPERATOR, pos );
     }
 

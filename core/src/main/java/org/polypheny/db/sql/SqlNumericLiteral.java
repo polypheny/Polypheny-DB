@@ -37,7 +37,7 @@ package org.polypheny.db.sql;
 import java.math.BigDecimal;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Util;
 
@@ -52,7 +52,7 @@ public class SqlNumericLiteral extends SqlLiteral {
     private boolean isExact;
 
 
-    protected SqlNumericLiteral( BigDecimal value, Integer prec, Integer scale, boolean isExact, SqlParserPos pos ) {
+    protected SqlNumericLiteral( BigDecimal value, Integer prec, Integer scale, boolean isExact, ParserPos pos ) {
         super(
                 value,
                 isExact ? PolyType.DECIMAL : PolyType.DOUBLE,
@@ -79,7 +79,7 @@ public class SqlNumericLiteral extends SqlLiteral {
 
 
     @Override
-    public SqlNumericLiteral clone( SqlParserPos pos ) {
+    public SqlNumericLiteral clone( ParserPos pos ) {
         return new SqlNumericLiteral( (BigDecimal) value, getPrec(), getScale(), isExact, pos );
     }
 

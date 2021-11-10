@@ -121,7 +121,7 @@ import org.polypheny.db.sql.parser.SqlAbstractParserImpl;
 import org.polypheny.db.sql.parser.SqlParseException;
 import org.polypheny.db.sql.parser.SqlParser;
 import org.polypheny.db.sql.parser.SqlParserImplFactory;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.parser.SqlParserUtil;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.sql.validate.SqlConformance;
@@ -392,9 +392,9 @@ JAVACODE List startList(Object o)
  * future changes to the grammar, making it very brittle.
  */
 
-JAVACODE protected SqlParserPos getPos()
+JAVACODE protected ParserPos getPos()
 {
-    return new SqlParserPos(
+    return new ParserPos(
         token.beginLine,
         token.beginColumn,
         token.endLine,
@@ -434,7 +434,7 @@ JAVACODE SqlParseException convertException(Throwable ex)
     if (ex instanceof SqlParseException) {
         return (SqlParseException) ex;
     }
-    SqlParserPos pos = null;
+    ParserPos pos = null;
     int[][] expectedTokenSequences = null;
     String[] tokenImage = null;
     if (ex instanceof ParseException) {
@@ -443,7 +443,7 @@ JAVACODE SqlParseException convertException(Throwable ex)
         tokenImage = pex.tokenImage;
         if (pex.currentToken != null) {
             final Token token = pex.currentToken.next;
-            pos = new SqlParserPos(
+            pos = new ParserPos(
                 token.beginLine,
                 token.beginColumn,
                 token.endLine,
@@ -461,7 +461,7 @@ JAVACODE SqlParseException convertException(Throwable ex)
         if (matcher.matches()) {
             int line = Integer.parseInt(matcher.group(1));
             int column = Integer.parseInt(matcher.group(2));
-            pos = new SqlParserPos(line, column, line, column);
+            pos = new ParserPos(line, column, line, column);
         }
     } else if (ex instanceof PolyphenyDbContextException) {
         // PolyphenyDbContextException is the standard wrapper for exceptions
@@ -472,7 +472,7 @@ JAVACODE SqlParseException convertException(Throwable ex)
         // SqlSpecialOperator.reduceExpr.
         PolyphenyDbContextException ece =
             (PolyphenyDbContextException) ex;
-        pos = new SqlParserPos(
+        pos = new ParserPos(
             ece.getPosLine(),
             ece.getPosColumn(),
             ece.getEndPosLine(),
@@ -1110,9 +1110,9 @@ SqlNode SqlExplain() :
     <FOR> stmt = SqlQueryOrDml() {
         return new SqlExplain(getPos(),
             stmt,
-            detailLevel.symbol(SqlParserPos.ZERO),
-            depth.symbol(SqlParserPos.ZERO),
-            format.symbol(SqlParserPos.ZERO),
+            detailLevel.symbol(ParserPos.ZERO),
+            depth.symbol(ParserPos.ZERO),
+            format.symbol(ParserPos.ZERO),
             nDynamicParams);
     }
 }
@@ -1238,9 +1238,9 @@ SqlNode SqlDescribe() :
             final SqlExplainFormat format = SqlExplainFormat.TEXT;
             return new SqlExplain(s.end(stmt),
                 stmt,
-                detailLevel.symbol(SqlParserPos.ZERO),
-                depth.symbol(SqlParserPos.ZERO),
-                format.symbol(SqlParserPos.ZERO),
+                detailLevel.symbol(ParserPos.ZERO),
+                depth.symbol(ParserPos.ZERO),
+                format.symbol(ParserPos.ZERO),
                 nDynamicParams);
         }
     )
@@ -1469,9 +1469,9 @@ SqlUpdate WhenMatchedClause(SqlNode table, SqlIdentifier alias) :
 {
     SqlIdentifier id;
     final Span s;
-    final SqlNodeList updateColumnList = new SqlNodeList(SqlParserPos.ZERO);
+    final SqlNodeList updateColumnList = new SqlNodeList(ParserPos.ZERO);
     SqlNode exp;
-    final SqlNodeList updateExprList = new SqlNodeList(SqlParserPos.ZERO);
+    final SqlNodeList updateExprList = new SqlNodeList(ParserPos.ZERO);
 }
 {
     <WHEN> { s = span(); } <MATCHED> <THEN>
@@ -1637,7 +1637,7 @@ SqlNode JoinTable(SqlNode e) :
     (
         <ON> { on = JoinConditionType.ON.symbol(getPos()); }
         condition = Expression(ExprContext.ACCEPT_SUB_QUERY) {
-            return new SqlJoin(joinType.getParserPosition(),
+            return new SqlJoin(joinType.getPos(),
                 e,
                 natural,
                 joinType,
@@ -1648,7 +1648,7 @@ SqlNode JoinTable(SqlNode e) :
     |
         <USING> { using = JoinConditionType.USING.symbol(getPos()); }
         list = ParenthesizedSimpleIdentifierList() {
-            return new SqlJoin(joinType.getParserPosition(),
+            return new SqlJoin(joinType.getPos(),
                 e,
                 natural,
                 joinType,
@@ -1658,12 +1658,12 @@ SqlNode JoinTable(SqlNode e) :
         }
     |
         {
-            return new SqlJoin(joinType.getParserPosition(),
+            return new SqlJoin(joinType.getPos(),
                 e,
                 natural,
                 joinType,
                 e2,
-                JoinConditionType.NONE.symbol(joinType.getParserPosition()),
+                JoinConditionType.NONE.symbol(joinType.getPos()),
                 null);
         }
     )
@@ -1689,7 +1689,7 @@ SqlNode FromClause() :
     SqlNode e, e2, condition;
     SqlLiteral natural, joinType, joinConditionType;
     SqlNodeList list;
-    SqlParserPos pos;
+    ParserPos pos;
 }
 {
     e = TableRef()
@@ -1706,7 +1706,7 @@ SqlNode FromClause() :
                 joinConditionType = JoinConditionType.ON.symbol(getPos());
             }
             condition = Expression(ExprContext.ACCEPT_SUB_QUERY) {
-                e = new SqlJoin(joinType.getParserPosition(),
+                e = new SqlJoin(joinType.getPos(),
                     e,
                     natural,
                     joinType,
@@ -1719,7 +1719,7 @@ SqlNode FromClause() :
                 joinConditionType = JoinConditionType.USING.symbol(getPos());
             }
             list = ParenthesizedSimpleIdentifierList() {
-                e = new SqlJoin(joinType.getParserPosition(),
+                e = new SqlJoin(joinType.getPos(),
                     e,
                     natural,
                     joinType,
@@ -1729,12 +1729,12 @@ SqlNode FromClause() :
             }
         |
             {
-                e = new SqlJoin(joinType.getParserPosition(),
+                e = new SqlJoin(joinType.getPos(),
                     e,
                     natural,
                     joinType,
                     e2,
-                    JoinConditionType.NONE.symbol(joinType.getParserPosition()),
+                    JoinConditionType.NONE.symbol(joinType.getPos()),
                     null);
             }
         )
@@ -1746,12 +1746,12 @@ SqlNode FromClause() :
         //LOOKAHEAD({true})
         <COMMA> { joinType = JoinType.COMMA.symbol(getPos()); }
         e2 = TableRef() {
-            e = new SqlJoin(joinType.getParserPosition(),
+            e = new SqlJoin(joinType.getPos(),
                 e,
-                SqlLiteral.createBoolean(false, joinType.getParserPosition()),
+                SqlLiteral.createBoolean(false, joinType.getPos()),
                 joinType,
                 e2,
-                JoinConditionType.NONE.symbol(SqlParserPos.ZERO),
+                JoinConditionType.NONE.symbol(ParserPos.ZERO),
                 null);
         }
     |
@@ -1760,12 +1760,12 @@ SqlNode FromClause() :
             if (!this.conformance.isApplyAllowed()) {
                 throw new ParseException(RESOURCE.applyNotAllowed().str());
             }
-            e = new SqlJoin(joinType.getParserPosition(),
+            e = new SqlJoin(joinType.getPos(),
                 e,
-                SqlLiteral.createBoolean(false, joinType.getParserPosition()),
+                SqlLiteral.createBoolean(false, joinType.getPos()),
                 joinType,
                 e2,
-                JoinConditionType.NONE.symbol(SqlParserPos.ZERO),
+                JoinConditionType.NONE.symbol(ParserPos.ZERO),
                 null);
         }
     |
@@ -1774,13 +1774,13 @@ SqlNode FromClause() :
             if (!this.conformance.isApplyAllowed()) {
                 throw new ParseException(RESOURCE.applyNotAllowed().str());
             }
-            e = new SqlJoin(joinType.getParserPosition(),
+            e = new SqlJoin(joinType.getPos(),
                 e,
-                SqlLiteral.createBoolean(false, joinType.getParserPosition()),
+                SqlLiteral.createBoolean(false, joinType.getPos()),
                 joinType,
                 e2,
-                JoinConditionType.ON.symbol(SqlParserPos.ZERO),
-                SqlLiteral.createBoolean(true, joinType.getParserPosition()));
+                JoinConditionType.ON.symbol(ParserPos.ZERO),
+                SqlLiteral.createBoolean(true, joinType.getPos()));
         }
     )*
     {
@@ -2038,7 +2038,7 @@ void CompoundIdentifierType(List<SqlNode> list, List<SqlNode> extendList) :
     }
 }
 
-SqlNode TableFunctionCall(SqlParserPos pos) :
+SqlNode TableFunctionCall(ParserPos pos) :
 {
     SqlNode call;
     SqlFunctionCategory funcType = SqlFunctionCategory.USER_DEFINED_TABLE_FUNCTION;
@@ -2076,7 +2076,7 @@ SqlNode TableFunctionCall(SqlParserPos pos) :
 /**
  * Parses an explicit TABLE t reference.
  */
-SqlNode ExplicitTable(SqlParserPos pos) :
+SqlNode ExplicitTable(ParserPos pos) :
 {
     SqlNode tableRef;
 }
@@ -2160,7 +2160,7 @@ SqlNode RowConstructor() :
             // LOOKAHEAD in RowConstructorList().  It would be so much more
             // reasonable to require parentheses.  Sigh.
             s = Span.of(value);
-            valueList = new SqlNodeList(Collections.singletonList(value),value.getParserPosition());
+            valueList = new SqlNodeList(Collections.singletonList(value),value.getPos());
         }
     )
     {
@@ -2336,9 +2336,9 @@ SqlWindow WindowSpecification() :
     List list;
     SqlNodeList partitionList;
     SqlNodeList orderList;
-    SqlLiteral isRows = SqlLiteral.createBoolean(false, SqlParserPos.ZERO);
+    SqlLiteral isRows = SqlLiteral.createBoolean(false, ParserPos.ZERO);
     SqlNode lowerBound = null, upperBound = null;
-    SqlParserPos startPos;
+    ParserPos startPos;
     final Span s, s1, s2;
     SqlLiteral allowPartial = null;
 }
@@ -2496,7 +2496,7 @@ SqlMatchRecognize MatchRecognizeOpt(SqlNode tableRef) :
     SqlLiteral interval;
     SqlNodeList patternDefList;
     final SqlNode after;
-    SqlParserPos pos;
+    ParserPos pos;
     final SqlNode var;
     final SqlLiteral rowsPerMatch;
     SqlNodeList subsetList = SqlNodeList.EMPTY;
@@ -2666,25 +2666,25 @@ SqlNode PatternFactor() :
     SqlNode extra;
     SqlLiteral startNum = null;
     SqlLiteral endNum = null;
-    SqlLiteral reluctant = SqlLiteral.createBoolean(false, SqlParserPos.ZERO);
+    SqlLiteral reluctant = SqlLiteral.createBoolean(false, ParserPos.ZERO);
 }
 {
     e = PatternPrimary()
     [
         (
             <STAR> {
-                startNum = SqlLiteral.createExactNumeric("0", SqlParserPos.ZERO);
-                endNum = SqlLiteral.createExactNumeric("-1", SqlParserPos.ZERO);
+                startNum = SqlLiteral.createExactNumeric("0", ParserPos.ZERO);
+                endNum = SqlLiteral.createExactNumeric("-1", ParserPos.ZERO);
             }
         |
             <PLUS> {
-                startNum = SqlLiteral.createExactNumeric("1", SqlParserPos.ZERO);
-                endNum = SqlLiteral.createExactNumeric("-1", SqlParserPos.ZERO);
+                startNum = SqlLiteral.createExactNumeric("1", ParserPos.ZERO);
+                endNum = SqlLiteral.createExactNumeric("-1", ParserPos.ZERO);
             }
         |
             <HOOK> {
-                startNum = SqlLiteral.createExactNumeric("0", SqlParserPos.ZERO);
-                endNum = SqlLiteral.createExactNumeric("1", SqlParserPos.ZERO);
+                startNum = SqlLiteral.createExactNumeric("0", ParserPos.ZERO);
+                endNum = SqlLiteral.createExactNumeric("1", ParserPos.ZERO);
             }
         |
             <LBRACE>
@@ -2692,7 +2692,7 @@ SqlNode PatternFactor() :
                 startNum = UnsignedNumericLiteral() { endNum = startNum; }
                 [
                     <COMMA> {
-                        endNum = SqlLiteral.createExactNumeric("-1", SqlParserPos.ZERO);
+                        endNum = SqlLiteral.createExactNumeric("-1", ParserPos.ZERO);
                     }
                     [
                         endNum = UnsignedNumericLiteral()
@@ -2701,7 +2701,7 @@ SqlNode PatternFactor() :
                 <RBRACE>
             |
                 {
-                    startNum = SqlLiteral.createExactNumeric("-1", SqlParserPos.ZERO);
+                    startNum = SqlLiteral.createExactNumeric("-1", ParserPos.ZERO);
                 }
                 <COMMA>
                 endNum = UnsignedNumericLiteral()
@@ -2720,7 +2720,7 @@ SqlNode PatternFactor() :
             <HOOK>
             {
                 if (startNum.intValue(true) != endNum.intValue(true)) {
-                    reluctant = SqlLiteral.createBoolean(true, SqlParserPos.ZERO);
+                    reluctant = SqlLiteral.createBoolean(true, ParserPos.ZERO);
                 }
             }
         ]
@@ -2873,8 +2873,8 @@ SqlNode QueryOrExpr(ExprContext exprContext) :
     SqlNodeList withList = null;
     SqlNode e;
     SqlOperator op;
-    SqlParserPos pos;
-    SqlParserPos withPos;
+    ParserPos pos;
+    ParserPos withPos;
     List<Object> list;
 }
 {
@@ -2907,7 +2907,7 @@ SqlNode QueryOrExpr(ExprContext exprContext) :
     {
         e = SqlParserUtil.toTree(list);
         if (withList != null) {
-            e = new SqlWith(withList.getParserPosition(), withList, e);
+            e = new SqlWith(withList.getPos(), withList, e);
         }
         return e;
     }
@@ -2916,7 +2916,7 @@ SqlNode QueryOrExpr(ExprContext exprContext) :
 SqlNodeList WithList() :
 {
     SqlWithItem withItem;
-    SqlParserPos pos;
+    ParserPos pos;
     SqlNodeList list;
 }
 {
@@ -2943,7 +2943,7 @@ SqlWithItem WithItem() :
     <AS>
     definition = ParenthesizedExpression(ExprContext.ACCEPT_QUERY)
     {
-        return new SqlWithItem(id.getParserPosition(), id, columnList,
+        return new SqlWithItem(id.getPos(), id, columnList,
             definition);
     }
 }
@@ -3258,15 +3258,15 @@ SqlNode Expression3(ExprContext exprContext) :
             {
                 if (list1.size() != 2 || list2.size() != 2) {
                     throw SqlUtil.newContextException(
-                        list1.getParserPosition().plus(
-                            list2.getParserPosition()),
+                        list1.getPos().plus(
+                            list2.getPos()),
                         RESOURCE.illegalOverlaps());
                 }
                 for (SqlNode node : list2) {
                     list1.add(node);
                 }
                 return op.createCall(
-                    list1.getParserPosition().plus(list2.getParserPosition()),
+                    list1.getPos().plus(list2.getPos()),
                     list1.toArray());
             }
         )
@@ -3728,7 +3728,7 @@ SqlNode StringLiteral() :
         if (nfrags == 1) {
             return frags.get(0); // just the head fragment
         } else {
-            SqlParserPos pos2 = SqlParserPos.sum(frags);
+            ParserPos pos2 = ParserPos.sum(frags);
             return SqlStdOperatorTable.LITERAL_CHAIN.createCall(pos2, frags);
         }
     }
@@ -3796,7 +3796,7 @@ SqlNode StringLiteral() :
                 rands[i] = ((SqlLiteral) rands[i]).unescapeUnicode(
                     unicodeEscapeChar);
             }
-            SqlParserPos pos2 = SqlParserPos.sum(rands);
+            ParserPos pos2 = ParserPos.sum(rands);
             return SqlStdOperatorTable.LITERAL_CHAIN.createCall(pos2, rands);
         }
     }
@@ -3967,7 +3967,7 @@ List<Object> ArrayItem(Span s) :
     final List<Object> list = new ArrayList<Object>();
     SqlNode e1;
     SqlNode e2 = null;
-    SqlParserPos pos;
+    ParserPos pos;
 }
 {
     <LBRACKET>
@@ -4307,7 +4307,7 @@ SqlNodeList ParenthesizedSimpleIdentifierList() :
 SqlIdentifier CompoundIdentifier() :
 {
     List<String> list = new ArrayList<String>();
-    List<SqlParserPos> posList = new ArrayList<SqlParserPos>();
+    List<ParserPos> posList = new ArrayList<ParserPos>();
     String p;
     boolean star = false;
 }
@@ -4333,7 +4333,7 @@ SqlIdentifier CompoundIdentifier() :
         }
     )?
     {
-        SqlParserPos pos = SqlParserPos.sum(posList);
+        ParserPos pos = ParserPos.sum(posList);
         if (star) {
             return SqlIdentifier.star(list, pos, posList);
         }
@@ -4859,7 +4859,7 @@ SqlNode BuiltinFunctionCall() :
                     // This is to handle the case of TRIM(x)
                     // (FRG-191).
                     if (flag == null) {
-                        flag = SqlTrimFunction.Flag.BOTH.symbol(SqlParserPos.ZERO);
+                        flag = SqlTrimFunction.Flag.BOTH.symbol(ParserPos.ZERO);
                     }
                     args = startList(flag);
                     args.add(null); // no trim chars
@@ -4871,7 +4871,7 @@ SqlNode BuiltinFunctionCall() :
         ]
         e = Expression(ExprContext.ACCEPT_SUB_QUERY) {
             if (flag == null) {
-                flag = SqlTrimFunction.Flag.BOTH.symbol(SqlParserPos.ZERO);
+                flag = SqlTrimFunction.Flag.BOTH.symbol(ParserPos.ZERO);
             }
             args = startList(flag);
             args.add(trimChars);
@@ -5503,7 +5503,7 @@ SqlCall MatchRecognizeNavigationLogical() :
     final SqlOperator funcOp;
     final SqlOperator runningOp;
     SqlNode arg0;
-    SqlNode arg1 = SqlLiteral.createExactNumeric("0", SqlParserPos.ZERO);
+    SqlNode arg1 = SqlLiteral.createExactNumeric("0", ParserPos.ZERO);
 }
 {
     (
@@ -5538,7 +5538,7 @@ SqlCall MatchRecognizeNavigationPhysical() :
     SqlCall func;
     SqlOperator funcOp;
     SqlNode arg0;
-    SqlNode arg1 = SqlLiteral.createExactNumeric("1", SqlParserPos.ZERO);
+    SqlNode arg1 = SqlLiteral.createExactNumeric("1", ParserPos.ZERO);
 }
 {
     (

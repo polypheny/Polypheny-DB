@@ -45,7 +45,7 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeTransformCascade;
 import org.polypheny.db.type.PolyTypeTransforms;
@@ -105,7 +105,7 @@ public class SqlTrimFunction extends SqlFunction {
         /**
          * Creates a parse-tree node representing an occurrence of this flag at a particular position in the parsed text.
          */
-        public SqlLiteral symbol( SqlParserPos pos ) {
+        public SqlLiteral symbol( ParserPos pos ) {
             return SqlLiteral.createSymbol( this, pos );
         }
     }
@@ -140,13 +140,13 @@ public class SqlTrimFunction extends SqlFunction {
 
 
     @Override
-    public SqlCall createCall( SqlLiteral functionQualifier, SqlParserPos pos, SqlNode... operands ) {
+    public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
         assert functionQualifier == null;
         switch ( operands.length ) {
             case 1:
                 // This variant occurs when someone writes TRIM(string) as opposed to the sugared syntax TRIM(string FROM string).
                 operands = new SqlNode[]{
-                        Flag.BOTH.symbol( SqlParserPos.ZERO ),
+                        Flag.BOTH.symbol( ParserPos.ZERO ),
                         SqlLiteral.createCharString( " ", pos ),
                         operands[0]
                 };

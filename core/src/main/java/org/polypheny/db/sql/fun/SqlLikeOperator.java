@@ -41,7 +41,7 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.parser.SqlParserUtil;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
@@ -179,7 +179,7 @@ public class SqlLikeOperator extends SqlSpecialOperator {
             operands = new SqlNode[]{ exp0, exp1 };
             end = opOrdinal + 2;
         }
-        SqlCall call = createCall( SqlParserPos.ZERO, operands );
+        SqlCall call = createCall( ParserPos.ZERO, operands );
         return new ReduceResult( opOrdinal - 1, end, call );
     }
 

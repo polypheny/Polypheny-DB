@@ -35,7 +35,7 @@ package org.polypheny.db.sql;
 
 
 import lombok.Getter;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 
 
 /**
@@ -59,7 +59,7 @@ public abstract class SqlCreate extends SqlDdl {
     /**
      * Creates a SqlCreate.
      */
-    public SqlCreate( SqlOperator operator, SqlParserPos pos, boolean replace, boolean ifNotExists ) {
+    public SqlCreate( SqlOperator operator, ParserPos pos, boolean replace, boolean ifNotExists ) {
         super( operator, pos );
         this.replace = replace;
         this.ifNotExists = ifNotExists;

@@ -1233,6 +1233,9 @@ public enum SqlKind {
      */
     OTHER_DDL,
 
+
+    DOC_JSONIZE,
+
     /**
      * Document model single selected value of field
      */
@@ -1439,6 +1442,7 @@ public enum SqlKind {
 
     public static final Set<SqlKind> DOC_KIND = EnumSet.of(
             DOC_FIELD,
+            DOC_JSONIZE,
             DOC_ITEM,
             DOC_SIZE_MATCH,
             DOC_REGEX_MATCH,
@@ -1451,6 +1455,7 @@ public enum SqlKind {
             DOC_UPDATE_ADD,
             DOC_UPDATE_REMOVE,
             DOC_UPDATE_RENAME,
+            DOC_JSONIZE,
             DOC_UPDATE,
             DOC_EXISTS );
 

@@ -51,7 +51,7 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -68,7 +68,7 @@ public class SqlDropSchema extends SqlDrop implements SqlExecutableStatement {
     /**
      * Creates a SqlDropSchema.
      */
-    SqlDropSchema( SqlParserPos pos, boolean ifExists, SqlIdentifier name ) {
+    SqlDropSchema( ParserPos pos, boolean ifExists, SqlIdentifier name ) {
         super( OPERATOR, pos, ifExists );
         this.name = name;
     }
@@ -95,9 +95,9 @@ public class SqlDropSchema extends SqlDrop implements SqlExecutableStatement {
         try {
             DdlManager.getInstance().dropSchema( context.getDatabaseId(), name.getSimple(), ifExists, statement );
         } catch ( SchemaNotExistException e ) {
-            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaNotFound( name.getSimple() ) );
+            throw SqlUtil.newContextException( name.getPos(), RESOURCE.schemaNotFound( name.getSimple() ) );
         } catch ( DdlOnSourceException e ) {
-            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.ddlOnSourceTable() );
+            throw SqlUtil.newContextException( name.getPos(), RESOURCE.ddlOnSourceTable() );
         }
     }
 

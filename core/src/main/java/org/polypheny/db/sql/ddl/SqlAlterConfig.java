@@ -22,6 +22,7 @@ import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.ConfigManager;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlAlter;
 import org.polypheny.db.sql.SqlKind;
@@ -29,7 +30,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -48,7 +48,7 @@ public class SqlAlterConfig extends SqlAlter {
     /**
      * Creates a SqlAlterSchemaOwner.
      */
-    public SqlAlterConfig( SqlParserPos pos, SqlNode key, SqlNode value ) {
+    public SqlAlterConfig( ParserPos pos, SqlNode key, SqlNode value ) {
         super( OPERATOR, pos );
         this.key = Objects.requireNonNull( key );
         this.value = Objects.requireNonNull( value );

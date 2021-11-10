@@ -36,6 +36,7 @@ package org.polypheny.db.sql.dialect;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlBasicCall;
 import org.polypheny.db.sql.SqlCall;
@@ -49,7 +50,6 @@ import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.fun.SqlCase;
 import org.polypheny.db.sql.fun.SqlFloorFunction;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
 
 
 /**
@@ -124,7 +124,7 @@ public class HsqldbSqlDialect extends SqlDialect {
                 return super.getCastSpec( type );
         }
 
-        return new SqlDataTypeSpec( new SqlIdentifier( castSpec, SqlParserPos.ZERO ), -1, -1, null, null, SqlParserPos.ZERO );
+        return new SqlDataTypeSpec( new SqlIdentifier( castSpec, ParserPos.ZERO ), -1, -1, null, null, ParserPos.ZERO );
     }
 
 
@@ -141,7 +141,7 @@ public class HsqldbSqlDialect extends SqlDialect {
                 final TimeUnitRange timeUnit = timeUnitNode.getValueAs( TimeUnitRange.class );
 
                 final String translatedLit = convertTimeUnit( timeUnit );
-                SqlCall call2 = SqlFloorFunction.replaceTimeUnitOperand( call, translatedLit, timeUnitNode.getParserPosition() );
+                SqlCall call2 = SqlFloorFunction.replaceTimeUnitOperand( call, translatedLit, timeUnitNode.getPos() );
                 SqlFloorFunction.unparseDatetimeFunction( writer, call2, "TRUNC", true );
                 break;
 
@@ -160,8 +160,8 @@ public class HsqldbSqlDialect extends SqlDialect {
     @Override
     public SqlNode rewriteSingleValueExpr( SqlNode aggCall ) {
         final SqlNode operand = ((SqlBasicCall) aggCall).operand( 0 );
-        final SqlLiteral nullLiteral = SqlLiteral.createNull( SqlParserPos.ZERO );
-        final SqlNode unionOperand = SqlStdOperatorTable.VALUES.createCall( SqlParserPos.ZERO, SqlLiteral.createApproxNumeric( "0", SqlParserPos.ZERO ) );
+        final SqlLiteral nullLiteral = SqlLiteral.createNull( ParserPos.ZERO );
+        final SqlNode unionOperand = SqlStdOperatorTable.VALUES.createCall( ParserPos.ZERO, SqlLiteral.createApproxNumeric( "0", ParserPos.ZERO ) );
         // For hsqldb, generate
         //   CASE COUNT(*)
         //   WHEN 0 THEN NULL
@@ -169,16 +169,16 @@ public class HsqldbSqlDialect extends SqlDialect {
         //   ELSE (VALUES 1 UNION ALL VALUES 1)
         //   END
         final SqlNode caseExpr =
-                new SqlCase( SqlParserPos.ZERO,
-                        SqlStdOperatorTable.COUNT.createCall( SqlParserPos.ZERO, operand ),
+                new SqlCase( ParserPos.ZERO,
+                        SqlStdOperatorTable.COUNT.createCall( ParserPos.ZERO, operand ),
                         SqlNodeList.of(
-                                SqlLiteral.createExactNumeric( "0", SqlParserPos.ZERO ),
-                                SqlLiteral.createExactNumeric( "1", SqlParserPos.ZERO ) ),
+                                SqlLiteral.createExactNumeric( "0", ParserPos.ZERO ),
+                                SqlLiteral.createExactNumeric( "1", ParserPos.ZERO ) ),
                         SqlNodeList.of(
                                 nullLiteral,
-                                SqlStdOperatorTable.MIN.createCall( SqlParserPos.ZERO, operand ) ),
-                        SqlStdOperatorTable.SCALAR_QUERY.createCall( SqlParserPos.ZERO,
-                                SqlStdOperatorTable.UNION_ALL.createCall( SqlParserPos.ZERO, unionOperand, unionOperand ) ) );
+                                SqlStdOperatorTable.MIN.createCall( ParserPos.ZERO, operand ) ),
+                        SqlStdOperatorTable.SCALAR_QUERY.createCall( ParserPos.ZERO,
+                                SqlStdOperatorTable.UNION_ALL.createCall( ParserPos.ZERO, unionOperand, unionOperand ) ) );
 
         log.debug( "SINGLE_VALUE rewritten into [{}]", caseExpr );
 

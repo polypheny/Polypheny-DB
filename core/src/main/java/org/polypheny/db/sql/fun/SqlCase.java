@@ -35,13 +35,13 @@ package org.polypheny.db.sql.fun;
 
 
 import java.util.List;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.util.UnmodifiableArrayList;
 
 
@@ -65,7 +65,7 @@ public class SqlCase extends SqlCall {
      * @param thenList List of all THEN expressions
      * @param elseExpr The implicit or explicit ELSE expression
      */
-    public SqlCase( SqlParserPos pos, SqlNode value, SqlNodeList whenList, SqlNodeList thenList, SqlNode elseExpr ) {
+    public SqlCase( ParserPos pos, SqlNode value, SqlNodeList whenList, SqlNodeList thenList, SqlNode elseExpr ) {
         super( pos );
         this.value = value;
         this.whenList = whenList;
@@ -84,7 +84,7 @@ public class SqlCase extends SqlCall {
      * ELSE elseClause<br>
      * END</code></blockquote>
      */
-    public static SqlCase createSwitched( SqlParserPos pos, SqlNode value, SqlNodeList whenList, SqlNodeList thenList, SqlNode elseClause ) {
+    public static SqlCase createSwitched( ParserPos pos, SqlNode value, SqlNodeList whenList, SqlNodeList thenList, SqlNode elseClause ) {
         if ( null != value ) {
             List<SqlNode> list = whenList.getList();
             for ( int i = 0; i < list.size(); i++ ) {

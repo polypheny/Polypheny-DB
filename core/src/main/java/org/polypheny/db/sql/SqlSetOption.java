@@ -39,7 +39,7 @@ import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.transaction.Statement;
@@ -79,7 +79,7 @@ public class SqlSetOption extends SqlAlter {
     public static final SqlSpecialOperator OPERATOR =
             new SqlSpecialOperator( "SET_OPTION", SqlKind.SET_OPTION ) {
                 @Override
-                public SqlCall createCall( SqlLiteral functionQualifier, SqlParserPos pos, SqlNode... operands ) {
+                public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
                     final SqlNode scopeNode = operands[0];
                     return new SqlSetOption(
                             pos,
@@ -114,7 +114,7 @@ public class SqlSetOption extends SqlAlter {
      * @param name Name of option, as an identifier, must not be null.
      * @param value Value of option, as an identifier or literal, may be null. If null, assume RESET command, else assume SET command.
      */
-    public SqlSetOption( SqlParserPos pos, String scope, SqlIdentifier name, SqlNode value ) {
+    public SqlSetOption( ParserPos pos, String scope, SqlIdentifier name, SqlNode value ) {
         super( OPERATOR, pos );
         this.name = name;
         this.value = value;
@@ -141,7 +141,7 @@ public class SqlSetOption extends SqlAlter {
         if ( scope == null ) {
             operandList.add( null );
         } else {
-            operandList.add( new SqlIdentifier( scope, SqlParserPos.ZERO ) );
+            operandList.add( new SqlIdentifier( scope, ParserPos.ZERO ) );
         }
         operandList.add( name );
         operandList.add( value );

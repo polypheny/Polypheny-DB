@@ -35,11 +35,11 @@ package org.polypheny.db.sql;
 
 
 import java.util.List;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.SqlValidatorException;
 
 
@@ -92,7 +92,7 @@ public class ExplicitOperatorBinding extends SqlOperatorBinding {
         if ( delegate != null ) {
             return delegate.newError( e );
         } else {
-            return SqlUtil.newContextException( SqlParserPos.ZERO, e );
+            return SqlUtil.newContextException( ParserPos.ZERO, e );
         }
     }
 

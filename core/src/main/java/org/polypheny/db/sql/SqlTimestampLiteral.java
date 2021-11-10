@@ -35,7 +35,7 @@ package org.polypheny.db.sql;
 
 
 import com.google.common.base.Preconditions;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.TimestampString;
 
@@ -48,14 +48,14 @@ import org.polypheny.db.util.TimestampString;
 public class SqlTimestampLiteral extends SqlAbstractDateTimeLiteral {
 
 
-    SqlTimestampLiteral( TimestampString ts, int precision, boolean hasTimeZone, SqlParserPos pos ) {
+    SqlTimestampLiteral( TimestampString ts, int precision, boolean hasTimeZone, ParserPos pos ) {
         super( ts, hasTimeZone, PolyType.TIMESTAMP, precision, pos );
         Preconditions.checkArgument( this.precision >= 0 );
     }
 
 
     @Override
-    public SqlTimestampLiteral clone( SqlParserPos pos ) {
+    public SqlTimestampLiteral clone( ParserPos pos ) {
         return new SqlTimestampLiteral( (TimestampString) value, precision, hasTimeZone, pos );
     }
 

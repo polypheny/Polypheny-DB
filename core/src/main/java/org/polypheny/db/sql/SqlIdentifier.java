@@ -39,7 +39,7 @@ import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.rel.type.DynamicRecordType;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.util.SqlVisitor;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
 import org.polypheny.db.sql.validate.SqlQualified;
@@ -73,7 +73,7 @@ public class SqlIdentifier extends SqlNode {
     /**
      * A list of the positions of the components of compound identifiers.
      */
-    protected ImmutableList<SqlParserPos> componentPositions;
+    protected ImmutableList<ParserPos> componentPositions;
 
 
     /**
@@ -81,7 +81,7 @@ public class SqlIdentifier extends SqlNode {
      *
      * @param names Parts of the identifier, length &ge; 1
      */
-    public SqlIdentifier( List<String> names, SqlCollation collation, SqlParserPos pos, List<SqlParserPos> componentPositions ) {
+    public SqlIdentifier( List<String> names, SqlCollation collation, ParserPos pos, List<ParserPos> componentPositions ) {
         super( pos );
         this.names = ImmutableList.copyOf( names );
         this.collation = collation;
@@ -95,7 +95,7 @@ public class SqlIdentifier extends SqlNode {
     }
 
 
-    public SqlIdentifier( List<String> names, SqlParserPos pos ) {
+    public SqlIdentifier( List<String> names, ParserPos pos ) {
         this( names, null, pos, null );
     }
 
@@ -103,7 +103,7 @@ public class SqlIdentifier extends SqlNode {
     /**
      * Creates a simple identifier, for example <code>foo</code>, with a collation.
      */
-    public SqlIdentifier( String name, SqlCollation collation, SqlParserPos pos ) {
+    public SqlIdentifier( String name, SqlCollation collation, ParserPos pos ) {
         this( ImmutableList.of( name ), collation, pos, null );
     }
 
@@ -111,7 +111,7 @@ public class SqlIdentifier extends SqlNode {
     /**
      * Creates a simple identifier, for example <code>foo</code>.
      */
-    public SqlIdentifier( String name, SqlParserPos pos ) {
+    public SqlIdentifier( String name, ParserPos pos ) {
         this( ImmutableList.of( name ), null, pos, null );
     }
 
@@ -119,7 +119,7 @@ public class SqlIdentifier extends SqlNode {
     /**
      * Creates an identifier that is a singleton wildcard star.
      */
-    public static SqlIdentifier star( SqlParserPos pos ) {
+    public static SqlIdentifier star( ParserPos pos ) {
         return star( ImmutableList.of( "" ), pos, ImmutableList.of( pos ) );
     }
 
@@ -127,7 +127,7 @@ public class SqlIdentifier extends SqlNode {
     /**
      * Creates an identifier that ends in a wildcard star.
      */
-    public static SqlIdentifier star( List<String> names, SqlParserPos pos, List<SqlParserPos> componentPositions ) {
+    public static SqlIdentifier star( List<String> names, ParserPos pos, List<ParserPos> componentPositions ) {
         return new SqlIdentifier(
                 Lists.transform( names, s -> s.equals( "*" ) ? "" : s ),
                 null,
@@ -143,7 +143,7 @@ public class SqlIdentifier extends SqlNode {
 
 
     @Override
-    public SqlNode clone( SqlParserPos pos ) {
+    public SqlNode clone( ParserPos pos ) {
         return new SqlIdentifier( names, collation, pos, componentPositions );
     }
 
@@ -182,7 +182,7 @@ public class SqlIdentifier extends SqlNode {
      * @param names Names of components
      * @param poses Positions of components
      */
-    public void setNames( List<String> names, List<SqlParserPos> poses ) {
+    public void setNames( List<String> names, List<ParserPos> poses ) {
         this.names = ImmutableList.copyOf( names );
         this.componentPositions =
                 poses == null
@@ -209,10 +209,10 @@ public class SqlIdentifier extends SqlNode {
     /**
      * Returns an identifier that is the same as this except with a component added at a given position. Does not modify this identifier.
      */
-    public SqlIdentifier add( int i, String name, SqlParserPos pos ) {
+    public SqlIdentifier add( int i, String name, ParserPos pos ) {
         final List<String> names2 = new ArrayList<>( names );
         names2.add( i, name );
-        final List<SqlParserPos> pos2;
+        final List<ParserPos> pos2;
         if ( componentPositions == null ) {
             pos2 = null;
         } else {
@@ -229,10 +229,10 @@ public class SqlIdentifier extends SqlNode {
      * @param i Ordinal of component.
      * @return Position of i'th component
      */
-    public SqlParserPos getComponentParserPosition( int i ) {
+    public ParserPos getComponentParserPosition( int i ) {
         assert (i >= 0) && (i < names.size());
         return (componentPositions == null)
-                ? getParserPosition()
+                ? getPos()
                 : componentPositions.get( i );
     }
 
@@ -248,7 +248,7 @@ public class SqlIdentifier extends SqlNode {
 
 
     /**
-     * Creates an identifier which contains only the <code>ordinal</code>th component of this compound identifier. It will have the correct {@link SqlParserPos}, provided that detailed position information is available.
+     * Creates an identifier which contains only the <code>ordinal</code>th component of this compound identifier. It will have the correct {@link ParserPos}, provided that detailed position information is available.
      */
     public SqlIdentifier getComponent( int ordinal ) {
         return getComponent( ordinal, ordinal + 1 );
@@ -256,14 +256,14 @@ public class SqlIdentifier extends SqlNode {
 
 
     public SqlIdentifier getComponent( int from, int to ) {
-        final SqlParserPos pos;
-        final ImmutableList<SqlParserPos> pos2;
+        final ParserPos pos;
+        final ImmutableList<ParserPos> pos2;
         if ( componentPositions == null ) {
             pos2 = null;
             pos = this.pos;
         } else {
             pos2 = componentPositions.subList( from, to );
-            pos = SqlParserPos.sum( pos2 );
+            pos = ParserPos.sum( pos2 );
         }
         return new SqlIdentifier( names.subList( from, to ), collation, pos, pos2 );
     }
@@ -273,14 +273,14 @@ public class SqlIdentifier extends SqlNode {
      * Creates an identifier that consists of this identifier plus a name segment.
      * Does not modify this identifier.
      */
-    public SqlIdentifier plus( String name, SqlParserPos pos ) {
+    public SqlIdentifier plus( String name, ParserPos pos ) {
         final ImmutableList<String> names = ImmutableList.<String>builder().addAll( this.names ).add( name ).build();
-        final ImmutableList<SqlParserPos> componentPositions;
-        final SqlParserPos pos2;
+        final ImmutableList<ParserPos> componentPositions;
+        final ParserPos pos2;
         if ( this.componentPositions != null ) {
-            final ImmutableList.Builder<SqlParserPos> builder = ImmutableList.builder();
+            final ImmutableList.Builder<ParserPos> builder = ImmutableList.builder();
             componentPositions = builder.addAll( this.componentPositions ).add( pos ).build();
-            pos2 = SqlParserPos.sum( builder.add( this.pos ).build() );
+            pos2 = ParserPos.sum( builder.add( this.pos ).build() );
         } else {
             componentPositions = null;
             pos2 = pos;
@@ -294,7 +294,7 @@ public class SqlIdentifier extends SqlNode {
      * Does not modify this identifier.
      */
     public SqlIdentifier plusStar() {
-        final SqlIdentifier id = this.plus( "*", SqlParserPos.ZERO );
+        final SqlIdentifier id = this.plus( "*", ParserPos.ZERO );
         return new SqlIdentifier(
                 id.names.stream().map( s -> s.equals( "*" ) ? "" : s ).collect( Util.toImmutableList() ),
                 null,

@@ -36,6 +36,7 @@ package org.polypheny.db.sql.ddl;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlCollation;
 import org.polypheny.db.sql.SqlDataTypeSpec;
@@ -45,7 +46,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.parser.SqlParserPos;
 
 
 /**
@@ -64,7 +64,7 @@ public class SqlAttributeDefinition extends SqlCall {
     /**
      * Creates a SqlAttributeDefinition; use {@link SqlDdlNodes#attribute}.
      */
-    SqlAttributeDefinition( SqlParserPos pos, SqlIdentifier name, SqlDataTypeSpec dataType, SqlNode expression, SqlCollation collation ) {
+    SqlAttributeDefinition( ParserPos pos, SqlIdentifier name, SqlDataTypeSpec dataType, SqlNode expression, SqlCollation collation ) {
         super( pos );
         this.name = name;
         this.dataType = dataType;

@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.jdbc.Context;
@@ -33,7 +34,6 @@ import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -49,7 +49,7 @@ public class SqlAlterTableAddUniqueConstraint extends SqlAlterTable {
 
 
     public SqlAlterTableAddUniqueConstraint(
-            SqlParserPos pos,
+            ParserPos pos,
             SqlIdentifier table,
             SqlIdentifier constraintName,
             SqlNodeList columnList ) {
@@ -93,7 +93,7 @@ public class SqlAlterTableAddUniqueConstraint extends SqlAlterTable {
                     columnList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),
                     constraintName.getSimple() );
         } catch ( DdlOnSourceException e ) {
-            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.ddlOnSourceTable() );
+            throw SqlUtil.newContextException( table.getPos(), RESOURCE.ddlOnSourceTable() );
         }
     }
 

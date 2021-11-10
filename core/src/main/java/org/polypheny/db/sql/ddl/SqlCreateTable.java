@@ -52,6 +52,7 @@ import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.ColumnInformation;
 import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
@@ -71,7 +72,6 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Pair;
@@ -103,7 +103,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
      * Creates a SqlCreateTable.
      */
     SqlCreateTable(
-            SqlParserPos pos,
+            ParserPos pos,
             boolean replace,
             boolean ifNotExists,
             SqlIdentifier name,
@@ -225,9 +225,9 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 tableName = name.names.get( 0 );
             }
         } catch ( UnknownDatabaseException e ) {
-            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.databaseNotFound( name.toString() ) );
+            throw SqlUtil.newContextException( name.getPos(), RESOURCE.databaseNotFound( name.toString() ) );
         } catch ( UnknownSchemaException e ) {
-            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaNotFound( name.toString() ) );
+            throw SqlUtil.newContextException( name.getPos(), RESOURCE.schemaNotFound( name.toString() ) );
         }
 
         List<DataStore> stores = store != null ? ImmutableList.of( getDataStoreInstance( store ) ) : null;
@@ -257,7 +257,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             if ( partitionType != null ) {
                 DdlManager.getInstance().addPartitioning(
                         PartitionInformation.fromSqlLists(
-                                getCatalogTable( context, new SqlIdentifier( tableName, SqlParserPos.ZERO ) ),
+                                getCatalogTable( context, new SqlIdentifier( tableName, ParserPos.ZERO ) ),
                                 partitionType.getSimple(),
                                 partitionColumn.getSimple(),
                                 partitionGroupNamesList,
@@ -270,13 +270,13 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             }
 
         } catch ( TableAlreadyExistsException e ) {
-            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( tableName ) );
+            throw SqlUtil.newContextException( name.getPos(), RESOURCE.tableExists( tableName ) );
         } catch ( ColumnNotExistsException e ) {
-            throw SqlUtil.newContextException( partitionColumn.getParserPosition(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
+            throw SqlUtil.newContextException( partitionColumn.getPos(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
         } catch ( UnknownPartitionTypeException e ) {
-            throw SqlUtil.newContextException( partitionType.getParserPosition(), RESOURCE.unknownPartitionType( partitionType.getSimple() ) );
+            throw SqlUtil.newContextException( partitionType.getPos(), RESOURCE.unknownPartitionType( partitionType.getSimple() ) );
         } catch ( PartitionGroupNamesNotUniqueException e ) {
-            throw SqlUtil.newContextException( partitionColumn.getParserPosition(), RESOURCE.partitionNamesNotUnique() );
+            throw SqlUtil.newContextException( partitionColumn.getPos(), RESOURCE.partitionNamesNotUnique() );
         } catch ( GenericCatalogException | UnknownColumnException e ) {
             // We just added the table/column so it has to exist or we have an internal problem
             throw new RuntimeException( e );

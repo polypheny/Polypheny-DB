@@ -37,11 +37,12 @@ package org.polypheny.db.sql.parser;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.SqlNode;
 
 
 /**
- * Builder for {@link SqlParserPos}.
+ * Builder for {@link ParserPos}.
  *
  * Because it is mutable, it is convenient for keeping track of the positions of the tokens that go into a non-terminal. It can be passed into methods, which can add the positions of tokens consumed to it.
  *
@@ -59,7 +60,7 @@ import org.polypheny.db.sql.SqlNode;
  */
 public final class Span {
 
-    private final List<SqlParserPos> posList = new ArrayList<>();
+    private final List<ParserPos> posList = new ArrayList<>();
 
 
     /**
@@ -80,7 +81,7 @@ public final class Span {
     /**
      * Creates a Span with one position.
      */
-    public static Span of( SqlParserPos p ) {
+    public static Span of( ParserPos p ) {
         return new Span().add( p );
     }
 
@@ -113,7 +114,7 @@ public final class Span {
      * Adds a node's position to the list, and returns this Span.
      */
     public Span add( SqlNode n ) {
-        return add( n.getParserPosition() );
+        return add( n.getPos() );
     }
 
 
@@ -128,7 +129,7 @@ public final class Span {
     /**
      * Adds a position to the list, and returns this Span.
      */
-    public Span add( SqlParserPos pos ) {
+    public Span add( ParserPos pos ) {
         posList.add( pos );
         return this;
     }
@@ -150,7 +151,7 @@ public final class Span {
      */
     public Span add( SqlAbstractParserImpl parser ) {
         try {
-            final SqlParserPos pos = parser.getPos();
+            final ParserPos pos = parser.getPos();
             return add( pos );
         } catch ( Exception e ) {
             // getPos does not really throw an exception
@@ -164,14 +165,14 @@ public final class Span {
      * Does not assume that the positions are sorted.
      * Throws if the list is empty.
      */
-    public SqlParserPos pos() {
+    public ParserPos pos() {
         switch ( posList.size() ) {
             case 0:
                 throw new AssertionError();
             case 1:
                 return posList.get( 0 );
             default:
-                return SqlParserPos.sum( posList );
+                return ParserPos.sum( posList );
         }
     }
 
@@ -179,7 +180,7 @@ public final class Span {
     /**
      * Adds the position of the last token emitted by a parser to the list, and returns a position that covers the whole range.
      */
-    public SqlParserPos end( SqlAbstractParserImpl parser ) {
+    public ParserPos end( SqlAbstractParserImpl parser ) {
         return add( parser ).pos();
     }
 
@@ -187,7 +188,7 @@ public final class Span {
     /**
      * Adds a node's position to the list, and returns a position that covers the whole range.
      */
-    public SqlParserPos end( SqlNode n ) {
+    public ParserPos end( SqlNode n ) {
         return add( n ).pos();
     }
 

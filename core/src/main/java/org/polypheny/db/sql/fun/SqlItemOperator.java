@@ -46,7 +46,7 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
@@ -84,10 +84,10 @@ public class SqlItemOperator extends SqlSpecialOperator {
                     ordinal - 1,
                     ordinal + 3,
                     createCall(
-                            SqlParserPos.sum(
+                            ParserPos.sum(
                                     Arrays.asList(
-                                            left.getParserPosition(),
-                                            right2.getParserPosition(),
+                                            left.getPos(),
+                                            right2.getPos(),
                                             list.pos( ordinal ) ) ),
                             left,
                             right, right2 ) );
@@ -96,10 +96,10 @@ public class SqlItemOperator extends SqlSpecialOperator {
                 ordinal - 1,
                 ordinal + 2,
                 createCall(
-                        SqlParserPos.sum(
+                        ParserPos.sum(
                                 Arrays.asList(
-                                        left.getParserPosition(),
-                                        right.getParserPosition(),
+                                        left.getPos(),
+                                        right.getPos(),
                                         list.pos( ordinal ) ) ),
                         left,
                         right ) );

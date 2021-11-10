@@ -45,7 +45,7 @@ import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -69,7 +69,7 @@ public class SqlKeyConstraint extends SqlCall {
     /**
      * Creates a SqlKeyConstraint.
      */
-    SqlKeyConstraint( SqlParserPos pos, SqlIdentifier name, SqlNodeList columnList ) {
+    SqlKeyConstraint( ParserPos pos, SqlIdentifier name, SqlNodeList columnList ) {
         super( pos );
         this.name = name;
         this.columnList = columnList;
@@ -79,7 +79,7 @@ public class SqlKeyConstraint extends SqlCall {
     /**
      * Creates a UNIQUE constraint.
      */
-    public static SqlKeyConstraint unique( SqlParserPos pos, SqlIdentifier name, SqlNodeList columnList ) {
+    public static SqlKeyConstraint unique( ParserPos pos, SqlIdentifier name, SqlNodeList columnList ) {
         return new SqlKeyConstraint( pos, name, columnList );
     }
 
@@ -87,7 +87,7 @@ public class SqlKeyConstraint extends SqlCall {
     /**
      * Creates a PRIMARY KEY constraint.
      */
-    public static SqlKeyConstraint primary( SqlParserPos pos, SqlIdentifier name, SqlNodeList columnList ) {
+    public static SqlKeyConstraint primary( ParserPos pos, SqlIdentifier name, SqlNodeList columnList ) {
         return new SqlKeyConstraint( pos, name, columnList ) {
             @Override
             public SqlOperator getOperator() {

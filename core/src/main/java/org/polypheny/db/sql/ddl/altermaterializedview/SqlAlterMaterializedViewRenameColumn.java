@@ -23,6 +23,7 @@ import java.util.Objects;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.jdbc.Context;
@@ -31,7 +32,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterMaterializedView;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -43,7 +43,7 @@ public class SqlAlterMaterializedViewRenameColumn extends SqlAlterMaterializedVi
     private final SqlIdentifier columnNewName;
 
 
-    public SqlAlterMaterializedViewRenameColumn( SqlParserPos pos, SqlIdentifier materializedView, SqlIdentifier columnOldName, SqlIdentifier columnNewName ) {
+    public SqlAlterMaterializedViewRenameColumn( ParserPos pos, SqlIdentifier materializedView, SqlIdentifier columnOldName, SqlIdentifier columnNewName ) {
         super( pos );
         this.materializedView = Objects.requireNonNull( materializedView );
         this.columnOldName = Objects.requireNonNull( columnOldName );
@@ -81,9 +81,9 @@ public class SqlAlterMaterializedViewRenameColumn extends SqlAlterMaterializedVi
         try {
             DdlManager.getInstance().renameColumn( catalogTable, columnOldName.getSimple(), columnNewName.getSimple(), statement );
         } catch ( ColumnAlreadyExistsException e ) {
-            throw SqlUtil.newContextException( columnNewName.getParserPosition(), RESOURCE.columnExists( columnNewName.getSimple() ) );
+            throw SqlUtil.newContextException( columnNewName.getPos(), RESOURCE.columnExists( columnNewName.getSimple() ) );
         } catch ( ColumnNotExistsException e ) {
-            throw SqlUtil.newContextException( columnOldName.getParserPosition(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
+            throw SqlUtil.newContextException( columnOldName.getPos(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
         }
     }
 

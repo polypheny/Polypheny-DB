@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.jdbc.Context;
@@ -31,7 +32,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -45,7 +45,7 @@ public class SqlAlterTableDropIndex extends SqlAlterTable {
     private final SqlIdentifier indexName;
 
 
-    public SqlAlterTableDropIndex( SqlParserPos pos, SqlIdentifier table, SqlIdentifier indexName ) {
+    public SqlAlterTableDropIndex( ParserPos pos, SqlIdentifier table, SqlIdentifier indexName ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.indexName = Objects.requireNonNull( indexName );
@@ -80,7 +80,7 @@ public class SqlAlterTableDropIndex extends SqlAlterTable {
         try {
             DdlManager.getInstance().dropIndex( catalogTable, indexName.getSimple(), statement );
         } catch ( DdlOnSourceException e ) {
-            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.ddlOnSourceTable() );
+            throw SqlUtil.newContextException( table.getPos(), RESOURCE.ddlOnSourceTable() );
         }
     }
 

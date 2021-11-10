@@ -47,10 +47,10 @@ import org.polypheny.db.cql.CqlQuery;
 import org.polypheny.db.cql.parser.CqlParser;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.mql.Mql.Family;
-import org.polypheny.db.mql.MqlCollectionStatement;
-import org.polypheny.db.mql.MqlNode;
-import org.polypheny.db.mql.MqlUseDatabase;
+import org.polypheny.db.languages.mql.Mql.Family;
+import org.polypheny.db.languages.mql.MqlCollectionStatement;
+import org.polypheny.db.languages.mql.MqlNode;
+import org.polypheny.db.languages.mql.MqlUseDatabase;
 import org.polypheny.db.processing.MqlProcessor;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rex.RexBuilder;
@@ -167,7 +167,7 @@ public class LanguageCrud {
 
         for ( String query : mqls ) {
 
-            MqlNode parsed = mqlProcessor.parse( query );
+            MqlNode parsed = (MqlNode) mqlProcessor.parse( query );
             if ( parsed instanceof MqlCollectionStatement && ((MqlCollectionStatement) parsed).getLimit() != null ) {
                 noLimit = true;
             }

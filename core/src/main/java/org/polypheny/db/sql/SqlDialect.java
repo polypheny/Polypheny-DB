@@ -53,13 +53,13 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.function.Experimental;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.RelFieldCollation;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.rel.type.RelDataTypeSystemImpl;
 import org.polypheny.db.sql.dialect.JethroDataSqlDialect;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.util.SqlBuilder;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
@@ -599,7 +599,7 @@ public class SqlDialect {
                     }
             }
             return new SqlDataTypeSpec(
-                    new SqlIdentifier( type.getPolyType().name(), SqlParserPos.ZERO ),
+                    new SqlIdentifier( type.getPolyType().name(), ParserPos.ZERO ),
                     precision,
                     type.getScale(),
                     null,
@@ -607,7 +607,7 @@ public class SqlDialect {
                     //        ? type.getCharset().name()
                     //        : null,
                     null,
-                    SqlParserPos.ZERO );
+                    ParserPos.ZERO );
         }
         return PolyTypeUtil.convertTypeToSpec( type );
     }
@@ -649,9 +649,9 @@ public class SqlDialect {
             return null;
         }
 
-        node = SqlStdOperatorTable.IS_NULL.createCall( SqlParserPos.ZERO, node );
+        node = SqlStdOperatorTable.IS_NULL.createCall( ParserPos.ZERO, node );
         if ( nullsFirst ) {
-            node = SqlStdOperatorTable.DESC.createCall( SqlParserPos.ZERO, node );
+            node = SqlStdOperatorTable.DESC.createCall( ParserPos.ZERO, node );
         }
         return node;
     }

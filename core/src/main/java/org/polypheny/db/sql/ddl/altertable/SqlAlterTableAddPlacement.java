@@ -28,6 +28,7 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.PlacementAlreadyExistsException;
 import org.polypheny.db.jdbc.Context;
@@ -37,7 +38,6 @@ import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -56,7 +56,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
 
 
     public SqlAlterTableAddPlacement(
-            SqlParserPos pos,
+            ParserPos pos,
             SqlIdentifier table,
             SqlNodeList columnList,
             SqlIdentifier storeName,
@@ -137,7 +137,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                     statement );
         } catch ( PlacementAlreadyExistsException e ) {
             throw SqlUtil.newContextException(
-                    storeName.getParserPosition(),
+                    storeName.getPos(),
                     RESOURCE.placementAlreadyExists( catalogTable.name, storeName.getSimple() ) );
         }
 

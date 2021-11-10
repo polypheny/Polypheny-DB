@@ -28,6 +28,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionException;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -36,7 +37,6 @@ import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -55,7 +55,7 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
     private final ForeignKeyOption onDelete;
 
 
-    public SqlAlterTableAddForeignKey( SqlParserPos pos, SqlIdentifier table, SqlIdentifier constraintName, SqlNodeList columnList, SqlIdentifier referencesTable, SqlNodeList referencesList, String onUpdate, String onDelete ) {
+    public SqlAlterTableAddForeignKey( ParserPos pos, SqlIdentifier table, SqlIdentifier constraintName, SqlNodeList columnList, SqlIdentifier referencesTable, SqlNodeList referencesList, String onUpdate, String onDelete ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.constraintName = Objects.requireNonNull( constraintName );
@@ -106,10 +106,10 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
 
         // Make sure that this is a table of type TABLE (and not SOURCE)
         if ( catalogTable.tableType != TableType.TABLE ) {
-            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.ddlOnSourceTable() );
+            throw SqlUtil.newContextException( table.getPos(), RESOURCE.ddlOnSourceTable() );
         }
         if ( refTable.tableType != TableType.TABLE ) {
-            throw SqlUtil.newContextException( referencesTable.getParserPosition(), RESOURCE.ddlOnSourceTable() );
+            throw SqlUtil.newContextException( referencesTable.getPos(), RESOURCE.ddlOnSourceTable() );
         }
         try {
             DdlManager.getInstance().addForeignKey(
@@ -121,7 +121,7 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
                     onUpdate,
                     onDelete );
         } catch ( UnknownColumnException e ) {
-            throw SqlUtil.newContextException( columnList.getParserPosition(), RESOURCE.columnNotFound( e.getColumnName() ) );
+            throw SqlUtil.newContextException( columnList.getPos(), RESOURCE.columnNotFound( e.getColumnName() ) );
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         }

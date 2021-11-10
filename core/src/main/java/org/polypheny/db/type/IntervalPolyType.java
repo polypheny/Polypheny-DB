@@ -36,13 +36,13 @@ package org.polypheny.db.type;
 
 import java.util.Objects;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.SqlIntervalQualifier;
 import org.polypheny.db.sql.dialect.AnsiSqlDialect;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.pretty.SqlPrettyWriter;
 import org.polypheny.db.sql.util.SqlString;
 
@@ -129,7 +129,7 @@ public class IntervalPolyType extends AbstractPolyType {
             }
         }
 
-        RelDataType intervalType = typeFactory.createSqlIntervalType( new SqlIntervalQualifier( thisStart, secondPrec, thisEnd, fracPrec, SqlParserPos.ZERO ) );
+        RelDataType intervalType = typeFactory.createSqlIntervalType( new SqlIntervalQualifier( thisStart, secondPrec, thisEnd, fracPrec, ParserPos.ZERO ) );
         intervalType = typeFactory.createTypeWithNullability( intervalType, nullable );
         return (IntervalPolyType) intervalType;
     }

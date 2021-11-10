@@ -36,7 +36,7 @@ import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 
@@ -76,13 +76,13 @@ public class SqlOperatorBindingTest {
     public void testSqlNodeLiteral() {
         final SqlNode literal = SqlLiteral.createExactNumeric(
                 "0",
-                SqlParserPos.ZERO );
+                ParserPos.ZERO );
         final SqlNode castLiteral = SqlStdOperatorTable.CAST.createCall(
-                SqlParserPos.ZERO,
+                ParserPos.ZERO,
                 literal,
                 integerType );
         final SqlNode castCastLiteral = SqlStdOperatorTable.CAST.createCall(
-                SqlParserPos.ZERO,
+                ParserPos.ZERO,
                 castLiteral,
                 integerType );
 

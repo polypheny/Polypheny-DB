@@ -38,11 +38,11 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.Lists;
 import java.util.List;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.SelectScope;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
 import org.polypheny.db.sql.validate.SqlValidator;
@@ -57,7 +57,7 @@ import org.polypheny.db.sql.validate.SqlValidatorUtil;
  */
 public class SqlCallBinding extends SqlOperatorBinding {
 
-    private static final SqlCall DEFAULT_CALL = SqlStdOperatorTable.DEFAULT.createCall( SqlParserPos.ZERO );
+    private static final SqlCall DEFAULT_CALL = SqlStdOperatorTable.DEFAULT.createCall( ParserPos.ZERO );
 
     private final SqlValidator validator;
     private final SqlValidatorScope scope;

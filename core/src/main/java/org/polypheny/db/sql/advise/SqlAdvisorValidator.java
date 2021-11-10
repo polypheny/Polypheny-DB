@@ -36,6 +36,7 @@ package org.polypheny.db.sql.advise;
 
 import java.util.HashSet;
 import java.util.Set;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.runtime.PolyphenyDbException;
@@ -44,7 +45,6 @@ import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperatorTable;
 import org.polypheny.db.sql.SqlSelect;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.OverScope;
 import org.polypheny.db.sql.validate.SqlConformance;
 import org.polypheny.db.sql.validate.SqlModality;
@@ -96,7 +96,7 @@ public class SqlAdvisorValidator extends SqlValidatorImpl {
 
     private void registerId( SqlIdentifier id, SqlValidatorScope scope ) {
         for ( int i = 0; i < id.names.size(); i++ ) {
-            final SqlParserPos subPos = id.getComponentParserPosition( i );
+            final ParserPos subPos = id.getComponentParserPosition( i );
             SqlIdentifier subId =
                     i == id.names.size() - 1
                             ? id

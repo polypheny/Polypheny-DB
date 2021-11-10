@@ -24,6 +24,7 @@ import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlAlter;
@@ -32,7 +33,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -50,7 +50,7 @@ public class SqlAlterInterfacesAdd extends SqlAlter {
     private final SqlNode config;
 
 
-    public SqlAlterInterfacesAdd( SqlParserPos pos, SqlNode uniqueName, SqlNode clazzName, SqlNode config ) {
+    public SqlAlterInterfacesAdd( ParserPos pos, SqlNode uniqueName, SqlNode clazzName, SqlNode config ) {
         super( OPERATOR, pos );
         this.uniqueName = Objects.requireNonNull( uniqueName );
         this.clazzName = Objects.requireNonNull( clazzName );

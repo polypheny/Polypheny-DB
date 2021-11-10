@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.AlterSourceException;
 import org.polypheny.db.ddl.exception.IndexExistsException;
@@ -43,7 +44,6 @@ import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterMaterializedView;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.util.ImmutableNullableList;
@@ -61,7 +61,7 @@ public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
 
 
     public SqlAlterMaterializedViewAddIndex(
-            SqlParserPos pos,
+            ParserPos pos,
             SqlIdentifier table,
             SqlNodeList columnList,
             boolean unique,
@@ -121,7 +121,7 @@ public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
             storeInstance = getDataStoreInstance( storeName );
             if ( storeInstance == null ) {
                 throw SqlUtil.newContextException(
-                        storeName.getParserPosition(),
+                        storeName.getPos(),
                         RESOURCE.unknownAdapter( storeName.getSimple() ) );
             }
         }
@@ -138,22 +138,22 @@ public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
                     storeInstance,
                     statement );
         } catch ( UnknownColumnException e ) {
-            throw SqlUtil.newContextException( columnList.getParserPosition(), RESOURCE.columnNotFound( e.getColumnName() ) );
+            throw SqlUtil.newContextException( columnList.getPos(), RESOURCE.columnNotFound( e.getColumnName() ) );
         } catch ( UnknownSchemaException e ) {
-            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.schemaNotFound( e.getSchemaName() ) );
+            throw SqlUtil.newContextException( table.getPos(), RESOURCE.schemaNotFound( e.getSchemaName() ) );
         } catch ( UnknownTableException e ) {
-            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.tableNotFound( e.getTableName() ) );
+            throw SqlUtil.newContextException( table.getPos(), RESOURCE.tableNotFound( e.getTableName() ) );
         } catch ( UnknownIndexMethodException e ) {
             throw SqlUtil.newContextException(
-                    indexMethod.getParserPosition(),
+                    indexMethod.getPos(),
                     RESOURCE.unknownIndexMethod( indexMethod.getSimple() ) );
         } catch ( AlterSourceException e ) {
-            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.ddlOnSourceTable() );
+            throw SqlUtil.newContextException( table.getPos(), RESOURCE.ddlOnSourceTable() );
         } catch ( IndexExistsException e ) {
-            throw SqlUtil.newContextException( indexName.getParserPosition(), RESOURCE.indexExists( indexName.getSimple() ) );
+            throw SqlUtil.newContextException( indexName.getPos(), RESOURCE.indexExists( indexName.getSimple() ) );
         } catch ( MissingColumnPlacementException e ) {
             throw SqlUtil.newContextException(
-                    storeName.getParserPosition(),
+                    storeName.getPos(),
                     RESOURCE.missingColumnPlacement( e.getColumnName(), storeInstance.getUniqueName() ) );
         } catch ( GenericCatalogException | UnknownKeyException | UnknownUserException | UnknownDatabaseException | TransactionException e ) {
             throw new RuntimeException( e );

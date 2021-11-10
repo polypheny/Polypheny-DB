@@ -39,6 +39,7 @@ import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlDataTypeSpec;
@@ -48,7 +49,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.type.PolyTypeFamily;
 
 
@@ -74,7 +74,7 @@ public class SqlColumnDeclaration extends SqlCall {
     /**
      * Creates a SqlColumnDeclaration; use {@link SqlDdlNodes#column}.
      */
-    SqlColumnDeclaration( SqlParserPos pos, SqlIdentifier name, SqlDataTypeSpec dataType, String collation, SqlNode expression, ColumnStrategy strategy ) {
+    SqlColumnDeclaration( ParserPos pos, SqlIdentifier name, SqlDataTypeSpec dataType, String collation, SqlNode expression, ColumnStrategy strategy ) {
         super( pos );
         this.name = name;
         this.dataType = dataType;

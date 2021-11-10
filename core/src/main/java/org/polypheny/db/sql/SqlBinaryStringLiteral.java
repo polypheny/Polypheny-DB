@@ -35,7 +35,7 @@ package org.polypheny.db.sql;
 
 
 import java.util.List;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BitString;
 import org.polypheny.db.util.Util;
@@ -49,7 +49,7 @@ import org.polypheny.db.util.Util;
 public class SqlBinaryStringLiteral extends SqlAbstractStringLiteral {
 
 
-    protected SqlBinaryStringLiteral( BitString val, SqlParserPos pos ) {
+    protected SqlBinaryStringLiteral( BitString val, ParserPos pos ) {
         super( val, PolyType.BINARY, pos );
     }
 
@@ -63,7 +63,7 @@ public class SqlBinaryStringLiteral extends SqlAbstractStringLiteral {
 
 
     @Override
-    public SqlBinaryStringLiteral clone( SqlParserPos pos ) {
+    public SqlBinaryStringLiteral clone( ParserPos pos ) {
         return new SqlBinaryStringLiteral( (BitString) value, pos );
     }
 
@@ -79,7 +79,7 @@ public class SqlBinaryStringLiteral extends SqlAbstractStringLiteral {
     protected SqlAbstractStringLiteral concat1( List<SqlLiteral> literals ) {
         return new SqlBinaryStringLiteral(
                 BitString.concat( Util.transform( literals, literal -> ((SqlBinaryStringLiteral) literal).getBitString() ) ),
-                literals.get( 0 ).getParserPosition() );
+                literals.get( 0 ).getPos() );
     }
 }
 

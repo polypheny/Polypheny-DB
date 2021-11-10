@@ -36,6 +36,7 @@ package org.polypheny.db.sql.fun;
 
 import java.util.List;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlFunction;
@@ -43,7 +44,6 @@ import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlIntervalQualifier;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
@@ -75,10 +75,10 @@ public class SqlDatePartFunction extends SqlFunction {
     @Override
     public SqlNode rewriteCall( SqlValidator validator, SqlCall call ) {
         final List<SqlNode> operands = call.getOperandList();
-        final SqlParserPos pos = call.getParserPosition();
+        final ParserPos pos = call.getPos();
         return SqlStdOperatorTable.EXTRACT.createCall(
                 pos,
-                new SqlIntervalQualifier( timeUnit, null, SqlParserPos.ZERO ),
+                new SqlIntervalQualifier( timeUnit, null, ParserPos.ZERO ),
                 operands.get( 0 ) );
     }
 

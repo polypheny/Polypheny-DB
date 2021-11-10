@@ -34,9 +34,9 @@
 package org.polypheny.db.rex;
 
 
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.NlsString;
@@ -90,13 +90,13 @@ public class RexToSqlNodeConverterImpl implements RexToSqlNodeConverter {
         if ( PolyTypeFamily.EXACT_NUMERIC.getTypeNames().contains( literal.getTypeName() ) ) {
             return SqlLiteral.createExactNumeric(
                     literal.getValue().toString(),
-                    SqlParserPos.ZERO );
+                    ParserPos.ZERO );
         }
 
         if ( PolyTypeFamily.APPROXIMATE_NUMERIC.getTypeNames().contains( literal.getTypeName() ) ) {
             return SqlLiteral.createApproxNumeric(
                     literal.getValue().toString(),
-                    SqlParserPos.ZERO );
+                    ParserPos.ZERO );
         }
 
         // Timestamp
@@ -104,14 +104,14 @@ public class RexToSqlNodeConverterImpl implements RexToSqlNodeConverter {
             return SqlLiteral.createTimestamp(
                     literal.getValueAs( TimestampString.class ),
                     0,
-                    SqlParserPos.ZERO );
+                    ParserPos.ZERO );
         }
 
         // Date
         if ( PolyTypeFamily.DATE.getTypeNames().contains( literal.getTypeName() ) ) {
             return SqlLiteral.createDate(
                     literal.getValueAs( DateString.class ),
-                    SqlParserPos.ZERO );
+                    ParserPos.ZERO );
         }
 
         // Time
@@ -119,26 +119,26 @@ public class RexToSqlNodeConverterImpl implements RexToSqlNodeConverter {
             return SqlLiteral.createTime(
                     literal.getValueAs( TimeString.class ),
                     0,
-                    SqlParserPos.ZERO );
+                    ParserPos.ZERO );
         }
 
         // String
         if ( PolyTypeFamily.CHARACTER.getTypeNames().contains( literal.getTypeName() ) ) {
             return SqlLiteral.createCharString(
                     ((NlsString) (literal.getValue())).getValue(),
-                    SqlParserPos.ZERO );
+                    ParserPos.ZERO );
         }
 
         // Boolean
         if ( PolyTypeFamily.BOOLEAN.getTypeNames().contains( literal.getTypeName() ) ) {
             return SqlLiteral.createBoolean(
                     (Boolean) literal.getValue(),
-                    SqlParserPos.ZERO );
+                    ParserPos.ZERO );
         }
 
         // Null
         if ( PolyTypeFamily.NULL == literal.getTypeName().getFamily() ) {
-            return SqlLiteral.createNull( SqlParserPos.ZERO );
+            return SqlLiteral.createNull( ParserPos.ZERO );
         }
 
         return null;

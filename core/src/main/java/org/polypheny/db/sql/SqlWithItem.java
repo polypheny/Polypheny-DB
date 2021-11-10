@@ -35,7 +35,7 @@ package org.polypheny.db.sql;
 
 
 import java.util.List;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -50,7 +50,7 @@ public class SqlWithItem extends SqlCall {
     public SqlNode query;
 
 
-    public SqlWithItem( SqlParserPos pos, SqlIdentifier name, SqlNodeList columnList, SqlNode query ) {
+    public SqlWithItem( ParserPos pos, SqlIdentifier name, SqlNodeList columnList, SqlNode query ) {
         super( pos );
         this.name = name;
         this.columnList = columnList;
@@ -120,7 +120,7 @@ public class SqlWithItem extends SqlCall {
 
 
         @Override
-        public SqlCall createCall( SqlLiteral functionQualifier, SqlParserPos pos, SqlNode... operands ) {
+        public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
             assert functionQualifier == null;
             assert operands.length == 3;
             return new SqlWithItem( pos, (SqlIdentifier) operands[0], (SqlNodeList) operands[1], operands[2] );

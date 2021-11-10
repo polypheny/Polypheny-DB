@@ -35,13 +35,13 @@ package org.polypheny.db.test.catalog;
 
 
 import java.util.Arrays;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeComparability;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeFieldImpl;
 import org.polypheny.db.rel.type.StructKind;
 import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.type.ObjectPolyType;
 import org.polypheny.db.type.PolyType;
 
@@ -131,7 +131,7 @@ final class Fixture {
         empListType = typeFactory.createArrayType( empRecordType, -1 );
         addressType =
                 new ObjectPolyType( PolyType.STRUCTURED,
-                        new SqlIdentifier( "ADDRESS", SqlParserPos.ZERO ),
+                        new SqlIdentifier( "ADDRESS", ParserPos.ZERO ),
                         false,
                         Arrays.asList(
                                 new RelDataTypeFieldImpl( "STREET", 0, varchar20Type ),

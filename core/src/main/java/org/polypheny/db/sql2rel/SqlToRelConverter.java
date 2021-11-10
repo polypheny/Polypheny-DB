@@ -185,7 +185,7 @@ import org.polypheny.db.sql.fun.SqlInOperator;
 import org.polypheny.db.sql.fun.SqlQuantifyOperator;
 import org.polypheny.db.sql.fun.SqlRowOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.util.SqlBasicVisitor;
 import org.polypheny.db.sql.util.SqlVisitor;
 import org.polypheny.db.sql.validate.AggregatingSelectScope;
@@ -793,7 +793,7 @@ public class SqlToRelConverter {
                 for ( SqlNode operand : sqlCall.getOperandList() ) {
                     operands.add( pushDownNotForIn( scope, operand ) );
                 }
-                final SqlCall newCall = sqlCall.getOperator().createCall( sqlCall.getParserPosition(), operands );
+                final SqlCall newCall = sqlCall.getOperator().createCall( sqlCall.getPos(), operands );
                 return reg( scope, newCall );
 
             case NOT:
@@ -802,23 +802,23 @@ public class SqlToRelConverter {
                 switch ( sqlCall.operand( 0 ).getKind() ) {
                     case CASE:
                         final SqlCase caseNode = (SqlCase) call;
-                        final SqlNodeList thenOperands = new SqlNodeList( SqlParserPos.ZERO );
+                        final SqlNodeList thenOperands = new SqlNodeList( ParserPos.ZERO );
 
                         for ( SqlNode thenOperand : caseNode.getThenOperands() ) {
-                            final SqlCall not = SqlStdOperatorTable.NOT.createCall( SqlParserPos.ZERO, thenOperand );
+                            final SqlCall not = SqlStdOperatorTable.NOT.createCall( ParserPos.ZERO, thenOperand );
                             thenOperands.add( pushDownNotForIn( scope, reg( scope, not ) ) );
                         }
                         SqlNode elseOperand = caseNode.getElseOperand();
                         if ( !SqlUtil.isNull( elseOperand ) ) {
                             // "not(unknown)" is "unknown", so no need to simplify
-                            final SqlCall not = SqlStdOperatorTable.NOT.createCall( SqlParserPos.ZERO, elseOperand );
+                            final SqlCall not = SqlStdOperatorTable.NOT.createCall( ParserPos.ZERO, elseOperand );
                             elseOperand = pushDownNotForIn( scope, reg( scope, not ) );
                         }
 
                         return reg(
                                 scope,
                                 SqlStdOperatorTable.CASE.createCall(
-                                        SqlParserPos.ZERO,
+                                        ParserPos.ZERO,
                                         caseNode.getValueOperand(),
                                         caseNode.getWhenOperands(),
                                         thenOperands,
@@ -830,9 +830,9 @@ public class SqlToRelConverter {
                             orOperands.add(
                                     pushDownNotForIn(
                                             scope,
-                                            reg( scope, SqlStdOperatorTable.NOT.createCall( SqlParserPos.ZERO, operand ) ) ) );
+                                            reg( scope, SqlStdOperatorTable.NOT.createCall( ParserPos.ZERO, operand ) ) ) );
                         }
-                        return reg( scope, SqlStdOperatorTable.OR.createCall( SqlParserPos.ZERO, orOperands ) );
+                        return reg( scope, SqlStdOperatorTable.OR.createCall( ParserPos.ZERO, orOperands ) );
 
                     case OR:
                         final List<SqlNode> andOperands = new ArrayList<>();
@@ -840,19 +840,19 @@ public class SqlToRelConverter {
                             andOperands.add(
                                     pushDownNotForIn(
                                             scope,
-                                            reg( scope, SqlStdOperatorTable.NOT.createCall( SqlParserPos.ZERO, operand ) ) ) );
+                                            reg( scope, SqlStdOperatorTable.NOT.createCall( ParserPos.ZERO, operand ) ) ) );
                         }
-                        return reg( scope, SqlStdOperatorTable.AND.createCall( SqlParserPos.ZERO, andOperands ) );
+                        return reg( scope, SqlStdOperatorTable.AND.createCall( ParserPos.ZERO, andOperands ) );
 
                     case NOT:
                         assert call.operandCount() == 1;
                         return pushDownNotForIn( scope, call.operand( 0 ) );
 
                     case NOT_IN:
-                        return reg( scope, SqlStdOperatorTable.IN.createCall( SqlParserPos.ZERO, call.getOperandList() ) );
+                        return reg( scope, SqlStdOperatorTable.IN.createCall( ParserPos.ZERO, call.getOperandList() ) );
 
                     case IN:
-                        return reg( scope, SqlStdOperatorTable.NOT_IN.createCall( SqlParserPos.ZERO, call.getOperandList() ) );
+                        return reg( scope, SqlStdOperatorTable.NOT_IN.createCall( ParserPos.ZERO, call.getOperandList() ) );
                 }
         }
         return sqlNode;
@@ -1457,7 +1457,7 @@ public class SqlToRelConverter {
                 }
 
                 // convert "1" to "row(1)"
-                call = (SqlBasicCall) SqlStdOperatorTable.ROW.createCall( SqlParserPos.ZERO, node );
+                call = (SqlBasicCall) SqlStdOperatorTable.ROW.createCall( ParserPos.ZERO, node );
             }
             unionInputs.add( convertRowConstructor( bb, call ) );
         }
@@ -1667,9 +1667,9 @@ public class SqlToRelConverter {
 
         // ROW_NUMBER() expects specific kind of framing.
         if ( aggCall.getKind() == SqlKind.ROW_NUMBER ) {
-            window.setLowerBound( SqlWindow.createUnboundedPreceding( SqlParserPos.ZERO ) );
-            window.setUpperBound( SqlWindow.createCurrentRow( SqlParserPos.ZERO ) );
-            window.setRows( SqlLiteral.createBoolean( true, SqlParserPos.ZERO ) );
+            window.setLowerBound( SqlWindow.createUnboundedPreceding( ParserPos.ZERO ) );
+            window.setUpperBound( SqlWindow.createCurrentRow( ParserPos.ZERO ) );
+            window.setRows( SqlLiteral.createBoolean( true, ParserPos.ZERO ) );
         }
         final SqlNodeList partitionList = window.getPartitionList();
         final ImmutableList.Builder<RexNode> partitionKeys = ImmutableList.builder();
@@ -2015,7 +2015,7 @@ public class SqlToRelConverter {
 
         SqlNode afterMatch = matchRecognize.getAfter();
         if ( afterMatch == null ) {
-            afterMatch = SqlMatchRecognize.AfterOption.SKIP_TO_NEXT_ROW.symbol( SqlParserPos.ZERO );
+            afterMatch = SqlMatchRecognize.AfterOption.SKIP_TO_NEXT_ROW.symbol( ParserPos.ZERO );
         }
 
         final RexNode after;
@@ -3405,7 +3405,7 @@ public class SqlToRelConverter {
             switch ( call.getKind() ) {
                 case MULTISET_VALUE_CONSTRUCTOR:
                 case ARRAY_VALUE_CONSTRUCTOR:
-                    final SqlNodeList list = new SqlNodeList( call.getOperandList(), call.getParserPosition() );
+                    final SqlNodeList list = new SqlNodeList( call.getOperandList(), call.getPos() );
                     CollectNamespace nss = (CollectNamespace) validator.getNamespace( call );
                     Blackboard usedBb;
                     if ( null != nss ) {
@@ -4406,7 +4406,7 @@ public class SqlToRelConverter {
         /**
          * The group-by expressions, in {@link SqlNode} format.
          */
-        private final SqlNodeList groupExprs = new SqlNodeList( SqlParserPos.ZERO );
+        private final SqlNodeList groupExprs = new SqlNodeList( ParserPos.ZERO );
 
         /**
          * The auxiliary group-by expressions.
@@ -5020,9 +5020,9 @@ public class SqlToRelConverter {
      */
     private static class AggregateFinder extends SqlBasicVisitor<Void> {
 
-        final SqlNodeList list = new SqlNodeList( SqlParserPos.ZERO );
-        final SqlNodeList filterList = new SqlNodeList( SqlParserPos.ZERO );
-        final SqlNodeList orderList = new SqlNodeList( SqlParserPos.ZERO );
+        final SqlNodeList list = new SqlNodeList( ParserPos.ZERO );
+        final SqlNodeList filterList = new SqlNodeList( ParserPos.ZERO );
+        final SqlNodeList orderList = new SqlNodeList( ParserPos.ZERO );
 
 
         @Override

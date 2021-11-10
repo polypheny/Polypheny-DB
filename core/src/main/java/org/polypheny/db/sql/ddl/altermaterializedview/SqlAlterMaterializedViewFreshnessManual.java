@@ -19,13 +19,13 @@ package org.polypheny.db.sql.ddl.altermaterializedview;
 import java.util.List;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterMaterializedView;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -34,7 +34,7 @@ public class SqlAlterMaterializedViewFreshnessManual extends SqlAlterMaterialize
     private final SqlIdentifier name;
 
 
-    public SqlAlterMaterializedViewFreshnessManual( SqlParserPos pos, SqlIdentifier name ) {
+    public SqlAlterMaterializedViewFreshnessManual( ParserPos pos, SqlIdentifier name ) {
         super( pos );
         this.name = name;
     }

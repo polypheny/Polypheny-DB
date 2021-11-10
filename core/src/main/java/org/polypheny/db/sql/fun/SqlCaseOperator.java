@@ -39,6 +39,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rex.RexNode;
@@ -53,7 +54,6 @@ import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlSyntax;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
@@ -268,7 +268,7 @@ public class SqlCaseOperator extends SqlOperator {
 
 
     @Override
-    public SqlCall createCall( SqlLiteral functionQualifier, SqlParserPos pos, SqlNode... operands ) {
+    public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
         assert functionQualifier == null;
         assert operands.length == 4;
         return new SqlCase( pos, operands[0], (SqlNodeList) operands[1], (SqlNodeList) operands[2], operands[3] );

@@ -37,7 +37,7 @@ package org.polypheny.db.sql;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.ImmutableNullableList;
@@ -66,7 +66,7 @@ public class SqlSelect extends SqlCall {
 
 
     public SqlSelect(
-            SqlParserPos pos,
+            ParserPos pos,
             SqlNodeList keywordList,
             SqlNodeList selectList,
             SqlNode from,

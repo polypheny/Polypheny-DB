@@ -34,13 +34,13 @@
 package org.polypheny.db.sql.ddl;
 
 
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -55,7 +55,7 @@ public class SqlDropFunction extends SqlDropObject {
     /**
      * Creates a SqlDropFunction.
      */
-    public SqlDropFunction( SqlParserPos pos, boolean ifExists, SqlIdentifier name ) {
+    public SqlDropFunction( ParserPos pos, boolean ifExists, SqlIdentifier name ) {
         super( OPERATOR, pos, ifExists, name );
     }
 

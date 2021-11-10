@@ -30,6 +30,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -37,7 +38,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -55,7 +55,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
 
 
     public SqlAlterTableModifyPartitions(
-            SqlParserPos pos,
+            ParserPos pos,
             SqlIdentifier table,
             SqlIdentifier storeName,
             List<Integer> partitionGroupList,
@@ -109,14 +109,14 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
         DataStore storeInstance = AdapterManager.getInstance().getStore( storeName.getSimple() );
         if ( storeInstance == null ) {
             throw SqlUtil.newContextException(
-                    storeName.getParserPosition(),
+                    storeName.getPos(),
                     RESOURCE.unknownStoreName( storeName.getSimple() ) );
         }
         int storeId = storeInstance.getAdapterId();
         // Check whether this placement already exists
         if ( !catalogTable.placementsByAdapter.containsKey( storeId ) ) {
             throw SqlUtil.newContextException(
-                    storeName.getParserPosition(),
+                    storeName.getPos(),
                     RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
         }
 

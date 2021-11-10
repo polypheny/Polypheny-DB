@@ -66,7 +66,7 @@ import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.util.SqlBasicVisitor;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -100,7 +100,7 @@ public abstract class SqlUtil {
         } else {
             list.add( node2 );
         }
-        return SqlStdOperatorTable.AND.createCall( SqlParserPos.ZERO, list );
+        return SqlStdOperatorTable.AND.createCall( ParserPos.ZERO, list );
     }
 
 
@@ -142,7 +142,7 @@ public abstract class SqlUtil {
      * Converts an SqlNode array to a SqlNodeList
      */
     public static SqlNodeList toNodeList( SqlNode[] operands ) {
-        SqlNodeList ret = new SqlNodeList( SqlParserPos.ZERO );
+        SqlNodeList ret = new SqlNodeList( ParserPos.ZERO );
         for ( SqlNode node : operands ) {
             ret.add( node );
         }
@@ -614,7 +614,7 @@ public abstract class SqlUtil {
                     return new SqlBasicCall(
                             operator,
                             SqlNode.EMPTY_ARRAY,
-                            id.getParserPosition(),
+                            id.getPos(),
                             true,
                             null );
                 }
@@ -685,7 +685,7 @@ public abstract class SqlUtil {
     /**
      * Wraps an exception with context.
      */
-    public static PolyphenyDbException newContextException( final SqlParserPos pos, Resources.ExInst<?> e, String inputText ) {
+    public static PolyphenyDbException newContextException( final ParserPos pos, Resources.ExInst<?> e, String inputText ) {
         PolyphenyDbContextException ex = newContextException( pos, e );
         ex.setOriginalStatement( inputText );
         return ex;
@@ -695,7 +695,7 @@ public abstract class SqlUtil {
     /**
      * Wraps an exception with context.
      */
-    public static PolyphenyDbContextException newContextException( final SqlParserPos pos, Resources.ExInst<?> e ) {
+    public static PolyphenyDbContextException newContextException( final ParserPos pos, Resources.ExInst<?> e ) {
         int line = pos.getLineNum();
         int col = pos.getColumnNum();
         int endLine = pos.getEndLineNum();

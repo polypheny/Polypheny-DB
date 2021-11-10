@@ -111,7 +111,7 @@ public class SqlShuttle extends SqlBasicVisitor<SqlNode> {
             newList.add( clonedOperand );
         }
         if ( update ) {
-            return new SqlNodeList( newList, nodeList.getParserPosition() );
+            return new SqlNodeList( newList, nodeList.getPos() );
         } else {
             return nodeList;
         }
@@ -141,7 +141,7 @@ public class SqlShuttle extends SqlBasicVisitor<SqlNode> {
         @Override
         public SqlNode result() {
             if ( update || alwaysCopy ) {
-                return call.getOperator().createCall( call.getFunctionQuantifier(), call.getParserPosition(), clonedOperands );
+                return call.getOperator().createCall( call.getFunctionQuantifier(), call.getPos(), clonedOperands );
             } else {
                 return call;
             }

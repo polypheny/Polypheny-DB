@@ -34,7 +34,7 @@
 package org.polypheny.db.sql;
 
 
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 
 
 /**
@@ -70,7 +70,7 @@ public enum SqlExplainLevel {
     /**
      * Creates a parse-tree node representing an occurrence of this symbol at a particular position in the parsed text.
      */
-    public SqlLiteral symbol( SqlParserPos pos ) {
+    public SqlLiteral symbol( ParserPos pos ) {
         return SqlLiteral.createSymbol( this, pos );
     }
 }

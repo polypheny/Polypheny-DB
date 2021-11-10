@@ -36,7 +36,7 @@ package org.polypheny.db.sql;
 
 import java.util.Collections;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
 
 
@@ -57,16 +57,16 @@ public class SqlProcedureCallOperator extends SqlPrefixOperator {
         // For now, rewrite "CALL f(x)" to "SELECT f(x) FROM VALUES(0)"
         // TODO jvs 18-Jan-2005:  rewrite to SELECT * FROM TABLE f(x) once we support function calls as tables
         return new SqlSelect(
-                SqlParserPos.ZERO,
+                ParserPos.ZERO,
                 null,
                 new SqlNodeList(
                         Collections.singletonList( call.operand( 0 ) ),
-                        SqlParserPos.ZERO ),
+                        ParserPos.ZERO ),
                 SqlStdOperatorTable.VALUES.createCall(
-                        SqlParserPos.ZERO,
+                        ParserPos.ZERO,
                         SqlStdOperatorTable.ROW.createCall(
-                                SqlParserPos.ZERO,
-                                SqlLiteral.createExactNumeric( "0", SqlParserPos.ZERO ) ) ),
+                                ParserPos.ZERO,
+                                SqlLiteral.createExactNumeric( "0", ParserPos.ZERO ) ) ),
                 null,
                 null,
                 null,

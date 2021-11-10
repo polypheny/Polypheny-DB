@@ -41,7 +41,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
-import org.polypheny.db.mql.fun.MqlFunctionOperator;
+import org.polypheny.db.core.MqlStdOperatorTable;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -273,7 +273,7 @@ public class RexCall extends RexNode {
 
     @Override
     public int hashCode() {
-        if ( SqlKind.DOC_KIND.contains( op.getKind() ) || op instanceof MqlFunctionOperator ) {
+        if ( SqlKind.DOC_KIND.contains( op.getKind() ) || MqlStdOperatorTable.DOC_OPERATORS.contains( this.op ) ) {
             return (op + "[" + operands.stream().map( rexNode -> Integer.toString( rexNode.hashCode() ) ).collect( Collectors.joining( "," ) ) + "]").hashCode();
         } else {
             return toString().hashCode();

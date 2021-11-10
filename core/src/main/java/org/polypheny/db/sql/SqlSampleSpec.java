@@ -34,6 +34,7 @@
 package org.polypheny.db.sql;
 
 
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
 
 
@@ -49,7 +50,7 @@ import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
  * declares a sample which is created using {@link #createNamed}.
  *
  * A sample is not a {@link SqlNode}. To include it in a parse tree, wrap it as a literal, viz:
- * {@link SqlLiteral#createSample(SqlSampleSpec, org.polypheny.db.sql.parser.SqlParserPos)}.
+ * {@link SqlLiteral#createSample(SqlSampleSpec, ParserPos)}.
  */
 public abstract class SqlSampleSpec {
 

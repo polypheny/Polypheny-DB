@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
@@ -34,7 +35,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -54,7 +54,7 @@ public class SqlAlterSourceTableAddColumn extends SqlAlterTable {
 
 
     public SqlAlterSourceTableAddColumn(
-            SqlParserPos pos,
+            ParserPos pos,
             SqlIdentifier table,
             SqlIdentifier columnPhysical,
             SqlIdentifier columnLogical,
@@ -125,11 +125,11 @@ public class SqlAlterSourceTableAddColumn extends SqlAlterTable {
                     defaultValue,
                     statement );
         } catch ( ColumnAlreadyExistsException e ) {
-            throw SqlUtil.newContextException( columnLogical.getParserPosition(), RESOURCE.columnExists( columnLogical.getSimple() ) );
+            throw SqlUtil.newContextException( columnLogical.getPos(), RESOURCE.columnExists( columnLogical.getSimple() ) );
         } catch ( DdlOnSourceException e ) {
-            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.ddlOnSourceTable() );
+            throw SqlUtil.newContextException( table.getPos(), RESOURCE.ddlOnSourceTable() );
         } catch ( ColumnNotExistsException e ) {
-            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
+            throw SqlUtil.newContextException( table.getPos(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
         }
 
     }

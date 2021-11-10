@@ -38,10 +38,10 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.jdbc.rel2sql.RelToSqlConverter;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.util.Util;
 
 
@@ -106,7 +106,7 @@ public class JdbcImplementor extends RelToSqlConverter {
             if ( table.hasPhysicalColumnName( columnName ) ) {
                 return schema.getTableMap().get( tableNames.get( 1 ) ).physicalColumnName( columnName );
             } else {
-                return new SqlIdentifier( "_" + columnName, SqlParserPos.ZERO );
+                return new SqlIdentifier( "_" + columnName, ParserPos.ZERO );
             }
         } else {
             throw new RuntimeException( "Unexpected number of names: " + tableNames.size() );

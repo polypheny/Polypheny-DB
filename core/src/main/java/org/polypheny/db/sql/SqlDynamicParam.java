@@ -34,7 +34,7 @@
 package org.polypheny.db.sql;
 
 
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.util.SqlVisitor;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
 import org.polypheny.db.sql.validate.SqlValidator;
@@ -50,14 +50,14 @@ public class SqlDynamicParam extends SqlNode {
     private final int index;
 
 
-    public SqlDynamicParam( int index, SqlParserPos pos ) {
+    public SqlDynamicParam( int index, ParserPos pos ) {
         super( pos );
         this.index = index;
     }
 
 
     @Override
-    public SqlNode clone( SqlParserPos pos ) {
+    public SqlNode clone( ParserPos pos ) {
         return new SqlDynamicParam( index, pos );
     }
 

@@ -35,6 +35,7 @@ package org.polypheny.db.sql.fun;
 
 
 import java.util.Arrays;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
@@ -46,7 +47,6 @@ import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.util.SqlBasicVisitor;
 import org.polypheny.db.sql.util.SqlVisitor;
 import org.polypheny.db.sql.validate.SqlValidator;
@@ -80,7 +80,7 @@ public class SqlDotOperator extends SqlSpecialOperator {
                 ordinal - 1,
                 ordinal + 2,
                 createCall(
-                        SqlParserPos.sum( Arrays.asList( left.getParserPosition(), right.getParserPosition(), list.pos( ordinal ) ) ),
+                        ParserPos.sum( Arrays.asList( left.getPos(), right.getPos(), list.pos( ordinal ) ) ),
                         left,
                         right ) );
     }
@@ -119,14 +119,14 @@ public class SqlDotOperator extends SqlSpecialOperator {
         final RelDataType nodeType = validator.deriveType( scope, operand );
         assert nodeType != null;
         if ( !nodeType.isStruct() ) {
-            throw SqlUtil.newContextException( operand.getParserPosition(), Static.RESOURCE.incompatibleTypes() );
+            throw SqlUtil.newContextException( operand.getPos(), Static.RESOURCE.incompatibleTypes() );
         }
 
         final SqlNode fieldId = call.operand( 1 );
         final String fieldName = fieldId.toString();
         final RelDataTypeField field = nodeType.getField( fieldName, false, false );
         if ( field == null ) {
-            throw SqlUtil.newContextException( fieldId.getParserPosition(), Static.RESOURCE.unknownField( fieldName ) );
+            throw SqlUtil.newContextException( fieldId.getPos(), Static.RESOURCE.unknownField( fieldName ) );
         }
         RelDataType type = field.getType();
 

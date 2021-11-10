@@ -1,0 +1,123 @@
+import ca.coglinc.gradle.plugins.javacc.CompileJavaccTask
+
+group "org.polypheny"
+
+version = versionMajor + "." + versionMinor + versionQualifier
+
+
+configurations {
+    javacc
+    tests {
+        extendsFrom testRuntime
+    }
+}
+
+
+buildscript {
+    dependencies {
+        // JavaCC (https://github.com/johnmartel/javaccPlugin)
+        classpath group: "gradle.plugin.ca.coglinc2", name: "javacc-gradle-plugin", version: javacc_plugin_version
+        // Fmpp
+        classpath group: "net.sourceforge.fmpp", name: "fmpp", version: fmpp_plugin_version
+    }
+    ant.taskdef(name: "fmpp", classname:"fmpp.tools.AntTask", classpath: buildscript.configurations.classpath.asPath)
+}
+
+dependencies {
+    implementation project(":core")
+    implementation project(":monitoring")
+
+    javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
+
+    api group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version  // MIT
+
+    implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
+
+    // --- Test Compile ---
+    testImplementation project(path: ":core", configuration: "tests")
+
+    testImplementation group: "junit", name: "junit", version: junit_version
+}
+
+
+/**
+ * Additional MongoDB query language Compile Pipeline
+ */
+task generateFmppSourcesDocument {
+    inputs.dir("src/main/codegen/templates/mql")
+    outputs.dir(project.buildDir.absolutePath + "/generated-sources/fmpp")
+    doLast {
+        ant.fmpp(configuration: "src/main/codegen/config_doc.fmpp",
+                sourceRoot: "src/main/codegen/templates/mql",
+                outputRoot: project.buildDir.absolutePath + "/generated-sources/fmpp/mql")
+    }
+}
+task generateParserDocument (type: CompileJavaccTask) {
+    dependsOn("generateFmppSourcesDocument")
+    getConventionMapping().map("classpath", { configurations.javacc })
+    arguments = [static: "false", lookahead: "2"]
+    inputDirectory = file(project.buildDir.absolutePath + "/generated-sources/fmpp/mql/javacc")
+    outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/org/polypheny/db/mql/parser/impl")
+}
+
+compileJava {
+    dependsOn("generateParserDocument")
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/main/java","build/generated-sources"]
+            outputDir = file(project.buildDir.absolutePath + "/classes")
+        }
+        resources {
+            srcDirs = ["src/main/resources"]
+            exclude "version/*.properties"
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
+    }
+    test {
+        java {
+            srcDirs = ["src/test/java"]
+            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+        }
+        resources {
+            // We need the main resources for the tests as well.
+            srcDirs = ["src/test/resources", "src/main/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
+    }
+}
+
+
+/**
+ * JavaDoc
+ */
+javadoc {
+    // suppress most of the warnings
+    options.addStringOption("Xdoclint:none", "-quiet")
+    // Include private fields in JavaDoc
+    options.memberLevel = JavadocMemberLevel.PRIVATE
+    // Use HTML 5 for JavaDoc
+    if(JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption("html5", true)
+    }
+    // Exclude build dir
+    exclude "fmpp/sql/javacc/**"
+    exclude "fmpp/mql/javacc/**"
+}
+
+/**
+ * JARs
+ */
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
+        attributes "Version": "$project.version"
+    }
+}
+java {
+    withJavadocJar()
+    withSourcesJar()
+}

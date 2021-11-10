@@ -35,7 +35,7 @@ package org.polypheny.db.sql;
 
 
 import java.util.List;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.NlsString;
@@ -49,7 +49,7 @@ import org.polypheny.db.util.Util;
  */
 public class SqlCharStringLiteral extends SqlAbstractStringLiteral {
 
-    protected SqlCharStringLiteral( NlsString val, SqlParserPos pos ) {
+    protected SqlCharStringLiteral( NlsString val, ParserPos pos ) {
         super( val, PolyType.CHAR, pos );
     }
 
@@ -71,7 +71,7 @@ public class SqlCharStringLiteral extends SqlAbstractStringLiteral {
 
 
     @Override
-    public SqlCharStringLiteral clone( SqlParserPos pos ) {
+    public SqlCharStringLiteral clone( ParserPos pos ) {
         return new SqlCharStringLiteral( (NlsString) value, pos );
     }
 
@@ -95,7 +95,7 @@ public class SqlCharStringLiteral extends SqlAbstractStringLiteral {
                         Util.transform(
                                 literals,
                                 literal -> ((SqlCharStringLiteral) literal).getNlsString() ) ),
-                literals.get( 0 ).getParserPosition() );
+                literals.get( 0 ).getPos() );
     }
 }
 

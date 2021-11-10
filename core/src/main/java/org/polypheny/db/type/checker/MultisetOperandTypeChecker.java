@@ -69,8 +69,8 @@ public class MultisetOperandTypeChecker implements PolyOperandTypeChecker {
             if ( throwOnFailure ) {
                 throw callBinding.newError(
                         Static.RESOURCE.typeNotComparable(
-                                op0.getParserPosition().toString(),
-                                op1.getParserPosition().toString() ) );
+                                op0.getPos().toString(),
+                                op1.getPos().toString() ) );
             }
 
             return false;

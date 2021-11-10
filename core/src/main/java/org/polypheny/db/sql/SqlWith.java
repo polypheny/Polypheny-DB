@@ -36,7 +36,7 @@ package org.polypheny.db.sql;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 
@@ -50,7 +50,7 @@ public class SqlWith extends SqlCall {
     public SqlNode body;
 
 
-    public SqlWith( SqlParserPos pos, SqlNodeList withList, SqlNode body ) {
+    public SqlWith( ParserPos pos, SqlNodeList withList, SqlNode body ) {
         super( pos );
         this.withList = withList;
         this.body = body;
@@ -128,7 +128,7 @@ public class SqlWith extends SqlCall {
 
 
         @Override
-        public SqlCall createCall( SqlLiteral functionQualifier, SqlParserPos pos, SqlNode... operands ) {
+        public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
             return new SqlWith( pos, (SqlNodeList) operands[0], operands[1] );
         }
 

@@ -107,7 +107,7 @@ import org.polypheny.db.sql.SqlWindow;
 import org.polypheny.db.sql.fun.SqlCase;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.fun.SqlSumEmptyIsZeroAggFunction;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.type.IntervalPolyType;
@@ -124,7 +124,7 @@ import org.polypheny.db.util.Util;
  */
 public abstract class SqlImplementor {
 
-    public static final SqlParserPos POS = SqlParserPos.ZERO;
+    public static final ParserPos POS = ParserPos.ZERO;
 
     public final SqlDialect dialect;
     protected final Set<String> aliasSet = new LinkedHashSet<>();

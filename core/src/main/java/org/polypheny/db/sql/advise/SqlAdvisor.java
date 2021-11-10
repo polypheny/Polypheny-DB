@@ -46,6 +46,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import org.apache.calcite.avatica.util.Casing;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -56,7 +57,6 @@ import org.polypheny.db.sql.parser.SqlAbstractParserImpl;
 import org.polypheny.db.sql.parser.SqlParseException;
 import org.polypheny.db.sql.parser.SqlParser;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.parser.SqlParserUtil;
 import org.polypheny.db.sql.validate.SqlMoniker;
 import org.polypheny.db.sql.validate.SqlMonikerImpl;
@@ -189,7 +189,7 @@ public class SqlAdvisor {
         if ( idx < 0 ) {
             return Collections.emptyList();
         }
-        SqlParserPos pos = new SqlParserPos( 1, idx + 1 );
+        ParserPos pos = new ParserPos( 1, idx + 1 );
         return getCompletionHints( simpleSql, pos );
     }
 
@@ -296,7 +296,7 @@ public class SqlAdvisor {
      * from sales.dept table setting pos to 'Line 1, Column 31' returns all the possible table names in 'sales' schema
      * @return an array of hints ({@link SqlMoniker}) that can fill in at the indicated position
      */
-    public List<SqlMoniker> getCompletionHints( String sql, SqlParserPos pos ) {
+    public List<SqlMoniker> getCompletionHints( String sql, ParserPos pos ) {
         // First try the statement they gave us. If this fails, just return
         // the tokens which were expected at the failure point.
         List<SqlMoniker> hintList = new ArrayList<>();
@@ -329,11 +329,11 @@ public class SqlAdvisor {
     }
 
 
-    private static boolean isSelectListItem( SqlNode root, final SqlParserPos pos, String hintToken ) {
+    private static boolean isSelectListItem( SqlNode root, final ParserPos pos, String hintToken ) {
         List<SqlNode> nodes = SqlUtil.getAncestry(
                 root,
                 input -> input instanceof SqlIdentifier && ((SqlIdentifier) input).names.contains( hintToken ),
-                input -> Objects.requireNonNull( input ).getParserPosition().startsAt( pos ) );
+                input -> Objects.requireNonNull( input ).getPos().startsAt( pos ) );
         assert nodes.get( 0 ) == root;
         nodes = Lists.reverse( nodes );
         return nodes.size() > 2
@@ -385,7 +385,7 @@ public class SqlAdvisor {
         } catch ( Exception e ) {
             return null;
         }
-        SqlParserPos pos = new SqlParserPos( 1, cursor + 1 );
+        ParserPos pos = new ParserPos( 1, cursor + 1 );
         try {
             return validator.lookupQualifiedName( sqlNode, pos );
         } catch ( PolyphenyDbContextException | AssertionError e ) {
@@ -599,7 +599,7 @@ public class SqlAdvisor {
          * @param pos Error position
          * @param errorMsg Error message
          */
-        public ValidateErrorInfo( SqlParserPos pos, String errorMsg ) {
+        public ValidateErrorInfo( ParserPos pos, String errorMsg ) {
             this.startLineNum = pos.getLineNum();
             this.startColumnNum = pos.getColumnNum();
             this.endLineNum = pos.getEndLineNum();

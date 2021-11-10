@@ -49,6 +49,7 @@ import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.processing.SqlProcessor;
@@ -66,7 +67,6 @@ import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -88,7 +88,7 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
      * Creates a SqlCreateView.
      */
     SqlCreateView(
-            SqlParserPos pos,
+            ParserPos pos,
             boolean replace,
             SqlIdentifier name,
             SqlNodeList columnList,
@@ -124,9 +124,9 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
                 viewName = name.names.get( 0 );
             }
         } catch ( UnknownDatabaseException e ) {
-            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.databaseNotFound( name.toString() ) );
+            throw SqlUtil.newContextException( name.getPos(), RESOURCE.databaseNotFound( name.toString() ) );
         } catch ( UnknownSchemaException e ) {
-            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaNotFound( name.toString() ) );
+            throw SqlUtil.newContextException( name.getPos(), RESOURCE.schemaNotFound( name.toString() ) );
         }
 
         PlacementType placementType = PlacementType.AUTOMATIC;
@@ -158,7 +158,7 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
                     String.valueOf( query.toSqlString( PolyphenyDbSqlDialect.DEFAULT ) ),
                     Catalog.QueryLanguage.SQL );
         } catch ( TableAlreadyExistsException e ) {
-            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( viewName ) );
+            throw SqlUtil.newContextException( name.getPos(), RESOURCE.tableExists( viewName ) );
         } catch ( GenericCatalogException | UnknownColumnException e ) {
             // we just added the table/column so it has to exist or we have a internal problem
             throw new RuntimeException( e );

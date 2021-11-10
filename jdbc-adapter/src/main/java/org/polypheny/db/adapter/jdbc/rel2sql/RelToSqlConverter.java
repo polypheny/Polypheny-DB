@@ -46,6 +46,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.SortedSet;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.RelFieldCollation;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Aggregate;
@@ -89,7 +90,6 @@ import org.polypheny.db.sql.SqlUpdate;
 import org.polypheny.db.sql.fun.SqlRowOperator;
 import org.polypheny.db.sql.fun.SqlSingleValueAggFunction;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.ReflectUtil;
@@ -271,7 +271,7 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
     public Result visit( TableScan e ) {
         //final SqlIdentifier identifier = getPhysicalTableName( e.getTable().getQualifiedName() );
         return result(
-                new SqlIdentifier( e.getTable().getQualifiedName(), SqlParserPos.ZERO ),
+                new SqlIdentifier( e.getTable().getQualifiedName(), ParserPos.ZERO ),
                 ImmutableList.of( Clause.FROM ),
                 e,
                 null );
@@ -553,7 +553,7 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
                 orderBySqlList.add( context.toSql( fc ) );
             }
         }
-        final SqlNodeList orderByList = new SqlNodeList( orderBySqlList, SqlParserPos.ZERO );
+        final SqlNodeList orderByList = new SqlNodeList( orderBySqlList, ParserPos.ZERO );
 
         final SqlLiteral rowsPerMatch = e.isAllRows()
                 ? SqlMatchRecognize.RowsPerMatchOption.ALL_ROWS.symbol( POS )

@@ -43,7 +43,7 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.sql.fun.SqlBetweenOperator;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.util.SqlBasicVisitor;
 import org.polypheny.db.sql.util.SqlVisitor;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
@@ -211,7 +211,7 @@ public abstract class SqlOperator {
      * Returns the fully-qualified name of this operator.
      */
     public SqlIdentifier getNameAsId() {
-        return new SqlIdentifier( getName(), SqlParserPos.ZERO );
+        return new SqlIdentifier( getName(), ParserPos.ZERO );
     }
 
 
@@ -250,7 +250,7 @@ public abstract class SqlOperator {
      * @param pos parser position of the identifier of the call
      * @param operands array of operands
      */
-    public SqlCall createCall( SqlLiteral functionQualifier, SqlParserPos pos, SqlNode... operands ) {
+    public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
         pos = pos.plusAll( Arrays.asList( operands ) );
         return new SqlBasicCall( this, operands, pos, false, functionQualifier );
     }
@@ -265,7 +265,7 @@ public abstract class SqlOperator {
      * @param operands List of arguments
      * @return call to this operator
      */
-    public final SqlCall createCall( SqlParserPos pos, SqlNode... operands ) {
+    public final SqlCall createCall( ParserPos pos, SqlNode... operands ) {
         return createCall( null, pos, operands );
     }
 
@@ -279,7 +279,7 @@ public abstract class SqlOperator {
      * @return call to this operator
      */
     public final SqlCall createCall( SqlNodeList nodeList ) {
-        return createCall( null, nodeList.getParserPosition(), nodeList.toArray() );
+        return createCall( null, nodeList.getPos(), nodeList.toArray() );
     }
 
 
@@ -288,7 +288,7 @@ public abstract class SqlOperator {
      *
      * The position of the resulting call is the union of the <code>pos</code> and the positions of all of the operands.
      */
-    public final SqlCall createCall( SqlParserPos pos, List<? extends SqlNode> operandList ) {
+    public final SqlCall createCall( ParserPos pos, List<? extends SqlNode> operandList ) {
         return createCall( null, pos, operandList.toArray( new SqlNode[0] ) );
     }
 

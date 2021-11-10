@@ -25,6 +25,7 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.ddl.exception.IndexPreventsRemovalException;
@@ -37,7 +38,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -52,7 +52,7 @@ public class SqlAlterTableModifyPlacementDropColumn extends SqlAlterTable {
     private final SqlIdentifier storeName;
 
 
-    public SqlAlterTableModifyPlacementDropColumn( SqlParserPos pos, SqlIdentifier table, SqlIdentifier columnName, SqlIdentifier storeName ) {
+    public SqlAlterTableModifyPlacementDropColumn( ParserPos pos, SqlIdentifier table, SqlIdentifier columnName, SqlIdentifier storeName ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.columnName = Objects.requireNonNull( columnName );
@@ -99,27 +99,27 @@ public class SqlAlterTableModifyPlacementDropColumn extends SqlAlterTable {
                     statement );
         } catch ( UnknownAdapterException e ) {
             throw SqlUtil.newContextException(
-                    storeName.getParserPosition(),
+                    storeName.getPos(),
                     RESOURCE.unknownAdapter( storeName.getSimple() ) );
         } catch ( PlacementNotExistsException e ) {
             throw SqlUtil.newContextException(
-                    storeName.getParserPosition(),
+                    storeName.getPos(),
                     RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
         } catch ( IndexPreventsRemovalException e ) {
             throw SqlUtil.newContextException(
-                    storeName.getParserPosition(),
+                    storeName.getPos(),
                     RESOURCE.indexPreventsRemovalOfPlacement( e.getIndexName(), columnName.getSimple() ) );
         } catch ( LastPlacementException e ) {
             throw SqlUtil.newContextException(
-                    storeName.getParserPosition(),
+                    storeName.getPos(),
                     RESOURCE.onlyOnePlacementLeft() );
         } catch ( PlacementIsPrimaryException e ) {
             throw SqlUtil.newContextException(
-                    storeName.getParserPosition(),
+                    storeName.getPos(),
                     RESOURCE.placementIsPrimaryKey( columnName.getSimple() ) );
         } catch ( ColumnNotExistsException e ) {
             throw SqlUtil.newContextException(
-                    columnName.getParserPosition(),
+                    columnName.getPos(),
                     RESOURCE.columnNotFoundInTable( e.columnName, e.tableName )
             );
         }

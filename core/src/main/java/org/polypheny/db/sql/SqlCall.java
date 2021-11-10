@@ -37,8 +37,8 @@ package org.polypheny.db.sql;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.util.SqlVisitor;
 import org.polypheny.db.sql.validate.SqlMoniker;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
@@ -55,7 +55,7 @@ import org.polypheny.db.util.Litmus;
 public abstract class SqlCall extends SqlNode {
 
 
-    public SqlCall( SqlParserPos pos ) {
+    public SqlCall( ParserPos pos ) {
         super( pos );
     }
 
@@ -102,7 +102,7 @@ public abstract class SqlCall extends SqlNode {
 
 
     @Override
-    public SqlNode clone( SqlParserPos pos ) {
+    public SqlNode clone( ParserPos pos ) {
         final List<SqlNode> operandList = getOperandList();
         return getOperator().createCall( getFunctionQuantifier(), pos, operandList.toArray( new SqlNode[0] ) );
     }
@@ -137,11 +137,11 @@ public abstract class SqlCall extends SqlNode {
 
 
     @Override
-    public void findValidOptions( SqlValidator validator, SqlValidatorScope scope, SqlParserPos pos, Collection<SqlMoniker> hintList ) {
+    public void findValidOptions( SqlValidator validator, SqlValidatorScope scope, ParserPos pos, Collection<SqlMoniker> hintList ) {
         for ( SqlNode operand : getOperandList() ) {
             if ( operand instanceof SqlIdentifier ) {
                 SqlIdentifier id = (SqlIdentifier) operand;
-                SqlParserPos idPos = id.getParserPosition();
+                ParserPos idPos = id.getPos();
                 if ( idPos.toString().equals( pos.toString() ) ) {
                     ((SqlValidatorImpl) validator).lookupNameCompletionHints( scope, id.names, pos, hintList );
                     return;

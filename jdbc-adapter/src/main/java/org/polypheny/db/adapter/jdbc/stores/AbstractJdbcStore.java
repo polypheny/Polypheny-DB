@@ -36,13 +36,13 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.SqlLiteral;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 
@@ -267,19 +267,19 @@ public abstract class AbstractJdbcStore extends DataStore {
         SqlLiteral literal;
         switch ( catalogColumn.defaultValue.type ) {
             case BOOLEAN:
-                literal = SqlLiteral.createBoolean( Boolean.parseBoolean( catalogColumn.defaultValue.value ), SqlParserPos.ZERO );
+                literal = SqlLiteral.createBoolean( Boolean.parseBoolean( catalogColumn.defaultValue.value ), ParserPos.ZERO );
                 break;
             case INTEGER:
             case DECIMAL:
             case BIGINT:
-                literal = SqlLiteral.createExactNumeric( catalogColumn.defaultValue.value, SqlParserPos.ZERO );
+                literal = SqlLiteral.createExactNumeric( catalogColumn.defaultValue.value, ParserPos.ZERO );
                 break;
             case REAL:
             case DOUBLE:
-                literal = SqlLiteral.createApproxNumeric( catalogColumn.defaultValue.value, SqlParserPos.ZERO );
+                literal = SqlLiteral.createApproxNumeric( catalogColumn.defaultValue.value, ParserPos.ZERO );
                 break;
             case VARCHAR:
-                literal = SqlLiteral.createCharString( catalogColumn.defaultValue.value, SqlParserPos.ZERO );
+                literal = SqlLiteral.createCharString( catalogColumn.defaultValue.value, ParserPos.ZERO );
                 break;
             default:
                 throw new PolyphenyDbException( "Not yet supported default value type: " + catalogColumn.defaultValue.type );

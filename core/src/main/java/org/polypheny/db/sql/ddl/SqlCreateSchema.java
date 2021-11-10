@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.exceptions.SchemaAlreadyExistsException;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlCreate;
@@ -51,7 +52,6 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -71,7 +71,7 @@ public class SqlCreateSchema extends SqlCreate implements SqlExecutableStatement
     /**
      * Creates a SqlCreateSchema.
      */
-    SqlCreateSchema( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SchemaType schemaType ) {
+    SqlCreateSchema( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SchemaType schemaType ) {
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
         this.type = schemaType;
@@ -103,7 +103,7 @@ public class SqlCreateSchema extends SqlCreate implements SqlExecutableStatement
         try {
             DdlManager.getInstance().createSchema( name.getSimple(), context.getDatabaseId(), type, context.getCurrentUserId(), ifNotExists, replace );
         } catch ( SchemaAlreadyExistsException e ) {
-            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaExists( name.getSimple() ) );
+            throw SqlUtil.newContextException( name.getPos(), RESOURCE.schemaExists( name.getSimple() ) );
         }
 
     }

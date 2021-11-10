@@ -44,7 +44,7 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.sql.fun.SqlLiteralChainOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.parser.SqlParserUtil;
 import org.polypheny.db.sql.util.SqlVisitor;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
@@ -154,7 +154,7 @@ public class SqlLiteral extends SqlNode {
     /**
      * Creates a <code>SqlLiteral</code>.
      */
-    protected SqlLiteral( Object value, PolyType typeName, SqlParserPos pos ) {
+    protected SqlLiteral( Object value, PolyType typeName, ParserPos pos ) {
         super( pos );
         this.value = value;
         this.typeName = typeName;
@@ -222,7 +222,7 @@ public class SqlLiteral extends SqlNode {
 
 
     @Override
-    public SqlLiteral clone( SqlParserPos pos ) {
+    public SqlLiteral clone( ParserPos pos ) {
         return new SqlLiteral( value, typeName, pos );
     }
 
@@ -358,7 +358,7 @@ public class SqlLiteral extends SqlNode {
      * Extracts the {@link SqlSampleSpec} value from a symbol literal.
      *
      * @throws ClassCastException if the value is not a symbol literal
-     * @see #createSymbol(Enum, SqlParserPos)
+     * @see #createSymbol(Enum, ParserPos)
      */
     public static SqlSampleSpec sampleValue( SqlNode node ) {
         return (SqlSampleSpec) ((SqlLiteral) node).value;
@@ -534,7 +534,7 @@ public class SqlLiteral extends SqlNode {
      *
      * There's no singleton constant for a NULL literal. Instead, nulls must be instantiated via createNull(), because different instances have different context-dependent types.
      */
-    public static SqlLiteral createNull( SqlParserPos pos ) {
+    public static SqlLiteral createNull( ParserPos pos ) {
         return new SqlLiteral( null, PolyType.NULL, pos );
     }
 
@@ -542,14 +542,14 @@ public class SqlLiteral extends SqlNode {
     /**
      * Creates a boolean literal.
      */
-    public static SqlLiteral createBoolean( boolean b, SqlParserPos pos ) {
+    public static SqlLiteral createBoolean( boolean b, ParserPos pos ) {
         return b
                 ? new SqlLiteral( Boolean.TRUE, PolyType.BOOLEAN, pos )
                 : new SqlLiteral( Boolean.FALSE, PolyType.BOOLEAN, pos );
     }
 
 
-    public static SqlLiteral createUnknown( SqlParserPos pos ) {
+    public static SqlLiteral createUnknown( ParserPos pos ) {
         return new SqlLiteral( null, PolyType.BOOLEAN, pos );
     }
 
@@ -559,7 +559,7 @@ public class SqlLiteral extends SqlNode {
      *
      * @see #symbolValue(Class)
      */
-    public static SqlLiteral createSymbol( Enum<?> o, SqlParserPos pos ) {
+    public static SqlLiteral createSymbol( Enum<?> o, ParserPos pos ) {
         return new SqlLiteral( o, PolyType.SYMBOL, pos );
     }
 
@@ -567,7 +567,7 @@ public class SqlLiteral extends SqlNode {
     /**
      * Creates a literal which represents a sample specification.
      */
-    public static SqlLiteral createSample( SqlSampleSpec sampleSpec, SqlParserPos pos ) {
+    public static SqlLiteral createSample( SqlSampleSpec sampleSpec, ParserPos pos ) {
         return new SqlLiteral( sampleSpec, PolyType.SYMBOL, pos );
     }
 
@@ -601,7 +601,7 @@ public class SqlLiteral extends SqlNode {
                     try {
                         return bd.intValueExact();
                     } catch ( ArithmeticException e ) {
-                        throw SqlUtil.newContextException( getParserPosition(), Static.RESOURCE.numberLiteralOutOfRange( bd.toString() ) );
+                        throw SqlUtil.newContextException( getPos(), Static.RESOURCE.numberLiteralOutOfRange( bd.toString() ) );
                     }
                 } else {
                     return bd.intValue();
@@ -627,7 +627,7 @@ public class SqlLiteral extends SqlNode {
                     try {
                         return bd.longValueExact();
                     } catch ( ArithmeticException e ) {
-                        throw SqlUtil.newContextException( getParserPosition(), Static.RESOURCE.numberLiteralOutOfRange( bd.toString() ) );
+                        throw SqlUtil.newContextException( getPos(), Static.RESOURCE.numberLiteralOutOfRange( bd.toString() ) );
                     }
                 } else {
                     return bd.longValue();
@@ -758,34 +758,34 @@ public class SqlLiteral extends SqlNode {
 
 
     @Deprecated // to be removed before 2.0
-    public static SqlDateLiteral createDate( Calendar calendar, SqlParserPos pos ) {
+    public static SqlDateLiteral createDate( Calendar calendar, ParserPos pos ) {
         return createDate( DateString.fromCalendarFields( calendar ), pos );
     }
 
 
-    public static SqlDateLiteral createDate( DateString date, SqlParserPos pos ) {
+    public static SqlDateLiteral createDate( DateString date, ParserPos pos ) {
         return new SqlDateLiteral( date, pos );
     }
 
 
     @Deprecated // to be removed before 2.0
-    public static SqlTimestampLiteral createTimestamp( Calendar calendar, int precision, SqlParserPos pos ) {
+    public static SqlTimestampLiteral createTimestamp( Calendar calendar, int precision, ParserPos pos ) {
         return createTimestamp( TimestampString.fromCalendarFields( calendar ), precision, pos );
     }
 
 
-    public static SqlTimestampLiteral createTimestamp( TimestampString ts, int precision, SqlParserPos pos ) {
+    public static SqlTimestampLiteral createTimestamp( TimestampString ts, int precision, ParserPos pos ) {
         return new SqlTimestampLiteral( ts, precision, false, pos );
     }
 
 
     @Deprecated // to be removed before 2.0
-    public static SqlTimeLiteral createTime( Calendar calendar, int precision, SqlParserPos pos ) {
+    public static SqlTimeLiteral createTime( Calendar calendar, int precision, ParserPos pos ) {
         return createTime( TimeString.fromCalendarFields( calendar ), precision, pos );
     }
 
 
-    public static SqlTimeLiteral createTime( TimeString t, int precision, SqlParserPos pos ) {
+    public static SqlTimeLiteral createTime( TimeString t, int precision, ParserPos pos ) {
         return new SqlTimeLiteral( t, precision, false, pos );
     }
 
@@ -797,12 +797,12 @@ public class SqlLiteral extends SqlNode {
      * @param intervalQualifier describes the interval type and precision
      * @param pos Parser position
      */
-    public static SqlIntervalLiteral createInterval( int sign, String intervalStr, SqlIntervalQualifier intervalQualifier, SqlParserPos pos ) {
+    public static SqlIntervalLiteral createInterval( int sign, String intervalStr, SqlIntervalQualifier intervalQualifier, ParserPos pos ) {
         return new SqlIntervalLiteral( sign, intervalStr, intervalQualifier, intervalQualifier.typeName(), pos );
     }
 
 
-    public static SqlNumericLiteral createNegative( SqlNumericLiteral num, SqlParserPos pos ) {
+    public static SqlNumericLiteral createNegative( SqlNumericLiteral num, ParserPos pos ) {
         return new SqlNumericLiteral(
                 ((BigDecimal) num.getValue()).negate(),
                 num.getPrec(),
@@ -812,7 +812,7 @@ public class SqlLiteral extends SqlNode {
     }
 
 
-    public static SqlNumericLiteral createExactNumeric( String s, SqlParserPos pos ) {
+    public static SqlNumericLiteral createExactNumeric( String s, ParserPos pos ) {
         BigDecimal value;
         int prec;
         int scale;
@@ -836,7 +836,7 @@ public class SqlLiteral extends SqlNode {
     }
 
 
-    public static SqlNumericLiteral createApproxNumeric( String s, SqlParserPos pos ) {
+    public static SqlNumericLiteral createApproxNumeric( String s, ParserPos pos ) {
         BigDecimal value = SqlParserUtil.parseDecimal( s );
         return new SqlNumericLiteral( value, null, null, false, pos );
     }
@@ -845,7 +845,7 @@ public class SqlLiteral extends SqlNode {
     /**
      * Creates a literal like X'ABAB'. Although it matters when we derive a type for this beastie, we don't care at this point whether the number of hexits is odd or even.
      */
-    public static SqlBinaryStringLiteral createBinaryString( String s, SqlParserPos pos ) {
+    public static SqlBinaryStringLiteral createBinaryString( String s, ParserPos pos ) {
         BitString bits;
         try {
             bits = BitString.createFromHexString( s );
@@ -863,7 +863,7 @@ public class SqlLiteral extends SqlNode {
      * @param pos Parser position
      * @return Binary string literal
      */
-    public static SqlBinaryStringLiteral createBinaryString( byte[] bytes, SqlParserPos pos ) {
+    public static SqlBinaryStringLiteral createBinaryString( byte[] bytes, ParserPos pos ) {
         BitString bits;
         try {
             bits = BitString.createFromBytes( bytes );
@@ -880,7 +880,7 @@ public class SqlLiteral extends SqlNode {
      * @param s a string (without the sql single quotes)
      * @param pos Parser position
      */
-    public static SqlCharStringLiteral createCharString( String s, SqlParserPos pos ) {
+    public static SqlCharStringLiteral createCharString( String s, ParserPos pos ) {
         // UnsupportedCharsetException not possible
         return createCharString( s, null, pos );
     }
@@ -895,7 +895,7 @@ public class SqlLiteral extends SqlNode {
      * @return A string literal
      * @throws UnsupportedCharsetException if charSet is not null but there is no character set with that name in this environment
      */
-    public static SqlCharStringLiteral createCharString( String s, String charSet, SqlParserPos pos ) {
+    public static SqlCharStringLiteral createCharString( String s, String charSet, ParserPos pos ) {
         NlsString slit = new NlsString( s, charSet, null );
         return new SqlCharStringLiteral( slit, pos );
     }
@@ -927,14 +927,14 @@ public class SqlLiteral extends SqlNode {
                     }
                 }
                 if ( (i + 5) > n ) {
-                    throw SqlUtil.newContextException( getParserPosition(), Static.RESOURCE.unicodeEscapeMalformed( i ) );
+                    throw SqlUtil.newContextException( getPos(), Static.RESOURCE.unicodeEscapeMalformed( i ) );
                 }
                 final String u = s.substring( i + 1, i + 5 );
                 final int v;
                 try {
                     v = Integer.parseInt( u, 16 );
                 } catch ( NumberFormatException ex ) {
-                    throw SqlUtil.newContextException( getParserPosition(), Static.RESOURCE.unicodeEscapeMalformed( i ) );
+                    throw SqlUtil.newContextException( getPos(), Static.RESOURCE.unicodeEscapeMalformed( i ) );
                 }
                 sb.append( (char) (v & 0xFFFF) );
 
@@ -945,7 +945,7 @@ public class SqlLiteral extends SqlNode {
             }
         }
         ns = new NlsString( sb.toString(), ns.getCharsetName(), ns.getCollation() );
-        return new SqlCharStringLiteral( ns, getParserPosition() );
+        return new SqlCharStringLiteral( ns, getPos() );
     }
 
 }

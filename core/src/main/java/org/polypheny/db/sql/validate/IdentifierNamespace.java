@@ -40,13 +40,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Static;
 
@@ -171,7 +171,7 @@ public class IdentifierNamespace extends AbstractNamespace {
                 List<String> qualifiedNames = table.getQualifiedName();
                 if ( qualifiedNames != null ) {
                     // Assign positions to the components of the fully-qualified identifier, as best we can. We assume that qualification adds names to the front, e.g. FOO.BAR becomes BAZ.FOO.BAR.
-                    List<SqlParserPos> poses = new ArrayList<>( Collections.nCopies( qualifiedNames.size(), id.getParserPosition() ) );
+                    List<ParserPos> poses = new ArrayList<>( Collections.nCopies( qualifiedNames.size(), id.getPos() ) );
                     int offset = qualifiedNames.size() - id.names.size();
 
                     // Test offset in case catalog supports fewer qualifiers than catalog reader.
@@ -202,7 +202,7 @@ public class IdentifierNamespace extends AbstractNamespace {
             final String fieldName = field.getName();
             final SqlMonotonicity monotonicity = resolvedNamespace.getMonotonicity( fieldName );
             if ( monotonicity != SqlMonotonicity.NOT_MONOTONIC ) {
-                builder.add( Pair.of( (SqlNode) new SqlIdentifier( fieldName, SqlParserPos.ZERO ), monotonicity ) );
+                builder.add( Pair.of( (SqlNode) new SqlIdentifier( fieldName, ParserPos.ZERO ), monotonicity ) );
             }
         }
         monotonicExprs = builder.build();

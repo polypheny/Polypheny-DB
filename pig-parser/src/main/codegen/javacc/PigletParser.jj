@@ -42,7 +42,7 @@ PARSER_BEGIN(PigletParser)
 package org.polypheny.db.piglet.parser;
 
 import org.apache.calcite.avatica.util.Casing;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.parser.SqlParseException;
 import org.polypheny.db.sql.parser.SqlParserUtil;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
@@ -100,16 +100,16 @@ String nonReservedKeyWord() :
 JAVACODE
 void e() {}
 
-JAVACODE SqlParserPos pos() {
-  return new SqlParserPos(token.beginLine, token.beginColumn,
+JAVACODE ParserPos pos() {
+  return new ParserPos(token.beginLine, token.beginColumn,
     token.endLine, token.endColumn);
 }
 
-JAVACODE SqlParserPos pos2(SqlParserPos p) {
+JAVACODE ParserPos pos2(ParserPos p) {
   return p.plus(pos());
 }
 
-JAVACODE SqlParserPos pos3(Node n) {
+JAVACODE ParserPos pos3(Node n) {
   return n.pos.plus(pos());
 }
 
@@ -121,7 +121,7 @@ JAVACODE SqlParseException convertException(Throwable ex) {
   if (ex instanceof SqlParseException) {
     return (SqlParseException) ex;
   }
-  SqlParserPos pos = null;
+  ParserPos pos = null;
   int[][] expectedTokenSequences = null;
   String[] tokenImage = null;
   if (ex instanceof ParseException) {
@@ -130,7 +130,7 @@ JAVACODE SqlParseException convertException(Throwable ex) {
     tokenImage = pex.tokenImage;
     if (pex.currentToken != null) {
       final Token token = pex.currentToken.next;
-      pos = new SqlParserPos(token.beginLine, token.beginColumn,
+      pos = new ParserPos(token.beginLine, token.beginColumn,
           token.endLine, token.endColumn);
     }
   } else if (ex instanceof TokenMgrError) {
@@ -145,7 +145,7 @@ JAVACODE SqlParseException convertException(Throwable ex) {
     if (matcher.matches()) {
       int line = Integer.parseInt(matcher.group(1));
       int column = Integer.parseInt(matcher.group(2));
-      pos = new SqlParserPos(line, column, line, column);
+      pos = new ParserPos(line, column, line, column);
     }
   } else if (ex instanceof PolyphenyDbContextException) {
     // PolyphenyDbContextException is the standard wrapper for exceptions
@@ -156,7 +156,7 @@ JAVACODE SqlParseException convertException(Throwable ex) {
     // SqlSpecialOperator.reduceExpr.
     PolyphenyDbContextException ece =
         (PolyphenyDbContextException) ex;
-    pos = new SqlParserPos(
+    pos = new ParserPos(
         ece.getPosLine(),
         ece.getPosColumn(),
         ece.getEndPosLine(),
@@ -188,7 +188,7 @@ Program stmtListEof() :
     }
   )*
   <EOF> {
-    SqlParserPos p = SqlParserPos.ZERO;
+    ParserPos p = ParserPos.ZERO;
     for (Stmt s2 : list) {
       p = p.plus(s2.pos);
     }
@@ -298,7 +298,7 @@ List<List<Node>> tupleListMaybeEmpty() :
 
 DescribeStmt describeStmt() :
 {
-  final SqlParserPos p;
+  final ParserPos p;
   final Identifier id;
 }
 {
@@ -309,7 +309,7 @@ DescribeStmt describeStmt() :
 
 DumpStmt dumpStmt() :
 {
-  final SqlParserPos p;
+  final ParserPos p;
   final Identifier id;
 }
 {
@@ -482,7 +482,7 @@ GroupStmt groupStmt(final Identifier target) :
 /** Parses a schema. */
 Schema schema() :
 {
-  final SqlParserPos p;
+  final ParserPos p;
   final List<FieldSchema> fieldSchemaList;
 }
 {
@@ -527,7 +527,7 @@ FieldSchema fieldSchema() :
 /** Parses a Type. */
 Type type() :
 {
-  final SqlParserPos p;
+  final ParserPos p;
   final String s;
   final Type t;
   final List<FieldSchema> fieldSchemaList;
@@ -607,7 +607,7 @@ Node exp2() :
 Node exp3() :
 {
   final Node e;
-  final SqlParserPos p;
+  final ParserPos p;
 }
 {
   (
@@ -705,7 +705,7 @@ Node atom() :
   Node f;
   final List<Node> list;
   ImmutableList.Builder<Node> builder = null;
-  final SqlParserPos p;
+  final ParserPos p;
 }
 {
   (
@@ -849,7 +849,7 @@ NumericLiteral unsignedNumericLiteral() :
 NumericLiteral numericLiteral() :
 {
   NumericLiteral num;
-  SqlParserPos p;
+  ParserPos p;
 }
 {
   <PLUS> num = unsignedNumericLiteral() {

@@ -36,7 +36,7 @@ package org.polypheny.db.sql;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.util.SqlBasicVisitor;
 import org.polypheny.db.sql.util.SqlVisitor;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -75,7 +75,7 @@ public class SqlSelectOperator extends SqlOperator {
 
 
     @Override
-    public SqlCall createCall( SqlLiteral functionQualifier, SqlParserPos pos, SqlNode... operands ) {
+    public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
         assert functionQualifier == null;
         return new SqlSelect( pos,
                 (SqlNodeList) operands[0],
@@ -104,7 +104,7 @@ public class SqlSelectOperator extends SqlOperator {
      * @param orderBy The ORDER BY clause, or null if not present
      * @param offset Expression for number of rows to discard before returning first row
      * @param fetch Expression for number of rows to fetch
-     * @param pos The parser position, or {@link org.polypheny.db.sql.parser.SqlParserPos#ZERO} if not specified; must not be null.
+     * @param pos The parser position, or {@link ParserPos#ZERO} if not specified; must not be null.
      * @return A {@link SqlSelect}, never null
      */
     public SqlSelect createCall(
@@ -118,7 +118,7 @@ public class SqlSelectOperator extends SqlOperator {
             SqlNodeList orderBy,
             SqlNode offset,
             SqlNode fetch,
-            SqlParserPos pos ) {
+            ParserPos pos ) {
         return new SqlSelect(
                 pos,
                 keywordList,
@@ -154,7 +154,7 @@ public class SqlSelectOperator extends SqlOperator {
         }
         SqlNode selectClause = select.selectList;
         if ( selectClause == null ) {
-            selectClause = SqlIdentifier.star( SqlParserPos.ZERO );
+            selectClause = SqlIdentifier.star( ParserPos.ZERO );
         }
         final SqlWriter.Frame selectListFrame = writer.startList( SqlWriter.FrameTypeEnum.SELECT_LIST );
         unparseListClause( writer, selectClause );
@@ -199,7 +199,7 @@ public class SqlSelectOperator extends SqlOperator {
                 final SqlWriter.Frame whereFrame = writer.startList( SqlWriter.FrameTypeEnum.WHERE_LIST );
                 unparseListClause(
                         writer,
-                        new SqlNodeList( list, select.where.getParserPosition() ),
+                        new SqlNodeList( list, select.where.getPos() ),
                         whereSepKind );
                 writer.endList( whereFrame );
             } else {

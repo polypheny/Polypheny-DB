@@ -36,6 +36,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -45,7 +46,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.DateString;
@@ -678,20 +678,20 @@ public class CottontailTypeUtil {
                 literal = Boolean.parseBoolean( catalogDefaultValue.value );
                 break;
             case INTEGER:
-                literal = SqlLiteral.createExactNumeric( catalogDefaultValue.value, SqlParserPos.ZERO ).getValueAs( Integer.class );
+                literal = SqlLiteral.createExactNumeric( catalogDefaultValue.value, ParserPos.ZERO ).getValueAs( Integer.class );
                 break;
             case DECIMAL:
-                literal = SqlLiteral.createExactNumeric( catalogDefaultValue.value, SqlParserPos.ZERO ).getValueAs( BigDecimal.class );
+                literal = SqlLiteral.createExactNumeric( catalogDefaultValue.value, ParserPos.ZERO ).getValueAs( BigDecimal.class );
                 break;
             case BIGINT:
-                literal = SqlLiteral.createExactNumeric( catalogDefaultValue.value, SqlParserPos.ZERO ).getValueAs( Long.class );
+                literal = SqlLiteral.createExactNumeric( catalogDefaultValue.value, ParserPos.ZERO ).getValueAs( Long.class );
                 break;
             case REAL:
             case FLOAT:
-                literal = SqlLiteral.createApproxNumeric( catalogDefaultValue.value, SqlParserPos.ZERO ).getValueAs( Float.class );
+                literal = SqlLiteral.createApproxNumeric( catalogDefaultValue.value, ParserPos.ZERO ).getValueAs( Float.class );
                 break;
             case DOUBLE:
-                literal = SqlLiteral.createApproxNumeric( catalogDefaultValue.value, SqlParserPos.ZERO ).getValueAs( Double.class );
+                literal = SqlLiteral.createApproxNumeric( catalogDefaultValue.value, ParserPos.ZERO ).getValueAs( Double.class );
                 break;
             case VARCHAR:
                 literal = catalogDefaultValue.value;

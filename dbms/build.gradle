@@ -17,6 +17,7 @@ apply plugin: "com.github.johnrengelman.shadow"
 
 dependencies {
     implementation project(":core")
+    implementation project(":languages")
     implementation project(":cassandra-adapter")
     implementation project(":cottontail-adapter")
     implementation project(":csv-adapter")

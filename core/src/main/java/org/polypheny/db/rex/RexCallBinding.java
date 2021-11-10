@@ -37,6 +37,7 @@ package org.polypheny.db.rex;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelFieldCollation;
 import org.polypheny.db.rel.type.RelDataType;
@@ -47,7 +48,6 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlUtil;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
 import org.polypheny.db.sql.validate.SqlValidatorException;
 
@@ -146,7 +146,7 @@ public class RexCallBinding extends SqlOperatorBinding {
 
     @Override
     public PolyphenyDbException newError( ExInst<SqlValidatorException> e ) {
-        return SqlUtil.newContextException( SqlParserPos.ZERO, e );
+        return SqlUtil.newContextException( ParserPos.ZERO, e );
     }
 
 

@@ -36,6 +36,7 @@ package org.polypheny.db.sql.ddl;
 
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlCreate;
@@ -48,7 +49,6 @@ import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -68,7 +68,7 @@ public class SqlCreateType extends SqlCreate implements SqlExecutableStatement {
     /**
      * Creates a SqlCreateType.
      */
-    SqlCreateType( SqlParserPos pos, boolean replace, SqlIdentifier name, SqlNodeList attributeDefs, SqlDataTypeSpec dataType ) {
+    SqlCreateType( ParserPos pos, boolean replace, SqlIdentifier name, SqlNodeList attributeDefs, SqlDataTypeSpec dataType ) {
         super( OPERATOR, pos, replace, false );
         this.name = Objects.requireNonNull( name );
         this.attributeDefs = attributeDefs; // may be null

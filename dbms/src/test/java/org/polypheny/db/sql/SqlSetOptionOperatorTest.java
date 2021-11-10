@@ -70,13 +70,13 @@ public class SqlSetOptionOperatorTest {
     private static void checkSqlSetOptionSame( SqlNode node ) {
         SqlSetOption opt = (SqlSetOption) node;
         SqlNode[] sqlNodes = new SqlNode[opt.getOperandList().size()];
-        SqlCall returned = opt.getOperator().createCall( opt.getFunctionQuantifier(), opt.getParserPosition(), opt.getOperandList().toArray( sqlNodes ) );
+        SqlCall returned = opt.getOperator().createCall( opt.getFunctionQuantifier(), opt.getPos(), opt.getOperandList().toArray( sqlNodes ) );
         assertThat( opt.getClass(), equalTo( (Class) returned.getClass() ) );
         SqlSetOption optRet = (SqlSetOption) returned;
         assertThat( optRet.getScope(), is( opt.getScope() ) );
         assertThat( optRet.getName(), is( opt.getName() ) );
         assertThat( optRet.getFunctionQuantifier(), is( opt.getFunctionQuantifier() ) );
-        assertThat( optRet.getParserPosition(), is( opt.getParserPosition() ) );
+        assertThat( optRet.getPos(), is( opt.getPos() ) );
         assertThat( optRet.getValue(), is( opt.getValue() ) );
         assertThat( optRet.toString(), is( opt.toString() ) );
     }

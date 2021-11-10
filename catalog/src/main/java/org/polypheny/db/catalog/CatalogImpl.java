@@ -91,7 +91,7 @@ import org.polypheny.db.catalog.exceptions.UnknownTableIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.exceptions.UnknownUserIdRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.mql.MqlNode;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.partition.FrequencyMap;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
@@ -479,7 +479,7 @@ public class CatalogImpl extends Catalog {
 
                     case MONGOQL:
                         MqlProcessor mqlProcessor = statement.getTransaction().getMqlProcessor();
-                        MqlNode mqlNode = mqlProcessor.parse( query );
+                        Node mqlNode = mqlProcessor.parse( query );
 
                         RelRoot mqlRel = mqlProcessor.translate(
                                 statement,

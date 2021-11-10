@@ -36,7 +36,7 @@ package org.polypheny.db.sql;
 
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.sql.fun.SqlConvertFunction;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.PolyType;
 
 
@@ -105,7 +105,7 @@ public enum SqlJdbcDataTypeName {
     /**
      * Creates a parse-tree node representing an occurrence of this keyword at a particular position in the parsed text.
      */
-    public SqlLiteral symbol( SqlParserPos pos ) {
+    public SqlLiteral symbol( ParserPos pos ) {
         return SqlLiteral.createSymbol( this, pos );
     }
 
@@ -113,7 +113,7 @@ public enum SqlJdbcDataTypeName {
     /**
      * Creates a parse tree node for a type identifier of this name.
      */
-    public SqlNode createDataType( SqlParserPos pos ) {
+    public SqlNode createDataType( ParserPos pos ) {
         if ( typeName != null ) {
             assert range == null;
             final SqlIdentifier id = new SqlIdentifier( typeName.name(), pos );

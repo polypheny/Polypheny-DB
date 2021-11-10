@@ -40,7 +40,7 @@ import java.util.Objects;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.fun.SqlTrimFunction;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
@@ -408,7 +408,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
 
 
     @Override
-    public SqlCall createCall( SqlLiteral functionQualifier, SqlParserPos pos, SqlNode... operands ) {
+    public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
         thisOperands = operands;
         return super.createCall( functionQualifier, pos, operands );
     }
@@ -425,7 +425,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
 
     public SqlCall getLookupCall() {
         if ( null == lookupCall ) {
-            lookupCall = lookupMakeCallObj.createCall( SqlParserPos.ZERO, thisOperands );
+            lookupCall = lookupMakeCallObj.createCall( ParserPos.ZERO, thisOperands );
         }
         return lookupCall;
     }
@@ -532,7 +532,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
          *
          * @param operands Operands
          */
-        SqlCall createCall( SqlParserPos pos, SqlNode... operands );
+        SqlCall createCall( ParserPos pos, SqlNode... operands );
 
         SqlOperator getOperator();
 
@@ -560,7 +560,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
 
 
         @Override
-        public SqlCall createCall( SqlParserPos pos, SqlNode... operands ) {
+        public SqlCall createCall( ParserPos pos, SqlNode... operands ) {
             return operator.createCall( pos, operands );
         }
 
@@ -595,7 +595,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
 
 
         @Override
-        public SqlCall createCall( SqlParserPos pos, SqlNode... operands ) {
+        public SqlCall createCall( ParserPos pos, SqlNode... operands ) {
             return super.createCall( pos, reorder( operands ) );
         }
 
@@ -692,12 +692,12 @@ public class SqlJdbcFunctionCall extends SqlFunction {
             map.put( "LTRIM",
                     new SimpleMakeCall( SqlStdOperatorTable.TRIM ) {
                         @Override
-                        public SqlCall createCall( SqlParserPos pos, SqlNode... operands ) {
+                        public SqlCall createCall( ParserPos pos, SqlNode... operands ) {
                             assert 1 == operands.length;
                             return super.createCall(
                                     pos,
-                                    SqlTrimFunction.Flag.LEADING.symbol( SqlParserPos.ZERO ),
-                                    SqlLiteral.createCharString( " ", SqlParserPos.ZERO ),
+                                    SqlTrimFunction.Flag.LEADING.symbol( ParserPos.ZERO ),
+                                    SqlLiteral.createCharString( " ", ParserPos.ZERO ),
                                     operands[0] );
                         }
                     } );
@@ -715,12 +715,12 @@ public class SqlJdbcFunctionCall extends SqlFunction {
             map.put( "RTRIM",
                     new SimpleMakeCall( SqlStdOperatorTable.TRIM ) {
                         @Override
-                        public SqlCall createCall( SqlParserPos pos, SqlNode... operands ) {
+                        public SqlCall createCall( ParserPos pos, SqlNode... operands ) {
                             assert 1 == operands.length;
                             return super.createCall(
                                     pos,
-                                    SqlTrimFunction.Flag.TRAILING.symbol( SqlParserPos.ZERO ),
-                                    SqlLiteral.createCharString( " ", SqlParserPos.ZERO ),
+                                    SqlTrimFunction.Flag.TRAILING.symbol( ParserPos.ZERO ),
+                                    SqlLiteral.createCharString( " ", ParserPos.ZERO ),
                                     operands[0] );
                         }
                     } );
@@ -737,7 +737,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
             map.put( "IFNULL",
                     new SimpleMakeCall( SqlStdOperatorTable.COALESCE ) {
                         @Override
-                        public SqlCall createCall( SqlParserPos pos, SqlNode... operands ) {
+                        public SqlCall createCall( ParserPos pos, SqlNode... operands ) {
                             assert 2 == operands.length;
                             return super.createCall( pos, operands );
                         }
@@ -746,7 +746,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
             map.put( "CONVERT",
                     new SimpleMakeCall( SqlStdOperatorTable.CAST ) {
                         @Override
-                        public SqlCall createCall( SqlParserPos pos, SqlNode... operands ) {
+                        public SqlCall createCall( ParserPos pos, SqlNode... operands ) {
                             assert 2 == operands.length;
                             SqlNode typeOperand = operands[1];
                             assert typeOperand.getKind() == SqlKind.LITERAL;

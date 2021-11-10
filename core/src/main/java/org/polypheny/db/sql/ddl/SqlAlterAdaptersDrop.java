@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlAlter;
@@ -32,7 +33,6 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -48,7 +48,7 @@ public class SqlAlterAdaptersDrop extends SqlAlter {
     private final SqlNode uniqueName;
 
 
-    public SqlAlterAdaptersDrop( SqlParserPos pos, SqlNode uniqueName ) {
+    public SqlAlterAdaptersDrop( ParserPos pos, SqlNode uniqueName ) {
         super( OPERATOR, pos );
         this.uniqueName = Objects.requireNonNull( uniqueName );
     }
@@ -74,7 +74,7 @@ public class SqlAlterAdaptersDrop extends SqlAlter {
         try {
             DdlManager.getInstance().dropAdapter( uniqueName.toString(), statement );
         } catch ( UnknownAdapterException e ) {
-            throw SqlUtil.newContextException( uniqueName.getParserPosition(), RESOURCE.unknownAdapter( e.getAdapterName() ) );
+            throw SqlUtil.newContextException( uniqueName.getPos(), RESOURCE.unknownAdapter( e.getAdapterName() ) );
         } catch ( Exception e ) {
             throw new RuntimeException( "Could not remove the adapter with the unique name '" + uniqueName.toString() + "' for the following reason: " + e.getMessage(), e );
         }

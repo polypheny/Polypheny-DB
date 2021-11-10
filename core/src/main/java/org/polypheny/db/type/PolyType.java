@@ -49,8 +49,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.SqlLiteral;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
@@ -1126,7 +1126,7 @@ public enum PolyType {
     }
 
 
-    public SqlLiteral createLiteral( Object o, SqlParserPos pos ) {
+    public SqlLiteral createLiteral( Object o, ParserPos pos ) {
         switch ( this ) {
             case BOOLEAN:
                 return SqlLiteral.createBoolean( (Boolean) o, pos );

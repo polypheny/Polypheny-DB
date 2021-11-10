@@ -34,7 +34,7 @@
 package org.polypheny.db.sql;
 
 
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 
 
 /**
@@ -45,7 +45,7 @@ public abstract class SqlAlter extends SqlDdl implements SqlExecutableStatement 
     /**
      * Creates a SqlDdl.
      */
-    public SqlAlter( SqlOperator operator, SqlParserPos pos ) {
+    public SqlAlter( SqlOperator operator, ParserPos pos ) {
         super( operator, pos );
     }
 

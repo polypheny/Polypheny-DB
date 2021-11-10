@@ -41,6 +41,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.rel.type.DynamicRecordType;
 import org.polypheny.db.rel.type.RelDataType;
@@ -54,7 +55,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlSelect;
 import org.polypheny.db.sql.SqlWindow;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
@@ -284,13 +284,13 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                     columnName = field.getName(); // use resolved field name
                 }
                 // todo: do implicit collation here
-                final SqlParserPos pos = identifier.getParserPosition();
+                final ParserPos pos = identifier.getPos();
                 identifier =
                         new SqlIdentifier(
                                 ImmutableList.of( tableName, columnName ),
                                 null,
                                 pos,
-                                ImmutableList.of( SqlParserPos.ZERO, pos ) );
+                                ImmutableList.of( ParserPos.ZERO, pos ) );
             }
             // fall through
             default: {
@@ -355,7 +355,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                                             fromRowType = resolve.rowType();
                                             identifier = identifier
                                                     .setName( 0, columnName )
-                                                    .add( 0, tableName2, SqlParserPos.ZERO );
+                                                    .add( 0, tableName2, ParserPos.ZERO );
                                             ++i;
                                             ++size;
                                         }
@@ -467,7 +467,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                         case PEEK_FIELDS:
                         case PEEK_FIELDS_DEFAULT:
                         case PEEK_FIELDS_NO_EXPAND:
-                            identifier = identifier.add( k, fieldName, SqlParserPos.ZERO );
+                            identifier = identifier.add( k, fieldName, ParserPos.ZERO );
                             break;
                         default:
                             if ( !fieldName.equals( name ) ) {

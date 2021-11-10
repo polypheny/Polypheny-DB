@@ -48,7 +48,7 @@ import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.type.PolyType;
@@ -145,9 +145,9 @@ public class SqlLiteralChainOperator extends SqlSpecialOperator {
         // per the SQL std, each string fragment must be on a different line
         final List<SqlNode> operandList = call.getOperandList();
         for ( int i = 1; i < operandList.size(); i++ ) {
-            SqlParserPos prevPos = operandList.get( i - 1 ).getParserPosition();
+            ParserPos prevPos = operandList.get( i - 1 ).getPos();
             final SqlNode operand = operandList.get( i );
-            SqlParserPos pos = operand.getParserPosition();
+            ParserPos pos = operand.getPos();
             if ( pos.getLineNum() <= prevPos.getLineNum() ) {
                 throw validator.newValidationError( operand, Static.RESOURCE.stringFragsOnSameLine() );
             }

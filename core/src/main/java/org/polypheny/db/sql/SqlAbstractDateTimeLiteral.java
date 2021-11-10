@@ -34,9 +34,9 @@
 package org.polypheny.db.sql;
 
 
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.TimestampString;
 
@@ -61,7 +61,7 @@ public abstract class SqlAbstractDateTimeLiteral extends SqlLiteral {
     /**
      * Constructs a datetime literal.
      */
-    protected SqlAbstractDateTimeLiteral( Object d, boolean tz, PolyType typeName, int precision, SqlParserPos pos ) {
+    protected SqlAbstractDateTimeLiteral( Object d, boolean tz, PolyType typeName, int precision, ParserPos pos ) {
         super( d, typeName, pos );
         this.hasTimeZone = tz;
         this.precision = precision;

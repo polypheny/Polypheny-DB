@@ -20,6 +20,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.jdbc.Context;
@@ -29,7 +30,6 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.view.MaterializedViewManager;
 
@@ -41,7 +41,7 @@ public class SqlDropMaterializedView extends SqlDropObject {
     /**
      * Creates a SqlDropMaterializedView.
      */
-    SqlDropMaterializedView( SqlParserPos pos, boolean ifExists, SqlIdentifier name ) {
+    SqlDropMaterializedView( ParserPos pos, boolean ifExists, SqlIdentifier name ) {
         super( OPERATOR, pos, ifExists, name );
     }
 
@@ -72,7 +72,7 @@ public class SqlDropMaterializedView extends SqlDropObject {
         try {
             DdlManager.getInstance().dropMaterializedView( catalogTable, statement );
         } catch ( DdlOnSourceException e ) {
-            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.ddlOnSourceTable() );
+            throw SqlUtil.newContextException( name.getPos(), RESOURCE.ddlOnSourceTable() );
         }
         materializedManager.isDroppingMaterialized = false;
     }

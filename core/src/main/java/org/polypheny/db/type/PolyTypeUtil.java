@@ -51,6 +51,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import org.apache.commons.lang3.reflect.TypeUtils;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeFamily;
@@ -63,7 +64,6 @@ import org.polypheny.db.sql.SqlCollation;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
@@ -870,7 +870,7 @@ public abstract class PolyTypeUtil {
 
         // TODO jvs: support row types, user-defined types, interval types, multiset types, etc
         assert typeName != null;
-        SqlIdentifier typeIdentifier = new SqlIdentifier( typeName.name(), SqlParserPos.ZERO );
+        SqlIdentifier typeIdentifier = new SqlIdentifier( typeName.name(), ParserPos.ZERO );
 
         String charSetName = null;
 
@@ -890,7 +890,7 @@ public abstract class PolyTypeUtil {
                     type.getScale(),
                     charSetName,
                     null,
-                    SqlParserPos.ZERO );
+                    ParserPos.ZERO );
         } else if ( typeName.allowsPrec() ) {
             return new SqlDataTypeSpec(
                     typeIdentifier,
@@ -898,10 +898,10 @@ public abstract class PolyTypeUtil {
                     -1,
                     charSetName,
                     null,
-                    SqlParserPos.ZERO );
+                    ParserPos.ZERO );
         } else if ( typeName.getFamily() == PolyTypeFamily.ARRAY ) {
             ArrayType arrayType = (ArrayType) type;
-            SqlIdentifier componentTypeIdentifier = new SqlIdentifier( arrayType.getComponentType().getPolyType().getName(), SqlParserPos.ZERO );
+            SqlIdentifier componentTypeIdentifier = new SqlIdentifier( arrayType.getComponentType().getPolyType().getName(), ParserPos.ZERO );
             return new SqlDataTypeSpec(
                     typeIdentifier,
                     componentTypeIdentifier,
@@ -912,7 +912,7 @@ public abstract class PolyTypeUtil {
                     charSetName,
                     null,
                     arrayType.isNullable(),
-                    SqlParserPos.ZERO );
+                    ParserPos.ZERO );
         } else {
             return new SqlDataTypeSpec(
                     typeIdentifier,
@@ -920,7 +920,7 @@ public abstract class PolyTypeUtil {
                     -1,
                     charSetName,
                     null,
-                    SqlParserPos.ZERO );
+                    ParserPos.ZERO );
         }
     }
 

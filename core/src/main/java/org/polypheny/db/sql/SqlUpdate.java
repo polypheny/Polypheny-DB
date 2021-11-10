@@ -35,7 +35,7 @@ package org.polypheny.db.sql;
 
 
 import java.util.List;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.ImmutableNullableList;
@@ -57,7 +57,7 @@ public class SqlUpdate extends SqlCall {
     SqlIdentifier alias;
 
 
-    public SqlUpdate( SqlParserPos pos, SqlNode targetTable, SqlNodeList targetColumnList, SqlNodeList sourceExpressionList, SqlNode condition, SqlSelect sourceSelect, SqlIdentifier alias ) {
+    public SqlUpdate( ParserPos pos, SqlNode targetTable, SqlNodeList targetColumnList, SqlNodeList sourceExpressionList, SqlNode condition, SqlSelect sourceSelect, SqlIdentifier alias ) {
         super( pos );
         this.targetTable = targetTable;
         this.targetColumnList = targetColumnList;

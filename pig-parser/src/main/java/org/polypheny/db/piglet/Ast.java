@@ -40,7 +40,7 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.avatica.util.Spacer;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.parser.SqlParserUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -154,10 +154,10 @@ public class Ast {
     public abstract static class Node {
 
         public final Op op;
-        public final SqlParserPos pos;
+        public final ParserPos pos;
 
 
-        protected Node( SqlParserPos pos, Op op ) {
+        protected Node( ParserPos pos, Op op ) {
             this.op = Objects.requireNonNull( op );
             this.pos = Objects.requireNonNull( pos );
         }
@@ -169,7 +169,7 @@ public class Ast {
      */
     public abstract static class Stmt extends Node {
 
-        protected Stmt( SqlParserPos pos, Op op ) {
+        protected Stmt( ParserPos pos, Op op ) {
             super( pos, op );
         }
     }
@@ -183,7 +183,7 @@ public class Ast {
         final Identifier target;
 
 
-        protected Assignment( SqlParserPos pos, Op op, Identifier target ) {
+        protected Assignment( ParserPos pos, Op op, Identifier target ) {
             super( pos, op );
             this.target = Objects.requireNonNull( target );
         }
@@ -198,7 +198,7 @@ public class Ast {
         final Literal name;
 
 
-        public LoadStmt( SqlParserPos pos, Identifier target, Literal name ) {
+        public LoadStmt( ParserPos pos, Identifier target, Literal name ) {
             super( pos, Op.LOAD, target );
             this.name = Objects.requireNonNull( name );
         }
@@ -216,7 +216,7 @@ public class Ast {
         final Schema schema;
 
 
-        public ValuesStmt( SqlParserPos pos, Identifier target, Schema schema, List<List<Node>> tupleList ) {
+        public ValuesStmt( ParserPos pos, Identifier target, Schema schema, List<List<Node>> tupleList ) {
             super( pos, Op.VALUES, target );
             this.schema = schema;
             this.tupleList = ImmutableList.copyOf( tupleList );
@@ -232,7 +232,7 @@ public class Ast {
         final Identifier source;
 
 
-        protected Assignment1( SqlParserPos pos, Op op, Identifier target, Identifier source ) {
+        protected Assignment1( ParserPos pos, Op op, Identifier target, Identifier source ) {
             super( pos, op, target );
             this.source = source;
         }
@@ -254,7 +254,7 @@ public class Ast {
         final List<Node> expList;
 
 
-        public ForeachStmt( SqlParserPos pos, Identifier target, Identifier source, List<Node> expList, Schema schema ) {
+        public ForeachStmt( ParserPos pos, Identifier target, Identifier source, List<Node> expList, Schema schema ) {
             super( pos, Op.FOREACH, target, source );
             this.expList = expList;
             assert schema == null; // not supported yet
@@ -284,7 +284,7 @@ public class Ast {
         final List<Node> expList;
 
 
-        public ForeachNestedStmt( SqlParserPos pos, Identifier target, Identifier source, List<Stmt> nestedStmtList, List<Node> expList, Schema schema ) {
+        public ForeachNestedStmt( ParserPos pos, Identifier target, Identifier source, List<Stmt> nestedStmtList, List<Node> expList, Schema schema ) {
             super( pos, Op.FOREACH_NESTED, target, source );
             this.nestedStmtList = nestedStmtList;
             this.expList = expList;
@@ -303,7 +303,7 @@ public class Ast {
         final Node condition;
 
 
-        public FilterStmt( SqlParserPos pos, Identifier target, Identifier source, Node condition ) {
+        public FilterStmt( ParserPos pos, Identifier target, Identifier source, Node condition ) {
             super( pos, Op.FILTER, target, source );
             this.condition = condition;
         }
@@ -317,7 +317,7 @@ public class Ast {
      */
     public static class DistinctStmt extends Assignment1 {
 
-        public DistinctStmt( SqlParserPos pos, Identifier target, Identifier source ) {
+        public DistinctStmt( ParserPos pos, Identifier target, Identifier source ) {
             super( pos, Op.DISTINCT, target, source );
         }
     }
@@ -333,7 +333,7 @@ public class Ast {
         final Literal count;
 
 
-        public LimitStmt( SqlParserPos pos, Identifier target,
+        public LimitStmt( ParserPos pos, Identifier target,
                 Identifier source, Literal count ) {
             super( pos, Op.LIMIT, target, source );
             this.count = count;
@@ -351,7 +351,7 @@ public class Ast {
         final List<Pair<Identifier, Direction>> fields;
 
 
-        public OrderStmt( SqlParserPos pos, Identifier target, Identifier source, List<Pair<Identifier, Direction>> fields ) {
+        public OrderStmt( ParserPos pos, Identifier target, Identifier source, List<Pair<Identifier, Direction>> fields ) {
             super( pos, Op.ORDER, target, source );
             this.fields = fields;
         }
@@ -371,7 +371,7 @@ public class Ast {
         final List<Node> keys;
 
 
-        public GroupStmt( SqlParserPos pos, Identifier target, Identifier source, List<Node> keys ) {
+        public GroupStmt( ParserPos pos, Identifier target, Identifier source, List<Node> keys ) {
             super( pos, Op.GROUP, target, source );
             this.keys = keys;
             assert keys == null || keys.size() >= 1;
@@ -387,7 +387,7 @@ public class Ast {
         final Identifier relation;
 
 
-        public DumpStmt( SqlParserPos pos, Identifier relation ) {
+        public DumpStmt( ParserPos pos, Identifier relation ) {
             super( pos, Op.DUMP );
             this.relation = Objects.requireNonNull( relation );
         }
@@ -402,7 +402,7 @@ public class Ast {
         final Identifier relation;
 
 
-        public DescribeStmt( SqlParserPos pos, Identifier relation ) {
+        public DescribeStmt( ParserPos pos, Identifier relation ) {
             super( pos, Op.DESCRIBE );
             this.relation = Objects.requireNonNull( relation );
         }
@@ -417,13 +417,13 @@ public class Ast {
         final Object value;
 
 
-        public Literal( SqlParserPos pos, Object value ) {
+        public Literal( ParserPos pos, Object value ) {
             super( pos, Op.LITERAL );
             this.value = Objects.requireNonNull( value );
         }
 
 
-        public static NumericLiteral createExactNumeric( String s, SqlParserPos pos ) {
+        public static NumericLiteral createExactNumeric( String s, ParserPos pos ) {
             BigDecimal value;
             int prec;
             int scale;
@@ -459,7 +459,7 @@ public class Ast {
         final boolean exact;
 
 
-        NumericLiteral( SqlParserPos pos, BigDecimal value, int prec, int scale, boolean exact ) {
+        NumericLiteral( ParserPos pos, BigDecimal value, int prec, int scale, boolean exact ) {
             super( pos, value );
             this.prec = prec;
             this.scale = scale;
@@ -467,7 +467,7 @@ public class Ast {
         }
 
 
-        public NumericLiteral negate( SqlParserPos pos ) {
+        public NumericLiteral negate( ParserPos pos ) {
             BigDecimal value = (BigDecimal) this.value;
             return new NumericLiteral( pos, value.negate(), prec, scale, exact );
         }
@@ -482,7 +482,7 @@ public class Ast {
         final String value;
 
 
-        public Identifier( SqlParserPos pos, String value ) {
+        public Identifier( ParserPos pos, String value ) {
             super( pos, Op.IDENTIFIER );
             this.value = Objects.requireNonNull( value );
         }
@@ -499,7 +499,7 @@ public class Ast {
      */
     public static class SpecialIdentifier extends Identifier {
 
-        public SpecialIdentifier( SqlParserPos pos ) {
+        public SpecialIdentifier( ParserPos pos ) {
             super( pos, "*" );
         }
 
@@ -519,18 +519,18 @@ public class Ast {
         final ImmutableList<Node> operands;
 
 
-        private Call( SqlParserPos pos, Op op, ImmutableList<Node> operands ) {
+        private Call( ParserPos pos, Op op, ImmutableList<Node> operands ) {
             super( pos, op );
             this.operands = ImmutableList.copyOf( operands );
         }
 
 
-        public Call( SqlParserPos pos, Op op, Iterable<? extends Node> operands ) {
+        public Call( ParserPos pos, Op op, Iterable<? extends Node> operands ) {
             this( pos, op, ImmutableList.copyOf( operands ) );
         }
 
 
-        public Call( SqlParserPos pos, Op op, Node... operands ) {
+        public Call( ParserPos pos, Op op, Node... operands ) {
             this( pos, op, ImmutableList.copyOf( operands ) );
         }
     }
@@ -544,7 +544,7 @@ public class Ast {
         public final List<Stmt> stmtList;
 
 
-        public Program( SqlParserPos pos, List<Stmt> stmtList ) {
+        public Program( ParserPos pos, List<Stmt> stmtList ) {
             super( pos, Op.PROGRAM );
             this.stmtList = stmtList;
         }
@@ -562,7 +562,7 @@ public class Ast {
         final Type type;
 
 
-        public FieldSchema( SqlParserPos pos, Identifier id, Type type ) {
+        public FieldSchema( ParserPos pos, Identifier id, Type type ) {
             super( pos, Op.FIELD_SCHEMA );
             this.id = Objects.requireNonNull( id );
             this.type = Objects.requireNonNull( type );
@@ -580,7 +580,7 @@ public class Ast {
         final List<FieldSchema> fieldSchemaList;
 
 
-        public Schema( SqlParserPos pos, List<FieldSchema> fieldSchemaList ) {
+        public Schema( ParserPos pos, List<FieldSchema> fieldSchemaList ) {
             super( pos, Op.SCHEMA );
             this.fieldSchemaList = ImmutableList.copyOf( fieldSchemaList );
         }
@@ -592,7 +592,7 @@ public class Ast {
      */
     public abstract static class Type extends Node {
 
-        protected Type( SqlParserPos pos, Op op ) {
+        protected Type( ParserPos pos, Op op ) {
             super( pos, op );
         }
     }
@@ -606,7 +606,7 @@ public class Ast {
         final String name;
 
 
-        public ScalarType( SqlParserPos pos, String name ) {
+        public ScalarType( ParserPos pos, String name ) {
             super( pos, Op.SCALAR_TYPE );
             this.name = name;
         }
@@ -621,7 +621,7 @@ public class Ast {
         final Type componentType;
 
 
-        public BagType( SqlParserPos pos, Type componentType ) {
+        public BagType( ParserPos pos, Type componentType ) {
             super( pos, Op.BAG_TYPE );
             this.componentType = componentType;
         }
@@ -636,7 +636,7 @@ public class Ast {
         final List<FieldSchema> fieldSchemaList;
 
 
-        public TupleType( SqlParserPos pos, List<FieldSchema> fieldSchemaList ) {
+        public TupleType( ParserPos pos, List<FieldSchema> fieldSchemaList ) {
             super( pos, Op.TUPLE_TYPE );
             this.fieldSchemaList = ImmutableList.copyOf( fieldSchemaList );
         }
@@ -652,7 +652,7 @@ public class Ast {
         final Type valueType;
 
 
-        public MapType( SqlParserPos pos ) {
+        public MapType( ParserPos pos ) {
             super( pos, Op.MAP_TYPE );
             // REVIEW: Why does Pig's "map" type not have key and value types?
             this.keyType = new ScalarType( pos, "int" );

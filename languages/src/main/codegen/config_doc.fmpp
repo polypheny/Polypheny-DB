@@ -1,0 +1,37 @@
+# This file is an FMPP (http://fmpp.sourceforge.net/) configuration file to allow clients to extend Polypheny-DB's MongoDB query language (MQL) parser to support application specific
+# MQL statements
+#
+# This MQL parser file (DocumentParser.jj) is written in JavaCC and draws inspiration from the original
+# sql parser
+#
+# Parser template file (DocumentParser.jj) along with this file are packaged as part of the polyphenydb-core-<version>.jar under "codegen" directory.
+
+
+data: {
+    parser: {
+        # Generated parser implementation package and class name.
+        package: "org.polypheny.db.mql.parser.impl",
+        class: "MqlParserImpl",
+
+        # List of additional classes and packages to import.
+        # Example. "org.polypheny.db.mql.mql.*", "java.util.List".
+        imports: [
+        ]
+
+        # List of new keywords. Example: "DATABASES", "TABLES". If the keyword is not a reserved keyword add it to 'nonReservedKeywords' section.
+        keywords: [
+
+        ]
+        nonReservedKeywords: [
+
+        ]
+
+        includeCompoundIdentifier: true
+        includeBraces: true
+        includeAdditionalDeclarations: false
+    }
+}
+
+freemarkerLinks: {
+    includes: includes/
+}

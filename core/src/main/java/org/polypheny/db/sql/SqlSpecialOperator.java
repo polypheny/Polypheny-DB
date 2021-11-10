@@ -35,7 +35,7 @@ package org.polypheny.db.sql;
 
 
 import java.util.function.Predicate;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
@@ -100,7 +100,7 @@ public class SqlSpecialOperator extends SqlOperator {
 
         SqlOperator op( int i );
 
-        SqlParserPos pos( int i );
+        ParserPos pos( int i );
 
         boolean isOp( int i );
 

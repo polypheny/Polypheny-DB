@@ -35,6 +35,7 @@ package org.polypheny.db.sql.ddl;
 
 
 import java.util.List;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlKind;
@@ -42,7 +43,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -62,7 +62,7 @@ public class SqlCheckConstraint extends SqlCall {
     /**
      * Creates a SqlCheckConstraint; use {@link SqlDdlNodes#check}.
      */
-    SqlCheckConstraint( SqlParserPos pos, SqlIdentifier name, SqlNode expression ) {
+    SqlCheckConstraint( ParserPos pos, SqlIdentifier name, SqlNode expression ) {
         super( pos );
         this.name = name; // may be null
         this.expression = expression;

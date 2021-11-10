@@ -18,7 +18,6 @@ package org.polypheny.db.document.rules;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import org.polypheny.db.mql.fun.MqlFunctionOperator;
 import org.polypheny.db.rel.SingleRel;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
@@ -107,7 +106,7 @@ public class DocumentRules {
         @Override
         public Void visitCall( RexCall call ) {
             SqlOperator operator = call.getOperator();
-            if ( operator instanceof MqlFunctionOperator ) {
+            if ( SqlKind.DOC_KIND.contains( operator.getKind() ) ) {
                 containsDocument = true;
             }
             return super.visitCall( call );

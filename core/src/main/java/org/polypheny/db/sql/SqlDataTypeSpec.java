@@ -37,9 +37,9 @@ package org.polypheny.db.sql;
 import java.nio.charset.Charset;
 import java.util.Objects;
 import java.util.TimeZone;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.util.SqlVisitor;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
 import org.polypheny.db.sql.validate.SqlValidator;
@@ -95,7 +95,7 @@ public class SqlDataTypeSpec extends SqlNode {
             int scale,
             String charSetName,
             TimeZone timeZone,
-            SqlParserPos pos ) {
+            ParserPos pos ) {
         this( null, typeName, precision, scale, -1, -1, charSetName, timeZone, null, pos );
     }
 
@@ -111,7 +111,7 @@ public class SqlDataTypeSpec extends SqlNode {
             int dimension,
             int cardinality,
             String charSetName,
-            SqlParserPos pos ) {
+            ParserPos pos ) {
         this( collectionsTypeName, typeName, precision, scale, dimension, cardinality, charSetName, null, null, pos );
     }
 
@@ -129,7 +129,7 @@ public class SqlDataTypeSpec extends SqlNode {
             String charSetName,
             TimeZone timeZone,
             Boolean nullable,
-            SqlParserPos pos ) {
+            ParserPos pos ) {
         this( collectionsTypeName, typeName, typeName, precision, scale, dimension, cardinality, charSetName, timeZone, nullable, pos );
     }
 
@@ -148,7 +148,7 @@ public class SqlDataTypeSpec extends SqlNode {
             String charSetName,
             TimeZone timeZone,
             Boolean nullable,
-            SqlParserPos pos ) {
+            ParserPos pos ) {
         super( pos );
         this.collectionsTypeName = collectionsTypeName;
         this.typeName = typeName;
@@ -164,7 +164,7 @@ public class SqlDataTypeSpec extends SqlNode {
 
 
     @Override
-    public SqlNode clone( SqlParserPos pos ) {
+    public SqlNode clone( ParserPos pos ) {
         return (collectionsTypeName != null)
                 ? new SqlDataTypeSpec( collectionsTypeName, typeName, precision, scale, dimension, cardinality, charSetName, pos )
                 : new SqlDataTypeSpec( typeName, precision, scale, charSetName, timeZone, pos );
@@ -249,7 +249,7 @@ public class SqlDataTypeSpec extends SqlNode {
         if ( Objects.equals( nullable, this.nullable ) ) {
             return this;
         }
-        return new SqlDataTypeSpec( collectionsTypeName, typeName, precision, scale, dimension, cardinality, charSetName, timeZone, nullable, getParserPosition() );
+        return new SqlDataTypeSpec( collectionsTypeName, typeName, precision, scale, dimension, cardinality, charSetName, timeZone, nullable, getPos() );
     }
 
 
@@ -265,7 +265,7 @@ public class SqlDataTypeSpec extends SqlNode {
                 scale,
                 charSetName,
                 timeZone,
-                getParserPosition() );
+                getPos() );
     }
 
 

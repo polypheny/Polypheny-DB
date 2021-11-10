@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.runtime.Utilities;
@@ -51,7 +52,6 @@ import org.polypheny.db.sql.dialect.AnsiSqlDialect;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParseException;
 import org.polypheny.db.sql.parser.SqlParser;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.parser.SqlParserUtil;
 import org.polypheny.db.sql.parser.SqlParserUtil.StringAndPos;
 import org.polypheny.db.sql.util.SqlShuttle;
@@ -616,8 +616,8 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
                 } );
         final List<SqlNode> nodes = new ArrayList<>( literalSet );
         nodes.sort( ( o1, o2 ) -> {
-            final SqlParserPos pos0 = o1.getParserPosition();
-            final SqlParserPos pos1 = o2.getParserPosition();
+            final ParserPos pos0 = o1.getPos();
+            final ParserPos pos1 = o2.getPos();
             int c = -Utilities.compare( pos0.getLineNum(), pos1.getLineNum() );
             if ( c != 0 ) {
                 return c;
@@ -628,7 +628,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
         final List<Pair<String, String>> values = new ArrayList<>();
         int p = 0;
         for ( SqlNode literal : nodes ) {
-            final SqlParserPos pos = literal.getParserPosition();
+            final ParserPos pos = literal.getPos();
             final int start = SqlParserUtil.lineColToIndex( sql, pos.getLineNum(), pos.getColumnNum() );
             final int end = SqlParserUtil.lineColToIndex( sql, pos.getEndLineNum(), pos.getEndColumnNum() ) + 1;
             String param = "p" + (p++);

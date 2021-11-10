@@ -35,7 +35,7 @@ package org.polypheny.db.sql;
 
 
 import java.util.List;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.ImmutableNullableList;
@@ -58,7 +58,7 @@ public class SqlMerge extends SqlCall {
     SqlIdentifier alias;
 
 
-    public SqlMerge( SqlParserPos pos, SqlNode targetTable, SqlNode condition, SqlNode source, SqlUpdate updateCall, SqlInsert insertCall, SqlSelect sourceSelect, SqlIdentifier alias ) {
+    public SqlMerge( ParserPos pos, SqlNode targetTable, SqlNode condition, SqlNode source, SqlUpdate updateCall, SqlInsert insertCall, SqlSelect sourceSelect, SqlIdentifier alias ) {
         super( pos );
         this.targetTable = targetTable;
         this.condition = condition;

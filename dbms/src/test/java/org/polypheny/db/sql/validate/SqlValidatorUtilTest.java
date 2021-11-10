@@ -34,7 +34,7 @@ import org.junit.Test;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.utils.SqlTester;
 import org.polypheny.db.sql.utils.SqlValidatorTester;
 import org.polypheny.db.test.SqlTestFactory;
@@ -128,8 +128,8 @@ public class SqlValidatorUtilTest {
     @Test
     public void testCheckingDuplicatesWithCompoundIdentifiers() {
         final List<SqlNode> newList = new ArrayList<>( 2 );
-        newList.add( new SqlIdentifier( Arrays.asList( "f0", "c0" ), SqlParserPos.ZERO ) );
-        newList.add( new SqlIdentifier( Arrays.asList( "f0", "c0" ), SqlParserPos.ZERO ) );
+        newList.add( new SqlIdentifier( Arrays.asList( "f0", "c0" ), ParserPos.ZERO ) );
+        newList.add( new SqlIdentifier( Arrays.asList( "f0", "c0" ), ParserPos.ZERO ) );
         final SqlTester tester = new SqlValidatorTester( SqlTestFactory.INSTANCE );
         final SqlValidatorImpl validator = (SqlValidatorImpl) tester.getValidator();
         try {
@@ -139,7 +139,7 @@ public class SqlValidatorUtilTest {
             // ok
         }
         // should not throw
-        newList.set( 1, new SqlIdentifier( Arrays.asList( "f0", "c1" ), SqlParserPos.ZERO ) );
+        newList.set( 1, new SqlIdentifier( Arrays.asList( "f0", "c1" ), ParserPos.ZERO ) );
         SqlValidatorUtil.checkIdentifierListForDuplicates( newList, null );
     }
 

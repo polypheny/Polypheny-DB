@@ -36,13 +36,13 @@ package org.polypheny.db.sql.ddl;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.SqlDrop;
 import org.polypheny.db.sql.SqlExecutableStatement;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.parser.SqlParserPos;
 
 
 /**
@@ -56,7 +56,7 @@ abstract class SqlDropObject extends SqlDrop implements SqlExecutableStatement {
     /**
      * Creates a SqlDropObject.
      */
-    SqlDropObject( SqlOperator operator, SqlParserPos pos, boolean ifExists, SqlIdentifier name ) {
+    SqlDropObject( SqlOperator operator, ParserPos pos, boolean ifExists, SqlIdentifier name ) {
         super( operator, pos, ifExists );
         this.name = name;
     }

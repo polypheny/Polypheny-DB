@@ -35,6 +35,7 @@ package org.polypheny.db.sql.fun;
 
 
 import java.util.List;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeComparability;
 import org.polypheny.db.sql.ExplicitOperatorBinding;
@@ -47,7 +48,6 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.parser.SqlParserUtil;
 import org.polypheny.db.sql.util.SqlBasicVisitor;
 import org.polypheny.db.sql.validate.SqlValidator;
@@ -207,14 +207,14 @@ public class SqlBetweenOperator extends SqlInfixOperator {
         // Create the expression between 'BETWEEN' and 'AND'.
         SqlNode exp1 = SqlParserUtil.toTreeEx( list, opOrdinal + 1, 0, SqlKind.AND );
         if ( (opOrdinal + 2) >= list.size() ) {
-            SqlParserPos lastPos = list.pos( list.size() - 1 );
+            ParserPos lastPos = list.pos( list.size() - 1 );
             final int line = lastPos.getEndLineNum();
             final int col = lastPos.getEndColumnNum() + 1;
-            SqlParserPos errPos = new SqlParserPos( line, col, line, col );
+            ParserPos errPos = new ParserPos( line, col, line, col );
             throw SqlUtil.newContextException( errPos, Static.RESOURCE.betweenWithoutAnd() );
         }
         if ( !list.isOp( opOrdinal + 2 ) || list.op( opOrdinal + 2 ).getKind() != SqlKind.AND ) {
-            SqlParserPos errPos = list.pos( opOrdinal + 2 );
+            ParserPos errPos = list.pos( opOrdinal + 2 );
             throw SqlUtil.newContextException( errPos, Static.RESOURCE.betweenWithoutAnd() );
         }
 

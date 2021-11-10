@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -30,7 +31,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterSchema;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -47,7 +47,7 @@ public class SqlAlterSchemaOwner extends SqlAlterSchema {
     /**
      * Creates a SqlAlterSchemaOwner.
      */
-    public SqlAlterSchemaOwner( SqlParserPos pos, SqlIdentifier schema, SqlIdentifier owner ) {
+    public SqlAlterSchemaOwner( ParserPos pos, SqlIdentifier schema, SqlIdentifier owner ) {
         super( pos );
         this.schema = Objects.requireNonNull( schema );
         this.owner = Objects.requireNonNull( owner );
@@ -76,9 +76,9 @@ public class SqlAlterSchemaOwner extends SqlAlterSchema {
         try {
             DdlManager.getInstance().alterSchemaOwner( schema.getSimple(), owner.getSimple(), context.getDatabaseId() );
         } catch ( UnknownSchemaException e ) {
-            throw SqlUtil.newContextException( schema.getParserPosition(), RESOURCE.schemaNotFound( schema.getSimple() ) );
+            throw SqlUtil.newContextException( schema.getPos(), RESOURCE.schemaNotFound( schema.getSimple() ) );
         } catch ( UnknownUserException e ) {
-            throw SqlUtil.newContextException( owner.getParserPosition(), RESOURCE.userNotFound( owner.getSimple() ) );
+            throw SqlUtil.newContextException( owner.getPos(), RESOURCE.userNotFound( owner.getSimple() ) );
         }
     }
 

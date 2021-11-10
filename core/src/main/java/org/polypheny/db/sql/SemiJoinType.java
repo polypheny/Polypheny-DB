@@ -36,8 +36,8 @@ package org.polypheny.db.sql;
 
 import java.util.Locale;
 import org.apache.calcite.linq4j.CorrelateJoinType;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.core.JoinRelType;
-import org.polypheny.db.sql.parser.SqlParserPos;
 
 
 /**
@@ -76,7 +76,7 @@ public enum SemiJoinType {
     /**
      * Creates a parse-tree node representing an occurrence of this condition type keyword at a particular position in the parsed text.
      */
-    public SqlLiteral symbol( SqlParserPos pos ) {
+    public SqlLiteral symbol( ParserPos pos ) {
         return SqlLiteral.createSymbol( this, pos );
     }
 

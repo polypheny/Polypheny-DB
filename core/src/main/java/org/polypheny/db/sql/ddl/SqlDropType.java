@@ -40,7 +40,7 @@ import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -52,7 +52,7 @@ public class SqlDropType extends SqlDropObject {
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "DROP TYPE", SqlKind.DROP_TYPE );
 
 
-    SqlDropType( SqlParserPos pos, boolean ifExists, SqlIdentifier name ) {
+    SqlDropType( ParserPos pos, boolean ifExists, SqlIdentifier name ) {
         super( OPERATOR, pos, ifExists, name );
     }
 

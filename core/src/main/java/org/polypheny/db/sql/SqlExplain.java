@@ -35,7 +35,7 @@ package org.polypheny.db.sql;
 
 
 import java.util.List;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -47,7 +47,7 @@ public class SqlExplain extends SqlCall {
     public static final SqlSpecialOperator OPERATOR =
             new SqlSpecialOperator( "EXPLAIN", SqlKind.EXPLAIN ) {
                 @Override
-                public SqlCall createCall( SqlLiteral functionQualifier, SqlParserPos pos, SqlNode... operands ) {
+                public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
                     return new SqlExplain( pos, operands[0], (SqlLiteral) operands[1], (SqlLiteral) operands[2], (SqlLiteral) operands[3], 0 );
                 }
             };
@@ -63,7 +63,7 @@ public class SqlExplain extends SqlCall {
         /**
          * Creates a parse-tree node representing an occurrence of this symbol at a particular position in the parsed text.
          */
-        public SqlLiteral symbol( SqlParserPos pos ) {
+        public SqlLiteral symbol( ParserPos pos ) {
             return SqlLiteral.createSymbol( this, pos );
         }
     }
@@ -76,7 +76,7 @@ public class SqlExplain extends SqlCall {
     private final int dynamicParameterCount;
 
 
-    public SqlExplain( SqlParserPos pos, SqlNode explicandum, SqlLiteral detailLevel, SqlLiteral depth, SqlLiteral format, int dynamicParameterCount ) {
+    public SqlExplain( ParserPos pos, SqlNode explicandum, SqlLiteral detailLevel, SqlLiteral depth, SqlLiteral format, int dynamicParameterCount ) {
         super( pos );
         this.explicandum = explicandum;
         this.detailLevel = detailLevel;

@@ -38,7 +38,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.util.Util;
 
 
@@ -97,7 +97,7 @@ public class SqlMonikerImpl implements SqlMoniker {
 
     @Override
     public SqlIdentifier toIdentifier() {
-        return new SqlIdentifier( names, SqlParserPos.ZERO );
+        return new SqlIdentifier( names, ParserPos.ZERO );
     }
 
 

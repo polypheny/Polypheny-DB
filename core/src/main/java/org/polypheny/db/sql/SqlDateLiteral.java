@@ -34,9 +34,9 @@
 package org.polypheny.db.sql;
 
 
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.DateString;
 
@@ -49,7 +49,7 @@ import org.polypheny.db.util.DateString;
 public class SqlDateLiteral extends SqlAbstractDateTimeLiteral {
 
 
-    SqlDateLiteral( DateString d, SqlParserPos pos ) {
+    SqlDateLiteral( DateString d, ParserPos pos ) {
         super( d, false, PolyType.DATE, 0, pos );
     }
 
@@ -63,7 +63,7 @@ public class SqlDateLiteral extends SqlAbstractDateTimeLiteral {
 
 
     @Override
-    public SqlDateLiteral clone( SqlParserPos pos ) {
+    public SqlDateLiteral clone( ParserPos pos ) {
         return new SqlDateLiteral( (DateString) value, pos );
     }
 

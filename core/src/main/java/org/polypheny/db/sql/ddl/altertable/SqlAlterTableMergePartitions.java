@@ -23,13 +23,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -43,7 +43,7 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
     private final SqlIdentifier table;
 
 
-    public SqlAlterTableMergePartitions( SqlParserPos pos, SqlIdentifier table ) {
+    public SqlAlterTableMergePartitions( ParserPos pos, SqlIdentifier table ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
     }

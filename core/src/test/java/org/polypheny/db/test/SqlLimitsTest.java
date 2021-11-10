@@ -52,7 +52,7 @@ import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.dialect.AnsiSqlDialect;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
 
@@ -215,7 +215,7 @@ public class SqlLimitsTest {
             s = o.toString();
         }
         pw.print( s );
-        SqlLiteral literal = type.getPolyType().createLiteral( o, SqlParserPos.ZERO );
+        SqlLiteral literal = type.getPolyType().createLiteral( o, ParserPos.ZERO );
         pw.print( "; as SQL: " );
         pw.print( literal.toSqlString( AnsiSqlDialect.DEFAULT ) );
         pw.println();

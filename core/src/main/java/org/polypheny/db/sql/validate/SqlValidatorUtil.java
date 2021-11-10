@@ -75,7 +75,7 @@ import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlOperatorTable;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -260,7 +260,7 @@ public class SqlValidatorUtil {
      * Converts an expression "expr" into "expr AS alias".
      */
     public static SqlNode addAlias( SqlNode expr, String alias ) {
-        final SqlParserPos pos = expr.getParserPosition();
+        final ParserPos pos = expr.getPos();
         final SqlIdentifier id = new SqlIdentifier( alias, pos );
         return SqlStdOperatorTable.AS.createCall( pos, expr, id );
     }
@@ -988,7 +988,7 @@ public class SqlValidatorUtil {
 
         SqlNode createGroupExpr() {
             // TODO: create an expression that could have no other source
-            return SqlLiteral.createCharString( "xyz" + groupCount++, SqlParserPos.ZERO );
+            return SqlLiteral.createCharString( "xyz" + groupCount++, ParserPos.ZERO );
         }
 
     }

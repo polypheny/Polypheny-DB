@@ -36,6 +36,7 @@ package org.polypheny.db.sql.dialect;
 
 import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.rel.type.RelDataTypeSystemImpl;
@@ -51,7 +52,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.fun.SqlFloorFunction;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.inference.ReturnTypes;
 
@@ -170,7 +170,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
                 return super.getCastSpec( type );
         }
 
-        return new SqlDataTypeSpec( new SqlIdentifier( castSpec, SqlParserPos.ZERO ), -1, -1, null, null, SqlParserPos.ZERO );
+        return new SqlDataTypeSpec( new SqlIdentifier( castSpec, ParserPos.ZERO ), -1, -1, null, null, ParserPos.ZERO );
     }
 
 
@@ -213,7 +213,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
                 final SqlLiteral timeUnitNode = call.operand( 1 );
                 final TimeUnitRange timeUnit = timeUnitNode.getValueAs( TimeUnitRange.class );
 
-                SqlCall call2 = SqlFloorFunction.replaceTimeUnitOperand( call, timeUnit.name(), timeUnitNode.getParserPosition() );
+                SqlCall call2 = SqlFloorFunction.replaceTimeUnitOperand( call, timeUnit.name(), timeUnitNode.getPos() );
                 SqlFloorFunction.unparseDatetimeFunction( writer, call2, "DATE_TRUNC", false );
                 break;
 
@@ -228,7 +228,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
                                 null,
                                 null,
                                 SqlFunctionCategory.USER_DEFINED_FUNCTION );
-                        SqlCall call1 = call.getOperator().createCall( call.getParserPosition(), call.getOperandList().get( 1 ) );
+                        SqlCall call1 = call.getOperator().createCall( call.getPos(), call.getOperandList().get( 1 ) );
                         SqlUtil.unparseFunctionSyntax( func, writer, call1 );
                     } else {
                         super.unparseCall( writer, call, leftPrec, rightPrec );

@@ -30,7 +30,7 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -47,7 +47,7 @@ public class SqlTruncate extends SqlDdl implements SqlExecutableStatement {
     /**
      * Creates a SqlDropTable.
      */
-    public SqlTruncate( SqlParserPos pos, SqlIdentifier name ) {
+    public SqlTruncate( ParserPos pos, SqlIdentifier name ) {
         super( OPERATOR, pos );
         this.name = name;
     }

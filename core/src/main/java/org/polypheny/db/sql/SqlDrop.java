@@ -34,7 +34,7 @@
 package org.polypheny.db.sql;
 
 
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 
 
 /**
@@ -51,7 +51,7 @@ public abstract class SqlDrop extends SqlDdl {
     /**
      * Creates a SqlDrop.
      */
-    public SqlDrop( SqlOperator operator, SqlParserPos pos, boolean ifExists ) {
+    public SqlDrop( SqlOperator operator, ParserPos pos, boolean ifExists ) {
         super( operator, pos );
         this.ifExists = ifExists;
     }

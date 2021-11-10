@@ -40,7 +40,7 @@ import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.rel.core.Window.Group;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexWindowBound;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.util.SqlBasicVisitor;
 import org.polypheny.db.sql.util.SqlVisitor;
 import org.polypheny.db.sql.validate.SqlValidator;
@@ -143,7 +143,7 @@ public class SqlWindow extends SqlCall {
     /**
      * Creates a window.
      */
-    public SqlWindow( SqlParserPos pos, SqlIdentifier declName, SqlIdentifier refName, SqlNodeList partitionList, SqlNodeList orderList, SqlLiteral isRows, SqlNode lowerBound, SqlNode upperBound, SqlLiteral allowPartial ) {
+    public SqlWindow( ParserPos pos, SqlIdentifier declName, SqlIdentifier refName, SqlNodeList partitionList, SqlNodeList orderList, SqlLiteral isRows, SqlNode lowerBound, SqlNode upperBound, SqlLiteral allowPartial ) {
         super( pos );
         this.declName = declName;
         this.refName = refName;
@@ -160,7 +160,7 @@ public class SqlWindow extends SqlCall {
     }
 
 
-    public static SqlWindow create( SqlIdentifier declName, SqlIdentifier refName, SqlNodeList partitionList, SqlNodeList orderList, SqlLiteral isRows, SqlNode lowerBound, SqlNode upperBound, SqlLiteral allowPartial, SqlParserPos pos ) {
+    public static SqlWindow create( SqlIdentifier declName, SqlIdentifier refName, SqlNodeList partitionList, SqlNodeList orderList, SqlLiteral isRows, SqlNode lowerBound, SqlNode upperBound, SqlLiteral allowPartial, ParserPos pos ) {
         // If there's only one bound and it's 'FOLLOWING', make it the upper bound.
         if ( upperBound == null
                 && lowerBound != null
@@ -281,7 +281,7 @@ public class SqlWindow extends SqlCall {
         if ( lowerBound == null || upperBound == null ) {
             // Keep the current window unmodified
             tmp = new SqlWindow(
-                    getParserPosition(),
+                    getPos(),
                     null,
                     null,
                     partitionList,
@@ -399,27 +399,27 @@ public class SqlWindow extends SqlCall {
     }
 
 
-    public static SqlNode createCurrentRow( SqlParserPos pos ) {
+    public static SqlNode createCurrentRow( ParserPos pos ) {
         return Bound.CURRENT_ROW.symbol( pos );
     }
 
 
-    public static SqlNode createUnboundedFollowing( SqlParserPos pos ) {
+    public static SqlNode createUnboundedFollowing( ParserPos pos ) {
         return Bound.UNBOUNDED_FOLLOWING.symbol( pos );
     }
 
 
-    public static SqlNode createUnboundedPreceding( SqlParserPos pos ) {
+    public static SqlNode createUnboundedPreceding( ParserPos pos ) {
         return Bound.UNBOUNDED_PRECEDING.symbol( pos );
     }
 
 
-    public static SqlNode createFollowing( SqlNode e, SqlParserPos pos ) {
+    public static SqlNode createFollowing( SqlNode e, ParserPos pos ) {
         return FOLLOWING_OPERATOR.createCall( pos, e );
     }
 
 
-    public static SqlNode createPreceding( SqlNode e, SqlParserPos pos ) {
+    public static SqlNode createPreceding( SqlNode e, ParserPos pos ) {
         return PRECEDING_OPERATOR.createCall( pos, e );
     }
 
@@ -520,7 +520,7 @@ public class SqlWindow extends SqlCall {
             upperBoundNew = that.upperBound;
         }
         return new SqlWindow(
-                SqlParserPos.ZERO,
+                ParserPos.ZERO,
                 declNameNew,
                 refNameNew,
                 partitionListNew,
@@ -742,15 +742,15 @@ public class SqlWindow extends SqlCall {
         return SqlWindow.create(
                 null,
                 null,
-                new SqlNodeList( SqlParserPos.ZERO ),
+                new SqlNodeList( ParserPos.ZERO ),
                 new SqlNodeList(
-                        ImmutableList.of( new SqlIdentifier( columnName, SqlParserPos.ZERO ) ),
-                        SqlParserPos.ZERO ),
-                SqlLiteral.createBoolean( true, SqlParserPos.ZERO ),
-                SqlWindow.createCurrentRow( SqlParserPos.ZERO ),
-                SqlWindow.createCurrentRow( SqlParserPos.ZERO ),
-                SqlLiteral.createBoolean( true, SqlParserPos.ZERO ),
-                SqlParserPos.ZERO );
+                        ImmutableList.of( new SqlIdentifier( columnName, ParserPos.ZERO ) ),
+                        ParserPos.ZERO ),
+                SqlLiteral.createBoolean( true, ParserPos.ZERO ),
+                SqlWindow.createCurrentRow( ParserPos.ZERO ),
+                SqlWindow.createCurrentRow( ParserPos.ZERO ),
+                SqlLiteral.createBoolean( true, ParserPos.ZERO ),
+                ParserPos.ZERO );
     }
 
 
@@ -763,15 +763,15 @@ public class SqlWindow extends SqlCall {
         return SqlWindow.create(
                 null,
                 null,
-                new SqlNodeList( SqlParserPos.ZERO ),
+                new SqlNodeList( ParserPos.ZERO ),
                 new SqlNodeList(
-                        ImmutableList.of( new SqlIdentifier( columnName, SqlParserPos.ZERO ) ),
-                        SqlParserPos.ZERO ),
-                SqlLiteral.createBoolean( false, SqlParserPos.ZERO ),
-                SqlWindow.createUnboundedPreceding( SqlParserPos.ZERO ),
-                SqlWindow.createCurrentRow( SqlParserPos.ZERO ),
-                SqlLiteral.createBoolean( false, SqlParserPos.ZERO ),
-                SqlParserPos.ZERO );
+                        ImmutableList.of( new SqlIdentifier( columnName, ParserPos.ZERO ) ),
+                        ParserPos.ZERO ),
+                SqlLiteral.createBoolean( false, ParserPos.ZERO ),
+                SqlWindow.createUnboundedPreceding( ParserPos.ZERO ),
+                SqlWindow.createCurrentRow( ParserPos.ZERO ),
+                SqlLiteral.createBoolean( false, ParserPos.ZERO ),
+                ParserPos.ZERO );
     }
 
 
@@ -781,13 +781,13 @@ public class SqlWindow extends SqlCall {
      */
     public void populateBounds() {
         if ( lowerBound == null && upperBound == null ) {
-            setLowerBound( SqlWindow.createUnboundedPreceding( getParserPosition() ) );
+            setLowerBound( SqlWindow.createUnboundedPreceding( getPos() ) );
         }
         if ( lowerBound == null ) {
-            setLowerBound( SqlWindow.createCurrentRow( getParserPosition() ) );
+            setLowerBound( SqlWindow.createCurrentRow( getPos() ) );
         }
         if ( upperBound == null ) {
-            SqlParserPos pos = orderList.getParserPosition();
+            ParserPos pos = orderList.getPos();
             setUpperBound(
                     orderList.size() == 0
                             ? SqlWindow.createUnboundedFollowing( pos )
@@ -820,7 +820,7 @@ public class SqlWindow extends SqlCall {
         /**
          * Creates a parse-tree node representing an occurrence of this bound type at a particular position in the parsed text.
          */
-        public SqlNode symbol( SqlParserPos pos ) {
+        public SqlNode symbol( ParserPos pos ) {
             return SqlLiteral.createSymbol( this, pos );
         }
     }
@@ -846,7 +846,7 @@ public class SqlWindow extends SqlCall {
 
 
         @Override
-        public SqlCall createCall( SqlLiteral functionQualifier, SqlParserPos pos, SqlNode... operands ) {
+        public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
             assert functionQualifier == null;
             assert operands.length == 8;
             return create(

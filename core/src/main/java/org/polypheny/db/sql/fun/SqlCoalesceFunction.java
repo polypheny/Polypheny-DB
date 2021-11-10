@@ -35,13 +35,13 @@ package org.polypheny.db.sql.fun;
 
 
 import java.util.List;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlFunction;
 import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.type.PolyTypeTransforms;
 import org.polypheny.db.type.checker.OperandTypes;
@@ -79,7 +79,7 @@ public class SqlCoalesceFunction extends SqlFunction {
             return operands.get( 0 );
         }
 
-        SqlParserPos pos = call.getParserPosition();
+        ParserPos pos = call.getPos();
 
         SqlNodeList whenList = new SqlNodeList( pos );
         SqlNodeList thenList = new SqlNodeList( pos );

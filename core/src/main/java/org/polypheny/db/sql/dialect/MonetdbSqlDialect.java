@@ -18,6 +18,7 @@ package org.polypheny.db.sql.dialect;
 
 
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlDataTypeSpec;
@@ -25,7 +26,6 @@ import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.parser.SqlParserPos;
 
 
 /**
@@ -89,7 +89,7 @@ public class MonetdbSqlDialect extends SqlDialect {
                 return super.getCastSpec( type );
         }
 
-        return new SqlDataTypeSpec( new SqlIdentifier( castSpec, SqlParserPos.ZERO ), -1, -1, null, null, SqlParserPos.ZERO );
+        return new SqlDataTypeSpec( new SqlIdentifier( castSpec, ParserPos.ZERO ), -1, -1, null, null, ParserPos.ZERO );
     }
 
 

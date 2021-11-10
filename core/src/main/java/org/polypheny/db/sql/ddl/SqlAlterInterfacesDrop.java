@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlAlter;
@@ -34,7 +35,6 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -50,7 +50,7 @@ public class SqlAlterInterfacesDrop extends SqlAlter {
     private final SqlNode uniqueName;
 
 
-    public SqlAlterInterfacesDrop( SqlParserPos pos, SqlNode uniqueName ) {
+    public SqlAlterInterfacesDrop( ParserPos pos, SqlNode uniqueName ) {
         super( OPERATOR, pos );
         this.uniqueName = Objects.requireNonNull( uniqueName );
     }
@@ -86,7 +86,7 @@ public class SqlAlterInterfacesDrop extends SqlAlter {
         try {
             QueryInterfaceManager.getInstance().removeQueryInterface( Catalog.getInstance(), uniqueNameStr );
         } catch ( UnknownQueryInterfaceException e ) {
-            throw SqlUtil.newContextException( uniqueName.getParserPosition(), RESOURCE.unknownQueryInterface( e.getIfaceName() ) );
+            throw SqlUtil.newContextException( uniqueName.getPos(), RESOURCE.unknownQueryInterface( e.getIfaceName() ) );
         } catch ( Exception e ) {
             throw new RuntimeException( "Could not remove query interface " + uniqueNameStr, e );
         }

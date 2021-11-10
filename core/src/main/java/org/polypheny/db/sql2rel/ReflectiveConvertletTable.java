@@ -40,12 +40,12 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
 
 
 /**
@@ -196,7 +196,7 @@ public class ReflectiveConvertletTable implements SqlRexConvertletTable {
                     Preconditions.checkArgument(
                             call.getOperator() == alias,
                             "call to wrong operator" );
-                    final SqlCall newCall = target.createCall( SqlParserPos.ZERO, call.getOperandList() );
+                    final SqlCall newCall = target.createCall( ParserPos.ZERO, call.getOperandList() );
                     return cx.convertExpression( newCall );
                 } );
     }

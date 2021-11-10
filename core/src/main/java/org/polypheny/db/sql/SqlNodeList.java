@@ -39,7 +39,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.util.SqlVisitor;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
@@ -55,7 +55,7 @@ public class SqlNodeList extends SqlNode implements Iterable<SqlNode> {
      * An immutable, empty SqlNodeList.
      */
     public static final SqlNodeList EMPTY =
-            new SqlNodeList( SqlParserPos.ZERO ) {
+            new SqlNodeList( ParserPos.ZERO ) {
                 @Override
                 public void add( SqlNode node ) {
                     throw new UnsupportedOperationException();
@@ -69,7 +69,7 @@ public class SqlNodeList extends SqlNode implements Iterable<SqlNode> {
     /**
      * Creates an empty <code>SqlNodeList</code>.
      */
-    public SqlNodeList( SqlParserPos pos ) {
+    public SqlNodeList( ParserPos pos ) {
         super( pos );
         list = new ArrayList<>();
     }
@@ -78,7 +78,7 @@ public class SqlNodeList extends SqlNode implements Iterable<SqlNode> {
     /**
      * Creates a <code>SqlNodeList</code> containing the nodes in <code>list</code>. The list is copied, but the nodes in it are not.
      */
-    public SqlNodeList( Collection<? extends SqlNode> collection, SqlParserPos pos ) {
+    public SqlNodeList( Collection<? extends SqlNode> collection, ParserPos pos ) {
         super( pos );
         list = new ArrayList<>( collection );
     }
@@ -102,7 +102,7 @@ public class SqlNodeList extends SqlNode implements Iterable<SqlNode> {
 
 
     @Override
-    public SqlNodeList clone( SqlParserPos pos ) {
+    public SqlNodeList clone( ParserPos pos ) {
         return new SqlNodeList( list, pos );
     }
 
@@ -213,14 +213,14 @@ public class SqlNodeList extends SqlNode implements Iterable<SqlNode> {
 
 
     public static SqlNodeList of( SqlNode node1 ) {
-        SqlNodeList list = new SqlNodeList( SqlParserPos.ZERO );
+        SqlNodeList list = new SqlNodeList( ParserPos.ZERO );
         list.add( node1 );
         return list;
     }
 
 
     public static SqlNodeList of( SqlNode node1, SqlNode node2 ) {
-        SqlNodeList list = new SqlNodeList( SqlParserPos.ZERO );
+        SqlNodeList list = new SqlNodeList( ParserPos.ZERO );
         list.add( node1 );
         list.add( node2 );
         return list;
@@ -228,7 +228,7 @@ public class SqlNodeList extends SqlNode implements Iterable<SqlNode> {
 
 
     public static SqlNodeList of( SqlNode node1, SqlNode node2, SqlNode... nodes ) {
-        SqlNodeList list = new SqlNodeList( SqlParserPos.ZERO );
+        SqlNodeList list = new SqlNodeList( ParserPos.ZERO );
         list.add( node1 );
         list.add( node2 );
         for ( SqlNode node : nodes ) {

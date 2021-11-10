@@ -60,7 +60,7 @@ import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.pretty.SqlPrettyWriter;
 import org.polypheny.db.sql.utils.AbstractSqlTester;
 import org.polypheny.db.sql.utils.SqlRuntimeTester;
@@ -297,7 +297,7 @@ public abstract class SqlOperatorBaseTest {
         for ( SqlOperator sqlOperator : operatorTable.getOperatorList() ) {
             String operatorName = sqlOperator.getName();
             List<SqlOperator> routines = new ArrayList<>();
-            operatorTable.lookupOperatorOverloads( new SqlIdentifier( operatorName, SqlParserPos.ZERO ), null, sqlOperator.getSyntax(), routines );
+            operatorTable.lookupOperatorOverloads( new SqlIdentifier( operatorName, ParserPos.ZERO ), null, sqlOperator.getSyntax(), routines );
 
             routines.removeIf( operator -> !sqlOperator.getClass().isInstance( operator ) );
             assertThat( routines.size(), equalTo( 1 ) );
@@ -7776,7 +7776,7 @@ public abstract class SqlOperatorBaseTest {
             for ( int n = range.getMin(), max = range.getMax(); n <= max; n++ ) {
                 final List<List<ValueType>> argValues = Collections.nCopies( n, builder.values );
                 for ( final List<ValueType> args : Linq4j.product( argValues ) ) {
-                    SqlNodeList nodeList = new SqlNodeList( SqlParserPos.ZERO );
+                    SqlNodeList nodeList = new SqlNodeList( ParserPos.ZERO );
                     int nullCount = 0;
                     for ( ValueType arg : args ) {
                         if ( arg.value == null ) {
@@ -7995,23 +7995,23 @@ public abstract class SqlOperatorBaseTest {
                     scale = -1;
                 }
                 return SqlStdOperatorTable.CAST.createCall(
-                        SqlParserPos.ZERO, SqlLiteral.createNull( SqlParserPos.ZERO ),
-                        new SqlDataTypeSpec( new SqlIdentifier( type.getPolyType().getName(), SqlParserPos.ZERO ), precision, scale, null, null, SqlParserPos.ZERO ) );
+                        ParserPos.ZERO, SqlLiteral.createNull( ParserPos.ZERO ),
+                        new SqlDataTypeSpec( new SqlIdentifier( type.getPolyType().getName(), ParserPos.ZERO ), precision, scale, null, null, ParserPos.ZERO ) );
             }
             switch ( type.getPolyType() ) {
                 case BOOLEAN:
-                    return SqlLiteral.createBoolean( (Boolean) value, SqlParserPos.ZERO );
+                    return SqlLiteral.createBoolean( (Boolean) value, ParserPos.ZERO );
                 case TINYINT:
                 case SMALLINT:
                 case INTEGER:
                 case BIGINT:
-                    return SqlLiteral.createExactNumeric( value.toString(), SqlParserPos.ZERO );
+                    return SqlLiteral.createExactNumeric( value.toString(), ParserPos.ZERO );
                 case CHAR:
                 case VARCHAR:
-                    return SqlLiteral.createCharString( value.toString(), SqlParserPos.ZERO );
+                    return SqlLiteral.createCharString( value.toString(), ParserPos.ZERO );
                 case TIMESTAMP:
                     TimestampString ts = TimestampString.fromMillisSinceEpoch( (Long) value );
-                    return SqlLiteral.createTimestamp( ts, type.getPrecision(), SqlParserPos.ZERO );
+                    return SqlLiteral.createTimestamp( ts, type.getPrecision(), ParserPos.ZERO );
                 default:
                     throw new AssertionError( type );
             }

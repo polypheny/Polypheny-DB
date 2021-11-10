@@ -48,6 +48,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import org.apache.calcite.avatica.util.Casing;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -365,7 +366,7 @@ public abstract class SqlAbstractParserImpl {
      * @param operands Operands to call
      * @return Call
      */
-    protected SqlCall createCall( SqlIdentifier funName, SqlParserPos pos, SqlFunctionCategory funcType, SqlLiteral functionQualifier, Iterable<? extends SqlNode> operands ) {
+    protected SqlCall createCall( SqlIdentifier funName, ParserPos pos, SqlFunctionCategory funcType, SqlLiteral functionQualifier, Iterable<? extends SqlNode> operands ) {
         return createCall( funName, pos, funcType, functionQualifier, Iterables.toArray( operands, SqlNode.class ) );
     }
 
@@ -380,7 +381,7 @@ public abstract class SqlAbstractParserImpl {
      * @param operands Operands to call
      * @return Call
      */
-    protected SqlCall createCall( SqlIdentifier funName, SqlParserPos pos, SqlFunctionCategory funcType, SqlLiteral functionQualifier, SqlNode[] operands ) {
+    protected SqlCall createCall( SqlIdentifier funName, ParserPos pos, SqlFunctionCategory funcType, SqlLiteral functionQualifier, SqlNode[] operands ) {
         SqlOperator fun = null;
 
         // First, try a half-hearted resolution as a builtin function.
@@ -415,7 +416,7 @@ public abstract class SqlAbstractParserImpl {
      */
     public abstract SqlParseException normalizeException( Throwable ex );
 
-    protected abstract SqlParserPos getPos() throws Exception;
+    protected abstract ParserPos getPos() throws Exception;
 
     /**
      * Reinitializes parser with new input.

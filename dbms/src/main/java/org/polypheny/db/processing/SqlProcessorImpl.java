@@ -72,7 +72,7 @@ import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParseException;
 import org.polypheny.db.sql.parser.SqlParser;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.validate.SqlConformance;
 import org.polypheny.db.sql2rel.RelDecorrelator;
 import org.polypheny.db.sql2rel.SqlToRelConverter;
@@ -292,7 +292,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
             catalogTable = getCatalogTable( transaction, (SqlIdentifier) insert.getTargetTable() );
 
-            SqlNodeList newColumnList = new SqlNodeList( SqlParserPos.ZERO );
+            SqlNodeList newColumnList = new SqlNodeList( ParserPos.ZERO );
             int size = (int) catalogTable.columnIds.size();
             if ( schemaType == SchemaType.DOCUMENT ) {
                 List<String> columnNames = catalogTable.getColumnNames();
@@ -305,7 +305,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
             for ( CatalogColumn column : columns ) {
 
                 // Add column
-                newColumnList.add( new SqlIdentifier( column.name, SqlParserPos.ZERO ) );
+                newColumnList.add( new SqlIdentifier( column.name, ParserPos.ZERO ) );
 
                 // Add value (loop because it can be a multi insert (insert into test(id) values (1),(2),(3))
                 int i = 0;
@@ -323,31 +323,31 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
                                 case BOOLEAN:
                                     newValues[i][pos] = SqlLiteral.createBoolean(
                                             Boolean.parseBoolean( column.defaultValue.value ),
-                                            SqlParserPos.ZERO );
+                                            ParserPos.ZERO );
                                     break;
                                 case INTEGER:
                                 case DECIMAL:
                                 case BIGINT:
                                     newValues[i][pos] = SqlLiteral.createExactNumeric(
                                             column.defaultValue.value,
-                                            SqlParserPos.ZERO );
+                                            ParserPos.ZERO );
                                     break;
                                 case REAL:
                                 case DOUBLE:
                                     newValues[i][pos] = SqlLiteral.createApproxNumeric(
                                             column.defaultValue.value,
-                                            SqlParserPos.ZERO );
+                                            ParserPos.ZERO );
                                     break;
                                 case VARCHAR:
                                     newValues[i][pos] = SqlLiteral.createCharString(
                                             column.defaultValue.value,
-                                            SqlParserPos.ZERO );
+                                            ParserPos.ZERO );
                                     break;
                                 default:
                                     throw new PolyphenyDbException( "Not yet supported default value type: " + defaultValue.type );
                             }
                         } else if ( column.nullable ) {
-                            newValues[i][pos] = SqlLiteral.createNull( SqlParserPos.ZERO );
+                            newValues[i][pos] = SqlLiteral.createNull( ParserPos.ZERO );
                         } else {
                             throw new PolyphenyDbException( "The not nullable field '" + column.name + "' is missing in the insert statement and has no default value defined." );
                         }
@@ -390,7 +390,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
                 SqlBasicCall call = ((SqlBasicCall) ((SqlBasicCall) insert.getSource()).getOperands()[i]);
                 ((SqlBasicCall) insert.getSource()).getOperands()[i] = call.getOperator().createCall(
                         call.getFunctionQuantifier(),
-                        call.getParserPosition(),
+                        call.getPos(),
                         newValues[i] );
             }
         }
@@ -414,11 +414,11 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
             }
             catalogTable = Catalog.getInstance().getTable( schemaId, tableOldName );
         } catch ( UnknownDatabaseException e ) {
-            throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.databaseNotFound( tableName.toString() ) );
+            throw SqlUtil.newContextException( tableName.getPos(), RESOURCE.databaseNotFound( tableName.toString() ) );
         } catch ( UnknownSchemaException e ) {
-            throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.schemaNotFound( tableName.toString() ) );
+            throw SqlUtil.newContextException( tableName.getPos(), RESOURCE.schemaNotFound( tableName.toString() ) );
         } catch ( UnknownTableException e ) {
-            throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.tableNotFound( tableName.toString() ) );
+            throw SqlUtil.newContextException( tableName.getPos(), RESOURCE.tableNotFound( tableName.toString() ) );
         }
         return catalogTable;
     }

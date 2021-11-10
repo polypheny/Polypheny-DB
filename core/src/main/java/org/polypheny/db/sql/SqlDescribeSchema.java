@@ -35,7 +35,7 @@ package org.polypheny.db.sql;
 
 
 import java.util.List;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -47,7 +47,7 @@ public class SqlDescribeSchema extends SqlCall {
     public static final SqlSpecialOperator OPERATOR =
             new SqlSpecialOperator( "DESCRIBE_SCHEMA", SqlKind.DESCRIBE_SCHEMA ) {
                 @Override
-                public SqlCall createCall( SqlLiteral functionQualifier, SqlParserPos pos, SqlNode... operands ) {
+                public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
                     return new SqlDescribeSchema( pos, (SqlIdentifier) operands[0] );
                 }
             };
@@ -58,7 +58,7 @@ public class SqlDescribeSchema extends SqlCall {
     /**
      * Creates a SqlDescribeSchema.
      */
-    public SqlDescribeSchema( SqlParserPos pos, SqlIdentifier schema ) {
+    public SqlDescribeSchema( ParserPos pos, SqlIdentifier schema ) {
         super( pos );
         this.schema = schema;
     }

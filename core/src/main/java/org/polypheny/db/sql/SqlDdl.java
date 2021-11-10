@@ -48,8 +48,8 @@ import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.jdbc.Context;
-import org.polypheny.db.sql.parser.SqlParserPos;
 
 
 /**
@@ -68,7 +68,7 @@ public abstract class SqlDdl extends SqlCall {
     /**
      * Creates a SqlDdl.
      */
-    public SqlDdl( SqlOperator operator, SqlParserPos pos ) {
+    public SqlDdl( SqlOperator operator, ParserPos pos ) {
         super( pos );
         this.operator = Objects.requireNonNull( operator );
     }
@@ -98,11 +98,11 @@ public abstract class SqlDdl extends SqlCall {
             }
             catalogTable = catalog.getTable( schemaId, tableOldName );
         } catch ( UnknownDatabaseException e ) {
-            throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.databaseNotFound( tableName.toString() ) );
+            throw SqlUtil.newContextException( tableName.getPos(), RESOURCE.databaseNotFound( tableName.toString() ) );
         } catch ( UnknownSchemaException e ) {
-            throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.schemaNotFound( tableName.toString() ) );
+            throw SqlUtil.newContextException( tableName.getPos(), RESOURCE.schemaNotFound( tableName.toString() ) );
         } catch ( UnknownTableException e ) {
-            throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.tableNotFound( tableName.toString() ) );
+            throw SqlUtil.newContextException( tableName.getPos(), RESOURCE.tableNotFound( tableName.toString() ) );
         }
         return catalogTable;
     }
@@ -113,7 +113,7 @@ public abstract class SqlDdl extends SqlCall {
         try {
             catalogColumn = Catalog.getInstance().getColumn( tableId, columnName.getSimple() );
         } catch ( UnknownColumnException e ) {
-            throw SqlUtil.newContextException( columnName.getParserPosition(), RESOURCE.columnNotFoundInTable( columnName.getSimple(), tableId + "" ) );
+            throw SqlUtil.newContextException( columnName.getPos(), RESOURCE.columnNotFoundInTable( columnName.getSimple(), tableId + "" ) );
         }
         return catalogColumn;
     }
@@ -122,13 +122,13 @@ public abstract class SqlDdl extends SqlCall {
     protected DataStore getDataStoreInstance( SqlIdentifier storeName ) {
         Adapter adapterInstance = AdapterManager.getInstance().getAdapter( storeName.getSimple() );
         if ( adapterInstance == null ) {
-            throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.unknownAdapter( storeName.getSimple() ) );
+            throw SqlUtil.newContextException( storeName.getPos(), RESOURCE.unknownAdapter( storeName.getSimple() ) );
         }
         // Make sure it is a data store instance
         if ( adapterInstance instanceof DataStore ) {
             return (DataStore) adapterInstance;
         } else if ( adapterInstance instanceof DataSource ) {
-            throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.ddlOnDataSource( adapterInstance.getUniqueName() ) );
+            throw SqlUtil.newContextException( storeName.getPos(), RESOURCE.ddlOnDataSource( adapterInstance.getUniqueName() ) );
         } else {
             throw new RuntimeException( "Unknown kind of adapter: " + adapterInstance.getClass().getName() );
         }

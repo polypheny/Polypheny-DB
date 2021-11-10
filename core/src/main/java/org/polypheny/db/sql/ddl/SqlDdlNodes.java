@@ -36,6 +36,7 @@ package org.polypheny.db.sql.ddl;
 
 import java.util.List;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.partition.raw.RawPartitionInformation;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.sql.SqlCollation;
@@ -45,7 +46,6 @@ import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.parser.SqlParserPos;
 
 
 /**
@@ -60,7 +60,7 @@ public class SqlDdlNodes {
     /**
      * Creates a CREATE SCHEMA.
      */
-    public static SqlCreateSchema createSchema( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SchemaType schemaType ) {
+    public static SqlCreateSchema createSchema( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SchemaType schemaType ) {
         return new SqlCreateSchema( pos, replace, ifNotExists, name, schemaType );
     }
 
@@ -68,7 +68,7 @@ public class SqlDdlNodes {
     /**
      * Creates a CREATE TYPE.
      */
-    public static SqlCreateType createType( SqlParserPos pos, boolean replace, SqlIdentifier name, SqlNodeList attributeList, SqlDataTypeSpec dataTypeSpec ) {
+    public static SqlCreateType createType( ParserPos pos, boolean replace, SqlIdentifier name, SqlNodeList attributeList, SqlDataTypeSpec dataTypeSpec ) {
         return new SqlCreateType( pos, replace, name, attributeList, dataTypeSpec );
     }
 
@@ -76,7 +76,7 @@ public class SqlDdlNodes {
     /**
      * Creates a CREATE TABLE.
      */
-    public static SqlCreateTable createTable( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query, SqlIdentifier store, SqlIdentifier partitionType, SqlIdentifier partitionColumn, int numPartitionGroups, int numPartitions, List<SqlIdentifier> partitionNamesList, List<List<SqlNode>> partitionQualifierList, RawPartitionInformation rawPartitionInfo ) {
+    public static SqlCreateTable createTable( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query, SqlIdentifier store, SqlIdentifier partitionType, SqlIdentifier partitionColumn, int numPartitionGroups, int numPartitions, List<SqlIdentifier> partitionNamesList, List<List<SqlNode>> partitionQualifierList, RawPartitionInformation rawPartitionInfo ) {
         return new SqlCreateTable( pos, replace, ifNotExists, name, columnList, query, store, partitionType, partitionColumn, numPartitionGroups, numPartitions, partitionNamesList, partitionQualifierList, rawPartitionInfo );
     }
 
@@ -84,7 +84,7 @@ public class SqlDdlNodes {
     /**
      * Creates a CREATE VIEW.
      */
-    public static SqlCreateView createView( SqlParserPos pos, boolean replace, SqlIdentifier name, SqlNodeList columnList, SqlNode query ) {
+    public static SqlCreateView createView( ParserPos pos, boolean replace, SqlIdentifier name, SqlNodeList columnList, SqlNode query ) {
         return new SqlCreateView( pos, replace, name, columnList, query );
     }
 
@@ -92,7 +92,7 @@ public class SqlDdlNodes {
     /**
      * Creates a CREATE MATERIALIZED VIEW.
      */
-    public static SqlCreateMaterializedView createMaterializedView( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query, List<SqlIdentifier> store, String freshnessType, Integer freshnessNumber, SqlIdentifier freshnessUnit ) {
+    public static SqlCreateMaterializedView createMaterializedView( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query, List<SqlIdentifier> store, String freshnessType, Integer freshnessNumber, SqlIdentifier freshnessUnit ) {
         return new SqlCreateMaterializedView( pos, replace, ifNotExists, name, columnList, query, store, freshnessType, freshnessNumber, freshnessUnit );
     }
 
@@ -100,7 +100,7 @@ public class SqlDdlNodes {
     /**
      * Creates a CREATE FUNCTION.
      */
-    public static SqlCreateFunction createFunction( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNode className, SqlNodeList usingList ) {
+    public static SqlCreateFunction createFunction( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNode className, SqlNodeList usingList ) {
         return new SqlCreateFunction( pos, replace, ifNotExists, name, className, usingList );
     }
 
@@ -108,7 +108,7 @@ public class SqlDdlNodes {
     /**
      * Creates a DROP SCHEMA.
      */
-    public static SqlDropSchema dropSchema( SqlParserPos pos, boolean ifExists, SqlIdentifier name ) {
+    public static SqlDropSchema dropSchema( ParserPos pos, boolean ifExists, SqlIdentifier name ) {
         return new SqlDropSchema( pos, ifExists, name );
     }
 
@@ -116,7 +116,7 @@ public class SqlDdlNodes {
     /**
      * Creates a DROP TYPE.
      */
-    public static SqlDropType dropType( SqlParserPos pos, boolean ifExists, SqlIdentifier name ) {
+    public static SqlDropType dropType( ParserPos pos, boolean ifExists, SqlIdentifier name ) {
         return new SqlDropType( pos, ifExists, name );
     }
 
@@ -124,7 +124,7 @@ public class SqlDdlNodes {
     /**
      * Creates a DROP TABLE.
      */
-    public static SqlDropTable dropTable( SqlParserPos pos, boolean ifExists, SqlIdentifier name ) {
+    public static SqlDropTable dropTable( ParserPos pos, boolean ifExists, SqlIdentifier name ) {
         return new SqlDropTable( pos, ifExists, name );
     }
 
@@ -132,7 +132,7 @@ public class SqlDdlNodes {
     /**
      * Creates a DROP VIEW.
      */
-    public static SqlDrop dropView( SqlParserPos pos, boolean ifExists, SqlIdentifier name ) {
+    public static SqlDrop dropView( ParserPos pos, boolean ifExists, SqlIdentifier name ) {
         return new SqlDropView( pos, ifExists, name );
     }
 
@@ -140,7 +140,7 @@ public class SqlDdlNodes {
     /**
      * Creates a DROP MATERIALIZED VIEW.
      */
-    public static SqlDrop dropMaterializedView( SqlParserPos pos, boolean ifExists, SqlIdentifier name ) {
+    public static SqlDrop dropMaterializedView( ParserPos pos, boolean ifExists, SqlIdentifier name ) {
         return new SqlDropMaterializedView( pos, ifExists, name );
     }
 
@@ -148,7 +148,7 @@ public class SqlDdlNodes {
     /**
      * Creates a DROP FUNCTION.
      */
-    public static SqlDrop dropFunction( SqlParserPos pos, boolean ifExists, SqlIdentifier name ) {
+    public static SqlDrop dropFunction( ParserPos pos, boolean ifExists, SqlIdentifier name ) {
         return new SqlDropFunction( pos, ifExists, name );
     }
 
@@ -156,7 +156,7 @@ public class SqlDdlNodes {
     /**
      * Creates a column declaration.
      */
-    public static SqlNode column( SqlParserPos pos, SqlIdentifier name, SqlDataTypeSpec dataType, String collation, SqlNode expression, ColumnStrategy strategy ) {
+    public static SqlNode column( ParserPos pos, SqlIdentifier name, SqlDataTypeSpec dataType, String collation, SqlNode expression, ColumnStrategy strategy ) {
         return new SqlColumnDeclaration( pos, name, dataType, collation, expression, strategy );
     }
 
@@ -164,7 +164,7 @@ public class SqlDdlNodes {
     /**
      * Creates a attribute definition.
      */
-    public static SqlNode attribute( SqlParserPos pos, SqlIdentifier name, SqlDataTypeSpec dataType, SqlNode expression, SqlCollation collation ) {
+    public static SqlNode attribute( ParserPos pos, SqlIdentifier name, SqlDataTypeSpec dataType, SqlNode expression, SqlCollation collation ) {
         return new SqlAttributeDefinition( pos, name, dataType, expression, collation );
     }
 
@@ -172,7 +172,7 @@ public class SqlDdlNodes {
     /**
      * Creates a CHECK constraint.
      */
-    public static SqlNode check( SqlParserPos pos, SqlIdentifier name, SqlNode expression ) {
+    public static SqlNode check( ParserPos pos, SqlIdentifier name, SqlNode expression ) {
         return new SqlCheckConstraint( pos, name, expression );
     }
 
@@ -180,7 +180,7 @@ public class SqlDdlNodes {
     /**
      * Creates a UNIQUE constraint.
      */
-    public static SqlKeyConstraint unique( SqlParserPos pos, SqlIdentifier name, SqlNodeList columnList ) {
+    public static SqlKeyConstraint unique( ParserPos pos, SqlIdentifier name, SqlNodeList columnList ) {
         return new SqlKeyConstraint( pos, name, columnList );
     }
 
@@ -188,7 +188,7 @@ public class SqlDdlNodes {
     /**
      * Creates a PRIMARY KEY constraint.
      */
-    public static SqlKeyConstraint primary( SqlParserPos pos, SqlIdentifier name, SqlNodeList columnList ) {
+    public static SqlKeyConstraint primary( ParserPos pos, SqlIdentifier name, SqlNodeList columnList ) {
         return new SqlKeyConstraint( pos, name, columnList ) {
             @Override
             public SqlOperator getOperator() {

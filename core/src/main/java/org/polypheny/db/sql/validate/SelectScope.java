@@ -36,6 +36,7 @@ package org.polypheny.db.sql.validate;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -43,7 +44,6 @@ import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlSelect;
 import org.polypheny.db.sql.SqlWindow;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
 
@@ -190,7 +190,7 @@ public class SelectScope extends ListScope {
     public SqlNodeList getOrderList() {
         if ( orderList == null ) {
             // Compute on demand first call.
-            orderList = new SqlNodeList( SqlParserPos.ZERO );
+            orderList = new SqlNodeList( ParserPos.ZERO );
             if ( children.size() == 1 ) {
                 final SqlValidatorNamespace child = children.get( 0 ).namespace;
                 final List<Pair<SqlNode, SqlMonotonicity>> monotonicExprs = child.getMonotonicExprs();

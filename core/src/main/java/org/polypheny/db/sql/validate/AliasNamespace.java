@@ -38,6 +38,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.sql.SqlCall;
@@ -45,7 +46,6 @@ import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.util.Util;
 
 
@@ -92,7 +92,7 @@ public class AliasNamespace extends AbstractNamespace {
             final SqlNode node =
                     operands.size() == 3
                             ? operands.get( 2 )
-                            : new SqlNodeList( columnNames, SqlParserPos.sum( columnNames ) );
+                            : new SqlNodeList( columnNames, ParserPos.sum( columnNames ) );
             throw validator.newValidationError( node, RESOURCE.aliasListDegree( rowType.getFieldCount(), getString( rowType ), nameList.size() ) );
         }
         final List<RelDataType> typeList = new ArrayList<>();

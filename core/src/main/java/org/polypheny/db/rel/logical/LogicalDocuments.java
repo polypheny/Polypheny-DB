@@ -28,7 +28,7 @@ import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import org.bson.types.ObjectId;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.mql.parser.BsonUtil;
+import org.polypheny.db.core.BsonUtil;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;

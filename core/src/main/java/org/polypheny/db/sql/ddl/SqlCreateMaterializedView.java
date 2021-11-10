@@ -37,6 +37,7 @@ import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.jdbc.Context;
@@ -53,7 +54,6 @@ import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.view.MaterializedViewManager;
@@ -77,7 +77,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
      * Creates a SqlCreateMaterializedView.
      */
     SqlCreateMaterializedView(
-            SqlParserPos pos,
+            ParserPos pos,
             boolean replace,
             boolean ifNotExists,
             SqlIdentifier name,
@@ -124,9 +124,9 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
                 viewName = name.names.get( 0 );
             }
         } catch ( UnknownDatabaseException e ) {
-            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.databaseNotFound( name.toString() ) );
+            throw SqlUtil.newContextException( name.getPos(), RESOURCE.databaseNotFound( name.toString() ) );
         } catch ( UnknownSchemaException e ) {
-            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaNotFound( name.toString() ) );
+            throw SqlUtil.newContextException( name.getPos(), RESOURCE.schemaNotFound( name.toString() ) );
         }
 
         List<DataStore> stores;
@@ -192,7 +192,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
                     ifNotExists,
                     ordered );
         } catch ( TableAlreadyExistsException e ) {
-            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( viewName ) );
+            throw SqlUtil.newContextException( name.getPos(), RESOURCE.tableExists( viewName ) );
         } catch ( GenericCatalogException | UnknownColumnException | ColumnNotExistsException | ColumnAlreadyExistsException e ) {
             // we just added the table/column, so it has to exist, or we have an internal problem
             throw new RuntimeException( e );

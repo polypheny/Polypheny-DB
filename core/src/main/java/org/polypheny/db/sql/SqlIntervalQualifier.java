@@ -46,7 +46,7 @@ import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.util.SqlVisitor;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
@@ -124,7 +124,7 @@ public class SqlIntervalQualifier extends SqlNode {
             int startPrecision,
             TimeUnit endUnit,
             int fractionalSecondPrecision,
-            SqlParserPos pos ) {
+            ParserPos pos ) {
         super( pos );
         if ( endUnit == startUnit ) {
             endUnit = null;
@@ -139,7 +139,7 @@ public class SqlIntervalQualifier extends SqlNode {
     public SqlIntervalQualifier(
             TimeUnit startUnit,
             TimeUnit endUnit,
-            SqlParserPos pos ) {
+            ParserPos pos ) {
         this(
                 startUnit,
                 RelDataType.PRECISION_NOT_SPECIFIED,
@@ -153,7 +153,7 @@ public class SqlIntervalQualifier extends SqlNode {
             int startPrecision,
             int fractionalSecondPrecision,
             TimeUnitRange timeUnitRange,
-            SqlParserPos pos ) {
+            ParserPos pos ) {
         super( pos );
         this.timeUnitRange = timeUnitRange;
         this.startPrecision = startPrecision;
@@ -162,7 +162,7 @@ public class SqlIntervalQualifier extends SqlNode {
 
 
     public SqlIntervalQualifier( PolyIntervalQualifier polyIntervalQualifier ) {
-        this( polyIntervalQualifier.startPrecision, polyIntervalQualifier.fractionalSecondPrecision, polyIntervalQualifier.timeUnitRange, SqlParserPos.ZERO );
+        this( polyIntervalQualifier.startPrecision, polyIntervalQualifier.fractionalSecondPrecision, polyIntervalQualifier.timeUnitRange, ParserPos.ZERO );
     }
 
     //~ Methods ----------------------------------------------------------------
@@ -366,7 +366,7 @@ public class SqlIntervalQualifier extends SqlNode {
 
 
     @Override
-    public SqlNode clone( SqlParserPos pos ) {
+    public SqlNode clone( ParserPos pos ) {
         return new SqlIntervalQualifier( timeUnitRange.startUnit, startPrecision,
                 timeUnitRange.endUnit, fractionalSecondPrecision, pos );
     }
@@ -441,7 +441,7 @@ public class SqlIntervalQualifier extends SqlNode {
 
 
     private void checkLeadFieldInRange( RelDataTypeSystem typeSystem, int sign,
-            BigDecimal value, TimeUnit unit, SqlParserPos pos ) {
+            BigDecimal value, TimeUnit unit, ParserPos pos ) {
         if ( !isLeadFieldInRange( typeSystem, value, unit ) ) {
             throw fieldExceedsPrecisionException(
                     pos, sign, value, unit, getStartPrecision( typeSystem ) );
@@ -548,7 +548,7 @@ public class SqlIntervalQualifier extends SqlNode {
             RelDataTypeSystem typeSystem, int sign,
             String value,
             String originalValue,
-            SqlParserPos pos ) {
+            ParserPos pos ) {
         BigDecimal year;
 
         // validate as YEAR(startPrecision), e.g. 'YY'
@@ -584,7 +584,7 @@ public class SqlIntervalQualifier extends SqlNode {
             RelDataTypeSystem typeSystem, int sign,
             String value,
             String originalValue,
-            SqlParserPos pos ) {
+            ParserPos pos ) {
         BigDecimal year;
         BigDecimal month;
 
@@ -625,7 +625,7 @@ public class SqlIntervalQualifier extends SqlNode {
             RelDataTypeSystem typeSystem, int sign,
             String value,
             String originalValue,
-            SqlParserPos pos ) {
+            ParserPos pos ) {
         BigDecimal month;
 
         // validate as MONTH(startPrecision), e.g. 'MM'
@@ -661,7 +661,7 @@ public class SqlIntervalQualifier extends SqlNode {
             RelDataTypeSystem typeSystem, int sign,
             String value,
             String originalValue,
-            SqlParserPos pos ) {
+            ParserPos pos ) {
         BigDecimal day;
 
         // validate as DAY(startPrecision), e.g. 'DD'
@@ -697,7 +697,7 @@ public class SqlIntervalQualifier extends SqlNode {
             RelDataTypeSystem typeSystem, int sign,
             String value,
             String originalValue,
-            SqlParserPos pos ) {
+            ParserPos pos ) {
         BigDecimal day;
         BigDecimal hour;
 
@@ -738,7 +738,7 @@ public class SqlIntervalQualifier extends SqlNode {
             RelDataTypeSystem typeSystem, int sign,
             String value,
             String originalValue,
-            SqlParserPos pos ) {
+            ParserPos pos ) {
         BigDecimal day;
         BigDecimal hour;
         BigDecimal minute;
@@ -782,7 +782,7 @@ public class SqlIntervalQualifier extends SqlNode {
             RelDataTypeSystem typeSystem, int sign,
             String value,
             String originalValue,
-            SqlParserPos pos ) {
+            ParserPos pos ) {
         BigDecimal day;
         BigDecimal hour;
         BigDecimal minute;
@@ -859,7 +859,7 @@ public class SqlIntervalQualifier extends SqlNode {
             RelDataTypeSystem typeSystem, int sign,
             String value,
             String originalValue,
-            SqlParserPos pos ) {
+            ParserPos pos ) {
         BigDecimal hour;
 
         // validate as HOUR(startPrecision), e.g. 'HH'
@@ -896,7 +896,7 @@ public class SqlIntervalQualifier extends SqlNode {
             RelDataTypeSystem typeSystem, int sign,
             String value,
             String originalValue,
-            SqlParserPos pos ) {
+            ParserPos pos ) {
         BigDecimal hour;
         BigDecimal minute;
 
@@ -938,7 +938,7 @@ public class SqlIntervalQualifier extends SqlNode {
             RelDataTypeSystem typeSystem, int sign,
             String value,
             String originalValue,
-            SqlParserPos pos ) {
+            ParserPos pos ) {
         BigDecimal hour;
         BigDecimal minute;
         BigDecimal second;
@@ -1012,7 +1012,7 @@ public class SqlIntervalQualifier extends SqlNode {
             RelDataTypeSystem typeSystem, int sign,
             String value,
             String originalValue,
-            SqlParserPos pos ) {
+            ParserPos pos ) {
         BigDecimal minute;
 
         // validate as MINUTE(startPrecision), e.g. 'MM'
@@ -1049,7 +1049,7 @@ public class SqlIntervalQualifier extends SqlNode {
             RelDataTypeSystem typeSystem, int sign,
             String value,
             String originalValue,
-            SqlParserPos pos ) {
+            ParserPos pos ) {
         BigDecimal minute;
         BigDecimal second;
         BigDecimal secondFrac;
@@ -1120,7 +1120,7 @@ public class SqlIntervalQualifier extends SqlNode {
             int sign,
             String value,
             String originalValue,
-            SqlParserPos pos ) {
+            ParserPos pos ) {
         BigDecimal second;
         BigDecimal secondFrac;
         boolean hasFractionalSecond;
@@ -1182,7 +1182,7 @@ public class SqlIntervalQualifier extends SqlNode {
      * @throws PolyphenyDbContextException if the interval
      * value is illegal
      */
-    public int[] evaluateIntervalLiteral( String value, SqlParserPos pos,
+    public int[] evaluateIntervalLiteral( String value, ParserPos pos,
             RelDataTypeSystem typeSystem ) {
         // save original value for if we have to throw
         final String value0 = value;
@@ -1255,7 +1255,7 @@ public class SqlIntervalQualifier extends SqlNode {
     }
 
 
-    private PolyphenyDbContextException invalidValueException( SqlParserPos pos, String value ) {
+    private PolyphenyDbContextException invalidValueException( ParserPos pos, String value ) {
         return SqlUtil.newContextException( pos,
                 RESOURCE.unsupportedIntervalLiteral(
                         "'" + value + "'", "INTERVAL " + toString() ) );
@@ -1263,7 +1263,7 @@ public class SqlIntervalQualifier extends SqlNode {
 
 
     private PolyphenyDbContextException fieldExceedsPrecisionException(
-            SqlParserPos pos, int sign, BigDecimal value, TimeUnit type,
+            ParserPos pos, int sign, BigDecimal value, TimeUnit type,
             int precision ) {
         if ( sign == -1 ) {
             value = value.negate();

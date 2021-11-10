@@ -47,6 +47,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
@@ -71,7 +72,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlSelect;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.pretty.SqlPrettyWriter;
 import org.polypheny.db.sql.util.SqlString;
 import org.polypheny.db.util.Pair;
@@ -156,13 +156,13 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
     SqlString generateSql() {
         List<SqlNode> pcnl = Expressions.list();
         for ( String str : physicalColumnNames ) {
-            pcnl.add( new SqlIdentifier( Arrays.asList( physicalTableName, str ), SqlParserPos.ZERO ) );
+            pcnl.add( new SqlIdentifier( Arrays.asList( physicalTableName, str ), ParserPos.ZERO ) );
         }
         //final SqlNodeList selectList = new SqlNodeList( Collections.singletonList( SqlIdentifier.star( SqlParserPos.ZERO ) ), SqlParserPos.ZERO );
-        final SqlNodeList selectList = new SqlNodeList( pcnl, SqlParserPos.ZERO );
-        SqlIdentifier physicalTableName = new SqlIdentifier( Arrays.asList( physicalSchemaName, this.physicalTableName ), SqlParserPos.ZERO );
+        final SqlNodeList selectList = new SqlNodeList( pcnl, ParserPos.ZERO );
+        SqlIdentifier physicalTableName = new SqlIdentifier( Arrays.asList( physicalSchemaName, this.physicalTableName ), ParserPos.ZERO );
         SqlSelect node = new SqlSelect(
-                SqlParserPos.ZERO,
+                ParserPos.ZERO,
                 SqlNodeList.EMPTY,
                 selectList,
                 physicalTableName,
@@ -180,13 +180,13 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
 
     public SqlIdentifier physicalTableName() {
-        return new SqlIdentifier( Arrays.asList( physicalSchemaName, physicalTableName ), SqlParserPos.ZERO );
+        return new SqlIdentifier( Arrays.asList( physicalSchemaName, physicalTableName ), ParserPos.ZERO );
     }
 
 
     public SqlIdentifier physicalColumnName( String logicalColumnName ) {
         String physicalName = physicalColumnNames.get( logicalColumnNames.indexOf( logicalColumnName ) );
-        return new SqlIdentifier( Arrays.asList( physicalName ), SqlParserPos.ZERO );
+        return new SqlIdentifier( Arrays.asList( physicalName ), ParserPos.ZERO );
     }
 
 
@@ -200,12 +200,12 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
         int i = 0;
         for ( String str : physicalColumnNames ) {
             SqlNode[] operands = new SqlNode[]{
-                    new SqlIdentifier( Arrays.asList( physicalSchemaName, physicalTableName, str ), SqlParserPos.ZERO ),
-                    new SqlIdentifier( Arrays.asList( logicalColumnNames.get( i++ ) ), SqlParserPos.ZERO )
+                    new SqlIdentifier( Arrays.asList( physicalSchemaName, physicalTableName, str ), ParserPos.ZERO ),
+                    new SqlIdentifier( Arrays.asList( logicalColumnNames.get( i++ ) ), ParserPos.ZERO )
             };
-            pcnl.add( new SqlBasicCall( SqlStdOperatorTable.AS, operands, SqlParserPos.ZERO ) );
+            pcnl.add( new SqlBasicCall( SqlStdOperatorTable.AS, operands, ParserPos.ZERO ) );
         }
-        return new SqlNodeList( pcnl, SqlParserPos.ZERO );
+        return new SqlNodeList( pcnl, ParserPos.ZERO );
     }
 
 

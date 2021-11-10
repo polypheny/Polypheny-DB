@@ -37,7 +37,7 @@ package org.polypheny.db.sql;
 import com.google.common.base.Preconditions;
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Util;
@@ -70,7 +70,7 @@ public class SqlJoin extends SqlCall {
     SqlNode condition;
 
 
-    public SqlJoin( SqlParserPos pos, SqlNode left, SqlLiteral natural, SqlLiteral joinType, SqlNode right, SqlLiteral conditionType, SqlNode condition ) {
+    public SqlJoin( ParserPos pos, SqlNode left, SqlLiteral natural, SqlLiteral joinType, SqlNode right, SqlLiteral conditionType, SqlNode condition ) {
         super( pos );
         this.left = left;
         this.natural = Objects.requireNonNull( natural );
@@ -211,7 +211,7 @@ public class SqlJoin extends SqlCall {
 
 
         @Override
-        public SqlCall createCall( SqlLiteral functionQualifier, SqlParserPos pos, SqlNode... operands ) {
+        public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
             assert functionQualifier == null;
             return new SqlJoin(
                     pos,

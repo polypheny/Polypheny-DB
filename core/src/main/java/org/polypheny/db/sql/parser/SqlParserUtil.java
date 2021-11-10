@@ -50,6 +50,7 @@ import java.util.StringTokenizer;
 import java.util.function.Predicate;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.sql.SqlBinaryOperator;
@@ -129,7 +130,7 @@ public final class SqlParserUtil {
     }
 
 
-    public static SqlDateLiteral parseDateLiteral( String s, SqlParserPos pos ) {
+    public static SqlDateLiteral parseDateLiteral( String s, ParserPos pos ) {
         final String dateStr = parseString( s );
         final Calendar cal = DateTimeUtils.parseDateFormat( dateStr, Format.PER_THREAD.get().date, DateTimeUtils.UTC_ZONE );
         if ( cal == null ) {
@@ -140,7 +141,7 @@ public final class SqlParserUtil {
     }
 
 
-    public static SqlTimeLiteral parseTimeLiteral( String s, SqlParserPos pos ) {
+    public static SqlTimeLiteral parseTimeLiteral( String s, ParserPos pos ) {
         final String dateStr = parseString( s );
         final DateTimeUtils.PrecisionTime pt = DateTimeUtils.parsePrecisionDateTimeLiteral( dateStr, Format.PER_THREAD.get().time, DateTimeUtils.UTC_ZONE, -1 );
         if ( pt == null ) {
@@ -151,7 +152,7 @@ public final class SqlParserUtil {
     }
 
 
-    public static SqlTimestampLiteral parseTimestampLiteral( String s, SqlParserPos pos ) {
+    public static SqlTimestampLiteral parseTimestampLiteral( String s, ParserPos pos ) {
         final String dateStr = parseString( s );
         final DateTimeUtils.PrecisionTime pt = DateTimeUtils.parsePrecisionDateTimeLiteral( dateStr, Format.PER_THREAD.get().timestamp, DateTimeUtils.UTC_ZONE, -1 );
         if ( pt == null ) {
@@ -162,7 +163,7 @@ public final class SqlParserUtil {
     }
 
 
-    public static SqlIntervalLiteral parseIntervalLiteral( SqlParserPos pos, int sign, String s, SqlIntervalQualifier intervalQualifier ) {
+    public static SqlIntervalLiteral parseIntervalLiteral( ParserPos pos, int sign, String s, SqlIntervalQualifier intervalQualifier ) {
         final String intervalStr = parseString( s );
         if ( intervalStr.equals( "" ) ) {
             throw SqlUtil.newContextException( pos, RESOURCE.illegalIntervalLiteral( s + " " + intervalQualifier.toString(), pos.toString() ) );
@@ -197,7 +198,7 @@ public final class SqlParserUtil {
         Preconditions.checkArgument( !intervalQualifier.isYearMonth(), "interval must be day time" );
         int[] ret;
         try {
-            ret = intervalQualifier.evaluateIntervalLiteral( literal, intervalQualifier.getParserPosition(), RelDataTypeSystem.DEFAULT );
+            ret = intervalQualifier.evaluateIntervalLiteral( literal, intervalQualifier.getPos(), RelDataTypeSystem.DEFAULT );
             assert ret != null;
         } catch ( PolyphenyDbContextException e ) {
             throw new RuntimeException( "while parsing day-to-second interval " + literal, e );
@@ -233,7 +234,7 @@ public final class SqlParserUtil {
         Preconditions.checkArgument( intervalQualifier.isYearMonth(), "interval must be year month" );
         int[] ret;
         try {
-            ret = intervalQualifier.evaluateIntervalLiteral( literal, intervalQualifier.getParserPosition(), RelDataTypeSystem.DEFAULT );
+            ret = intervalQualifier.evaluateIntervalLiteral( literal, intervalQualifier.getPos(), RelDataTypeSystem.DEFAULT );
             assert ret != null;
         } catch ( PolyphenyDbContextException e ) {
             throw new RuntimeException( "Error while parsing year-to-month interval " + literal, e );
@@ -340,7 +341,7 @@ public final class SqlParserUtil {
         if ( secondCaret < 0 ) {
             String sqlSansCaret = sql.substring( 0, firstCaret ) + sql.substring( firstCaret + 1 );
             int[] start = indexToLineCol( sql, firstCaret );
-            SqlParserPos pos = new SqlParserPos( start[0], start[1] );
+            ParserPos pos = new ParserPos( start[0], start[1] );
             return new StringAndPos( sqlSansCaret, firstCaret, pos );
         } else {
             String sqlSansCaret =
@@ -358,7 +359,7 @@ public final class SqlParserUtil {
                 --end[1];
             }
 
-            SqlParserPos pos = new SqlParserPos( start[0], start[1], end[0], end[1] );
+            ParserPos pos = new ParserPos( start[0], start[1], end[0], end[1] );
             return new StringAndPos( sqlSansCaret, firstCaret, pos );
         }
     }
@@ -644,15 +645,15 @@ public final class SqlParserUtil {
 
 
     /**
-     * Class that holds a {@link SqlOperator} and a {@link SqlParserPos}. Used by {@link SqlSpecialOperator#reduceExpr} and the parser to associate a parsed operator with a parser position.
+     * Class that holds a {@link SqlOperator} and a {@link ParserPos}. Used by {@link SqlSpecialOperator#reduceExpr} and the parser to associate a parsed operator with a parser position.
      */
     public static class ToTreeListItem {
 
         private final SqlOperator op;
-        private final SqlParserPos pos;
+        private final ParserPos pos;
 
 
-        public ToTreeListItem( SqlOperator op, SqlParserPos pos ) {
+        public ToTreeListItem( SqlOperator op, ParserPos pos ) {
             this.op = op;
             this.pos = pos;
         }
@@ -668,7 +669,7 @@ public final class SqlParserUtil {
         }
 
 
-        public SqlParserPos getPos() {
+        public ParserPos getPos() {
             return pos;
         }
     }
@@ -681,10 +682,10 @@ public final class SqlParserUtil {
 
         public final String sql;
         public final int cursor;
-        public final SqlParserPos pos;
+        public final ParserPos pos;
 
 
-        StringAndPos( String sql, int cursor, SqlParserPos pos ) {
+        StringAndPos( String sql, int cursor, ParserPos pos ) {
             this.sql = sql;
             this.cursor = cursor;
             this.pos = pos;
@@ -725,13 +726,13 @@ public final class SqlParserUtil {
         }
 
 
-        private static SqlParserPos pos( PrecedenceClimbingParser.Token token ) {
+        private static ParserPos pos( PrecedenceClimbingParser.Token token ) {
             switch ( token.type ) {
                 case ATOM:
-                    return ((SqlNode) token.o).getParserPosition();
+                    return ((SqlNode) token.o).getPos();
                 case CALL:
                     final PrecedenceClimbingParser.Call call = (PrecedenceClimbingParser.Call) token;
-                    SqlParserPos pos = ((ToTreeListItem) call.op.o).pos;
+                    ParserPos pos = ((ToTreeListItem) call.op.o).pos;
                     for ( PrecedenceClimbingParser.Token arg : call.args ) {
                         pos = pos.plus( pos( arg ) );
                     }
@@ -743,7 +744,7 @@ public final class SqlParserUtil {
 
 
         @Override
-        public SqlParserPos pos( int i ) {
+        public ParserPos pos( int i ) {
             return pos( list.get( i ) );
         }
 
@@ -828,11 +829,11 @@ public final class SqlParserUtil {
 
 
         @Override
-        public SqlParserPos pos( int i ) {
+        public ParserPos pos( int i ) {
             final Object o = list.get( i );
             return o instanceof ToTreeListItem
                     ? ((ToTreeListItem) o).pos
-                    : ((SqlNode) o).getParserPosition();
+                    : ((SqlNode) o).getPos();
         }
 
 

@@ -38,8 +38,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.sql.dialect.AnsiSqlDialect;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.pretty.SqlPrettyWriter;
 import org.polypheny.db.sql.util.SqlString;
 import org.polypheny.db.sql.util.SqlVisitor;
@@ -56,12 +57,12 @@ import org.polypheny.db.util.Util;
  *
  * It may be an {@link SqlOperator operator}, {@link SqlLiteral literal}, {@link SqlIdentifier identifier}, and so forth.
  */
-public abstract class SqlNode implements Cloneable {
+public abstract class SqlNode implements Cloneable, Node {
 
     public static final SqlNode[] EMPTY_ARRAY = new SqlNode[0];
 
 
-    protected final SqlParserPos pos;
+    protected final ParserPos pos;
 
 
     /**
@@ -69,7 +70,7 @@ public abstract class SqlNode implements Cloneable {
      *
      * @param pos Parser position, must not be null.
      */
-    SqlNode( SqlParserPos pos ) {
+    SqlNode( ParserPos pos ) {
         this.pos = Objects.requireNonNull( pos );
     }
 
@@ -81,7 +82,7 @@ public abstract class SqlNode implements Cloneable {
     @Deprecated
     @SuppressWarnings("MethodDoesntCallSuperMethod")
     public Object clone() {
-        return clone( getParserPosition() );
+        return clone( getPos() );
     }
 
 
@@ -97,7 +98,7 @@ public abstract class SqlNode implements Cloneable {
     /**
      * Clones a SqlNode with a different position.
      */
-    public abstract SqlNode clone( SqlParserPos pos );
+    public abstract SqlNode clone( ParserPos pos );
 
 
     /**
@@ -182,7 +183,8 @@ public abstract class SqlNode implements Cloneable {
     public abstract void unparse( SqlWriter writer, int leftPrec, int rightPrec );
 
 
-    public SqlParserPos getParserPosition() {
+    @Override
+    public ParserPos getPos() {
         return pos;
     }
 
@@ -205,7 +207,7 @@ public abstract class SqlNode implements Cloneable {
      * @param pos SqlParserPos indicating the cursor position at which completion hints are requested for
      * @param hintList list of valid options
      */
-    public void findValidOptions( SqlValidator validator, SqlValidatorScope scope, SqlParserPos pos, Collection<SqlMoniker> hintList ) {
+    public void findValidOptions( SqlValidator validator, SqlValidatorScope scope, ParserPos pos, Collection<SqlMoniker> hintList ) {
         // no valid options
     }
 

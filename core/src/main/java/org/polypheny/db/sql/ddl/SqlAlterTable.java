@@ -17,11 +17,11 @@
 package org.polypheny.db.sql.ddl;
 
 
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.SqlAlter;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
-import org.polypheny.db.sql.parser.SqlParserPos;
 
 
 /**
@@ -36,7 +36,7 @@ public abstract class SqlAlterTable extends SqlAlter {
     /**
      * Creates a SqlAlterTable.
      */
-    public SqlAlterTable( SqlParserPos pos ) {
+    public SqlAlterTable( ParserPos pos ) {
         super( OPERATOR, pos );
     }
 

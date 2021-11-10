@@ -24,6 +24,7 @@ import java.util.Objects;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.LastPlacementException;
 import org.polypheny.db.ddl.exception.PlacementNotExistsException;
@@ -33,7 +34,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -47,7 +47,7 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
     private final SqlIdentifier storeName;
 
 
-    public SqlAlterTableDropPlacement( SqlParserPos pos, SqlIdentifier table, SqlIdentifier storeName ) {
+    public SqlAlterTableDropPlacement( ParserPos pos, SqlIdentifier table, SqlIdentifier storeName ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.storeName = Objects.requireNonNull( storeName );
@@ -86,11 +86,11 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
             DdlManager.getInstance().dropPlacement( catalogTable, storeInstance, statement );
         } catch ( PlacementNotExistsException e ) {
             throw SqlUtil.newContextException(
-                    storeName.getParserPosition(),
+                    storeName.getPos(),
                     RESOURCE.placementDoesNotExist( catalogTable.name, storeName.getSimple() ) );
         } catch ( LastPlacementException e ) {
             throw SqlUtil.newContextException(
-                    storeName.getParserPosition(),
+                    storeName.getPos(),
                     RESOURCE.onlyOnePlacementLeft() );
         }
     }

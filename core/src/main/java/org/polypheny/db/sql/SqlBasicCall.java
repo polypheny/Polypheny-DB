@@ -36,7 +36,7 @@ package org.polypheny.db.sql;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.util.UnmodifiableArrayList;
 
 
@@ -51,12 +51,12 @@ public class SqlBasicCall extends SqlCall {
     private final boolean expanded;
 
 
-    public SqlBasicCall( SqlOperator operator, SqlNode[] operands, SqlParserPos pos ) {
+    public SqlBasicCall( SqlOperator operator, SqlNode[] operands, ParserPos pos ) {
         this( operator, operands, pos, false, null );
     }
 
 
-    protected SqlBasicCall( SqlOperator operator, SqlNode[] operands, SqlParserPos pos, boolean expanded, SqlLiteral functionQualifier ) {
+    protected SqlBasicCall( SqlOperator operator, SqlNode[] operands, ParserPos pos, boolean expanded, SqlLiteral functionQualifier ) {
         super( pos );
         this.operator = Objects.requireNonNull( operator );
         this.operands = operands;
@@ -125,7 +125,7 @@ public class SqlBasicCall extends SqlCall {
 
 
     @Override
-    public SqlNode clone( SqlParserPos pos ) {
+    public SqlNode clone( ParserPos pos ) {
         return getOperator().createCall( getFunctionQuantifier(), pos, operands );
     }
 

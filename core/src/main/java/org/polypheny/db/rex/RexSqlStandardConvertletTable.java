@@ -37,6 +37,7 @@ package org.polypheny.db.rex;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.SqlBasicCall;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlDataTypeSpec;
@@ -46,7 +47,6 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.OracleSqlOperatorTable;
 import org.polypheny.db.sql.fun.SqlCaseOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.type.PolyTypeUtil;
 
 
@@ -163,7 +163,7 @@ public class RexSqlStandardConvertletTable extends RexSqlReflectiveConvertletTab
         if ( exprs == null ) {
             return null;
         }
-        return new SqlBasicCall( op, exprs, SqlParserPos.ZERO );
+        return new SqlBasicCall( op, exprs, ParserPos.ZERO );
     }
 
 
@@ -208,7 +208,7 @@ public class RexSqlStandardConvertletTable extends RexSqlReflectiveConvertletTab
                     return new SqlBasicCall(
                             op,
                             operandList.toArray( new SqlNode[0] ),
-                            SqlParserPos.ZERO );
+                            ParserPos.ZERO );
                 } );
     }
 
@@ -226,8 +226,8 @@ public class RexSqlStandardConvertletTable extends RexSqlReflectiveConvertletTab
                     if ( operands == null ) {
                         return null;
                     }
-                    SqlNodeList whenList = new SqlNodeList( SqlParserPos.ZERO );
-                    SqlNodeList thenList = new SqlNodeList( SqlParserPos.ZERO );
+                    SqlNodeList whenList = new SqlNodeList( ParserPos.ZERO );
+                    SqlNodeList thenList = new SqlNodeList( ParserPos.ZERO );
                     int i = 0;
                     while ( i < operands.length - 1 ) {
                         whenList.add( operands[i] );
@@ -236,7 +236,7 @@ public class RexSqlStandardConvertletTable extends RexSqlReflectiveConvertletTab
                         ++i;
                     }
                     SqlNode elseExpr = operands[i];
-                    return op.createCall( null, SqlParserPos.ZERO, null, whenList, thenList, elseExpr );
+                    return op.createCall( null, ParserPos.ZERO, null, whenList, thenList, elseExpr );
                 } );
     }
 
@@ -260,7 +260,7 @@ public class RexSqlStandardConvertletTable extends RexSqlReflectiveConvertletTab
             if ( operands == null ) {
                 return null;
             }
-            return new SqlBasicCall( op, operands, SqlParserPos.ZERO );
+            return new SqlBasicCall( op, operands, ParserPos.ZERO );
         }
     }
 }

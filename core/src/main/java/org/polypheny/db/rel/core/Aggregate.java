@@ -43,6 +43,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -65,7 +66,6 @@ import org.polypheny.db.runtime.Resources;
 import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlUtil;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.SqlValidatorException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Bug;
@@ -537,7 +537,7 @@ public abstract class Aggregate extends SingleRel {
 
         @Override
         public PolyphenyDbException newError( Resources.ExInst<SqlValidatorException> e ) {
-            return SqlUtil.newContextException( SqlParserPos.ZERO, e );
+            return SqlUtil.newContextException( ParserPos.ZERO, e );
         }
 
     }

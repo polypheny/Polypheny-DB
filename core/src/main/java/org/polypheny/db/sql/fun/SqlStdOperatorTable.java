@@ -2279,7 +2279,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
      */
     private static SqlCall copy( SqlCall call, SqlOperator operator ) {
         final List<SqlNode> list = call.getOperandList();
-        return new SqlBasicCall( operator, list.toArray( new SqlNode[0] ), call.getParserPosition() );
+        return new SqlBasicCall( operator, list.toArray( new SqlNode[0] ), call.getPos() );
     }
 
 

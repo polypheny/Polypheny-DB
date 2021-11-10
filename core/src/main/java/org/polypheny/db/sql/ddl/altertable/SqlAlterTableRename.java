@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -30,7 +31,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -44,7 +44,7 @@ public class SqlAlterTableRename extends SqlAlterTable {
     private final SqlIdentifier newName;
 
 
-    public SqlAlterTableRename( SqlParserPos pos, SqlIdentifier oldName, SqlIdentifier newName ) {
+    public SqlAlterTableRename( ParserPos pos, SqlIdentifier oldName, SqlIdentifier newName ) {
         super( pos );
         this.oldName = Objects.requireNonNull( oldName );
         this.newName = Objects.requireNonNull( newName );
@@ -79,7 +79,7 @@ public class SqlAlterTableRename extends SqlAlterTable {
         try {
             DdlManager.getInstance().renameTable( table, newName.getSimple(), statement );
         } catch ( TableAlreadyExistsException e ) {
-            throw SqlUtil.newContextException( newName.getParserPosition(), RESOURCE.tableExists( newName.getSimple() ) );
+            throw SqlUtil.newContextException( newName.getPos(), RESOURCE.tableExists( newName.getSimple() ) );
         }
     }
 

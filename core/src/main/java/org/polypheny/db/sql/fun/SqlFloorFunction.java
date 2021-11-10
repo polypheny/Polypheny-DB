@@ -44,7 +44,7 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -103,7 +103,7 @@ public class SqlFloorFunction extends SqlMonotonicUnaryFunction {
      * @param pos Parser position
      * @return Modified call
      */
-    public static SqlCall replaceTimeUnitOperand( SqlCall call, String literal, SqlParserPos pos ) {
+    public static SqlCall replaceTimeUnitOperand( SqlCall call, String literal, ParserPos pos ) {
         SqlLiteral literalNode = SqlLiteral.createCharString( literal, null, pos );
         return call.getOperator().createCall( call.getFunctionQuantifier(), pos, call.getOperandList().get( 0 ), literalNode );
     }
@@ -135,7 +135,7 @@ public class SqlFloorFunction extends SqlMonotonicUnaryFunction {
             SqlNode op1 = call.operand( 0 );
             SqlNode op2 = call.operand( 1 );
 
-            call1 = call.getOperator().createCall( call.getParserPosition(), op2, op1 );
+            call1 = call.getOperator().createCall( call.getPos(), op2, op1 );
         }
 
         SqlUtil.unparseFunctionSyntax( func, writer, call1 );

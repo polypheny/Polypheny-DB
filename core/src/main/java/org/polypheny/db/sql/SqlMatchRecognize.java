@@ -38,7 +38,7 @@ import com.google.common.base.Preconditions;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.util.SqlBasicVisitor;
 import org.polypheny.db.sql.util.SqlVisitor;
 import org.polypheny.db.sql.validate.SqlValidator;
@@ -101,7 +101,7 @@ public class SqlMatchRecognize extends SqlCall {
      * Creates a SqlMatchRecognize.
      */
     public SqlMatchRecognize(
-            SqlParserPos pos,
+            ParserPos pos,
             SqlNode tableRef,
             SqlNode pattern,
             SqlLiteral strictStart,
@@ -293,7 +293,7 @@ public class SqlMatchRecognize extends SqlCall {
         }
 
 
-        public SqlLiteral symbol( SqlParserPos pos ) {
+        public SqlLiteral symbol( ParserPos pos ) {
             return SqlLiteral.createSymbol( this, pos );
         }
     }
@@ -323,7 +323,7 @@ public class SqlMatchRecognize extends SqlCall {
         /**
          * Creates a parse-tree node representing an occurrence of this symbol at a particular position in the parsed text.
          */
-        public SqlLiteral symbol( SqlParserPos pos ) {
+        public SqlLiteral symbol( ParserPos pos ) {
             return SqlLiteral.createSymbol( this, pos );
         }
     }
@@ -356,7 +356,7 @@ public class SqlMatchRecognize extends SqlCall {
 
 
         @Override
-        public SqlCall createCall( SqlLiteral functionQualifier, SqlParserPos pos, SqlNode... operands ) {
+        public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
             assert functionQualifier == null;
             assert operands.length == 12;
 
@@ -471,11 +471,11 @@ public class SqlMatchRecognize extends SqlCall {
             writer.sep( "DEFINE" );
 
             final SqlWriter.Frame patternDefFrame = writer.startList( "", "" );
-            final SqlNodeList newDefineList = new SqlNodeList( SqlParserPos.ZERO );
+            final SqlNodeList newDefineList = new SqlNodeList( ParserPos.ZERO );
             for ( SqlNode node : pattern.getPatternDefList() ) {
                 final SqlCall call2 = (SqlCall) node;
                 // swap the position of alias position in AS operator
-                newDefineList.add( call2.getOperator().createCall( SqlParserPos.ZERO, call2.operand( 1 ), call2.operand( 0 ) ) );
+                newDefineList.add( call2.getOperator().createCall( ParserPos.ZERO, call2.operand( 1 ), call2.operand( 0 ) ) );
             }
             newDefineList.unparse( writer, 0, 0 );
             writer.endList( patternDefFrame );

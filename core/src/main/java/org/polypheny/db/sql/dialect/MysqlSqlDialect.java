@@ -37,6 +37,7 @@ package org.polypheny.db.sql.dialect;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.sql.NullCollation;
@@ -56,7 +57,6 @@ import org.polypheny.db.sql.SqlSelect;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.fun.SqlCase;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.InferTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -138,10 +138,10 @@ public class MysqlSqlDialect extends SqlDialect {
         switch ( type.getPolyType() ) {
             case VARCHAR:
                 // MySQL doesn't have a VARCHAR type, only CHAR.
-                return new SqlDataTypeSpec( new SqlIdentifier( "CHAR", SqlParserPos.ZERO ), type.getPrecision(), -1, null, null, SqlParserPos.ZERO );
+                return new SqlDataTypeSpec( new SqlIdentifier( "CHAR", ParserPos.ZERO ), type.getPrecision(), -1, null, null, ParserPos.ZERO );
             case INTEGER:
             case BIGINT:
-                return new SqlDataTypeSpec( new SqlIdentifier( "_SIGNED", SqlParserPos.ZERO ), type.getPrecision(), -1, null, null, SqlParserPos.ZERO );
+                return new SqlDataTypeSpec( new SqlIdentifier( "_SIGNED", ParserPos.ZERO ), type.getPrecision(), -1, null, null, ParserPos.ZERO );
         }
         return super.getCastSpec( type );
     }
@@ -150,9 +150,9 @@ public class MysqlSqlDialect extends SqlDialect {
     @Override
     public SqlNode rewriteSingleValueExpr( SqlNode aggCall ) {
         final SqlNode operand = ((SqlBasicCall) aggCall).operand( 0 );
-        final SqlLiteral nullLiteral = SqlLiteral.createNull( SqlParserPos.ZERO );
+        final SqlLiteral nullLiteral = SqlLiteral.createNull( ParserPos.ZERO );
         final SqlNode unionOperand = new SqlSelect(
-                SqlParserPos.ZERO,
+                ParserPos.ZERO,
                 SqlNodeList.EMPTY,
                 SqlNodeList.of( nullLiteral ),
                 null,
@@ -170,15 +170,15 @@ public class MysqlSqlDialect extends SqlDialect {
         //   ELSE (SELECT NULL UNION ALL SELECT NULL)
         //   END
         final SqlNode caseExpr =
-                new SqlCase( SqlParserPos.ZERO,
-                        SqlStdOperatorTable.COUNT.createCall( SqlParserPos.ZERO, operand ),
+                new SqlCase( ParserPos.ZERO,
+                        SqlStdOperatorTable.COUNT.createCall( ParserPos.ZERO, operand ),
                         SqlNodeList.of(
-                                SqlLiteral.createExactNumeric( "0", SqlParserPos.ZERO ),
-                                SqlLiteral.createExactNumeric( "1", SqlParserPos.ZERO ) ),
+                                SqlLiteral.createExactNumeric( "0", ParserPos.ZERO ),
+                                SqlLiteral.createExactNumeric( "1", ParserPos.ZERO ) ),
                         SqlNodeList.of( nullLiteral, operand ),
                         SqlStdOperatorTable.SCALAR_QUERY.createCall(
-                                SqlParserPos.ZERO,
-                                SqlStdOperatorTable.UNION_ALL.createCall( SqlParserPos.ZERO, unionOperand, unionOperand ) ) );
+                                ParserPos.ZERO,
+                                SqlStdOperatorTable.UNION_ALL.createCall( ParserPos.ZERO, unionOperand, unionOperand ) ) );
 
         log.debug( "SINGLE_VALUE rewritten into [{}]", caseExpr );
 

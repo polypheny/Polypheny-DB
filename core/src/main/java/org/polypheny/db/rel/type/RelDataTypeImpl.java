@@ -40,10 +40,10 @@ import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.SqlCollation;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlIntervalQualifier;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
@@ -288,7 +288,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
         if ( typeName == null ) {
             return null;
         }
-        return new SqlIdentifier( typeName.name(), SqlParserPos.ZERO );
+        return new SqlIdentifier( typeName.name(), ParserPos.ZERO );
     }
 
 

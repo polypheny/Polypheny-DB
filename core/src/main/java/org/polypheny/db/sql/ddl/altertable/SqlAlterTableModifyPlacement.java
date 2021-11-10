@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.IndexPreventsRemovalException;
 import org.polypheny.db.ddl.exception.LastPlacementException;
@@ -37,7 +38,6 @@ import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -56,7 +56,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
 
 
     public SqlAlterTableModifyPlacement(
-            SqlParserPos pos,
+            ParserPos pos,
             SqlIdentifier table,
             SqlNodeList columnList,
             SqlIdentifier storeName,
@@ -139,15 +139,15 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
                     statement );
         } catch ( PlacementNotExistsException e ) {
             throw SqlUtil.newContextException(
-                    storeName.getParserPosition(),
+                    storeName.getPos(),
                     RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
         } catch ( IndexPreventsRemovalException e ) {
             throw SqlUtil.newContextException(
-                    storeName.getParserPosition(),
+                    storeName.getPos(),
                     RESOURCE.indexPreventsRemovalOfPlacement( e.getIndexName(), e.getColumnName() ) );
         } catch ( LastPlacementException e ) {
             throw SqlUtil.newContextException(
-                    storeName.getParserPosition(),
+                    storeName.getPos(),
                     RESOURCE.onlyOnePlacementLeft() );
         }
 
