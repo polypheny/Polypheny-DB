@@ -33,7 +33,7 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.restapi.exception.UnauthorizedAccessException;
 import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.util.Pair;
 
 

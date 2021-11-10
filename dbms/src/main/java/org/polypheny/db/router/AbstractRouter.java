@@ -44,6 +44,8 @@ import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -84,8 +86,6 @@ import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Statement;
 
@@ -739,7 +739,7 @@ public abstract class AbstractRouter implements Router {
 
                                     if ( partitionColumnName.equals( columnName ) ) {
 
-                                        if ( ((LogicalTableModify) node).getInput().getChildExps().get( i ).getKind().equals( SqlKind.DYNAMIC_PARAM ) ) {
+                                        if ( ((LogicalTableModify) node).getInput().getChildExps().get( i ).getKind().equals( Kind.DYNAMIC_PARAM ) ) {
 
                                             // Needed to identify the column which contains the partition value
                                             long partitionValueIndex = ((RexDynamicParam) fieldValues.get( i )).getIndex();
@@ -1345,7 +1345,7 @@ public abstract class AbstractRouter implements Router {
             super.visitCall( call );
 
             if ( call.operands.size() == 2 ) {
-                if ( call.op.getKind().equals( SqlKind.EQUALS ) ) {
+                if ( call.op.getKind().equals( Kind.EQUALS ) ) {
                     if ( call.operands.get( 0 ) instanceof RexInputRef ) {
                         if ( ((RexInputRef) call.operands.get( 0 )).getIndex() == partitionColumnIndex ) {
                             if ( call.operands.get( 1 ) instanceof RexLiteral ) {

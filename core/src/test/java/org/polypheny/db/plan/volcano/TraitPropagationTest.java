@@ -91,7 +91,7 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.AbstractTable;
 import org.polypheny.db.sql.SqlExplainFormat;
 import org.polypheny.db.sql.SqlExplainLevel;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.RuleSet;

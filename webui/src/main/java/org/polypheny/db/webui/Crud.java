@@ -141,6 +141,7 @@ import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.BsonUtil;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.docker.DockerManager;
@@ -158,6 +159,7 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.DmlEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
@@ -173,8 +175,6 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.statistic.StatisticsManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -2911,7 +2911,7 @@ public class Crud implements InformationObserver {
                 result instanceof Sort
                         ? ((Sort) result).collation
                         : RelCollations.EMPTY;
-        RelRoot root = new RelRoot( result, result.getRowType(), SqlKind.SELECT, fields, collation );
+        RelRoot root = new RelRoot( result, result.getRowType(), Kind.SELECT, fields, collation );
 
         // Prepare
         PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( root );
@@ -3965,7 +3965,7 @@ public class Crud implements InformationObserver {
         SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
         SqlNode parsed = sqlProcessor.parse( sql );
         RelRoot logicalRoot = null;
-        if ( parsed.isA( SqlKind.DDL ) ) {
+        if ( parsed.isA( Kind.DDL ) ) {
             signature = sqlProcessor.prepareDdl( statement, parsed );
         } else {
             Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );

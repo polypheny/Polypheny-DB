@@ -55,7 +55,7 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperatorTable;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParser;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.sql.validate.SqlConformance;

@@ -38,11 +38,11 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.mapping.Mappings;
@@ -94,7 +94,7 @@ public class RelRoot {
 
     public final RelNode rel;
     public final RelDataType validatedRowType;
-    public final SqlKind kind;
+    public final Kind kind;
     public final ImmutableList<Pair<Integer, String>> fields;
     public final RelCollation collation;
     public boolean usesDocumentModel = false;
@@ -107,7 +107,7 @@ public class RelRoot {
      * @param kind Type of query (SELECT, UPDATE, ...)
      */
 
-    public RelRoot( RelNode rel, RelDataType validatedRowType, SqlKind kind, List<Pair<Integer, String>> fields, RelCollation collation ) {
+    public RelRoot( RelNode rel, RelDataType validatedRowType, Kind kind, List<Pair<Integer, String>> fields, RelCollation collation ) {
         this.rel = rel;
         this.validatedRowType = validatedRowType;
         this.kind = kind;
@@ -119,7 +119,7 @@ public class RelRoot {
     /**
      * Creates a simple RelRoot.
      */
-    public static RelRoot of( RelNode rel, SqlKind kind ) {
+    public static RelRoot of( RelNode rel, Kind kind ) {
         return of( rel, rel.getRowType(), kind );
     }
 
@@ -127,7 +127,7 @@ public class RelRoot {
     /**
      * Creates a simple RelRoot.
      */
-    public static RelRoot of( RelNode rel, RelDataType rowType, SqlKind kind ) {
+    public static RelRoot of( RelNode rel, RelDataType rowType, Kind kind ) {
         final ImmutableIntList refs = ImmutableIntList.identity( rowType.getFieldCount() );
         final List<String> names = rowType.getFieldNames();
         return new RelRoot( rel, rowType, kind, Pair.zip( refs, names ),
@@ -159,7 +159,7 @@ public class RelRoot {
     /**
      * Creates a copy, assigning a new kind.
      */
-    public RelRoot withKind( SqlKind kind ) {
+    public RelRoot withKind( Kind kind ) {
         if ( kind == this.kind ) {
             return this;
         }
@@ -187,7 +187,7 @@ public class RelRoot {
      */
     public RelNode project( boolean force ) {
         if ( isRefTrivial()
-                && (SqlKind.DML.contains( kind )
+                && (Kind.DML.contains( kind )
                 || !force
                 || rel instanceof LogicalProject) ) {
             return rel;
@@ -208,7 +208,7 @@ public class RelRoot {
 
 
     public boolean isRefTrivial() {
-        if ( SqlKind.DML.contains( kind ) ) {
+        if ( Kind.DML.contains( kind ) ) {
             // DML statements return a single count column. The validated type is of the SELECT. Still, we regard the mapping as trivial.
             return true;
         }

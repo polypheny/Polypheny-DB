@@ -100,7 +100,7 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.OracleSqlOperatorTable;
 import org.polypheny.db.sql.fun.SqlJsonArrayAggAggFunction;
 import org.polypheny.db.sql.fun.SqlJsonObjectAggAggFunction;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.sql.fun.SqlTrimFunction;
 import org.polypheny.db.sql.fun.SqlTrimFunction.Flag;
 import org.polypheny.db.sql.validate.SqlUserDefinedAggFunction;

@@ -5,6 +5,7 @@ version = versionMajor + "." + versionMinor + versionQualifier
 
 dependencies {
     implementation project(":core")
+    implementation project(":languages")
     implementation project(":monitoring")
     implementation group: "com.sparkjava", name: "spark-core", version: spark_core_version
     implementation group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version

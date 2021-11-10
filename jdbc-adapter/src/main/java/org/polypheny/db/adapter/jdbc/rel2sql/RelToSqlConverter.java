@@ -89,7 +89,7 @@ import org.polypheny.db.sql.SqlSelect;
 import org.polypheny.db.sql.SqlUpdate;
 import org.polypheny.db.sql.fun.SqlRowOperator;
 import org.polypheny.db.sql.fun.SqlSingleValueAggFunction;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.ReflectUtil;

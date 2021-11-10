@@ -62,6 +62,7 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.document.util.DataModelShuttle;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -70,6 +71,10 @@ import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.languages.sql.SqlExplainFormat;
+import org.polypheny.db.languages.sql.SqlExplainLevel;
+import org.polypheny.db.languages.sql.validate.SqlConformance;
+import org.polypheny.db.languages.sql2rel.RelStructuredTypeFlattener;
 import org.polypheny.db.monitoring.events.DmlEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
@@ -119,11 +124,6 @@ import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
-import org.polypheny.db.sql.SqlExplainFormat;
-import org.polypheny.db.sql.SqlExplainLevel;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.validate.SqlConformance;
-import org.polypheny.db.sql2rel.RelStructuredTypeFlattener;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
 import org.polypheny.db.tools.RelBuilder;
@@ -194,9 +194,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         }
 
         if ( statement.getTransaction().getMonitoringData() == null ) {
-            if ( logicalRoot.kind.belongsTo( SqlKind.DML ) ) {
+            if ( logicalRoot.kind.belongsTo( Kind.DML ) ) {
                 statement.getTransaction().setMonitoringData( new DmlEvent() );
-            } else if ( logicalRoot.kind.belongsTo( SqlKind.QUERY ) ) {
+            } else if ( logicalRoot.kind.belongsTo( Kind.QUERY ) ) {
                 statement.getTransaction().setMonitoringData( new QueryEvent() );
             }
         }
@@ -319,7 +319,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         //
         // Parameterize
         RelRoot parameterizedRoot = null;
-        if ( statement.getDataContext().getParameterValues().size() == 0 && (RuntimeConfig.PARAMETERIZE_DML.getBoolean() || !routedRoot.kind.belongsTo( SqlKind.DML )) ) {
+        if ( statement.getDataContext().getParameterValues().size() == 0 && (RuntimeConfig.PARAMETERIZE_DML.getBoolean() || !routedRoot.kind.belongsTo( Kind.DML )) ) {
             Pair<RelRoot, RelDataType> parameterized = parameterize( routedRoot, parameterRowType );
             parameterizedRoot = parameterized.left;
             parameterRowType = parameterized.right;
@@ -333,7 +333,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         if ( isAnalyze ) {
             statement.getProcessingDuration().start( "Implementation Caching" );
         }
-        if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && statement.getTransaction().getUseCache() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
+        if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && statement.getTransaction().getUseCache() && (!routedRoot.kind.belongsTo( Kind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
             PreparedResult preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.rel );
             if ( preparedResult != null ) {
                 PolyphenyDbSignature signature = createSignature( preparedResult, routedRoot, resultConvention, executionTimeMonitor );
@@ -370,7 +370,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             statement.getProcessingDuration().start( "Plan Caching" );
         }
         RelNode optimalNode;
-        if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && statement.getTransaction().getUseCache() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
+        if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && statement.getTransaction().getUseCache() && (!routedRoot.kind.belongsTo( Kind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
             optimalNode = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRoot.rel );
         } else {
             parameterizedRoot = routedRoot;
@@ -392,7 +392,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             //    optimalRoot = optimalRoot.withKind( sqlNodeOriginal.getKind() );
             //}
 
-            if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && statement.getTransaction().getUseCache() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
+            if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && statement.getTransaction().getUseCache() && (!routedRoot.kind.belongsTo( Kind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
                 QueryPlanCache.INSTANCE.put( parameterizedRoot.rel, optimalNode );
             }
         }
@@ -411,7 +411,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         PreparedResult preparedResult = implement( optimalRoot, parameterRowType );
 
         // Cache implementation
-        if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && statement.getTransaction().getUseCache() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
+        if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && statement.getTransaction().getUseCache() && (!routedRoot.kind.belongsTo( Kind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
             if ( optimalRoot.rel.isImplementationCacheable() ) {
                 ImplementationCache.INSTANCE.put( parameterizedRoot.rel, preparedResult );
             } else {
@@ -454,7 +454,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
 
     private RelRoot indexUpdate( RelRoot root, Statement statement, RelDataType parameterRowType ) {
-        if ( root.kind.belongsTo( SqlKind.DML ) ) {
+        if ( root.kind.belongsTo( Kind.DML ) ) {
             final RelShuttle shuttle = new RelShuttleImpl() {
 
                 @Override
@@ -604,7 +604,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 //                                RelDataType type = transaction.getTypeFactory().createStructType( types, originalProject.getRowType().getFieldNames() );
 //                                originalProject = LogicalProject.create( originalProject, expr, type );
 //                            }
-                            RelRoot scanRoot = RelRoot.of( originalProject, SqlKind.SELECT );
+                            RelRoot scanRoot = RelRoot.of( originalProject, Kind.SELECT );
                             final PolyphenyDbSignature scanSig = prepareQuery( scanRoot, parameterRowType, false, true );
                             final Iterable<Object> enumerable = scanSig.enumerable( statement.getDataContext() );
                             final Iterator<Object> iterator = enumerable.iterator();
@@ -718,7 +718,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         final RelBuilder builder = RelBuilder.create( statement, logicalRoot.rel.getCluster() );
         final RexBuilder rexBuilder = builder.getRexBuilder();
         RelNode newRoot = logicalRoot.rel;
-        if ( logicalRoot.kind.belongsTo( SqlKind.DML ) ) {
+        if ( logicalRoot.kind.belongsTo( Kind.DML ) ) {
             final RelShuttle shuttle = new RelShuttleImpl() {
 
                 @Override
@@ -1031,7 +1031,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         }
 
         RelDataType resultType = root.rel.getRowType();
-        boolean isDml = root.kind.belongsTo( SqlKind.DML );
+        boolean isDml = root.kind.belongsTo( Kind.DML );
 
         return new PreparedResultImpl(
                 resultType,
@@ -1112,7 +1112,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     }
 
 
-    protected LogicalTableModify.Operation mapTableModOp( boolean isDml, SqlKind sqlKind ) {
+    protected LogicalTableModify.Operation mapTableModOp( boolean isDml, Kind sqlKind ) {
         if ( !isDml ) {
             return null;
         }

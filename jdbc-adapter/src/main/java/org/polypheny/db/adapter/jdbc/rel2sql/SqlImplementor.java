@@ -105,7 +105,7 @@ import org.polypheny.db.sql.SqlSelectKeyword;
 import org.polypheny.db.sql.SqlSetOperator;
 import org.polypheny.db.sql.SqlWindow;
 import org.polypheny.db.sql.fun.SqlCase;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.sql.fun.SqlSumEmptyIsZeroAggFunction;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;

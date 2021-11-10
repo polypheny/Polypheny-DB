@@ -32,7 +32,10 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.DmlEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
@@ -64,7 +67,6 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilder.GroupKey;
 import org.polypheny.db.transaction.Statement;
@@ -144,7 +146,7 @@ public class Rest {
                 relNode instanceof Sort
                         ? ((Sort) relNode).collation
                         : RelCollations.EMPTY;
-        RelRoot root = new RelRoot( relNode, relNode.getRowType(), SqlKind.SELECT, fields, collation );
+        RelRoot root = new RelRoot( relNode, relNode.getRowType(), Kind.SELECT, fields, collation );
         log.debug( "RelRoot was built." );
 
         return executeAndTransformRelAlg( root, statement, res );
@@ -205,7 +207,7 @@ public class Rest {
                 relNode instanceof Sort
                         ? ((Sort) relNode).collation
                         : RelCollations.EMPTY;
-        RelRoot root = new RelRoot( tableModify, rowType, SqlKind.UPDATE, fields, collation );
+        RelRoot root = new RelRoot( tableModify, rowType, Kind.UPDATE, fields, collation );
         log.debug( "RelRoot was built." );
 
         return executeAndTransformRelAlg( root, statement, res );
@@ -260,7 +262,7 @@ public class Rest {
                 relNode instanceof Sort
                         ? ((Sort) relNode).collation
                         : RelCollations.EMPTY;
-        RelRoot root = new RelRoot( tableModify, rowType, SqlKind.DELETE, fields, collation );
+        RelRoot root = new RelRoot( tableModify, rowType, Kind.DELETE, fields, collation );
         log.debug( "RelRoot was built." );
 
         return executeAndTransformRelAlg( root, statement, res );
@@ -314,7 +316,7 @@ public class Rest {
                 relNode instanceof Sort
                         ? ((Sort) relNode).collation
                         : RelCollations.EMPTY;
-        RelRoot root = new RelRoot( tableModify, rowType, SqlKind.INSERT, fields, collation );
+        RelRoot root = new RelRoot( tableModify, rowType, Kind.INSERT, fields, collation );
         log.debug( "RelRoot was built." );
 
         return executeAndTransformRelAlg( root, statement, res );

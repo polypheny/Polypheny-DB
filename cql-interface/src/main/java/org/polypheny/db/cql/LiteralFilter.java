@@ -18,11 +18,11 @@ package org.polypheny.db.cql;
 
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 
 
 /**

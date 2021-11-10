@@ -59,7 +59,7 @@ import org.polypheny.db.sql.dialect.JethroDataSqlDialect;
 import org.polypheny.db.sql.dialect.MysqlSqlDialect;
 import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.dialect.PostgresqlSqlDialect;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.sql2rel.SqlToRelConverter;
 import org.polypheny.db.test.Matchers;

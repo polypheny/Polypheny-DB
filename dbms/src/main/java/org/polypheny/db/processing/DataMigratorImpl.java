@@ -37,7 +37,9 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.languages.sql2rel.RelStructuredTypeFlattener;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.plan.RelOptCluster;
@@ -55,8 +57,6 @@ import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.PolySchemaBuilder;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql2rel.RelStructuredTypeFlattener;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -248,7 +248,7 @@ public class DataMigratorImpl implements DataMigrator {
                 true
         );
 
-        return RelRoot.of( node, SqlKind.DELETE );
+        return RelRoot.of( node, Kind.DELETE );
     }
 
 
@@ -289,7 +289,7 @@ public class DataMigratorImpl implements DataMigrator {
                 null,
                 true
         );
-        return RelRoot.of( node, SqlKind.INSERT );
+        return RelRoot.of( node, Kind.INSERT );
     }
 
 
@@ -350,7 +350,7 @@ public class DataMigratorImpl implements DataMigrator {
                 values,
                 false
         );
-        RelRoot relRoot = RelRoot.of( node, SqlKind.UPDATE );
+        RelRoot relRoot = RelRoot.of( node, Kind.UPDATE );
         RelStructuredTypeFlattener typeFlattener = new RelStructuredTypeFlattener(
                 RelBuilder.create( statement, relRoot.rel.getCluster() ),
                 relRoot.rel.getCluster().getRexBuilder(),
@@ -369,7 +369,7 @@ public class DataMigratorImpl implements DataMigrator {
                 new RexBuilder( statement.getTransaction().getTypeFactory() ) );
 
         RelNode node = statement.getRouter().buildJoinedTableScan( statement, cluster, placementDistribution );
-        return RelRoot.of( node, SqlKind.SELECT );
+        return RelRoot.of( node, Kind.SELECT );
     }
 
 

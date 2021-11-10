@@ -56,27 +56,27 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.PolyphenyDbException;
-import org.polypheny.db.sql.SqlBasicCall;
-import org.polypheny.db.sql.SqlExecutableStatement;
-import org.polypheny.db.sql.SqlExplainFormat;
-import org.polypheny.db.sql.SqlExplainLevel;
-import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.SqlInsert;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlLiteral;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlNodeList;
-import org.polypheny.db.sql.SqlUtil;
-import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParseException;
-import org.polypheny.db.sql.parser.SqlParser;
-import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
+import org.polypheny.db.languages.sql.SqlBasicCall;
+import org.polypheny.db.languages.sql.SqlExecutableStatement;
+import org.polypheny.db.languages.sql.SqlExplainFormat;
+import org.polypheny.db.languages.sql.SqlExplainLevel;
+import org.polypheny.db.languages.sql.SqlIdentifier;
+import org.polypheny.db.languages.sql.SqlInsert;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.languages.sql.SqlLiteral;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlNodeList;
+import org.polypheny.db.languages.sql.SqlUtil;
+import org.polypheny.db.languages.sql.dialect.PolyphenyDbSqlDialect;
+import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.languages.sql.parser.SqlParseException;
+import org.polypheny.db.languages.sql.parser.SqlParser;
+import org.polypheny.db.languages.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.sql.validate.SqlConformance;
-import org.polypheny.db.sql2rel.RelDecorrelator;
-import org.polypheny.db.sql2rel.SqlToRelConverter;
-import org.polypheny.db.sql2rel.StandardConvertletTable;
+import org.polypheny.db.languages.sql.validate.SqlConformance;
+import org.polypheny.db.languages.sql2rel.RelDecorrelator;
+import org.polypheny.db.languages.sql2rel.SqlToRelConverter;
+import org.polypheny.db.languages.sql2rel.StandardConvertletTable;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.DeadlockException;
 import org.polypheny.db.transaction.Lock.LockMode;
@@ -151,7 +151,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
         // Add default values for unset fields
         if ( addDefaultValues ) {
-            if ( parsed.getKind() == SqlKind.INSERT ) {
+            if ( parsed.getKind() == Kind.INSERT ) {
                 addDefaultValues( transaction, (SqlInsert) parsed );
             }
         }
@@ -471,7 +471,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
                 .withExpand( false )
                 .build();
         final boolean ordered = !root.collation.getFieldCollations().isEmpty();
-        final boolean dml = SqlKind.DML.contains( root.kind );
+        final boolean dml = Kind.DML.contains( root.kind );
         return root.withRel( sqlToRelConverter.trimUnusedFields( dml || ordered, root.rel ) );
     }
 

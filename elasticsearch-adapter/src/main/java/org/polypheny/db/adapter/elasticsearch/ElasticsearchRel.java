@@ -39,11 +39,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.rel.RelFieldCollation;
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.util.Pair;
 
 

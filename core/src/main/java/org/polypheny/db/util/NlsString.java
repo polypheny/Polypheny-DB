@@ -51,14 +51,15 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import javax.annotation.Nonnull;
+import lombok.Getter;
 import org.apache.calcite.avatica.util.ByteString;
+import org.polypheny.db.core.Collation;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.runtime.SqlFunctions;
-import org.polypheny.db.sql.SqlCollation;
-import org.polypheny.db.sql.SqlUtil;
 
 
 /**
- * A string, optionally with {@link Charset character set} and {@link SqlCollation}. It is immutable.
+ * A string, optionally with {@link Charset character set} and {@link Collation}. It is immutable.
  */
 public class NlsString implements Comparable<NlsString>, Cloneable, Externalizable {
 
@@ -86,9 +87,12 @@ public class NlsString implements Comparable<NlsString>, Cloneable, Externalizab
 
     private String stringValue;
     private ByteString bytesValue;
+    @Getter
     private String charsetName;
+    @Getter
     private Charset charset;
-    private SqlCollation collation;
+    @Getter
+    private Collation collation;
 
 
     /**
@@ -101,7 +105,7 @@ public class NlsString implements Comparable<NlsString>, Cloneable, Externalizab
      * @throws UnsupportedCharsetException If no support for the named charset is available in this instance of the Java virtual machine
      * @throws RuntimeException If the given value cannot be represented in the given charset
      */
-    public NlsString( ByteString bytesValue, String charsetName, SqlCollation collation ) {
+    public NlsString( ByteString bytesValue, String charsetName, Collation collation ) {
         this( null, Objects.requireNonNull( bytesValue ), Objects.requireNonNull( charsetName ), collation );
     }
 
@@ -116,7 +120,7 @@ public class NlsString implements Comparable<NlsString>, Cloneable, Externalizab
      * @throws UnsupportedCharsetException If no support for the named charset is available in this instance of the Java virtual machine
      * @throws RuntimeException If the given value cannot be represented in the given charset
      */
-    public NlsString( String stringValue, String charsetName, SqlCollation collation ) {
+    public NlsString( String stringValue, String charsetName, Collation collation ) {
         this( Objects.requireNonNull( stringValue ), null, charsetName, collation );
     }
 
@@ -124,10 +128,10 @@ public class NlsString implements Comparable<NlsString>, Cloneable, Externalizab
     /**
      * Internal constructor; other constructors must call it.
      */
-    private NlsString( String stringValue, ByteString bytesValue, String charsetName, SqlCollation collation ) {
+    private NlsString( String stringValue, ByteString bytesValue, String charsetName, Collation collation ) {
         if ( charsetName != null ) {
             this.charsetName = charsetName.toUpperCase( Locale.ROOT );
-            this.charset = SqlUtil.getCharset( charsetName );
+            this.charset = CoreUtil.getCharset( charsetName );
         } else {
             this.charsetName = null;
             this.charset = null;
@@ -139,7 +143,7 @@ public class NlsString implements Comparable<NlsString>, Cloneable, Externalizab
             if ( charsetName == null ) {
                 throw new IllegalArgumentException( "Bytes value requires charset" );
             }
-            SqlUtil.validateCharset( bytesValue, charset );
+            CoreUtil.validateCharset( bytesValue, charset );
         } else {
             // Java string can be malformed if LATIN1 is required.
             if ( this.charsetName != null && (this.charsetName.equals( "LATIN1" ) || this.charsetName.equals( "ISO-8859-1" )) ) {
@@ -187,21 +191,6 @@ public class NlsString implements Comparable<NlsString>, Cloneable, Externalizab
     public int compareTo( NlsString other ) {
         // TODO jvs 18-Jan-2006:  Actual collation support.  This just uses the default collation.
         return getValue().compareTo( other.getValue() );
-    }
-
-
-    public String getCharsetName() {
-        return charsetName;
-    }
-
-
-    public Charset getCharset() {
-        return charset;
-    }
-
-
-    public SqlCollation getCollation() {
-        return collation;
     }
 
 
@@ -273,7 +262,7 @@ public class NlsString implements Comparable<NlsString>, Cloneable, Externalizab
             return args.get( 0 );
         }
         String charSetName = args.get( 0 ).charsetName;
-        SqlCollation collation = args.get( 0 ).collation;
+        Collation collation = args.get( 0 ).collation;
         int length = args.get( 0 ).getValue().length();
 
         // sum string lengths and validate
@@ -328,7 +317,7 @@ public class NlsString implements Comparable<NlsString>, Cloneable, Externalizab
         bytesValue = (ByteString) in.readObject();
         charsetName = in.readUTF();
         charset = ((SerializableCharset) in.readObject()).getCharset();
-        collation = (SqlCollation) in.readObject();
+        collation = (Collation) in.readObject();
     }
 
 }

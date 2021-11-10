@@ -39,11 +39,11 @@ import java.util.TimeZone;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.joda.time.Period;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.type.PolyType;
 
 

@@ -1,0 +1,92 @@
+/*
+ * Copyright 2019-2021 The Polypheny Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.polypheny.db.languages.sql.validate;
+
+
+import com.google.common.collect.Lists;
+import java.util.List;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.schema.Function;
+import org.polypheny.db.schema.FunctionParameter;
+import org.polypheny.db.languages.sql.SqlFunction;
+import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.languages.sql.SqlIdentifier;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.type.checker.PolyOperandTypeChecker;
+import org.polypheny.db.type.inference.PolyOperandTypeInference;
+import org.polypheny.db.type.inference.PolyReturnTypeInference;
+import org.polypheny.db.util.Util;
+
+
+/**
+ * User-defined scalar function.
+ *
+ * Created by the validator, after resolving a function call to a function defined in a Polypheny-DB schema.
+ */
+public class SqlUserDefinedFunction extends SqlFunction {
+
+    public final Function function;
+
+
+    /**
+     * Creates a {@link SqlUserDefinedFunction}.
+     */
+    public SqlUserDefinedFunction( SqlIdentifier opName, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, List<RelDataType> paramTypes, Function function ) {
+        this(
+                opName,
+                returnTypeInference,
+                operandTypeInference,
+                operandTypeChecker,
+                paramTypes,
+                function,
+                SqlFunctionCategory.USER_DEFINED_FUNCTION );
+    }
+
+
+    /**
+     * Constructor used internally and by derived classes.
+     */
+    protected SqlUserDefinedFunction( SqlIdentifier opName, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, List<RelDataType> paramTypes, Function function, SqlFunctionCategory category ) {
+        super(
+                Util.last( opName.names ),
+                opName,
+                Kind.OTHER_FUNCTION,
+                returnTypeInference,
+                operandTypeInference,
+                operandTypeChecker,
+                paramTypes,
+                category );
+        this.function = function;
+    }
+
+
+    /**
+     * Returns function that implements given operator call.
+     *
+     * @return function that implements given operator call
+     */
+    public Function getFunction() {
+        return function;
+    }
+
+
+    @Override
+    public List<String> getParamNames() {
+        return Lists.transform( function.getParameters(), FunctionParameter::getName );
+    }
+}
+

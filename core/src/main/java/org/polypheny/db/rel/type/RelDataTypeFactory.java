@@ -40,8 +40,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.sql.SqlCollation;
 import org.polypheny.db.sql.SqlIntervalQualifier;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.type.PolyType;
@@ -184,7 +184,7 @@ public interface RelDataTypeFactory {
      * @return output type, same as input type except with specified charset and
      * collation
      */
-    RelDataType createTypeWithCharsetAndCollation( RelDataType type, Charset charset, SqlCollation collation );
+    RelDataType createTypeWithCharsetAndCollation( RelDataType type, Charset charset, Collation collation );
 
     /**
      * @return the default {@link Charset} for string types
@@ -220,7 +220,7 @@ public interface RelDataTypeFactory {
     /**
      * Creates a Poly type with length (precision) but no scale.
      *
-     * @param typeName  Name of the type, for example {@link PolyType#VARCHAR}. Never null.
+     * @param typeName Name of the type, for example {@link PolyType#VARCHAR}. Never null.
      * @param precision Maximum length of the value (non-numeric types) or the precision of the value (numeric/datetime types). Must be non-negative or {@link RelDataType#PRECISION_NOT_SPECIFIED}.
      * @return canonical type descriptor
      */
@@ -229,9 +229,9 @@ public interface RelDataTypeFactory {
     /**
      * Creates a Poly type with precision and scale.
      *
-     * @param typeName  Name of the type, for example {@link PolyType#DECIMAL}. Never null.
+     * @param typeName Name of the type, for example {@link PolyType#DECIMAL}. Never null.
      * @param precision Precision of the value. Must be non-negative or {@link RelDataType#PRECISION_NOT_SPECIFIED}.
-     * @param scale     scale of the values, i.e. the number of decimal places to shift the value. For example, a NUMBER(10,3) value of "123.45" is represented "123450" (that is, multiplied by 10^3). A negative scale <em>is</em> valid.
+     * @param scale scale of the values, i.e. the number of decimal places to shift the value. For example, a NUMBER(10,3) value of "123.45" is represented "123450" (that is, multiplied by 10^3). A negative scale <em>is</em> valid.
      * @return canonical type descriptor
      */
     RelDataType createPolyType( PolyType typeName, int precision, int scale );
@@ -317,6 +317,7 @@ public interface RelDataTypeFactory {
          * @return Type of given field
          */
         RelDataType getFieldType( int index );
+
     }
 
 
@@ -389,6 +390,7 @@ public interface RelDataTypeFactory {
         public FieldInfoBuilder uniquify() {
             return (FieldInfoBuilder) super.uniquify();
         }
+
     }
 
 
@@ -583,6 +585,8 @@ public interface RelDataTypeFactory {
         public boolean nameExists( String name ) {
             return names.contains( name );
         }
+
     }
+
 }
 

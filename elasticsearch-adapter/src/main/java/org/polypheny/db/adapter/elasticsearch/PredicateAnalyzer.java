@@ -34,8 +34,6 @@
 package org.polypheny.db.adapter.elasticsearch;
 
 
-import static java.lang.String.format;
-
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import java.util.ArrayList;
@@ -49,6 +47,7 @@ import java.util.stream.Collectors;
 import org.polypheny.db.adapter.elasticsearch.QueryBuilders.BoolQueryBuilder;
 import org.polypheny.db.adapter.elasticsearch.QueryBuilders.QueryBuilder;
 import org.polypheny.db.adapter.elasticsearch.QueryBuilders.RangeQueryBuilder;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
@@ -60,7 +59,6 @@ import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlSyntax;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 

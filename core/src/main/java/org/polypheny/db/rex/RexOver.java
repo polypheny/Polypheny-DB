@@ -41,7 +41,7 @@ import javax.annotation.Nonnull;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.SqlWindow;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.util.ControlFlowException;
 import org.polypheny.db.util.Util;
 

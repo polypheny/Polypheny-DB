@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
 import org.polypheny.db.adapter.DataContext.ParameterValue;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.languages.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.core.TableModify;
@@ -51,8 +53,6 @@ import org.polypheny.db.rex.RexRangeRef;
 import org.polypheny.db.rex.RexSubQuery;
 import org.polypheny.db.rex.RexTableInputRef;
 import org.polypheny.db.rex.RexVisitor;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
 
@@ -206,7 +206,7 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
 
     @Override
     public RexNode visitCall( RexCall call ) {
-        if ( call.getKind().belongsTo( SqlKind.DOC_KIND ) ) {
+        if ( call.getKind().belongsTo( Kind.DOC_KIND ) ) {
             return call;
         } else if ( call.op instanceof SqlArrayValueConstructor ) {
             int i = index.getAndIncrement();

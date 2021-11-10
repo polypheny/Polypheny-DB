@@ -16,13 +16,9 @@
 
 package org.polypheny.db.core;
 
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlSpecialOperator;
+public class LangFunctionOperator extends Operator {
 
-
-public class LangFunctionOperator extends SqlSpecialOperator {
-
-    public LangFunctionOperator( String name, SqlKind kind ) {
+    public LangFunctionOperator( String name, Kind kind ) {
         super( name, kind );
     }
 

@@ -59,7 +59,7 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlCollation;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParserUtil;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.CompositeList;

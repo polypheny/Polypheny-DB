@@ -57,8 +57,6 @@ import org.slf4j.Logger;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
 
 /**
  * Parser Piglet, a Pig-like language, generated from PigletParser.jj by JavaCC.
@@ -70,6 +68,7 @@ public class PigletParser
   public void setTabSize(int tabSize) {
     jj_input_stream.setTabSize(tabSize);
   }
+}}
 }
 
 PARSER_END(PigletParser)

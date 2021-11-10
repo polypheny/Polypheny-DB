@@ -96,6 +96,8 @@ import javax.annotation.Nonnull;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlKind;
@@ -2099,7 +2101,7 @@ public class Util {
 
 
     /**
-     * Visitor which looks for an OVER clause inside a tree of {@link SqlNode} objects.
+     * Visitor which looks for an OVER clause inside a tree of {@link Node} objects.
      */
     public static class OverFinder extends SqlBasicVisitor<Void> {
 
@@ -2108,7 +2110,7 @@ public class Util {
 
         @Override
         public Void visit( SqlCall call ) {
-            if ( call.getKind() == SqlKind.OVER ) {
+            if ( call.getKind() == Kind.OVER ) {
                 throw FoundOne.NULL;
             }
             return super.visit( call );

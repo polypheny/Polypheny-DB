@@ -21,13 +21,13 @@ import java.util.List;
 import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.cql.exception.UnknownIndexException;
 import org.polypheny.db.cql.helper.RelBuildTestHelper;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
 
 
 public class FilterTest extends RelBuildTestHelper {
@@ -64,7 +64,7 @@ public class FilterTest extends RelBuildTestHelper {
                 "1"
         );
         RexNode rexNode = literalFilter.convert2RexNode( baseNode, rexBuilder, filterMap );
-        Assert.assertEquals( SqlKind.EQUALS, rexNode.getKind() );
+        Assert.assertEquals( Kind.EQUALS, rexNode.getKind() );
     }
 
 }

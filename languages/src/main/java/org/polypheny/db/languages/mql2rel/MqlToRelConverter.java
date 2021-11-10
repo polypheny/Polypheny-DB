@@ -39,8 +39,10 @@ import org.bson.BsonRegularExpression;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.MqlStdOperatorTable;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.document.util.DocumentUtil;
 import org.polypheny.db.languages.mql.Mql.Type;
 import org.polypheny.db.languages.mql.MqlAggregate;
@@ -51,6 +53,8 @@ import org.polypheny.db.languages.mql.MqlFind;
 import org.polypheny.db.languages.mql.MqlInsert;
 import org.polypheny.db.languages.mql.MqlQueryStatement;
 import org.polypheny.db.languages.mql.MqlUpdate;
+import org.polypheny.db.languages.sql.SqlAggFunction;
+import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
@@ -83,10 +87,6 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.LogicalView;
-import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -281,25 +281,25 @@ public class MqlToRelConverter {
         switch ( kind ) {
             case FIND:
                 RelNode find = convertFind( (MqlFind) query, table.getRowType(), node );
-                root = RelRoot.of( find, find.getRowType(), SqlKind.SELECT );
+                root = RelRoot.of( find, find.getRowType(), Kind.SELECT );
                 break;
             case COUNT:
                 RelNode count = convertCount( (MqlCount) query, table.getRowType(), node );
-                root = RelRoot.of( count, count.getRowType(), SqlKind.SELECT );
+                root = RelRoot.of( count, count.getRowType(), Kind.SELECT );
                 break;
             case AGGREGATE:
-                root = RelRoot.of( convertAggregate( (MqlAggregate) query, table.getRowType(), node ), SqlKind.SELECT );
+                root = RelRoot.of( convertAggregate( (MqlAggregate) query, table.getRowType(), node ), Kind.SELECT );
                 break;
             /// dmls
             case INSERT:
-                root = RelRoot.of( convertInsert( (MqlInsert) query, table ), SqlKind.INSERT );
+                root = RelRoot.of( convertInsert( (MqlInsert) query, table ), Kind.INSERT );
                 break;
             case DELETE:
             case FIND_DELETE:
-                root = RelRoot.of( convertDelete( (MqlDelete) query, table, node ), SqlKind.DELETE );
+                root = RelRoot.of( convertDelete( (MqlDelete) query, table, node ), Kind.DELETE );
                 break;
             case UPDATE:
-                root = RelRoot.of( convertUpdate( (MqlUpdate) query, table, node ), SqlKind.UPDATE );
+                root = RelRoot.of( convertUpdate( (MqlUpdate) query, table, node ), Kind.UPDATE );
                 break;
             default:
                 throw new IllegalStateException( "Unexpected value: " + kind );
@@ -1728,7 +1728,7 @@ public class MqlToRelConverter {
 
     private RexNode getFixedCall( List<RexNode> operands, SqlOperator op, PolyType polyType ) {
         if ( operands.size() == 1 ) {
-            if ( op.kind == SqlKind.NOT && operands.get( 0 ) instanceof RexCall && ((RexCall) operands.get( 0 )).op.kind == SqlKind.NOT ) {
+            if ( op.kind == Kind.NOT && operands.get( 0 ) instanceof RexCall && ((RexCall) operands.get( 0 )).op.kind == Kind.NOT ) {
                 // we have a nested NOT, which can be removed
                 return ((RexCall) operands.get( 0 )).operands.get( 0 );
             }

@@ -38,8 +38,9 @@ import com.google.common.base.Preconditions;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
+import lombok.Getter;
+import org.polypheny.db.core.Collation;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.sql.SqlCollation;
 import org.polypheny.db.util.SerializableCharset;
 
 
@@ -53,7 +54,8 @@ public class BasicPolyType extends AbstractPolyType {
     private final int precision;
     private final int scale;
     private final RelDataTypeSystem typeSystem;
-    private final SqlCollation collation;
+    @Getter
+    private final Collation collation;
     private final SerializableCharset wrappedCharset;
 
 
@@ -115,7 +117,7 @@ public class BasicPolyType extends AbstractPolyType {
             boolean nullable,
             int precision,
             int scale,
-            SqlCollation collation,
+            Collation collation,
             SerializableCharset wrappedCharset ) {
         super( typeName, nullable, null );
         this.typeSystem = Objects.requireNonNull( typeSystem );
@@ -123,7 +125,7 @@ public class BasicPolyType extends AbstractPolyType {
         this.scale = scale;
 
         if ( typeName == PolyType.JSON ) {
-            this.collation = SqlCollation.IMPLICIT;
+            this.collation = Collation.IMPLICIT;
             this.wrappedCharset = SerializableCharset.forCharset( StandardCharsets.ISO_8859_1 );
         } else {
             this.collation = collation;
@@ -157,7 +159,7 @@ public class BasicPolyType extends AbstractPolyType {
      * <p>
      * This must be a character type.
      */
-    BasicPolyType createWithCharsetAndCollation( Charset charset, SqlCollation collation ) {
+    BasicPolyType createWithCharsetAndCollation( Charset charset, Collation collation ) {
         Preconditions.checkArgument( PolyTypeUtil.inCharFamily( this ) );
         return new BasicPolyType(
                 this.typeSystem,
@@ -209,12 +211,6 @@ public class BasicPolyType extends AbstractPolyType {
     }
 
 
-    @Override
-    public SqlCollation getCollation() {
-        return collation;
-    }
-
-
     // implement RelDataTypeImpl
     @Override
     protected void generateTypeString( StringBuilder sb, boolean withDetail ) {
@@ -247,12 +243,12 @@ public class BasicPolyType extends AbstractPolyType {
         if ( !withDetail ) {
             return;
         }
-        if ( wrappedCharset != null && !SqlCollation.IMPLICIT.getCharset().equals( wrappedCharset.getCharset() ) ) {
+        if ( wrappedCharset != null && !Collation.IMPLICIT.getCharset().equals( wrappedCharset.getCharset() ) ) {
             sb.append( " CHARACTER SET \"" );
             sb.append( wrappedCharset.getCharset().name() );
             sb.append( "\"" );
         }
-        if ( collation != null && collation != SqlCollation.IMPLICIT && collation != SqlCollation.COERCIBLE ) {
+        if ( collation != null && collation != Collation.IMPLICIT && collation != Collation.COERCIBLE ) {
             sb.append( " COLLATE \"" );
             sb.append( collation.getCollationName() );
             sb.append( "\"" );

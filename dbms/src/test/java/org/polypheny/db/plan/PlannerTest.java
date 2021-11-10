@@ -62,8 +62,26 @@ import org.polypheny.db.adapter.jdbc.JdbcImplementor;
 import org.polypheny.db.adapter.jdbc.JdbcRel;
 import org.polypheny.db.adapter.jdbc.JdbcRules;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.languages.sql.Lex;
+import org.polypheny.db.languages.sql.SqlAggFunction;
+import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.languages.sql.SqlDialect;
+import org.polypheny.db.languages.sql.SqlExplainFormat;
+import org.polypheny.db.languages.sql.SqlExplainLevel;
+import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlOperatorTable;
+import org.polypheny.db.languages.sql.parser.SqlParseException;
+import org.polypheny.db.languages.sql.parser.SqlParser;
+import org.polypheny.db.languages.sql.parser.SqlParser.SqlParserConfig;
+import org.polypheny.db.languages.sql.util.ChainedSqlOperatorTable;
+import org.polypheny.db.languages.sql.util.ListSqlOperatorTable;
+import org.polypheny.db.languages.sql.validate.SqlValidator;
+import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.RelCollationTraitDef;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
@@ -86,24 +104,6 @@ import org.polypheny.db.schema.HrSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TpchSchema;
-import org.polypheny.db.sql.Lex;
-import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.sql.SqlCall;
-import org.polypheny.db.sql.SqlDialect;
-import org.polypheny.db.sql.SqlExplainFormat;
-import org.polypheny.db.sql.SqlExplainLevel;
-import org.polypheny.db.sql.SqlFunctionCategory;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperatorTable;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParseException;
-import org.polypheny.db.sql.parser.SqlParser;
-import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
-import org.polypheny.db.sql.util.ChainedSqlOperatorTable;
-import org.polypheny.db.sql.util.ListSqlOperatorTable;
-import org.polypheny.db.sql.validate.SqlValidator;
-import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.test.PolyphenyDbAssert;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
@@ -1181,7 +1181,7 @@ public class PlannerTest {
     public static class MyCountAggFunction extends SqlAggFunction {
 
         public MyCountAggFunction() {
-            super( "MY_COUNT", null, SqlKind.OTHER_FUNCTION, ReturnTypes.BIGINT, null, OperandTypes.ANY,
+            super( "MY_COUNT", null, Kind.OTHER_FUNCTION, ReturnTypes.BIGINT, null, OperandTypes.ANY,
                     SqlFunctionCategory.NUMERIC, false, false, Optionality.FORBIDDEN );
         }
 

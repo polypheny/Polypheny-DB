@@ -43,6 +43,7 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -56,7 +57,6 @@ import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.SingleRel;
 import org.polypheny.db.rel.logical.LogicalViewTableScan;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.DeadlockException;
 import org.polypheny.db.transaction.Lock.LockMode;
@@ -387,7 +387,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                         Catalog.getInstance().getPartitionsOnDataPlacement( id, catalogMaterializedView.id ).get( 0 ) );
                 dataMigrator.executeQuery(
                         columns.get( id ),
-                        RelRoot.of( deleteRel, SqlKind.SELECT ),
+                        RelRoot.of( deleteRel, Kind.SELECT ),
                         deleteStatement,
                         targetStatementDelete,
                         targetRel,
@@ -403,7 +403,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                         Catalog.getInstance().getPartitionsOnDataPlacement( id, catalogMaterializedView.id ).get( 0 ) );
                 dataMigrator.executeQuery(
                         columns.get( id ),
-                        RelRoot.of( insertRel, SqlKind.SELECT ),
+                        RelRoot.of( insertRel, Kind.SELECT ),
                         sourceStatement,
                         targetStatementInsert,
                         targetRel,

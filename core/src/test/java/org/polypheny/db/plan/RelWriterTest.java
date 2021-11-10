@@ -41,7 +41,7 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.schema.HrSchema;
 import org.polypheny.db.sql.SqlExplainFormat;
 import org.polypheny.db.sql.SqlExplainLevel;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.test.Matchers;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.type.PolyType;

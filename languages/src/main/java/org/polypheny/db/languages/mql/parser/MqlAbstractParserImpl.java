@@ -29,9 +29,9 @@ import java.util.TreeSet;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.languages.mql.MqlNode;
-import org.polypheny.db.sql.parser.SqlAbstractParserImpl;
-import org.polypheny.db.sql.parser.SqlParseException;
-import org.polypheny.db.sql.parser.SqlParserUtil;
+import org.polypheny.db.languages.sql.parser.SqlAbstractParserImpl;
+import org.polypheny.db.languages.sql.parser.SqlParseException;
+import org.polypheny.db.languages.sql.parser.SqlParserUtil;
 
 
 public abstract class MqlAbstractParserImpl {

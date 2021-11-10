@@ -50,6 +50,8 @@ import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.AggregateCall;
 import org.polypheny.db.rel.core.CorrelationId;
@@ -65,7 +67,7 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.fun.SqlCountAggFunction;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.MapPolyType;
 import org.polypheny.db.type.MultisetPolyType;
@@ -91,7 +93,7 @@ public class RexBuilder {
      * Special operator that accesses an unadvertised field of an input record.
      * This operator cannot be used in SQL queries; it is introduced temporarily during sql-to-rel translation, then replaced during the process that trims unwanted fields.
      */
-    public static final SqlSpecialOperator GET_OPERATOR = new SqlSpecialOperator( "_get", SqlKind.OTHER_FUNCTION );
+    public static final SqlSpecialOperator GET_OPERATOR = new SqlSpecialOperator( "_get", Kind.OTHER_FUNCTION );
 
     /**
      * The smallest valid {@code int} value, as a {@link BigDecimal}.
@@ -235,7 +237,7 @@ public class RexBuilder {
     /**
      * Creates a call with a list of arguments and a predetermined type.
      */
-    public RexNode makeCall( RelDataType returnType, SqlOperator op, List<RexNode> exprs ) {
+    public RexNode makeCall( RelDataType returnType, Operator op, List<RexNode> exprs ) {
         return new RexCall( returnType, op, exprs );
     }
 
@@ -243,9 +245,9 @@ public class RexBuilder {
     /**
      * Creates a call with an array of arguments.
      * <p>
-     * If you already know the return type of the call, then {@link #makeCall(RelDataType, SqlOperator, java.util.List)} is preferred.
+     * If you already know the return type of the call, then {@link #makeCall(RelDataType, Operator, java.util.List)} is preferred.
      */
-    public RexNode makeCall( SqlOperator op, List<? extends RexNode> exprs ) {
+    public RexNode makeCall( Operator op, List<? extends RexNode> exprs ) {
         final RelDataType type = deriveReturnType( op, exprs );
         return new RexCall( type, op, exprs );
     }
@@ -256,7 +258,7 @@ public class RexBuilder {
      *
      * Equivalent to <code>makeCall(op, exprList.toArray(new RexNode[exprList.size()]))</code>.
      */
-    public final RexNode makeCall( SqlOperator op, RexNode... exprs ) {
+    public final RexNode makeCall( Operator op, RexNode... exprs ) {
         return makeCall( op, ImmutableList.copyOf( exprs ) );
     }
 
@@ -268,7 +270,7 @@ public class RexBuilder {
      * @param exprs actual operands
      * @return derived type
      */
-    public RelDataType deriveReturnType( SqlOperator op, List<? extends RexNode> exprs ) {
+    public RelDataType deriveReturnType( Operator op, List<? extends RexNode> exprs ) {
         return op.inferReturnType( new RexCallBinding( typeFactory, op, exprs, ImmutableList.of() ) );
     }
 
@@ -988,7 +990,7 @@ public class RexBuilder {
         }
 
         // Special handling for arrays
-        if ( node instanceof RexCall && ((RexCall) node).op.kind == SqlKind.ARRAY_VALUE_CONSTRUCTOR ) {
+        if ( node instanceof RexCall && ((RexCall) node).op.kind == Kind.ARRAY_VALUE_CONSTRUCTOR ) {
             List<RexNode> newRexNodes = new ArrayList<>( ((RexCall) node).operands.size() );
             for ( RexNode n : ((RexCall) node).operands ) {
                 newRexNodes.add( makeCast( targetType.getComponentType(), n ) );

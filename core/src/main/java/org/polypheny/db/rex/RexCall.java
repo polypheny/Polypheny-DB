@@ -41,12 +41,13 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.MqlStdOperatorTable;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSyntax;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -57,28 +58,28 @@ import org.polypheny.db.util.Litmus;
  * An expression formed by a call to an operator with zero or more expressions as operands.
  *
  * Operators may be binary, unary, functions, special syntactic constructs like <code>CASE ... WHEN ... END</code>, or even internally generated constructs like implicit type conversions. The syntax of the operator is
- * really irrelevant, because row-expressions (unlike {@link org.polypheny.db.sql.SqlNode SQL expressions}) do not directly represent a piece of source code.
+ * really irrelevant, because row-expressions (unlike {@link Node SQL expressions}) do not directly represent a piece of source code.
  *
  * It's not often necessary to sub-class this class. The smarts should be in the operator, rather than the call. Any extra information about the call can often be encoded as extra arguments. (These don't need to be hidden,
  * because no one is going to be generating source code from this tree.)
  */
 public class RexCall extends RexNode {
 
-    public final SqlOperator op;
+    public final Operator op;
     public final ImmutableList<RexNode> operands;
     public final RelDataType type;
 
-    private static final Set<SqlKind> SIMPLE_BINARY_OPS;
+    private static final Set<Kind> SIMPLE_BINARY_OPS;
 
 
     static {
-        EnumSet<SqlKind> kinds = EnumSet.of( SqlKind.PLUS, SqlKind.MINUS, SqlKind.TIMES, SqlKind.DIVIDE );
-        kinds.addAll( SqlKind.COMPARISON );
+        EnumSet<Kind> kinds = EnumSet.of( Kind.PLUS, Kind.MINUS, Kind.TIMES, Kind.DIVIDE );
+        kinds.addAll( Kind.COMPARISON );
         SIMPLE_BINARY_OPS = Sets.immutableEnumSet( kinds );
     }
 
 
-    public RexCall( RelDataType type, SqlOperator op, List<? extends RexNode> operands ) {
+    public RexCall( RelDataType type, Operator op, List<? extends RexNode> operands ) {
         this.type = Objects.requireNonNull( type );
         this.op = Objects.requireNonNull( op );
         this.operands = ImmutableList.copyOf( operands );
@@ -109,7 +110,7 @@ public class RexCall extends RexNode {
             // For instance, AND/OR arguments should be BOOLEAN, so AND(true, null) is better than AND(true, null:BOOLEAN), and we keep the same info +($0, 2) is better than +($0, 2:BIGINT). Note: if $0 has BIGINT,
             // then 2 is expected to be of BIGINT type as well.
             RexDigestIncludeType includeType = RexDigestIncludeType.OPTIONAL;
-            if ( (isA( SqlKind.AND ) || isA( SqlKind.OR )) && operand.getType().getPolyType() == PolyType.BOOLEAN ) {
+            if ( (isA( Kind.AND ) || isA( Kind.OR )) && operand.getType().getPolyType() == PolyType.BOOLEAN ) {
                 includeType = RexDigestIncludeType.NO_TYPE;
             }
             if ( SIMPLE_BINARY_OPS.contains( getKind() ) ) {
@@ -170,7 +171,7 @@ public class RexCall extends RexNode {
         // This data race is intentional
         String localDigest = digest;
         if ( localDigest == null ) {
-            localDigest = computeDigest( isA( SqlKind.CAST ) || isA( SqlKind.NEW_SPECIFICATION ) );
+            localDigest = computeDigest( isA( Kind.CAST ) || isA( Kind.NEW_SPECIFICATION ) );
             digest = Objects.requireNonNull( localDigest );
         }
         return localDigest;
@@ -236,7 +237,7 @@ public class RexCall extends RexNode {
 
 
     @Override
-    public SqlKind getKind() {
+    public Kind getKind() {
         return op.kind;
     }
 
@@ -246,7 +247,7 @@ public class RexCall extends RexNode {
     }
 
 
-    public SqlOperator getOperator() {
+    public Operator getOperator() {
         return op;
     }
 
@@ -273,7 +274,7 @@ public class RexCall extends RexNode {
 
     @Override
     public int hashCode() {
-        if ( SqlKind.DOC_KIND.contains( op.getKind() ) || MqlStdOperatorTable.DOC_OPERATORS.contains( this.op ) ) {
+        if ( Kind.DOC_KIND.contains( op.getKind() ) || MqlStdOperatorTable.DOC_OPERATORS.contains( this.op ) ) {
             return (op + "[" + operands.stream().map( rexNode -> Integer.toString( rexNode.hashCode() ) ).collect( Collectors.joining( "," ) ) + "]").hashCode();
         } else {
             return toString().hashCode();

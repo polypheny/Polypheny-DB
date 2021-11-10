@@ -20,14 +20,14 @@ import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.MqlStdOperatorTable;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.languages.mql.parser.MqlParseException;
 import org.polypheny.db.languages.mql.parser.MqlParser;
 import org.polypheny.db.languages.mql.parser.MqlParser.MqlParserConfig;
 import org.polypheny.db.languages.mql2rel.MqlMockCatalog;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.util.SourceStringReader;
 
 
@@ -37,7 +37,7 @@ public abstract class MqlTest {
     @Getter
     private static final Map<String, SqlOperator> biComparisons;
     @Getter
-    private static final Map<String, SqlKind> logicalOperators;
+    private static final Map<String, Kind> logicalOperators;
 
     public static final SqlOperator eq = MqlStdOperatorTable.DOC_EQ;
     public static final SqlOperator ne = SqlStdOperatorTable.NOT_EQUALS;
@@ -62,8 +62,8 @@ public abstract class MqlTest {
 
         logicalOperators = new HashMap<>();
 
-        logicalOperators.put( "$and", SqlKind.AND );
-        logicalOperators.put( "$or", SqlKind.OR );
+        logicalOperators.put( "$and", Kind.AND );
+        logicalOperators.put( "$or", Kind.OR );
         //logicalOperators.put( "nor", SqlKind.N);
         //logicalOperators.put( "not", SqlKind.NOT );
     }

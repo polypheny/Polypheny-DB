@@ -36,7 +36,7 @@ import org.polypheny.db.rel.externalize.RelXmlWriter;
 import org.polypheny.db.sql.NullCollation;
 import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.sql.fun.SqlCaseOperator;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.sql.validate.SqlConformance;
 import org.polypheny.db.sql.validate.SqlConformanceEnum;
 import org.polypheny.db.sql.validate.SqlDelegatingConformance;

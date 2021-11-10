@@ -34,10 +34,10 @@
 package org.polypheny.db.adapter.enumerable;
 
 
-import static org.polypheny.db.sql.fun.SqlStdOperatorTable.CHARACTER_LENGTH;
-import static org.polypheny.db.sql.fun.SqlStdOperatorTable.CHAR_LENGTH;
-import static org.polypheny.db.sql.fun.SqlStdOperatorTable.SUBSTRING;
-import static org.polypheny.db.sql.fun.SqlStdOperatorTable.UPPER;
+import static org.polypheny.db.core.SqlStdOperatorTable.CHARACTER_LENGTH;
+import static org.polypheny.db.core.SqlStdOperatorTable.CHAR_LENGTH;
+import static org.polypheny.db.core.SqlStdOperatorTable.SUBSTRING;
+import static org.polypheny.db.core.SqlStdOperatorTable.UPPER;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -84,7 +84,7 @@ import org.polypheny.db.sql.SqlIntervalQualifier;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.OracleSqlOperatorTable;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.sql.validate.SqlConformance;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BuiltInMethod;

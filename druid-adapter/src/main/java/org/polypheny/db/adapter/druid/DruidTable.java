@@ -47,6 +47,7 @@ import org.joda.time.DateTime;
 import org.joda.time.Interval;
 import org.joda.time.chrono.ISOChronology;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
@@ -63,7 +64,6 @@ import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlSelectKeyword;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.type.PolyType;
 
 

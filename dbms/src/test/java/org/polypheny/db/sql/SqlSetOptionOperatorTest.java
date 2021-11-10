@@ -39,8 +39,11 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 import org.junit.Test;
-import org.polypheny.db.sql.parser.SqlParseException;
-import org.polypheny.db.sql.parser.SqlParser;
+import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlSetOption;
+import org.polypheny.db.languages.sql.parser.SqlParseException;
+import org.polypheny.db.languages.sql.parser.SqlParser;
 
 
 /**

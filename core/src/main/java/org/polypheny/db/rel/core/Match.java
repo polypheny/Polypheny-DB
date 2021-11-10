@@ -48,6 +48,7 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelCollation;
@@ -62,7 +63,6 @@ import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.fun.SqlBitOpAggFunction;
 import org.polypheny.db.sql.fun.SqlMinMaxAggFunction;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.fun.SqlSumAggFunction;
 import org.polypheny.db.sql.fun.SqlSumEmptyIsZeroAggFunction;
 

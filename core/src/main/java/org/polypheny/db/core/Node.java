@@ -16,7 +16,32 @@
 
 package org.polypheny.db.core;
 
-public interface Node {
+import java.util.Set;
+
+public interface Node extends Cloneable {
+
+
+    @Deprecated
+    Object clone();
+
+    /**
+     * Creates a copy of a SqlNode.
+     */
+    static <E extends Node> E clone( E e ) {
+        //noinspection unchecked
+        return (E) e.clone( e.getPos() );
+    }
+
+    /**
+     * Clones a SqlNode with a different position.
+     */
+    Node clone( ParserPos pos );
+
+    Kind getKind();
+
+    boolean isA( Set<Kind> category );
+
+    String toString();
 
     ParserPos getPos();
 

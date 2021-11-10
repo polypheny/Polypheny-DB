@@ -40,10 +40,15 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationQueryPlan;
+import org.polypheny.db.languages.sql.SqlExplainFormat;
+import org.polypheny.db.languages.sql.SqlExplainLevel;
+import org.polypheny.db.languages.sql.fun.SqlCountAggFunction;
 import org.polypheny.db.plan.RelOptSchema;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelOptUtil;
@@ -69,11 +74,6 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.SqlExplainFormat;
-import org.polypheny.db.sql.SqlExplainLevel;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.fun.SqlCountAggFunction;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Statement;
 
@@ -83,7 +83,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
 
     @Override
     public RelRoot enforce( RelRoot logicalRoot, Statement statement ) {
-        if ( !logicalRoot.kind.belongsTo( SqlKind.DML ) ) {
+        if ( !logicalRoot.kind.belongsTo( Kind.DML ) ) {
             return logicalRoot;
         }
         if ( !(logicalRoot.rel instanceof TableModify) ) {

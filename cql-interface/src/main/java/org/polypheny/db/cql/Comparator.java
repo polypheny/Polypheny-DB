@@ -16,8 +16,8 @@
 
 package org.polypheny.db.cql;
 
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.sql.SqlBinaryOperator;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 
 
 public enum Comparator {
