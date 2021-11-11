@@ -1226,7 +1226,7 @@ public class DbmsMeta implements ProtobufMeta {
 
         SqlNode parsed = sqlProcessor.parse( sql );
 
-        PolyphenyDbSignature signature;
+        PolyphenyDbSignature<?> signature;
         if ( parsed.isA( SqlKind.DDL ) ) {
             signature = sqlProcessor.prepareDdl( statementHandle.getStatement(), parsed );
         } else {
@@ -1238,7 +1238,7 @@ public class DbmsMeta implements ProtobufMeta {
             RelDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
 
             // Prepare
-            signature = statementHandle.getStatement().getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, false , true);
+            signature = statementHandle.getStatement().getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, true );
         }
 
         h.signature = signature;

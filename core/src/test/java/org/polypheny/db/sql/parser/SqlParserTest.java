@@ -55,7 +55,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlSetOption;
 import org.polypheny.db.sql.dialect.AnsiSqlDialect;
 import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
-
 import org.polypheny.db.sql.parser.impl.SqlParserImpl;
 import org.polypheny.db.sql.pretty.SqlPrettyWriter;
 import org.polypheny.db.sql.utils.SqlValidatorTestCase;
@@ -251,6 +250,7 @@ public class SqlParserTest {
             "FRAME_ROW", "2014", "c",
             "FREE", "99", "2003", "2011", "2014", "c",
             "FREQUENCY", "99", "2003", "2011", "2014", "c",
+            "FRESHNESS", "c",                                   //IG: Added for Materialized Views
             "FROM", "92", "99", "2003", "2011", "2014", "c",
             "FULL", "92", "99", "2003", "2011", "2014", "c",
             "FUNCTION", "92", "99", "2003", "2011", "2014", "c",
@@ -325,6 +325,7 @@ public class SqlParserTest {
             "LOCATOR", "99",
             "LOOP", "92", "99", "2003",
             "LOWER", "92", "2011", "2014", "c",
+            "MANUAL", "c",                                      //IG: Added for Materialized Views
             "MAP", "99",
             "MATCH", "92", "99", "2003", "2011", "2014", "c",
             "MATCHES", "2014", "c",

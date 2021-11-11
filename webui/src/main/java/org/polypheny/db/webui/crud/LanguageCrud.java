@@ -33,7 +33,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.LanguageType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -72,7 +72,7 @@ import spark.Response;
 @Slf4j
 public class LanguageCrud {
 
-    Crud crud;
+    private final Crud crud;
 
 
     public LanguageCrud( Crud crud ) {
@@ -83,23 +83,22 @@ public class LanguageCrud {
     public Result processCqlRequest( Session session, QueryRequest request ) {
         try {
             String cqlQueryStr = request.query;
-            if ( cqlQueryStr.equals( "" ) ) {
+            if ( cqlQueryStr.trim().equals( "" ) ) {
                 throw new RuntimeException( "CQL query is an empty string!" );
-
             }
 
             CqlParser cqlParser = new CqlParser( cqlQueryStr, "APP" );
             CqlQuery cqlQuery = cqlParser.parse();
 
-            log.debug( "Starting to process CQL resource request. Session ID: {}.", session );
+            if ( log.isDebugEnabled() ) {
+                log.debug( "Starting to process CQL resource request. Session ID: {}.", session );
+            }
             //requestCounter.incrementAndGet();
             Transaction transaction = this.crud.getTransaction( request.analyze, request.cache );
 
             if ( request.analyze ) {
                 transaction.getQueryAnalyzer().setSession( session );
             }
-
-            boolean autoCommit = true;
 
             // This is not a nice solution. In case of a sql script with auto commit only the first statement is analyzed
             // and in case of auto commit of, the information is overwritten
@@ -120,7 +119,7 @@ public class LanguageCrud {
             RelRoot relRoot = cql2RelConverter.convert2Rel( relBuilder, rexBuilder );
             PolyphenyDbSignature<?> signature = statement.getQueryProcessor().prepareQuery( relRoot, false );
 
-            Result result = getResult( SchemaType.RELATIONAL, statement, request, cqlQueryStr, signature, request.noLimit );
+            Result result = getResult( LanguageType.CQL, statement, request, cqlQueryStr, signature, request.noLimit );
             try {
                 statement.getTransaction().commit();
             } catch ( TransactionException e ) {
@@ -150,8 +149,6 @@ public class LanguageCrud {
         if ( request.analyze ) {
             transaction.getQueryAnalyzer().setSession( session );
         }
-
-        boolean autoCommit = true;
 
         // This is not a nice solution. In case of a sql script with auto commit only the first statement is analyzed
         // and in case of auto commit of, the information is overwritten
@@ -189,7 +186,7 @@ public class LanguageCrud {
                 // Prepare
                 signature = statement.getQueryProcessor().prepareQuery( logicalRoot, false );
 
-                results.add( getResult( SchemaType.DOCUMENT, statement, request, query, signature, noLimit ) );
+                results.add( getResult( LanguageType.MQL, statement, request, query, signature, noLimit ) );
             }
 
             if ( parsed instanceof MqlUseDatabase ) {
@@ -215,7 +212,7 @@ public class LanguageCrud {
 
 
     @NotNull
-    private static Result getResult( SchemaType schemaType, Statement statement, QueryRequest request, String query, PolyphenyDbSignature<?> signature, final boolean noLimit ) {
+    private static Result getResult( LanguageType languageType, Statement statement, QueryRequest request, String query, PolyphenyDbSignature<?> signature, final boolean noLimit ) {
         Catalog catalog = Catalog.getInstance();
 
         Iterator<Object> iterator;
@@ -291,7 +288,8 @@ public class LanguageCrud {
             ArrayList<String[]> data = Crud.computeResultData( rows, header, statement.getTransaction() );
 
             return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) )
-                    .setSchemaType( schemaType )
+                    .setSchemaType( signature.getSchemaType() )
+                    .setLanguageType( languageType )
                     .setAffectedRows( data.size() )
                     .setHasMoreRows( hasMoreRows )
                     .setGeneratedQuery( query );

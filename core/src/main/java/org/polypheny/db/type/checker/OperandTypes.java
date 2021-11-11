@@ -20,7 +20,6 @@ package org.polypheny.db.type.checker;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.ImmutableList;
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.function.Predicate;
@@ -54,7 +53,7 @@ import org.polypheny.db.type.inference.ReturnTypes;
  * @see ReturnTypes
  * @see InferTypes
  */
-public abstract class OperandTypes implements Serializable {
+public abstract class OperandTypes {
 
     private OperandTypes() {
     }
@@ -64,7 +63,7 @@ public abstract class OperandTypes implements Serializable {
      * Operand type-checking strategy type must be a positive integer non-NULL literal.
      */
     public static final PolySingleOperandTypeChecker POSITIVE_INTEGER_LITERAL =
-            new FamilyOperandTypeChecker( ImmutableList.of( PolyTypeFamily.INTEGER ), (Predicate<Integer> & Serializable) i -> false ) {
+            new FamilyOperandTypeChecker( ImmutableList.of( PolyTypeFamily.INTEGER ), i -> false ) {
                 @Override
                 public boolean checkSingleOperandType( SqlCallBinding callBinding, SqlNode node, int iFormalOperand, boolean throwOnFailure ) {
                     if ( !LITERAL.checkSingleOperandType( callBinding, node, iFormalOperand, throwOnFailure ) ) {
@@ -117,7 +116,7 @@ public abstract class OperandTypes implements Serializable {
      * Creates a checker that passes if each operand is a member of a corresponding family.
      */
     public static FamilyOperandTypeChecker family( PolyTypeFamily... families ) {
-        return new FamilyOperandTypeChecker( ImmutableList.copyOf( families ), (Predicate<Integer> & Serializable) i -> false );
+        return new FamilyOperandTypeChecker( ImmutableList.copyOf( families ), i -> false );
     }
 
 
@@ -308,7 +307,7 @@ public abstract class OperandTypes implements Serializable {
      * Creates a checker that passes if each operand is a member of a corresponding family.
      */
     public static FamilyOperandTypeChecker family( List<PolyTypeFamily> families ) {
-        return family( families, (Predicate<Integer> & Serializable) i -> false );
+        return family( families, i -> false );
     }
 
 
@@ -418,7 +417,7 @@ public abstract class OperandTypes implements Serializable {
     public static final PolySingleOperandTypeChecker MINUS_OPERATOR = OperandTypes.or( NUMERIC_NUMERIC, INTERVAL_SAME_SAME, DATETIME_INTERVAL );  // TODO: compatibility check
 
     public static final FamilyOperandTypeChecker MINUS_DATE_OPERATOR =
-            new FamilyOperandTypeChecker( ImmutableList.of( PolyTypeFamily.DATETIME, PolyTypeFamily.DATETIME, PolyTypeFamily.DATETIME_INTERVAL ), (Predicate<Integer> & Serializable) i -> false ) {
+            new FamilyOperandTypeChecker( ImmutableList.of( PolyTypeFamily.DATETIME, PolyTypeFamily.DATETIME, PolyTypeFamily.DATETIME_INTERVAL ), i -> false ) {
                 @Override
                 public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
                     if ( !super.checkOperandTypes( callBinding, throwOnFailure ) ) {
@@ -572,7 +571,7 @@ public abstract class OperandTypes implements Serializable {
      * [ROW] (DATETIME, DATETIME)
      * [ROW] (DATETIME, INTERVAL)
      */
-    private static class PeriodOperandTypeChecker implements PolySingleOperandTypeChecker, Serializable {
+    private static class PeriodOperandTypeChecker implements PolySingleOperandTypeChecker {
 
         @Override
         public boolean checkSingleOperandType( SqlCallBinding callBinding, SqlNode node, int iFormalOperand, boolean throwOnFailure ) {

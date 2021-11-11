@@ -42,6 +42,8 @@ import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
+import org.polypheny.db.processing.JsonRelProcessor;
+import org.polypheny.db.processing.JsonRelProcessorImpl;
 import org.polypheny.db.processing.MqlProcessor;
 import org.polypheny.db.processing.MqlProcessorImpl;
 import org.polypheny.db.processing.SqlProcessor;
@@ -49,6 +51,7 @@ import org.polypheny.db.processing.SqlProcessorImpl;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.statistic.StatisticsManager;
+import org.polypheny.db.view.MaterializedViewManager;
 
 
 @Slf4j
@@ -177,6 +180,9 @@ public class TransactionImpl implements Transaction, Comparable {
         LockManager.INSTANCE.removeTransaction( this );
         // Remove transaction
         transactionManager.removeTransaction( xid );
+
+        // Handover information about commit to Materialized Manager
+        MaterializedViewManager.getInstance().updateCommittedXid( xid );
     }
 
 
@@ -235,6 +241,12 @@ public class TransactionImpl implements Transaction, Comparable {
     @Override
     public MqlProcessor getMqlProcessor() {
         return new MqlProcessorImpl();
+    }
+
+
+    @Override
+    public JsonRelProcessor getJsonRelProcessor() {
+        return new JsonRelProcessorImpl();
     }
 
 

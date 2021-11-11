@@ -120,6 +120,10 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/updateColumn", crud::updateColumn, gson::toJson );
 
+        webuiServer.post( "/getMaterializedInfo", crud::getMaterializedInfo, gson::toJson );
+
+        webuiServer.post( "/updateMaterialized", crud::updateMaterialized, gson::toJson );
+
         webuiServer.post( "/addColumn", crud::addColumn, gson::toJson );
 
         webuiServer.post( "/dropColumn", crud::dropColumn, gson::toJson );

@@ -27,7 +27,6 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollationTraitDef;
 import org.polypheny.db.rel.RelNode;
@@ -69,11 +68,11 @@ public class LogicalViewTableScan extends TableScan {
 
         Catalog catalog = Catalog.getInstance();
 
-        long idLogical = ((LogicalTable) ((RelOptTableImpl) relOptTable).getTable()).getTableId();
+        long idLogical = ((LogicalTable) relOptTable.getTable()).getTableId();
         CatalogTable catalogTable = catalog.getTable( idLogical );
         RelCollation relCollation = ((CatalogView) catalogTable).getRelCollation();
 
-        return new LogicalViewTableScan( cluster, traitSet, relOptTable, ((CatalogView) catalogTable).prepareView( cluster, relCollation ), relCollation );
+        return new LogicalViewTableScan( cluster, traitSet, relOptTable, ((CatalogView) catalogTable).prepareView( cluster ), relCollation );
     }
 
 

@@ -22,6 +22,8 @@ import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 
 
@@ -72,5 +74,14 @@ public interface DataMigrator {
             List<CatalogColumn> columns,
             List<Long> sourcePartitionIds,
             List<Long> targetPartitionIds );
+
+    RelRoot buildInsertStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId );
+
+    //is used within copyData
+    void executeQuery( List<CatalogColumn> columns, RelRoot sourceRel, Statement sourceStatement, Statement targetStatement, RelRoot targetRel, boolean isMaterializedView, boolean doesSubstituteOrderBy );
+
+    RelRoot buildDeleteStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId );
+
+    RelRoot getSourceIterator( Statement statement, Map<Long, List<CatalogColumnPlacement>> placementDistribution );
 
 }

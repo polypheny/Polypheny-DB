@@ -32,7 +32,11 @@ public interface Statement {
 
     Context getPrepareContext();
 
-    InformationDuration getDuration();
+    InformationDuration getProcessingDuration();
+
+    InformationDuration getExecutionDuration();
+
+    InformationDuration getTotalDuration();
 
     void close();
 

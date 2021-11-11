@@ -26,5 +26,9 @@ public class RelAlgRequest extends UIRequest {
     public boolean useCache;
     public boolean createView;
     public String viewName;
+    public String store;
+    public String freshness;
+    public String interval;
+    public String timeUnit;
 
 }

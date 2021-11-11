@@ -42,10 +42,9 @@ public class QueryEventAnalyzer {
                 .build();
         metric.getTables().addAll( queryEvent.getLogicalQueryInformation().getTables() );
 
-        if ( queryEvent.isAnalyze() ) {
-            processDurationInfo( queryEvent, metric );
-
-        }
+        //if ( queryEvent.isAnalyze() ) {
+        //    processDurationInfo( queryEvent, metric );
+        //}
 
         return metric;
     }

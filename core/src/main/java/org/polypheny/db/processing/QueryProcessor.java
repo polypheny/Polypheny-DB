@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,9 @@ public interface QueryProcessor extends ViewExpander {
      * @param withMonitoring activates or deactivates the monitoring.
      * @return prepared PolyphenyDbSignature
      */
-    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, boolean withMonitoring );
+    PolyphenyDbSignature<?> prepareQuery( RelRoot logicalRoot, boolean withMonitoring );
+
+    PolyphenyDbSignature<?> prepareQuery( RelRoot logicalRoot, RelDataType parameters, boolean withMonitoring );
 
     /**
      * @param logicalRoot relRoot of query.
@@ -39,13 +41,13 @@ public interface QueryProcessor extends ViewExpander {
      * @param withMonitoring activates or deactivates the monitoring.
      * @return prepared PolyphenyDbSignature
      */
-    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameters, boolean isRouted, boolean withMonitoring );
+    PolyphenyDbSignature<?> prepareQuery( RelRoot logicalRoot, RelDataType parameters, boolean isRouted, boolean isSubquery, boolean withMonitoring );
 
     /**
      * @return Gets the planner.
      */
     RelOptPlanner getPlanner();
- 
+
     /**
      * Resets caches Implementation, QueryPlan, RoutingPlan and Router caches.
      */

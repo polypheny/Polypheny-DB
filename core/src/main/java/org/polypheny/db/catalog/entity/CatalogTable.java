@@ -23,6 +23,7 @@ import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -55,6 +56,7 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
     public final long partitionColumnId;
     public final PartitionProperty partitionProperty;
 
+    @Getter
     public final ImmutableList<Long> connectedViews;
 
 
@@ -284,11 +286,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
             }
         }
         return -1;
-    }
-
-
-    public boolean isView() {
-        return this.tableType == TableType.VIEW;
     }
 
 

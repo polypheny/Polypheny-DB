@@ -38,6 +38,7 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
+import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
@@ -104,6 +105,24 @@ public abstract class MockCatalog extends Catalog {
 
     @Override
     public long addDatabase( String name, int ownerId, String ownerName, long defaultSchemaId, String defaultSchemaName ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public Map<Long, RelNode> getNodeInfo() {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public Map<Long, RelDataType> getRelTypeInfo() {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void restoreViews( Transaction transaction ) {
         throw new NotImplementedException();
     }
 
@@ -241,7 +260,13 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList ) {
+    public long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, String query, QueryLanguage language ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) {
         throw new NotImplementedException();
     }
 
@@ -254,6 +279,12 @@ public abstract class MockCatalog extends Catalog {
 
     @Override
     public boolean checkIfExistsTable( long schemaId, String tableName ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public boolean checkIfExistsTable( long tableId ) {
         throw new NotImplementedException();
     }
 
@@ -374,6 +405,12 @@ public abstract class MockCatalog extends Catalog {
 
     @Override
     public void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalColumnName, boolean updatePhysicalColumnPosition ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void updateMaterializedViewRefreshTime( long materializedId ) {
         throw new NotImplementedException();
     }
 

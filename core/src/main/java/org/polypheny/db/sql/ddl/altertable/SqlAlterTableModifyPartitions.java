@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.ddl.DdlManager;
@@ -91,8 +92,8 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
         Catalog catalog = Catalog.getInstance();
         CatalogTable catalogTable = getCatalogTable( context, table );
 
-        if ( catalogTable.isView() ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE with Views" );
+        if ( catalogTable.tableType != TableType.TABLE ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE because" + catalogTable.name + " is not a table." );
         }
 
         if ( !catalogTable.isPartitioned ) {

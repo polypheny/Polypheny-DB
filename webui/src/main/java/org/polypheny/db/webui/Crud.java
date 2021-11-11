@@ -108,6 +108,7 @@ import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
+import org.polypheny.db.catalog.Catalog.LanguageType;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.SchemaType;
@@ -119,10 +120,14 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
+import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogView;
+import org.polypheny.db.catalog.entity.MaterializedCriteria;
+import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
+import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -136,6 +141,7 @@ import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.exploreByExample.Explore;
 import org.polypheny.db.exploreByExample.ExploreManager;
@@ -151,10 +157,6 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
-import org.polypheny.db.monitoring.events.DmlEvent;
-import org.polypheny.db.monitoring.events.QueryEvent;
-import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.mql.parser.BsonUtil;
 import org.polypheny.db.partition.PartitionFunctionInfo;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
@@ -195,6 +197,7 @@ import org.polypheny.db.webui.models.HubMeta;
 import org.polypheny.db.webui.models.HubMeta.TableMapping;
 import org.polypheny.db.webui.models.HubResult;
 import org.polypheny.db.webui.models.Index;
+import org.polypheny.db.webui.models.MaterializedInfos;
 import org.polypheny.db.webui.models.PartitionFunctionModel;
 import org.polypheny.db.webui.models.PartitionFunctionModel.FieldType;
 import org.polypheny.db.webui.models.PartitionFunctionModel.PartitionFunctionColumn;
@@ -439,36 +442,14 @@ public class Crud implements InformationObserver {
                             tableElement.setTableType( "TABLE" );
                         } else if ( table.tableType == TableType.VIEW ) {
                             tableElement.setTableType( "VIEW" );
+                        } else if ( table.tableType == TableType.MATERIALIZED_VIEW ) {
+                            tableElement.setTableType( "MATERIALIZED" );
                         }
                     }
 
-                    /*
-                    if ( table.tableType == TableType.TABLE || table.tableType == TableType.SOURCE ) {
-                        tableTree.add( tableElement );
-                    } else if ( request.views && table.tableType == TableType.VIEW ) {
-                        viewTree.add( tableElement );
-                    }
-                     */
                     collectionTree.add( tableElement );
                 }
 
-
-
-                /*if ( request.showTable ) {
-                    String collection = schema.schemaType == SchemaType.RELATIONAL ? "tables" : "collections";
-
-                    schemaTree.addChild( new SidebarElement( schema.name + ".tables", collection, request.routerLinkRoot, "fa fa-table" ).addChildren( tableTree ).setRouterLink( "" ) );
-                } else {
-                    schemaTree.addChildren( tableTree ).setRouterLink( "" );
-                }
-                if ( request.views ) {
-                    if ( request.showTable ) {
-                        schemaTree.addChild( new SidebarElement( schema.name + ".views", "views", request.routerLinkRoot, "icon-eye" ).addChildren( viewTree ).setRouterLink( "" ) );
-                    } else {
-                        schemaTree.addChildren( viewTree ).setRouterLink( "" );
-                    }
-
-                }*/
                 if ( request.showTable ) {
                     schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", schema.schemaType, request.routerLinkRoot, "fa fa-table" ).addChildren( collectionTree ).setRouterLink( "" ) );
                 } else {
@@ -1377,6 +1358,8 @@ public class Crud implements InformationObserver {
             result = new Result( cols.toArray( new DbColumn[0] ), null );
             if ( catalogTable.tableType == TableType.TABLE ) {
                 result.setType( ResultType.TABLE );
+            } else if ( catalogTable.tableType == TableType.MATERIALIZED_VIEW ) {
+                result.setType( ResultType.MATERIALIZED );
             } else {
                 result.setType( ResultType.VIEW );
             }
@@ -1439,7 +1422,7 @@ public class Crud implements InformationObserver {
                             col.defaultValue == null ? null : col.defaultValue.value
                     ).setPhysicalName( ccp.physicalColumnName ) );
                 }
-                return new Result( columns.toArray( new DbColumn[0] ), null ).setType( ResultType.VIEW );
+                return new Result( columns.toArray( new DbColumn[0] ), null ).setType( ResultType.TABLE );
             }
         } catch ( UnknownDatabaseException | UnknownSchemaException | UnknownTableException e ) {
             return new Result( e );
@@ -1494,6 +1477,78 @@ public class Crud implements InformationObserver {
     }
 
 
+    MaterializedInfos getMaterializedInfo( final Request req, final Response res ) {
+        EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
+
+        try {
+            CatalogTable catalogTable = catalog.getTable( databaseName, request.schema, request.table );
+
+            if ( catalogTable.tableType == TableType.MATERIALIZED_VIEW ) {
+                CatalogMaterializedView catalogMaterializedView = (CatalogMaterializedView) catalogTable;
+
+                MaterializedCriteria materializedCriteria = catalogMaterializedView.getMaterializedCriteria();
+
+                ArrayList<String> materializedInfo = new ArrayList<>();
+                materializedInfo.add( materializedCriteria.getCriteriaType().toString() );
+                materializedInfo.add( materializedCriteria.getLastUpdate().toString() );
+                if ( materializedCriteria.getCriteriaType() == CriteriaType.INTERVAL ) {
+                    materializedInfo.add( materializedCriteria.getInterval().toString() );
+                    materializedInfo.add( materializedCriteria.getTimeUnit().name() );
+                } else if ( materializedCriteria.getCriteriaType() == CriteriaType.UPDATE ) {
+                    materializedInfo.add( materializedCriteria.getInterval().toString() );
+                    materializedInfo.add( "" );
+                } else {
+                    materializedInfo.add( "" );
+                    materializedInfo.add( "" );
+                }
+
+                return new MaterializedInfos( materializedInfo );
+            } else {
+                throw new RuntimeException( "only possible with materialized views" );
+            }
+
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
+            log.error( "Caught exception while fetching information about the materialized view", e );
+            return new MaterializedInfos( e );
+        }
+    }
+
+
+    Result updateMaterialized( final Request req, final Response res ) {
+        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
+        Transaction transaction = getTransaction();
+        Result result;
+        ArrayList<String> queries = new ArrayList<>();
+        StringBuilder sBuilder = new StringBuilder();
+
+        String[] t = request.tableId.split( "\\." );
+        String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
+
+        String query = String.format( "ALTER MATERIALIZED VIEW %s FRESHNESS MANUAL", tableId );
+        queries.add( query );
+
+        result = new Result( 1 ).setGeneratedQuery( queries.toString() );
+        try {
+            for ( String q : queries ) {
+                sBuilder.append( q );
+                executeSqlUpdate( transaction, q );
+            }
+            transaction.commit();
+        } catch ( QueryExecutionException | TransactionException e ) {
+            log.error( "Caught exception while updating a column", e );
+            result = new Result( e ).setAffectedRows( 0 ).setGeneratedQuery( sBuilder.toString() );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException e2 ) {
+                log.error( "Caught exception during rollback", e2 );
+                result = new Result( e2 ).setAffectedRows( 0 ).setGeneratedQuery( sBuilder.toString() );
+            }
+        }
+
+        return result;
+    }
+
+
     Result updateColumn( final Request req, final Response res ) {
         ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
         Transaction transaction = getTransaction();
@@ -1509,7 +1564,14 @@ public class Crud implements InformationObserver {
 
         // rename column if needed
         if ( !oldColumn.name.equals( newColumn.name ) ) {
-            String query = String.format( "ALTER TABLE %s RENAME COLUMN \"%s\" TO \"%s\"", tableId, oldColumn.name, newColumn.name );
+            String query;
+            if ( request.tableType.equals( "VIEW" ) ) {
+                query = String.format( "ALTER VIEW %s RENAME COLUMN \"%s\" TO \"%s\"", tableId, oldColumn.name, newColumn.name );
+            } else if ( request.tableType.equals( "MATERIALIZED" ) ) {
+                query = String.format( "ALTER MATERIALIZED VIEW %s RENAME COLUMN \"%s\" TO \"%s\"", tableId, oldColumn.name, newColumn.name );
+            } else {
+                query = String.format( "ALTER TABLE %s RENAME COLUMN \"%s\" TO \"%s\"", tableId, oldColumn.name, newColumn.name );
+            }
             queries.add( query );
         }
 
@@ -2784,6 +2846,37 @@ public class Crud implements InformationObserver {
     }
 
 
+    // helper for relAlg materialized View
+    private TimeUnit getFreshnessType( String freshnessId ) {
+        TimeUnit timeUnit;
+        switch ( freshnessId ) {
+            case "min":
+            case "minutes":
+                timeUnit = TimeUnit.MINUTES;
+                break;
+            case "hours":
+                timeUnit = TimeUnit.HOURS;
+                break;
+            case "sec":
+            case "seconds":
+                timeUnit = TimeUnit.SECONDS;
+                break;
+            case "days":
+            case "day":
+                timeUnit = TimeUnit.DAYS;
+                break;
+            case "millisec":
+            case "milliseconds":
+                timeUnit = TimeUnit.MILLISECONDS;
+                break;
+            default:
+                timeUnit = TimeUnit.MINUTES;
+                break;
+        }
+        return timeUnit;
+    }
+
+
     /**
      * Execute a logical plan coming from the Web-Ui plan builder
      */
@@ -2822,32 +2915,97 @@ public class Crud implements InformationObserver {
 
             String viewName = request.viewName;
             boolean replace = false;
-            List<DataStore> store = null;
-            PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
+            String viewType;
 
-            List<String> columns = new ArrayList<>();
-            root.rel.getRowType().getFieldList().forEach( f -> columns.add( f.getName() ) );
+            if ( request.freshness != null ) {
+                viewType = "Materialized View";
+                DataStore store = (DataStore) AdapterManager.getInstance().getAdapter( request.store );
+                List<DataStore> stores = new ArrayList<>();
+                stores.add( store );
 
-            //default Schema
-            long schemaId = transaction.getDefaultSchema().id;
+                PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
 
-            try {
-                DdlManager.getInstance().createView(
-                        viewName,
-                        schemaId,
-                        root.rel,
-                        root.collation,
-                        replace,
-                        statement,
-                        store,
-                        placementType,
-                        columns
-                );
-            } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
-                log.error( "Not possible to create View because the Name is already used", e );
-                Result finalResult = new Result( e );
-                finalResult.setGeneratedQuery( "Execute logical query plan" );
-                return finalResult;
+                List<String> columns = new ArrayList<>();
+                root.rel.getRowType().getFieldList().forEach( f -> columns.add( f.getName() ) );
+
+                //default Schema
+                long schemaId = transaction.getDefaultSchema().id;
+
+                MaterializedCriteria materializedCriteria;
+                if ( request.freshness.toUpperCase().equalsIgnoreCase( CriteriaType.INTERVAL.toString() ) ) {
+                    materializedCriteria = new MaterializedCriteria( CriteriaType.INTERVAL, Integer.parseInt( request.interval ), getFreshnessType( request.timeUnit ) );
+                } else if ( request.freshness.toUpperCase().equalsIgnoreCase( CriteriaType.UPDATE.toString() ) ) {
+                    materializedCriteria = new MaterializedCriteria( CriteriaType.UPDATE, Integer.parseInt( request.interval ) );
+                } else if ( request.freshness.toUpperCase().equalsIgnoreCase( CriteriaType.MANUAL.toString() ) ) {
+                    materializedCriteria = new MaterializedCriteria( CriteriaType.MANUAL );
+                } else {
+                    materializedCriteria = new MaterializedCriteria();
+                }
+
+                Gson gson = new Gson();
+
+                try {
+                    DdlManager.getInstance().createMaterializedView(
+                            viewName,
+                            schemaId,
+                            root,
+                            replace,
+                            statement,
+                            stores,
+                            placementType,
+                            columns,
+                            materializedCriteria,
+                            gson.toJson( request.topNode ),
+                            Catalog.QueryLanguage.RELALG,
+                            false,
+                            false
+                    );
+                } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
+                    log.error( "Not possible to create Materialized View because the name is already used", e );
+                    Result finalResult = new Result( e );
+                    finalResult.setGeneratedQuery( "Execute logical query plan" );
+                    return finalResult;
+                } catch ( ColumnNotExistsException | ColumnAlreadyExistsException e ) {
+                    log.error( "Error while creating materialized view", e );
+                    Result finalResult = new Result( e );
+                    finalResult.setGeneratedQuery( "Execute logical query plan" );
+                    return finalResult;
+                }
+
+            } else {
+
+                viewType = "View";
+                List<DataStore> store = null;
+                PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
+
+                List<String> columns = new ArrayList<>();
+                root.rel.getRowType().getFieldList().forEach( f -> columns.add( f.getName() ) );
+
+                // Default Schema
+                long schemaId = transaction.getDefaultSchema().id;
+
+                Gson gson = new Gson();
+
+                try {
+                    DdlManager.getInstance().createView(
+                            viewName,
+                            schemaId,
+                            root.rel,
+                            root.collation,
+                            replace,
+                            statement,
+                            placementType,
+                            columns,
+                            gson.toJson( request.topNode ),
+                            Catalog.QueryLanguage.RELALG
+                    );
+                } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
+                    log.error( "Not possible to create View because the Name is already used", e );
+                    Result finalResult = new Result( e );
+                    finalResult.setGeneratedQuery( "Execute logical query plan" );
+                    return finalResult;
+                }
+
             }
             try {
                 transaction.commit();
@@ -2861,7 +3019,7 @@ public class Crud implements InformationObserver {
                 throw new RuntimeException( e );
             }
 
-            return new Result().setGeneratedQuery( "Created View \"" + viewName + "\" from logical query plan" );
+            return new Result().setGeneratedQuery( "Created " + viewType + " \"" + viewName + "\" from logical query plan" );
         }
 
         List<List<Object>> rows;
@@ -3499,10 +3657,26 @@ public class Crud implements InformationObserver {
         List<List<Object>> rows;
         Iterator<Object> iterator = null;
         boolean hasMoreRows = false;
+        boolean isAnalyze = statement.getTransaction().isAnalyze();
 
         try {
+            if ( isAnalyze ) {
+                statement.getProcessingDuration().start( "Plan Query" );
+            }
+
             signature = processQuery( statement, sqlSelect );
+
+            if ( isAnalyze ) {
+                statement.getProcessingDuration().stop( "Plan Query" );
+                statement.getExecutionDuration().start( "Execute Query" );
+            }
+
             final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
+
+            if ( isAnalyze ) {
+                statement.getExecutionDuration().stop( "Execute Query" );
+            }
+
             //noinspection unchecked
             iterator = enumerable.iterator();
             StopWatch stopWatch = new StopWatch();
@@ -3596,10 +3770,10 @@ public class Crud implements InformationObserver {
             ArrayList<String[]> data = computeResultData( rows, header, statement.getTransaction() );
 
             if ( tableType != null ) {
-                return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
+                return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), signature.getSchemaType(), LanguageType.SQL ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
             } else {
                 //if we do not have a fix table it is not possible to change anything within the resultSet therefore we use TableType.SOURCE
-                return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
+                return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), signature.getSchemaType(), LanguageType.SQL ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
             }
 
         } finally {

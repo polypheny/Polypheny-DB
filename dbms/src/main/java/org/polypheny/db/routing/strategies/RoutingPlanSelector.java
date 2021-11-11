@@ -40,17 +40,17 @@ import org.polypheny.db.util.Pair;
 public class RoutingPlanSelector {
 
 
-    public Pair<Optional<PolyphenyDbSignature>, RoutingPlan> selectPlanBasedOnCosts( List<? extends RoutingPlan> routingPlans, List<RelOptCost> approximatedCosts, String queryId, List<PolyphenyDbSignature> signatures, Statement statement ) {
+    public Pair<Optional<PolyphenyDbSignature<?>>, RoutingPlan> selectPlanBasedOnCosts( List<? extends RoutingPlan> routingPlans, List<RelOptCost> approximatedCosts, String queryId, List<PolyphenyDbSignature<?>> signatures, Statement statement ) {
         return this.selectPlanBasedOnCosts( routingPlans, approximatedCosts, queryId, Optional.of( signatures ), statement );
     }
 
 
-    public Pair<Optional<PolyphenyDbSignature>, RoutingPlan> selectPlanBasedOnCosts( List<? extends RoutingPlan> routingPlans, List<RelOptCost> approximatedCosts, String queryId, Statement statement ) {
+    public Pair<Optional<PolyphenyDbSignature<?>>, RoutingPlan> selectPlanBasedOnCosts( List<? extends RoutingPlan> routingPlans, List<RelOptCost> approximatedCosts, String queryId, Statement statement ) {
         return this.selectPlanBasedOnCosts( routingPlans, approximatedCosts, queryId, Optional.empty(), statement );
     }
 
 
-    public Pair<Optional<PolyphenyDbSignature>, RoutingPlan> selectPlanBasedOnCosts( List<? extends RoutingPlan> routingPlans, List<RelOptCost> approximatedCosts, String queryId, Optional<List<PolyphenyDbSignature>> signatures, Statement statement ) {
+    public Pair<Optional<PolyphenyDbSignature<?>>, RoutingPlan> selectPlanBasedOnCosts( List<? extends RoutingPlan> routingPlans, List<RelOptCost> approximatedCosts, String queryId, Optional<List<PolyphenyDbSignature<?>>> signatures, Statement statement ) {
         // 0 = only consider pre costs
         // 1 = only consider post costs
         // [0,1] = get normalized pre and post costs and multiply by ratio
@@ -78,7 +78,7 @@ public class RoutingPlanSelector {
         }
 
         // get effective costs
-        Pair<Optional<PolyphenyDbSignature>, RoutingPlan> result = null;
+        Pair<Optional<PolyphenyDbSignature<?>>, RoutingPlan> result = null;
         val effectiveCosts = IntStream.rangeClosed( 0, n - 1 )
                 .mapToDouble( i -> (preCosts.get( i ) * ratioPre) + (postCosts.get( i ) * ratioPost) )
                 .boxed()
@@ -106,7 +106,7 @@ public class RoutingPlanSelector {
     }
 
 
-    private Pair<Pair<Optional<PolyphenyDbSignature>, RoutingPlan>, List<Double>> selectPlanFromProbability( List<? extends RoutingPlan> routingPlans, Optional<List<PolyphenyDbSignature>> signatures, List<Double> effectiveCosts ) {
+    private Pair<Pair<Optional<PolyphenyDbSignature<?>>, RoutingPlan>, List<Double>> selectPlanFromProbability( List<? extends RoutingPlan> routingPlans, Optional<List<PolyphenyDbSignature<?>>> signatures, List<Double> effectiveCosts ) {
         // check for list all 0
         if ( effectiveCosts.stream().allMatch( value -> value <= RelOptUtil.EPSILON ) ) {
             effectiveCosts = Collections.nCopies( effectiveCosts.size(), 1.0 );
@@ -141,9 +141,9 @@ public class RoutingPlanSelector {
     }
 
 
-    private Pair<Optional<PolyphenyDbSignature>, RoutingPlan> selectBestPlan( List<? extends RoutingPlan> routingPlans, Optional<List<PolyphenyDbSignature>> signatures, List<Double> effectiveCosts ) {
+    private Pair<Optional<PolyphenyDbSignature<?>>, RoutingPlan> selectBestPlan( List<? extends RoutingPlan> routingPlans, Optional<List<PolyphenyDbSignature<?>>> signatures, List<Double> effectiveCosts ) {
         RoutingPlan currentPlan = routingPlans.get( 0 );
-        Optional<PolyphenyDbSignature> currentSignature = signatures.map( polyphenyDbSignatures -> polyphenyDbSignatures.get( 0 ) );
+        Optional<PolyphenyDbSignature<?>> currentSignature = signatures.map( polyphenyDbSignatures -> polyphenyDbSignatures.get( 0 ) );
         Double currentCost = effectiveCosts.get( 0 );
 
         for ( int i = 1; i < routingPlans.size(); i++ ) {
