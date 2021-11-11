@@ -96,50 +96,6 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
                 e.printStackTrace();
             }
         }
-
-
-        /**
-         * Internal conversion method that mainly converts arrays to lists.
-         *
-         * @param object The object to convert.
-         * @return Converted object.
-         */
-        private Object convert( Object object ) {
-            if ( object instanceof double[] ) {
-                final List<Double> list = new ArrayList<>( ((double[]) object).length );
-                for ( double v : ((double[]) object) ) {
-                    list.add( v );
-                }
-                return list;
-            } else if ( object instanceof float[] ) {
-                final List<Float> list = new ArrayList<>( ((float[]) object).length );
-                for ( float v : ((float[]) object) ) {
-                    list.add( v );
-                }
-                return list;
-            } else if ( object instanceof long[] ) {
-                final List<Long> list = new ArrayList<>( ((long[]) object).length );
-                for ( long v : ((long[]) object) ) {
-                    list.add( v );
-                }
-                return list;
-            } else if ( object instanceof int[] ) {
-                final List<Integer> list = new ArrayList<>( ((int[]) object).length );
-                for ( int v : ((int[]) object) ) {
-                    list.add( v );
-                }
-                return list;
-            } else if ( object instanceof boolean[] ) {
-                final List<Boolean> list = new ArrayList<>( ((boolean[]) object).length );
-                for ( boolean v : ((boolean[]) object) ) {
-                    list.add( v );
-                }
-                return list;
-            } else {
-                return object;
-            }
-        }
-
     }
 
 
@@ -161,8 +117,7 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
             final List<RelDataTypeField> fieldList = this.rowType.getFieldList();
             for ( int i = 0; i < fieldList.size(); i++ ) {
                 final RelDataType type = fieldList.get( i ).getType();
-                final String columnName = this.physicalColumnNames.get( i );
-                returnValue[i] = this.parseSingleField( a0.get( columnName ), type );
+                returnValue[i] = this.parseSingleField( a0.get( i ), type );
             }
 
             return returnValue;

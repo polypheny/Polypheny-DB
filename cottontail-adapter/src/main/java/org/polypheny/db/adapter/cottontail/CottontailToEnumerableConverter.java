@@ -104,10 +104,10 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         final RelDataType rowType = getRowType();
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaRowFormat.ARRAY ) );
 
-        List<Pair<String, String>> pairs = Pair.zip(
+        final List<Pair<String, String>> pairs = Pair.zip(
                 rowType.getFieldList().stream().map( RelDataTypeField::getPhysicalName ).collect( Collectors.toList() ),
                 rowType.getFieldNames() );
-        List<String> physicalFieldNames = pairs.stream()
+        final List<String> physicalFieldNames = pairs.stream()
                 .map( it -> it.left != null ? it.left : it.right )
                 .collect( Collectors.toList() );
 
