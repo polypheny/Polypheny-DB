@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.cottontail.rel;
 
-
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -28,14 +27,10 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.NewExpression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
-import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.core.Values;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexLiteral;
@@ -49,6 +44,7 @@ public class CottontailValues extends Values implements org.polypheny.db.adapter
     public CottontailValues( RelOptCluster cluster, RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, RelTraitSet traits ) {
         super( cluster, rowType, tuples, traits );
     }
+
 
     @Override
     public void implement( CottontailImplementContext context ) {
@@ -103,4 +99,5 @@ public class CottontailValues extends Values implements org.polypheny.db.adapter
         context.blockBuilder = builder;
         context.valuesHashMapList = valuesMapList_;
     }
+
 }

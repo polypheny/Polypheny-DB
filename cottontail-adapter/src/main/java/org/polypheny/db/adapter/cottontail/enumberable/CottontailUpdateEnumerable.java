@@ -16,18 +16,12 @@
 
 package org.polypheny.db.adapter.cottontail.enumberable;
 
-
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.function.Function1;
-import org.apache.calcite.linq4j.tree.Types;
-import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.CottontailWrapper;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.*;
-
-import java.lang.reflect.Method;
-import java.util.*;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.UpdateMessage;
 
 
 @Slf4j
@@ -35,6 +29,7 @@ public class CottontailUpdateEnumerable extends AbstractEnumerable<Long> {
 
     private final List<UpdateMessage> updates;
     private final CottontailWrapper wrapper;
+
 
     public CottontailUpdateEnumerable( List<UpdateMessage> updates, CottontailWrapper wrapper ) {
         this.updates = updates;
@@ -47,34 +42,47 @@ public class CottontailUpdateEnumerable extends AbstractEnumerable<Long> {
         return new CottontailUpdateEnumerator();
     }
 
+
     private class CottontailUpdateEnumerator implements Enumerator<Long> {
-        /** Result of the last UPDATE that was performed. */
+
+        /**
+         * Result of the last UPDATE that was performed.
+         */
         private long currentResult;
 
-        /** The pointer to the last {@link UpdateMessage} that was executed. */
+        /**
+         * The pointer to the last {@link UpdateMessage} that was executed.
+         */
         private int pointer = 0;
+
 
         @Override
         public Long current() {
             return this.currentResult;
         }
 
+
         @Override
         public boolean moveNext() {
             if ( this.pointer < CottontailUpdateEnumerable.this.updates.size() ) {
-                final UpdateMessage updateMessage = CottontailUpdateEnumerable.this.updates.get(this.pointer++);
+                final UpdateMessage updateMessage = CottontailUpdateEnumerable.this.updates.get( this.pointer++ );
                 this.currentResult = CottontailUpdateEnumerable.this.wrapper.update( updateMessage );
                 return !(this.currentResult == -1L);
             }
             return false;
         }
 
+
         @Override
         public void reset() {
             this.pointer = 0;
         }
 
+
         @Override
-        public void close() {}
+        public void close() {
+        }
+
     }
+
 }

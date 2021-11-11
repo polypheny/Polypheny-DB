@@ -17,6 +17,8 @@
 package org.polypheny.db.adapter.cottontail.enumberable;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -29,22 +31,25 @@ import org.polypheny.db.type.ArrayType;
 import org.vitrivr.cottontail.client.iterators.Tuple;
 import org.vitrivr.cottontail.client.iterators.TupleIterator;
 
-import java.util.ArrayList;
-import java.util.List;
-
 
 public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
 
-    /** The {@link TupleIterator} backing this {@link CottontailQueryEnumerable}. */
+    /**
+     * The {@link TupleIterator} backing this {@link CottontailQueryEnumerable}.
+     */
     private final TupleIterator tupleIterator;
 
-    /** The {@link RowTypeParser} backing this {@link CottontailQueryEnumerable}. */
+    /**
+     * The {@link RowTypeParser} backing this {@link CottontailQueryEnumerable}.
+     */
     private final Function1<Tuple, T> parser;
 
-    public CottontailQueryEnumerable(TupleIterator iterator, Function1<Tuple, T> rowParser ) {
+
+    public CottontailQueryEnumerable( TupleIterator iterator, Function1<Tuple, T> rowParser ) {
         this.tupleIterator = iterator;
         this.parser = rowParser;
     }
+
 
     @Override
     public Enumerator<T> enumerator() {
@@ -54,18 +59,21 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
 
     private class CottontailQueryResultEnumerator<T> implements Enumerator<T> {
 
-        /** The current {@link Tuple} this {@link CottontailQueryEnumerable} is pointing to. */
+        /**
+         * The current {@link Tuple} this {@link CottontailQueryEnumerable} is pointing to.
+         */
         private Tuple tuple = null;
+
 
         @Override
         public T current() {
-            return ( (T) CottontailQueryEnumerable.this.parser.apply( this.tuple ) );
+            return ((T) CottontailQueryEnumerable.this.parser.apply( this.tuple ));
         }
 
 
         @Override
         public boolean moveNext() {
-            if (CottontailQueryEnumerable.this.tupleIterator.hasNext()) {
+            if ( CottontailQueryEnumerable.this.tupleIterator.hasNext() ) {
                 this.tuple = CottontailQueryEnumerable.this.tupleIterator.next();
                 return true;
             } else {
@@ -84,10 +92,11 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
         public void close() {
             try {
                 CottontailQueryEnumerable.this.tupleIterator.close();
-            } catch (Exception e) {
+            } catch ( Exception e ) {
                 e.printStackTrace();
             }
         }
+
 
         /**
          * Internal conversion method that mainly converts arrays to lists.
@@ -95,42 +104,44 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
          * @param object The object to convert.
          * @return Converted object.
          */
-        private Object convert(Object object) {
-            if (object instanceof double[]) {
-                final List<Double> list = new ArrayList<>(((double[]) object).length);
-                for (double v : ((double[]) object)) {
-                    list.add(v);
+        private Object convert( Object object ) {
+            if ( object instanceof double[] ) {
+                final List<Double> list = new ArrayList<>( ((double[]) object).length );
+                for ( double v : ((double[]) object) ) {
+                    list.add( v );
                 }
                 return list;
-            } else if (object instanceof float[]) {
-                final List<Float> list = new ArrayList<>(((float[]) object).length);
-                for (float v : ((float[]) object)) {
-                    list.add(v);
+            } else if ( object instanceof float[] ) {
+                final List<Float> list = new ArrayList<>( ((float[]) object).length );
+                for ( float v : ((float[]) object) ) {
+                    list.add( v );
                 }
                 return list;
-            } else if (object instanceof long[]) {
-                final List<Long> list = new ArrayList<>(((long[]) object).length);
-                for (long v : ((long[]) object)) {
-                    list.add(v);
+            } else if ( object instanceof long[] ) {
+                final List<Long> list = new ArrayList<>( ((long[]) object).length );
+                for ( long v : ((long[]) object) ) {
+                    list.add( v );
                 }
                 return list;
-            } else if (object instanceof int[]) {
-                final List<Integer> list = new ArrayList<>(((int[]) object).length);
-                for (int v : ((int[]) object)) {
-                    list.add(v);
+            } else if ( object instanceof int[] ) {
+                final List<Integer> list = new ArrayList<>( ((int[]) object).length );
+                for ( int v : ((int[]) object) ) {
+                    list.add( v );
                 }
                 return list;
-            } else if (object instanceof boolean[]) {
-                final List<Boolean> list = new ArrayList<>(((boolean[]) object).length);
-                for (boolean v : ((boolean[]) object)) {
-                    list.add(v);
+            } else if ( object instanceof boolean[] ) {
+                final List<Boolean> list = new ArrayList<>( ((boolean[]) object).length );
+                for ( boolean v : ((boolean[]) object) ) {
+                    list.add( v );
                 }
                 return list;
-            } else  {
+            } else {
                 return object;
             }
         }
+
     }
+
 
     public static class RowTypeParser implements Function1<Tuple, Object[]> {
 
@@ -178,23 +189,33 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
                 case ARRAY:
                     ArrayType arrayType = (ArrayType) type;
                     if ( arrayType.getDimension() == 1 && CottontailToEnumerableConverter.SUPPORTED_ARRAY_COMPONENT_TYPES.contains( arrayType.getComponentType().getPolyType() ) ) {
-                        final List<Object> list = new ArrayList<>((int)arrayType.getCardinality());
+                        final List<Object> list = new ArrayList<>( (int) arrayType.getCardinality() );
                         switch ( arrayType.getComponentType().getPolyType() ) {
                             case INTEGER:
-                                for (long v : ((int[]) data)) list.add(v);
+                                for ( long v : ((int[]) data) ) {
+                                    list.add( v );
+                                }
                                 break;
                             case BIGINT:
-                                for (long v : ((long[]) data)) list.add(v);
+                                for ( long v : ((long[]) data) ) {
+                                    list.add( v );
+                                }
                                 break;
                             case DOUBLE:
-                                for (double v : ((double[]) data)) list.add(v);
+                                for ( double v : ((double[]) data) ) {
+                                    list.add( v );
+                                }
                                 break;
                             case BOOLEAN:
-                                for (boolean v : ((boolean[]) data)) list.add(v);
+                                for ( boolean v : ((boolean[]) data) ) {
+                                    list.add( v );
+                                }
                                 break;
                             case FLOAT:
                             case REAL:
-                                for (float v : ((float[]) data)) list.add(v);
+                                for ( float v : ((float[]) data) ) {
+                                    list.add( v );
+                                }
                                 break;
                             default:
                                 throw new RuntimeException( "Impossible to reach statement." );
@@ -208,4 +229,5 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
         }
 
     }
+
 }

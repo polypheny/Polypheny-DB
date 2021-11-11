@@ -16,10 +16,11 @@
 
 package org.polypheny.db.adapter.cottontail.rel;
 
-
 import java.lang.reflect.Modifier;
-import java.util.*;
-
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -46,22 +47,22 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 
+
 /**
  * A {@link CottontailRel} that implements PROJECTION clauses and pushes them down to Cottontail DB.
  *
  * This implementation interprets distance functions and maps them to Cottontail DB function calls.
- *
- * @author Ralph Gasser
- * @version 1.0.0
  */
 public class CottontailProject extends Project implements CottontailRel {
 
     private final boolean arrayProject;
 
+
     public CottontailProject( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, List<? extends RexNode> projects, RelDataType rowType, boolean arrayValueProject ) {
         super( cluster, traitSet, input, projects, rowType );
         this.arrayProject = arrayValueProject;
     }
+
 
     @Override
     public boolean isImplementationCacheable() {
@@ -80,6 +81,7 @@ public class CottontailProject extends Project implements CottontailRel {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.6 );
     }
 
+
     @Override
     public void implement( CottontailImplementContext context ) {
         final BlockBuilder builder = context.blockBuilder;
@@ -89,8 +91,8 @@ public class CottontailProject extends Project implements CottontailRel {
         }
 
         final List<RelDataTypeField> fieldList = context.cottontailTable.getRowType( getCluster().getTypeFactory() ).getFieldList();
-        final List<String> physicalColumnNames = new ArrayList<>(fieldList.size());
-        final List<PolyType> columnTypes = new ArrayList<>(fieldList.size());
+        final List<String> physicalColumnNames = new ArrayList<>( fieldList.size() );
+        final List<PolyType> columnTypes = new ArrayList<>( fieldList.size() );
 
         for ( RelDataTypeField field : fieldList ) {
             physicalColumnNames.add( context.cottontailTable.getPhysicalColumnName( field.getName() ) );
@@ -115,7 +117,7 @@ public class CottontailProject extends Project implements CottontailRel {
      *
      * @param builder The {@link BlockBuilder} instance.
      * @param namedProjects List of projection to alias mappings.
-     * @param  physicalColumnNames List of physical column names in the underlying store.
+     * @param physicalColumnNames List of physical column names in the underlying store.
      * @return {@link ParameterExpression}
      */
     public static ParameterExpression makeProjectionAndKnnBuilder( BlockBuilder builder, List<Pair<RexNode, String>> namedProjects, List<String> physicalColumnNames ) {
@@ -132,19 +134,13 @@ public class CottontailProject extends Project implements CottontailRel {
             } else {
                 continue;
             }
-            builder.add( Expressions.statement(Expressions.call( projectionMap_, BuiltInMethod.MAP_PUT.method, exp, Expressions.constant( name ) ) ) );
+            builder.add( Expressions.statement( Expressions.call( projectionMap_, BuiltInMethod.MAP_PUT.method, exp, Expressions.constant( name ) ) ) );
         }
 
         return projectionMap_;
     }
 
-    /**
-     *
-     * @param namedProjects
-     * @param physicalColumnNames
-     * @param columnTypes
-     * @return
-     */
+
     public static Expression makeProjectValueBuilder( List<Pair<RexNode, String>> namedProjects, List<String> physicalColumnNames, List<PolyType> columnTypes ) {
         BlockBuilder inner = new BlockBuilder();
 

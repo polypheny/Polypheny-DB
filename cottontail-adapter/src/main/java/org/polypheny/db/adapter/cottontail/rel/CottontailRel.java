@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.cottontail.rel;
 
-
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;

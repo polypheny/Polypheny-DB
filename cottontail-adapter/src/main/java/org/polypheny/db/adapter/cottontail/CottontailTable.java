@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.cottontail;
 
-
 import java.util.Collection;
 import java.util.List;
 import lombok.Getter;
@@ -53,7 +52,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.Scan;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.SchemaName;
 
 
-public class CottontailTable extends AbstractQueryableTable implements TranslatableTable, ModifiableTable {  // implements TranslatableTable
+public class CottontailTable extends AbstractQueryableTable implements TranslatableTable, ModifiableTable {
 
     private RelProtoDataType protoRowType;
     private CottontailSchema cottontailSchema;
@@ -195,9 +194,11 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
             final Query query = Query.newBuilder().setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( cottontailTable.entity ) ).build() ).build();
             final QueryMessage queryMessage = QueryMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId( txId ) ).setQuery( query ).build();
             return new CottontailQueryEnumerable(
-                cottontailTable.cottontailSchema.getWrapper().query( queryMessage ),
-                new CottontailQueryEnumerable.RowTypeParser( cottontailTable.getRowType( typeFactory ), cottontailTable.physicalColumnNames )
+                    cottontailTable.cottontailSchema.getWrapper().query( queryMessage ),
+                    new CottontailQueryEnumerable.RowTypeParser( cottontailTable.getRowType( typeFactory ), cottontailTable.physicalColumnNames )
             ).enumerator();
         }
+
     }
+
 }

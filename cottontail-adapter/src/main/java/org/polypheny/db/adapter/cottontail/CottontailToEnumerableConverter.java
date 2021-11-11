@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.cottontail;
 
-
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -28,7 +27,6 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
-import org.apache.commons.lang3.reflect.TypeUtils;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailDeleteEnumerable;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailEnumerableFactory;
@@ -56,6 +54,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 import org.vitrivr.cottontail.client.iterators.Tuple;
+
 
 public class CottontailToEnumerableConverter extends ConverterImpl implements EnumerableRel {
 
@@ -121,7 +120,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                 BlockBuilder builder = new BlockBuilder();
 
                 final ParameterExpression resultMap_ = Expressions.parameter(
-                    Tuple.class, builder.newName( "resultDataMap" )
+                        Tuple.class, builder.newName( "resultDataMap" )
                 );
 
                 if ( fieldCount == 1 ) {
@@ -148,7 +147,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                     builder.add( Expressions.return_( null, values_ ) );
                 }
 
-                final Expression rowBuilder_ = list.append("rowBuilder", Expressions.lambda(Expressions.block( builder.toBlock() ), resultMap_ ) );
+                final Expression rowBuilder_ = list.append( "rowBuilder", Expressions.lambda( Expressions.block( builder.toBlock() ), resultMap_ ) );
                 enumerable = list.append( "enumerable",
                         Expressions.call( CottontailEnumerableFactory.CREATE_QUERY_METHOD,
                                 Expressions.constant( cottontailContext.tableName ),
@@ -381,6 +380,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         }
     }
 
+
     private Method cottontailGetVectorMethod( PolyType polyType ) {
         switch ( polyType ) {
             case BOOLEAN:
@@ -408,6 +408,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         return new BigDecimal( string );
     }
 
+
     private static Expression expressionOrNullExpression( Expression expression ) {
         if ( expression == null ) {
             return Expressions.constant( null );
@@ -415,4 +416,5 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
             return expression;
         }
     }
+
 }

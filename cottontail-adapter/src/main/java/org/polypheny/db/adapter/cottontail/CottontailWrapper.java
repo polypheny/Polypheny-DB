@@ -27,7 +27,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.vitrivr.cottontail.client.SimpleClient;
 import org.vitrivr.cottontail.client.iterators.Tuple;
 import org.vitrivr.cottontail.client.iterators.TupleIterator;
-import org.vitrivr.cottontail.grpc.*;
+import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.BatchInsertMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnName;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.CreateEntityMessage;
@@ -43,11 +43,10 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.ListSchemaMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.TruncateEntityMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.UpdateMessage;
+
+
 /**
  * A wrapper class that provides all functionality exposed by the Cottontail DB gRPC endpoint.
- *
- * @author Jan Schönholz & Ralph Gasser
- * @version 1.1.0
  */
 @Slf4j
 public class CottontailWrapper implements AutoCloseable {
@@ -74,6 +73,7 @@ public class CottontailWrapper implements AutoCloseable {
      */
     private final CottontailStore store;
 
+
     /**
      * Default constructor.
      *
@@ -83,7 +83,7 @@ public class CottontailWrapper implements AutoCloseable {
     public CottontailWrapper( ManagedChannel channel, CottontailStore store ) {
         this.store = store;
         this.channel = channel;
-        this.client = new SimpleClient(this.channel);
+        this.client = new SimpleClient( this.channel );
     }
 
 
@@ -116,7 +116,7 @@ public class CottontailWrapper implements AutoCloseable {
         final Long txId = this.transactions.get( xid );
         if ( txId != null ) {
             try {
-                this.client.commit(txId);
+                this.client.commit( txId );
                 this.transactions.remove( xid );
             } catch ( StatusRuntimeException e ) {
                 log.error( "Could not COMMIT Cottontail DB transaction {} due to error; trying rollback", txId, e );
@@ -137,7 +137,7 @@ public class CottontailWrapper implements AutoCloseable {
         final Long txId = this.transactions.get( xid );
         if ( txId != null ) {
             try {
-                this.client.rollback(txId);
+                this.client.rollback( txId );
                 this.transactions.remove( xid );
             } catch ( StatusRuntimeException e ) {
                 log.error( "Could not ROLLBACK Cottontail DB transaction {} due to error.", txId, e );
@@ -147,6 +147,7 @@ public class CottontailWrapper implements AutoCloseable {
             log.warn( "No Cottontail DB transaction for Xid {} could be found.", xid );
         }
     }
+
 
     public boolean createEntityBlocking( CreateEntityMessage createMessage ) {
         try {
@@ -161,6 +162,7 @@ public class CottontailWrapper implements AutoCloseable {
             return false;
         }
     }
+
 
     public synchronized void createIndexBlocking( CreateIndexMessage createMessage ) {
         try {
@@ -193,7 +195,9 @@ public class CottontailWrapper implements AutoCloseable {
             this.client.drop( dropMessage );
         } catch ( StatusRuntimeException e ) {
             if ( e.getStatus().getCode() == Status.NOT_FOUND.getCode() ) {
-                log.debug( "entity {} was not dropped because it does not exist", toString( dropMessage.getEntity() ) );
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "entity {} was not dropped because it does not exist", toString( dropMessage.getEntity() ) );
+                }
             } else {
                 log.error( "Caught exception", e );
             }
@@ -206,7 +210,9 @@ public class CottontailWrapper implements AutoCloseable {
             this.client.truncate( truncateMessage );
         } catch ( StatusRuntimeException e ) {
             if ( e.getStatus().getCode() == Status.NOT_FOUND.getCode() ) {
-                log.debug( "entity {} was not truncated because it does not exist", toString( truncateMessage.getEntity() ) );
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "entity {} was not truncated because it does not exist", toString( truncateMessage.getEntity() ) );
+                }
             } else {
                 log.error( "Caught exception", e );
             }
@@ -217,9 +223,9 @@ public class CottontailWrapper implements AutoCloseable {
     public synchronized void checkedCreateSchemaBlocking( CreateSchemaMessage createMessage ) {
         final TupleIterator schemas = this.client.list( ListSchemaMessage.getDefaultInstance() );
         while ( schemas.hasNext() ) {
-            while (schemas.hasNext()) {
+            while ( schemas.hasNext() ) {
                 final Tuple tuple = schemas.next();
-                final String value = tuple.asString(0);
+                final String value = tuple.asString( 0 );
                 if ( value != null && value.equals( createMessage.getSchema().getName() ) ) {
                     return;
                 }
@@ -234,7 +240,9 @@ public class CottontailWrapper implements AutoCloseable {
             this.client.create( createMessage );
         } catch ( StatusRuntimeException e ) {
             if ( e.getStatus().getCode() == Status.ALREADY_EXISTS.getCode() ) {
-                log.debug( "Schema {} was not created because it does already exist.", createMessage.getSchema().getName() );
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "Schema {} was not created because it does already exist.", createMessage.getSchema().getName() );
+                }
             } else {
                 log.error( "Caught exception", e );
             }
@@ -245,15 +253,17 @@ public class CottontailWrapper implements AutoCloseable {
     public long delete( DeleteMessage message ) {
         try {
             final TupleIterator response = this.client.delete( message );
-            final Long results = response.next().asLong(0);
-            if (results != null) {
+            final Long results = response.next().asLong( 0 );
+            if ( results != null ) {
                 return results; /* Number of deletions as returned by Cottontail DB. */
             } else {
                 return -1L;
             }
         } catch ( StatusRuntimeException e ) {
             if ( e.getStatus().getCode() == Status.INVALID_ARGUMENT.getCode() ) {
-                log.debug( "Deletion failed due to user error: {}", e.getMessage() );
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "Deletion failed due to user error: {}", e.getMessage() );
+                }
             } else {
                 log.error( "Caught exception", e );
             }
@@ -264,16 +274,18 @@ public class CottontailWrapper implements AutoCloseable {
 
     public long update( UpdateMessage message ) {
         try {
-            final TupleIterator response =  this.client.update( message );
-            final Long results = response.next().asLong(0);
-            if (results != null) {
+            final TupleIterator response = this.client.update( message );
+            final Long results = response.next().asLong( 0 );
+            if ( results != null ) {
                 return results;  /* Number of updates as returned by Cottontail DB. */
             } else {
                 return -1L;
             }
         } catch ( StatusRuntimeException e ) {
             if ( e.getStatus().getCode() == Status.INVALID_ARGUMENT.getCode() ) {
-                log.debug( "Update failed due to user error: {}", e.getMessage() );
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "Update failed due to user error: {}", e.getMessage() );
+                }
             } else {
                 log.error( "Caught exception", e );
             }
@@ -303,12 +315,15 @@ public class CottontailWrapper implements AutoCloseable {
         }
     }
 
-    public TupleIterator query(QueryMessage query ) {
+
+    public TupleIterator query( QueryMessage query ) {
         try {
             return this.client.query( query );
         } catch ( StatusRuntimeException e ) {
             if ( e.getStatus().getCode() == Status.INVALID_ARGUMENT.getCode() ) {
-                log.debug( "Query failed due to user error: {}", e.getMessage() );
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "Query failed due to user error: {}", e.getMessage() );
+                }
             } else if ( e.getStatus() == Status.DEADLINE_EXCEEDED ) {
                 log.error( "Query has timed out (timeout = {}ms).", MAX_QUERY_CALL_TIMEOUT );
             } else {
@@ -318,12 +333,15 @@ public class CottontailWrapper implements AutoCloseable {
         }
     }
 
-    public TupleIterator batchedQuery(CottontailGrpc.BatchedQueryMessage query ) {
+
+    public TupleIterator batchedQuery( CottontailGrpc.BatchedQueryMessage query ) {
         try {
             return this.client.batchedQuery( query );
         } catch ( StatusRuntimeException e ) {
             if ( e.getStatus().getCode() == Status.INVALID_ARGUMENT.getCode() ) {
-                log.debug( "Batched query failed due to user error: {}", e.getMessage() );
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "Batched query failed due to user error: {}", e.getMessage() );
+                }
             } else if ( e.getStatus() == Status.DEADLINE_EXCEEDED ) {
                 log.error( "Batched query has timed out (timeout = {}ms).", MAX_QUERY_CALL_TIMEOUT );
             } else {
@@ -333,13 +351,14 @@ public class CottontailWrapper implements AutoCloseable {
         }
     }
 
+
     @Override
     public void close() {
         try {
             this.channel.shutdown();
-            this.channel.awaitTermination(1000, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            log.warn( "Thread was interrupted while awaiting shutdown of managed channel.");
+            this.channel.awaitTermination( 1000, TimeUnit.MILLISECONDS );
+        } catch ( InterruptedException e ) {
+            log.warn( "Thread was interrupted while awaiting shutdown of managed channel." );
         }
     }
 
@@ -353,7 +372,9 @@ public class CottontailWrapper implements AutoCloseable {
         return name.getEntity().getSchema().getName() + "." + name.getEntity().getName() + "." + name.getName();
     }
 
+
     private static String toString( ColumnName name ) {
         return name.getEntity().getSchema().getName() + "." + name.getEntity().getName() + "." + name.getName();
     }
+
 }

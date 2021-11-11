@@ -16,10 +16,17 @@
 
 package org.polypheny.db.adapter.cottontail.rel;
 
-
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.linq4j.tree.*;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.cottontail.rel.CottontailFilter.CompoundPredicate.Op;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.adapter.cottontail.util.Linq4JFixer;
@@ -29,19 +36,23 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Filter;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rex.*;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.*;
-
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanOperand;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanPredicate;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnName;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.ComparisonOperator;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.CompoundBooleanPredicate;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.ConnectionOperator;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Literal;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
 
 
 public class CottontailFilter extends Filter implements CottontailRel {
@@ -113,9 +124,16 @@ public class CottontailFilter extends Filter implements CottontailRel {
 
         public Translator( RelDataType rowType ) {
             this.rowType = rowType;
-            List<Pair<String, String>> pairs = Pair.zip( rowType.getFieldList().stream().map( RelDataTypeField::getPhysicalName ).collect( Collectors.toList() ), rowType.getFieldNames() );
-            this.fieldNames = pairs.stream().map( it -> it.left != null ? it.left : it.right ).collect( Collectors.toList() );
-            this.columnTypes = rowType.getFieldList().stream().map( RelDataTypeField::getType ).map( RelDataType::getPolyType ).collect( Collectors.toList() );
+            List<Pair<String, String>> pairs = Pair.zip( rowType.getFieldList().stream()
+                    .map( RelDataTypeField::getPhysicalName )
+                    .collect( Collectors.toList() ), rowType.getFieldNames() );
+            this.fieldNames = pairs.stream()
+                    .map( it -> it.left != null ? it.left : it.right )
+                    .collect( Collectors.toList() );
+            this.columnTypes = rowType.getFieldList().stream()
+                    .map( RelDataTypeField::getType )
+                    .map( RelDataType::getPolyType )
+                    .collect( Collectors.toList() );
         }
 
 
@@ -298,7 +316,7 @@ public class CottontailFilter extends Filter implements CottontailRel {
                     .setNot( not )
                     .setLeft( ColumnName.newBuilder().setName( attribute ) )
                     .setOp( operator )
-                    .setRight( AtomicBooleanOperand.newBuilder().setExpressions( CottontailGrpc.Expressions.newBuilder().addExpression(CottontailGrpc.Expression.newBuilder().setLiteral( data )) ).build() )
+                    .setRight( AtomicBooleanOperand.newBuilder().setExpressions( CottontailGrpc.Expressions.newBuilder().addExpression( CottontailGrpc.Expression.newBuilder().setLiteral( data ) ) ).build() )
                     .build();
         }
 
