@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql.validate;
+package org.polypheny.db.core;
 
 
 /**
  * Enumeration of valid SQL compatibility modes.
  *
- * For most purposes, one of the built-in compatibility modes in enum {@link SqlConformanceEnum} will suffice.
+ * For most purposes, one of the built-in compatibility modes in enum {@link ConformanceEnum} will suffice.
  *
- * If you wish to implement this interface to build your own conformance, we strongly recommend that you extend {@link SqlAbstractConformance}, or use a {@link SqlDelegatingConformance},
+ * If you wish to implement this interface to build your own conformance, we strongly recommend that you extend {#@link SqlAbstractConformance}, or use a {#@link SqlDelegatingConformance},
  * so that you won't be broken by future changes.
  *
- * @see SqlConformanceEnum
- * @see SqlAbstractConformance
- * @see SqlDelegatingConformance
+ * @see ConformanceEnum
+ * #@see SqlAbstractConformance
+ * #@see SqlDelegatingConformance
  */
-public interface SqlConformance {
+public interface Conformance {
 
     /**
      * Whether this dialect supports features from a wide variety of dialects. This is enabled for the Babel parser, disabled otherwise.
@@ -40,9 +40,9 @@ public interface SqlConformance {
      * Whether to allow aliases from the {@code SELECT} clause to be used as column names in the {@code GROUP BY} clause.
      *
      * Among the built-in conformance levels, true in
-     * {@link SqlConformanceEnum#BABEL},
-     * {@link SqlConformanceEnum#LENIENT},
-     * {@link SqlConformanceEnum#MYSQL_5};
+     * {@link ConformanceEnum#BABEL},
+     * {@link ConformanceEnum#LENIENT},
+     * {@link ConformanceEnum#MYSQL_5};
      * false otherwise.
      */
     boolean isGroupByAlias();
@@ -51,9 +51,9 @@ public interface SqlConformance {
      * Whether {@code GROUP BY 2} is interpreted to mean 'group by the 2nd column in the select list'.
      *
      * Among the built-in conformance levels, true in
-     * {@link SqlConformanceEnum#BABEL},
-     * {@link SqlConformanceEnum#LENIENT},
-     * {@link SqlConformanceEnum#MYSQL_5};
+     * {@link ConformanceEnum#BABEL},
+     * {@link ConformanceEnum#LENIENT},
+     * {@link ConformanceEnum#MYSQL_5};
      * false otherwise.
      */
     boolean isGroupByOrdinal();
@@ -62,9 +62,9 @@ public interface SqlConformance {
      * Whether to allow aliases from the {@code SELECT} clause to be used as column names in the {@code HAVING} clause.
      *
      * Among the built-in conformance levels, true in
-     * {@link SqlConformanceEnum#BABEL},
-     * {@link SqlConformanceEnum#LENIENT},
-     * {@link SqlConformanceEnum#MYSQL_5};
+     * {@link ConformanceEnum#BABEL},
+     * {@link ConformanceEnum#LENIENT},
+     * {@link ConformanceEnum#MYSQL_5};
      * false otherwise.
      */
     boolean isHavingAlias();
@@ -73,16 +73,16 @@ public interface SqlConformance {
      * Whether '{@code ORDER BY 2}' is interpreted to mean 'sort by the 2nd column in the select list'.
      *
      * Among the built-in conformance levels, true in
-     * {@link SqlConformanceEnum#DEFAULT},
-     * {@link SqlConformanceEnum#BABEL},
-     * {@link SqlConformanceEnum#LENIENT},
-     * {@link SqlConformanceEnum#MYSQL_5},
-     * {@link SqlConformanceEnum#ORACLE_10},
-     * {@link SqlConformanceEnum#ORACLE_12},
-     * {@link SqlConformanceEnum#STRICT_92},
-     * {@link SqlConformanceEnum#PRAGMATIC_99},
-     * {@link SqlConformanceEnum#PRAGMATIC_2003};
-     * {@link SqlConformanceEnum#SQL_SERVER_2008};
+     * {@link ConformanceEnum#DEFAULT},
+     * {@link ConformanceEnum#BABEL},
+     * {@link ConformanceEnum#LENIENT},
+     * {@link ConformanceEnum#MYSQL_5},
+     * {@link ConformanceEnum#ORACLE_10},
+     * {@link ConformanceEnum#ORACLE_12},
+     * {@link ConformanceEnum#STRICT_92},
+     * {@link ConformanceEnum#PRAGMATIC_99},
+     * {@link ConformanceEnum#PRAGMATIC_2003};
+     * {@link ConformanceEnum#SQL_SERVER_2008};
      * false otherwise.
      */
     boolean isSortByOrdinal();
@@ -91,14 +91,14 @@ public interface SqlConformance {
      * Whether '{@code ORDER BY x}' is interpreted to mean 'sort by the select list item whose alias is x' even if there is a column called x.
      *
      * Among the built-in conformance levels, true in
-     * {@link SqlConformanceEnum#DEFAULT},
-     * {@link SqlConformanceEnum#BABEL},
-     * {@link SqlConformanceEnum#LENIENT},
-     * {@link SqlConformanceEnum#MYSQL_5},
-     * {@link SqlConformanceEnum#ORACLE_10},
-     * {@link SqlConformanceEnum#ORACLE_12},
-     * {@link SqlConformanceEnum#STRICT_92};
-     * {@link SqlConformanceEnum#SQL_SERVER_2008};
+     * {@link ConformanceEnum#DEFAULT},
+     * {@link ConformanceEnum#BABEL},
+     * {@link ConformanceEnum#LENIENT},
+     * {@link ConformanceEnum#MYSQL_5},
+     * {@link ConformanceEnum#ORACLE_10},
+     * {@link ConformanceEnum#ORACLE_12},
+     * {@link ConformanceEnum#STRICT_92};
+     * {@link ConformanceEnum#SQL_SERVER_2008};
      * false otherwise.
      */
     boolean isSortByAlias();
@@ -107,7 +107,7 @@ public interface SqlConformance {
      * Whether "empno" is invalid in "select empno as x from emp order by empno" because the alias "x" obscures it.
      *
      * Among the built-in conformance levels, true in
-     * {@link SqlConformanceEnum#STRICT_92};
+     * {@link ConformanceEnum#STRICT_92};
      * false otherwise.
      */
     boolean isSortByAliasObscures();
@@ -116,11 +116,11 @@ public interface SqlConformance {
      * Whether {@code FROM} clause is required in a {@code SELECT} statement.
      *
      * Among the built-in conformance levels, true in
-     * {@link SqlConformanceEnum#ORACLE_10},
-     * {@link SqlConformanceEnum#ORACLE_12},
-     * {@link SqlConformanceEnum#STRICT_92},
-     * {@link SqlConformanceEnum#STRICT_99},
-     * {@link SqlConformanceEnum#STRICT_2003};
+     * {@link ConformanceEnum#ORACLE_10},
+     * {@link ConformanceEnum#ORACLE_12},
+     * {@link ConformanceEnum#STRICT_92},
+     * {@link ConformanceEnum#STRICT_99},
+     * {@link ConformanceEnum#STRICT_2003};
      * false otherwise.
      */
     boolean isFromRequired();
@@ -129,11 +129,11 @@ public interface SqlConformance {
      * Whether the bang-equal token != is allowed as an alternative to &lt;&gt; in the parser.
      *
      * Among the built-in conformance levels, true in
-     * {@link SqlConformanceEnum#BABEL},
-     * {@link SqlConformanceEnum#LENIENT},
-     * {@link SqlConformanceEnum#MYSQL_5},
-     * {@link SqlConformanceEnum#ORACLE_10};
-     * {@link SqlConformanceEnum#ORACLE_12};
+     * {@link ConformanceEnum#BABEL},
+     * {@link ConformanceEnum#LENIENT},
+     * {@link ConformanceEnum#MYSQL_5},
+     * {@link ConformanceEnum#ORACLE_10};
+     * {@link ConformanceEnum#ORACLE_12};
      * false otherwise.
      */
     boolean isBangEqualAllowed();
@@ -142,9 +142,9 @@ public interface SqlConformance {
      * Whether the "%" operator is allowed by the parser as an alternative to the {@code mod} function.
      *
      * Among the built-in conformance levels, true in
-     * {@link SqlConformanceEnum#BABEL},
-     * {@link SqlConformanceEnum#LENIENT},
-     * {@link SqlConformanceEnum#MYSQL_5};
+     * {@link ConformanceEnum#BABEL},
+     * {@link ConformanceEnum#LENIENT},
+     * {@link ConformanceEnum#MYSQL_5};
      * false otherwise.
      */
     boolean isPercentRemainderAllowed();
@@ -153,10 +153,10 @@ public interface SqlConformance {
      * Whether {@code MINUS} is allowed as an alternative to {@code EXCEPT} in the parser.
      *
      * Among the built-in conformance levels, true in
-     * {@link SqlConformanceEnum#BABEL},
-     * {@link SqlConformanceEnum#LENIENT},
-     * {@link SqlConformanceEnum#ORACLE_10};
-     * {@link SqlConformanceEnum#ORACLE_12};
+     * {@link ConformanceEnum#BABEL},
+     * {@link ConformanceEnum#LENIENT},
+     * {@link ConformanceEnum#ORACLE_10};
+     * {@link ConformanceEnum#ORACLE_12};
      * false otherwise.
      *
      * Note: MySQL does not support {@code MINUS} or {@code EXCEPT} (as of version 5.5).
@@ -179,10 +179,10 @@ public interface SqlConformance {
      * </ul>
      *
      * Among the built-in conformance levels, true in
-     * {@link SqlConformanceEnum#BABEL},
-     * {@link SqlConformanceEnum#LENIENT},
-     * {@link SqlConformanceEnum#SQL_SERVER_2008};
-     * {@link SqlConformanceEnum#ORACLE_12};
+     * {@link ConformanceEnum#BABEL},
+     * {@link ConformanceEnum#LENIENT},
+     * {@link ConformanceEnum#SQL_SERVER_2008};
+     * {@link ConformanceEnum#ORACLE_12};
      * false otherwise.
      */
     boolean isApplyAllowed();
@@ -196,10 +196,10 @@ public interface SqlConformance {
      * The default value of a column is specified by the {@code DEFAULT} clause in the {@code CREATE TABLE} statement, or is {@code NULL} if the column is not declared {@code NOT NULL}.
      *
      * Among the built-in conformance levels, true in
-     * {@link SqlConformanceEnum#BABEL},
-     * {@link SqlConformanceEnum#LENIENT},
-     * {@link SqlConformanceEnum#PRAGMATIC_99},
-     * {@link SqlConformanceEnum#PRAGMATIC_2003};
+     * {@link ConformanceEnum#BABEL},
+     * {@link ConformanceEnum#LENIENT},
+     * {@link ConformanceEnum#PRAGMATIC_99},
+     * {@link ConformanceEnum#PRAGMATIC_2003};
      * false otherwise.
      */
     boolean isInsertSubsetColumnsAllowed();
@@ -219,9 +219,9 @@ public interface SqlConformance {
      * Apache Hive, HSQLDB, IBM DB2, Microsoft SQL Server, Oracle, PostgreSQL do not.
      *
      * Among the built-in conformance levels, true in
-     * {@link SqlConformanceEnum#BABEL},
-     * {@link SqlConformanceEnum#LENIENT},
-     * {@link SqlConformanceEnum#MYSQL_5};
+     * {@link ConformanceEnum#BABEL},
+     * {@link ConformanceEnum#LENIENT},
+     * {@link ConformanceEnum#MYSQL_5};
      * false otherwise.
      */
     boolean allowNiladicParentheses();
@@ -235,8 +235,8 @@ public interface SqlConformance {
      * Standard SQL allows row expressions in other contexts, for instance inside {@code VALUES} clause.
      *
      * Among the built-in conformance levels, true in
-     * {@link SqlConformanceEnum#DEFAULT},
-     * {@link SqlConformanceEnum#LENIENT};
+     * {@link ConformanceEnum#DEFAULT},
+     * {@link ConformanceEnum#LENIENT};
      * false otherwise.
      */
     boolean allowExplicitRowValueConstructor();
@@ -252,8 +252,8 @@ public interface SqlConformance {
      * </blockquote>
      *
      * Among the built-in conformance levels, true in
-     * {@link SqlConformanceEnum#BABEL},
-     * {@link SqlConformanceEnum#LENIENT};
+     * {@link ConformanceEnum#BABEL},
+     * {@link ConformanceEnum#LENIENT};
      * false otherwise.
      */
     boolean allowExtend();
@@ -266,9 +266,9 @@ public interface SqlConformance {
      * MySQL and CUBRID allow this behavior.
      *
      * Among the built-in conformance levels, true in
-     * {@link SqlConformanceEnum#BABEL},
-     * {@link SqlConformanceEnum#LENIENT},
-     * {@link SqlConformanceEnum#MYSQL_5};
+     * {@link ConformanceEnum#BABEL},
+     * {@link ConformanceEnum#LENIENT},
+     * {@link ConformanceEnum#MYSQL_5};
      * false otherwise.
      */
     boolean isLimitStartCountAllowed();
@@ -277,10 +277,10 @@ public interface SqlConformance {
      * Whether to allow geo-spatial extensions, including the GEOMETRY type.
      *
      * Among the built-in conformance levels, true in
-     * {@link SqlConformanceEnum#BABEL},
-     * {@link SqlConformanceEnum#LENIENT},
-     * {@link SqlConformanceEnum#MYSQL_5},
-     * {@link SqlConformanceEnum#SQL_SERVER_2008};
+     * {@link ConformanceEnum#BABEL},
+     * {@link ConformanceEnum#LENIENT},
+     * {@link ConformanceEnum#MYSQL_5},
+     * {@link ConformanceEnum#SQL_SERVER_2008};
      * false otherwise.
      */
     boolean allowGeometry();
@@ -300,12 +300,12 @@ public interface SqlConformance {
      * </ul>
      *
      * Among the built-in conformance levels, true in
-     * {@link SqlConformanceEnum#PRAGMATIC_99},
-     * {@link SqlConformanceEnum#PRAGMATIC_2003},
-     * {@link SqlConformanceEnum#MYSQL_5};
-     * {@link SqlConformanceEnum#ORACLE_10};
-     * {@link SqlConformanceEnum#ORACLE_12};
-     * {@link SqlConformanceEnum#SQL_SERVER_2008};
+     * {@link ConformanceEnum#PRAGMATIC_99},
+     * {@link ConformanceEnum#PRAGMATIC_2003},
+     * {@link ConformanceEnum#MYSQL_5};
+     * {@link ConformanceEnum#ORACLE_10};
+     * {@link ConformanceEnum#ORACLE_12};
+     * {@link ConformanceEnum#SQL_SERVER_2008};
      * false otherwise.
      */
     boolean shouldConvertRaggedUnionTypesToVarying();
@@ -321,10 +321,10 @@ public interface SqlConformance {
      * However many implementations (in databases such as MySQL and SQL Server) trim all the characters, resulting in a return value of '__'.
      *
      * Among the built-in conformance levels, true in
-     * {@link SqlConformanceEnum#BABEL},
-     * {@link SqlConformanceEnum#LENIENT},
-     * {@link SqlConformanceEnum#MYSQL_5},
-     * {@link SqlConformanceEnum#SQL_SERVER_2008};
+     * {@link ConformanceEnum#BABEL},
+     * {@link ConformanceEnum#LENIENT},
+     * {@link ConformanceEnum#MYSQL_5},
+     * {@link ConformanceEnum#SQL_SERVER_2008};
      * false otherwise.
      */
     boolean allowExtendedTrim();

@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.core.Conformance;
 import org.polypheny.db.plan.RelOptSchemaWithSampling;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.prepare.Prepare;
@@ -57,7 +58,7 @@ import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlOperatorTable;
 import org.polypheny.db.languages.sql.SqlUtil;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
@@ -289,7 +290,7 @@ public class SqlValidatorUtil {
     /**
      * Factory method for {@link SqlValidator}.
      */
-    public static SqlValidatorWithHints newValidator( SqlOperatorTable opTab, SqlValidatorCatalogReader catalogReader, RelDataTypeFactory typeFactory, SqlConformance conformance ) {
+    public static SqlValidatorWithHints newValidator( SqlOperatorTable opTab, SqlValidatorCatalogReader catalogReader, RelDataTypeFactory typeFactory, Conformance conformance ) {
         return new SqlValidatorImpl( opTab, catalogReader, typeFactory, conformance );
     }
 

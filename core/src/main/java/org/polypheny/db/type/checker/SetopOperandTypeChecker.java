@@ -19,6 +19,7 @@ package org.polypheny.db.type.checker;
 
 import java.util.AbstractList;
 import java.util.List;
+import org.polypheny.db.core.CallBinding;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.sql.SqlCallBinding;
@@ -46,7 +47,7 @@ public class SetopOperandTypeChecker implements PolyOperandTypeChecker {
 
 
     @Override
-    public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
+    public boolean checkOperandTypes( CallBinding callBinding, boolean throwOnFailure ) {
         assert callBinding.getOperandCount() == 2 : "setops are binary (for now)";
         final RelDataType[] argTypes = new RelDataType[callBinding.getOperandCount()];
         int colCount = -1;
@@ -123,7 +124,7 @@ public class SetopOperandTypeChecker implements PolyOperandTypeChecker {
 
 
     @Override
-    public String getAllowedSignatures( SqlOperator op, String opName ) {
+    public String getAllowedSignatures( Operator op, String opName ) {
         return "{0} " + opName + " {1}";
     }
 

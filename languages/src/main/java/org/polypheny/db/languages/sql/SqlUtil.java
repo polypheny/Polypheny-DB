@@ -41,7 +41,7 @@ import org.apache.calcite.linq4j.function.Functions;
 import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.util.SqlBasicVisitor;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;

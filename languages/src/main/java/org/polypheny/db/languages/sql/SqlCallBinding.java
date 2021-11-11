@@ -21,27 +21,30 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.Lists;
 import java.util.List;
+import org.polypheny.db.core.CallBinding;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.Validator;
 import org.polypheny.db.languages.sql.validate.SelectScope;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
-import org.polypheny.db.languages.sql.validate.SqlValidatorException;
+import org.polypheny.db.core.SqlValidatorException;
 import org.polypheny.db.languages.sql.validate.SqlValidatorNamespace;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.languages.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 
 
 /**
  * <code>SqlCallBinding</code> implements {@link SqlOperatorBinding} by analyzing to the operands of a {@link SqlCall} with a {@link SqlValidator}.
  */
-public class SqlCallBinding extends SqlOperatorBinding {
+public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
 
-    private static final SqlCall DEFAULT_CALL = SqlStdOperatorTable.DEFAULT.createCall( ParserPos.ZERO );
+    private static final SqlCall DEFAULT_CALL = StdOperatorRegistry.get( "DEFAULT" ).createCall( ParserPos.ZERO );
 
     private final SqlValidator validator;
     private final SqlValidatorScope scope;
@@ -88,7 +91,8 @@ public class SqlCallBinding extends SqlOperatorBinding {
     /**
      * Returns the validator.
      */
-    public SqlValidator getValidator() {
+    @Override
+    public Validator getValidator() {
         return validator;
     }
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql.validate;
+package org.polypheny.db.core;
 
 
 import lombok.extern.slf4j.Slf4j;

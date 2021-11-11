@@ -17,18 +17,20 @@
 package org.polypheny.db.languages.sql.validate;
 
 
+import org.polypheny.db.core.Conformance;
+
 /**
- * Implementation of {@link SqlConformance} that delegates all methods to another object. You can create a sub-class that overrides particular methods.
+ * Implementation of {@link Conformance} that delegates all methods to another object. You can create a sub-class that overrides particular methods.
  */
 public class SqlDelegatingConformance extends SqlAbstractConformance {
 
-    private final SqlConformance delegate;
+    private final Conformance delegate;
 
 
     /**
      * Creates a SqlDelegatingConformance.
      */
-    protected SqlDelegatingConformance( SqlConformance delegate ) {
+    protected SqlDelegatingConformance( Conformance delegate ) {
         this.delegate = delegate;
     }
 

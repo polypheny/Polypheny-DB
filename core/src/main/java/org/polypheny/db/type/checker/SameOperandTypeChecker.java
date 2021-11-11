@@ -22,6 +22,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.List;
+import org.polypheny.db.core.CallBinding;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlNode;
@@ -60,7 +61,7 @@ public class SameOperandTypeChecker implements PolySingleOperandTypeChecker {
 
 
     @Override
-    public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
+    public boolean checkOperandTypes( CallBinding callBinding, boolean throwOnFailure ) {
         return checkOperandTypesImpl( callBinding, throwOnFailure, callBinding );
     }
 
@@ -102,7 +103,7 @@ public class SameOperandTypeChecker implements PolySingleOperandTypeChecker {
 
 
     /**
-     * Similar functionality to {@link #checkOperandTypes(SqlCallBinding, boolean)}, but not part of the interface, and
+     * Similar functionality to {@link PolyOperandTypeChecker#checkOperandTypes(CallBinding, boolean)}, but not part of the interface, and
      * cannot throw an error.
      */
     public boolean checkOperandTypes( SqlOperatorBinding operatorBinding ) {
@@ -122,7 +123,7 @@ public class SameOperandTypeChecker implements PolySingleOperandTypeChecker {
 
 
     @Override
-    public String getAllowedSignatures( SqlOperator op, String opName ) {
+    public String getAllowedSignatures( Operator op, String opName ) {
         final String typeName = getTypeName();
         return SqlUtil.getAliasedSignature(
                 op,
@@ -134,7 +135,7 @@ public class SameOperandTypeChecker implements PolySingleOperandTypeChecker {
 
 
     /**
-     * Override to change the behavior of {@link #getAllowedSignatures(SqlOperator, String)}.
+     * Override to change the behavior of {@link PolyOperandTypeChecker#getAllowedSignatures(Operator, String)}.
      */
     protected String getTypeName() {
         return "EQUIVALENT_TYPE";
@@ -142,7 +143,7 @@ public class SameOperandTypeChecker implements PolySingleOperandTypeChecker {
 
 
     @Override
-    public boolean checkSingleOperandType( SqlCallBinding callBinding, SqlNode operand, int iFormalOperand, boolean throwOnFailure ) {
+    public boolean checkSingleOperandType( SqlCallBinding callBinding, Node operand, int iFormalOperand, boolean throwOnFailure ) {
         throw new UnsupportedOperationException(); // TODO:
     }
 

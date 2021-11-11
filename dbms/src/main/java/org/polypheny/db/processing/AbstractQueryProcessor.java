@@ -62,7 +62,9 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.Conformance;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.RelStructuredTypeFlattener;
 import org.polypheny.db.document.util.DataModelShuttle;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -73,8 +75,6 @@ import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.languages.sql.SqlExplainFormat;
 import org.polypheny.db.languages.sql.SqlExplainLevel;
-import org.polypheny.db.languages.sql.validate.SqlConformance;
-import org.polypheny.db.languages.sql2rel.RelStructuredTypeFlattener;
 import org.polypheny.db.monitoring.events.DmlEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
@@ -1018,7 +1018,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
             try {
                 CatalogReader.THREAD_LOCAL.set( statement.getTransaction().getCatalogReader() );
-                final SqlConformance conformance = statement.getPrepareContext().config().conformance();
+                final Conformance conformance = statement.getPrepareContext().config().conformance();
 
                 final Map<String, Object> internalParameters = new LinkedHashMap<>();
                 internalParameters.put( "_conformance", conformance );

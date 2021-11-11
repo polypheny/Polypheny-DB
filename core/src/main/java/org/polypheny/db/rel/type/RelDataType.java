@@ -36,6 +36,7 @@ package org.polypheny.db.rel.type;
 
 import java.nio.charset.Charset;
 import java.util.List;
+import org.polypheny.db.core.Collation;
 import org.polypheny.db.sql.SqlCollation;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlIntervalQualifier;
@@ -145,7 +146,7 @@ public interface RelDataType {
      *
      * @return collation of type
      */
-    SqlCollation getCollation();
+    Collation getCollation();
 
     /**
      * Gets this type's interval qualifier, or null if this is not an interval type.

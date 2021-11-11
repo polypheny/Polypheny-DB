@@ -17,7 +17,6 @@
 package org.polypheny.db.languages.sql.fun;
 
 
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.validate.SqlModality;
 import org.polypheny.db.languages.sql.SqlFunctionalOperator;
 import org.polypheny.db.core.Kind;

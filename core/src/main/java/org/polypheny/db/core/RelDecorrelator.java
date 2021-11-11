@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql2rel;
+package org.polypheny.db.core;
 
 
 import com.google.common.collect.ImmutableList;
@@ -43,14 +43,13 @@ import java.util.TreeMap;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function2;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.SqlExplainFormat;
 import org.polypheny.db.languages.sql.SqlExplainLevel;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.fun.SqlCountAggFunction;
 import org.polypheny.db.languages.sql.fun.SqlSingleValueAggFunction;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCostImpl;
@@ -1422,6 +1421,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
             }
             return ref;
         }
+
     }
 
 
@@ -1581,6 +1581,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
             }
             return newCall;
         }
+
     }
 
 
@@ -1636,6 +1637,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
             relBuilder.push( aggregate ).project( cast );
             call.transformTo( relBuilder.build() );
         }
+
     }
 
 
@@ -1807,6 +1809,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
 
             removeCorVarFromTree( correlate );
         }
+
     }
 
 
@@ -2138,6 +2141,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
 
             removeCorVarFromTree( correlate );
         }
+
     }
 
     // REVIEW jhyde: This rule is non-static, depends on the state of members in RelDecorrelator, and has side-effects in the decorrelator.
@@ -2269,6 +2273,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
 
             call.transformTo( newOutput );
         }
+
     }
 
 
@@ -2329,6 +2334,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
         public CorDef def() {
             return new CorDef( corr, field );
         }
+
     }
 
 
@@ -2376,6 +2382,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
             }
             return Integer.compare( field, o.field );
         }
+
     }
 
 
@@ -2445,6 +2452,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
         public boolean hasCorrelation() {
             return !mapCorToCorRel.isEmpty();
         }
+
     }
 
 
@@ -2566,6 +2574,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
                 }
             };
         }
+
     }
 
 
@@ -2587,5 +2596,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
             assert allLessThan( this.oldToNewOutputs.keySet(), oldRel.getRowType().getFieldCount(), Litmus.THROW );
             assert allLessThan( this.oldToNewOutputs.values(), r.getRowType().getFieldCount(), Litmus.THROW );
         }
+
     }
+
 }

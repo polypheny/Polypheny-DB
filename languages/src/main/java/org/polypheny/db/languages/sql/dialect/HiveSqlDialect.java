@@ -17,7 +17,6 @@
 package org.polypheny.db.languages.sql.dialect;
 
 
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.NullCollation;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDialect;
@@ -25,6 +24,7 @@ import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlSyntax;
 import org.polypheny.db.languages.sql.SqlWriter;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 
 
 /**

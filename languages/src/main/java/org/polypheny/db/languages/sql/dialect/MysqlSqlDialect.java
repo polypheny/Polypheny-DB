@@ -22,7 +22,7 @@ import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.NullCollation;
 import org.polypheny.db.languages.sql.SqlBasicCall;
 import org.polypheny.db.languages.sql.SqlCall;

@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.core.CallBinding;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.type.OperandCountRange;
@@ -123,7 +125,7 @@ public class CompositeOperandTypeChecker implements PolyOperandTypeChecker {
 
 
     @Override
-    public String getAllowedSignatures( SqlOperator op, String opName ) {
+    public String getAllowedSignatures( Operator op, String opName ) {
         if ( allowedSignatures != null ) {
             return allowedSignatures;
         }
@@ -244,7 +246,7 @@ public class CompositeOperandTypeChecker implements PolyOperandTypeChecker {
 
 
     @Override
-    public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
+    public boolean checkOperandTypes( CallBinding callBinding, boolean throwOnFailure ) {
         if ( check( callBinding ) ) {
             return true;
         }

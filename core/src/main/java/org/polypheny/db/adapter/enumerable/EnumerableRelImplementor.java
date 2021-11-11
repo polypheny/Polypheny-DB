@@ -73,12 +73,12 @@ import org.apache.calcite.linq4j.tree.Statement;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.VisitorImpl;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.ConformanceEnum;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl.SyntheticRecordType;
 import org.polypheny.db.plan.RelImplementor;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.runtime.Bindable;
-import org.polypheny.db.sql.validate.SqlConformance;
-import org.polypheny.db.sql.validate.SqlConformanceEnum;
 import org.polypheny.db.util.BuiltInMethod;
 
 
@@ -427,8 +427,8 @@ public class EnumerableRelImplementor extends JavaRelImplementor {
 
 
     @Override
-    public SqlConformance getConformance() {
-        return (SqlConformance) map.getOrDefault( "_conformance", SqlConformanceEnum.DEFAULT );
+    public Conformance getConformance() {
+        return (Conformance) map.getOrDefault( "_conformance", ConformanceEnum.DEFAULT );
     }
 
 
@@ -474,6 +474,7 @@ public class EnumerableRelImplementor extends JavaRelImplementor {
             }
             return super.visit( constantExpression );
         }
+
     }
 
 
@@ -514,6 +515,8 @@ public class EnumerableRelImplementor extends JavaRelImplementor {
                 register( type );
             }
         }
+
     }
+
 }
 

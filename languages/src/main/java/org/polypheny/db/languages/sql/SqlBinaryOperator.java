@@ -19,12 +19,14 @@ package org.polypheny.db.languages.sql;
 
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
+import org.polypheny.db.core.BinaryOperator;
+import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
@@ -37,7 +39,7 @@ import org.polypheny.db.util.Util;
 /**
  * <code>SqlBinaryOperator</code> is a binary operator.
  */
-public class SqlBinaryOperator extends SqlOperator {
+public class SqlBinaryOperator extends SqlOperator implements BinaryOperator {
 
 
     /**
@@ -112,8 +114,8 @@ public class SqlBinaryOperator extends SqlOperator {
                 throw validator.newValidationError( call, Static.RESOURCE.incompatibleCharset( getName(), cs1.name(), cs2.name() ) );
             }
 
-            SqlCollation col1 = operandType1.getCollation();
-            SqlCollation col2 = operandType2.getCollation();
+            Collation col1 = operandType1.getCollation();
+            Collation col2 = operandType2.getCollation();
             assert (null != col1) && (null != col2) : "An implicit or explicit collation should have been set";
 
             // validation will occur inside getCoercibilityDyadicOperator...
@@ -141,8 +143,8 @@ public class SqlBinaryOperator extends SqlOperator {
                 throw validator.newValidationError( call, Static.RESOURCE.incompatibleCharset( getName(), cs1.name(), cs2.name() ) );
             }
 
-            SqlCollation col1 = operandType1.getCollation();
-            SqlCollation col2 = operandType2.getCollation();
+            Collation col1 = operandType1.getCollation();
+            Collation col2 = operandType2.getCollation();
             assert (null != col1) && (null != col2) : "An implicit or explicit collation should have been set";
 
             // validation will occur inside getCoercibilityDyadicOperator...

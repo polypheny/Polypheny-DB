@@ -17,7 +17,7 @@
 package org.polypheny.db.languages.sql;
 
 
-import org.polypheny.db.languages.sql.validate.SqlConformance;
+import org.polypheny.db.core.Conformance;
 import org.polypheny.db.util.Util;
 
 
@@ -93,7 +93,7 @@ public enum SqlSyntax {
     /**
      * Function syntax which takes no parentheses if there are no arguments, for example "CURRENTTIME".
      *
-     * @see SqlConformance#allowNiladicParentheses()
+     * @see Conformance#allowNiladicParentheses()
      */
     FUNCTION_ID {
         @Override

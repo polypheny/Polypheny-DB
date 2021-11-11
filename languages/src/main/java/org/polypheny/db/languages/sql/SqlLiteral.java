@@ -25,6 +25,7 @@ import java.util.Objects;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Literal;
 import org.polypheny.db.languages.sql.fun.SqlLiteralChainOperator;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil;
 import org.polypheny.db.languages.sql.util.SqlVisitor;
@@ -33,7 +34,7 @@ import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -122,7 +123,7 @@ import org.polypheny.db.util.Util;
  * </tr>
  * </table>
  */
-public class SqlLiteral extends SqlNode {
+public class SqlLiteral extends SqlNode implements Literal {
 
     /**
      * The type with which this literal was declared. This type is very approximate: the literal may have a different type once validated. For example, all numeric literals have a type name of
@@ -704,7 +705,7 @@ public class SqlLiteral extends SqlNode {
                 if ( null == charset ) {
                     charset = typeFactory.getDefaultCharset();
                 }
-                SqlCollation collation = string.getCollation();
+                Collation collation = string.getCollation();
                 if ( null == collation ) {
                     collation = Collation.COERCIBLE;
                 }

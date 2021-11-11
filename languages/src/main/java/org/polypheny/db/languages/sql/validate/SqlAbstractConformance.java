@@ -17,129 +17,132 @@
 package org.polypheny.db.languages.sql.validate;
 
 
+import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.ConformanceEnum;
+
 /**
- * Abstract base class for implementing {@link SqlConformance}.
+ * Abstract base class for implementing {@link Conformance}.
  *
- * Every method in {@code SqlConformance} is implemented, and behaves the same as in {@link SqlConformanceEnum#DEFAULT}.
+ * Every method in {@code SqlConformance} is implemented, and behaves the same as in {@link ConformanceEnum#DEFAULT}.
  */
-public abstract class SqlAbstractConformance implements SqlConformance {
+public abstract class SqlAbstractConformance implements Conformance {
 
     @Override
     public boolean isLiberal() {
-        return SqlConformanceEnum.DEFAULT.isLiberal();
+        return ConformanceEnum.DEFAULT.isLiberal();
     }
 
 
     @Override
     public boolean isGroupByAlias() {
-        return SqlConformanceEnum.DEFAULT.isGroupByAlias();
+        return ConformanceEnum.DEFAULT.isGroupByAlias();
     }
 
 
     @Override
     public boolean isGroupByOrdinal() {
-        return SqlConformanceEnum.DEFAULT.isGroupByOrdinal();
+        return ConformanceEnum.DEFAULT.isGroupByOrdinal();
     }
 
 
     @Override
     public boolean isHavingAlias() {
-        return SqlConformanceEnum.DEFAULT.isHavingAlias();
+        return ConformanceEnum.DEFAULT.isHavingAlias();
     }
 
 
     @Override
     public boolean isSortByOrdinal() {
-        return SqlConformanceEnum.DEFAULT.isSortByOrdinal();
+        return ConformanceEnum.DEFAULT.isSortByOrdinal();
     }
 
 
     @Override
     public boolean isSortByAlias() {
-        return SqlConformanceEnum.DEFAULT.isSortByAlias();
+        return ConformanceEnum.DEFAULT.isSortByAlias();
     }
 
 
     @Override
     public boolean isSortByAliasObscures() {
-        return SqlConformanceEnum.DEFAULT.isSortByAliasObscures();
+        return ConformanceEnum.DEFAULT.isSortByAliasObscures();
     }
 
 
     @Override
     public boolean isFromRequired() {
-        return SqlConformanceEnum.DEFAULT.isFromRequired();
+        return ConformanceEnum.DEFAULT.isFromRequired();
     }
 
 
     @Override
     public boolean isBangEqualAllowed() {
-        return SqlConformanceEnum.DEFAULT.isBangEqualAllowed();
+        return ConformanceEnum.DEFAULT.isBangEqualAllowed();
     }
 
 
     @Override
     public boolean isMinusAllowed() {
-        return SqlConformanceEnum.DEFAULT.isMinusAllowed();
+        return ConformanceEnum.DEFAULT.isMinusAllowed();
     }
 
 
     @Override
     public boolean isApplyAllowed() {
-        return SqlConformanceEnum.DEFAULT.isApplyAllowed();
+        return ConformanceEnum.DEFAULT.isApplyAllowed();
     }
 
 
     @Override
     public boolean isInsertSubsetColumnsAllowed() {
-        return SqlConformanceEnum.DEFAULT.isInsertSubsetColumnsAllowed();
+        return ConformanceEnum.DEFAULT.isInsertSubsetColumnsAllowed();
     }
 
 
     @Override
     public boolean allowNiladicParentheses() {
-        return SqlConformanceEnum.DEFAULT.allowNiladicParentheses();
+        return ConformanceEnum.DEFAULT.allowNiladicParentheses();
     }
 
 
     @Override
     public boolean allowExplicitRowValueConstructor() {
-        return SqlConformanceEnum.DEFAULT.allowExplicitRowValueConstructor();
+        return ConformanceEnum.DEFAULT.allowExplicitRowValueConstructor();
     }
 
 
     @Override
     public boolean allowExtend() {
-        return SqlConformanceEnum.DEFAULT.allowExtend();
+        return ConformanceEnum.DEFAULT.allowExtend();
     }
 
 
     @Override
     public boolean isLimitStartCountAllowed() {
-        return SqlConformanceEnum.DEFAULT.isLimitStartCountAllowed();
+        return ConformanceEnum.DEFAULT.isLimitStartCountAllowed();
     }
 
 
     @Override
     public boolean isPercentRemainderAllowed() {
-        return SqlConformanceEnum.DEFAULT.isPercentRemainderAllowed();
+        return ConformanceEnum.DEFAULT.isPercentRemainderAllowed();
     }
 
 
     @Override
     public boolean allowGeometry() {
-        return SqlConformanceEnum.DEFAULT.allowGeometry();
+        return ConformanceEnum.DEFAULT.allowGeometry();
     }
 
 
     @Override
     public boolean shouldConvertRaggedUnionTypesToVarying() {
-        return SqlConformanceEnum.DEFAULT.shouldConvertRaggedUnionTypesToVarying();
+        return ConformanceEnum.DEFAULT.shouldConvertRaggedUnionTypesToVarying();
     }
 
 
     @Override
     public boolean allowExtendedTrim() {
-        return SqlConformanceEnum.DEFAULT.allowExtendedTrim();
+        return ConformanceEnum.DEFAULT.allowExtendedTrim();
     }
 }

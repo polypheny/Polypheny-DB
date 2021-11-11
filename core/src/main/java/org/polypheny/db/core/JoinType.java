@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql;
+package org.polypheny.db.core;
 
 
 import java.util.Locale;
-import org.polypheny.db.core.ParserPos;
 
 
 /**
@@ -84,12 +83,5 @@ public enum JoinType {
         return this == LEFT || this == FULL;
     }
 
-
-    /**
-     * Creates a parse-tree node representing an occurrence of this condition type keyword at a particular position in the parsed text.
-     */
-    public SqlLiteral symbol( ParserPos pos ) {
-        return SqlLiteral.createSymbol( this, pos );
-    }
 }
 

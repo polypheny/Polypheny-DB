@@ -19,6 +19,7 @@ package org.polypheny.db.languages.sql;
 
 import java.util.Objects;
 import javax.annotation.Nonnull;
+import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -32,7 +33,7 @@ import org.polypheny.db.util.Optionality;
 /**
  * Abstract base class for the definition of an aggregate function: an operator which aggregates sets of values into a result.
  */
-public abstract class SqlAggFunction extends SqlFunction implements Context {
+public abstract class SqlAggFunction extends SqlFunction implements Context, AggFunction {
 
     private final boolean requiresOrder;
     private final boolean requiresOver;

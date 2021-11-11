@@ -21,7 +21,7 @@ import java.util.HashSet;
 import java.util.Set;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.validate.OverScope;
-import org.polypheny.db.languages.sql.validate.SqlConformance;
+import org.polypheny.db.core.Conformance;
 import org.polypheny.db.languages.sql.validate.SqlModality;
 import org.polypheny.db.languages.sql.validate.SqlValidatorCatalogReader;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
@@ -58,7 +58,7 @@ public class SqlAdvisorValidator extends SqlValidatorImpl {
      * @param typeFactory Type factory
      * @param conformance Compatibility mode
      */
-    public SqlAdvisorValidator( SqlOperatorTable opTab, SqlValidatorCatalogReader catalogReader, RelDataTypeFactory typeFactory, SqlConformance conformance ) {
+    public SqlAdvisorValidator( SqlOperatorTable opTab, SqlValidatorCatalogReader catalogReader, RelDataTypeFactory typeFactory, Conformance conformance ) {
         super( opTab, catalogReader, typeFactory, conformance );
     }
 

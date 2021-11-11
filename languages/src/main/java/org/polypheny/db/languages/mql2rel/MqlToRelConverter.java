@@ -42,7 +42,7 @@ import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.MqlStdOperatorTable;
 import org.polypheny.db.core.Node;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.document.util.DocumentUtil;
 import org.polypheny.db.languages.mql.Mql.Type;
 import org.polypheny.db.languages.mql.MqlAggregate;

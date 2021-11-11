@@ -36,8 +36,8 @@ package org.polypheny.db.adapter.enumerable;
 
 import java.lang.reflect.Type;
 import java.util.List;
+import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
@@ -51,7 +51,7 @@ public interface AggContext {
      *
      * @return aggregation being implemented.
      */
-    SqlAggFunction aggregation();
+    AggFunction aggregation();
 
     /**
      * Returns the return type of the aggregate as {@link org.polypheny.db.rel.type.RelDataType}.
@@ -102,5 +102,6 @@ public interface AggContext {
      * Returns the grouping sets we are aggregating on.
      */
     List<ImmutableBitSet> groupSets();
+
 }
 

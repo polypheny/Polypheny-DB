@@ -23,10 +23,12 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.function.Predicate;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.core.CallBinding;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
@@ -59,7 +61,7 @@ public class FamilyOperandTypeChecker implements PolySingleOperandTypeChecker {
 
 
     @Override
-    public boolean checkSingleOperandType( SqlCallBinding callBinding, SqlNode node, int iFormalOperand, boolean throwOnFailure ) {
+    public boolean checkSingleOperandType( SqlCallBinding callBinding, Node node, int iFormalOperand, boolean throwOnFailure ) {
         PolyTypeFamily family = families.get( iFormalOperand );
         if ( family == PolyTypeFamily.ANY ) {
             // no need to check
@@ -91,7 +93,7 @@ public class FamilyOperandTypeChecker implements PolySingleOperandTypeChecker {
 
 
     @Override
-    public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
+    public boolean checkOperandTypes( CallBinding callBinding, boolean throwOnFailure ) {
         if ( families.size() != callBinding.getOperandCount() ) {
             // assume this is an inapplicable sub-rule of a composite rule;
             // don't throw
@@ -119,7 +121,7 @@ public class FamilyOperandTypeChecker implements PolySingleOperandTypeChecker {
 
 
     @Override
-    public String getAllowedSignatures( SqlOperator op, String opName ) {
+    public String getAllowedSignatures( Operator op, String opName ) {
         return SqlUtil.getAliasedSignature( op, opName, families );
     }
 

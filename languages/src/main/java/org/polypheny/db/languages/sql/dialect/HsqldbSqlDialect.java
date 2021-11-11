@@ -20,7 +20,6 @@ package org.polypheny.db.languages.sql.dialect;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.SqlBasicCall;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDataTypeSpec;
@@ -32,6 +31,7 @@ import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.fun.SqlCase;
 import org.polypheny.db.languages.sql.fun.SqlFloorFunction;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.rel.type.RelDataType;
 
 

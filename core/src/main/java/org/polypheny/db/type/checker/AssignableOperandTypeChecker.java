@@ -20,10 +20,10 @@ package org.polypheny.db.type.checker;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.core.CallBinding;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -65,7 +65,7 @@ public class AssignableOperandTypeChecker implements PolyOperandTypeChecker {
 
 
     @Override
-    public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
+    public boolean checkOperandTypes( CallBinding callBinding, boolean throwOnFailure ) {
         // Do not use callBinding.operands(). We have not resolved to a function yet, therefore we do not know the ordered
         // parameter names.
         final List<SqlNode> operands = callBinding.getCall().getOperandList();
@@ -84,7 +84,7 @@ public class AssignableOperandTypeChecker implements PolyOperandTypeChecker {
 
 
     @Override
-    public String getAllowedSignatures( SqlOperator op, String opName ) {
+    public String getAllowedSignatures( Operator op, String opName ) {
         StringBuilder sb = new StringBuilder();
         sb.append( opName );
         sb.append( "(" );

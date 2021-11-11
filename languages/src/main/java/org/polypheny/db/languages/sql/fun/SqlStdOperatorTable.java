@@ -14,16 +14,49 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.core;
+package org.polypheny.db.languages.sql.fun;
 
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.languages.sql.SqlAggFunction;
+import org.polypheny.db.languages.sql.SqlAsOperator;
+import org.polypheny.db.languages.sql.SqlBasicCall;
+import org.polypheny.db.languages.sql.SqlBinaryOperator;
+import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.languages.sql.SqlFilterOperator;
+import org.polypheny.db.languages.sql.SqlFunction;
+import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.languages.sql.SqlGroupedWindowFunction;
+import org.polypheny.db.languages.sql.SqlInternalOperator;
+import org.polypheny.db.languages.sql.SqlJsonConstructorNullClause;
+import org.polypheny.db.languages.sql.SqlLiteral;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlNumericLiteral;
+import org.polypheny.db.languages.sql.SqlOperator;
+import org.polypheny.db.languages.sql.SqlOperatorTable;
+import org.polypheny.db.languages.sql.SqlOverOperator;
+import org.polypheny.db.languages.sql.SqlPostfixOperator;
+import org.polypheny.db.languages.sql.SqlPrefixOperator;
+import org.polypheny.db.languages.sql.SqlProcedureCallOperator;
+import org.polypheny.db.languages.sql.SqlRankFunction;
+import org.polypheny.db.languages.sql.SqlSampleSpec;
+import org.polypheny.db.languages.sql.SqlSetOperator;
+import org.polypheny.db.languages.sql.SqlSpecialOperator;
+import org.polypheny.db.languages.sql.SqlUnnestOperator;
+import org.polypheny.db.languages.sql.SqlUtil;
+import org.polypheny.db.languages.sql.SqlWindow;
+import org.polypheny.db.languages.sql.SqlWithinGroupOperator;
+import org.polypheny.db.languages.sql.SqlWriter;
+import org.polypheny.db.languages.sql.util.ReflectiveSqlOperatorTable;
+import org.polypheny.db.core.Conformance;
+import org.polypheny.db.languages.sql2rel.AuxiliaryConverter;
 import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.SqlAsOperator;
 import org.polypheny.db.sql.SqlBasicCall;
-import org.polypheny.db.sql.SqlBinaryOperator;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlFilterOperator;
 import org.polypheny.db.sql.SqlFunction;
@@ -31,7 +64,6 @@ import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlGroupedWindowFunction;
 import org.polypheny.db.sql.SqlInternalOperator;
 import org.polypheny.db.sql.SqlJsonConstructorNullClause;
-import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlLateralOperator;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
@@ -44,7 +76,6 @@ import org.polypheny.db.sql.SqlPrefixOperator;
 import org.polypheny.db.sql.SqlProcedureCallOperator;
 import org.polypheny.db.sql.SqlRankFunction;
 import org.polypheny.db.sql.SqlSampleSpec;
-import org.polypheny.db.sql.SqlSetOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUnnestOperator;
 import org.polypheny.db.sql.SqlUtil;
@@ -52,86 +83,6 @@ import org.polypheny.db.sql.SqlValuesOperator;
 import org.polypheny.db.sql.SqlWindow;
 import org.polypheny.db.sql.SqlWithinGroupOperator;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.fun.OracleSqlOperatorTable;
-import org.polypheny.db.sql.fun.SqlAbstractTimeFunction;
-import org.polypheny.db.sql.fun.SqlAnyValueAggFunction;
-import org.polypheny.db.sql.fun.SqlArgumentAssignmentOperator;
-import org.polypheny.db.sql.fun.SqlArrayQueryConstructor;
-import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
-import org.polypheny.db.sql.fun.SqlAvgAggFunction;
-import org.polypheny.db.sql.fun.SqlBaseContextVariable;
-import org.polypheny.db.sql.fun.SqlBetweenOperator;
-import org.polypheny.db.sql.fun.SqlBitOpAggFunction;
-import org.polypheny.db.sql.fun.SqlCaseOperator;
-import org.polypheny.db.sql.fun.SqlCastFunction;
-import org.polypheny.db.sql.fun.SqlCoalesceFunction;
-import org.polypheny.db.sql.fun.SqlCollectionTableOperator;
-import org.polypheny.db.sql.fun.SqlColumnListConstructor;
-import org.polypheny.db.sql.fun.SqlConvertFunction;
-import org.polypheny.db.sql.fun.SqlCountAggFunction;
-import org.polypheny.db.sql.fun.SqlCovarAggFunction;
-import org.polypheny.db.sql.fun.SqlCurrentDateFunction;
-import org.polypheny.db.sql.fun.SqlCursorConstructor;
-import org.polypheny.db.sql.fun.SqlDatePartFunction;
-import org.polypheny.db.sql.fun.SqlDatetimePlusOperator;
-import org.polypheny.db.sql.fun.SqlDatetimeSubtractionOperator;
-import org.polypheny.db.sql.fun.SqlDefaultOperator;
-import org.polypheny.db.sql.fun.SqlDistanceFunction;
-import org.polypheny.db.sql.fun.SqlDotOperator;
-import org.polypheny.db.sql.fun.SqlExtendOperator;
-import org.polypheny.db.sql.fun.SqlExtractFunction;
-import org.polypheny.db.sql.fun.SqlFirstLastValueAggFunction;
-import org.polypheny.db.sql.fun.SqlFloorFunction;
-import org.polypheny.db.sql.fun.SqlGroupIdFunction;
-import org.polypheny.db.sql.fun.SqlGroupingFunction;
-import org.polypheny.db.sql.fun.SqlHistogramAggFunction;
-import org.polypheny.db.sql.fun.SqlInOperator;
-import org.polypheny.db.sql.fun.SqlItemOperator;
-import org.polypheny.db.sql.fun.SqlJsonApiCommonSyntaxOperator;
-import org.polypheny.db.sql.fun.SqlJsonArrayAggAggFunction;
-import org.polypheny.db.sql.fun.SqlJsonArrayFunction;
-import org.polypheny.db.sql.fun.SqlJsonExistsFunction;
-import org.polypheny.db.sql.fun.SqlJsonObjectAggAggFunction;
-import org.polypheny.db.sql.fun.SqlJsonObjectFunction;
-import org.polypheny.db.sql.fun.SqlJsonQueryFunction;
-import org.polypheny.db.sql.fun.SqlJsonValueExpressionOperator;
-import org.polypheny.db.sql.fun.SqlJsonValueFunction;
-import org.polypheny.db.sql.fun.SqlLeadLagAggFunction;
-import org.polypheny.db.sql.fun.SqlLikeOperator;
-import org.polypheny.db.sql.fun.SqlLiteralChainOperator;
-import org.polypheny.db.sql.fun.SqlMapQueryConstructor;
-import org.polypheny.db.sql.fun.SqlMapValueConstructor;
-import org.polypheny.db.sql.fun.SqlMetaFunction;
-import org.polypheny.db.sql.fun.SqlMinMaxAggFunction;
-import org.polypheny.db.sql.fun.SqlMonotonicBinaryOperator;
-import org.polypheny.db.sql.fun.SqlMonotonicUnaryFunction;
-import org.polypheny.db.sql.fun.SqlMultisetMemberOfOperator;
-import org.polypheny.db.sql.fun.SqlMultisetQueryConstructor;
-import org.polypheny.db.sql.fun.SqlMultisetSetOperator;
-import org.polypheny.db.sql.fun.SqlMultisetValueConstructor;
-import org.polypheny.db.sql.fun.SqlNewOperator;
-import org.polypheny.db.sql.fun.SqlNthValueAggFunction;
-import org.polypheny.db.sql.fun.SqlNtileAggFunction;
-import org.polypheny.db.sql.fun.SqlNullifFunction;
-import org.polypheny.db.sql.fun.SqlOverlapsOperator;
-import org.polypheny.db.sql.fun.SqlOverlayFunction;
-import org.polypheny.db.sql.fun.SqlPositionFunction;
-import org.polypheny.db.sql.fun.SqlQuantifyOperator;
-import org.polypheny.db.sql.fun.SqlRandFunction;
-import org.polypheny.db.sql.fun.SqlRandIntegerFunction;
-import org.polypheny.db.sql.fun.SqlRegrCountAggFunction;
-import org.polypheny.db.sql.fun.SqlRollupOperator;
-import org.polypheny.db.sql.fun.SqlRowOperator;
-import org.polypheny.db.sql.fun.SqlSequenceValueOperator;
-import org.polypheny.db.sql.fun.SqlSingleValueAggFunction;
-import org.polypheny.db.sql.fun.SqlStringContextVariable;
-import org.polypheny.db.sql.fun.SqlSubstringFunction;
-import org.polypheny.db.sql.fun.SqlSumAggFunction;
-import org.polypheny.db.sql.fun.SqlSumEmptyIsZeroAggFunction;
-import org.polypheny.db.sql.fun.SqlThrowOperator;
-import org.polypheny.db.sql.fun.SqlTimestampAddFunction;
-import org.polypheny.db.sql.fun.SqlTimestampDiffFunction;
-import org.polypheny.db.sql.fun.SqlTrimFunction;
 import org.polypheny.db.sql.util.ReflectiveSqlOperatorTable;
 import org.polypheny.db.sql.validate.SqlConformance;
 import org.polypheny.db.sql.validate.SqlModality;
@@ -156,6 +107,25 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
      * The standard operator table.
      */
     private static SqlStdOperatorTable instance;
+
+
+    static {
+        StdOperatorRegistry.register( "DEFAULT", new SqlDefaultOperator() );
+
+        /**
+         * Logical greater-than operator, '<code>&gt;</code>'.
+         */
+        StdOperatorRegistry.register( "GREATER_THAN", new SqlBinaryOperator(
+                ">",
+                Kind.GREATER_THAN,
+                30,
+                true,
+                ReturnTypes.BOOLEAN_NULLABLE,
+                InferTypes.FIRST_KNOWN,
+                OperandTypes.COMPARABLE_ORDERED_COMPARABLE_ORDERED ) );
+
+    }
+
 
     //-------------------------------------------------------------
     //                   SET OPERATORS
@@ -320,7 +290,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
     /**
      * Arithmetic remainder operator, '<code>%</code>', an alternative to {@link #MOD} allowed if under certain conformance levels.
      *
-     * @see SqlConformance#isPercentRemainderAllowed
+     * @see Conformance#isPercentRemainderAllowed
      */
     public static final SqlBinaryOperator PERCENT_REMAINDER =
             new SqlBinaryOperator(
@@ -2342,7 +2312,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
      */
     private static SqlCall copy( SqlCall call, SqlOperator operator ) {
         final List<SqlNode> list = call.getOperandList();
-        return new SqlBasicCall( operator, list.toArray( new SqlNode[0] ), call.getPos() );
+        return new SqlBasicCall( operator, list.toArray( SqlNode.EMPTY_ARRAY ), call.getPos() );
     }
 
 

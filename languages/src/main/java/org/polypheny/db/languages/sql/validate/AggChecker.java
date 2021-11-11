@@ -23,7 +23,6 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -31,6 +30,7 @@ import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlSelect;
 import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWindow;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.util.SqlBasicVisitor;
 import org.polypheny.db.util.Litmus;
 

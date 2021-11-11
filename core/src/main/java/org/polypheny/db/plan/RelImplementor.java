@@ -34,8 +34,8 @@
 package org.polypheny.db.plan;
 
 
+import org.polypheny.db.core.Conformance;
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.sql.validate.SqlConformance;
 
 
 /**
@@ -46,7 +46,10 @@ public interface RelImplementor {
 
     /**
      * Returns the desired SQL conformance.
+     *
+     * @return
      */
-    SqlConformance getConformance();
+    Conformance getConformance();
+
 }
 

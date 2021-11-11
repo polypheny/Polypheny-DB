@@ -50,6 +50,8 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.ConformanceEnum;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptPredicateList;
 import org.polypheny.db.plan.RelTraitSet;
@@ -64,8 +66,6 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.validate.SqlConformance;
-import org.polypheny.db.sql.validate.SqlConformanceEnum;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 
@@ -159,7 +159,7 @@ public class EnumerableCalc extends Calc implements EnumerableRel {
         }
 
         final BlockBuilder builder3 = new BlockBuilder();
-        final SqlConformance conformance = (SqlConformance) implementor.map.getOrDefault( "_conformance", SqlConformanceEnum.DEFAULT );
+        final Conformance conformance = (Conformance) implementor.map.getOrDefault( "_conformance", ConformanceEnum.DEFAULT );
         UnwindContext unwindContext = new UnwindContext();
         List<Expression> expressions =
                 RexToLixTranslator.translateProjects(

@@ -35,6 +35,7 @@ package org.polypheny.db.rel.logical;
 
 
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.SemiJoinType;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -44,7 +45,6 @@ import org.polypheny.db.rel.RelShuttle;
 import org.polypheny.db.rel.core.Correlate;
 import org.polypheny.db.rel.core.CorrelationId;
 import org.polypheny.db.rel.core.Join;
-import org.polypheny.db.sql.SemiJoinType;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Litmus;
 
@@ -111,4 +111,5 @@ public final class LogicalCorrelate extends Correlate {
     public RelNode accept( RelShuttle shuttle ) {
         return shuttle.visit( this );
     }
+
 }

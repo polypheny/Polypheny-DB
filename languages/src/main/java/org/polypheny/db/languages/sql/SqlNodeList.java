@@ -22,7 +22,9 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.NodeList;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.util.SqlVisitor;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
@@ -33,7 +35,7 @@ import org.polypheny.db.util.Litmus;
 /**
  * A <code>SqlNodeList</code> is a list of {@link SqlNode}s. It is also a {@link SqlNode}, so may appear in a parse tree.
  */
-public class SqlNodeList extends SqlNode implements Iterable<SqlNode> {
+public class SqlNodeList extends SqlNode implements Iterable<SqlNode>, NodeList {
 
     /**
      * An immutable, empty SqlNodeList.
@@ -181,8 +183,9 @@ public class SqlNodeList extends SqlNode implements Iterable<SqlNode> {
     }
 
 
-    public SqlNode[] toArray() {
-        return list.toArray( new SqlNode[0] );
+    @Override
+    public Node[] toArray() {
+        return list.toArray( SqlNode.EMPTY_ARRAY );
     }
 
 

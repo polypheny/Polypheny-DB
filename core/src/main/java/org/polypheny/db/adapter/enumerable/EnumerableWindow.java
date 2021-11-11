@@ -57,6 +57,7 @@ import org.polypheny.db.adapter.enumerable.impl.WinAggResetContextImpl;
 import org.polypheny.db.adapter.enumerable.impl.WinAggResultContextImpl;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -74,7 +75,6 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexWindowBound;
 import org.polypheny.db.runtime.SortedMultiMap;
-import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.validate.SqlConformance;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -677,7 +677,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
             agg.context =
                     new WinAggContext() {
                         @Override
-                        public SqlAggFunction aggregation() {
+                        public AggFunction aggregation() {
                             return agg.call.getAggregation();
                         }
 

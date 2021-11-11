@@ -32,7 +32,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import org.apache.calcite.avatica.util.Casing;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.languages.sql.validate.SqlConformance;
+import org.polypheny.db.core.Conformance;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlFunctionCategory;
 import org.polypheny.db.languages.sql.SqlIdentifier;
@@ -41,7 +41,7 @@ import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlSyntax;
 import org.polypheny.db.languages.sql.SqlUnresolvedFunction;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.util.Glossary;
 
 
@@ -451,7 +451,7 @@ public abstract class SqlAbstractParserImpl {
     /**
      * Sets the SQL language conformance level.
      */
-    public abstract void setConformance( SqlConformance conformance );
+    public abstract void setConformance( Conformance conformance );
 
 
     /**

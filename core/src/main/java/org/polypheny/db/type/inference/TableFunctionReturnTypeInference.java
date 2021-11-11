@@ -21,12 +21,12 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.polypheny.db.core.CallBinding;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.rel.metadata.RelColumnMapping;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rel.type.RelProtoDataType;
-import org.polypheny.db.sql.SqlCallBinding;
-import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Static;
 
@@ -57,7 +57,7 @@ public class TableFunctionReturnTypeInference extends ExplicitReturnTypeInferenc
 
 
     @Override
-    public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
+    public RelDataType inferReturnType( OperatorBinding opBinding ) {
         columnMappings = new HashSet<>();
         RelDataType unexpandedOutputType = protoType.apply( opBinding.getTypeFactory() );
         List<RelDataType> expandedOutputTypes = new ArrayList<>();
@@ -138,20 +138,20 @@ public class TableFunctionReturnTypeInference extends ExplicitReturnTypeInferenc
     }
 
 
-    private void addOutputColumn(
+    private <T extends OperatorBinding & CallBinding> void addOutputColumn(
             List<String> expandedFieldNames,
             List<RelDataType> expandedOutputTypes,
             int iInputColumn,
             int iCursor,
-            SqlOperatorBinding opBinding,
+            OperatorBinding opBinding,
             RelDataTypeField cursorField ) {
         columnMappings.add( new RelColumnMapping( expandedFieldNames.size(), iCursor, iInputColumn, !isPassthrough ) );
 
         // As a special case, system fields are implicitly NOT NULL. A badly behaved UDX can still provide NULL values,
         // so the system must ensure that each generated system field has a reasonable value.
         boolean nullable = true;
-        if ( opBinding instanceof SqlCallBinding ) {
-            SqlCallBinding sqlCallBinding = (SqlCallBinding) opBinding;
+        if ( opBinding instanceof CallBinding ) {
+            CallBinding sqlCallBinding = (CallBinding) opBinding;
             if ( sqlCallBinding.getValidator().isSystemField( cursorField ) ) {
                 nullable = false;
             }
@@ -167,5 +167,6 @@ public class TableFunctionReturnTypeInference extends ExplicitReturnTypeInferenc
         expandedOutputTypes.add( nullableType );
         expandedFieldNames.add( cursorField.getName() );
     }
+
 }
 

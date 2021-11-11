@@ -41,7 +41,7 @@ import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -49,6 +49,7 @@ import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.languages.sql.SqlExplainFormat;
 import org.polypheny.db.languages.sql.SqlExplainLevel;
 import org.polypheny.db.languages.sql.fun.SqlCountAggFunction;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.plan.RelOptSchema;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelOptUtil;
@@ -223,7 +224,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                     builder.clear();
                     builder.push( input );
                     builder.aggregate( builder.groupKey( constraint.key.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) ), builder.aggregateCall( new SqlCountAggFunction( "count" ) ).as( "count" ) );
-                    builder.filter( builder.call( SqlStdOperatorTable.GREATER_THAN, builder.field( "count" ), builder.literal( 1 ) ) );
+                    builder.filter( builder.call( StdOperatorRegistry.get( "GREATER_THAN" ), builder.field( "count" ), builder.literal( 1 ) ) );
                     final RelNode innerCheck = builder.build();
                     final LogicalConditionalExecute ilce = LogicalConditionalExecute.create( innerCheck, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
                             String.format( "Insert violates unique constraint `%s`.`%s`", table.name, constraint.name ) );

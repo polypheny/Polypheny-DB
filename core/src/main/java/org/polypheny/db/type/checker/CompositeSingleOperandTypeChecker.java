@@ -18,8 +18,8 @@ package org.polypheny.db.type.checker;
 
 
 import com.google.common.collect.ImmutableList;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.sql.SqlCallBinding;
-import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.util.Util;
 
 
@@ -47,7 +47,7 @@ public class CompositeSingleOperandTypeChecker extends CompositeOperandTypeCheck
 
 
     @Override
-    public boolean checkSingleOperandType( SqlCallBinding callBinding, SqlNode node, int iFormalOperand, boolean throwOnFailure ) {
+    public boolean checkSingleOperandType( SqlCallBinding callBinding, Node node, int iFormalOperand, boolean throwOnFailure ) {
         assert allowedRules.size() >= 1;
 
         final ImmutableList<? extends PolySingleOperandTypeChecker> rules = getRules();

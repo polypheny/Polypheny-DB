@@ -69,7 +69,7 @@ import org.polypheny.db.languages.sql.fun.SqlMultisetValueConstructor;
 import org.polypheny.db.languages.sql.fun.SqlOverlapsOperator;
 import org.polypheny.db.languages.sql.fun.SqlRowOperator;
 import org.polypheny.db.languages.sql.fun.SqlSequenceValueOperator;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.fun.SqlTrimFunction;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlValidator;

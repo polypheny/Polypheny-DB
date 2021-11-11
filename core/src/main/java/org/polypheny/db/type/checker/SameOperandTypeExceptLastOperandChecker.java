@@ -81,7 +81,7 @@ public class SameOperandTypeExceptLastOperandChecker extends SameOperandTypeChec
 
 
     @Override
-    public String getAllowedSignatures( SqlOperator op, String opName ) {
+    public String getAllowedSignatures( Operator op, String opName ) {
         final String typeName = getTypeName();
         if ( nOperands == -1 ) {
             return SqlUtil.getAliasedSignature( op, opName, ImmutableList.of( typeName, typeName, "..." ) );

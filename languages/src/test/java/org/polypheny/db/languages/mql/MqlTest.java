@@ -22,12 +22,12 @@ import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.MqlStdOperatorTable;
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.languages.mql.parser.MqlParseException;
 import org.polypheny.db.languages.mql.parser.MqlParser;
 import org.polypheny.db.languages.mql.parser.MqlParser.MqlParserConfig;
 import org.polypheny.db.languages.mql2rel.MqlMockCatalog;
 import org.polypheny.db.languages.sql.SqlOperator;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.util.SourceStringReader;
 
 

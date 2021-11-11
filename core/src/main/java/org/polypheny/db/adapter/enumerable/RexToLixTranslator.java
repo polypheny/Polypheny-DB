@@ -34,11 +34,6 @@
 package org.polypheny.db.adapter.enumerable;
 
 
-import static org.polypheny.db.core.SqlStdOperatorTable.CHARACTER_LENGTH;
-import static org.polypheny.db.core.SqlStdOperatorTable.CHAR_LENGTH;
-import static org.polypheny.db.core.SqlStdOperatorTable.SUBSTRING;
-import static org.polypheny.db.core.SqlStdOperatorTable.UPPER;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.lang.reflect.Method;
@@ -67,6 +62,10 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
 import org.polypheny.db.rex.RexBuilder;
@@ -81,11 +80,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.runtime.SqlFunctions;
 import org.polypheny.db.sql.SqlIntervalQualifier;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.OracleSqlOperatorTable;
-import org.polypheny.db.core.SqlStdOperatorTable;
-import org.polypheny.db.sql.validate.SqlConformance;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ControlFlowException;
@@ -99,20 +93,18 @@ import org.polypheny.db.util.Util;
  */
 public class RexToLixTranslator {
 
-    public static final Map<Method, SqlOperator> JAVA_TO_SQL_METHOD_MAP =
+    public static final Map<Method, Operator> JAVA_TO_SQL_METHOD_MAP =
             Util.mapOf(
-                    findMethod( String.class, "toUpperCase" ), UPPER,
-                    findMethod( SqlFunctions.class, "substring", String.class, Integer.TYPE, Integer.TYPE ), SUBSTRING,
-                    findMethod( SqlFunctions.class, "charLength", String.class ),
-                    CHARACTER_LENGTH,
-                    findMethod( SqlFunctions.class, "charLength", String.class ),
-                    CHAR_LENGTH,
-                    findMethod( SqlFunctions.class, "translate3", String.class, String.class, String.class ), OracleSqlOperatorTable.TRANSLATE3 );
+                    findMethod( String.class, "toUpperCase" ), StdOperatorRegistry.get( "UPPER" ),
+                    findMethod( SqlFunctions.class, "substring", String.class, Integer.TYPE, Integer.TYPE ), StdOperatorRegistry.get( "SUBSTRING" ),
+                    findMethod( SqlFunctions.class, "charLength", String.class ), StdOperatorRegistry.get( "CHARACTER_LENGTH" ),
+                    findMethod( SqlFunctions.class, "charLength", String.class ), StdOperatorRegistry.get( "CHAR_LENGTH" ),
+                    findMethod( SqlFunctions.class, "translate3", String.class, String.class, String.class ), StdOperatorRegistry.get( "0_TRANSLATE3" ) );
 
     final JavaTypeFactory typeFactory;
     final RexBuilder builder;
     private final RexProgram program;
-    final SqlConformance conformance;
+    final Conformance conformance;
     private final Expression root;
     private final RexToLixTranslator.InputGetter inputGetter;
     @Getter
@@ -136,7 +128,7 @@ public class RexToLixTranslator {
             BlockBuilder list,
             Map<? extends RexNode, Boolean> nullable,
             RexBuilder builder,
-            SqlConformance conformance,
+            Conformance conformance,
             RexToLixTranslator parent,
             Function1<String, InputGetter> correlates ) {
         this( program, typeFactory, root, inputGetter, list, nullable, builder, conformance, parent, correlates, new HashMap<>() );
@@ -153,7 +145,7 @@ public class RexToLixTranslator {
 
 
     private RexToLixTranslator( RexProgram program, JavaTypeFactory typeFactory, Expression root, InputGetter inputGetter, BlockBuilder list,
-            Map<? extends RexNode, Boolean> exprNullableMap, RexBuilder builder, SqlConformance conformance, RexToLixTranslator parent, Function1<String, InputGetter> correlates, Map<RexNode, Expression> replace ) {
+            Map<? extends RexNode, Boolean> exprNullableMap, RexBuilder builder, Conformance conformance, RexToLixTranslator parent, Function1<String, InputGetter> correlates, Map<RexNode, Expression> replace ) {
         this.program = program; // may be null
         this.typeFactory = Objects.requireNonNull( typeFactory );
         this.conformance = Objects.requireNonNull( conformance );
@@ -169,7 +161,7 @@ public class RexToLixTranslator {
     }
 
 
-    public static List<Expression> translateProjects( RexProgram program, JavaTypeFactory typeFactory, SqlConformance conformance, BlockBuilder list, PhysType outputPhysType, Expression root,
+    public static List<Expression> translateProjects( RexProgram program, JavaTypeFactory typeFactory, Conformance conformance, BlockBuilder list, PhysType outputPhysType, Expression root,
             InputGetter inputGetter, Function1<String, InputGetter> correlates ) {
         return translateProjects( program, typeFactory, conformance, list, outputPhysType, root, inputGetter, correlates, new UnwindContext() );
     }
@@ -188,7 +180,7 @@ public class RexToLixTranslator {
      * @param correlates Provider of references to the values of correlated variables
      * @return Sequence of expressions, optional condition
      */
-    public static List<Expression> translateProjects( RexProgram program, JavaTypeFactory typeFactory, SqlConformance conformance, BlockBuilder list, PhysType outputPhysType, Expression root,
+    public static List<Expression> translateProjects( RexProgram program, JavaTypeFactory typeFactory, Conformance conformance, BlockBuilder list, PhysType outputPhysType, Expression root,
             InputGetter inputGetter, Function1<String, InputGetter> correlates, UnwindContext unwindContext ) {
         List<Type> storageTypes = null;
         if ( outputPhysType != null ) {
@@ -208,7 +200,7 @@ public class RexToLixTranslator {
     /**
      * Creates a translator for translating aggregate functions.
      */
-    public static RexToLixTranslator forAggregation( JavaTypeFactory typeFactory, BlockBuilder list, InputGetter inputGetter, SqlConformance conformance ) {
+    public static RexToLixTranslator forAggregation( JavaTypeFactory typeFactory, BlockBuilder list, InputGetter inputGetter, Conformance conformance ) {
         final ParameterExpression root = DataContext.ROOT;
         return new RexToLixTranslator( null, typeFactory, root, inputGetter, list, Collections.emptyMap(), new RexBuilder( typeFactory ), conformance, null, null );
     }
@@ -677,7 +669,7 @@ public class RexToLixTranslator {
                     default:
                         RexNode rxIndex = builder.makeLiteral( fieldIndex, typeFactory.createType( int.class ), true );
                         RexNode rxName = builder.makeLiteral( fieldName, typeFactory.createType( String.class ), true );
-                        RexCall accessCall = (RexCall) builder.makeCall( fieldAccess.getType(), SqlStdOperatorTable.STRUCT_ACCESS, ImmutableList.of( target, rxIndex, rxName ) );
+                        RexCall accessCall = (RexCall) builder.makeCall( fieldAccess.getType(), StdOperatorRegistry.get( "STRUCT_ACCESS" ), ImmutableList.of( target, rxIndex, rxName ) );
                         return translateCall( accessCall, nullAs );
                 }
             }
@@ -709,7 +701,7 @@ public class RexToLixTranslator {
      * Translates a call to an operator or function.
      */
     private Expression translateCall( RexCall call, RexImpTable.NullAs nullAs ) {
-        final SqlOperator operator = call.getOperator();
+        final Operator operator = call.getOperator();
         CallImplementor implementor = RexImpTable.INSTANCE.get( operator );
         if ( implementor == null ) {
             throw new RuntimeException( "cannot translate call " + call );
@@ -880,7 +872,7 @@ public class RexToLixTranslator {
     }
 
 
-    public static Expression translateCondition( RexProgram program, JavaTypeFactory typeFactory, BlockBuilder list, InputGetter inputGetter, Function1<String, InputGetter> correlates, SqlConformance conformance ) {
+    public static Expression translateCondition( RexProgram program, JavaTypeFactory typeFactory, BlockBuilder list, InputGetter inputGetter, Function1<String, InputGetter> correlates, Conformance conformance ) {
         if ( program.getCondition() == null ) {
             return RexImpTable.TRUE_EXPR;
         }
@@ -1078,7 +1070,7 @@ public class RexToLixTranslator {
     }
 
 
-    public Expression translateConstructor( List<RexNode> operandList, SqlKind kind ) {
+    public Expression translateConstructor( List<RexNode> operandList, Kind kind ) {
         switch ( kind ) {
             case MAP_VALUE_CONSTRUCTOR:
                 Expression map =
@@ -1195,7 +1187,7 @@ public class RexToLixTranslator {
     }
 
 
-    private RexToLixTranslator withConformance( SqlConformance conformance ) {
+    private RexToLixTranslator withConformance( Conformance conformance ) {
         if ( conformance == this.conformance ) {
             return this;
         }

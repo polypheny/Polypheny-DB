@@ -22,6 +22,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.core.Call;
+import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.fun.SqlArrayValueConstructor;
@@ -41,7 +44,6 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
-import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
 
@@ -78,21 +80,6 @@ public abstract class SqlOperator extends Operator {
      */
     private final int rightPrec;
 
-    /**
-     * used to infer the return type of a call to this operator
-     */
-    private final PolyReturnTypeInference returnTypeInference;
-
-    /**
-     * used to infer types of unknown operands
-     */
-    private final PolyOperandTypeInference operandTypeInference;
-
-    /**
-     * used to validate operand types
-     */
-    private final PolyOperandTypeChecker operandTypeChecker;
-
 
     /**
      * Creates an operator.
@@ -105,13 +92,10 @@ public abstract class SqlOperator extends Operator {
             PolyReturnTypeInference returnTypeInference,
             PolyOperandTypeInference operandTypeInference,
             PolyOperandTypeChecker operandTypeChecker ) {
-        super( name, kind );
+        super( name, kind, returnTypeInference, operandTypeInference, operandTypeChecker );
         assert kind != null;
         this.leftPrec = leftPrecedence;
         this.rightPrec = rightPrecedence;
-        this.returnTypeInference = returnTypeInference;
-        this.operandTypeInference = operandTypeInference;
-        this.operandTypeChecker = operandTypeChecker;
     }
 
 
@@ -214,46 +198,10 @@ public abstract class SqlOperator extends Operator {
      * @param pos parser position of the identifier of the call
      * @param operands array of operands
      */
-    public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
+    @Override
+    public Call createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
         pos = pos.plusAll( Arrays.asList( operands ) );
-        return new SqlBasicCall( this, operands, pos, false, functionQualifier );
-    }
-
-
-    /**
-     * Creates a call to this operand with an array of operands.
-     *
-     * The position of the resulting call is the union of the <code>pos</code> and the positions of all of the operands.
-     *
-     * @param pos Parser position
-     * @param operands List of arguments
-     * @return call to this operator
-     */
-    public final SqlCall createCall( ParserPos pos, SqlNode... operands ) {
-        return createCall( null, pos, operands );
-    }
-
-
-    /**
-     * Creates a call to this operand with a list of operands contained in a {@link SqlNodeList}.
-     *
-     * The position of the resulting call inferred from the SqlNodeList.
-     *
-     * @param nodeList List of arguments
-     * @return call to this operator
-     */
-    public final SqlCall createCall( SqlNodeList nodeList ) {
-        return createCall( null, nodeList.getPos(), nodeList.toArray() );
-    }
-
-
-    /**
-     * Creates a call to this operand with a list of operands.
-     *
-     * The position of the resulting call is the union of the <code>pos</code> and the positions of all of the operands.
-     */
-    public final SqlCall createCall( ParserPos pos, List<? extends SqlNode> operandList ) {
-        return createCall( null, pos, operandList.toArray( new SqlNode[0] ) );
+        return new SqlBasicCall( this, (SqlNode[]) operands, pos, false, (SqlLiteral) functionQualifier );
     }
 
 
@@ -593,23 +541,6 @@ public abstract class SqlOperator extends Operator {
      */
     public String getSignatureTemplate( final int operandsCount ) {
         return null;
-    }
-
-
-    /**
-     * Returns a string describing the expected operand types of a call, e.g. "SUBSTR(VARCHAR, INTEGER, INTEGER)".
-     */
-    public final String getAllowedSignatures() {
-        return getAllowedSignatures( name );
-    }
-
-
-    /**
-     * Returns a string describing the expected operand types of a call, e.g. "SUBSTRING(VARCHAR, INTEGER, INTEGER)" where the name (SUBSTRING in this example) can be replaced by a specified name.
-     */
-    public String getAllowedSignatures( String opNameToUse ) {
-        assert operandTypeChecker != null : "If you see this, assign operandTypeChecker a value or override this function";
-        return operandTypeChecker.getAllowedSignatures( this, opNameToUse ).trim();
     }
 
 

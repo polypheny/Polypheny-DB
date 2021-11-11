@@ -30,7 +30,7 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.mapping.Mappings.TargetMapping;

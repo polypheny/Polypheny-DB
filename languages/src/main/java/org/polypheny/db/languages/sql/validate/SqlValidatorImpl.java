@@ -51,7 +51,9 @@ import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.function.Functions;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.core.Conformance;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.SqlValidatorException;
 import org.polypheny.db.document.util.DocumentUtil;
 import org.polypheny.db.languages.sql2rel.InitializerContext;
 import org.polypheny.db.plan.RelOptTable;
@@ -75,8 +77,8 @@ import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.ModifiableViewTable;
-import org.polypheny.db.languages.sql.JoinConditionType;
-import org.polypheny.db.languages.sql.JoinType;
+import org.polypheny.db.core.JoinConditionType;
+import org.polypheny.db.core.JoinType;
 import org.polypheny.db.languages.sql.NullCollation;
 import org.polypheny.db.languages.sql.SqlAccessEnum;
 import org.polypheny.db.languages.sql.SqlAccessType;
@@ -116,7 +118,7 @@ import org.polypheny.db.languages.sql.SqlWindow;
 import org.polypheny.db.languages.sql.SqlWith;
 import org.polypheny.db.languages.sql.SqlWithItem;
 import org.polypheny.db.languages.sql.fun.SqlCase;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.util.SqlBasicVisitor;
 import org.polypheny.db.languages.sql.util.SqlShuttle;
@@ -239,7 +241,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     private final AggFinder aggOrOverOrGroupFinder;
     private final AggFinder groupFinder;
     private final AggFinder overFinder;
-    private final SqlConformance conformance;
+    private final Conformance conformance;
     private final Map<SqlNode, SqlNode> originalExprs = new HashMap<>();
 
     private SqlNode top;
@@ -270,7 +272,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @param typeFactory Type factory
      * @param conformance Compatibility mode
      */
-    protected SqlValidatorImpl( SqlOperatorTable opTab, SqlValidatorCatalogReader catalogReader, RelDataTypeFactory typeFactory, SqlConformance conformance ) {
+    protected SqlValidatorImpl( SqlOperatorTable opTab, SqlValidatorCatalogReader catalogReader, RelDataTypeFactory typeFactory, Conformance conformance ) {
         this.opTab = Objects.requireNonNull( opTab );
         this.catalogReader = Objects.requireNonNull( catalogReader );
         this.typeFactory = Objects.requireNonNull( typeFactory );
@@ -290,7 +292,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     @Override
-    public SqlConformance getConformance() {
+    public Conformance getConformance() {
         return conformance;
     }
 
@@ -1270,9 +1272,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                         ParserPos.ZERO,
                         leftJoinTerm,
                         SqlLiteral.createBoolean( false, ParserPos.ZERO ),
-                        joinType.symbol( ParserPos.ZERO ),
+                        SqlLiteral.createSymbol( joinType, ParserPos.ZERO ),
                         targetTable,
-                        JoinConditionType.ON.symbol( ParserPos.ZERO ),
+                        SqlLiteral.createSymbol( JoinConditionType.ON, ParserPos.ZERO ),
                         call.getCondition() );
         SqlSelect select =
                 new SqlSelect(
@@ -1344,14 +1346,14 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                             selfJoinCond,
                             condition );
         }
-        SqlNode target = updateCall.getTargetTable().clone( ParserPos.ZERO );
+        SqlNode target = (SqlNode) updateCall.getTargetTable().clone( ParserPos.ZERO );
 
         // For the source, we need to anonymize the fields, so that for a statement like UPDATE T SET I = I + 1, there's no ambiguity for the "I" in "I + 1";
         // this is OK because the source and target have identical values due to the self-join.
         // Note that we anonymize the source rather than the target because downstream, the optimizer rules don't want to see any projection on top of the target.
         IdentifierNamespace ns = new IdentifierNamespace( this, target, null, null );
         RelDataType rowType = ns.getRowType();
-        SqlNode source = updateCall.getTargetTable().clone( ParserPos.ZERO );
+        SqlNode source = (SqlNode) updateCall.getTargetTable().clone( ParserPos.ZERO );
         final SqlNodeList selectList = new SqlNodeList( ParserPos.ZERO );
         int i = 1;
         for ( RelDataTypeField field : rowType.getFieldList() ) {

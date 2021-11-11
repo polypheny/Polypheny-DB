@@ -17,7 +17,6 @@
 package org.polypheny.db.languages.sql.fun;
 
 
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlFunctionCategory;

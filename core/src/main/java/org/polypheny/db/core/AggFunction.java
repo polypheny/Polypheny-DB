@@ -16,16 +16,6 @@
 
 package org.polypheny.db.core;
 
-public class LangFunctionOperator extends Operator {
-
-    public LangFunctionOperator( String name, Kind kind ) {
-        super( name, kind );
-    }
-
-
-    @Override
-    public Call createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
-        return null;
-    }
+public interface AggFunction extends Operator {
 
 }

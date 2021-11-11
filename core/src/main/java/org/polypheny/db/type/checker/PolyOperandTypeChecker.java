@@ -18,8 +18,8 @@ package org.polypheny.db.type.checker;
 
 
 import java.io.Serializable;
-import org.polypheny.db.sql.SqlCallBinding;
-import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.core.CallBinding;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.type.OperandCountRange;
 
 
@@ -37,7 +37,7 @@ public interface PolyOperandTypeChecker extends Serializable {
      * @param throwOnFailure whether to throw an exception if check fails (otherwise returns false in that case)
      * @return whether check succeeded
      */
-    boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure );
+    boolean checkOperandTypes( CallBinding callBinding, boolean throwOnFailure );
 
     /**
      * @return range of operand counts allowed in a call
@@ -51,7 +51,7 @@ public interface PolyOperandTypeChecker extends Serializable {
      * @param opName name to use for the operator in case of aliasing
      * @return generated string
      */
-    String getAllowedSignatures( SqlOperator op, String opName );
+    String getAllowedSignatures( Operator op, String opName );
 
     /**
      * Returns the strategy for making the arguments have consistency types.

@@ -20,7 +20,6 @@ package org.polypheny.db.languages.sql.fun;
 import java.util.List;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;

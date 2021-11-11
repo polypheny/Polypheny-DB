@@ -45,7 +45,7 @@ public class SqlCollation extends Collation {
      * @return the resulting collation sequence. The "no collating sequence" result is returned as null.
      * @see Glossary#SQL99 SQL:1999 Part 2 Section 4.2.3 Table 2
      */
-    public static SqlCollation getCoercibilityDyadicOperator( SqlCollation col1, SqlCollation col2 ) {
+    public static SqlCollation getCoercibilityDyadicOperator( Collation col1, Collation col2 ) {
         return getCoercibilityDyadic( col1, col2 );
     }
 
@@ -88,7 +88,7 @@ public class SqlCollation extends Collation {
     /**
      * Returns the result for {@link #getCoercibilityDyadicComparison} and {@link #getCoercibilityDyadicOperator}.
      */
-    protected static SqlCollation getCoercibilityDyadic( SqlCollation col1, SqlCollation col2 ) {
+    protected static Collation getCoercibilityDyadic( Collation col1, Collation col2 ) {
         assert null != col1;
         assert null != col2;
         final Coercibility coercibility1 = col1.getCoercibility();

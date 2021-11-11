@@ -23,8 +23,8 @@ import java.util.Objects;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.polypheny.db.languages.sql.SqlBinaryOperator;
-import org.polypheny.db.languages.sql.validate.SqlConformance;
-import org.polypheny.db.languages.sql.validate.SqlConformanceEnum;
+import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.ConformanceEnum;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.languages.sql.Lex;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -216,7 +216,7 @@ public class SqlParser {
 
         boolean caseSensitive();
 
-        SqlConformance conformance();
+        Conformance conformance();
 
         SqlParserImplFactory parserFactory();
     }
@@ -232,7 +232,7 @@ public class SqlParser {
         private Quoting quoting = Lex.POLYPHENY.quoting;
         private int identifierMaxLength = DEFAULT_IDENTIFIER_MAX_LENGTH;
         private boolean caseSensitive = Lex.POLYPHENY.caseSensitive;
-        private SqlConformance conformance = SqlConformanceEnum.LENIENT;
+        private Conformance conformance = ConformanceEnum.LENIENT;
         private SqlParserImplFactory parserFactory = SqlParserImpl.FACTORY;
 
 
@@ -284,7 +284,7 @@ public class SqlParser {
         }
 
 
-        public ConfigBuilder setConformance( SqlConformance conformance ) {
+        public ConfigBuilder setConformance( Conformance conformance ) {
             this.conformance = conformance;
             return this;
         }
@@ -323,14 +323,14 @@ public class SqlParser {
 
         private final int identifierMaxLength;
         private final boolean caseSensitive;
-        private final SqlConformance conformance;
+        private final Conformance conformance;
         private final Casing quotedCasing;
         private final Casing unquotedCasing;
         private final Quoting quoting;
         private final SqlParserImplFactory parserFactory;
 
 
-        private ConfigImpl( int identifierMaxLength, Casing quotedCasing, Casing unquotedCasing, Quoting quoting, boolean caseSensitive, SqlConformance conformance, SqlParserImplFactory parserFactory ) {
+        private ConfigImpl( int identifierMaxLength, Casing quotedCasing, Casing unquotedCasing, Quoting quoting, boolean caseSensitive, Conformance conformance, SqlParserImplFactory parserFactory ) {
             this.identifierMaxLength = identifierMaxLength;
             this.caseSensitive = caseSensitive;
             this.conformance = Objects.requireNonNull( conformance );
@@ -372,7 +372,7 @@ public class SqlParser {
 
 
         @Override
-        public SqlConformance conformance() {
+        public Conformance conformance() {
             return conformance;
         }
 

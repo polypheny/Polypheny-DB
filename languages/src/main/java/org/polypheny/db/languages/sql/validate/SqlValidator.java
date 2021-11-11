@@ -19,9 +19,12 @@ package org.polypheny.db.languages.sql.validate;
 
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.ConformanceEnum;
+import org.polypheny.db.core.SqlValidatorException;
+import org.polypheny.db.core.Validator;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
@@ -82,7 +85,7 @@ import org.polypheny.db.util.Util;
  * The methods {@link #getSelectScope}, {@link #getFromScope}, {@link #getWhereScope}, {@link #getGroupScope}, {@link #getHavingScope}, {@link #getOrderScope} and {@link #getJoinScope} get the correct scope to resolve
  * names in a particular clause of a SQL statement.
  */
-public interface SqlValidator {
+public interface SqlValidator extends Validator {
 
     /**
      * Whether to follow the SQL standard strictly.
@@ -91,11 +94,11 @@ public interface SqlValidator {
 
     /**
      * Returns the dialect of SQL (SQL:2003, etc.) this validator recognizes.
-     * Default is {@link SqlConformanceEnum#DEFAULT}.
+     * Default is {@link ConformanceEnum#DEFAULT}.
      *
      * @return dialect of SQL this validator recognizes
      */
-    SqlConformance getConformance();
+    Conformance getConformance();
 
     /**
      * Returns the catalog reader used by this validator.
@@ -588,16 +591,6 @@ public interface SqlValidator {
      * @return Expanded expression
      */
     SqlNode expand( SqlNode expr, SqlValidatorScope scope );
-
-    /**
-     * Returns whether a field is a system field. Such fields may have particular properties such as sortedness and nullability.
-     *
-     * In the default implementation, always returns {@code false}.
-     *
-     * @param field Field
-     * @return whether field is a system field
-     */
-    boolean isSystemField( RelDataTypeField field );
 
     /**
      * Returns a description of how each field in the row type maps to a catalog, schema, table and column in the schema.

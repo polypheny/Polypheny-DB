@@ -40,7 +40,7 @@ import static org.polypheny.db.runtime.Resources.ExInstWithCause;
 import static org.polypheny.db.runtime.Resources.Inst;
 import static org.polypheny.db.runtime.Resources.Property;
 
-import org.polypheny.db.sql.validate.SqlValidatorException;
+import org.polypheny.db.core.SqlValidatorException;
 
 
 /**

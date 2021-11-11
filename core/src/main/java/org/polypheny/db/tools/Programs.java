@@ -43,6 +43,8 @@ import java.util.List;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.RelDecorrelator;
+import org.polypheny.db.core.RelFieldTrimmer;
 import org.polypheny.db.interpreter.NoneToBindableConverterRule;
 import org.polypheny.db.plan.RelOptCostImpl;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -82,9 +84,6 @@ import org.polypheny.db.rel.rules.SemiJoinRule;
 import org.polypheny.db.rel.rules.SortProjectTransposeRule;
 import org.polypheny.db.rel.rules.SubQueryRemoveRule;
 import org.polypheny.db.rel.rules.TableScanRule;
-import org.polypheny.db.sql2rel.RelDecorrelator;
-import org.polypheny.db.sql2rel.RelFieldTrimmer;
-import org.polypheny.db.sql2rel.SqlToRelConverter;
 
 
 /**
@@ -375,6 +374,7 @@ public class Programs {
             return planner.findBestExp();
 
         }
+
     }
 
 
@@ -398,6 +398,7 @@ public class Programs {
             }
             return rel;
         }
+
     }
 
 
@@ -405,7 +406,7 @@ public class Programs {
      * Program that de-correlates a query.
      * <p>
      * To work around "Decorrelator gets field offsets confused if fields have been trimmed", disable field-trimming in
-     * {@link SqlToRelConverter}, and run {@link TrimFieldsProgram} after this program.
+     * {#@link SqlToRelConverter}, and run {@link TrimFieldsProgram} after this program.
      */
     private static class DecorrelateProgram implements Program {
 
@@ -418,6 +419,7 @@ public class Programs {
             }
             return rel;
         }
+
     }
 
 
@@ -431,6 +433,8 @@ public class Programs {
             final RelBuilder relBuilder = RelFactories.LOGICAL_BUILDER.create( rel.getCluster(), null );
             return new RelFieldTrimmer( null, relBuilder ).trim( rel );
         }
+
     }
+
 }
 

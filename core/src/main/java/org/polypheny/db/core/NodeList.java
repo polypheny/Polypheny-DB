@@ -16,16 +16,8 @@
 
 package org.polypheny.db.core;
 
-public class LangFunctionOperator extends Operator {
+public interface NodeList extends Iterable<Node>, Node {
 
-    public LangFunctionOperator( String name, Kind kind ) {
-        super( name, kind );
-    }
-
-
-    @Override
-    public Call createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
-        return null;
-    }
+    Node[] toArray();
 
 }

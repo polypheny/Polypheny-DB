@@ -20,6 +20,8 @@ package org.polypheny.db.languages.sql;
 import com.google.common.base.Preconditions;
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.core.JoinConditionType;
+import org.polypheny.db.core.JoinType;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.type.PolyType;

@@ -37,6 +37,7 @@ package org.polypheny.db.rel.core;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.util.List;
+import org.polypheny.db.core.SemiJoinType;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -48,7 +49,6 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelWriter;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SemiJoinType;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Litmus;
@@ -232,4 +232,5 @@ public abstract class Correlate extends BiRel {
                 (requiredColumns != null ? requiredColumns.toString() : "") + "$" +
                 (joinType != null ? joinType.name() : "") + "&";
     }
+
 }

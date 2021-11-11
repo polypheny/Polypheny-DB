@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql;
+package org.polypheny.db.core;
 
 
 import java.util.Locale;
 import org.apache.calcite.linq4j.CorrelateJoinType;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.core.JoinRelType;
 
 
@@ -54,14 +53,6 @@ public enum SemiJoinType {
      * Lower-case name.
      */
     public final String lowerName = name().toLowerCase( Locale.ROOT );
-
-
-    /**
-     * Creates a parse-tree node representing an occurrence of this condition type keyword at a particular position in the parsed text.
-     */
-    public SqlLiteral symbol( ParserPos pos ) {
-        return SqlLiteral.createSymbol( this, pos );
-    }
 
 
     public static SemiJoinType of( JoinRelType joinType ) {

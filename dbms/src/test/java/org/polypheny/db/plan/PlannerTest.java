@@ -63,7 +63,7 @@ import org.polypheny.db.adapter.jdbc.JdbcRel;
 import org.polypheny.db.adapter.jdbc.JdbcRules;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.sql.Lex;

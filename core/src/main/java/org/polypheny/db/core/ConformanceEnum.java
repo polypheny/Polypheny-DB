@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql.validate;
+package org.polypheny.db.core;
 
 
 /**
  * Enumeration of built-in SQL compatibility modes.
  */
-public enum SqlConformanceEnum implements SqlConformance {
+public enum ConformanceEnum implements Conformance {
     /**
      * Polypheny-DB's default SQL behavior.
      */
@@ -177,7 +177,7 @@ public enum SqlConformanceEnum implements SqlConformance {
 
     @Override
     public boolean isSortByAliasObscures() {
-        return this == SqlConformanceEnum.STRICT_92;
+        return this == ConformanceEnum.STRICT_92;
     }
 
 

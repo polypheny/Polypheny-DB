@@ -68,13 +68,13 @@ import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.dialect.PolyphenyDbSqlDialect;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.parser.SqlParseException;
 import org.polypheny.db.languages.sql.parser.SqlParser;
 import org.polypheny.db.languages.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.languages.sql.validate.SqlConformance;
-import org.polypheny.db.languages.sql2rel.RelDecorrelator;
+import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.RelDecorrelator;
 import org.polypheny.db.languages.sql2rel.SqlToRelConverter;
 import org.polypheny.db.languages.sql2rel.StandardConvertletTable;
 import org.polypheny.db.tools.RelBuilder;
@@ -156,7 +156,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
             }
         }
 
-        final SqlConformance conformance = parserConfig.conformance();
+        final Conformance conformance = parserConfig.conformance();
         final PolyphenyDbCatalogReader catalogReader = transaction.getCatalogReader();
         validator = new PolyphenyDbSqlValidator( SqlStdOperatorTable.instance(), catalogReader, transaction.getTypeFactory(), conformance );
         validator.setIdentifierExpansion( true );

@@ -16,16 +16,18 @@
 
 package org.polypheny.db.core;
 
-public class LangFunctionOperator extends Operator {
+import org.polypheny.db.rel.type.RelDataTypeField;
 
-    public LangFunctionOperator( String name, Kind kind ) {
-        super( name, kind );
-    }
+public interface Validator {
 
-
-    @Override
-    public Call createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
-        return null;
-    }
+    /**
+     * Returns whether a field is a system field. Such fields may have particular properties such as sortedness and nullability.
+     *
+     * In the default implementation, always returns {@code false}.
+     *
+     * @param field Field
+     * @return whether field is a system field
+     */
+    boolean isSystemField( RelDataTypeField field );
 
 }

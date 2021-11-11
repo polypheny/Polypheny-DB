@@ -19,7 +19,6 @@ package org.polypheny.db.languages.sql.fun;
 
 import java.util.List;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil;
 import org.polypheny.db.languages.sql.util.SqlBasicVisitor;
 import org.polypheny.db.languages.sql.validate.SqlValidator;

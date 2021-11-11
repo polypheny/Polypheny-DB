@@ -20,6 +20,7 @@ package org.polypheny.db.languages.sql;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.util.SqlVisitor;
@@ -36,7 +37,7 @@ import org.polypheny.db.util.Litmus;
  * A <code>SqlCall</code> is a call to an {@link SqlOperator operator}.
  * (Operators can be used to describe any syntactic construct, so in practice, every non-leaf node in a SQL parse tree is a <code>SqlCall</code> of some kind.)
  */
-public abstract class SqlCall extends SqlNode {
+public abstract class SqlCall extends SqlNode implements Call {
 
 
     public SqlCall( ParserPos pos ) {

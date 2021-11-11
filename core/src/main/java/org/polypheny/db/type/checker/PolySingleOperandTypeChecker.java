@@ -17,6 +17,7 @@
 package org.polypheny.db.type.checker;
 
 
+import org.polypheny.db.core.Node;
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlNode;
 
@@ -48,6 +49,6 @@ public interface PolySingleOperandTypeChecker extends PolyOperandTypeChecker {
      * @param throwOnFailure whether to throw an exception if check fails (otherwise returns false in that case)
      * @return whether check succeeded
      */
-    boolean checkSingleOperandType( SqlCallBinding callBinding, SqlNode operand, int iFormalOperand, boolean throwOnFailure );
+    boolean checkSingleOperandType( SqlCallBinding callBinding, Node operand, int iFormalOperand, boolean throwOnFailure );
 }
 

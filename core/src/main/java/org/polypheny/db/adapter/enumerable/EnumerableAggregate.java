@@ -54,6 +54,7 @@ import org.polypheny.db.adapter.enumerable.impl.AggAddContextImpl;
 import org.polypheny.db.adapter.enumerable.impl.AggResultContextImpl;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl.SyntheticRecordType;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -66,7 +67,6 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
@@ -456,7 +456,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableRel {
 
 
         @Override
-        public SqlAggFunction aggregation() {
+        public AggFunction aggregation() {
             return agg.call.getAggregation();
         }
 

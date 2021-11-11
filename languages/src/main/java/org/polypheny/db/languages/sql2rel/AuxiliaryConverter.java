@@ -17,8 +17,8 @@
 package org.polypheny.db.languages.sql2rel;
 
 
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.SqlFunction;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;

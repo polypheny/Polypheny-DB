@@ -44,6 +44,8 @@ import org.bson.BsonValue;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.SemiJoinType;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
@@ -75,8 +77,6 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.TranslatableTable;
-import org.polypheny.db.sql.SemiJoinType;
-import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -255,7 +255,7 @@ public class RelFactories {
         /**
          * Creates a set operation.
          */
-        RelNode createSetOp( SqlKind kind, List<RelNode> inputs, boolean all );
+        RelNode createSetOp( Kind kind, List<RelNode> inputs, boolean all );
 
     }
 
@@ -266,7 +266,7 @@ public class RelFactories {
     private static class SetOpFactoryImpl implements SetOpFactory {
 
         @Override
-        public RelNode createSetOp( SqlKind kind, List<RelNode> inputs, boolean all ) {
+        public RelNode createSetOp( Kind kind, List<RelNode> inputs, boolean all ) {
             switch ( kind ) {
                 case UNION:
                     return LogicalUnion.create( inputs, all );

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql2rel;
+package org.polypheny.db.core;
 
 
 import com.google.common.collect.ImmutableList;
@@ -75,9 +75,6 @@ import org.polypheny.db.rex.RexProgramBuilder;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexSubQuery;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.languages.sql.SqlOperator;
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -225,7 +222,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
         RexNode[] caseOperands = new RexNode[3];
 
         // WHEN StructuredType.Indicator IS NULL
-        caseOperands[0] = rexBuilder.makeCall( SqlStdOperatorTable.IS_NULL, nullIndicator );
+        caseOperands[0] = rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NULL" ), nullIndicator );
 
         // THEN CAST(NULL AS StructuredType)
         caseOperands[1] = rexBuilder.makeCast( structuredType, rexBuilder.constantNull() );
@@ -233,7 +230,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
         // ELSE NEW StructuredType(inputs...) END
         caseOperands[2] = newInvocation;
 
-        return rexBuilder.makeCall( SqlStdOperatorTable.CASE, caseOperands );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "CASE" ), caseOperands );
     }
 
 
@@ -711,6 +708,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
     public interface SelfFlatteningRel extends RelNode {
 
         void flattenRel( RelStructuredTypeFlattener flattener );
+
     }
 
 
@@ -748,6 +746,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
                 }
             }
         }
+
     }
 
 
@@ -845,14 +844,14 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
         }
 
 
-        private RexNode flattenComparison( RexBuilder rexBuilder, SqlOperator op, List<RexNode> exprs ) {
+        private RexNode flattenComparison( RexBuilder rexBuilder, Operator op, List<RexNode> exprs ) {
             final List<Pair<RexNode, String>> flattenedExps = new ArrayList<>();
             flattenProjections( this, exprs, null, "", flattenedExps );
             int n = flattenedExps.size() / 2;
             boolean negate = false;
             if ( op.getKind() == Kind.NOT_EQUALS ) {
                 negate = true;
-                op = SqlStdOperatorTable.EQUALS;
+                op = StdOperatorRegistry.get( "EQUALS" );
             }
             if ( (n > 1) && op.getKind() != Kind.EQUALS ) {
                 throw Util.needToImplement( "inequality comparison for row types" );
@@ -866,15 +865,17 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
                 if ( conjunction == null ) {
                     conjunction = comparison;
                 } else {
-                    conjunction = rexBuilder.makeCall( SqlStdOperatorTable.AND, conjunction, comparison );
+                    conjunction = rexBuilder.makeCall( StdOperatorRegistry.get( "AND" ), conjunction, comparison );
                 }
             }
             if ( negate ) {
-                return rexBuilder.makeCall( SqlStdOperatorTable.NOT, conjunction );
+                return rexBuilder.makeCall( StdOperatorRegistry.get( "NOT" ), conjunction );
             } else {
                 return conjunction;
             }
         }
+
     }
+
 }
 

@@ -17,7 +17,6 @@
 package org.polypheny.db.languages.sql.fun;
 
 
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.languages.sql.SqlCall;

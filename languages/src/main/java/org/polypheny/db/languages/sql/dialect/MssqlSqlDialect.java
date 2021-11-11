@@ -19,7 +19,7 @@ package org.polypheny.db.languages.sql.dialect;
 
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.SqlAbstractDateTimeLiteral;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDialect;

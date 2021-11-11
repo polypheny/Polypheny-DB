@@ -19,7 +19,7 @@ package org.polypheny.db.languages.sql;
 
 import java.util.List;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.languages.sql.validate.SqlValidatorException;
+import org.polypheny.db.core.SqlValidatorException;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.runtime.PolyphenyDbException;

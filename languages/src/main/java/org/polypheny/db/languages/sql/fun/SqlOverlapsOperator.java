@@ -18,7 +18,6 @@ package org.polypheny.db.languages.sql.fun;
 
 
 import com.google.common.collect.ImmutableList;
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.languages.sql.SqlBinaryOperator;
 import org.polypheny.db.languages.sql.SqlCall;

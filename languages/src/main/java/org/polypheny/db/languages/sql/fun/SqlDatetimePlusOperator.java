@@ -18,7 +18,6 @@ package org.polypheny.db.languages.sql.fun;
 
 
 import org.apache.calcite.avatica.util.TimeUnit;
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;

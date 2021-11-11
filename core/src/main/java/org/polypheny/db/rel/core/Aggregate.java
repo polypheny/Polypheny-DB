@@ -43,6 +43,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -501,7 +502,7 @@ public abstract class Aggregate extends SingleRel {
          * @param groupCount Number of columns in the GROUP BY clause
          * @param filter Whether the aggregate function has a FILTER clause
          */
-        public AggCallBinding( RelDataTypeFactory typeFactory, SqlAggFunction aggFunction, List<RelDataType> operands, int groupCount, boolean filter ) {
+        public AggCallBinding( RelDataTypeFactory typeFactory, AggFunction aggFunction, List<RelDataType> operands, int groupCount, boolean filter ) {
             super( typeFactory, aggFunction );
             this.operands = operands;
             this.groupCount = groupCount;

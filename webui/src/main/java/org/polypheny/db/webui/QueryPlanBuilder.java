@@ -20,7 +20,7 @@ package org.polypheny.db.webui;
 import com.google.gson.Gson;
 import java.util.ArrayList;
 import org.apache.commons.lang.math.NumberUtils;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rex.RexNode;

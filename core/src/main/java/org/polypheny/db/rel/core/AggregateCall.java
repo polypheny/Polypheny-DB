@@ -37,12 +37,12 @@ package org.polypheny.db.rel.core;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.mapping.Mapping;
 import org.polypheny.db.util.mapping.Mappings;
@@ -53,7 +53,7 @@ import org.polypheny.db.util.mapping.Mappings;
  */
 public class AggregateCall {
 
-    private final SqlAggFunction aggFunction;
+    private final AggFunction aggFunction;
 
     private final boolean distinct;
     private final boolean approximate;
@@ -80,7 +80,7 @@ public class AggregateCall {
      * @param name Name (may be null)
      */
     private AggregateCall(
-            SqlAggFunction aggFunction,
+            AggFunction aggFunction,
             boolean distinct,
             boolean approximate,
             List<Integer> argList,
@@ -103,7 +103,7 @@ public class AggregateCall {
      * Creates an AggregateCall, inferring its type if {@code type} is null.
      */
     public static AggregateCall create(
-            SqlAggFunction aggFunction,
+            AggFunction aggFunction,
             boolean distinct,
             boolean approximate,
             List<Integer> argList,
@@ -132,7 +132,7 @@ public class AggregateCall {
      * Creates an AggregateCall.
      */
     public static AggregateCall create(
-            SqlAggFunction aggFunction,
+            AggFunction aggFunction,
             boolean distinct,
             boolean approximate,
             List<Integer> argList,
@@ -169,7 +169,7 @@ public class AggregateCall {
      *
      * @return aggregate function
      */
-    public final SqlAggFunction getAggregation() {
+    public final AggFunction getAggregation() {
         return aggFunction;
     }
 

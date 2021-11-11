@@ -14,10 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql;
-
-
-import org.polypheny.db.core.ParserPos;
+package org.polypheny.db.core;
 
 
 /**
@@ -38,13 +35,5 @@ public enum JoinConditionType {
      * Join clause has a USING condition, for example "FROM EMP JOIN DEPT USING (DEPTNO)"
      */
     USING;
-
-
-    /**
-     * Creates a parse-tree node representing an occurrence of this join type at a particular position in the parsed text.
-     */
-    public SqlLiteral symbol( ParserPos pos ) {
-        return SqlLiteral.createSymbol( this, pos );
-    }
 }
 
