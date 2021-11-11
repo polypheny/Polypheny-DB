@@ -32,13 +32,12 @@
  */
 package org.polypheny.db.type;
 
-import java.io.Serializable;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.sql.SqlIntervalQualifier;
 
-public class PolyIntervalQualifier implements Serializable {
+public class PolyIntervalQualifier {
 
     public PolyIntervalQualifier( int startPrecision, TimeUnitRange timeUnitRange, int fractionalSecondPrecision ) {
         this.startPrecision = startPrecision;

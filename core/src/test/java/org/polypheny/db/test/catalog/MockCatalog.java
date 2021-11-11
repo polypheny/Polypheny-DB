@@ -30,12 +30,15 @@ import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPartition;
+import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
+import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
@@ -48,6 +51,7 @@ import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
@@ -65,6 +69,18 @@ public abstract class MockCatalog extends Catalog {
 
     @Override
     public void commit() throws NoTablePrimaryKeyException {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public int addUser( String name, String password ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void setUserSchema( int userId, long schemaId ) {
         throw new NotImplementedException();
     }
 
@@ -89,6 +105,24 @@ public abstract class MockCatalog extends Catalog {
 
     @Override
     public long addDatabase( String name, int ownerId, String ownerName, long defaultSchemaId, String defaultSchemaName ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public Map<Long, RelNode> getNodeInfo() {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public Map<Long, RelDataType> getRelTypeInfo() {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void restoreViews( Transaction transaction ) {
         throw new NotImplementedException();
     }
 
@@ -226,7 +260,13 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList ) {
+    public long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, String query, QueryLanguage language ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) {
         throw new NotImplementedException();
     }
 
@@ -239,6 +279,12 @@ public abstract class MockCatalog extends Catalog {
 
     @Override
     public boolean checkIfExistsTable( long schemaId, String tableName ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public boolean checkIfExistsTable( long tableId ) {
         throw new NotImplementedException();
     }
 
@@ -268,7 +314,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, List<Long> partitionIds ) {
+    public void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, List<Long> partitionGroupIds ) {
         throw new NotImplementedException();
     }
 
@@ -292,13 +338,13 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<CatalogColumnPlacement> getColumnPlacements( long columnId ) {
+    public List<CatalogColumnPlacement> getColumnPlacement( long columnId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<CatalogColumnPlacement> getColumnPlacementsOnAdapter( int adapterId, long tableId ) {
+    public List<CatalogColumnPlacement> getColumnPlacementsOnAdapterPerTable( int adapterId, long tableId ) {
         throw new NotImplementedException();
     }
 
@@ -358,7 +404,13 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName, boolean updatePhysicalColumnPosition ) {
+    public void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalColumnName, boolean updatePhysicalColumnPosition ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void updateMaterializedViewRefreshTime( long materializedId ) {
         throw new NotImplementedException();
     }
 
@@ -700,25 +752,25 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addPartition( long tableId, String partitionName, long schemaId, int ownerId, PartitionType partitionType, List<String> effectivePartitionQualifier, boolean isUnbound ) throws GenericCatalogException {
+    public long addPartitionGroup( long tableId, String partitionGroupName, long schemaId, PartitionType partitionType, long numberOfInternalPartitions, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public void deletePartition( long tableId, long schemaId, long partitionId ) {
+    public void deletePartitionGroup( long tableId, long schemaId, long partitionGroupId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogPartition getPartition( long partitionId ) {
+    public CatalogPartitionGroup getPartitionGroup( long partitionGroupId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitions, List<Long> partitionIds ) {
+    public void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitionGroups, List<Long> partitionGroupIds, PartitionProperty partitionProperty ) {
         throw new NotImplementedException();
     }
 
@@ -730,61 +782,61 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<CatalogPartition> getPartitions( long tableId ) {
+    public List<CatalogPartitionGroup> getPartitionGroups( long tableId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<CatalogPartition> getPartitions( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) {
+    public List<CatalogPartitionGroup> getPartitionGroups( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<String> getPartitionNames( long tableId ) {
+    public List<String> getPartitionGroupNames( long tableId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<CatalogColumnPlacement> getColumnPlacementsByPartition( long tableId, long partitionId, long columnId ) {
+    public List<CatalogColumnPlacement> getColumnPlacementsByPartitionGroup( long tableId, long partitionGroupId, long columnId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<CatalogAdapter> getAdaptersByPartition( long tableId, long partitionId ) {
+    public List<CatalogAdapter> getAdaptersByPartitionGroup( long tableId, long partitionGroupId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public void updatePartitionsOnDataPlacement( int adapterId, long tableId, List<Long> partitionIds ) {
+    public void updatePartitionGroupsOnDataPlacement( int adapterId, long tableId, List<Long> partitionGroupIds ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<Long> getPartitionsOnDataPlacement( int adapterId, long tableId ) {
+    public List<Long> getPartitionGroupsOnDataPlacement( int adapterId, long tableId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<Long> getPartitionsIndexOnDataPlacement( int adapterId, long tableId ) {
+    public List<Long> getPartitionGroupsIndexOnDataPlacement( int adapterId, long tableId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public void deletePartitionsOnDataPlacement( int storeId, long tableId ) {
+    public void deletePartitionGroupsOnDataPlacement( int storeId, long tableId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public boolean validatePartitionDistribution( int adapterId, long tableId, long columnId ) {
+    public boolean validatePartitionGroupDistribution( int adapterId, long tableId, long columnId, int threshold ) {
         throw new NotImplementedException();
     }
 
@@ -809,6 +861,228 @@ public abstract class MockCatalog extends Catalog {
 
     @Override
     public void clear() {
+        throw new NotImplementedException();
+    }
+
+
+    /**
+     * Adds a partition to the catalog
+     *
+     * @param tableId The unique id of the table
+     * @param schemaId The unique id of the table
+     * @param partitionGroupId partitionGroupId where the partition should be initially added to
+     * @return The id of the created partition
+     */
+    @Override
+    public long addPartition( long tableId, long schemaId, long partitionGroupId, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException {
+        throw new NotImplementedException();
+    }
+
+
+    /**
+     * Deletes a single partition and all references.
+     *
+     * @param tableId The unique id of the table
+     * @param schemaId The unique id of the table
+     * @param partitionId The partitionId to be deleted
+     */
+    @Override
+    public void deletePartition( long tableId, long schemaId, long partitionId ) {
+        throw new NotImplementedException();
+    }
+
+
+    /**
+     * Get a partition object by its unique id
+     *
+     * @param partitionId The unique id of the partition
+     * @return A catalog partition
+     */
+    @Override
+    public CatalogPartition getPartition( long partitionId ) {
+        throw new NotImplementedException();
+    }
+
+
+    /**
+     * Updates partitionProperties on table
+     *
+     * @param tableId Table to be partitioned
+     * @param partitionProperty Partition properties
+     */
+    @Override
+    public void updateTablePartitionProperties( long tableId, PartitionProperty partitionProperty ) {
+        throw new NotImplementedException();
+    }
+
+
+    /**
+     * Get a List of all partitions belonging to a specific table
+     *
+     * @param partitionGroupId Table to be queried
+     * @return list of all partitions on this table
+     */
+    @Override
+    public List<CatalogPartition> getPartitions( long partitionGroupId ) {
+        throw new NotImplementedException();
+    }
+
+
+    /**
+     * Get all partitions of the specified database which fit to the specified filter patterns.
+     * <code>getColumns(xid, databaseName, null, null, null)</code> returns all partitions of the database.
+     *
+     * @param databaseNamePattern Pattern for the database name. null returns all.
+     * @param schemaNamePattern Pattern for the schema name. null returns all.
+     * @param tableNamePattern Pattern for the table name. null returns catalog/src/test/java/org/polypheny/db/test/CatalogTest.javaall.
+     * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
+     */
+    @Override
+    public List<CatalogPartition> getPartitions( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) {
+        throw new NotImplementedException();
+    }
+
+
+    /**
+     * Get all partitions of a DataPlacement (identified by adapterId and tableId)
+     *
+     * @param adapterId The unique id of the adapter
+     * @param tableId The unique id of the table
+     * @return List of partitionIds
+     */
+    @Override
+    public List<Long> getPartitionsOnDataPlacement( int adapterId, long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    /**
+     * Adds a placement for a partition.
+     *
+     * @param adapterId The adapter on which the table should be placed on
+     * @param placementType The type of placement
+     * @param physicalSchemaName The schema name on the adapter
+     * @param physicalTableName The table name on the adapter
+     */
+    @Override
+    public void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName ) {
+        throw new NotImplementedException();
+    }
+
+
+    /**
+     * Change physical names of a partition placement.
+     *
+     * @param adapterId The id of the adapter
+     * @param partitionId The id of the partition
+     * @param physicalSchemaName The physical schema name
+     * @param physicalTableName The physical table name
+     */
+    @Override
+    public void updatePartitionPlacementPhysicalNames( int adapterId, long partitionId, String physicalSchemaName, String physicalTableName ) {
+        throw new NotImplementedException();
+    }
+
+
+    /**
+     * Deletes a placement for a partition.
+     *
+     * @param adapterId The adapter on which the table should be placed on
+     */
+    @Override
+    public void deletePartitionPlacement( int adapterId, long partitionId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public CatalogPartitionPlacement getPartitionPlacement( int adapterId, long partitionId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogPartitionPlacement> getPartitionPlacementsByAdapter( int adapterId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogPartitionPlacement> getPartitionPlacementByTable( int adapterId, long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogPartitionPlacement> getAllPartitionPlacementsByTable( long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogPartitionPlacement> getPartitionPlacements( long partitionId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public boolean checkIfExistsPartitionPlacement( int adapterId, long partitionId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void removeTableFromPeriodicProcessing( long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void addTableToPeriodicProcessing( long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogTable> getTablesForPeriodicProcessing() {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogPartition> getPartitionsByTable( long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    /**
+     * Updates the specified partition group with the attached partitionIds
+     *
+     * @param partitionIds List of new partitionIds
+     */
+    @Override
+    public void updatePartitionGroup( long partitionGroupId, List<Long> partitionIds ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void addPartitionToGroup( long partitionGroupId, Long partitionId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void removePartitionFromGroup( long partitionGroupId, Long partitionId ) {
+        throw new NotImplementedException();
+    }
+
+
+    /**
+     * Assign the partition to a new partitionGroup
+     */
+    @Override
+    public void updatePartition( long partitionId, Long partitionGroupId ) {
         throw new NotImplementedException();
     }
 

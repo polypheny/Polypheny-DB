@@ -34,7 +34,6 @@
 package org.polypheny.db.plan;
 
 
-import java.io.Serializable;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.rel.RelCollation;
@@ -47,6 +46,7 @@ import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.schema.ColumnStrategy;
+import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.util.ImmutableBitSet;
 
@@ -54,7 +54,7 @@ import org.polypheny.db.util.ImmutableBitSet;
 /**
  * Represents a relational dataset in a {@link RelOptSchema}. It has methods to describe and implement itself.
  */
-public interface RelOptTable extends Wrapper, Serializable {
+public interface RelOptTable extends Wrapper {
 
     /**
      * Obtains an identifier for this table. The identifier must be unique with respect to the Connection producing this table.
@@ -132,6 +132,11 @@ public interface RelOptTable extends Wrapper, Serializable {
      * Returns a list describing how each column is populated. The list has the same number of entries as there are fields, and is immutable.
      */
     List<ColumnStrategy> getColumnStrategies();
+
+
+    default Table getTable() {
+        return null;
+    }
 
     /**
      * Can expand a view into relational expressions.

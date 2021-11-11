@@ -18,25 +18,23 @@ package org.polypheny.db.catalog.entity;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PartitionType;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.plan.Convention;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.AbstractRelNode;
 import org.polypheny.db.rel.BiRel;
 import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelCollationTraitDef;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.SingleRel;
 import org.polypheny.db.rel.logical.LogicalViewTableScan;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.view.ViewManager.ViewVisitor;
 
 public class CatalogView extends CatalogTable {
 
@@ -45,11 +43,11 @@ public class CatalogView extends CatalogTable {
     @Getter
     private final Map<Long, List<Long>> underlyingTables;
     @Getter
-    private final RelDataType fieldList;
+    private final QueryLanguage language;
     @Getter
     private final RelCollation relCollation;
     @Getter
-    RelNode definition;
+    String query;
 
 
     public CatalogView(
@@ -61,18 +59,19 @@ public class CatalogView extends CatalogTable {
             int ownerId,
             @NonNull String ownerName,
             @NonNull Catalog.TableType type,
-            RelNode definition,
+            String query,
             Long primaryKey,
             @NonNull ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             boolean modifiable,
             RelCollation relCollation,
             Map<Long, List<Long>> underlyingTables,
-            RelDataType fieldList ) {
-        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, primaryKey, placementsByAdapter, modifiable );
-        this.definition = definition;
+            QueryLanguage language,
+            PartitionProperty partitionProperty ) {
+        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, primaryKey, placementsByAdapter, modifiable, partitionProperty );
+        this.query = query;
         this.relCollation = relCollation;
         this.underlyingTables = underlyingTables;
-        this.fieldList = fieldList;
+        this.language = language;
     }
 
 
@@ -85,24 +84,23 @@ public class CatalogView extends CatalogTable {
             int ownerId,
             String ownerName,
             TableType tableType,
-            RelNode definition,
+            String query,
             Long primaryKey,
             ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             boolean modifiable,
-            long numPartitions,
             PartitionType partitionType,
-            ImmutableList<Long> partitionIds,
             long partitionColumnId,
             boolean isPartitioned,
+            PartitionProperty partitionProperty,
             RelCollation relCollation,
             ImmutableList<Long> connectedViews,
             Map<Long, List<Long>> underlyingTables,
-            RelDataType fieldList ) {
-        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, primaryKey, placementsByAdapter, modifiable, numPartitions, partitionType, partitionIds, partitionColumnId, isPartitioned, connectedViews );
-        this.definition = definition;
+            QueryLanguage language ) {
+        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, primaryKey, placementsByAdapter, modifiable, partitionType, partitionColumnId, isPartitioned, partitionProperty, connectedViews );
+        this.query = query;
         this.relCollation = relCollation;
         this.underlyingTables = underlyingTables;
-        this.fieldList = fieldList;
+        this.language = language;
     }
 
 
@@ -117,19 +115,18 @@ public class CatalogView extends CatalogTable {
                 ownerId,
                 ownerName,
                 tableType,
-                definition,
+                query,
                 primaryKey,
                 placementsByAdapter,
                 modifiable,
-                numPartitions,
                 partitionType,
-                partitionIds,
                 partitionColumnId,
                 isPartitioned,
+                partitionProperty,
                 relCollation,
                 newConnectedViews,
                 underlyingTables,
-                fieldList );
+                language );
     }
 
 
@@ -144,19 +141,18 @@ public class CatalogView extends CatalogTable {
                 ownerId,
                 ownerName,
                 tableType,
-                definition,
+                query,
                 primaryKey,
                 placementsByAdapter,
                 modifiable,
-                numPartitions,
                 partitionType,
-                partitionIds,
                 partitionColumnId,
                 isPartitioned,
+                partitionProperty,
                 relCollation,
                 connectedViews,
                 underlyingTables,
-                fieldList );
+                language );
     }
 
 
@@ -171,53 +167,47 @@ public class CatalogView extends CatalogTable {
                 ownerId,
                 ownerName,
                 tableType,
-                definition,
+                query,
                 primaryKey,
                 placementsByAdapter,
                 modifiable,
                 relCollation,
                 underlyingTables,
-                fieldList );
+                language,
+                partitionProperty );
     }
 
 
-    public RelNode prepareView( RelOptCluster cluster, RelCollation relCollation ) {
-        RelNode viewLogicalRoot = definition;
-        prepareView( viewLogicalRoot, cluster, relCollation );
-        if ( viewLogicalRoot.hasView() ) {
-            viewLogicalRoot.tryExpandView( viewLogicalRoot );
-        }
+    public RelNode prepareView( RelOptCluster cluster ) {
+        RelNode viewLogicalRoot = getDefinition();
+        prepareView( viewLogicalRoot, cluster );
+
+        ViewVisitor materializedVisitor = new ViewVisitor( false );
+        viewLogicalRoot.accept( materializedVisitor );
+
         return viewLogicalRoot;
     }
 
 
-    public void prepareView( RelNode viewLogicalRoot, RelOptCluster relOptCluster, RelCollation relCollation ) {
+    public void prepareView( RelNode viewLogicalRoot, RelOptCluster relOptCluster ) {
         if ( viewLogicalRoot instanceof AbstractRelNode ) {
             ((AbstractRelNode) viewLogicalRoot).setCluster( relOptCluster );
-
-            List<RelCollation> relCollationList = new ArrayList<>();
-            relCollationList.add( relCollation );
-            RelTraitSet traitSetTest =
-                    relOptCluster.traitSetOf( Convention.NONE )
-                            .replaceIfs( RelCollationTraitDef.INSTANCE,
-                                    () -> {
-                                        if ( relCollation != null ) {
-                                            return relCollationList;
-                                        }
-                                        return ImmutableList.of();
-                                    } );
-
-            ((AbstractRelNode) viewLogicalRoot).setTraitSet( traitSetTest );
         }
         if ( viewLogicalRoot instanceof BiRel ) {
-            prepareView( ((BiRel) viewLogicalRoot).getLeft(), relOptCluster, relCollation );
-            prepareView( ((BiRel) viewLogicalRoot).getRight(), relOptCluster, relCollation );
+            prepareView( ((BiRel) viewLogicalRoot).getLeft(), relOptCluster );
+            prepareView( ((BiRel) viewLogicalRoot).getRight(), relOptCluster );
         } else if ( viewLogicalRoot instanceof SingleRel ) {
-            prepareView( ((SingleRel) viewLogicalRoot).getInput(), relOptCluster, relCollation );
+            prepareView( ((SingleRel) viewLogicalRoot).getInput(), relOptCluster );
         }
         if ( viewLogicalRoot instanceof LogicalViewTableScan ) {
-            prepareView( ((LogicalViewTableScan) viewLogicalRoot).getRelNode(), relOptCluster, relCollation );
+            prepareView( ((LogicalViewTableScan) viewLogicalRoot).getRelNode(), relOptCluster );
         }
     }
+
+
+    public RelNode getDefinition() {
+        return Catalog.getInstance().getNodeInfo().get( id );
+    }
+
 
 }

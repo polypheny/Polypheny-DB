@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -157,19 +157,25 @@ public class CassandraProject extends Project implements CassandraRel {
             context.addInsertValues( valuesList );
         } else {
             context.visitChild( 0, getInput() );
-            final CassandraRules.RexToCassandraTranslator translator = new CassandraRules.RexToCassandraTranslator( (JavaTypeFactory) getCluster().getTypeFactory(), CassandraRules.cassandraPhysicalFieldNames( getInput().getRowType() ) );
+            final CassandraRules.RexToCassandraTranslator translator = new CassandraRules.RexToCassandraTranslator(
+                    (JavaTypeFactory) getCluster().getTypeFactory(),
+                    CassandraRules.cassandraPhysicalFieldNames( getInput().getRowType() ) );
             final List<Selector> fields = new ArrayList<>();
             for ( Pair<RexNode, String> pair : getNamedProjects() ) {
                 if ( pair.left instanceof RexInputRef ) {
-                    final String name = pair.right;
+                    String name = pair.right;
 //                getRowType()
 //                ((RexInputRef) pair.left);
                     final String originalName = pair.left.accept( translator );
+                    if ( name.startsWith( "_" ) ) {
+                        name = "\"" + name + "\"";
+                    }
                     fields.add( Selector.column( originalName ).as( name ) );
                 }
             }
             context.addSelectColumns( fields );
         }
     }
+
 }
 

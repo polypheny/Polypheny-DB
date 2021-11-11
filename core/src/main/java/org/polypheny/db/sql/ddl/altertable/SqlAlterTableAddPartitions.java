@@ -23,14 +23,16 @@ import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.PartitionInformation;
-import org.polypheny.db.ddl.exception.PartitionNamesNotUniqueException;
+import org.polypheny.db.ddl.exception.PartitionGroupNamesNotUniqueException;
 import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.partition.raw.RawPartitionInformation;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlUtil;
@@ -50,9 +52,11 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
     private final SqlIdentifier table;
     private final SqlIdentifier partitionColumn;
     private final SqlIdentifier partitionType;
+    private final int numPartitionGroups;
     private final int numPartitions;
-    private final List<SqlIdentifier> partitionNamesList;
+    private final List<SqlIdentifier> partitionGroupNamesList;
     private final List<List<SqlNode>> partitionQualifierList;
+    private final RawPartitionInformation rawPartitionInformation;
 
 
     public SqlAlterTableAddPartitions(
@@ -60,16 +64,20 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
             SqlIdentifier table,
             SqlIdentifier partitionColumn,
             SqlIdentifier partitionType,
+            int numPartitionGroups,
             int numPartitions,
-            List<SqlIdentifier> partitionNamesList,
-            List<List<SqlNode>> partitionQualifierList ) {
+            List<SqlIdentifier> partitionGroupNamesList,
+            List<List<SqlNode>> partitionQualifierList,
+            RawPartitionInformation rawPartitionInformation ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.partitionType = Objects.requireNonNull( partitionType );
         this.partitionColumn = Objects.requireNonNull( partitionColumn );
+        this.numPartitionGroups = numPartitionGroups; //May be empty
         this.numPartitions = numPartitions; //May be empty
-        this.partitionNamesList = partitionNamesList; //May be null and can only be used in association with PARTITION BY and PARTITIONS
+        this.partitionGroupNamesList = partitionGroupNamesList; //May be null and can only be used in association with PARTITION BY and PARTITIONS
         this.partitionQualifierList = partitionQualifierList;
+        this.rawPartitionInformation = rawPartitionInformation;
     }
 
 
@@ -81,16 +89,42 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
-        // TODO @HENNLO: The partition part is still incomplete
-        /** There are several possible ways to unparse the partition section.
-         The To Do is deferred until we have decided if parsing of partition functions will be
-         self contained or not.*/
         writer.keyword( "ALTER" );
         writer.keyword( "TABLE" );
         table.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "PARTITION" );
         writer.keyword( "BY" );
         partitionType.unparse( writer, leftPrec, rightPrec );
+
+        switch ( partitionType.getSimple() ) {
+            case "HASH":
+                writer.keyword( "WITH" );
+                SqlWriter.Frame frame = writer.startList( "(", ")" );
+                for ( SqlIdentifier name : partitionGroupNamesList ) {
+                    writer.sep( "," );
+                    name.unparse( writer, 0, 0 );
+                }
+                break;
+            case "RANGE":
+            case "LIST":
+                writer.keyword( "(" );
+                for ( int i = 0; i < partitionGroupNamesList.size(); i++ ) {
+                    writer.keyword( "PARTITION" );
+                    partitionGroupNamesList.get( i ).unparse( writer, 0, 0 );
+                    writer.keyword( "VALUES" );
+                    writer.keyword( "(" );
+                    partitionQualifierList.get( i ).get( 0 ).unparse( writer, 0, 0 );
+                    writer.sep( "," );
+                    partitionQualifierList.get( i ).get( 1 ).unparse( writer, 0, 0 );
+                    writer.keyword( ")" );
+
+                    if ( i < partitionGroupNamesList.size() ) {
+                        writer.sep( "," );
+                    }
+                }
+                writer.keyword( ")" );
+                break;
+        }
     }
 
 
@@ -98,27 +132,32 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
 
-        if ( catalogTable.isView() ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE with Views" );
+        if ( catalogTable.tableType != TableType.TABLE ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE because" + catalogTable.name + " is not a table." );
         }
 
         try {
             // Check if table is already partitioned
             if ( catalogTable.partitionType == Catalog.PartitionType.NONE ) {
-                DdlManager.getInstance().addPartition( PartitionInformation.fromSqlLists(
-                        catalogTable,
-                        partitionType.getSimple(),
-                        partitionColumn.getSimple(),
-                        partitionNamesList,
-                        numPartitions,
-                        partitionQualifierList ) );
+                DdlManager.getInstance().addPartitioning(
+                        PartitionInformation.fromSqlLists(
+                                catalogTable,
+                                partitionType.getSimple(),
+                                partitionColumn.getSimple(),
+                                partitionGroupNamesList,
+                                numPartitionGroups,
+                                numPartitions,
+                                partitionQualifierList,
+                                rawPartitionInformation ),
+                        null,
+                        statement );
 
             } else {
                 throw new RuntimeException( "Table '" + catalogTable.name + "' is already partitioned" );
             }
         } catch ( UnknownPartitionTypeException | GenericCatalogException e ) {
             throw new RuntimeException( e );
-        } catch ( PartitionNamesNotUniqueException e ) {
+        } catch ( PartitionGroupNamesNotUniqueException e ) {
             throw SqlUtil.newContextException( partitionColumn.getParserPosition(), RESOURCE.partitionNamesNotUnique() );
         } catch ( UnknownColumnException e ) {
             throw SqlUtil.newContextException( partitionColumn.getParserPosition(), RESOURCE.columnNotFoundInTable( partitionColumn.getSimple(), catalogTable.name ) );

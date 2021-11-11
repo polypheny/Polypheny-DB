@@ -110,7 +110,7 @@ public class Explore {
     /**
      * Final classification of all data according to isConvertedToSql with Weka or by creating a sql query
      *
-     * @param labeled          data from user
+     * @param labeled data from user
      * @param isConvertedToSql boolean if it should be converted to SQL or not
      */
     public void classifyAllData( List<String[]> labeled, boolean isConvertedToSql ) {
@@ -146,7 +146,7 @@ public class Explore {
             name = name.replace( "\"", "" ); // remove quotes
             if ( exploreQueryResult.name.get( i ).startsWith( name ) ) {
                 String type = exploreQueryResult.typeInfo.get( i );
-                if ( type.equals( "VARCHAR" ) || type.equals( "INTEGER" ) || type.equals( "BIGINT" ) || type.equals( "SMALLINT" ) || type.equals( "TINYINT" ) || type.equals( "DECIMAL" ) ) {
+                if ( Arrays.asList( "VARCHAR", "INTEGER", "BIGINT", "SMALLINT", "TINYINT", "DECIMAL", "JSON" ).contains( type ) ) {
                     dataType[i] = exploreQueryResult.typeInfo.get( i );
                     nameAndType.put( fullNames[i], dataType[i] );
                 } else {
@@ -383,13 +383,13 @@ public class Explore {
         for ( int dim = 0; dim < dimLength; dim++ ) {
             attVals = new FastVector();
 
-            if ( dataType[dim].equals( "VARCHAR" ) ) {
+            if ( Arrays.asList( "VARCHAR", "JSON" ).contains( dataType[dim] ) ) {
                 for ( int i = 0; i < uniqueValues.get( dim ).size(); i++ ) {
                     attVals.addElement( uniqueValues.get( dim ).get( i ) );
                 }
                 atts.addElement( new Attribute( qualifiedNames.get( dim ), attVals ) );
                 attValsEl[dim] = attVals;
-            } else if ( dataType[dim].equals( "INTEGER" ) || dataType[dim].equals( "BIGINT" ) || dataType[dim].equals( "SMALLINT" ) || dataType[dim].equals( "TINYINT" ) || dataType[dim].equals( "DECIMAL" ) ) {
+            } else if ( Arrays.asList( "INTEGER", "BIGINT", "SMALLINT", "TINYINT", "DECIMAL" ).contains( dataType[dim] ) ) {
                 atts.addElement( new Attribute( qualifiedNames.get( dim ) ) );
             }
         }
@@ -448,7 +448,7 @@ public class Explore {
     /**
      * Translates a Weka J48 Tree to a SQL query
      *
-     * @param tree        J48 tree
+     * @param tree J48 tree
      * @param nameAndType of all the columns
      * @return sql query
      */
@@ -462,7 +462,7 @@ public class Explore {
     /**
      * Classifies unlabeled data with the before created tree
      *
-     * @param tree      J48 tree
+     * @param tree J48 tree
      * @param unlabeled Weka Instances
      * @return labeled data
      */
@@ -493,7 +493,7 @@ public class Explore {
     /**
      * Classify all Data with tree built before
      *
-     * @param tree      J48 Weka Tree
+     * @param tree J48 Weka Tree
      * @param unlabeled all selected unlabeled Data
      * @return only the data labeled as true
      */

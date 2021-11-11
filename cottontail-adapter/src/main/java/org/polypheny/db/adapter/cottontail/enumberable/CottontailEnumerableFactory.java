@@ -42,7 +42,7 @@ public class CottontailEnumerableFactory {
     public static final Method CREATE_QUERY_METHOD = Types.lookupMethod(
             CottontailEnumerableFactory.class,
             "query",
-            String.class, String.class, Map.class, Map.class, Function1.class, Function1.class, Function1.class, DataContext.class, CottontailWrapper.class );
+            String.class, String.class, Map.class, Map.class, Function1.class, Function1.class, Function1.class, DataContext.class, Function1.class, CottontailWrapper.class );
 
     /**
      * Method signature for building INSERT of values.
@@ -89,6 +89,7 @@ public class CottontailEnumerableFactory {
             Function1<Map<Long, Object>, Integer> offsetBuilder,
             Function1<Map<Long, Object>, Where> whereBuilder,
             DataContext dataContext,
+            Function1 rowParser,
             CottontailWrapper wrapper
     ) {
 
@@ -138,7 +139,7 @@ public class CottontailEnumerableFactory {
             queryResponseIterator = wrapper.batchedQuery( batchedQueryMessageBuilder.build() );
         }
 
-        return new CottontailQueryEnumerable<Object>( queryResponseIterator );
+        return new CottontailQueryEnumerable<Object>( queryResponseIterator, rowParser );
     }
 
     /**

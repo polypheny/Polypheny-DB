@@ -92,6 +92,85 @@ SqlAlterView SqlAlterView(Span s) :
 }
 
 /**
+* Parses a ALTER MATERIALIZED VIEW statement.
+**/
+SqlAlterMaterializedView SqlAlterMaterializedView(Span s) :
+{
+    final SqlIdentifier materializedview;
+    final SqlIdentifier name;
+    final SqlIdentifier column;
+    final SqlIdentifier store;
+    final SqlIdentifier indexName;
+    final SqlNodeList columnList;
+    final SqlIdentifier indexMethod;
+    final boolean unique;
+    final SqlIdentifier storeName;
+
+}
+{
+    <MATERIALIZED><VIEW>
+    materializedview = CompoundIdentifier()
+    (
+        <RENAME><TO>
+            name = SimpleIdentifier()
+            {
+            return new SqlAlterMaterializedViewRename(s.end(this), materializedview, name);
+            }
+    |
+        <RENAME> <COLUMN>
+            column = SimpleIdentifier()
+            <TO>
+            name = SimpleIdentifier()
+            {
+                return new SqlAlterMaterializedViewRenameColumn(s.end(this), materializedview, column, name);
+            }
+    |
+        <FRESHNESS><MANUAL>
+            {
+                return new SqlAlterMaterializedViewFreshnessManual(s.end(this), materializedview);
+            }
+    |
+        <ADD>
+            (
+            <UNIQUE> { unique = true; }
+            |
+            { unique = false; }
+            )
+            <INDEX>
+                indexName = SimpleIdentifier()
+            <ON>
+            (
+            columnList = ParenthesizedSimpleIdentifierList()
+            |
+            column = SimpleIdentifier()
+            {
+                columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
+            }
+            )
+            (
+            <USING> indexMethod = SimpleIdentifier()
+            |
+            { indexMethod = null; }
+            )
+            (
+            <ON> <STORE> storeName = SimpleIdentifier()
+            |
+            { storeName = null; }
+            )
+            {
+            return new SqlAlterMaterializedViewAddIndex(s.end(this), materializedview, columnList, unique, indexMethod, indexName, storeName);
+            }
+    |
+        <DROP> <INDEX>
+            indexName = SimpleIdentifier()
+            {
+            return new SqlAlterMaterializedViewDropIndex(s.end(this), materializedview, indexName);
+            }
+
+    )
+}
+
+/**
 * Parses a ALTER TABLE statement.
 */
 SqlAlterTable SqlAlterTable(Span s) :
@@ -123,12 +202,16 @@ SqlAlterTable SqlAlterTable(Span s) :
     final SqlIdentifier partitionColumn;
     List<Integer> partitionList = new ArrayList<Integer>();
     int partitionIndex = 0;
+    int numPartitionGroups = 0;
     int numPartitions = 0;
     List<SqlIdentifier> partitionNamesList = new ArrayList<SqlIdentifier>();
     SqlIdentifier partitionName = null;
     List< List<SqlNode>> partitionQualifierList = new ArrayList<List<SqlNode>>();
     List<SqlNode> partitionQualifiers = new ArrayList<SqlNode>();
     SqlNode partitionValues = null;
+    SqlIdentifier tmpIdent = null;
+    int tmpInt = 0;
+    RawPartitionInformation rawPartitionInfo;
 }
 {
     <TABLE>
@@ -476,12 +559,59 @@ SqlAlterTable SqlAlterTable(Span s) :
                             partitionType = SimpleIdentifier()
                         |
                             <RANGE> { partitionType = new SqlIdentifier( "RANGE", s.end(this) );}
+
+                        |
+                            <TEMPERATURE> { partitionType = new SqlIdentifier( "TEMPERATURE", s.end(this) );
+                                    rawPartitionInfo = new RawTemperaturePartitionInformation();
+                                    rawPartitionInfo.setPartitionType( partitionType );
+                                    }
+                                    <LPAREN> partitionColumn = SimpleIdentifier() { rawPartitionInfo.setPartitionColumn( partitionColumn ); } <RPAREN>
+                                    <LPAREN>
+                                        <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                                <VALUES> <LPAREN>
+                                                            partitionValues = Literal()
+                                                            {
+                                                                 partitionQualifiers.add(partitionValues);
+                                                                 ((RawTemperaturePartitionInformation)rawPartitionInfo).setHotAccessPercentageIn( partitionValues );
+                                                            } <PERCENT_REMAINDER>
+                                                <RPAREN> {partitionQualifierList.add(partitionQualifiers); partitionQualifiers = new ArrayList<SqlNode>();}
+                                        <COMMA>
+                                        <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                                <VALUES> <LPAREN>
+                                                            partitionValues = Literal()
+                                                            {
+                                                                partitionQualifiers.add(partitionValues);
+                                                                ((RawTemperaturePartitionInformation)rawPartitionInfo).setHotAccessPercentageOut( partitionValues );
+                                                            } <PERCENT_REMAINDER>
+                                                    <RPAREN> {partitionQualifierList.add(partitionQualifiers); partitionQualifiers = new ArrayList<SqlNode>();}
+                                                    <RPAREN>
+                                                        <USING> <FREQUENCY>
+                                                                (
+                                                                    <ALL> { ((RawTemperaturePartitionInformation)rawPartitionInfo).setAccessPattern( new SqlIdentifier( "ALL", s.end(this) ) ); tmpIdent = null; }
+                                                                |
+                                                                    <WRITE> { ((RawTemperaturePartitionInformation)rawPartitionInfo).setAccessPattern( new SqlIdentifier( "WRITE", s.end(this) ) ); tmpIdent = null; }
+                                                                |
+                                                                    <READ> { ((RawTemperaturePartitionInformation)rawPartitionInfo).setAccessPattern( new SqlIdentifier( "READ", s.end(this) ) ); tmpIdent = null;}
+                                                                )
+                                                            <INTERVAL>
+                                                                    tmpInt = UnsignedIntLiteral() { ((RawTemperaturePartitionInformation)rawPartitionInfo).setInterval( tmpInt ); tmpInt = 0; }
+                                                                    tmpIdent = SimpleIdentifier() { ((RawTemperaturePartitionInformation)rawPartitionInfo).setIntervalUnit( tmpIdent ); tmpIdent = null; }
+                                                        <WITH>  numPartitions = UnsignedIntLiteral() {rawPartitionInfo.setNumPartitions( numPartitions );}
+                                                                    tmpIdent = SimpleIdentifier() {
+                                                                    ((RawTemperaturePartitionInformation)rawPartitionInfo).setInternalPartitionFunction( tmpIdent ); tmpIdent = null;
+                                                            } <PARTITIONS>
+                                                                    {
+                                                                    rawPartitionInfo.setPartitionNamesList( partitionNamesList );
+                                                                    rawPartitionInfo.setPartitionQualifierList( partitionQualifierList );
+
+                                                                return new SqlAlterTableAddPartitions(s.end(this), table, partitionColumn, partitionType, numPartitionGroups, numPartitions, partitionNamesList, partitionQualifierList, rawPartitionInfo);
+                                                                            }
                     )
 
         <LPAREN> partitionColumn = SimpleIdentifier() <RPAREN>
         [
                 (
-                        <PARTITIONS> numPartitions = UnsignedIntLiteral()
+                        <PARTITIONS> numPartitionGroups = UnsignedIntLiteral()
                     |
                         <WITH> <LPAREN>
                                 partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
@@ -512,7 +642,8 @@ SqlAlterTable SqlAlterTable(Span s) :
                 )
         ]
         {
-            return new SqlAlterTableAddPartitions(s.end(this), table, partitionColumn, partitionType, numPartitions, partitionNamesList, partitionQualifierList);
+            rawPartitionInfo = new RawPartitionInformation();
+            return new SqlAlterTableAddPartitions(s.end(this), table, partitionColumn, partitionType, numPartitionGroups, numPartitions, partitionNamesList, partitionQualifierList, rawPartitionInfo);
         }
 
     |

@@ -27,7 +27,9 @@ dependencies {
     implementation project(":catalog")
     implementation project(":webui")
     implementation project(":jdbc-interface")
+    implementation project(":mongoql-interface")
     implementation project(":rest-interface")
+    implementation project(":cql-interface")
     implementation project(":statistic")
     implementation project(":explore-by-example")
     implementation project(":monitoring")
@@ -60,6 +62,8 @@ dependencies {
     testImplementation group: "com.wix", name: "wix-embedded-mysql", version: embedded_mysql_version
     testImplementation group: "io.zonky.test", name: "embedded-postgres", version: embedded_postgres_version
     testImplementation group: "monetdb", name: "monetdb-java-lite", version: embedded_monetdb_version
+
+    implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
 
     //testImplementation group: "net.hydromatic", name: "foodmart-data-hsqldb", version: foodmart_data_hsqldb_version
     //testImplementation group: "net.hydromatic", name: "foodmart-queries", version: foodmart_queries_version

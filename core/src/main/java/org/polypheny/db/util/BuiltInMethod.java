@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,6 +110,7 @@ import org.polypheny.db.runtime.BinarySearch;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Enumerables;
 import org.polypheny.db.runtime.FlatLists;
+import org.polypheny.db.runtime.MqlFunctions;
 import org.polypheny.db.runtime.RandomFunction;
 import org.polypheny.db.runtime.SortedMultiMap;
 import org.polypheny.db.runtime.SqlFunctions;
@@ -246,6 +247,7 @@ public enum BuiltInMethod {
     LOWER( SqlFunctions.class, "lower", String.class ),
     JSONIZE( SqlFunctions.class, "jsonize", Object.class ),
     JSON_VALUE_EXPRESSION( SqlFunctions.class, "jsonValueExpression", String.class ),
+    JSON_VALUE_EXPRESSION_EXCLUDE( SqlFunctions.class, "jsonValueExpressionExclude", String.class, List.class ),
     JSON_STRUCTURED_VALUE_EXPRESSION( SqlFunctions.class, "jsonStructuredValueExpression", Object.class ),
     JSON_API_COMMON_SYNTAX( SqlFunctions.class, "jsonApiCommonSyntax", Object.class, String.class ),
     JSON_EXISTS( SqlFunctions.class, "jsonExists", Object.class ),
@@ -406,7 +408,30 @@ public enum BuiltInMethod {
     AGG_LAMBDA_FACTORY_ACC_RESULT_SELECTOR( AggregateLambdaFactory.class, "resultSelector", Function2.class ),
     AGG_LAMBDA_FACTORY_ACC_SINGLE_GROUP_RESULT_SELECTOR( AggregateLambdaFactory.class, "singleGroupResultSelector", Function1.class ),
     RESULTSET_GETBYTES( ResultSet.class, "getBytes", int.class ),
-    RESULTSET_GETBINARYSTREAM( ResultSet.class, "getBinaryStream", int.class );
+    RESULTSET_GETBINARYSTREAM( ResultSet.class, "getBinaryStream", int.class ),
+    /// MQL BUILT-IN METHODS
+    DOC_EQ( MqlFunctions.class, "docEq", Object.class, Object.class ),
+    DOC_GT( MqlFunctions.class, "docGt", Object.class, Object.class ),
+    DOC_GTE( MqlFunctions.class, "docGte", Object.class, Object.class ),
+    DOC_LT( MqlFunctions.class, "docLt", Object.class, Object.class ),
+    DOC_LTE( MqlFunctions.class, "docLte", Object.class, Object.class ),
+    DOC_SIZE_MATCH( MqlFunctions.class, "docSizeMatch", Object.class, int.class ),
+    DOC_JSON_MATCH( MqlFunctions.class, "docJsonMatch", Object.class, String.class ),
+    DOC_REGEX_MATCH( MqlFunctions.class, "docRegexMatch", Object.class, String.class, boolean.class, boolean.class, boolean.class, boolean.class ),
+    DOC_TYPE_MATCH( MqlFunctions.class, "docTypeMatch", Object.class, List.class ),
+    DOC_SLICE( MqlFunctions.class, "docSlice", Object.class, int.class, int.class ),
+    DOC_QUERY_VALUE( MqlFunctions.class, "docQueryValue", Object.class, List.class ),
+    DOC_QUERY_EXCLUDE( MqlFunctions.class, "docQueryExclude", Object.class, List.class ),
+    DOC_ADD_FIELDS( MqlFunctions.class, "docAddFields", Object.class, String.class, Object.class ),
+    DOC_UPDATE_MIN( MqlFunctions.class, "docUpdateMin", Object.class, Long.class ),
+    DOC_UPDATE_MAX( MqlFunctions.class, "docUpdateMax", Object.class, Long.class ),
+    DOC_UPDATE_ADD_TO_SET( MqlFunctions.class, "docAddToSet", Object.class, Object.class ),
+    DOC_UPDATE_REMOVE( MqlFunctions.class, "docUpdateRemove", Object.class, List.class ),
+    DOC_UPDATE_REPLACE( MqlFunctions.class, "docUpdateReplace", Object.class, List.class, List.class ),
+    DOC_UPDATE_RENAME( MqlFunctions.class, "docUpdateRename", Object.class, List.class, List.class ),
+    DOC_GET_ARRAY( MqlFunctions.class, "docGetArray", Object.class ),
+    DOC_JSONIZE( MqlFunctions.class, "docJsonize", Object.class ),
+    DOC_EXISTS( MqlFunctions.class, "docExists", Object.class, List.class );
 
     public final Method method;
     public final Constructor constructor;

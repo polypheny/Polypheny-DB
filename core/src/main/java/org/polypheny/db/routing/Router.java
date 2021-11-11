@@ -17,6 +17,7 @@
 package org.polypheny.db.routing;
 
 import java.util.List;
+import java.util.Map;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -35,7 +36,8 @@ public interface Router {
 
     void dropPlacements( List<CatalogColumnPlacement> placements );
 
-    RelNode buildJoinedTableScan( Statement statement, RelOptCluster cluster, List<CatalogColumnPlacement> placements );
+    RelNode buildJoinedTableScan( Statement statement, RelOptCluster cluster, Map<Long, List<CatalogColumnPlacement>> placements );
 
     void resetCaches();
+
 }

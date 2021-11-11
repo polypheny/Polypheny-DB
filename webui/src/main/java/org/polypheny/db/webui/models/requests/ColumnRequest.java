@@ -26,5 +26,6 @@ public class ColumnRequest extends UIRequest {
     public DbColumn newColumn;
     // for data sources
     public boolean renameOnly;
+    public String tableType;
 
 }

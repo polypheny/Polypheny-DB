@@ -23,7 +23,7 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.polypheny.db.adapter.mongodb.MongoRel.Implementor;
 import org.polypheny.db.adapter.mongodb.MongoRowType;
-import org.polypheny.db.adapter.mongodb.util.MongoTypeUtil;
+import org.polypheny.db.mql.parser.BsonUtil;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
@@ -143,7 +143,7 @@ public class BsonFunctionHelper extends BsonDocument {
             return new BsonString( "$" + rowType.getPhysicalName( rowType.getFieldNames().get( rex.getIndex() ), implementor ) );
         } else if ( rexNode.isA( SqlKind.ARRAY_VALUE_CONSTRUCTOR ) ) {
             RexCall rex = (RexCall) rexNode;
-            return MongoTypeUtil.getBsonArray( rex, implementor.getBucket() );
+            return BsonUtil.getBsonArray( rex, implementor.getBucket() );
         } else if ( rexNode.isA( SqlKind.DYNAMIC_PARAM ) ) {
             RexDynamicParam rex = (RexDynamicParam) rexNode;
             return new BsonDynamic( rex );

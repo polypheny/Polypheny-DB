@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.polypheny.db.catalog.Catalog.LanguageType;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.webui.models.requests.UIRequest;
 
 
@@ -90,6 +92,18 @@ public class Result {
     private ResultType type;
 
     /**
+     * schema type of result DOCUMENT/RELATIONAL
+     */
+    @Setter
+    private SchemaType schemaType = SchemaType.RELATIONAL;
+
+    /**
+     * language type of result MQL/SQL/CQL
+     */
+    @Setter
+    private LanguageType languageType = LanguageType.SQL;
+
+    /**
      * Indicate that only a subset of the specified query is being displayed.
      */
     @Setter
@@ -143,6 +157,21 @@ public class Result {
         this.header = header;
         this.data = data;
     }
+
+
+    /**
+     * Build a Result object containing the data from the ResultSet, including the headers of the columns
+     *
+     * @param header columns of the result
+     * @param data data of the result
+     */
+    public Result( final DbColumn[] header, final String[][] data, SchemaType schemaType, LanguageType languageType ) {
+        this.header = header;
+        this.data = data;
+        this.schemaType = schemaType;
+        this.languageType = languageType;
+    }
+
 
     /**
      * Build a Result object containing the error message of a failed query

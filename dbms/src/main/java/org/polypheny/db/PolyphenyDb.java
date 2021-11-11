@@ -44,6 +44,12 @@ import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.information.HostInformation;
 import org.polypheny.db.information.JavaInformation;
+import org.polypheny.db.monitoring.core.MonitoringService;
+import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
+import org.polypheny.db.partition.FrequencyMap;
+import org.polypheny.db.partition.FrequencyMapImpl;
+import org.polypheny.db.partition.PartitionManagerFactory;
+import org.polypheny.db.partition.PartitionManagerFactoryImpl;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.statistic.StatisticQueryProcessor;
 import org.polypheny.db.statistic.StatisticsManager;
@@ -53,6 +59,8 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.TransactionManagerImpl;
 import org.polypheny.db.util.FileSystemManager;
+import org.polypheny.db.view.MaterializedViewManager;
+import org.polypheny.db.view.MaterializedViewManagerImpl;
 import org.polypheny.db.webui.ConfigServer;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.InformationServer;
@@ -70,6 +78,9 @@ public class PolyphenyDb {
 
     @Option(name = { "-resetCatalog" }, description = "Reset the catalog")
     public boolean resetCatalog = false;
+
+    @Option(name = { "-resetDocker" }, description = "Removes all Docker instances, which are from previous Polypheny runs.")
+    public boolean resetDocker = false;
 
     @Option(name = { "-memoryCatalog" }, description = "Store catalog only in-memory")
     public boolean memoryCatalog = false;
@@ -107,6 +118,10 @@ public class PolyphenyDb {
 
 
     public void runPolyphenyDb() throws GenericCatalogException {
+        if ( resetDocker ) {
+            log.warn( "[-resetDocker] option is set, this option is only for development." );
+        }
+
         // Move data folder
         if ( FileSystemManager.getInstance().checkIfExists( "data.backup" ) ) {
             FileSystemManager.getInstance().recursiveDeleteFolder( "data" );
@@ -208,6 +223,9 @@ public class PolyphenyDb {
         // Initialize interface manager
         QueryInterfaceManager.initialize( transactionManager, authenticator );
 
+        // Initialize MaterializedViewManager
+        MaterializedViewManager.setAndGetInstance( new MaterializedViewManagerImpl( transactionManager ) );
+
         // Startup and restore catalog
         Catalog catalog;
         Transaction trx = null;
@@ -215,6 +233,7 @@ public class PolyphenyDb {
             Catalog.resetCatalog = resetCatalog;
             Catalog.memoryCatalog = memoryCatalog;
             Catalog.testMode = testMode;
+            Catalog.resetDocker = resetDocker;
             Catalog.defaultStore = Adapter.fromString( defaultStoreName );
             Catalog.defaultSource = Adapter.fromString( defaultSourceName );
             catalog = Catalog.setAndGetInstance( new CatalogImpl() );
@@ -224,6 +243,7 @@ public class PolyphenyDb {
             trx.commit();
             trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );
             catalog.restoreColumnPlacements( trx );
+            catalog.restoreViews( trx );
             trx.commit();
         } catch ( UnknownDatabaseException | UnknownUserException | UnknownSchemaException | TransactionException e ) {
             if ( trx != null ) {
@@ -238,6 +258,10 @@ public class PolyphenyDb {
 
         // Initialize DdlManager
         DdlManager.setAndGetInstance( new DdlManagerImpl( catalog ) );
+
+        // Initialize PartitionMangerFactory
+        PartitionManagerFactory.setAndGetInstance( new PartitionManagerFactoryImpl() );
+        FrequencyMap.setAndGetInstance( new FrequencyMapImpl( catalog ) );
 
         // Start Polypheny UI
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator );
@@ -274,6 +298,8 @@ public class PolyphenyDb {
             new UiTestingConfigPage();
             new UiTestingMonitoringPage();
         }
+
+        MonitoringService monitoringService = MonitoringServiceProvider.getInstance();
 
         log.info( "****************************************************************************************************" );
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );

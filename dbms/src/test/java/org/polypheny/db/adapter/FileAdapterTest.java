@@ -142,7 +142,7 @@ public class FileAdapterTest {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 try {
-                    statement.executeUpdate( "CREATE TABLE testDateTime (a INTEGER NOT NULL, b DATE, c TIME, d TIMESTAMP , PRIMARY KEY (a)) ON STORE \"mm\"" );
+                    statement.executeUpdate( "CREATE TABLE testDateTime (a INTEGER NOT NULL, b DATE, c TIME, d TIMESTAMP, PRIMARY KEY (a)) ON STORE \"mm\"" );
 
                     PreparedStatement preparedStatement = connection.prepareStatement( "INSERT INTO testDateTime (a,b,c,d) VALUES (?,?,?,?)" );
                     preparedStatement.setInt( 1, 1 );

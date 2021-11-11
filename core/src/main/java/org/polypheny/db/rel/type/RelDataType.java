@@ -34,7 +34,6 @@
 package org.polypheny.db.rel.type;
 
 
-import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.List;
 import org.polypheny.db.sql.SqlCollation;
@@ -49,7 +48,7 @@ import org.polypheny.db.type.PolyType;
  * This is a somewhat "fat" interface which unions the attributes of many different type classes into one. Inelegant,
  * but since our type system was defined before the advent of Java generics, it avoids a lot of typecasting.
  */
-public interface RelDataType extends Serializable {
+public interface RelDataType {
 
     int SCALE_NOT_SPECIFIED = Integer.MIN_VALUE;
     int PRECISION_NOT_SPECIFIED = -1;

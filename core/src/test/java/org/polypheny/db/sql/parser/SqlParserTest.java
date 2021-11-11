@@ -207,6 +207,7 @@ public class SqlParserTest {
             "DISTANCE", "92", "99", "2003", "2011", "2014", "c",          // JS: Added for DISTANCE functions
             "DISTINCT", "92", "99", "2003", "2011", "2014", "c",
             "DO", "92", "99", "2003",
+            "DOCUMENT", "92", "99", "2003", "2011", "2014", "c", // DL: added for document support
             "DOMAIN", "92", "99",
             "DOUBLE", "92", "99", "2003", "2011", "2014", "c",
             "DROP", "92", "99", "2003", "2011", "2014", "c",
@@ -248,6 +249,8 @@ public class SqlParserTest {
             "FOUND", "92", "99",
             "FRAME_ROW", "2014", "c",
             "FREE", "99", "2003", "2011", "2014", "c",
+            "FREQUENCY", "99", "2003", "2011", "2014", "c",
+            "FRESHNESS", "c",                                   //IG: Added for Materialized Views
             "FROM", "92", "99", "2003", "2011", "2014", "c",
             "FULL", "92", "99", "2003", "2011", "2014", "c",
             "FUNCTION", "92", "99", "2003", "2011", "2014", "c",
@@ -322,6 +325,7 @@ public class SqlParserTest {
             "LOCATOR", "99",
             "LOOP", "92", "99", "2003",
             "LOWER", "92", "2011", "2014", "c",
+            "MANUAL", "c",                                      //IG: Added for Materialized Views
             "MAP", "99",
             "MATCH", "92", "99", "2003", "2011", "2014", "c",
             "MATCHES", "2014", "c",
@@ -496,6 +500,7 @@ public class SqlParserTest {
             "SYSTEM_USER", "92", "99", "2003", "2011", "2014", "c",
             "TABLE", "92", "99", "2003", "2011", "2014", "c",
             "TABLESAMPLE", "2003", "2011", "2014", "c",
+            "TEMPERATURE", "99", "2003", "2011", "2014", "c",
             "TEMPORARY", "92", "99",
             "THEN", "92", "99", "2003", "2011", "2014", "c",
             "TIME", "92", "99", "2003", "2011", "2014", "c",

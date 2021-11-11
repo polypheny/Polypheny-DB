@@ -16,8 +16,16 @@
 
 package org.polypheny.db.adapter.cottontail.enumberable;
 
+import java.math.BigDecimal;
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.function.Function1;
+import org.polypheny.db.adapter.cottontail.CottontailToEnumerableConverter;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
+import org.polypheny.db.type.ArrayType;
 import org.vitrivr.cottontail.client.iterators.Tuple;
 import org.vitrivr.cottontail.client.iterators.TupleIterator;
 
@@ -27,46 +35,38 @@ import java.util.List;
 
 public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
 
+    /** The {@link TupleIterator} backing this {@link CottontailQueryEnumerable}. */
     private final TupleIterator tupleIterator;
 
-    public CottontailQueryEnumerable(TupleIterator iterator ) {
+    /** The {@link RowTypeParser} backing this {@link CottontailQueryEnumerable}. */
+    private final Function1<Tuple, T> parser;
+
+    public CottontailQueryEnumerable(TupleIterator iterator, Function1<Tuple, T> rowParser ) {
         this.tupleIterator = iterator;
+        this.parser = rowParser;
     }
 
     @Override
     public Enumerator<T> enumerator() {
-        return new CottontailQueryResultEnumerator<>( this.tupleIterator );
+        return new CottontailQueryResultEnumerator<>();
     }
 
 
-    private static class CottontailQueryResultEnumerator<T> implements Enumerator<T> {
-
-        /** The current {@link TupleIterator} backing this {@link CottontailQueryEnumerable}. */
-        private final TupleIterator tupleIterator;
+    private class CottontailQueryResultEnumerator<T> implements Enumerator<T> {
 
         /** The current {@link Tuple} this {@link CottontailQueryEnumerable} is pointing to. */
         private Tuple tuple = null;
 
-        CottontailQueryResultEnumerator( TupleIterator tupleIterator ) {
-            this.tupleIterator = tupleIterator;
-        }
-
-
         @Override
         public T current() {
-            final Object[] returnValue = new Object[this.tupleIterator.getNumberOfColumns()];
-            for ( int i = 0; i < this.tupleIterator.getNumberOfColumns(); i++ ) {
-                returnValue[i] = convert( this.tuple.get( i ) ) ;
-
-            }
-            return ( (T) returnValue );
+            return ( (T) CottontailQueryEnumerable.this.parser.apply( this.tuple ) );
         }
 
 
         @Override
         public boolean moveNext() {
-            if (this.tupleIterator.hasNext()) {
-                this.tuple = this.tupleIterator.next();
+            if (CottontailQueryEnumerable.this.tupleIterator.hasNext()) {
+                this.tuple = CottontailQueryEnumerable.this.tupleIterator.next();
                 return true;
             } else {
                 return false;
@@ -83,7 +83,7 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
         @Override
         public void close() {
             try {
-                this.tupleIterator.close();
+                CottontailQueryEnumerable.this.tupleIterator.close();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -130,5 +130,82 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
                 return object;
             }
         }
+    }
+
+    public static class RowTypeParser implements Function1<Tuple, Object[]> {
+
+        private final RelDataType rowType;
+        private final List<String> physicalColumnNames;
+
+
+        public RowTypeParser( RelDataType rowType, List<String> physicalColumnNames ) {
+            this.rowType = rowType;
+            this.physicalColumnNames = physicalColumnNames;
+        }
+
+
+        @Override
+        public Object[] apply( Tuple a0 ) {
+            final Object[] returnValue = new Object[this.physicalColumnNames.size()];
+            final List<RelDataTypeField> fieldList = this.rowType.getFieldList();
+            for ( int i = 0; i < fieldList.size(); i++ ) {
+                final RelDataType type = fieldList.get( i ).getType();
+                final String columnName = this.physicalColumnNames.get( i );
+                returnValue[i] = this.parseSingleField( a0.get( columnName ), type );
+            }
+
+            return returnValue;
+        }
+
+
+        private Object parseSingleField( Object data, RelDataType type ) {
+            switch ( type.getPolyType() ) {
+                case BOOLEAN:
+                case INTEGER:
+                case BIGINT:
+                case FLOAT:
+                case REAL:
+                case DOUBLE:
+                case CHAR:
+                case VARCHAR:
+                case JSON:
+                case NULL:
+                case DECIMAL:
+                    return new BigDecimal( (String) data );
+                case BINARY:
+                case VARBINARY:
+                    return ByteString.parseBase64( (String) data );
+                case ARRAY:
+                    ArrayType arrayType = (ArrayType) type;
+                    if ( arrayType.getDimension() == 1 && CottontailToEnumerableConverter.SUPPORTED_ARRAY_COMPONENT_TYPES.contains( arrayType.getComponentType().getPolyType() ) ) {
+                        final List<Object> list = new ArrayList<>((int)arrayType.getCardinality());
+                        switch ( arrayType.getComponentType().getPolyType() ) {
+                            case INTEGER:
+                                for (long v : ((int[]) data)) list.add(v);
+                                break;
+                            case BIGINT:
+                                for (long v : ((long[]) data)) list.add(v);
+                                break;
+                            case DOUBLE:
+                                for (double v : ((double[]) data)) list.add(v);
+                                break;
+                            case BOOLEAN:
+                                for (boolean v : ((boolean[]) data)) list.add(v);
+                                break;
+                            case FLOAT:
+                            case REAL:
+                                for (float v : ((float[]) data)) list.add(v);
+                                break;
+                            default:
+                                throw new RuntimeException( "Impossible to reach statement." );
+                        }
+                        return list;
+                    } else {
+                        SqlArrayValueConstructor.reparse( arrayType.getComponentType().getPolyType(), arrayType.getDimension(), (String) data );
+                    }
+            }
+            throw new AssertionError( "Not yet supported type: " + type.getPolyType() );
+        }
+
     }
 }

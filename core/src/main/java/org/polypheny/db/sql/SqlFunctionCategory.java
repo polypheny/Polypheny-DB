@@ -33,7 +33,6 @@
 
 package org.polypheny.db.sql;
 
-
 import static org.polypheny.db.sql.SqlFunctionCategory.Property.DISTANCE_FUNCTION;
 import static org.polypheny.db.sql.SqlFunctionCategory.Property.FUNCTION;
 import static org.polypheny.db.sql.SqlFunctionCategory.Property.MULTIMEDIA_FUNCTION;

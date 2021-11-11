@@ -35,7 +35,6 @@ package org.polypheny.db.rel.core;
 
 
 import com.google.common.collect.ImmutableList;
-import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.rel.RelCollation;
@@ -52,7 +51,7 @@ import org.polypheny.db.util.mapping.Mappings;
 /**
  * Call to an aggregate function within an {@link org.polypheny.db.rel.core.Aggregate}.
  */
-public class AggregateCall implements Serializable {
+public class AggregateCall {
 
     private final SqlAggFunction aggFunction;
 

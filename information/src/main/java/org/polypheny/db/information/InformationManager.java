@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,6 @@ import java.util.Comparator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
@@ -43,13 +40,13 @@ public class InformationManager {
     /**
      * Map of instances.
      */
-    private static ConcurrentMap<String, InformationManager> instances = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, InformationManager> instances = new ConcurrentHashMap<>();
 
     private final ConcurrentMap<String, Information> informationMap = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, InformationGroup> groups = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, InformationPage> pages = new ConcurrentHashMap<>();
 
-    private ConcurrentLinkedQueue<InformationObserver> observers = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<InformationObserver> observers = new ConcurrentLinkedQueue<>();
 
     /**
      * WebsocketConnection for notifications
@@ -82,18 +79,17 @@ public class InformationManager {
                     runningInstancesGroup,
                     Arrays.asList( "ID", "Pages", "Groups", "Elements", "Observers" ) );
             this.registerInformation( runningInstancesTable );
-            ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
-            exec.scheduleAtFixedRate( () -> {
+            page.setRefreshFunction( () -> {
                 runningInstancesTable.reset();
                 instances.forEach( ( k, v ) -> runningInstancesTable.addRow( k.substring( 0, Math.min( k.length(), 8 ) ), v.pages.size(), v.groups.size(), v.informationMap.size(), v.observers.size() ) );
-            }, 0, 30, TimeUnit.SECONDS );
+            } );
         }
     }
 
 
     /**
      * Singleton.
-     * Without a id the main Information Manager is returned.
+     * Without an id the main Information Manager is returned.
      */
     public static InformationManager getInstance() {
         return getInstance( MAIN_MANAGER_IDENTIFIER );

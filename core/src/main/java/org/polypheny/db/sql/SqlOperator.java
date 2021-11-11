@@ -35,7 +35,6 @@ package org.polypheny.db.sql;
 
 
 import com.google.common.collect.ImmutableList;
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -74,7 +73,7 @@ import org.polypheny.db.util.Util;
  *
  * In many cases, the formal/actual distinction is clear from context, in which case we drop these qualifiers.
  */
-public abstract class SqlOperator implements Serializable {
+public abstract class SqlOperator {
 
     public static final String NL = System.getProperty( "line.separator" );
 

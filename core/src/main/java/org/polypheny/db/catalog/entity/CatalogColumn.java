@@ -24,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.type.PolyType;
@@ -49,6 +50,10 @@ public final class CatalogColumn implements CatalogEntity, Comparable<CatalogCol
     public final boolean nullable;
     public final Collation collation;
     public final CatalogDefaultValue defaultValue;
+    @EqualsAndHashCode.Exclude
+    // lombok uses getter methods to compare objects
+    // and this method depends on the catalog, which can lead to nullpointers -> doNotUseGetters
+    public SchemaType schemaType;
 
 
     public CatalogColumn(
@@ -100,6 +105,14 @@ public final class CatalogColumn implements CatalogEntity, Comparable<CatalogCol
         } else {
             return elementType;
         }
+    }
+
+
+    public SchemaType getSchemaType() {
+        if ( schemaType == null ) {
+            schemaType = Catalog.getInstance().getSchema( schemaId ).schemaType;
+        }
+        return schemaType;
     }
 
 
@@ -195,6 +208,7 @@ public final class CatalogColumn implements CatalogEntity, Comparable<CatalogCol
         public final String isNullable;
 
         public final String collation;
+
     }
 
 }

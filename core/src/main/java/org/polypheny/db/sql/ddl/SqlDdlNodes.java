@@ -36,6 +36,7 @@ package org.polypheny.db.sql.ddl;
 
 import java.util.List;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.partition.raw.RawPartitionInformation;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.sql.SqlCollation;
 import org.polypheny.db.sql.SqlDataTypeSpec;
@@ -59,8 +60,8 @@ public class SqlDdlNodes {
     /**
      * Creates a CREATE SCHEMA.
      */
-    public static SqlCreateSchema createSchema( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name ) {
-        return new SqlCreateSchema( pos, replace, ifNotExists, name, SchemaType.RELATIONAL );
+    public static SqlCreateSchema createSchema( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SchemaType schemaType ) {
+        return new SqlCreateSchema( pos, replace, ifNotExists, name, schemaType );
     }
 
 
@@ -75,8 +76,8 @@ public class SqlDdlNodes {
     /**
      * Creates a CREATE TABLE.
      */
-    public static SqlCreateTable createTable( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query, SqlIdentifier store, SqlIdentifier partitionType, SqlIdentifier partitionColumn, int numPartitions, List<SqlIdentifier> partitionNamesList, List<List<SqlNode>> partitionQualifierList ) {
-        return new SqlCreateTable( pos, replace, ifNotExists, name, columnList, query, store, partitionType, partitionColumn, numPartitions, partitionNamesList, partitionQualifierList );
+    public static SqlCreateTable createTable( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query, SqlIdentifier store, SqlIdentifier partitionType, SqlIdentifier partitionColumn, int numPartitionGroups, int numPartitions, List<SqlIdentifier> partitionNamesList, List<List<SqlNode>> partitionQualifierList, RawPartitionInformation rawPartitionInfo ) {
+        return new SqlCreateTable( pos, replace, ifNotExists, name, columnList, query, store, partitionType, partitionColumn, numPartitionGroups, numPartitions, partitionNamesList, partitionQualifierList, rawPartitionInfo );
     }
 
 
@@ -85,6 +86,14 @@ public class SqlDdlNodes {
      */
     public static SqlCreateView createView( SqlParserPos pos, boolean replace, SqlIdentifier name, SqlNodeList columnList, SqlNode query ) {
         return new SqlCreateView( pos, replace, name, columnList, query );
+    }
+
+
+    /**
+     * Creates a CREATE MATERIALIZED VIEW.
+     */
+    public static SqlCreateMaterializedView createMaterializedView( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query, List<SqlIdentifier> store, String freshnessType, Integer freshnessNumber, SqlIdentifier freshnessUnit ) {
+        return new SqlCreateMaterializedView( pos, replace, ifNotExists, name, columnList, query, store, freshnessType, freshnessNumber, freshnessUnit );
     }
 
 
@@ -125,6 +134,14 @@ public class SqlDdlNodes {
      */
     public static SqlDrop dropView( SqlParserPos pos, boolean ifExists, SqlIdentifier name ) {
         return new SqlDropView( pos, ifExists, name );
+    }
+
+
+    /**
+     * Creates a DROP MATERIALIZED VIEW.
+     */
+    public static SqlDrop dropMaterializedView( SqlParserPos pos, boolean ifExists, SqlIdentifier name ) {
+        return new SqlDropMaterializedView( pos, ifExists, name );
     }
 
 

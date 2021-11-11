@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,7 +78,8 @@ public enum SqlJdbcDataTypeName {
     SQL_INTERVAL_HOUR_TO_SECOND( TimeUnitRange.HOUR_TO_SECOND ),
     SQL_INTERVAL_MINUTE( TimeUnitRange.MINUTE ),
     SQL_INTERVAL_MINUTE_TO_SECOND( TimeUnitRange.MINUTE_TO_SECOND ),
-    SQL_INTERVAL_SECOND( TimeUnitRange.SECOND );
+    SQL_INTERVAL_SECOND( TimeUnitRange.SECOND ),
+    SQL_JSON( PolyType.JSON );
 
     private final TimeUnitRange range;
     private final PolyType typeName;

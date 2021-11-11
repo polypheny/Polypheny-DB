@@ -19,13 +19,12 @@ package org.polypheny.db.sql.ddl.altertable;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.IndexPreventsRemovalException;
@@ -52,8 +51,8 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
     private final SqlIdentifier table;
     private final SqlNodeList columnList;
     private final SqlIdentifier storeName;
-    private final List<Integer> partitionList;
-    private final List<SqlIdentifier> partitionNamesList;
+    private final List<Integer> partitionGroupList;
+    private final List<SqlIdentifier> partitionGroupNamesList;
 
 
     public SqlAlterTableModifyPlacement(
@@ -61,14 +60,14 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
             SqlIdentifier table,
             SqlNodeList columnList,
             SqlIdentifier storeName,
-            List<Integer> partitionList,
-            List<SqlIdentifier> partitionNamesList ) {
+            List<Integer> partitionGroupList,
+            List<SqlIdentifier> partitionGroupNamesList ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.columnList = Objects.requireNonNull( columnList );
         this.storeName = Objects.requireNonNull( storeName );
-        this.partitionList = partitionList;
-        this.partitionNamesList = partitionNamesList;
+        this.partitionGroupList = partitionGroupList;
+        this.partitionGroupNamesList = partitionGroupNamesList;
     }
 
 
@@ -80,10 +79,6 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
-        // TODO @HENNLO: The partition part is still incomplete
-        /** There are several possible ways to unparse the partition section.
-         The To Do is deferred until we have decided if parsing of partition functions will be
-         self contained or not.*/
         writer.keyword( "ALTER" );
         writer.keyword( "TABLE" );
         table.unparse( writer, leftPrec, rightPrec );
@@ -93,6 +88,21 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
         writer.keyword( "ON" );
         writer.keyword( "STORE" );
         storeName.unparse( writer, leftPrec, rightPrec );
+
+        if ( partitionGroupList != null || partitionGroupNamesList != null ) {
+            writer.keyword( " WITH " );
+            writer.keyword( " PARTITIONS" );
+            SqlWriter.Frame frame = writer.startList( "(", ")" );
+            if ( partitionGroupNamesList != null ) {
+                for ( int i = 0; i < partitionGroupNamesList.size(); i++ ) {
+                    partitionGroupNamesList.get( i ).unparse( writer, leftPrec, rightPrec );
+                    if ( i + 1 < partitionGroupNamesList.size() ) {
+                        writer.sep( "," );
+                    }
+                }
+            }
+        }
+
     }
 
 
@@ -100,28 +110,31 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
 
-        if ( catalogTable.isView() ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE with Views" );
+        if ( catalogTable.tableType != TableType.TABLE ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE because" + catalogTable.name + " is not a table." );
         }
 
         // You can't partition placements if the table is not partitioned
-        if ( !catalogTable.isPartitioned && (!partitionList.isEmpty() || !partitionNamesList.isEmpty()) ) {
-            throw new RuntimeException( " Partition Placement is not allowed for unpartitioned table '" + catalogTable.name + "'" );
+        if ( !catalogTable.isPartitioned && (!partitionGroupList.isEmpty() || !partitionGroupNamesList.isEmpty()) ) {
+            throw new RuntimeException( "Partition Placement is not allowed for unpartitioned table '" + catalogTable.name + "'" );
         }
 
-        List<Long> columnIds = new LinkedList<>();
+        // Check if all columns exist
         for ( SqlNode node : columnList.getList() ) {
-            CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, (SqlIdentifier) node );
-            columnIds.add( catalogColumn.id );
+            getCatalogColumn( catalogTable.id, (SqlIdentifier) node );
         }
-        DataStore storeInstance = getDataStoreInstance( storeName );
 
+        DataStore storeInstance = getDataStoreInstance( storeName );
         try {
             DdlManager.getInstance().modifyColumnPlacement(
                     catalogTable,
-                    columnList.getList().stream().map( c -> getCatalogColumn( catalogTable.id, (SqlIdentifier) c ).id ).collect( Collectors.toList() ),
-                    partitionList,
-                    partitionNamesList.stream().map( SqlIdentifier::toString ).collect( Collectors.toList() ),
+                    columnList.getList().stream()
+                            .map( c -> getCatalogColumn( catalogTable.id, (SqlIdentifier) c ).id )
+                            .collect( Collectors.toList() ),
+                    partitionGroupList,
+                    partitionGroupNamesList.stream()
+                            .map( SqlIdentifier::toString )
+                            .collect( Collectors.toList() ),
                     storeInstance,
                     statement );
         } catch ( PlacementNotExistsException e ) {

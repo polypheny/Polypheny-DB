@@ -33,7 +33,6 @@
 
 package org.polypheny.db.schema;
 
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -610,6 +609,7 @@ public final class Schemas {
         public List<Map<Long, Object>> getParameterValues() {
             throw new UnsupportedOperationException();
         }
+
     }
 
 
@@ -684,5 +684,7 @@ public final class Schemas {
         public List<Schema> schemas() {
             return Pair.right( pairs );
         }
+
     }
+
 }

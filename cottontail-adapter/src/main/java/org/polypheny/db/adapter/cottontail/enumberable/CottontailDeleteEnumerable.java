@@ -96,7 +96,10 @@ public class CottontailDeleteEnumerable<T> extends AbstractEnumerable<T> {
     ) {
         final DeleteMessage.Builder builder = DeleteMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId( txId ).build() );
         builder.setFrom( CottontailTypeUtil.fromFromTableAndSchema( entity, schema ) );
-        builder.setWhere( whereBuilder.apply( parameterValues ) );
+        if ( whereBuilder != null ) {
+            builder.setWhere( whereBuilder.apply( parameterValues ) );
+        }
+
         return builder.build();
     }
 

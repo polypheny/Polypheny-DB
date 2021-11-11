@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.time.StopWatch;
+import org.polypheny.db.util.background.BackgroundTask.TaskDelayType;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
@@ -32,7 +33,7 @@ class BackgroundTaskHandle implements Runnable {
     @Getter
     private long maxExecTime = 0L;
 
-    private ScheduledFuture runner;
+    private final ScheduledFuture<?> runner;
 
 
     public BackgroundTaskHandle( String id, BackgroundTask task, String description, TaskPriority priority, TaskSchedulingType schedulingType ) {
@@ -44,11 +45,14 @@ class BackgroundTaskHandle implements Runnable {
 
         // Schedule
         ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
-        if ( schedulingType == TaskSchedulingType.WORKLOAD ) {
-            this.runner = exec.scheduleWithFixedDelay( this, 0, 100, TimeUnit.MILLISECONDS ); // TODO MV: implement workload based scheduling
-        } else {
+        if ( schedulingType.getDelayType() == TaskDelayType.FIXED ) {
             this.runner = exec.scheduleAtFixedRate( this, 0, schedulingType.getMillis(), TimeUnit.MILLISECONDS );
+        } else if ( schedulingType.getDelayType() == TaskDelayType.DELAYED ) {
+            this.runner = exec.scheduleWithFixedDelay( this, 0, schedulingType.getMillis(), TimeUnit.MILLISECONDS );
+        } else {
+            throw new RuntimeException( "Unknown TaskDelayType: " + schedulingType.getDelayType().name() );
         }
+
     }
 
 
@@ -110,6 +114,7 @@ class BackgroundTaskHandle implements Runnable {
             }
             return sum / (double) window.size();
         }
+
     }
 
 }

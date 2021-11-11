@@ -34,7 +34,6 @@
 package org.polypheny.db.schema.impl;
 
 
-import java.io.Serializable;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Schema.TableType;
 import org.polypheny.db.schema.Statistic;
@@ -51,7 +50,7 @@ import org.polypheny.db.sql.SqlNode;
  * Sub-classes should override {@link #isRolledUp} and {@link Table#rolledUpColumnValidInsideAgg(String, SqlCall, SqlNode)} if their table can potentially contain rolled up values.
  * This information is used by the validator to check for illegal uses of these columns.
  */
-public abstract class AbstractTable implements Table, Wrapper, Serializable {
+public abstract class AbstractTable implements Table, Wrapper {
 
     protected AbstractTable() {
     }

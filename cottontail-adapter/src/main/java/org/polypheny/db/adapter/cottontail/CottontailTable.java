@@ -20,7 +20,6 @@ package org.polypheny.db.adapter.cottontail;
 import java.util.Collection;
 import java.util.List;
 import lombok.Getter;
-import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
@@ -190,11 +189,15 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
 
         @Override
         public Enumerator<T> enumerator() {
+            final JavaTypeFactory typeFactory = dataContext.getTypeFactory();
             final CottontailTable cottontailTable = (CottontailTable) this.table;
             final long txId = cottontailTable.cottontailSchema.getWrapper().beginOrContinue( this.dataContext.getStatement().getTransaction() );
             final Query query = Query.newBuilder().setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( cottontailTable.entity ) ).build() ).build();
             final QueryMessage queryMessage = QueryMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId( txId ) ).setQuery( query ).build();
-            return new CottontailQueryEnumerable( cottontailTable.cottontailSchema.getWrapper().query( queryMessage ) ).enumerator();
+            return new CottontailQueryEnumerable(
+                cottontailTable.cottontailSchema.getWrapper().query( queryMessage ),
+                new CottontailQueryEnumerable.RowTypeParser( cottontailTable.getRowType( typeFactory ), cottontailTable.physicalColumnNames )
+            ).enumerator();
         }
     }
 }

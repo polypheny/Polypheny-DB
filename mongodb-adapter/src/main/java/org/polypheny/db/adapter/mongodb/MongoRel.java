@@ -84,6 +84,7 @@ public interface MongoRel extends RelNode {
         // holds the logical names which where used in a DQL
         // and need to be projected beforehand from their physical names
         public Set<String> physicalMapper = new TreeSet<>();
+        public boolean onlyOne = false;
 
         RelOptTable table;
         @Setter
@@ -139,7 +140,7 @@ public interface MongoRel extends RelNode {
         public String getPhysicalName( String name ) {
             int index = mongoTable.getCatalogTable().getColumnNames().indexOf( name );
             if ( index != -1 ) {
-                return MongoStore.getPhysicalColumnName( mongoTable.getCatalogTable().columnIds.get( index ) );
+                return MongoStore.getPhysicalColumnName( name, mongoTable.getCatalogTable().columnIds.get( index ) );
             }
             throw new RuntimeException( "This column is not part of the table." );
         }

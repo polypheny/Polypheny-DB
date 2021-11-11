@@ -36,6 +36,7 @@ package org.polypheny.db.type;
 
 import com.google.common.base.Preconditions;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.sql.SqlCollation;
@@ -52,7 +53,7 @@ public class BasicPolyType extends AbstractPolyType {
     private final int precision;
     private final int scale;
     private final RelDataTypeSystem typeSystem;
-    private final transient SqlCollation collation;
+    private final SqlCollation collation;
     private final SerializableCharset wrappedCharset;
 
 
@@ -120,14 +121,21 @@ public class BasicPolyType extends AbstractPolyType {
         this.typeSystem = Objects.requireNonNull( typeSystem );
         this.precision = precision;
         this.scale = scale;
-        this.collation = collation;
-        this.wrappedCharset = wrappedCharset;
+
+        if ( typeName == PolyType.JSON ) {
+            this.collation = SqlCollation.IMPLICIT;
+            this.wrappedCharset = SerializableCharset.forCharset( StandardCharsets.ISO_8859_1 );
+        } else {
+            this.collation = collation;
+            this.wrappedCharset = wrappedCharset;
+        }
+
         computeDigest();
     }
 
 
     /**
-     * Constructs a type with nullablity.
+     * Constructs a type with nullability.
      */
     BasicPolyType createWithNullability( boolean nullable ) {
         if ( nullable == this.isNullable ) {

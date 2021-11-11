@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,6 @@
 
 package org.polypheny.db.test;
 
-
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeTrue;
 
@@ -46,6 +44,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
+import org.hamcrest.CoreMatchers;
 import org.polypheny.db.util.Util;
 
 
@@ -59,7 +58,7 @@ public class MongoAssertions {
 
 
     /**
-     * Similar to {@link PolyphenyDbAssert#checkResultUnordered}, but filters strings before comparing them.
+     * Similar to {@code PolyphenyDbAssert#checkResultUnordered}, but filters strings before comparing them.
      *
      * @param lines Expected expressions
      * @return validation function
@@ -77,7 +76,7 @@ public class MongoAssertions {
                 }
                 Collections.sort( actualList );
 
-                assertThat( Ordering.natural().immutableSortedCopy( actualList ), equalTo( expectedList ) );
+                assertThat( Ordering.natural().immutableSortedCopy( actualList ), CoreMatchers.equalTo( expectedList ) );
             } catch ( SQLException e ) {
                 throw new RuntimeException( e );
             }
@@ -113,5 +112,6 @@ public class MongoAssertions {
     public static void assumeRealMongoInstance() {
         assumeTrue( "Expect mongo instance", useMongo() );
     }
+
 }
 

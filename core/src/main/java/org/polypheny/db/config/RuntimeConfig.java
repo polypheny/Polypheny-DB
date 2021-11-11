@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.util.background.BackgroundTask;
+import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
 
 public enum RuntimeConfig {
@@ -185,7 +186,12 @@ public enum RuntimeConfig {
 
     STATISTIC_RATE( "statistics/passiveTrackingRate",
             "Rate of passive tracking of statistics.",
-            BackgroundTask.TaskSchedulingType.EVERY_THIRTY_SECONDS,
+            BackgroundTask.TaskSchedulingType.EVERY_THIRTY_SECONDS_FIXED,
+            ConfigType.ENUM ),
+
+    MATERIALIZED_VIEW_LOOP( "materializedView/freshnessLoopRate",
+            "Rate of freshness Loop for Materialized Views with update type interval.",
+            TaskSchedulingType.EVERY_SECOND_FIXED,
             ConfigType.ENUM ),
 
     EXPLORE_BY_EXAMPLE_TO_SQL( "exploreByExample/classificationToSQL",
@@ -321,15 +327,17 @@ public enum RuntimeConfig {
             ConfigType.INSTANCE_LIST,
             "dockerGroup" ),
 
+
     FILE_HANDLE_CACHE_SIZE( "runtime/fileHandleCacheSize",
             "Size (in Bytes) up to which media files are cached in-memory instead of creating a temporary file. Needs to be >= 0 and smaller than Integer.MAX_SIZE. Setting to zero disables caching of media files.",
             0,
             ConfigType.INTEGER,
             "runtimeExecutionGroup" ),
 
+
     QUEUE_PROCESSING_INTERVAL( "runtime/queueProcessingInterval",
             "Rate of passive tracking of statistics.",
-            BackgroundTask.TaskSchedulingType.EVERY_TEN_SECONDS,
+            BackgroundTask.TaskSchedulingType.EVERY_TEN_SECONDS_FIXED,
             ConfigType.ENUM,
             "monitoringSettingsQueueGroup" ),
 
@@ -337,7 +345,13 @@ public enum RuntimeConfig {
             "Number of elements in workload queue to process per time.",
             50,
             ConfigType.INTEGER,
-            "monitoringSettingsQueueGroup" );
+            "monitoringSettingsQueueGroup" ),
+
+    TEMPERATURE_FREQUENCY_PROCESSING_INTERVAL( "runtime/partitionFrequencyProcessingInterval",
+            "Time interval in seconds, how often the access frequency of all TEMPERATURE-partitioned tables is analyzed and redistributed",
+            BackgroundTask.TaskSchedulingType.EVERY_MINUTE_FIXED,
+            ConfigType.ENUM,
+            "temperaturePartitionProcessingSettingsGroup" );
 
 
     private final String key;
@@ -439,6 +453,16 @@ public enum RuntimeConfig {
         monitoringSettingsQueueGroup.withTitle( "Queue Processing" );
         configManager.registerWebUiPage( monitoringSettingsPage );
         configManager.registerWebUiGroup( monitoringSettingsQueueGroup );
+
+        // Partitioning specific setting
+        final WebUiPage partitionSettingsPage = new WebUiPage(
+                "partitionSettings",
+                "Partitioning",
+                "Settings for partitioning" );
+        final WebUiGroup temperaturePartitionProcessingSettingsGroup = new WebUiGroup( "temperaturePartitionProcessingSettingsGroup", partitionSettingsPage.getId() );
+        temperaturePartitionProcessingSettingsGroup.withTitle( "TEMPERATURE Partition Processing" );
+        configManager.registerWebUiPage( partitionSettingsPage );
+        configManager.registerWebUiGroup( temperaturePartitionProcessingSettingsGroup );
     }
 
 

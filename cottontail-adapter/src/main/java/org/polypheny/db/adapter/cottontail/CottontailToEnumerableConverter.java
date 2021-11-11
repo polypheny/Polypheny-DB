@@ -22,7 +22,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -33,7 +32,6 @@ import org.apache.commons.lang3.reflect.TypeUtils;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailDeleteEnumerable;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailEnumerableFactory;
-import org.polypheny.db.adapter.cottontail.enumberable.CottontailUpdateEnumerable;
 import org.polypheny.db.adapter.cottontail.rel.CottontailRel.CottontailImplementContext;
 import org.polypheny.db.adapter.cottontail.util.Linq4JFixer;
 import org.polypheny.db.adapter.enumerable.EnumerableRel;
@@ -57,7 +55,7 @@ import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
-import org.vitrivr.cottontail.grpc.CottontailGrpc;
+import org.vitrivr.cottontail.client.iterators.Tuple;
 
 public class CottontailToEnumerableConverter extends ConverterImpl implements EnumerableRel {
 
@@ -123,8 +121,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                 BlockBuilder builder = new BlockBuilder();
 
                 final ParameterExpression resultMap_ = Expressions.parameter(
-                        TypeUtils.parameterize( Map.class, String.class, CottontailGrpc.Literal.class ),
-                        builder.newName( "resultDataMap" )
+                    Tuple.class, builder.newName( "resultDataMap" )
                 );
 
                 if ( fieldCount == 1 ) {
@@ -162,6 +159,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                                 expressionOrNullExpression( cottontailContext.offsetBuilder ), // OFFSET
                                 expressionOrNullExpression( cottontailContext.filterBuilder ), // WHERE
                                 DataContext.ROOT,
+                                rowBuilder_,
                                 Expressions.call( Schemas.unwrap( convention.expression, CottontailSchema.class ), "getWrapper" )
                         ) );
                 break;
@@ -289,6 +287,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
             case DOUBLE:
             case CHAR:
             case VARCHAR:
+            case JSON:
             case DECIMAL:
                 // Polypheny uses BigDecimal internally to represent DECIMAL values.
                 // BigDecimal#toString gives an exact and unique representation of the value.
@@ -357,6 +356,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                 return Types.lookupMethod( Linq4JFixer.class, "getDoubleData", Object.class );
             case CHAR:
             case VARCHAR:
+            case JSON:
                 return Types.lookupMethod( Linq4JFixer.class, "getStringData", Object.class );
             case NULL:
                 return Types.lookupMethod( Linq4JFixer.class, "getNullData", Object.class );

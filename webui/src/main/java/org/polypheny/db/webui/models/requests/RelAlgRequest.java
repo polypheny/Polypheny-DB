@@ -23,7 +23,12 @@ import org.polypheny.db.webui.models.UIRelNode;
 public class RelAlgRequest extends UIRequest {
 
     public UIRelNode topNode;
+    public boolean useCache;
     public boolean createView;
     public String viewName;
+    public String store;
+    public String freshness;
+    public String interval;
+    public String timeUnit;
 
 }

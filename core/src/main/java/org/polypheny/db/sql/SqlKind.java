@@ -1162,6 +1162,21 @@ public enum SqlKind {
     DROP_VIEW,
 
     /**
+     * {@code CREATE MATERIALIZED VIEW} DDL statement.
+     */
+    CREATE_MATERIALIZED_VIEW,
+
+    /**
+     * {@code ALTER MATERIALIZED VIEW} DDL statement.
+     */
+    ALTER_MATERIALIZED_VIEW,
+
+    /**
+     * {@code DROP MATERIALIZED VIEW} DDL statement.
+     */
+    DROP_MATERIALIZED_VIEW,
+
+    /**
      * {@code CREATE SEQUENCE} DDL statement.
      */
     CREATE_SEQUENCE,
@@ -1216,7 +1231,87 @@ public enum SqlKind {
      *
      * <b>Note to other projects</b>: If you are extending Polypheny-DB's SQL parser and have your own object types you no doubt want to define CREATE and DROP commands for them. Use OTHER_DDL in the short term, but we are happy to add new enum values for your object types. Just ask!
      */
-    OTHER_DDL;
+    OTHER_DDL,
+
+    /**
+     * Document model single selected value of field
+     */
+    DOC_FIELD,
+
+    /**
+     * Document model item operator, which retrieves from any underlying array
+     */
+    DOC_ITEM,
+
+    /**
+     * Document model {@code $size} operator
+     */
+    DOC_SIZE_MATCH,
+
+    /**
+     * Document model {@code $regex} operator
+     */
+    DOC_REGEX_MATCH,
+
+    /**
+     * Document model {@code $type} operator
+     */
+    DOC_TYPE_MATCH,
+
+    /**
+     * Document model {@code $slice} operator
+     */
+    DOC_SLICE,
+
+    /**
+     * Document model exclusive project {@code $project: 0}
+     */
+    DOC_EXCLUDE,
+
+    /**
+     * ocument model {@code $elemMatch} operator
+     */
+    DOC_ELEM_MATCH,
+
+    /**
+     * Document model {@code $unwind} operator
+     */
+    DOC_UNWIND,
+
+    /**
+     * Document model {@code UPDATE} operator, which handles only REPLACE during updates
+     * // TODO DL: REFACTOR AFTER DML ENUMERABLE
+     */
+    DOC_UPDATE_REPLACE,
+
+    /**
+     * Document model {@code UPDATE} operator, which handles new DOCUMENTS during updates
+     * // TODO DL: REFACTOR AFTER DML ENUMERABLE
+     */
+    DOC_UPDATE_ADD,
+
+    /**
+     * Document model {@code UPDATE} operator, which handles removing DOCUMENTS during updates
+     * // TODO DL: REFACTOR AFTER DML ENUMERABLE
+     */
+    DOC_UPDATE_REMOVE,
+
+    /**
+     * Document model {@code UPDATE} operator, which handles rename DOCUMENTS during updates
+     * // TODO DL: REFACTOR AFTER DML ENUMERABLE
+     */
+    DOC_UPDATE_RENAME,
+
+    /**
+     * Document model {@code UPDATE} operator, which wrapes the other UPDATE operations
+     * // TODO DL: REFACTOR AFTER DML ENUMERABLE
+     */
+    DOC_UPDATE,
+
+    /**
+     * Document model {@code $exists} operator
+     */
+    DOC_EXISTS;
 
     // Most of the static fields are categories, aggregating several kinds into a set.
 
@@ -1253,7 +1348,7 @@ public enum SqlKind {
      * Category consisting of all DDL operators.
      */
     public static final EnumSet<SqlKind> DDL =
-            EnumSet.of( COMMIT, ROLLBACK, ALTER_SESSION, CREATE_SCHEMA, CREATE_FOREIGN_SCHEMA, DROP_SCHEMA, CREATE_TABLE, ALTER_TABLE, DROP_TABLE, CREATE_VIEW, ALTER_VIEW, DROP_VIEW, CREATE_SEQUENCE, ALTER_SEQUENCE, DROP_SEQUENCE, CREATE_INDEX, ALTER_INDEX, DROP_INDEX, CREATE_TYPE, DROP_TYPE, SET_OPTION, TRUNCATE, ALTER_SCHEMA, OTHER_DDL );
+            EnumSet.of( COMMIT, ROLLBACK, ALTER_SESSION, CREATE_SCHEMA, CREATE_FOREIGN_SCHEMA, DROP_SCHEMA, CREATE_TABLE, ALTER_TABLE, DROP_TABLE, CREATE_VIEW, ALTER_VIEW, DROP_VIEW, CREATE_MATERIALIZED_VIEW, ALTER_MATERIALIZED_VIEW, DROP_MATERIALIZED_VIEW, CREATE_SEQUENCE, ALTER_SEQUENCE, DROP_SEQUENCE, CREATE_INDEX, ALTER_INDEX, DROP_INDEX, CREATE_TYPE, DROP_TYPE, SET_OPTION, TRUNCATE, ALTER_SCHEMA, OTHER_DDL );
 
     /**
      * Category consisting of query node types.
@@ -1339,6 +1434,25 @@ public enum SqlKind {
      * {@link #GREATER_THAN_OR_EQUAL}.
      */
     public static final Set<SqlKind> COMPARISON = EnumSet.of( IN, EQUALS, NOT_EQUALS, LESS_THAN, GREATER_THAN, GREATER_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL );
+
+    public static final Set<SqlKind> ORDER = EnumSet.of( ORDER_BY );
+
+    public static final Set<SqlKind> DOC_KIND = EnumSet.of(
+            DOC_FIELD,
+            DOC_ITEM,
+            DOC_SIZE_MATCH,
+            DOC_REGEX_MATCH,
+            DOC_TYPE_MATCH,
+            DOC_SLICE,
+            DOC_EXCLUDE,
+            DOC_ELEM_MATCH,
+            DOC_UNWIND,
+            DOC_UPDATE_REPLACE,
+            DOC_UPDATE_ADD,
+            DOC_UPDATE_REMOVE,
+            DOC_UPDATE_RENAME,
+            DOC_UPDATE,
+            DOC_EXISTS );
 
     /**
      * Lower-case name.

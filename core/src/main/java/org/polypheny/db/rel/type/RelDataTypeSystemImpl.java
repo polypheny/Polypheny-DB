@@ -34,7 +34,6 @@
 package org.polypheny.db.rel.type;
 
 
-import java.io.Serializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 
@@ -50,7 +49,7 @@ import org.polypheny.db.type.PolyTypeFamily;
  * <tr><td>MAX_NUMERIC_SCALE</td> <td>19</td></tr>
  * </table>
  */
-public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem, Serializable {
+public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem {
 
     @Override
     public int getMaxScale( PolyType typeName ) {
@@ -84,6 +83,7 @@ public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem, Serial
             case CHAR:
             case BINARY:
                 return 1;
+            case JSON:
             case VARCHAR:
             case VARBINARY:
                 return RelDataType.PRECISION_NOT_SPECIFIED;
@@ -139,6 +139,7 @@ public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem, Serial
         switch ( typeName ) {
             case DECIMAL:
                 return getMaxNumericPrecision();
+            case JSON:
             case VARCHAR:
             case CHAR:
                 return 65536;
@@ -187,6 +188,7 @@ public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem, Serial
         switch ( typeName ) {
             case VARBINARY:
             case VARCHAR:
+            case JSON:
             case CHAR:
                 return "'";
             case BINARY:
@@ -228,6 +230,7 @@ public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem, Serial
     public boolean isCaseSensitive( PolyType typeName ) {
         switch ( typeName ) {
             case CHAR:
+            case JSON:
             case VARCHAR:
                 return true;
             default:

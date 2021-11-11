@@ -5,6 +5,7 @@ version = versionMajor + "." + versionMinor + versionQualifier
 
 dependencies {
     implementation project(":core")
+    implementation project(":monitoring")
     
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
