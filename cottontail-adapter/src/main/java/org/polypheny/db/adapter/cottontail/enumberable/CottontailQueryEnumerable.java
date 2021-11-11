@@ -180,7 +180,9 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
                 case CHAR:
                 case VARCHAR:
                 case JSON:
+                    return data;
                 case NULL:
+                    return null;
                 case DECIMAL:
                     return new BigDecimal( (String) data );
                 case BINARY:
