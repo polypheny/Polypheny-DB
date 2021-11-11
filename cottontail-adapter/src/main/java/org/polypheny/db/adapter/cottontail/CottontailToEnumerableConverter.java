@@ -241,7 +241,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         // This should generate: `result_.get(<physical field name>)`
         final Expression getDataFromMap_;
         try {
-            getDataFromMap_ = blockBuilder.append( "v" + i, Expressions.call( result_, BuiltInMethod.MAP_GET.method, Expressions.constant( physicalRowNames.get( i ).toLowerCase() ) ) );
+            getDataFromMap_ = blockBuilder.append( "v" + i, Expressions.call( result_, BuiltInMethod.MAP_GET.method, Expressions.constant( i ) ) );
         } catch ( Exception e ) {
             throw new RuntimeException( e );
         }
@@ -308,17 +308,13 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
             case TIMESTAMP:
             case NULL:
                 /* These are all simple types to fetch from the result. */
-                source = Expressions.call( cottontailGetMethod( fieldType.getPolyType() ), getDataFromMap_ );
+                source = getDataFromMap_ ;
                 break;
             case ARRAY: {
                 ArrayType arrayType = (ArrayType) fieldType;
                 if ( arrayType.getDimension() == 1 && SUPPORTED_ARRAY_COMPONENT_TYPES.contains( arrayType.getComponentType().getPolyType() ) ) {
-                    // Cottontail supports flat arrays natively
-                    source = Expressions.call(
-                            cottontailGetVectorMethod( arrayType.getComponentType().getPolyType() ),
-                            getDataFromMap_ );
+                    source = Expressions.call(cottontailGetVectorMethod( arrayType.getComponentType().getPolyType() ), getDataFromMap_ );
                 } else {
-                    // We need to handle nested arrays
                     source = Expressions.call(
                             BuiltInMethod.PARSE_ARRAY_FROM_TEXT.method,
                             Expressions.constant( fieldType.getComponentType().getPolyType() ),

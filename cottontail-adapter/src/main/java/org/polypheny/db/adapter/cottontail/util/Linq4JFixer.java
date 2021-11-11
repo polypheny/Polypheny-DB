@@ -108,37 +108,65 @@ public class Linq4JFixer {
 
 
     public static Object getBoolVector( Object data ) {
-        return ((CottontailGrpc.Literal) data).getVectorData().getBoolVector().getVectorList();
+        final List<Object> list = new ArrayList<>(((boolean[]) data).length);
+        for (boolean b : ((boolean[]) data)) {
+            list.add(b);
+        }
+        return list;
     }
 
 
     public static Object getTinyIntVector( Object data ) {
-        return ((CottontailGrpc.Literal) data).getVectorData().getIntVector().getVectorList().stream().map( Integer::byteValue ).collect( Collectors.toList() );
+        final List<Object> list = new ArrayList<>(((int[]) data).length);
+        for (int b : ((int[]) data)) {
+            list.add(b);
+        }
+        return list;
     }
 
 
     public static Object getSmallIntVector( Object data ) {
-        return ((CottontailGrpc.Literal) data).getVectorData().getIntVector().getVectorList().stream().map( Integer::shortValue ).collect( Collectors.toList() );
+        final List<Object> list = new ArrayList<>(((int[]) data).length);
+        for (int b : ((int[]) data)) {
+            list.add(b);
+        }
+        return list;
     }
 
 
     public static Object getIntVector( Object data ) {
-        return ((CottontailGrpc.Literal) data).getVectorData().getIntVector().getVectorList();
+        final List<Object> list = new ArrayList<>(((int[]) data).length);
+        for (int b : ((int[]) data)) {
+            list.add(b);
+        }
+        return list;
     }
 
 
     public static Object getFloatVector( Object data ) {
-        return ((CottontailGrpc.Literal) data).getVectorData().getFloatVector().getVectorList();
+        final List<Object> list = new ArrayList<>(((float[]) data).length);
+        for (float b : ((float[]) data)) {
+            list.add(b);
+        }
+        return list;
     }
 
 
     public static Object getDoubleVector( Object data ) {
-        return ((CottontailGrpc.Literal) data).getVectorData().getDoubleVector().getVectorList();
+        final List<Object> list = new ArrayList<>(((double[]) data).length);
+        for (double b : ((double[]) data)) {
+            list.add(b);
+        }
+        return list;
     }
 
 
     public static Object getLongVector( Object data ) {
-        return ((CottontailGrpc.Literal) data).getVectorData().getLongVector().getVectorList();
+        final List<Object> list = new ArrayList<>(((long[]) data).length);
+        for (long b : ((long[]) data)) {
+            list.add(b);
+        }
+        return list;
     }
 
 
