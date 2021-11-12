@@ -299,12 +299,12 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                             throw new AssertionError( "No vector access method for inner type: " + arrayType.getPolyType() );
                     }
                 } else {
-                    // We need to handle nested arrays
                     source = Expressions.call(
-                            BuiltInMethod.PARSE_ARRAY_FROM_TEXT.method,
-                            Expressions.constant( fieldType.getComponentType().getPolyType() ),
-                            Expressions.constant( arrayType.getDimension() ),
-                            Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getData", Object.class ), getDataFromMap_ ) );
+                        BuiltInMethod.PARSE_ARRAY_FROM_TEXT.method,
+                        Expressions.constant( fieldType.getComponentType().getPolyType() ),
+                        Expressions.constant( arrayType.getDimension() ),
+                        getDataFromMap_
+                    );
                 }
             }
             break;

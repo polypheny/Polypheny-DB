@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.cottontail.util;
 
-
 import org.apache.calcite.avatica.util.ByteString;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.TimeString;
@@ -41,11 +40,8 @@ public class Linq4JFixer {
      * @return {@link String}
      */
     public static String getJsonData( Object data ) {
-        if (data == null) {
-            return null;
-        } else {
-            return (String) data;
-        }
+        if (data == null) return null;
+        return (String) data;
     }
 
     /**
@@ -55,11 +51,8 @@ public class Linq4JFixer {
      * @return {@link BigDecimal}
      */
     public static Object getDecimalData( Object data ) {
-        if (data == null) {
-            return null;
-        } else {
-            return new BigDecimal( (String) data );
-        }
+        if (data == null) return null;
+        return new BigDecimal( (String) data );
     }
 
     /**
@@ -69,11 +62,8 @@ public class Linq4JFixer {
      * @return {@link ByteString}
      */
     public static Object getBinaryData( Object data ) {
-        if (data == null) {
-            return null;
-        } else {
-            return ByteString.parseBase64( (String) data );
-        }
+        if (data == null) return null;
+        return ByteString.parseBase64( (String) data );
     }
 
     /**
@@ -85,11 +75,8 @@ public class Linq4JFixer {
      * @return {@link Integer}
      */
     public static Object getTimeData( Object data ) {
-        if (data == null) {
-            return null;
-        } else {
-            return ((int)data);
-        }
+        if (data == null) return null;
+        return ((int)data);
     }
 
     /**
@@ -101,11 +88,8 @@ public class Linq4JFixer {
      * @return {@link Integer}
      */
     public static Object getDateData( Object data ) {
-        if (data == null) {
-            return null;
-        } else {
-            return ((int)data);
-        }
+        if (data == null) return null;
+        return ((int)data);
     }
 
     /**
@@ -115,15 +99,13 @@ public class Linq4JFixer {
      * @return {@link Integer}
      */
     public static Object getTimestampData( Object data ) {
-        if (data == null) {
-            return null;
-        } else {
-            return ((java.util.Date) data).getTime();
-        }
+        if (data == null) return null;
+        return ((java.util.Date) data).getTime();
     }
 
 
     public static Object getBoolVector( Object data ) {
+        if (data == null) return null;
         final List<Boolean> list = new ArrayList<>(((boolean[]) data).length);
         for (boolean v : ((boolean[]) data))
             list.add(v);
@@ -131,6 +113,7 @@ public class Linq4JFixer {
     }
 
     public static Object getTinyIntVector( Object data ) {
+        if (data == null) return null;
         final List<Byte> list = new ArrayList<>(((int[]) data).length);
         for (int v : ((int[]) data))
             list.add((byte)v);
@@ -139,6 +122,7 @@ public class Linq4JFixer {
 
 
     public static Object getSmallIntVector( Object data ) {
+        if (data == null) return null;
         final List<Short> list = new ArrayList<>(((int[]) data).length);
         for (int v : ((int[]) data))
             list.add((short)v);
@@ -147,6 +131,7 @@ public class Linq4JFixer {
 
 
     public static Object getIntVector( Object data ) {
+        if (data == null) return null;
         final List<Integer> list = new ArrayList<>(((int[]) data).length);
         for (int v : ((int[]) data))
             list.add(v);
@@ -154,6 +139,7 @@ public class Linq4JFixer {
     }
 
     public static Object getLongVector( Object data ) {
+        if (data == null) return null;
         final List<Long> list = new ArrayList<>(((long[]) data).length);
         for (long v : ((long[]) data))
             list.add(v);
@@ -161,6 +147,7 @@ public class Linq4JFixer {
     }
 
     public static Object getFloatVector( Object data ) {
+        if (data == null) return null;
         final List<Float> list = new ArrayList<>(((float[]) data).length);
         for (float v : ((float[]) data))
             list.add(v);
@@ -168,6 +155,7 @@ public class Linq4JFixer {
     }
 
     public static Object getDoubleVector( Object data ) {
+        if (data == null) return null;
         final List<Double> list = new ArrayList<>(((double[]) data).length);
         for (double v : ((double[]) data))
             list.add(v);
