@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.cottontail.rules;
 
-
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -32,8 +31,6 @@ import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.plan.volcano.RelSubset;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Project;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
@@ -42,7 +39,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.sql.fun.SqlDistanceFunction;
 import org.polypheny.db.tools.RelBuilderFactory;
-import org.polypheny.db.type.PolyType;
 
 
 public class CottontailProjectRule extends CottontailConverterRule {
@@ -50,6 +46,7 @@ public class CottontailProjectRule extends CottontailConverterRule {
     CottontailProjectRule( CottontailConvention out, RelBuilderFactory relBuilderFactory ) {
         super( Project.class, p -> !DocumentRules.containsDocument( p ), Convention.NONE, out, relBuilderFactory, "CottontailProjectRule:" + out.getName() );
     }
+
 
     @Override
     public boolean matches( RelOptRuleCall call ) {
@@ -62,14 +59,14 @@ public class CottontailProjectRule extends CottontailConverterRule {
         boolean containsValueProjects = false;
 
         List<RexNode> projects = project.getProjects();
-        for (RexNode e : projects) {
-            if (e instanceof RexInputRef) {
+        for ( RexNode e : projects ) {
+            if ( e instanceof RexInputRef ) {
                 containsInputRefs = true;
-            } else if ((e instanceof RexLiteral) || (e instanceof RexDynamicParam) || ((e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlArrayValueConstructor))) {
+            } else if ( (e instanceof RexLiteral) || (e instanceof RexDynamicParam) || ((e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlArrayValueConstructor)) ) {
                 containsValueProjects = true;
-            } else if ((e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlDistanceFunction)) {
+            } else if ( (e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlDistanceFunction) ) {
                 RexCall rexCall = (RexCall) e;
-                if (!(CottontailToEnumerableConverter.SUPPORTED_ARRAY_COMPONENT_TYPES.contains(rexCall.getOperands().get(0).getType().getComponentType().getPolyType()))) {
+                if ( !(CottontailToEnumerableConverter.SUPPORTED_ARRAY_COMPONENT_TYPES.contains( rexCall.getOperands().get( 0 ).getType().getComponentType().getPolyType() )) ) {
                     return false;
                 }
             } else {
@@ -86,27 +83,23 @@ public class CottontailProjectRule extends CottontailConverterRule {
         final RelTraitSet traitSet = project.getTraitSet().replace( out );
         boolean arrayValueProject = true;
         for ( RexNode e : project.getProjects() ) {
-            if (!((e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlArrayValueConstructor)) && !(e instanceof RexLiteral) && !(e instanceof RexDynamicParam)) {
+            if ( !((e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlArrayValueConstructor)) && !(e instanceof RexLiteral) && !(e instanceof RexDynamicParam) ) {
                 arrayValueProject = false;
                 break;
             }
         }
 
         return new CottontailProject(
-            project.getCluster(),
-            traitSet,
-            convert( project.getInput(), project.getInput().getTraitSet().replace( out ) ),
-            project.getProjects(),
-            project.getRowType(),
-            arrayValueProject
+                project.getCluster(),
+                traitSet,
+                convert( project.getInput(), project.getInput().getTraitSet().replace( out ) ),
+                project.getProjects(),
+                project.getRowType(),
+                arrayValueProject
         );
     }
 
-    /**
-     *
-     * @param project
-     * @return
-     */
+
     private static boolean containsInnerProject( Project project ) {
         List<RelNode> rels = ((RelSubset) project.getInput()).getRelList();
         Set<RelNode> alreadyChecked = new HashSet<>();
@@ -131,4 +124,5 @@ public class CottontailProjectRule extends CottontailConverterRule {
         }
         return false;
     }
+
 }

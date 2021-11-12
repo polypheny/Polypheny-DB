@@ -21,39 +21,50 @@ import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.cottontail.CottontailWrapper;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.BatchInsertMessage;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.InsertMessage;
+
 
 public class CottontailBatchInsertEnumerable extends AbstractEnumerable<Long> {
+
     private final List<BatchInsertMessage> inserts;
     private final CottontailWrapper wrapper;
+
 
     public CottontailBatchInsertEnumerable( List<BatchInsertMessage> inserts, CottontailWrapper wrapper ) {
         this.inserts = inserts;
         this.wrapper = wrapper;
     }
 
+
     @Override
     public Enumerator<Long> enumerator() {
         return new CottontailInsertResultEnumerator();
     }
 
+
     private class CottontailInsertResultEnumerator implements Enumerator<Long> {
-        /** Result of the last BATCH INSERT that was performed. */
+
+        /**
+         * Result of the last BATCH INSERT that was performed.
+         */
         private long currentResult;
 
-        /** The pointer to the last {@link BatchInsertMessage} that was executed. */
+        /**
+         * The pointer to the last {@link BatchInsertMessage} that was executed.
+         */
         private int pointer = 0;
+
 
         @Override
         public Long current() {
             return this.currentResult;
         }
 
+
         @Override
         public boolean moveNext() {
             if ( this.pointer < CottontailBatchInsertEnumerable.this.inserts.size() ) {
                 final BatchInsertMessage insertMessage = CottontailBatchInsertEnumerable.this.inserts.get( this.pointer++ );
-                if ( CottontailBatchInsertEnumerable.this.wrapper.insert(insertMessage ) ) {
+                if ( CottontailBatchInsertEnumerable.this.wrapper.insert( insertMessage ) ) {
                     this.currentResult = insertMessage.getInsertsCount();
                 } else {
                     this.currentResult = -1;
@@ -64,12 +75,17 @@ public class CottontailBatchInsertEnumerable extends AbstractEnumerable<Long> {
             }
         }
 
+
         @Override
         public void reset() {
             this.pointer = 0;
         }
 
+
         @Override
-        public void close() {}
+        public void close() {
+        }
+
     }
+
 }

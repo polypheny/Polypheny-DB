@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.cottontail.rules;
 
-
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
@@ -27,18 +26,21 @@ import org.polypheny.db.tools.RelBuilderFactory;
 
 
 public class CottontailRules {
+
     public static List<RelOptRule> rules( CottontailConvention out ) {
         return rules( out, RelFactories.LOGICAL_BUILDER );
     }
 
+
     public static List<RelOptRule> rules( CottontailConvention out, RelBuilderFactory relBuilderFactory ) {
         return ImmutableList.of(
-            new CottontailToEnumerableConverterRule( out, relBuilderFactory ),
-            new CottontailValuesRule( out, relBuilderFactory ),
-            new CottontailTableModificationRule( out, relBuilderFactory ),
-            new CottontailProjectRule( out, relBuilderFactory ),
-            new CottontailFilterRule( out, relBuilderFactory ),
-            new CottontailSortRule( out, relBuilderFactory )
+                new CottontailToEnumerableConverterRule( out, relBuilderFactory ),
+                new CottontailValuesRule( out, relBuilderFactory ),
+                new CottontailTableModificationRule( out, relBuilderFactory ),
+                new CottontailProjectRule( out, relBuilderFactory ),
+                new CottontailFilterRule( out, relBuilderFactory ),
+                new CottontailSortRule( out, relBuilderFactory )
         );
     }
+
 }

@@ -16,6 +16,13 @@
 
 package org.polypheny.db.adapter.cottontail.enumberable;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Types;
@@ -25,17 +32,27 @@ import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.vitrivr.cottontail.client.iterators.TupleIterator;
 import org.vitrivr.cottontail.client.language.basics.Constants;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.*;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.BatchInsertMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.BatchInsertMessage.Insert;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.BatchedQueryMessage;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnName;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Expression;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.InsertMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.InsertMessage.InsertElement;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Literal;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Metadata;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Order;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Projection;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Projection.ProjectionElement;
-
-import java.lang.reflect.Method;
-import java.util.*;
-import java.util.Map.Entry;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Query;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryMessage;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.UpdateMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.UpdateMessage.UpdateElement;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
+
 
 public class CottontailEnumerableFactory {
+
     /**
      * Method signature for building SELECT statements.
      */
@@ -64,22 +81,11 @@ public class CottontailEnumerableFactory {
      * Method signature for building UPDATE with values.
      */
     public static final Method CREATE_UPDATE_METHOD = Types.lookupMethod(
-        CottontailEnumerableFactory.class,
-        "updateFromValues",
-        String.class, String.class, Function1.class, Function1.class, DataContext.class, CottontailWrapper.class );
+            CottontailEnumerableFactory.class,
+            "updateFromValues",
+            String.class, String.class, Function1.class, Function1.class, DataContext.class, CottontailWrapper.class );
 
-    /**
-     *
-     * @param from
-     * @param schema
-     * @param projection
-     * @param whereBuilder
-     * @param limitBuilder
-     * @param offsetBuilder
-     * @param dataContext
-     * @param wrapper
-     * @return
-     */
+
     public static CottontailQueryEnumerable<Object> query(
             String from,
             String schema,
@@ -142,17 +148,9 @@ public class CottontailEnumerableFactory {
         return new CottontailQueryEnumerable<Object>( queryResponseIterator, rowParser );
     }
 
+
     /**
      * Used via reflection
-     *
-     * @param from
-     * @param schema
-     * @param projection
-     * @param whereBuilder
-     * @param limit
-     * @param offset
-     * @param parameterValues
-     * @return
      */
     private static Query buildSingleQuery(
             String from,
@@ -181,12 +179,11 @@ public class CottontailEnumerableFactory {
             final Projection.Builder projBuilder = queryBuilder.getProjectionBuilder();
             for ( Entry<Object, String> p : projection.entrySet() ) {
                 final Object key = p.getKey();
-                final String value = p.getValue();
-                if (key instanceof String) {
-                    final ProjectionElement.Builder ele = projBuilder.addElementsBuilder().setColumn( ColumnName.newBuilder().setName( (String) key ) );
-                } else if (key instanceof Function1) {
+                if ( key instanceof String ) {
+                    projBuilder.addElementsBuilder().setColumn( ColumnName.newBuilder().setName( (String) key ) );
+                } else if ( key instanceof Function1 ) {
                     /* Not exactly beautiful i know ;-) */
-                    projBuilder.addElements(((Function1<Map<Long, Object>, ProjectionElement>) key).apply(parameterValues));
+                    projBuilder.addElements( ((Function1<Map<Long, Object>, ProjectionElement>) key).apply( parameterValues ) );
                 }
             }
         }
@@ -197,7 +194,7 @@ public class CottontailEnumerableFactory {
         }
 
         /* Add ORDER BY to query. */
-        if (order != null && !order.isEmpty()) {
+        if ( order != null && !order.isEmpty() ) {
             final Order.Builder orderBuilder = queryBuilder.getOrderBuilder();
             for ( Entry<String, String> p : order.entrySet() ) {
                 orderBuilder.addComponentsBuilder()
@@ -208,6 +205,7 @@ public class CottontailEnumerableFactory {
 
         return queryBuilder.build();
     }
+
 
     @SuppressWarnings("unused") // Used via reflection
     public static AbstractEnumerable<Long> insertFromValues(
@@ -233,6 +231,7 @@ public class CottontailEnumerableFactory {
 
         return new CottontailInsertEnumerable( insertMessages, wrapper );
     }
+
 
     @SuppressWarnings("unused") // Used via reflection
     public static AbstractEnumerable<Long> insertFromPreparedStatements(
@@ -261,8 +260,8 @@ public class CottontailEnumerableFactory {
             BatchInsertMessage.Builder builder = BatchInsertMessage.newBuilder().setFrom( from_ ).setMetadata( Metadata.newBuilder().setTransactionId( txId ) );
 
             /* Add columns to BatchInsertMessage */
-            final List<Map<Long,Object>> parameterValues = dataContext.getParameterValues();
-            for (Entry<String, Literal> e: tupleBuilder.apply( parameterValues.get(0) ).entrySet()) {
+            final List<Map<Long, Object>> parameterValues = dataContext.getParameterValues();
+            for ( Entry<String, Literal> e : tupleBuilder.apply( parameterValues.get( 0 ) ).entrySet() ) {
                 final ColumnName name = ColumnName.newBuilder().setName( e.getKey() ).build();
                 builder.addColumns( name );
             }
@@ -275,13 +274,13 @@ public class CottontailEnumerableFactory {
             for ( Map<Long, Object> row : parameterValues ) {
                 final Insert.Builder insertBuilder = Insert.newBuilder();
                 for ( Entry<String, Literal> e : tupleBuilder.apply( row ).entrySet() ) {
-                    insertBuilder.addValues( e.getValue()  );
+                    insertBuilder.addValues( e.getValue() );
                 }
                 final Insert insert = insertBuilder.build();
 
                 /* Check if maximum message size is exceeded. If so, build and add BatchInsertMessage to list. */
-                if (messageSize + insert.getSerializedSize() >= Constants.MAX_PAGE_SIZE_BYTES) {
-                    insertMessages.add(builder.build());
+                if ( messageSize + insert.getSerializedSize() >= Constants.MAX_PAGE_SIZE_BYTES ) {
+                    insertMessages.add( builder.build() );
                     builder = builder.clone().clearInserts();
                     messageSize = basicSize;
                 }
@@ -290,33 +289,26 @@ public class CottontailEnumerableFactory {
             }
 
             /* Add file message. */
-            if (builder.getInsertsCount() > 0) {
-                insertMessages.add(builder.build());
+            if ( builder.getInsertsCount() > 0 ) {
+                insertMessages.add( builder.build() );
             }
 
             return new CottontailBatchInsertEnumerable( insertMessages, wrapper );
         }
     }
 
+
     /**
      * Builds and returns an {@link CottontailUpdateEnumerable}.
-     *
-     * @param entity
-     * @param schema
-     * @param whereBuilder
-     * @param tupleBuilder
-     * @param dataContext
-     * @param wrapper
-     * @return
      */
     @SuppressWarnings("unused") // Used via reflection
     public static CottontailUpdateEnumerable updateFromValues(
-        String entity,
-        String schema,
-        Function1<Map<Long, Object>, Where> whereBuilder,
-        Function1<Map<Long, Object>, Map<String, CottontailGrpc.Literal>> tupleBuilder,
-        DataContext dataContext,
-        CottontailWrapper wrapper
+            String entity,
+            String schema,
+            Function1<Map<Long, Object>, Where> whereBuilder,
+            Function1<Map<Long, Object>, Map<String, CottontailGrpc.Literal>> tupleBuilder,
+            DataContext dataContext,
+            CottontailWrapper wrapper
     ) {
         /* Begin or continue Cottontail DB transaction. */
         final long txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
@@ -344,12 +336,12 @@ public class CottontailEnumerableFactory {
 
 
     private static UpdateMessage buildSingleUpdate(
-        String entity,
-        String schema,
-        Long txId,
-        Function1<Map<Long, Object>, Where> whereBuilder,
-        Function1<Map<Long, Object>, Map<String, CottontailGrpc.Literal>> tupleBuilder,
-        Map<Long, Object> parameterValues
+            String entity,
+            String schema,
+            Long txId,
+            Function1<Map<Long, Object>, Where> whereBuilder,
+            Function1<Map<Long, Object>, Map<String, CottontailGrpc.Literal>> tupleBuilder,
+            Map<Long, Object> parameterValues
     ) {
         final UpdateMessage.Builder builder = UpdateMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId( txId ).build() );
         final CottontailGrpc.From from_ = CottontailTypeUtil.fromFromTableAndSchema( entity, schema );
@@ -361,9 +353,9 @@ public class CottontailEnumerableFactory {
         try {
             for ( Entry<String, Literal> e : tupleBuilder.apply( parameterValues ).entrySet() ) {
                 builder.addUpdates( UpdateElement.newBuilder()
-                    .setColumn( ColumnName.newBuilder().setName( e.getKey() ) )
-                    .setValue( Expression.newBuilder().setLiteral( e.getValue() ) )
-                    .build() );
+                        .setColumn( ColumnName.newBuilder().setName( e.getKey() ) )
+                        .setValue( Expression.newBuilder().setLiteral( e.getValue() ) )
+                        .build() );
             }
         } catch ( RuntimeException e ) {
             throw new RuntimeException( e );
@@ -373,4 +365,5 @@ public class CottontailEnumerableFactory {
 
         return builder.build();
     }
+
 }

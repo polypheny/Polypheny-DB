@@ -25,14 +25,16 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.tools.RelBuilderFactory;
 
+
 /**
  * Matches
  */
 public class CottontailSortRule extends CottontailConverterRule {
 
-    CottontailSortRule(CottontailConvention out, RelBuilderFactory relBuilderFactory ) {
+    CottontailSortRule( CottontailConvention out, RelBuilderFactory relBuilderFactory ) {
         super( Sort.class, r -> true, Convention.NONE, out, relBuilderFactory, "CottontailSortRule" + out.getName() );
     }
+
 
     @Override
     public boolean matches( RelOptRuleCall call ) {
@@ -40,8 +42,9 @@ public class CottontailSortRule extends CottontailConverterRule {
         return sort.getCollation().getFieldCollations().size() > 0 || sort.fetch != null || sort.offset != null;
     }
 
+
     @Override
-    public RelNode convert(RelNode rel) {
+    public RelNode convert( RelNode rel ) {
         Sort sort = (Sort) rel;
         final RelTraitSet traitSet = sort.getTraitSet().replace( out );
         final RelNode input;
@@ -50,4 +53,5 @@ public class CottontailSortRule extends CottontailConverterRule {
 
         return new CottontailSort( sort.getCluster(), traitSet, input, sort.getCollation(), sort.offset, sort.fetch );
     }
+
 }

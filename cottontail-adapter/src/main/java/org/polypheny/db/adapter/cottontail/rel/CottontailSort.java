@@ -16,7 +16,15 @@
 
 package org.polypheny.db.adapter.cottontail.rel;
 
-import org.apache.calcite.linq4j.tree.*;
+import java.lang.reflect.Modifier;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.NewExpression;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -32,27 +40,23 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 
-import java.lang.reflect.Modifier;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * A {@link CottontailRel} that implements ORDER BY clauses and pushes them down to Cottontail DB.
- *
- * @author Ralph Gasser
- * @version 1.0.0
  */
 public class CottontailSort extends Sort implements CottontailRel {
-    public CottontailSort(RelOptCluster cluster, RelTraitSet traits, RelNode child, RelCollation collation, RexNode offset, RexNode fetch ) {
+
+    public CottontailSort( RelOptCluster cluster, RelTraitSet traits, RelNode child, RelCollation collation, RexNode offset, RexNode fetch ) {
         super( cluster, traits, child, collation, offset, fetch );
     }
 
+
     @Override
-    public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq ) {
+    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
         final double rowCount = mq.getRowCount( this ) + 0.01;
         return planner.getCostFactory().makeCost( rowCount, 0, 0 );
     }
+
 
     @Override
     public void implement( CottontailImplementContext context ) {
@@ -68,10 +72,12 @@ public class CottontailSort extends Sort implements CottontailRel {
         }
     }
 
+
     @Override
-    public Sort copy(RelTraitSet traitSet, RelNode newInput, RelCollation newCollation, RexNode offset, RexNode fetch) {
+    public Sort copy( RelTraitSet traitSet, RelNode newInput, RelCollation newCollation, RexNode offset, RexNode fetch ) {
         return new CottontailSort( getCluster(), traitSet, newInput, newCollation, offset, fetch );
     }
+
 
     /**
      * Constructs a {@link ParameterExpression} that generates a map containing the field to order by.
@@ -85,19 +91,19 @@ public class CottontailSort extends Sort implements CottontailRel {
         final ParameterExpression orderMap_ = Expressions.variable( Map.class, builder.newName( "orderMap" ) );
         final NewExpression projectionMapCreator = Expressions.new_( LinkedHashMap.class );
         builder.add( Expressions.declare( Modifier.FINAL, orderMap_, projectionMapCreator ) );
-        for (RelFieldCollation c: node.getFieldCollations()) {
+        for ( RelFieldCollation c : node.getFieldCollations() ) {
             final String physicalName = columnNames.get( c.getFieldIndex() );
             final Expression sortOrder;
-            switch (c.direction) {
+            switch ( c.direction ) {
                 case DESCENDING:
                 case STRICTLY_DESCENDING:
                     sortOrder = Expressions.constant( CottontailGrpc.Order.Direction.DESCENDING.toString() );
                     break;
                 default:
-                    sortOrder = Expressions.constant( CottontailGrpc.Order.Direction.ASCENDING.toString() ) ;
+                    sortOrder = Expressions.constant( CottontailGrpc.Order.Direction.ASCENDING.toString() );
                     break;
             }
-            builder.add( Expressions.statement(Expressions.call( orderMap_, BuiltInMethod.MAP_PUT.method, Expressions.constant( physicalName ), sortOrder ) ) );
+            builder.add( Expressions.statement( Expressions.call( orderMap_, BuiltInMethod.MAP_PUT.method, Expressions.constant( physicalName ), sortOrder ) ) );
         }
         return orderMap_;
     }
@@ -114,9 +120,9 @@ public class CottontailSort extends Sort implements CottontailRel {
         ParameterExpression dynamicParameterMap_ = Expressions.parameter( Modifier.FINAL, Map.class, inner.newName( "dynamicParameters" ) );
 
         Expression expr;
-        if ( node instanceof RexLiteral) {
+        if ( node instanceof RexLiteral ) {
             expr = Expressions.constant( ((RexLiteral) node).getValueAs( Integer.class ) );
-        } else if ( node instanceof RexDynamicParam) {
+        } else if ( node instanceof RexDynamicParam ) {
             expr = Expressions.call( dynamicParameterMap_, BuiltInMethod.MAP_GET.method, Expressions.constant( ((RexDynamicParam) node).getIndex() ) );
         } else {
             throw new RuntimeException( "Node statement is neither a Literal nor a Dynamic Parameter." );
@@ -126,4 +132,5 @@ public class CottontailSort extends Sort implements CottontailRel {
 
         return Expressions.lambda( inner.toBlock(), dynamicParameterMap_ );
     }
+
 }

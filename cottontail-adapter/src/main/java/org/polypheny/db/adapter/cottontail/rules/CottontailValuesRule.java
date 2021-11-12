@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.cottontail.rules;
 
-
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.rel.CottontailValues;
 import org.polypheny.db.plan.Convention;
