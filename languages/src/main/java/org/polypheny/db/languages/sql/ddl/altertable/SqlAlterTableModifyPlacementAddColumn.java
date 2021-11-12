@@ -32,7 +32,6 @@ import org.polypheny.db.ddl.exception.PlacementAlreadyExistsException;
 import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.ddl.SqlAlterTable;
@@ -63,7 +62,7 @@ public class SqlAlterTableModifyPlacementAddColumn extends SqlAlterTable {
 
 
     @Override
-    public List<SqlNode> getOperandList() {
+    public List<Node> getOperandList() {
         return ImmutableNullableList.of( table, columnName, storeName );
     }
 

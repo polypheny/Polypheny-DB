@@ -23,11 +23,11 @@ import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlAlter;
-import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
@@ -55,7 +55,7 @@ public class SqlAlterAdaptersDrop extends SqlAlter {
 
 
     @Override
-    public List<SqlNode> getOperandList() {
+    public List<Node> getOperandList() {
         return ImmutableNullableList.of( uniqueName );
     }
 

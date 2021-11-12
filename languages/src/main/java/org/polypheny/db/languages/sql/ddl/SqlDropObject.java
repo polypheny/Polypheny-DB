@@ -23,7 +23,6 @@ import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.SqlDrop;
 import org.polypheny.db.languages.sql.SqlExecutableStatement;
 import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlWriter;
 
@@ -46,7 +45,7 @@ abstract class SqlDropObject extends SqlDrop implements SqlExecutableStatement {
 
 
     @Override
-    public List<SqlNode> getOperandList() {
+    public List<Node> getOperandList() {
         return ImmutableList.of( name );
     }
 

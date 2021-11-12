@@ -20,8 +20,8 @@ package org.polypheny.db.languages.sql;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.ImmutableNullableList;
@@ -82,7 +82,7 @@ public class SqlSelect extends SqlCall {
 
 
     @Override
-    public SqlOperator getOperator() {
+    public Operator getOperator() {
         return SqlSelectOperator.INSTANCE;
     }
 
@@ -94,7 +94,7 @@ public class SqlSelect extends SqlCall {
 
 
     @Override
-    public List<SqlNode> getOperandList() {
+    public List<Node> getOperandList() {
         return ImmutableNullableList.of( keywordList, selectList, from, where, groupBy, having, windowDecls, orderBy, offset, fetch );
     }
 

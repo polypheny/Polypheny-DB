@@ -96,16 +96,16 @@ import javax.annotation.Nonnull;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.core.BasicNodeVisitor;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.SqlCall;
-import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlValuesOperator;
 import org.polypheny.db.sql.fun.SqlRowOperator;
-import org.polypheny.db.sql.util.SqlBasicVisitor;
 import org.slf4j.Logger;
 
 
@@ -2103,18 +2103,20 @@ public class Util {
     /**
      * Visitor which looks for an OVER clause inside a tree of {@link Node} objects.
      */
-    public static class OverFinder extends SqlBasicVisitor<Void> {
+    public static class OverFinder extends BasicNodeVisitor<Void> {
 
         public static final OverFinder INSTANCE = new Util.OverFinder();
 
 
+
         @Override
-        public Void visit( SqlCall call ) {
+        public <T extends Node & Call> Void visit( T call ) {
             if ( call.getKind() == Kind.OVER ) {
                 throw FoundOne.NULL;
             }
             return super.visit( call );
         }
+
     }
 
 

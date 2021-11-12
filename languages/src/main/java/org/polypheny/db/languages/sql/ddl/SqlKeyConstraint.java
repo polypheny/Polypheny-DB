@@ -20,15 +20,13 @@ package org.polypheny.db.languages.sql.ddl;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
-import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlWriter;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -73,7 +71,7 @@ public class SqlKeyConstraint extends SqlCall {
     public static SqlKeyConstraint primary( ParserPos pos, SqlIdentifier name, SqlNodeList columnList ) {
         return new SqlKeyConstraint( pos, name, columnList ) {
             @Override
-            public SqlOperator getOperator() {
+            public Operator getOperator() {
                 return PRIMARY;
             }
 
@@ -91,13 +89,13 @@ public class SqlKeyConstraint extends SqlCall {
 
 
     @Override
-    public SqlOperator getOperator() {
+    public Operator getOperator() {
         return UNIQUE;
     }
 
 
     @Override
-    public List<SqlNode> getOperandList() {
+    public List<Node> getOperandList() {
         return ImmutableNullableList.of( name, columnList );
     }
 

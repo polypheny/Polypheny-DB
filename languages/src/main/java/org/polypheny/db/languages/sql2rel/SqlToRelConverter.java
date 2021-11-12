@@ -46,9 +46,82 @@ import javax.annotation.Nonnull;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.core.AggFunction;
+import org.polypheny.db.core.BasicNodeVisitor;
+import org.polypheny.db.core.Call;
+import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.DataTypeSpec;
+import org.polypheny.db.core.Identifier;
+import org.polypheny.db.core.IntervalQualifier;
+import org.polypheny.db.core.JoinConditionType;
+import org.polypheny.db.core.JoinType;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.NodeList;
+import org.polypheny.db.core.NodeVisitor;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.RelDecorrelator;
 import org.polypheny.db.core.RelFieldTrimmer;
 import org.polypheny.db.core.RelStructuredTypeFlattener;
+import org.polypheny.db.core.SemiJoinType;
+import org.polypheny.db.languages.sql.SqlAggFunction;
+import org.polypheny.db.languages.sql.SqlBasicCall;
+import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.languages.sql.SqlCallBinding;
+import org.polypheny.db.languages.sql.SqlDelete;
+import org.polypheny.db.languages.sql.SqlDynamicParam;
+import org.polypheny.db.languages.sql.SqlExplainFormat;
+import org.polypheny.db.languages.sql.SqlExplainLevel;
+import org.polypheny.db.languages.sql.SqlFunction;
+import org.polypheny.db.languages.sql.SqlIdentifier;
+import org.polypheny.db.languages.sql.SqlInsert;
+import org.polypheny.db.languages.sql.SqlIntervalQualifier;
+import org.polypheny.db.languages.sql.SqlJoin;
+import org.polypheny.db.languages.sql.SqlLiteral;
+import org.polypheny.db.languages.sql.SqlMatchRecognize;
+import org.polypheny.db.languages.sql.SqlMerge;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlNodeList;
+import org.polypheny.db.languages.sql.SqlNumericLiteral;
+import org.polypheny.db.languages.sql.SqlOperator;
+import org.polypheny.db.languages.sql.SqlOperatorTable;
+import org.polypheny.db.languages.sql.SqlOrderBy;
+import org.polypheny.db.languages.sql.SqlSampleSpec;
+import org.polypheny.db.languages.sql.SqlSelect;
+import org.polypheny.db.languages.sql.SqlSelectKeyword;
+import org.polypheny.db.languages.sql.SqlSetOperator;
+import org.polypheny.db.languages.sql.SqlUnnestOperator;
+import org.polypheny.db.languages.sql.SqlUpdate;
+import org.polypheny.db.languages.sql.SqlUtil;
+import org.polypheny.db.languages.sql.SqlValuesOperator;
+import org.polypheny.db.languages.sql.SqlWindow;
+import org.polypheny.db.languages.sql.SqlWith;
+import org.polypheny.db.languages.sql.SqlWithItem;
+import org.polypheny.db.languages.sql.fun.SqlCase;
+import org.polypheny.db.languages.sql.fun.SqlCountAggFunction;
+import org.polypheny.db.languages.sql.fun.SqlInOperator;
+import org.polypheny.db.languages.sql.fun.SqlQuantifyOperator;
+import org.polypheny.db.languages.sql.fun.SqlRowOperator;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.languages.sql.validate.AggregatingSelectScope;
+import org.polypheny.db.languages.sql.validate.CollectNamespace;
+import org.polypheny.db.languages.sql.validate.DelegatingScope;
+import org.polypheny.db.languages.sql.validate.ListScope;
+import org.polypheny.db.languages.sql.validate.MatchRecognizeScope;
+import org.polypheny.db.languages.sql.validate.ParameterScope;
+import org.polypheny.db.languages.sql.validate.SelectScope;
+import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
+import org.polypheny.db.languages.sql.validate.SqlNameMatcher;
+import org.polypheny.db.languages.sql.validate.SqlQualified;
+import org.polypheny.db.languages.sql.validate.SqlUserDefinedTableFunction;
+import org.polypheny.db.languages.sql.validate.SqlUserDefinedTableMacro;
+import org.polypheny.db.languages.sql.validate.SqlValidator;
+import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
+import org.polypheny.db.languages.sql.validate.SqlValidatorNamespace;
+import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
+import org.polypheny.db.languages.sql.validate.SqlValidatorTable;
+import org.polypheny.db.languages.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptSamplingParameters;
@@ -127,71 +200,6 @@ import org.polypheny.db.schema.ModifiableView;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.Wrapper;
-import org.polypheny.db.core.JoinConditionType;
-import org.polypheny.db.core.JoinType;
-import org.polypheny.db.core.SemiJoinType;
-import org.polypheny.db.languages.sql.SqlAggFunction;
-import org.polypheny.db.languages.sql.SqlBasicCall;
-import org.polypheny.db.languages.sql.SqlCall;
-import org.polypheny.db.languages.sql.SqlCallBinding;
-import org.polypheny.db.languages.sql.SqlDataTypeSpec;
-import org.polypheny.db.languages.sql.SqlDelete;
-import org.polypheny.db.languages.sql.SqlDynamicParam;
-import org.polypheny.db.languages.sql.SqlExplainFormat;
-import org.polypheny.db.languages.sql.SqlExplainLevel;
-import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.languages.sql.SqlInsert;
-import org.polypheny.db.languages.sql.SqlIntervalQualifier;
-import org.polypheny.db.languages.sql.SqlJoin;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.languages.sql.SqlLiteral;
-import org.polypheny.db.languages.sql.SqlMatchRecognize;
-import org.polypheny.db.languages.sql.SqlMerge;
-import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlNodeList;
-import org.polypheny.db.languages.sql.SqlNumericLiteral;
-import org.polypheny.db.languages.sql.SqlOperator;
-import org.polypheny.db.languages.sql.SqlOperatorTable;
-import org.polypheny.db.languages.sql.SqlOrderBy;
-import org.polypheny.db.languages.sql.SqlSampleSpec;
-import org.polypheny.db.languages.sql.SqlSelect;
-import org.polypheny.db.languages.sql.SqlSelectKeyword;
-import org.polypheny.db.languages.sql.SqlSetOperator;
-import org.polypheny.db.languages.sql.SqlUnnestOperator;
-import org.polypheny.db.languages.sql.SqlUpdate;
-import org.polypheny.db.languages.sql.SqlUtil;
-import org.polypheny.db.languages.sql.SqlValuesOperator;
-import org.polypheny.db.languages.sql.SqlWindow;
-import org.polypheny.db.languages.sql.SqlWith;
-import org.polypheny.db.languages.sql.SqlWithItem;
-import org.polypheny.db.languages.sql.fun.SqlCase;
-import org.polypheny.db.languages.sql.fun.SqlCountAggFunction;
-import org.polypheny.db.languages.sql.fun.SqlInOperator;
-import org.polypheny.db.languages.sql.fun.SqlQuantifyOperator;
-import org.polypheny.db.languages.sql.fun.SqlRowOperator;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.languages.sql.util.SqlBasicVisitor;
-import org.polypheny.db.languages.sql.util.SqlVisitor;
-import org.polypheny.db.languages.sql.validate.AggregatingSelectScope;
-import org.polypheny.db.languages.sql.validate.CollectNamespace;
-import org.polypheny.db.languages.sql.validate.DelegatingScope;
-import org.polypheny.db.languages.sql.validate.ListScope;
-import org.polypheny.db.languages.sql.validate.MatchRecognizeScope;
-import org.polypheny.db.languages.sql.validate.ParameterScope;
-import org.polypheny.db.languages.sql.validate.SelectScope;
-import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
-import org.polypheny.db.languages.sql.validate.SqlNameMatcher;
-import org.polypheny.db.languages.sql.validate.SqlQualified;
-import org.polypheny.db.languages.sql.validate.SqlUserDefinedTableFunction;
-import org.polypheny.db.languages.sql.validate.SqlUserDefinedTableMacro;
-import org.polypheny.db.languages.sql.validate.SqlValidator;
-import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
-import org.polypheny.db.languages.sql.validate.SqlValidatorNamespace;
-import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.languages.sql.validate.SqlValidatorTable;
-import org.polypheny.db.languages.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.type.PolyType;
@@ -383,7 +391,7 @@ public class SqlToRelConverter {
         final RelDataType validatedRowType =
                 validator.getTypeFactory().createStructType(
                         Pair.right( validatedFields ),
-                        SqlValidatorUtil.uniquify(
+                        CoreUtil.uniquify(
                                 Pair.left( validatedFields ),
                                 catalogReader.nameMatcher().isCaseSensitive() ) );
         /*int diff = validatedFields.size() - result.getRowType().getFieldList().size();
@@ -741,10 +749,10 @@ public class SqlToRelConverter {
      */
     private static boolean containsInOperator( SqlNode node ) {
         try {
-            SqlVisitor<Void> visitor =
-                    new SqlBasicVisitor<Void>() {
+            NodeVisitor<Void> visitor =
+                    new BasicNodeVisitor<Void>() {
                         @Override
-                        public Void visit( SqlCall call ) {
+                        public Void visit( Call call ) {
                             if ( call.getOperator() instanceof SqlInOperator ) {
                                 throw new Util.FoundOne( call );
                             }
@@ -1653,8 +1661,8 @@ public class SqlToRelConverter {
 
         // ROW_NUMBER() expects specific kind of framing.
         if ( aggCall.getKind() == Kind.ROW_NUMBER ) {
-            window.setLowerBound( SqlWindow.createUnboundedPreceding( ParserPos.ZERO ) );
-            window.setUpperBound( SqlWindow.createCurrentRow( ParserPos.ZERO ) );
+            window.setLowerBound( (SqlNode) SqlWindow.createUnboundedPreceding( ParserPos.ZERO ) );
+            window.setUpperBound( (SqlNode) SqlWindow.createCurrentRow( ParserPos.ZERO ) );
             window.setRows( SqlLiteral.createBoolean( true, ParserPos.ZERO ) );
         }
         final SqlNodeList partitionList = window.getPartitionList();
@@ -1945,10 +1953,10 @@ public class SqlToRelConverter {
         // convert pattern
         final Set<String> patternVarsSet = new HashSet<>();
         SqlNode pattern = matchRecognize.getPattern();
-        final SqlBasicVisitor<RexNode> patternVarVisitor =
-                new SqlBasicVisitor<RexNode>() {
+        final BasicNodeVisitor<RexNode> patternVarVisitor =
+                new BasicNodeVisitor<RexNode>() {
                     @Override
-                    public RexNode visit( SqlCall call ) {
+                    public RexNode visit( Call call ) {
                         List<SqlNode> operands = call.getOperandList();
                         List<RexNode> newOperands = new ArrayList<>();
                         for ( SqlNode node : operands ) {
@@ -1959,7 +1967,7 @@ public class SqlToRelConverter {
 
 
                     @Override
-                    public RexNode visit( SqlIdentifier id ) {
+                    public RexNode visit( Identifier id ) {
                         assert id.isSimple();
                         patternVarsSet.add( id.getSimple() );
                         return rexBuilder.makeLiteral( id.getSimple() );
@@ -1967,7 +1975,7 @@ public class SqlToRelConverter {
 
 
                     @Override
-                    public RexNode visit( SqlLiteral literal ) {
+                    public RexNode visit( Literal literal ) {
                         if ( literal instanceof SqlNumericLiteral ) {
                             return rexBuilder.makeExactLiteral( BigDecimal.valueOf( literal.intValue( true ) ) );
                         } else {
@@ -3507,7 +3515,7 @@ public class SqlToRelConverter {
             fieldNames.add( deriveAlias( expr, aliases, i ) );
         }
 
-        fieldNames = SqlValidatorUtil.uniquify( fieldNames, catalogReader.nameMatcher().isCaseSensitive() );
+        fieldNames = CoreUtil.uniquify( fieldNames, catalogReader.nameMatcher().isCaseSensitive() );
 
         relBuilder.push( bb.root ).projectNamed( exprs, fieldNames, true );
         bb.setRoot( relBuilder.build(), false );
@@ -3628,7 +3636,7 @@ public class SqlToRelConverter {
     /**
      * Workspace for translating an individual SELECT statement (or sub-SELECT).
      */
-    protected class Blackboard implements SqlRexContext, SqlVisitor<RexNode>, InitializerContext {
+    protected class Blackboard implements SqlRexContext, NodeVisitor<RexNode>, InitializerContext {
 
         /**
          * Collection of {@link RelNode} objects which correspond to a SELECT statement.
@@ -3995,7 +4003,7 @@ public class SqlToRelConverter {
 
 
         @Override
-        public RexNode convertExpression( SqlNode expr ) {
+        public RexNode convertExpression( Node expr ) {
             // If we're in aggregation mode and this is an expression in the GROUP BY clause, return a reference to the field.
             if ( agg != null ) {
                 final SqlNode expandedGroupExpr = validator.expand( expr, scope );
@@ -4255,13 +4263,13 @@ public class SqlToRelConverter {
 
 
         @Override
-        public RexNode visit( SqlLiteral literal ) {
+        public RexNode visit( Literal literal ) {
             return exprConverter.convertLiteral( this, literal );
         }
 
 
         @Override
-        public RexNode visit( SqlCall call ) {
+        public RexNode visit( Call call ) {
             if ( agg != null ) {
                 final SqlOperator op = call.getOperator();
                 if ( window == null
@@ -4276,19 +4284,19 @@ public class SqlToRelConverter {
 
 
         @Override
-        public RexNode visit( SqlNodeList nodeList ) {
+        public RexNode visit( NodeList nodeList ) {
             throw new UnsupportedOperationException();
         }
 
 
         @Override
-        public RexNode visit( SqlIdentifier id ) {
+        public RexNode visit( Identifier id ) {
             return convertIdentifier( this, id );
         }
 
 
         @Override
-        public RexNode visit( SqlDataTypeSpec type ) {
+        public RexNode visit( DataTypeSpec type ) {
             throw new UnsupportedOperationException();
         }
 
@@ -4300,7 +4308,7 @@ public class SqlToRelConverter {
 
 
         @Override
-        public RexNode visit( SqlIntervalQualifier intervalQualifier ) {
+        public RexNode visit( IntervalQualifier intervalQualifier ) {
             return convertInterval( intervalQualifier );
         }
 
@@ -4382,7 +4390,7 @@ public class SqlToRelConverter {
      * <li>aggCalls = {AggCall(SUM, {1})}</li>
      * </ul>
      */
-    protected class AggConverter implements SqlVisitor<Void> {
+    protected class AggConverter implements NodeVisitor<Void> {
 
         private final Blackboard bb;
         public final AggregatingSelectScope aggregatingSelectScope;
@@ -4501,13 +4509,13 @@ public class SqlToRelConverter {
 
 
         @Override
-        public Void visit( SqlIdentifier id ) {
+        public Void visit( Identifier id ) {
             return null;
         }
 
 
         @Override
-        public Void visit( SqlNodeList nodeList ) {
+        public Void visit( NodeList nodeList ) {
             for ( int i = 0; i < nodeList.size(); i++ ) {
                 nodeList.get( i ).accept( this );
             }
@@ -4516,13 +4524,13 @@ public class SqlToRelConverter {
 
 
         @Override
-        public Void visit( SqlLiteral lit ) {
+        public Void visit( Literal lit ) {
             return null;
         }
 
 
         @Override
-        public Void visit( SqlDataTypeSpec type ) {
+        public Void visit( DataTypeSpec type ) {
             return null;
         }
 
@@ -4534,13 +4542,13 @@ public class SqlToRelConverter {
 
 
         @Override
-        public Void visit( SqlIntervalQualifier intervalQualifier ) {
+        public Void visit( IntervalQualifier intervalQualifier ) {
             return null;
         }
 
 
         @Override
-        public Void visit( SqlCall call ) {
+        public Void visit( Call call ) {
             switch ( call.getKind() ) {
                 case FILTER:
                 case WITHIN_GROUP:
@@ -4924,7 +4932,7 @@ public class SqlToRelConverter {
                 return histogramCall;
             } else {
                 boolean needSum0 = aggOp == SqlStdOperatorTable.SUM && type.isNullable();
-                SqlAggFunction aggOpToUse =
+                AggFunction aggOpToUse =
                         needSum0
                                 ? SqlStdOperatorTable.SUM0
                                 : aggOp;
@@ -5004,7 +5012,7 @@ public class SqlToRelConverter {
     /**
      * Visitor that collects all aggregate functions in a {@link SqlNode} tree.
      */
-    private static class AggregateFinder extends SqlBasicVisitor<Void> {
+    private static class AggregateFinder extends BasicNodeVisitor<Void> {
 
         final SqlNodeList list = new SqlNodeList( ParserPos.ZERO );
         final SqlNodeList filterList = new SqlNodeList( ParserPos.ZERO );
@@ -5012,7 +5020,7 @@ public class SqlToRelConverter {
 
 
         @Override
-        public Void visit( SqlCall call ) {
+        public Void visit( Call call ) {
             // ignore window aggregates and ranking functions (associated with OVER operator)
             if ( call.getOperator().getKind() == Kind.OVER ) {
                 return null;

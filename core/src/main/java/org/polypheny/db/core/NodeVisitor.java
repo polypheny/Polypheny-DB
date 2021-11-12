@@ -14,18 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql.util;
-
-
-import org.polypheny.db.languages.sql.SqlCall;
-import org.polypheny.db.languages.sql.SqlDataTypeSpec;
-import org.polypheny.db.languages.sql.SqlDynamicParam;
-import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.languages.sql.SqlIntervalQualifier;
-import org.polypheny.db.languages.sql.SqlLiteral;
-import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlNodeList;
-import org.polypheny.db.languages.sql.SqlOperator;
+package org.polypheny.db.core;
 
 
 /**
@@ -34,65 +23,66 @@ import org.polypheny.db.languages.sql.SqlOperator;
  * The type parameter <code>R</code> is the return type of each <code>visit()</code> method. If the methods do not need to return a value, use {@link Void}.
  *
  * @param <R> Return type
- * @see SqlBasicVisitor
- * @see SqlNode#accept(SqlVisitor)
- * @see SqlOperator#acceptCall
+ * #@see SqlBasicVisitor
+ * @see Node#accept(NodeVisitor)
+ * #@see Operator#acceptCall
  */
-public interface SqlVisitor<R> {
+public interface NodeVisitor<R> {
 
     /**
      * Visits a literal.
      *
      * @param literal Literal
-     * @see SqlLiteral#accept(SqlVisitor)
+     * @see Literal#accept(NodeVisitor)
      */
-    R visit( SqlLiteral literal );
+    R visit( Literal literal );
 
     /**
-     * Visits a call to a {@link SqlOperator}.
+     * Visits a call to a {@link Operator}.
      *
      * @param call Call
-     * @see SqlCall#accept(SqlVisitor)
+     * @see Call#accept(NodeVisitor)
      */
-    R visit( SqlCall call );
+    R visit( Call call );
 
     /**
-     * Visits a list of {@link SqlNode} objects.
+     * Visits a list of {@link Node} objects.
      *
      * @param nodeList list of nodes
-     * @see SqlNodeList#accept(SqlVisitor)
+     * @see NodeList#accept(NodeVisitor)
      */
-    R visit( SqlNodeList nodeList );
+    R visit( NodeList nodeList );
 
     /**
      * Visits an identifier.
      *
      * @param id identifier
-     * @see SqlIdentifier#accept(SqlVisitor)
+     * @see Identifier#accept(NodeVisitor)
      */
-    R visit( SqlIdentifier id );
+    R visit( Identifier id );
 
     /**
      * Visits a datatype specification.
      *
      * @param type datatype specification
-     * @see SqlDataTypeSpec#accept(SqlVisitor)
+     * @see DataTypeSpec#accept(NodeVisitor)
      */
-    R visit( SqlDataTypeSpec type );
+    R visit( DataTypeSpec type );
 
     /**
      * Visits a dynamic parameter.
      *
      * @param param Dynamic parameter
-     * @see SqlDynamicParam#accept(SqlVisitor)
+     * @see DynamicParam#accept(NodeVisitor)
      */
-    R visit( SqlDynamicParam param );
+    R visit( DynamicParam param );
 
     /**
      * Visits an interval qualifier
      *
      * @param intervalQualifier Interval qualifier
-     * @see SqlIntervalQualifier#accept(SqlVisitor)
+     * @see IntervalQualifier#accept(NodeVisitor)
      */
-    R visit( SqlIntervalQualifier intervalQualifier );
+    R visit( IntervalQualifier intervalQualifier );
+
 }

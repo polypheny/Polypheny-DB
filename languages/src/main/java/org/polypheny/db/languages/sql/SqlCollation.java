@@ -45,7 +45,7 @@ public class SqlCollation extends Collation {
      * @return the resulting collation sequence. The "no collating sequence" result is returned as null.
      * @see Glossary#SQL99 SQL:1999 Part 2 Section 4.2.3 Table 2
      */
-    public static SqlCollation getCoercibilityDyadicOperator( Collation col1, Collation col2 ) {
+    public static Collation getCoercibilityDyadicOperator( Collation col1, Collation col2 ) {
         return getCoercibilityDyadic( col1, col2 );
     }
 
@@ -59,14 +59,14 @@ public class SqlCollation extends Collation {
      * @throws PolyphenyDbException from {@link PolyphenyDbResource#invalidCompare} or {@link PolyphenyDbResource#differentCollations} if no collating sequence can be deduced
      * @see Glossary#SQL99 SQL:1999 Part 2 Section 4.2.3 Table 2
      */
-    public static SqlCollation getCoercibilityDyadicOperatorThrows( SqlCollation col1, SqlCollation col2 ) {
-        SqlCollation ret = getCoercibilityDyadic( col1, col2 );
+    public static Collation getCoercibilityDyadicOperatorThrows( Collation col1, Collation col2 ) {
+        Collation ret = getCoercibilityDyadic( col1, col2 );
         if ( null == ret ) {
             throw RESOURCE.invalidCompare(
-                    col1.collationName,
-                    "" + col1.coercibility,
-                    col2.collationName,
-                    "" + col2.coercibility ).ex();
+                    col1.getCollationName(),
+                    "" + col1.getCoercibility(),
+                    col2.getCollationName(),
+                    "" + col2.getCoercibility() ).ex();
         }
         return ret;
     }
@@ -80,8 +80,8 @@ public class SqlCollation extends Collation {
      * @return the resulting collation sequence. If no collating sequence could be deduced throws a {@link PolyphenyDbResource#invalidCompare}
      * @see Glossary#SQL99 SQL:1999 Part 2 Section 4.2.3 Table 3
      */
-    public static String getCoercibilityDyadicComparison( SqlCollation col1, SqlCollation col2 ) {
-        return getCoercibilityDyadicOperatorThrows( col1, col2 ).collationName;
+    public static String getCoercibilityDyadicComparison( Collation col1, Collation col2 ) {
+        return getCoercibilityDyadicOperatorThrows( col1, col2 ).getCollationName();
     }
 
 
@@ -112,7 +112,7 @@ public class SqlCollation extends Collation {
                     case COERCIBLE:
                         return col1;
                     case IMPLICIT:
-                        if ( col1.collationName.equals( col2.collationName ) ) {
+                        if ( col1.getCollationName().equals( col2.getCollationName() ) ) {
                             return col2;
                         }
                         return null;
@@ -141,10 +141,10 @@ public class SqlCollation extends Collation {
                     case NONE:
                         return col1;
                     case EXPLICIT:
-                        if ( col1.collationName.equals( col2.collationName ) ) {
+                        if ( col1.getCollationName().equals( col2.getCollationName() ) ) {
                             return col2;
                         }
-                        throw RESOURCE.differentCollations( col1.collationName, col2.collationName ).ex();
+                        throw RESOURCE.differentCollations( col1.getCollationName(), col2.getCollationName() ).ex();
                     default:
                         throw Util.unexpected( coercibility2 );
                 }

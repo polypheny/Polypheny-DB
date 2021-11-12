@@ -19,16 +19,17 @@ package org.polypheny.db.languages.sql.validate;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import org.polypheny.db.core.Call;
+import org.polypheny.db.core.NodeVisitor;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.util.SqlShuttle;
-import org.polypheny.db.languages.sql.util.SqlVisitor;
 
 
 /**
  * Refinement to {@link SqlShuttle} which maintains a stack of scopes.
  *
- * Derived class should override {@link #visitScoped(SqlCall)} rather than {@link SqlVisitor#visit(SqlCall)}.
+ * Derived class should override {@link #visitScoped(SqlCall)} rather than {@link NodeVisitor#visit(Call)}.
  */
 public abstract class SqlScopedShuttle extends SqlShuttle {
 
@@ -41,7 +42,7 @@ public abstract class SqlScopedShuttle extends SqlShuttle {
 
 
     @Override
-    public final SqlNode visit( SqlCall call ) {
+    public final SqlNode visit( Call call ) {
         SqlValidatorScope oldScope = scopes.peek();
         SqlValidatorScope newScope = oldScope.getOperandScope( call );
         scopes.push( newScope );

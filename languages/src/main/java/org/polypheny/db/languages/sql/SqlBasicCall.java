@@ -19,8 +19,9 @@ package org.polypheny.db.languages.sql;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.util.UnmodifiableArrayList;
 
 
@@ -73,7 +74,7 @@ public class SqlBasicCall extends SqlCall {
 
 
     @Override
-    public SqlOperator getOperator() {
+    public Operator getOperator() {
         return operator;
     }
 
@@ -84,7 +85,7 @@ public class SqlBasicCall extends SqlCall {
 
 
     @Override
-    public List<SqlNode> getOperandList() {
+    public List<Node> getOperandList() {
         return UnmodifiableArrayList.of( operands ); // not immutable, but quick
     }
 
@@ -109,7 +110,7 @@ public class SqlBasicCall extends SqlCall {
 
 
     @Override
-    public SqlNode clone( ParserPos pos ) {
+    public Call clone( ParserPos pos ) {
         return getOperator().createCall( getFunctionQuantifier(), pos, operands );
     }
 

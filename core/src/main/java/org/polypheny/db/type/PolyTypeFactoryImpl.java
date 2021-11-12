@@ -36,13 +36,13 @@ package org.polypheny.db.type;
 
 import java.nio.charset.Charset;
 import java.util.List;
+import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
 import org.polypheny.db.rel.type.RelDataTypeFamily;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.sql.SqlCollation;
-import org.polypheny.db.sql.SqlIntervalQualifier;
 import org.polypheny.db.util.Util;
 
 
@@ -134,7 +134,7 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
 
 
     @Override
-    public RelDataType createSqlIntervalType( SqlIntervalQualifier intervalQualifier ) {
+    public RelDataType createSqlIntervalType( IntervalQualifier intervalQualifier ) {
         RelDataType newType = new IntervalPolyType( typeSystem, intervalQualifier, false );
         return canonize( newType );
     }

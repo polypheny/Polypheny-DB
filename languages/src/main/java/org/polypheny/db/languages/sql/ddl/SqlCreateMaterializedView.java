@@ -37,23 +37,23 @@ import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.jdbc.Context;
-import org.polypheny.db.languages.sql.dialect.PolyphenyDbSqlDialect;
-import org.polypheny.db.processing.SqlProcessor;
-import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.languages.sql.SqlCreate;
 import org.polypheny.db.languages.sql.SqlExecutableStatement;
 import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
+import org.polypheny.db.languages.sql.dialect.PolyphenyDbSqlDialect;
+import org.polypheny.db.processing.SqlProcessor;
+import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.view.MaterializedViewManager;
@@ -99,7 +99,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
 
 
     @Override
-    public List<SqlNode> getOperandList() {
+    public List<Node> getOperandList() {
         return ImmutableNullableList.of( name, columnList, query );
     }
 

@@ -21,9 +21,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.polypheny.db.core.Call;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.Kind;
-import org.polypheny.db.languages.sql.util.SqlVisitor;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.NodeVisitor;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlMoniker;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
@@ -70,11 +71,6 @@ public abstract class SqlCall extends SqlNode implements Call {
     }
 
 
-    public abstract SqlOperator getOperator();
-
-    public abstract List<SqlNode> getOperandList();
-
-
     @SuppressWarnings("unchecked")
     public <S extends SqlNode> S operand( int i ) {
         return (S) getOperandList().get( i );
@@ -87,15 +83,15 @@ public abstract class SqlCall extends SqlNode implements Call {
 
 
     @Override
-    public SqlNode clone( ParserPos pos ) {
-        final List<SqlNode> operandList = getOperandList();
-        return getOperator().createCall( getFunctionQuantifier(), pos, operandList.toArray( new SqlNode[0] ) );
+    public Node clone( ParserPos pos ) {
+        final List<Node> operandList = getOperandList();
+        return (Node) getOperator().createCall( getFunctionQuantifier(), pos, operandList.toArray( new Node[0] ) );
     }
 
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
-        final SqlOperator operator = getOperator();
+        final SqlOperator operator = (SqlOperator) getOperator();
         final SqlDialect dialect = writer.getDialect();
         if ( leftPrec > operator.getLeftPrec()
                 || (operator.getRightPrec() <= rightPrec && (rightPrec != 0))
@@ -123,7 +119,7 @@ public abstract class SqlCall extends SqlNode implements Call {
 
     @Override
     public void findValidOptions( SqlValidator validator, SqlValidatorScope scope, ParserPos pos, Collection<SqlMoniker> hintList ) {
-        for ( SqlNode operand : getOperandList() ) {
+        for ( Node operand : getOperandList() ) {
             if ( operand instanceof SqlIdentifier ) {
                 SqlIdentifier id = (SqlIdentifier) operand;
                 ParserPos idPos = id.getPos();
@@ -138,13 +134,13 @@ public abstract class SqlCall extends SqlNode implements Call {
 
 
     @Override
-    public <R> R accept( SqlVisitor<R> visitor ) {
+    public <R> R accept( NodeVisitor<R> visitor ) {
         return visitor.visit( this );
     }
 
 
     @Override
-    public boolean equalsDeep( SqlNode node, Litmus litmus ) {
+    public boolean equalsDeep( Node node, Litmus litmus ) {
         if ( node == this ) {
             return true;
         }
@@ -158,7 +154,7 @@ public abstract class SqlCall extends SqlNode implements Call {
         if ( !this.getOperator().getName().equalsIgnoreCase( that.getOperator().getName() ) ) {
             return litmus.fail( "{} != {}", this, node );
         }
-        return equalDeep( this.getOperandList(), that.getOperandList(), litmus );
+        return Node.equalDeep( this.getOperandList(), that.getOperandList(), litmus );
     }
 
 
@@ -167,14 +163,14 @@ public abstract class SqlCall extends SqlNode implements Call {
      */
     protected String getCallSignature( SqlValidator validator, SqlValidatorScope scope ) {
         List<String> signatureList = new ArrayList<>();
-        for ( final SqlNode operand : getOperandList() ) {
+        for ( final Node operand : getOperandList() ) {
             final RelDataType argType = validator.deriveType( scope, operand );
             if ( null == argType ) {
                 continue;
             }
             signatureList.add( argType.toString() );
         }
-        return SqlUtil.getOperatorSignature( getOperator(), signatureList );
+        return SqlUtil.getOperatorSignature( (SqlOperator) getOperator(), signatureList );
     }
 
 
@@ -209,4 +205,5 @@ public abstract class SqlCall extends SqlNode implements Call {
     public SqlLiteral getFunctionQuantifier() {
         return null;
     }
+
 }

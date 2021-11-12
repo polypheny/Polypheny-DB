@@ -16,6 +16,10 @@
 
 package org.polypheny.db.core;
 
-public interface Literal {
+public interface Literal extends Visitable {
+
+    Object getValue();
+
+    <E extends Enum<E>> E symbolValue( Class<E> class_ );
 
 }

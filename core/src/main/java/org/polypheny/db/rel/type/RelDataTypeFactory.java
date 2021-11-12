@@ -41,9 +41,10 @@ import java.util.Map;
 import java.util.Objects;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.core.Collation;
+import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.SqlIntervalQualifier;
-import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Glossary;
 
@@ -242,7 +243,7 @@ public interface RelDataTypeFactory {
      * @param intervalQualifier contains information if it is a year-month or a day-time interval along with precision information
      * @return canonical type descriptor
      */
-    RelDataType createSqlIntervalType( SqlIntervalQualifier intervalQualifier );
+    RelDataType createSqlIntervalType( IntervalQualifier intervalQualifier );
 
     /**
      * Infers the return type of a decimal multiplication. Decimal multiplication involves at least one decimal operand and
@@ -499,7 +500,7 @@ public interface RelDataTypeFactory {
          * Adds a field with an interval type.
          */
         public Builder add( String name, String physicalName, TimeUnit startUnit, int startPrecision, TimeUnit endUnit, int fractionalSecondPrecision ) {
-            final SqlIntervalQualifier q = new SqlIntervalQualifier( startUnit, startPrecision, endUnit, fractionalSecondPrecision, ParserPos.ZERO );
+            final IntervalQualifier q = new SqlIntervalQualifier( startUnit, startPrecision, endUnit, fractionalSecondPrecision, ParserPos.ZERO );
             add( name, physicalName, typeFactory.createSqlIntervalType( q ) );
             return this;
         }
@@ -551,7 +552,7 @@ public interface RelDataTypeFactory {
          * Makes sure that field names are unique.
          */
         public Builder uniquify() {
-            final List<String> uniqueNames = SqlValidatorUtil.uniquify( names, typeFactory.getTypeSystem().isSchemaCaseSensitive() );
+            final List<String> uniqueNames = CoreUtil.uniquify( names, typeFactory.getTypeSystem().isSchemaCaseSensitive() );
             if ( uniqueNames != names ) {
                 names.clear();
                 names.addAll( uniqueNames );

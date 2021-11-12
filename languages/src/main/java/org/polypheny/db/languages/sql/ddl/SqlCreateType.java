@@ -19,6 +19,7 @@ package org.polypheny.db.languages.sql.ddl;
 
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
@@ -26,7 +27,6 @@ import org.polypheny.db.languages.sql.SqlCreate;
 import org.polypheny.db.languages.sql.SqlDataTypeSpec;
 import org.polypheny.db.languages.sql.SqlExecutableStatement;
 import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlOperator;
@@ -66,7 +66,7 @@ public class SqlCreateType extends SqlCreate implements SqlExecutableStatement {
 
 
     @Override
-    public List<SqlNode> getOperandList() {
+    public List<Node> getOperandList() {
         return ImmutableNullableList.of( name, attributeDefs );
     }
 

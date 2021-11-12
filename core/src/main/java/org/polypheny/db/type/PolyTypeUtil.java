@@ -51,21 +51,21 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import org.apache.commons.lang3.reflect.TypeUtils;
+import org.polypheny.db.core.Call;
+import org.polypheny.db.core.CallBinding;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.Validator;
+import org.polypheny.db.core.ValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeFamily;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rel.type.RelDataTypeFieldImpl;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.SqlCall;
-import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlCollation;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.validate.SqlValidator;
-import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.util.NumberUtil;
 import org.polypheny.db.util.Pair;
@@ -127,9 +127,9 @@ public abstract class PolyTypeUtil {
      * @param throwOnFailure Whether to throw an exception on failure
      * @return whether operands are valid
      */
-    public static boolean isCharTypeComparable( SqlCallBinding binding, List<SqlNode> operands, boolean throwOnFailure ) {
-        final SqlValidator validator = binding.getValidator();
-        final SqlValidatorScope scope = binding.getScope();
+    public static boolean isCharTypeComparable( CallBinding binding, List<Node> operands, boolean throwOnFailure ) {
+        final Validator validator = binding.getValidator();
+        final ValidatorScope scope = binding.getScope();
         assert operands != null;
         assert operands.size() >= 2;
 
@@ -153,10 +153,10 @@ public abstract class PolyTypeUtil {
     /**
      * Iterates over all operands, derives their types, and collects them into a list.
      */
-    public static List<RelDataType> deriveAndCollectTypes( SqlValidator validator, SqlValidatorScope scope, List<SqlNode> operands ) {
+    public static List<RelDataType> deriveAndCollectTypes( Validator validator, ValidatorScope scope, List<Node> operands ) {
         // NOTE: Do not use an AbstractList. Don't want to be lazy. We want errors.
         List<RelDataType> types = new ArrayList<>();
-        for ( SqlNode operand : operands ) {
+        for ( Node operand : operands ) {
             types.add( validator.deriveType( scope, operand ) );
         }
         return types;
@@ -184,8 +184,8 @@ public abstract class PolyTypeUtil {
     /**
      * Recreates a given RelDataType with nullability iff any of the operands of a call are nullable.
      */
-    public static RelDataType makeNullableIfOperandsAre( final SqlValidator validator, final SqlValidatorScope scope, final SqlCall call, RelDataType type ) {
-        for ( SqlNode operand : call.getOperandList() ) {
+    public static RelDataType makeNullableIfOperandsAre( final Validator validator, final ValidatorScope scope, final Call call, RelDataType type ) {
+        for ( Node operand : call.getOperandList() ) {
             RelDataType operandType = validator.deriveType( scope, operand );
 
             if ( containsNullable( operandType ) ) {

@@ -31,14 +31,15 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import org.junit.Test;
+import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.languages.sql.SqlIdentifier;
+import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.validate.SqlNameMatcher;
 import org.polypheny.db.languages.sql.validate.SqlNameMatchers;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.languages.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
-import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.utils.SqlTester;
 import org.polypheny.db.sql.utils.SqlValidatorTester;
 import org.polypheny.db.test.SqlTestFactory;
@@ -79,7 +80,7 @@ public class SqlValidatorUtilTest {
     @Test
     public void testUniquifyCaseSensitive() {
         List<String> nameList = Lists.newArrayList( "col1", "COL1", "col_ABC", "col_abC" );
-        List<String> resultList = SqlValidatorUtil.uniquify( nameList, SqlValidatorUtil.EXPR_SUGGESTER, true );
+        List<String> resultList = CoreUtil.uniquify( nameList, CoreUtil.EXPR_SUGGESTER, true );
         assertThat( nameList, sameInstance( resultList ) );
     }
 
@@ -87,7 +88,7 @@ public class SqlValidatorUtilTest {
     @Test
     public void testUniquifyNotCaseSensitive() {
         List<String> nameList = Lists.newArrayList( "col1", "COL1", "col_ABC", "col_abC" );
-        List<String> resultList = SqlValidatorUtil.uniquify( nameList, SqlValidatorUtil.EXPR_SUGGESTER, false );
+        List<String> resultList = CoreUtil.uniquify( nameList, CoreUtil.EXPR_SUGGESTER, false );
         assertThat( resultList, not( nameList ) );
         checkChangedFieldList( nameList, resultList, false );
     }
@@ -96,7 +97,7 @@ public class SqlValidatorUtilTest {
     @Test
     public void testUniquifyOrderingCaseSensitive() {
         List<String> nameList = Lists.newArrayList( "k68s", "def", "col1", "COL1", "abc", "123" );
-        List<String> resultList = SqlValidatorUtil.uniquify( nameList, SqlValidatorUtil.EXPR_SUGGESTER, true );
+        List<String> resultList = CoreUtil.uniquify( nameList, CoreUtil.EXPR_SUGGESTER, true );
         assertThat( nameList, sameInstance( resultList ) );
     }
 
@@ -104,7 +105,7 @@ public class SqlValidatorUtilTest {
     @Test
     public void testUniquifyOrderingRepeatedCaseSensitive() {
         List<String> nameList = Lists.newArrayList( "k68s", "def", "col1", "COL1", "def", "123" );
-        List<String> resultList = SqlValidatorUtil.uniquify( nameList, SqlValidatorUtil.EXPR_SUGGESTER, true );
+        List<String> resultList = CoreUtil.uniquify( nameList, CoreUtil.EXPR_SUGGESTER, true );
         assertThat( nameList, not( resultList ) );
         checkChangedFieldList( nameList, resultList, true );
     }
@@ -113,7 +114,7 @@ public class SqlValidatorUtilTest {
     @Test
     public void testUniquifyOrderingNotCaseSensitive() {
         List<String> nameList = Lists.newArrayList( "k68s", "def", "col1", "COL1", "abc", "123" );
-        List<String> resultList = SqlValidatorUtil.uniquify( nameList, SqlValidatorUtil.EXPR_SUGGESTER, false );
+        List<String> resultList = CoreUtil.uniquify( nameList, CoreUtil.EXPR_SUGGESTER, false );
         assertThat( resultList, not( nameList ) );
         checkChangedFieldList( nameList, resultList, false );
     }
@@ -122,7 +123,7 @@ public class SqlValidatorUtilTest {
     @Test
     public void testUniquifyOrderingRepeatedNotCaseSensitive() {
         List<String> nameList = Lists.newArrayList( "k68s", "def", "col1", "COL1", "def", "123" );
-        List<String> resultList = SqlValidatorUtil.uniquify( nameList, SqlValidatorUtil.EXPR_SUGGESTER, false );
+        List<String> resultList = CoreUtil.uniquify( nameList, CoreUtil.EXPR_SUGGESTER, false );
         assertThat( resultList, not( nameList ) );
         checkChangedFieldList( nameList, resultList, false );
     }

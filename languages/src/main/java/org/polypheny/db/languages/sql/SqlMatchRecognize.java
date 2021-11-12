@@ -21,10 +21,10 @@ import com.google.common.base.Preconditions;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.BasicNodeVisitor.ArgHandler;
 import org.polypheny.db.core.Kind;
-import org.polypheny.db.languages.sql.util.SqlBasicVisitor.ArgHandler;
-import org.polypheny.db.languages.sql.util.SqlVisitor;
+import org.polypheny.db.core.NodeVisitor;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.ImmutableNullableList;
@@ -117,7 +117,7 @@ public class SqlMatchRecognize extends SqlCall {
 
 
     @Override
-    public SqlOperator getOperator() {
+    public Operator getOperator() {
         return SqlMatchRecognizeOperator.INSTANCE;
     }
 
@@ -129,7 +129,7 @@ public class SqlMatchRecognize extends SqlCall {
 
 
     @Override
-    public List<SqlNode> getOperandList() {
+    public List<Node> getOperandList() {
         return ImmutableNullableList.of( tableRef, pattern, strictStart, strictEnd, patternDefList, measureList, after, subsetList, partitionList, orderList );
     }
 
@@ -362,7 +362,7 @@ public class SqlMatchRecognize extends SqlCall {
 
 
         @Override
-        public <R> void acceptCall( SqlVisitor<R> visitor, SqlCall call, boolean onlyExpressions, ArgHandler<R> argHandler ) {
+        public <R> void acceptCall( NodeVisitor<R> visitor, SqlCall call, boolean onlyExpressions, ArgHandler<R> argHandler ) {
             if ( onlyExpressions ) {
                 List<SqlNode> operands = call.getOperandList();
                 for ( int i = 0; i < operands.size(); i++ ) {

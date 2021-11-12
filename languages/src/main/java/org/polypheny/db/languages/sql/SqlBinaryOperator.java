@@ -22,11 +22,11 @@ import java.nio.charset.Charset;
 import org.polypheny.db.core.BinaryOperator;
 import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
@@ -119,7 +119,7 @@ public class SqlBinaryOperator extends SqlOperator implements BinaryOperator {
             assert (null != col1) && (null != col2) : "An implicit or explicit collation should have been set";
 
             // validation will occur inside getCoercibilityDyadicOperator...
-            SqlCollation resultCol = SqlCollation.getCoercibilityDyadicOperator( col1, col2 );
+            Collation resultCol = SqlCollation.getCoercibilityDyadicOperator( col1, col2 );
 
             if ( PolyTypeUtil.inCharFamily( type ) ) {
                 type = validator.getTypeFactory().createTypeWithCharsetAndCollation( type, type.getCharset(), resultCol );
@@ -148,7 +148,7 @@ public class SqlBinaryOperator extends SqlOperator implements BinaryOperator {
             assert (null != col1) && (null != col2) : "An implicit or explicit collation should have been set";
 
             // validation will occur inside getCoercibilityDyadicOperator...
-            SqlCollation resultCol = SqlCollation.getCoercibilityDyadicOperator( col1, col2 );
+            Collation resultCol = SqlCollation.getCoercibilityDyadicOperator( col1, col2 );
 
             if ( PolyTypeUtil.inCharFamily( type ) ) {
                 type = validator.getTypeFactory()

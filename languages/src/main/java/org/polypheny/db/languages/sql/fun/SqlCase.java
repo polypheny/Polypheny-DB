@@ -18,13 +18,12 @@ package org.polypheny.db.languages.sql.fun;
 
 
 import java.util.List;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.SqlCall;
-import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
-import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.util.UnmodifiableArrayList;
 
 
@@ -97,13 +96,13 @@ public class SqlCase extends SqlCall {
 
 
     @Override
-    public SqlOperator getOperator() {
+    public Operator getOperator() {
         return SqlStdOperatorTable.CASE;
     }
 
 
     @Override
-    public List<SqlNode> getOperandList() {
+    public List<Node> getOperandList() {
         return UnmodifiableArrayList.of( value, whenList, thenList, elseExpr );
     }
 

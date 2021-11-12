@@ -21,14 +21,16 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.core.Identifier;
 import org.polypheny.db.core.Kind;
-import org.polypheny.db.languages.sql.util.SqlVisitor;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.NodeVisitor;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlQualified;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.DynamicRecordType;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Util;
 
@@ -36,7 +38,7 @@ import org.polypheny.db.util.Util;
 /**
  * A <code>SqlIdentifier</code> is an identifier, possibly compound.
  */
-public class SqlIdentifier extends SqlNode {
+public class SqlIdentifier extends SqlNode implements Identifier {
 
     /**
      * Array of the components of this compound identifier.
@@ -338,7 +340,7 @@ public class SqlIdentifier extends SqlNode {
 
 
     @Override
-    public boolean equalsDeep( SqlNode node, Litmus litmus ) {
+    public boolean equalsDeep( Node node, Litmus litmus ) {
         if ( !(node instanceof SqlIdentifier) ) {
             return litmus.fail( "{} != {}", this, node );
         }
@@ -356,7 +358,7 @@ public class SqlIdentifier extends SqlNode {
 
 
     @Override
-    public <R> R accept( SqlVisitor<R> visitor ) {
+    public <R> R accept( NodeVisitor<R> visitor ) {
         return visitor.visit( this );
     }
 

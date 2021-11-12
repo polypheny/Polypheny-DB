@@ -17,9 +17,11 @@
 package org.polypheny.db.languages.sql;
 
 
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.DynamicParam;
 import org.polypheny.db.core.Kind;
-import org.polypheny.db.languages.sql.util.SqlVisitor;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.NodeVisitor;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -29,7 +31,7 @@ import org.polypheny.db.util.Litmus;
 /**
  * A <code>SqlDynamicParam</code> represents a dynamic parameter marker in an SQL statement. The textual order in which dynamic parameters appear within an SQL statement is the only property which distinguishes them, so this 0-based index is recorded as soon as the parameter is encountered.
  */
-public class SqlDynamicParam extends SqlNode {
+public class SqlDynamicParam extends SqlNode implements DynamicParam {
 
     private final int index;
 
@@ -76,13 +78,13 @@ public class SqlDynamicParam extends SqlNode {
 
 
     @Override
-    public <R> R accept( SqlVisitor<R> visitor ) {
+    public <R> R accept( NodeVisitor<R> visitor ) {
         return visitor.visit( this );
     }
 
 
     @Override
-    public boolean equalsDeep( SqlNode node, Litmus litmus ) {
+    public boolean equalsDeep( Node node, Litmus litmus ) {
         if ( !(node instanceof SqlDynamicParam) ) {
             return litmus.fail( "{} != {}", this, node );
         }

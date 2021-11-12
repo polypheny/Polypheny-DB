@@ -84,7 +84,7 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
 
 
     @Override
-    public List<SqlNode> getOperandList() {
+    public List<Node> getOperandList() {
         return ImmutableNullableList.of( tableName, columnName, type, beforeColumn, afterColumn, defaultValue );
     }
 

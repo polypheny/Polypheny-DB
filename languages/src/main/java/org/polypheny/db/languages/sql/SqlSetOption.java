@@ -21,9 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.transaction.Statement;
@@ -114,13 +114,13 @@ public class SqlSetOption extends SqlAlter {
 
 
     @Override
-    public SqlOperator getOperator() {
+    public Operator getOperator() {
         return OPERATOR;
     }
 
 
     @Override
-    public List<SqlNode> getOperandList() {
+    public List<Node> getOperandList() {
         final List<SqlNode> operandList = new ArrayList<>();
         if ( scope == null ) {
             operandList.add( null );

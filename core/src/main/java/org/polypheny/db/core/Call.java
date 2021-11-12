@@ -16,6 +16,12 @@
 
 package org.polypheny.db.core;
 
-public interface Call {
+import java.util.List;
+
+public interface Call extends Visitable {
+
+    List<Node> getOperandList();
+
+    Operator getOperator();
 
 }

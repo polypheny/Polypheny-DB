@@ -25,14 +25,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.StructKind;
+import org.polypheny.db.core.ValidatorScope;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlSelect;
 import org.polypheny.db.languages.sql.SqlWindow;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.StructKind;
 import org.polypheny.db.util.Pair;
 
 
@@ -41,7 +42,7 @@ import org.polypheny.db.util.Pair;
  *
  * When validating an expression, say "foo"."bar", you first use the {@link #resolve} method of the scope where the expression is defined to locate "foo". If successful, this returns a {@link SqlValidatorNamespace namespace} describing the type of the resulting object.
  */
-public interface SqlValidatorScope {
+public interface SqlValidatorScope extends ValidatorScope {
 
     /**
      * Returns the validator which created this scope.

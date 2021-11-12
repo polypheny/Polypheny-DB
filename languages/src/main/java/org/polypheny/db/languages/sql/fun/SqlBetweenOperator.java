@@ -18,23 +18,24 @@ package org.polypheny.db.languages.sql.fun;
 
 
 import java.util.List;
+import org.polypheny.db.core.BasicNodeVisitor;
+import org.polypheny.db.core.Call;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.languages.sql.parser.SqlParserUtil;
-import org.polypheny.db.languages.sql.util.SqlBasicVisitor;
-import org.polypheny.db.languages.sql.validate.SqlValidator;
-import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeComparability;
 import org.polypheny.db.languages.sql.ExplicitOperatorBinding;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlInfixOperator;
-import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
+import org.polypheny.db.languages.sql.parser.SqlParserUtil;
+import org.polypheny.db.languages.sql.validate.SqlValidator;
+import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeComparability;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.ComparableOperandTypeChecker;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
@@ -222,10 +223,10 @@ public class SqlBetweenOperator extends SqlInfixOperator {
     /**
      * Finds an AND operator in an expression.
      */
-    private static class AndFinder extends SqlBasicVisitor<Void> {
+    private static class AndFinder extends BasicNodeVisitor<Void> {
 
         @Override
-        public Void visit( SqlCall call ) {
+        public Void visit( Call call ) {
             final SqlOperator operator = call.getOperator();
             if ( operator == SqlStdOperatorTable.AND ) {
                 throw Util.FoundOne.NULL;

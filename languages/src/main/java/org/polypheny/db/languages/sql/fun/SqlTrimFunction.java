@@ -20,15 +20,18 @@ package org.polypheny.db.languages.sql.fun;
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import java.util.List;
+import org.polypheny.db.core.Call;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlFunctionCategory;
-import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWriter;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeTransformCascade;
 import org.polypheny.db.type.PolyTypeTransforms;
@@ -123,7 +126,7 @@ public class SqlTrimFunction extends SqlFunction {
 
 
     @Override
-    public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
+    public Call createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
         assert functionQualifier == null;
         switch ( operands.length ) {
             case 1:
@@ -131,7 +134,7 @@ public class SqlTrimFunction extends SqlFunction {
                 operands = new SqlNode[]{
                         Flag.BOTH.symbol( ParserPos.ZERO ),
                         SqlLiteral.createCharString( " ", pos ),
-                        operands[0]
+                        (SqlNode) operands[0]
                 };
                 break;
             case 3:

@@ -19,10 +19,10 @@ package org.polypheny.db.languages.sql;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.BasicNodeVisitor.ArgHandler;
 import org.polypheny.db.core.Kind;
-import org.polypheny.db.languages.sql.util.SqlBasicVisitor.ArgHandler;
-import org.polypheny.db.languages.sql.util.SqlVisitor;
+import org.polypheny.db.core.NodeVisitor;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.inference.ReturnTypes;
 
 
@@ -119,7 +119,7 @@ public class SqlSelectOperator extends SqlOperator {
 
 
     @Override
-    public <R> void acceptCall( SqlVisitor<R> visitor, SqlCall call, boolean onlyExpressions, ArgHandler<R> argHandler ) {
+    public <R> void acceptCall( NodeVisitor<R> visitor, SqlCall call, boolean onlyExpressions, ArgHandler<R> argHandler ) {
         if ( !onlyExpressions ) {
             // None of the arguments to the SELECT operator are expressions.
             super.acceptCall( visitor, call, onlyExpressions, argHandler );

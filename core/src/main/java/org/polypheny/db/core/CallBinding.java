@@ -16,8 +16,15 @@
 
 package org.polypheny.db.core;
 
+import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.runtime.Resources;
+
 public interface CallBinding {
 
     Validator getValidator();
+
+    ValidatorScope getScope();
+
+    PolyphenyDbException newError( Resources.ExInst<SqlValidatorException> e );
 
 }

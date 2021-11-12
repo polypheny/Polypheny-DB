@@ -14,45 +14,35 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql.util;
-
-
-import org.polypheny.db.languages.sql.SqlCall;
-import org.polypheny.db.languages.sql.SqlDataTypeSpec;
-import org.polypheny.db.languages.sql.SqlDynamicParam;
-import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.languages.sql.SqlIntervalQualifier;
-import org.polypheny.db.languages.sql.SqlLiteral;
-import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlNodeList;
+package org.polypheny.db.core;
 
 
 /**
- * Basic implementation of {@link SqlVisitor} which does nothing at each node.
+ * Basic implementation of {@link NodeVisitor} which does nothing at each node.
  *
- * This class is useful as a base class for classes which implement the {@link SqlVisitor} interface. The derived class can override whichever methods it chooses.
+ * This class is useful as a base class for classes which implement the {@link NodeVisitor} interface. The derived class can override whichever methods it chooses.
  *
  * @param <R> Return type
  */
-public class SqlBasicVisitor<R> implements SqlVisitor<R> {
+public class BasicNodeVisitor<R> implements NodeVisitor<R> {
 
     @Override
-    public R visit( SqlLiteral literal ) {
+    public R visit( Literal literal ) {
         return null;
     }
 
 
     @Override
-    public R visit( SqlCall call ) {
+    public R visit( Call call ) {
         return call.getOperator().acceptCall( this, call );
     }
 
 
     @Override
-    public R visit( SqlNodeList nodeList ) {
+    public R visit( NodeList nodeList ) {
         R result = null;
         for ( int i = 0; i < nodeList.size(); i++ ) {
-            SqlNode node = nodeList.get( i );
+            Node node = nodeList.get( i );
             result = node.accept( this );
         }
         return result;
@@ -60,25 +50,25 @@ public class SqlBasicVisitor<R> implements SqlVisitor<R> {
 
 
     @Override
-    public R visit( SqlIdentifier id ) {
+    public R visit( Identifier id ) {
         return null;
     }
 
 
     @Override
-    public R visit( SqlDataTypeSpec type ) {
+    public R visit( DataTypeSpec type ) {
         return null;
     }
 
 
     @Override
-    public R visit( SqlDynamicParam param ) {
+    public R visit( DynamicParam param ) {
         return null;
     }
 
 
     @Override
-    public R visit( SqlIntervalQualifier intervalQualifier ) {
+    public R visit( IntervalQualifier intervalQualifier ) {
         return null;
     }
 
@@ -100,12 +90,13 @@ public class SqlBasicVisitor<R> implements SqlVisitor<R> {
         /**
          * Visits a particular operand of a call, using a given visitor.
          */
-        R visitChild( SqlVisitor<R> visitor, SqlNode expr, int i, SqlNode operand );
+        R visitChild( NodeVisitor<R> visitor, Node expr, int i, Node operand );
+
     }
 
 
     /**
-     * Default implementation of {@link ArgHandler} which merely calls {@link SqlNode#accept} on each operand.
+     * Default implementation of {@link ArgHandler} which merely calls {@link Node#accept} on each operand.
      *
      * @param <R> result type
      */
@@ -127,12 +118,14 @@ public class SqlBasicVisitor<R> implements SqlVisitor<R> {
 
 
         @Override
-        public R visitChild( SqlVisitor<R> visitor, SqlNode expr, int i, SqlNode operand ) {
+        public R visitChild( NodeVisitor<R> visitor, Node expr, int i, Node operand ) {
             if ( operand == null ) {
                 return null;
             }
             return operand.accept( visitor );
         }
+
     }
+
 }
 

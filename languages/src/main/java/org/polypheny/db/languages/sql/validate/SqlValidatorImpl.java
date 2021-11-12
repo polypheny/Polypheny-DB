@@ -51,34 +51,24 @@ import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.function.Functions;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.core.BasicNodeVisitor;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Conformance;
-import org.polypheny.db.core.Node;
-import org.polypheny.db.core.SqlValidatorException;
-import org.polypheny.db.document.util.DocumentUtil;
-import org.polypheny.db.languages.sql2rel.InitializerContext;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.prepare.Prepare;
-import org.polypheny.db.rel.type.DynamicRecordType;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.rel.type.RelRecordType;
-import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexPatternFieldRef;
-import org.polypheny.db.rex.RexVisitor;
-import org.polypheny.db.runtime.Feature;
-import org.polypheny.db.runtime.PolyphenyDbContextException;
-import org.polypheny.db.runtime.PolyphenyDbException;
-import org.polypheny.db.runtime.Resources;
-import org.polypheny.db.schema.ColumnStrategy;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.ModifiableViewTable;
+import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.DataTypeSpec;
+import org.polypheny.db.core.Identifier;
+import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.core.JoinConditionType;
 import org.polypheny.db.core.JoinType;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.NodeList;
+import org.polypheny.db.core.NodeVisitor;
+import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.SqlValidatorException;
+import org.polypheny.db.core.ValidatorScope;
+import org.polypheny.db.document.util.DocumentUtil;
 import org.polypheny.db.languages.sql.NullCollation;
 import org.polypheny.db.languages.sql.SqlAccessEnum;
 import org.polypheny.db.languages.sql.SqlAccessType;
@@ -98,7 +88,6 @@ import org.polypheny.db.languages.sql.SqlInsert;
 import org.polypheny.db.languages.sql.SqlIntervalLiteral;
 import org.polypheny.db.languages.sql.SqlIntervalQualifier;
 import org.polypheny.db.languages.sql.SqlJoin;
-import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlMatchRecognize;
 import org.polypheny.db.languages.sql.SqlMerge;
@@ -119,10 +108,30 @@ import org.polypheny.db.languages.sql.SqlWith;
 import org.polypheny.db.languages.sql.SqlWithItem;
 import org.polypheny.db.languages.sql.fun.SqlCase;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.languages.sql.util.SqlBasicVisitor;
 import org.polypheny.db.languages.sql.util.SqlShuttle;
-import org.polypheny.db.languages.sql.util.SqlVisitor;
+import org.polypheny.db.languages.sql2rel.InitializerContext;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.prepare.Prepare;
+import org.polypheny.db.rel.type.DynamicRecordType;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.rel.type.RelRecordType;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexPatternFieldRef;
+import org.polypheny.db.rex.RexVisitor;
+import org.polypheny.db.runtime.Feature;
+import org.polypheny.db.runtime.PolyphenyDbContextException;
+import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.runtime.Resources;
+import org.polypheny.db.runtime.Resources.ExInst;
+import org.polypheny.db.schema.ColumnStrategy;
+import org.polypheny.db.schema.PolyphenyDbSchema;
+import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.impl.ModifiableViewTable;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -1557,7 +1566,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     @Override
-    public RelDataType deriveType( SqlValidatorScope scope, SqlNode expr ) {
+    public RelDataType deriveType( ValidatorScope scope, Node expr ) {
         Objects.requireNonNull( scope );
         Objects.requireNonNull( expr );
 
@@ -1737,7 +1746,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      */
     protected void addToSelectList( List<SqlNode> list, Set<String> aliases, List<Map.Entry<String, RelDataType>> fieldList, SqlNode exp, SqlValidatorScope scope, final boolean includeSystemVars ) {
         String alias = SqlValidatorUtil.getAlias( exp, -1 );
-        String uniqueAlias = SqlValidatorUtil.uniquify( alias, aliases, SqlValidatorUtil.EXPR_SUGGESTER );
+        String uniqueAlias = CoreUtil.uniquify( alias, aliases, CoreUtil.EXPR_SUGGESTER );
         if ( !alias.equals( uniqueAlias ) ) {
             exp = SqlValidatorUtil.addAlias( exp, uniqueAlias );
         }
@@ -4638,7 +4647,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     @Override
-    public PolyphenyDbContextException newValidationError( SqlNode node, Resources.ExInst<SqlValidatorException> e ) {
+    public PolyphenyDbContextException newValidationError( Node node, ExInst<SqlValidatorException> e ) {
         assert node != null;
         final ParserPos pos = node.getPos();
         return SqlUtil.newContextException( pos, e );
@@ -5354,7 +5363,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     /**
      * retrieve pattern variables defined
      */
-    private class PatternVarVisitor implements SqlVisitor<Void> {
+    private class PatternVarVisitor implements NodeVisitor<Void> {
 
         private MatchRecognizeScope scope;
 
@@ -5365,13 +5374,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
         @Override
-        public Void visit( SqlLiteral literal ) {
+        public Void visit( Literal literal ) {
             return null;
         }
 
 
         @Override
-        public Void visit( SqlCall call ) {
+        public Void visit( Call call ) {
             for ( int i = 0; i < call.getOperandList().size(); i++ ) {
                 call.getOperandList().get( i ).accept( this );
             }
@@ -5380,13 +5389,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
         @Override
-        public Void visit( SqlNodeList nodeList ) {
+        public Void visit( NodeList nodeList ) {
             throw Util.needToImplement( nodeList );
         }
 
 
         @Override
-        public Void visit( SqlIdentifier id ) {
+        public Void visit( Identifier id ) {
             Preconditions.checkArgument( id.isSimple() );
             scope.addPatternVar( id.getSimple() );
             return null;
@@ -5394,7 +5403,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
         @Override
-        public Void visit( SqlDataTypeSpec type ) {
+        public Void visit( DataTypeSpec type ) {
             throw Util.needToImplement( type );
         }
 
@@ -5406,7 +5415,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
         @Override
-        public Void visit( SqlIntervalQualifier intervalQualifier ) {
+        public Void visit( IntervalQualifier intervalQualifier ) {
             throw Util.needToImplement( intervalQualifier );
         }
 
@@ -5418,7 +5427,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      *
      * Each method must return the derived type. This visitor is basically a single-use dispatcher; the visit is never recursive.
      */
-    private class DeriveTypeVisitor implements SqlVisitor<RelDataType> {
+    private class DeriveTypeVisitor implements NodeVisitor<RelDataType> {
 
         private final SqlValidatorScope scope;
 
@@ -5429,20 +5438,20 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
         @Override
-        public RelDataType visit( SqlLiteral literal ) {
+        public RelDataType visit( Literal literal ) {
             return literal.createSqlType( typeFactory );
         }
 
 
         @Override
-        public RelDataType visit( SqlCall call ) {
+        public RelDataType visit( Call call ) {
             final SqlOperator operator = call.getOperator();
             return operator.deriveType( SqlValidatorImpl.this, scope, call );
         }
 
 
         @Override
-        public RelDataType visit( SqlNodeList nodeList ) {
+        public RelDataType visit( NodeList nodeList ) {
             // Operand is of a type that we can't derive a type for. If the operand is of a peculiar type, such as a SqlNodeList, then you should override the operator's validateCall() method so that it
             // doesn't try to validate that operand as an expression.
             throw Util.needToImplement( nodeList );
@@ -5450,7 +5459,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
         @Override
-        public RelDataType visit( SqlIdentifier id ) {
+        public RelDataType visit( Identifier id ) {
             // First check for builtin functions which don't have parentheses, like "LOCALTIME".
             SqlCall call = SqlUtil.makeCall( opTab, id );
             if ( call != null ) {
@@ -5520,7 +5529,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
         @Override
-        public RelDataType visit( SqlDataTypeSpec dataType ) {
+        public RelDataType visit( DataTypeSpec dataType ) {
             // Q. How can a data type have a type?
             // A. When it appears in an expression. (Say as the 2nd arg to the CAST operator.)
             validateDataType( dataType );
@@ -5535,7 +5544,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
         @Override
-        public RelDataType visit( SqlIntervalQualifier intervalQualifier ) {
+        public RelDataType visit( IntervalQualifier intervalQualifier ) {
             return typeFactory.createSqlIntervalType( intervalQualifier );
         }
 
@@ -5557,7 +5566,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
         @Override
-        public SqlNode visit( SqlIdentifier id ) {
+        public SqlNode visit( Identifier id ) {
             // First check for builtin functions which don't have parentheses, like "LOCALTIME".
             SqlCall call = SqlUtil.makeCall( validator.getOperatorTable(), id );
             if ( call != null ) {
@@ -5626,7 +5635,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
         @Override
-        public SqlNode visit( SqlLiteral literal ) {
+        public SqlNode visit( Literal literal ) {
             // Ordinal markers, e.g. 'select a, b from t order by 2'.
             // Only recognize them if they are the whole expression, and if the dialect permits.
             if ( literal == root && getConformance().isSortByOrdinal() ) {
@@ -5674,7 +5683,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
         @Override
-        public SqlNode visit( SqlIdentifier id ) {
+        public SqlNode visit( Identifier id ) {
             // Aliases, e.g. 'select a as x, b from t order by x'.
             if ( id.isSimple() && getConformance().isSortByAlias() ) {
                 String alias = id.getSimple();
@@ -5723,7 +5732,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
         @Override
-        public SqlNode visit( SqlIdentifier id ) {
+        public SqlNode visit( Identifier id ) {
             if ( id.isSimple() && (havingExpr
                     ? validator.getConformance().isHavingAlias()
                     : validator.getConformance().isGroupByAlias()) ) {
@@ -5760,7 +5769,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
         @Override
-        public SqlNode visit( SqlLiteral literal ) {
+        public SqlNode visit( Literal literal ) {
             if ( havingExpr || !validator.getConformance().isGroupByOrdinal() ) {
                 return super.visit( literal );
             }
@@ -5885,7 +5894,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
         @Override
-        public SqlNode visit( SqlCall call ) {
+        public SqlNode visit( Call call ) {
             Kind kind = call.getKind();
             List<SqlNode> operands = call.getOperandList();
             List<SqlNode> newOperands = new ArrayList<>();
@@ -5938,7 +5947,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
         @Override
-        public SqlNode visit( SqlIdentifier id ) {
+        public SqlNode visit( Identifier id ) {
             if ( op == null ) {
                 return id;
             } else {
@@ -5966,7 +5975,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
         @Override
-        public SqlNode visit( SqlCall call ) {
+        public SqlNode visit( Call call ) {
             Kind kind = call.getKind();
             if ( isLogicalNavigation( kind ) || isAggregation( kind ) || isRunningOrFinal( kind ) ) {
                 return call;
@@ -5987,7 +5996,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
         @Override
-        public SqlNode visit( SqlIdentifier id ) {
+        public SqlNode visit( Identifier id ) {
             if ( id.isSimple() ) {
                 return id;
             }
@@ -6007,7 +6016,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     /**
      * Within one navigation function, the pattern var should be same
      */
-    private class PatternValidator extends SqlBasicVisitor<Set<String>> {
+    private class PatternValidator extends BasicNodeVisitor<Set<String>> {
 
         private final boolean isMeasure;
         int firstLastCount;
@@ -6029,7 +6038,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
         @Override
-        public Set<String> visit( SqlCall call ) {
+        public Set<String> visit( Call call ) {
             boolean isSingle = false;
             Set<String> vars = new HashSet<>();
             Kind kind = call.getKind();
@@ -6104,7 +6113,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
         @Override
-        public Set<String> visit( SqlIdentifier identifier ) {
+        public Set<String> visit( Identifier identifier ) {
             boolean check = prevNextCount > 0 || firstLastCount > 0 || aggregateCount > 0;
             Set<String> vars = new HashSet<>();
             if ( identifier.names.size() > 1 && check ) {
@@ -6115,19 +6124,19 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
         @Override
-        public Set<String> visit( SqlLiteral literal ) {
+        public Set<String> visit( Literal literal ) {
             return ImmutableSet.of();
         }
 
 
         @Override
-        public Set<String> visit( SqlIntervalQualifier qualifier ) {
+        public Set<String> visit( IntervalQualifier qualifier ) {
             return ImmutableSet.of();
         }
 
 
         @Override
-        public Set<String> visit( SqlDataTypeSpec type ) {
+        public Set<String> visit( DataTypeSpec type ) {
             return ImmutableSet.of();
         }
 

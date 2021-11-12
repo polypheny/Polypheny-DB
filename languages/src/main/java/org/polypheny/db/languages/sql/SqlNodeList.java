@@ -24,9 +24,9 @@ import java.util.List;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeList;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.core.NodeVisitor;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.languages.sql.util.SqlVisitor;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.Litmus;
@@ -35,7 +35,7 @@ import org.polypheny.db.util.Litmus;
 /**
  * A <code>SqlNodeList</code> is a list of {@link SqlNode}s. It is also a {@link SqlNode}, so may appear in a parse tree.
  */
-public class SqlNodeList extends SqlNode implements Iterable<SqlNode>, NodeList {
+public class SqlNodeList extends SqlNode implements NodeList {
 
     /**
      * An immutable, empty SqlNodeList.
@@ -43,13 +43,13 @@ public class SqlNodeList extends SqlNode implements Iterable<SqlNode>, NodeList 
     public static final SqlNodeList EMPTY =
             new SqlNodeList( ParserPos.ZERO ) {
                 @Override
-                public void add( SqlNode node ) {
+                public void add( Node node ) {
                     throw new UnsupportedOperationException();
                 }
             };
 
 
-    private final List<SqlNode> list;
+    private final List<Node> list;
 
 
     /**
@@ -64,7 +64,7 @@ public class SqlNodeList extends SqlNode implements Iterable<SqlNode>, NodeList 
     /**
      * Creates a <code>SqlNodeList</code> containing the nodes in <code>list</code>. The list is copied, but the nodes in it are not.
      */
-    public SqlNodeList( Collection<? extends SqlNode> collection, ParserPos pos ) {
+    public SqlNodeList( Collection<? extends Node> collection, ParserPos pos ) {
         super( pos );
         list = new ArrayList<>( collection );
     }
@@ -72,17 +72,19 @@ public class SqlNodeList extends SqlNode implements Iterable<SqlNode>, NodeList 
 
     // implement Iterable<SqlNode>
     @Override
-    public Iterator<SqlNode> iterator() {
+    public Iterator<Node> iterator() {
         return list.iterator();
     }
 
 
-    public List<SqlNode> getList() {
+    @Override
+    public List<Node> getList() {
         return list;
     }
 
 
-    public void add( SqlNode node ) {
+    @Override
+    public void add( Node node ) {
         list.add( node );
     }
 
@@ -93,16 +95,19 @@ public class SqlNodeList extends SqlNode implements Iterable<SqlNode>, NodeList 
     }
 
 
-    public SqlNode get( int n ) {
+    @Override
+    public Node get( int n ) {
         return list.get( n );
     }
 
 
-    public SqlNode set( int n, SqlNode node ) {
+    @Override
+    public Node set( int n, Node node ) {
         return list.set( n, node );
     }
 
 
+    @Override
     public int size() {
         return list.size();
     }
@@ -121,9 +126,9 @@ public class SqlNodeList extends SqlNode implements Iterable<SqlNode>, NodeList 
 
     void commaList( SqlWriter writer ) {
         // The precedence of the comma operator if low but not zero. For instance, this ensures parentheses in select x, (select * from foo order by z), y from t
-        for ( SqlNode node : list ) {
+        for ( Node node : list ) {
             writer.sep( "," );
-            node.unparse( writer, 2, 3 );
+            ((SqlNode) node).unparse( writer, 2, 3 );
         }
     }
 
@@ -134,7 +139,7 @@ public class SqlNodeList extends SqlNode implements Iterable<SqlNode>, NodeList 
                         ? SqlStdOperatorTable.AND
                         : SqlStdOperatorTable.OR;
         for ( int i = 0; i < list.size(); i++ ) {
-            SqlNode node = list.get( i );
+            Node node = list.get( i );
             writer.sep( sepKind.name(), false );
 
             // The precedence pulling on the LHS of a node is the right-precedence of the separator operator, except at the start of the list; similarly for the RHS of a node. If the operator
@@ -144,27 +149,27 @@ public class SqlNodeList extends SqlNode implements Iterable<SqlNode>, NodeList 
             // 5 <- node3 -> 0
             int lprec = (i == 0) ? 0 : sepOp.getRightPrec();
             int rprec = (i == (list.size() - 1)) ? 0 : sepOp.getLeftPrec();
-            node.unparse( writer, lprec, rprec );
+            ((SqlNode) node).unparse( writer, lprec, rprec );
         }
     }
 
 
     @Override
     public void validate( SqlValidator validator, SqlValidatorScope scope ) {
-        for ( SqlNode child : list ) {
-            child.validate( validator, scope );
+        for ( Node child : list ) {
+            ((SqlNode) child).validate( validator, scope );
         }
     }
 
 
     @Override
-    public <R> R accept( SqlVisitor<R> visitor ) {
+    public <R> R accept( NodeVisitor<R> visitor ) {
         return visitor.visit( this );
     }
 
 
     @Override
-    public boolean equalsDeep( SqlNode node, Litmus litmus ) {
+    public boolean equalsDeep( Node node, Litmus litmus ) {
         if ( !(node instanceof SqlNodeList) ) {
             return litmus.fail( "{} != {}", this, node );
         }
@@ -173,8 +178,8 @@ public class SqlNodeList extends SqlNode implements Iterable<SqlNode>, NodeList 
             return litmus.fail( "{} != {}", this, node );
         }
         for ( int i = 0; i < list.size(); i++ ) {
-            SqlNode thisChild = list.get( i );
-            final SqlNode thatChild = that.list.get( i );
+            Node thisChild = list.get( i );
+            final Node thatChild = that.list.get( i );
             if ( !thisChild.equalsDeep( thatChild, litmus ) ) {
                 return litmus.fail( null );
             }
@@ -185,11 +190,11 @@ public class SqlNodeList extends SqlNode implements Iterable<SqlNode>, NodeList 
 
     @Override
     public Node[] toArray() {
-        return list.toArray( SqlNode.EMPTY_ARRAY );
+        return list.toArray( new Node[0] );
     }
 
 
-    public static boolean isEmptyList( final SqlNode node ) {
+    public static boolean isEmptyList( final Node node ) {
         if ( node instanceof SqlNodeList ) {
             if ( 0 == ((SqlNodeList) node).size() ) {
                 return true;
@@ -237,9 +242,10 @@ public class SqlNodeList extends SqlNode implements Iterable<SqlNode>, NodeList 
         //
         //    {  SqlIdentifier({"empno"}), SqlNodeList(SqlLiteral(10), SqlLiteral(20))  }
 
-        for ( SqlNode node : list ) {
-            node.validateExpr( validator, scope );
+        for ( Node node : list ) {
+            ((SqlNode) node).validateExpr( validator, scope );
         }
     }
+
 }
 

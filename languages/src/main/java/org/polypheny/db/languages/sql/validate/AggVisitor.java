@@ -19,6 +19,8 @@ package org.polypheny.db.languages.sql.validate;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.core.BasicNodeVisitor;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlFunction;
@@ -26,7 +28,6 @@ import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlOperatorTable;
 import org.polypheny.db.languages.sql.SqlSyntax;
 import org.polypheny.db.languages.sql.fun.SqlAbstractGroupFunction;
-import org.polypheny.db.languages.sql.util.SqlBasicVisitor;
 
 
 /**
@@ -34,7 +35,7 @@ import org.polypheny.db.languages.sql.util.SqlBasicVisitor;
  *
  * @see AggFinder
  */
-abstract class AggVisitor extends SqlBasicVisitor<Void> {
+abstract class AggVisitor extends BasicNodeVisitor<Void> {
 
     protected final SqlOperatorTable opTab;
 
@@ -74,7 +75,7 @@ abstract class AggVisitor extends SqlBasicVisitor<Void> {
 
 
     @Override
-    public Void visit( SqlCall call ) {
+    public Void visit( Call call ) {
         final SqlOperator operator = call.getOperator();
         // If nested aggregates disallowed or found an aggregate at invalid level
         if ( operator.isAggregator() && !(operator instanceof SqlAbstractGroupFunction) && !operator.requiresOver() ) {

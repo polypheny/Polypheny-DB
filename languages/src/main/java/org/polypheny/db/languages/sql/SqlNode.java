@@ -18,21 +18,18 @@ package org.polypheny.db.languages.sql;
 
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import org.polypheny.db.core.Node;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.dialect.AnsiSqlDialect;
 import org.polypheny.db.languages.sql.pretty.SqlPrettyWriter;
 import org.polypheny.db.languages.sql.util.SqlString;
-import org.polypheny.db.languages.sql.util.SqlVisitor;
 import org.polypheny.db.languages.sql.validate.SqlMoniker;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Util;
 
 
@@ -196,45 +193,6 @@ public abstract class SqlNode implements Node {
 
 
     /**
-     * Accepts a generic visitor.
-     *
-     * Implementations of this method in subtypes simply call the appropriate <code>visit</code> method on the {@link SqlVisitor visitor object}.
-     *
-     * The type parameter <code>R</code> must be consistent with the type parameter of the visitor.
-     */
-    public abstract <R> R accept( SqlVisitor<R> visitor );
-
-    /**
-     * Returns whether this node is structurally equivalent to another node.
-     * Some examples:
-     *
-     * <ul>
-     * <li>1 + 2 is structurally equivalent to 1 + 2</li>
-     * <li>1 + 2 + 3 is structurally equivalent to (1 + 2) + 3, but not to 1 + (2 + 3), because the '+' operator is left-associative</li>
-     * </ul>
-     */
-    public abstract boolean equalsDeep( SqlNode node, Litmus litmus );
-
-
-    /**
-     * Returns whether two nodes are equal (using {@link #equalsDeep(SqlNode, Litmus)}) or are both null.
-     *
-     * @param node1 First expression
-     * @param node2 Second expression
-     * @param litmus What to do if an error is detected (expressions are not equal)
-     */
-    public static boolean equalDeep( SqlNode node1, SqlNode node2, Litmus litmus ) {
-        if ( node1 == null ) {
-            return node2 == null;
-        } else if ( node2 == null ) {
-            return false;
-        } else {
-            return node1.equalsDeep( node2, litmus );
-        }
-    }
-
-
-    /**
      * Returns whether expression is always ascending, descending or constant.
      * This property is useful because it allows to safely aggregate infinite streams of values.
      *
@@ -247,19 +205,5 @@ public abstract class SqlNode implements Node {
     }
 
 
-    /**
-     * Returns whether two lists of operands are equal.
-     */
-    public static boolean equalDeep( List<SqlNode> operands0, List<SqlNode> operands1, Litmus litmus ) {
-        if ( operands0.size() != operands1.size() ) {
-            return litmus.fail( null );
-        }
-        for ( int i = 0; i < operands0.size(); i++ ) {
-            if ( !SqlNode.equalDeep( operands0.get( i ), operands1.get( i ), litmus ) ) {
-                return litmus.fail( null );
-            }
-        }
-        return litmus.succeed();
-    }
 }
 

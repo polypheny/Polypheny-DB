@@ -16,7 +16,19 @@
 
 package org.polypheny.db.core;
 
-public interface NodeList extends Iterable<Node>, Node {
+import java.util.List;
+
+public interface NodeList extends Node, Visitable, Iterable<Node> {
+
+    List<Node> getList();
+
+    void add( Node node );
+
+    Node get( int n );
+
+    Node set( int n, Node node );
+
+    int size();
 
     Node[] toArray();
 

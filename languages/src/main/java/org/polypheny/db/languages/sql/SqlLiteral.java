@@ -26,16 +26,17 @@ import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.NodeVisitor;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.fun.SqlLiteralChainOperator;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil;
-import org.polypheny.db.languages.sql.util.SqlVisitor;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -227,6 +228,7 @@ public class SqlLiteral extends SqlNode implements Literal {
      * @see #booleanValue()
      * @see #symbolValue(Class)
      */
+    @Override
     public Object getValue() {
         return value;
     }
@@ -327,6 +329,7 @@ public class SqlLiteral extends SqlNode implements Literal {
     /**
      * Returns the value as a symbol.
      */
+    @Override
     public <E extends Enum<E>> E symbolValue( Class<E> class_ ) {
         return class_.cast( value );
     }
@@ -491,13 +494,13 @@ public class SqlLiteral extends SqlNode implements Literal {
 
 
     @Override
-    public <R> R accept( SqlVisitor<R> visitor ) {
+    public <R> R accept( NodeVisitor<R> visitor ) {
         return visitor.visit( this );
     }
 
 
     @Override
-    public boolean equalsDeep( SqlNode node, Litmus litmus ) {
+    public boolean equalsDeep( Node node, Litmus litmus ) {
         if ( !(node instanceof SqlLiteral) ) {
             return litmus.fail( "{} != {}", this, node );
         }

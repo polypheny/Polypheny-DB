@@ -19,9 +19,16 @@ package org.polypheny.db.languages.sql.advise;
 
 import java.util.HashSet;
 import java.util.Set;
-import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.languages.sql.validate.OverScope;
 import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.ValidatorScope;
+import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.languages.sql.SqlIdentifier;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlOperatorTable;
+import org.polypheny.db.languages.sql.SqlSelect;
+import org.polypheny.db.languages.sql.validate.OverScope;
 import org.polypheny.db.languages.sql.validate.SqlModality;
 import org.polypheny.db.languages.sql.validate.SqlValidatorCatalogReader;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
@@ -30,11 +37,6 @@ import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.runtime.PolyphenyDbException;
-import org.polypheny.db.languages.sql.SqlCall;
-import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlOperatorTable;
-import org.polypheny.db.languages.sql.SqlSelect;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Util;
 
@@ -105,9 +107,11 @@ public class SqlAdvisorValidator extends SqlValidatorImpl {
 
     /**
      * Calls the parent class method and mask Farrago exception thrown.
+     * @param scope
+     * @param operand
      */
     @Override
-    public RelDataType deriveType( SqlValidatorScope scope, SqlNode operand ) {
+    public RelDataType deriveType( ValidatorScope scope, Node operand ) {
         // REVIEW: Do not mask Error (indicates a serious system problem) or UnsupportedOperationException (a bug). I have to mask UnsupportedOperationException because SqlValidatorImpl.getValidatedNodeType
         // throws it for an unrecognized identifier node I have to mask Error as well because AbstractNamespace.getRowType  called in super.deriveType can do a Util.permAssert that throws Error
         try {

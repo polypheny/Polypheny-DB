@@ -38,11 +38,17 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Functions;
+import org.polypheny.db.core.BasicNodeVisitor;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Collation;
+import org.polypheny.db.core.DataTypeSpec;
+import org.polypheny.db.core.Identifier;
+import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.NodeList;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.languages.sql.util.SqlBasicVisitor;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
@@ -787,7 +793,7 @@ public abstract class SqlUtil {
     /**
      * Walks over a {@link SqlNode} tree and returns the ancestry stack when it finds a given node.
      */
-    private static class Genealogist extends SqlBasicVisitor<Void> {
+    private static class Genealogist extends BasicNodeVisitor<Void> {
 
         private final List<SqlNode> ancestors = new ArrayList<>();
         private final Predicate<SqlNode> predicate;
@@ -834,13 +840,13 @@ public abstract class SqlUtil {
 
 
         @Override
-        public Void visit( SqlIdentifier id ) {
+        public Void visit( Identifier id ) {
             return check( id );
         }
 
 
         @Override
-        public Void visit( SqlCall call ) {
+        public Void visit( Call call ) {
             preCheck( call );
             for ( SqlNode node : call.getOperandList() ) {
                 visitChild( node );
@@ -850,19 +856,19 @@ public abstract class SqlUtil {
 
 
         @Override
-        public Void visit( SqlIntervalQualifier intervalQualifier ) {
+        public Void visit( IntervalQualifier intervalQualifier ) {
             return check( intervalQualifier );
         }
 
 
         @Override
-        public Void visit( SqlLiteral literal ) {
+        public Void visit( Literal literal ) {
             return check( literal );
         }
 
 
         @Override
-        public Void visit( SqlNodeList nodeList ) {
+        public Void visit( NodeList nodeList ) {
             preCheck( nodeList );
             for ( SqlNode node : nodeList ) {
                 visitChild( node );
@@ -878,7 +884,7 @@ public abstract class SqlUtil {
 
 
         @Override
-        public Void visit( SqlDataTypeSpec type ) {
+        public Void visit( DataTypeSpec type ) {
             return check( type );
         }
 

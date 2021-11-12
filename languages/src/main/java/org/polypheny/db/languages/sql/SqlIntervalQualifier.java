@@ -26,13 +26,15 @@ import java.util.regex.Pattern;
 import lombok.Getter;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
-import org.polypheny.db.languages.sql.util.SqlVisitor;
+import org.polypheny.db.core.IntervalQualifier;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.NodeVisitor;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.PolyIntervalQualifier;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Litmus;
@@ -84,7 +86,7 @@ import org.polypheny.db.util.Util;
  *
  * <p>An instance of this class is immutable.
  */
-public class SqlIntervalQualifier extends SqlNode {
+public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
     //~ Static fields/initializers ---------------------------------------------
 
     private static final BigDecimal ZERO = BigDecimal.ZERO;
@@ -207,13 +209,13 @@ public class SqlIntervalQualifier extends SqlNode {
 
 
     @Override
-    public <R> R accept( SqlVisitor<R> visitor ) {
+    public <R> R accept( NodeVisitor<R> visitor ) {
         return visitor.visit( this );
     }
 
 
     @Override
-    public boolean equalsDeep( SqlNode node, Litmus litmus ) {
+    public boolean equalsDeep( Node node, Litmus litmus ) {
         final String thisString = this.toString();
         final String thatString = node.toString();
         if ( !thisString.equals( thatString ) ) {

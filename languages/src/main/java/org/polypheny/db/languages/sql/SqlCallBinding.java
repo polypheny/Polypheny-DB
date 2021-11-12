@@ -21,22 +21,22 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.Lists;
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.core.CallBinding;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.SqlValidatorException;
 import org.polypheny.db.core.StdOperatorRegistry;
-import org.polypheny.db.core.Validator;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.validate.SelectScope;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
-import org.polypheny.db.core.SqlValidatorException;
 import org.polypheny.db.languages.sql.validate.SqlValidatorNamespace;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.languages.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 
 
 /**
@@ -46,7 +46,9 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
 
     private static final SqlCall DEFAULT_CALL = StdOperatorRegistry.get( "DEFAULT" ).createCall( ParserPos.ZERO );
 
+    @Getter
     private final SqlValidator validator;
+    @Getter
     private final SqlValidatorScope scope;
     private final SqlCall call;
 
@@ -85,23 +87,6 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
             return n;
         }
         return validator.isAggregate( select ) ? 0 : -1;
-    }
-
-
-    /**
-     * Returns the validator.
-     */
-    @Override
-    public Validator getValidator() {
-        return validator;
-    }
-
-
-    /**
-     * Returns the scope of the call.
-     */
-    public SqlValidatorScope getScope() {
-        return scope;
     }
 
 
@@ -291,5 +276,6 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
     public PolyphenyDbException newValidationError( Resources.ExInst<SqlValidatorException> ex ) {
         return validator.newValidationError( call, ex );
     }
+
 }
 

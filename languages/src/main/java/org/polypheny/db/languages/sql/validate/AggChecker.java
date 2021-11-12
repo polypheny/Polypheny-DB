@@ -22,6 +22,9 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
+import org.polypheny.db.core.BasicNodeVisitor;
+import org.polypheny.db.core.Call;
+import org.polypheny.db.core.Identifier;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIdentifier;
@@ -31,14 +34,13 @@ import org.polypheny.db.languages.sql.SqlSelect;
 import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWindow;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.languages.sql.util.SqlBasicVisitor;
 import org.polypheny.db.util.Litmus;
 
 
 /**
  * Visitor which throws an exception if any component of the expression is not a group expression.
  */
-class AggChecker extends SqlBasicVisitor<Void> {
+class AggChecker extends BasicNodeVisitor<Void> {
 
     private final Deque<SqlValidatorScope> scopes = new ArrayDeque<>();
     private final List<SqlNode> extraExprs;
@@ -81,7 +83,7 @@ class AggChecker extends SqlBasicVisitor<Void> {
 
 
     @Override
-    public Void visit( SqlIdentifier id ) {
+    public Void visit( Identifier id ) {
         if ( isGroupExpr( id ) || id.isStar() ) {
             // Star may validly occur in "SELECT COUNT(*) OVER w"
             return null;
@@ -110,7 +112,7 @@ class AggChecker extends SqlBasicVisitor<Void> {
 
 
     @Override
-    public Void visit( SqlCall call ) {
+    public Void visit( Call call ) {
         final SqlValidatorScope scope = scopes.peek();
         if ( call.getOperator().isAggregator() ) {
             if ( distinct ) {

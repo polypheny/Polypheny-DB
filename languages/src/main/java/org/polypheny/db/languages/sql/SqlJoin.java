@@ -22,8 +22,8 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.core.JoinConditionType;
 import org.polypheny.db.core.JoinType;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Util;
@@ -72,7 +72,7 @@ public class SqlJoin extends SqlCall {
 
 
     @Override
-    public SqlOperator getOperator() {
+    public Operator getOperator() {
         return OPERATOR;
     }
 
@@ -84,7 +84,7 @@ public class SqlJoin extends SqlCall {
 
 
     @Override
-    public List<SqlNode> getOperandList() {
+    public List<Node> getOperandList() {
         return ImmutableNullableList.of( left, natural, joinType, right, conditionType, condition );
     }
 

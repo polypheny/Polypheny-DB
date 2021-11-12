@@ -23,14 +23,13 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.core.Call;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.Operator;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.languages.sql.fun.SqlBetweenOperator;
-import org.polypheny.db.languages.sql.util.SqlBasicVisitor.ArgHandler;
-import org.polypheny.db.languages.sql.util.SqlVisitor;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
@@ -38,7 +37,6 @@ import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.languages.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
@@ -625,41 +623,6 @@ public abstract class SqlOperator extends Operator {
      */
     public boolean isGroupAuxiliary() {
         return false;
-    }
-
-
-    /**
-     * Accepts a {@link SqlVisitor}, visiting each operand of a call. Returns null.
-     *
-     * @param visitor Visitor
-     * @param call Call to visit
-     */
-    public <R> R acceptCall( SqlVisitor<R> visitor, SqlCall call ) {
-        for ( SqlNode operand : call.getOperandList() ) {
-            if ( operand == null ) {
-                continue;
-            }
-            operand.accept( visitor );
-        }
-        return null;
-    }
-
-
-    /**
-     * Accepts a {@link SqlVisitor}, directing an {@link ArgHandler} to visit an operand of a call.
-     *
-     * The argument handler allows fine control about how the operands are visited, and how the results are combined.
-     *
-     * @param visitor Visitor
-     * @param call Call to visit
-     * @param onlyExpressions If true, ignores operands which are not expressions. For example, in the call to the <code>AS</code> operator
-     * @param argHandler Called for each operand
-     */
-    public <R> void acceptCall( SqlVisitor<R> visitor, SqlCall call, boolean onlyExpressions, ArgHandler<R> argHandler ) {
-        List<SqlNode> operands = call.getOperandList();
-        for ( int i = 0; i < operands.size(); i++ ) {
-            argHandler.visitChild( visitor, call, i, operands.get( i ) );
-        }
     }
 
 

@@ -34,10 +34,10 @@
 package org.polypheny.db.rex;
 
 
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlLiteral;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlWindow;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Window;
 
 
 /**
@@ -52,11 +52,11 @@ public abstract class RexWindowBound {
      * @param rexNode offset value when bound is not UNBOUNDED/CURRENT ROW
      * @return window bound
      */
-    public static RexWindowBound create( SqlNode node, RexNode rexNode ) {
-        if ( SqlWindow.isUnboundedPreceding( node ) || SqlWindow.isUnboundedFollowing( node ) ) {
+    public static RexWindowBound create( Node node, RexNode rexNode ) {
+        if ( Window.isUnboundedPreceding( node ) || Window.isUnboundedFollowing( node ) ) {
             return new RexWindowBoundUnbounded( node );
         }
-        if ( SqlWindow.isCurrentRow( node ) ) {
+        if ( Window.isCurrentRow( node ) ) {
             return new RexWindowBoundCurrentRow();
         }
         return new RexWindowBoundBounded( rexNode );
@@ -141,10 +141,10 @@ public abstract class RexWindowBound {
      */
     private static class RexWindowBoundUnbounded extends RexWindowBound {
 
-        private final SqlNode node;
+        private final Node node;
 
 
-        RexWindowBoundUnbounded( SqlNode node ) {
+        RexWindowBoundUnbounded( Node node ) {
             this.node = node;
         }
 
@@ -157,19 +157,19 @@ public abstract class RexWindowBound {
 
         @Override
         public boolean isPreceding() {
-            return SqlWindow.isUnboundedPreceding( node );
+            return Window.isUnboundedPreceding( node );
         }
 
 
         @Override
         public boolean isFollowing() {
-            return SqlWindow.isUnboundedFollowing( node );
+            return Window.isUnboundedFollowing( node );
         }
 
 
         @Override
         public String toString() {
-            return ((SqlLiteral) node).getValue().toString();
+            return ((Literal) node).getValue().toString();
         }
 
 
@@ -202,6 +202,7 @@ public abstract class RexWindowBound {
         public int hashCode() {
             return node.hashCode();
         }
+
     }
 
 
@@ -238,6 +239,7 @@ public abstract class RexWindowBound {
         public int hashCode() {
             return 123;
         }
+
     }
 
 
@@ -246,7 +248,7 @@ public abstract class RexWindowBound {
      */
     private static class RexWindowBoundBounded extends RexWindowBound {
 
-        private final SqlKind sqlKind;
+        private final Kind kind;
         private final RexNode offset;
 
 
@@ -254,26 +256,26 @@ public abstract class RexWindowBound {
             assert node instanceof RexCall : "RexWindowBoundBounded window bound should be either 'X preceding'" + " or 'X following' call. Actual type is " + node;
             RexCall call = (RexCall) node;
             this.offset = call.getOperands().get( 0 );
-            this.sqlKind = call.getKind();
+            this.kind = call.getKind();
             assert this.offset != null : "RexWindowBoundBounded offset should not be null";
         }
 
 
-        private RexWindowBoundBounded( SqlKind sqlKind, RexNode offset ) {
-            this.sqlKind = sqlKind;
+        private RexWindowBoundBounded( Kind kind, RexNode offset ) {
+            this.kind = kind;
             this.offset = offset;
         }
 
 
         @Override
         public boolean isPreceding() {
-            return sqlKind == SqlKind.PRECEDING;
+            return kind == Kind.PRECEDING;
         }
 
 
         @Override
         public boolean isFollowing() {
-            return sqlKind == SqlKind.FOLLOWING;
+            return kind == Kind.FOLLOWING;
         }
 
 
@@ -287,7 +289,7 @@ public abstract class RexWindowBound {
         public <R> RexWindowBound accept( RexVisitor<R> visitor ) {
             R r = offset.accept( visitor );
             if ( r instanceof RexNode && r != offset ) {
-                return new RexWindowBoundBounded( sqlKind, (RexNode) r );
+                return new RexWindowBoundBounded( kind, (RexNode) r );
             }
             return this;
         }
@@ -295,7 +297,7 @@ public abstract class RexWindowBound {
 
         @Override
         public String toString() {
-            return offset.toString() + " " + sqlKind.toString();
+            return offset.toString() + " " + kind.toString();
         }
 
 
@@ -313,7 +315,7 @@ public abstract class RexWindowBound {
             if ( !offset.equals( that.offset ) ) {
                 return false;
             }
-            if ( sqlKind != that.sqlKind ) {
+            if ( kind != that.kind ) {
                 return false;
             }
 
@@ -323,11 +325,13 @@ public abstract class RexWindowBound {
 
         @Override
         public int hashCode() {
-            int result = sqlKind.hashCode();
+            int result = kind.hashCode();
             result = 31 * result + offset.hashCode();
             return result;
         }
+
     }
+
 }
 
 

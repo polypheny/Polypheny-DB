@@ -22,10 +22,10 @@ import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.ConfigManager;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlAlter;
-import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
@@ -56,7 +56,7 @@ public class SqlAlterConfig extends SqlAlter {
 
 
     @Override
-    public List<SqlNode> getOperandList() {
+    public List<Node> getOperandList() {
         return ImmutableNullableList.of( key, value );
     }
 

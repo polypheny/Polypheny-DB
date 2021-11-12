@@ -20,9 +20,9 @@ package org.polypheny.db.languages.sql;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.core.BasicNodeVisitor.ArgHandler;
 import org.polypheny.db.core.Kind;
-import org.polypheny.db.languages.sql.util.SqlBasicVisitor.ArgHandler;
-import org.polypheny.db.languages.sql.util.SqlVisitor;
+import org.polypheny.db.core.NodeVisitor;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -106,12 +106,12 @@ public class SqlOverOperator extends SqlBinaryOperator {
 
 
     /**
-     * Accepts a {@link SqlVisitor}, and tells it to visit each child.
+     * Accepts a {@link NodeVisitor}, and tells it to visit each child.
      *
      * @param visitor Visitor
      */
     @Override
-    public <R> void acceptCall( SqlVisitor<R> visitor, SqlCall call, boolean onlyExpressions, ArgHandler<R> argHandler ) {
+    public <R> void acceptCall( NodeVisitor<R> visitor, SqlCall call, boolean onlyExpressions, ArgHandler<R> argHandler ) {
         if ( onlyExpressions ) {
             for ( Ord<SqlNode> operand : Ord.zip( call.getOperandList() ) ) {
                 // If the second param is an Identifier then it's supposed to be a name from a window clause and isn't part of the group by check

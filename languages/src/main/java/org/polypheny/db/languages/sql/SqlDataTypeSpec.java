@@ -22,8 +22,10 @@ import java.util.Objects;
 import java.util.TimeZone;
 import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.DataTypeSpec;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.NodeVisitor;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.languages.sql.util.SqlVisitor;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -51,7 +53,7 @@ import org.polypheny.db.util.Util;
  *
  * Currently it only supports simple datatypes like CHAR, VARCHAR and DOUBLE, with optional precision and scale.
  */
-public class SqlDataTypeSpec extends SqlNode {
+public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
 
     private final SqlIdentifier collectionsTypeName;
     private final SqlIdentifier typeName;
@@ -308,18 +310,18 @@ public class SqlDataTypeSpec extends SqlNode {
 
 
     @Override
-    public <R> R accept( SqlVisitor<R> visitor ) {
+    public <R> R accept( NodeVisitor<R> visitor ) {
         return visitor.visit( this );
     }
 
 
     @Override
-    public boolean equalsDeep( SqlNode node, Litmus litmus ) {
+    public boolean equalsDeep( Node node, Litmus litmus ) {
         if ( !(node instanceof SqlDataTypeSpec) ) {
             return litmus.fail( "{} != {}", this, node );
         }
         SqlDataTypeSpec that = (SqlDataTypeSpec) node;
-        if ( !SqlNode.equalDeep( this.collectionsTypeName, that.collectionsTypeName, litmus ) ) {
+        if ( !Node.equalDeep( this.collectionsTypeName, that.collectionsTypeName, litmus ) ) {
             return litmus.fail( null );
         }
         if ( !this.typeName.equalsDeep( that.typeName, litmus ) ) {
@@ -406,7 +408,7 @@ public class SqlDataTypeSpec extends SqlNode {
             // Applying Syntax rule 10 from SQL:99 spec section 6.22 "If TD is a fixed-length, variable-length or large object character string,
             // then the collating sequence of the result of the <cast specification> is the default collating sequence for the
             // character repertoire of TD and the result of the <cast specification> has the Coercible coercibility characteristic."
-            SqlCollation collation = Collation.COERCIBLE;
+            Collation collation = Collation.COERCIBLE;
 
             Charset charset;
             if ( null == charSetName ) {

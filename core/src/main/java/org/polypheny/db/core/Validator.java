@@ -16,6 +16,8 @@
 
 package org.polypheny.db.core;
 
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
 
 public interface Validator {
@@ -29,5 +31,21 @@ public interface Validator {
      * @return whether field is a system field
      */
     boolean isSystemField( RelDataTypeField field );
+
+    /**
+     * Derives the type of a node in a given scope. If the type has already been inferred, returns the previous type.
+     *
+     * @param scope Syntactic scope
+     * @param operand Parse tree node
+     * @return Type of the SqlNode. Should never return <code>NULL</code>
+     */
+    RelDataType deriveType( ValidatorScope scope, Node operand );
+
+    /**
+     * Returns the type factory used by this validator.
+     *
+     * @return type factory
+     */
+    RelDataTypeFactory getTypeFactory();
 
 }

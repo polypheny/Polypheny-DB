@@ -73,7 +73,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
 
 
     @Override
-    public List<SqlNode> getOperandList() {
+    public List<Node> getOperandList() {
         return ImmutableNullableList.of( table, columnList, storeName );
     }
 

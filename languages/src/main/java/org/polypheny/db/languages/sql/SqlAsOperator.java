@@ -18,9 +18,9 @@ package org.polypheny.db.languages.sql;
 
 
 import java.util.List;
+import org.polypheny.db.core.BasicNodeVisitor.ArgHandler;
 import org.polypheny.db.core.Kind;
-import org.polypheny.db.languages.sql.util.SqlBasicVisitor.ArgHandler;
-import org.polypheny.db.languages.sql.util.SqlVisitor;
+import org.polypheny.db.core.NodeVisitor;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -113,7 +113,7 @@ public class SqlAsOperator extends SqlSpecialOperator {
 
 
     @Override
-    public <R> void acceptCall( SqlVisitor<R> visitor, SqlCall call, boolean onlyExpressions, ArgHandler<R> argHandler ) {
+    public <R> void acceptCall( NodeVisitor<R> visitor, SqlCall call, boolean onlyExpressions, ArgHandler<R> argHandler ) {
         if ( onlyExpressions ) {
             // Do not visit operands[1] -- it is not an expression.
             argHandler.visitChild( visitor, call, 0, call.operand( 0 ) );

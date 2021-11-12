@@ -19,8 +19,8 @@ package org.polypheny.db.languages.sql;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 
@@ -48,13 +48,13 @@ public class SqlWith extends SqlCall {
 
 
     @Override
-    public SqlOperator getOperator() {
+    public Operator getOperator() {
         return SqlWithOperator.INSTANCE;
     }
 
 
     @Override
-    public List<SqlNode> getOperandList() {
+    public List<Node> getOperandList() {
         return ImmutableList.of( withList, body );
     }
 

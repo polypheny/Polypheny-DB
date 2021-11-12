@@ -18,6 +18,7 @@ package org.polypheny.db.languages.sql;
 
 
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
 
 /**
  * The <code>VALUES</code> operator.
@@ -32,9 +33,9 @@ public class SqlValuesOperator extends SqlSpecialOperator {
     @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startList( SqlWriter.FrameTypeEnum.VALUES, "VALUES", "" );
-        for ( SqlNode operand : call.getOperandList() ) {
+        for ( Node operand : call.getOperandList() ) {
             writer.sep( "," );
-            operand.unparse( writer, 0, 0 );
+            ((SqlNode) operand).unparse( writer, 0, 0 );
         }
         writer.endList( frame );
     }

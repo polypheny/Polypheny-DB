@@ -20,15 +20,14 @@ package org.polypheny.db.languages.sql.ddl;
 import java.util.List;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.partition.raw.RawPartitionInformation;
-import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.languages.sql.SqlCollation;
 import org.polypheny.db.languages.sql.SqlDataTypeSpec;
 import org.polypheny.db.languages.sql.SqlDrop;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
-import org.polypheny.db.languages.sql.SqlOperator;
+import org.polypheny.db.partition.raw.RawPartitionInformation;
+import org.polypheny.db.schema.ColumnStrategy;
 
 
 /**
@@ -174,7 +173,7 @@ public class SqlDdlNodes {
     public static SqlKeyConstraint primary( ParserPos pos, SqlIdentifier name, SqlNodeList columnList ) {
         return new SqlKeyConstraint( pos, name, columnList ) {
             @Override
-            public SqlOperator getOperator() {
+            public Operator getOperator() {
                 return PRIMARY;
             }
         };

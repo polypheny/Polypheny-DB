@@ -19,37 +19,41 @@ package org.polypheny.db.languages.sql.util;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.core.BasicNodeVisitor;
+import org.polypheny.db.core.Call;
+import org.polypheny.db.core.DataTypeSpec;
+import org.polypheny.db.core.Identifier;
+import org.polypheny.db.core.IntervalQualifier;
+import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.NodeList;
+import org.polypheny.db.core.NodeVisitor;
 import org.polypheny.db.languages.sql.SqlCall;
-import org.polypheny.db.languages.sql.SqlDataTypeSpec;
 import org.polypheny.db.languages.sql.SqlDynamicParam;
-import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.languages.sql.SqlIntervalQualifier;
-import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
 
 
 /**
- * Basic implementation of {@link SqlVisitor} which returns each leaf node unchanged.
+ * Basic implementation of {@link NodeVisitor} which returns each leaf node unchanged.
  *
- * This class is useful as a base class for classes which implement the {@link SqlVisitor} interface and have {@link SqlNode} as the return type. The derived class can override whichever methods it chooses.
+ * This class is useful as a base class for classes which implement the {@link NodeVisitor} interface and have {@link SqlNode} as the return type. The derived class can override whichever methods it chooses.
  */
-public class SqlShuttle extends SqlBasicVisitor<SqlNode> {
+public class SqlShuttle extends BasicNodeVisitor<SqlNode> {
 
     @Override
-    public SqlNode visit( SqlLiteral literal ) {
+    public SqlNode visit( Literal literal ) {
         return literal;
     }
 
 
     @Override
-    public SqlNode visit( SqlIdentifier id ) {
+    public SqlNode visit( Identifier id ) {
         return id;
     }
 
 
     @Override
-    public SqlNode visit( SqlDataTypeSpec type ) {
+    public SqlNode visit( DataTypeSpec type ) {
         return type;
     }
 
@@ -61,13 +65,13 @@ public class SqlShuttle extends SqlBasicVisitor<SqlNode> {
 
 
     @Override
-    public SqlNode visit( SqlIntervalQualifier intervalQualifier ) {
+    public SqlNode visit( IntervalQualifier intervalQualifier ) {
         return intervalQualifier;
     }
 
 
     @Override
-    public SqlNode visit( final SqlCall call ) {
+    public SqlNode visit( final Call call ) {
         // Handler creates a new copy of 'call' only if one or more operands change.
         ArgHandler<SqlNode> argHandler = new CallCopyingArgHandler( call, false );
         call.getOperator().acceptCall( this, call, false, argHandler );
@@ -76,7 +80,7 @@ public class SqlShuttle extends SqlBasicVisitor<SqlNode> {
 
 
     @Override
-    public SqlNode visit( SqlNodeList nodeList ) {
+    public SqlNode visit( NodeList nodeList ) {
         boolean update = false;
         List<SqlNode> exprs = nodeList.getList();
         int exprCount = exprs.size();
@@ -102,7 +106,7 @@ public class SqlShuttle extends SqlBasicVisitor<SqlNode> {
 
 
     /**
-     * Implementation of {@link SqlBasicVisitor.ArgHandler} that deep-copies {@link SqlCall}s and their operands.
+     * Implementation of {@link BasicNodeVisitor.ArgHandler} that deep-copies {@link SqlCall}s and their operands.
      */
     protected class CallCopyingArgHandler implements ArgHandler<SqlNode> {
 
@@ -132,7 +136,7 @@ public class SqlShuttle extends SqlBasicVisitor<SqlNode> {
 
 
         @Override
-        public SqlNode visitChild( SqlVisitor<SqlNode> visitor, SqlNode expr, int i, SqlNode operand ) {
+        public SqlNode visitChild( NodeVisitor<SqlNode> visitor, SqlNode expr, int i, SqlNode operand ) {
             if ( operand == null ) {
                 return null;
             }

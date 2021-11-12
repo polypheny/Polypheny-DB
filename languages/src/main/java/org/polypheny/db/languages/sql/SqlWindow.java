@@ -19,10 +19,17 @@ package org.polypheny.db.languages.sql;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.core.BasicNodeVisitor.ArgHandler;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
-import org.polypheny.db.languages.sql.util.SqlBasicVisitor.ArgHandler;
-import org.polypheny.db.languages.sql.util.SqlVisitor;
+import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.NodeVisitor;
+import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.Window;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -30,7 +37,6 @@ import org.polypheny.db.languages.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.rel.core.Window.Group;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexWindowBound;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.ControlFlowException;
@@ -55,7 +61,7 @@ import org.polypheny.db.util.Util;
  *
  * declares windows w and w1, and uses a window in an OVER clause. It thus contains 3 {@link SqlWindow} objects.
  */
-public class SqlWindow extends SqlCall {
+public class SqlWindow extends SqlCall implements Window {
 
     /**
      * The FOLLOWING operator used exclusively in a window specification.
@@ -109,12 +115,16 @@ public class SqlWindow extends SqlCall {
     /**
      * The lower bound of the window.
      */
-    SqlNode lowerBound;
+    @Getter
+    @Setter
+    Node lowerBound;
 
     /**
      * The upper bound of the window.
      */
-    SqlNode upperBound;
+    @Getter
+    @Setter
+    Node upperBound;
 
     /**
      * Whether to allow partial results. It may be null.
@@ -127,7 +137,7 @@ public class SqlWindow extends SqlCall {
     /**
      * Creates a window.
      */
-    public SqlWindow( ParserPos pos, SqlIdentifier declName, SqlIdentifier refName, SqlNodeList partitionList, SqlNodeList orderList, SqlLiteral isRows, SqlNode lowerBound, SqlNode upperBound, SqlLiteral allowPartial ) {
+    public SqlWindow( ParserPos pos, SqlIdentifier declName, SqlIdentifier refName, SqlNodeList partitionList, SqlNodeList orderList, SqlLiteral isRows, Node lowerBound, Node upperBound, SqlLiteral allowPartial ) {
         super( pos );
         this.declName = declName;
         this.refName = refName;
@@ -144,7 +154,7 @@ public class SqlWindow extends SqlCall {
     }
 
 
-    public static SqlWindow create( SqlIdentifier declName, SqlIdentifier refName, SqlNodeList partitionList, SqlNodeList orderList, SqlLiteral isRows, SqlNode lowerBound, SqlNode upperBound, SqlLiteral allowPartial, ParserPos pos ) {
+    public static SqlWindow create( SqlIdentifier declName, SqlIdentifier refName, SqlNodeList partitionList, SqlNodeList orderList, SqlLiteral isRows, Node lowerBound, Node upperBound, SqlLiteral allowPartial, ParserPos pos ) {
         // If there's only one bound and it's 'FOLLOWING', make it the upper bound.
         if ( upperBound == null
                 && lowerBound != null
@@ -157,7 +167,7 @@ public class SqlWindow extends SqlCall {
 
 
     @Override
-    public SqlOperator getOperator() {
+    public Operator getOperator() {
         return SqlWindowOperator.INSTANCE;
     }
 
@@ -169,7 +179,7 @@ public class SqlWindow extends SqlCall {
 
 
     @Override
-    public List<SqlNode> getOperandList() {
+    public List<Node> getOperandList() {
         return ImmutableNullableList.of( declName, refName, partitionList, orderList, isRows, lowerBound, upperBound, allowPartial );
     }
 
@@ -227,26 +237,6 @@ public class SqlWindow extends SqlCall {
     public void setDeclName( SqlIdentifier declName ) {
         assert declName.isSimple();
         this.declName = declName;
-    }
-
-
-    public SqlNode getLowerBound() {
-        return lowerBound;
-    }
-
-
-    public void setLowerBound( SqlNode lowerBound ) {
-        this.lowerBound = lowerBound;
-    }
-
-
-    public SqlNode getUpperBound() {
-        return upperBound;
-    }
-
-
-    public void setUpperBound( SqlNode upperBound ) {
-        this.upperBound = upperBound;
     }
 
 
@@ -334,8 +324,8 @@ public class SqlWindow extends SqlCall {
 
 
     static void checkSpecialLiterals( SqlWindow window, SqlValidator validator ) {
-        final SqlNode lowerBound = window.getLowerBound();
-        final SqlNode upperBound = window.getUpperBound();
+        final Node lowerBound = window.getLowerBound();
+        final Node upperBound = window.getUpperBound();
         Object lowerLitType = null;
         Object upperLitType = null;
         SqlOperator lowerOp = null;
@@ -343,7 +333,7 @@ public class SqlWindow extends SqlCall {
         if ( null != lowerBound ) {
             if ( lowerBound.getKind() == Kind.LITERAL ) {
                 lowerLitType = ((SqlLiteral) lowerBound).getValue();
-                if ( Bound.UNBOUNDED_FOLLOWING == lowerLitType ) {
+                if ( Window.Bound.UNBOUNDED_FOLLOWING == lowerLitType ) {
                     throw validator.newValidationError( lowerBound, Static.RESOURCE.badLowerBoundary() );
                 }
             } else if ( lowerBound instanceof SqlCall ) {
@@ -353,7 +343,7 @@ public class SqlWindow extends SqlCall {
         if ( null != upperBound ) {
             if ( upperBound.getKind() == Kind.LITERAL ) {
                 upperLitType = ((SqlLiteral) upperBound).getValue();
-                if ( Bound.UNBOUNDED_PRECEDING == upperLitType ) {
+                if ( Window.Bound.UNBOUNDED_PRECEDING == upperLitType ) {
                     throw validator.newValidationError( upperBound, Static.RESOURCE.badUpperBoundary() );
                 }
             } else if ( upperBound instanceof SqlCall ) {
@@ -361,7 +351,7 @@ public class SqlWindow extends SqlCall {
             }
         }
 
-        if ( Bound.CURRENT_ROW == lowerLitType ) {
+        if ( Window.Bound.CURRENT_ROW == lowerLitType ) {
             if ( null != upperOp ) {
                 if ( upperOp == PRECEDING_OPERATOR ) {
                     throw validator.newValidationError( upperBound, Static.RESOURCE.currentRowPrecedingError() );
@@ -374,7 +364,7 @@ public class SqlWindow extends SqlCall {
                         throw validator.newValidationError( upperBound, Static.RESOURCE.followingBeforePrecedingError() );
                     }
                 } else if ( null != upperLitType ) {
-                    if ( Bound.CURRENT_ROW == upperLitType ) {
+                    if ( Window.Bound.CURRENT_ROW == upperLitType ) {
                         throw validator.newValidationError( upperBound, Static.RESOURCE.currentRowFollowingError() );
                     }
                 }
@@ -383,18 +373,18 @@ public class SqlWindow extends SqlCall {
     }
 
 
-    public static SqlNode createCurrentRow( ParserPos pos ) {
-        return Bound.CURRENT_ROW.symbol( pos );
+    public static Node createCurrentRow( ParserPos pos ) {
+        return SqlLiteral.createSymbol( Bound.CURRENT_ROW, pos );
     }
 
 
-    public static SqlNode createUnboundedFollowing( ParserPos pos ) {
-        return Bound.UNBOUNDED_FOLLOWING.symbol( pos );
+    public static Node createUnboundedFollowing( ParserPos pos ) {
+        return SqlLiteral.createSymbol( Bound.UNBOUNDED_FOLLOWING, pos );
     }
 
 
-    public static SqlNode createUnboundedPreceding( ParserPos pos ) {
-        return Bound.UNBOUNDED_PRECEDING.symbol( pos );
+    public static Node createUnboundedPreceding( ParserPos pos ) {
+        return SqlLiteral.createSymbol( Window.Bound.UNBOUNDED_PRECEDING, pos );
     }
 
 
@@ -410,30 +400,6 @@ public class SqlWindow extends SqlCall {
 
     public static SqlNode createBound( SqlLiteral range ) {
         return range;
-    }
-
-
-    /**
-     * Returns whether an expression represents the "CURRENT ROW" bound.
-     */
-    public static boolean isCurrentRow( SqlNode node ) {
-        return (node instanceof SqlLiteral) && ((SqlLiteral) node).symbolValue( Bound.class ) == Bound.CURRENT_ROW;
-    }
-
-
-    /**
-     * Returns whether an expression represents the "UNBOUNDED PRECEDING" bound.
-     */
-    public static boolean isUnboundedPreceding( SqlNode node ) {
-        return (node instanceof SqlLiteral) && ((SqlLiteral) node).symbolValue( Bound.class ) == Bound.UNBOUNDED_PRECEDING;
-    }
-
-
-    /**
-     * Returns whether an expression represents the "UNBOUNDED FOLLOWING" bound.
-     */
-    public static boolean isUnboundedFollowing( SqlNode node ) {
-        return (node instanceof SqlLiteral) && ((SqlLiteral) node).symbolValue( Bound.class ) == Bound.UNBOUNDED_FOLLOWING;
     }
 
 
@@ -471,8 +437,8 @@ public class SqlWindow extends SqlCall {
         }
 
         // 711 rule 10e
-        final SqlNode lowerBound = that.getLowerBound();
-        final SqlNode upperBound = that.getUpperBound();
+        final Node lowerBound = that.getLowerBound();
+        final Node upperBound = that.getUpperBound();
         if ( (null != lowerBound) || (null != upperBound) ) {
             throw validator.newValidationError( that.isRows, Static.RESOURCE.refWindowWithFrame() );
         }
@@ -482,8 +448,8 @@ public class SqlWindow extends SqlCall {
         SqlNodeList partitionListNew = partitionList;
         SqlNodeList orderListNew = orderList;
         SqlLiteral isRowsNew = isRows;
-        SqlNode lowerBoundNew = lowerBound;
-        SqlNode upperBoundNew = upperBound;
+        Node lowerBoundNew = lowerBound;
+        Node upperBoundNew = upperBound;
         SqlLiteral allowPartialNew = allowPartial;
 
         // Clear the reference window, because the reference is now resolved.
@@ -516,7 +482,7 @@ public class SqlWindow extends SqlCall {
     }
 
 
-    private static boolean setOperand( SqlNode clonedOperand, SqlNode thatOperand, SqlValidator validator ) {
+    private static boolean setOperand( Node clonedOperand, Node thatOperand, SqlValidator validator ) {
         if ( (thatOperand != null) && !SqlNodeList.isEmptyList( thatOperand ) ) {
             if ( (clonedOperand == null) || SqlNodeList.isEmptyList( clonedOperand ) ) {
                 return true;
@@ -536,11 +502,11 @@ public class SqlWindow extends SqlCall {
      * @return boolean true if all nodes in the subtree are equal
      */
     @Override
-    public boolean equalsDeep( SqlNode node, Litmus litmus ) {
+    public boolean equalsDeep( Node node, Litmus litmus ) {
         // This is the difference over super.equalsDeep.  It skips operands[0] the declared name fo this window.  We only want to check the window components.
         return node == this
                 || node instanceof SqlWindow
-                && equalDeep(
+                && Node.equalDeep(
                 Util.skip( getOperandList() ),
                 Util.skip( ((SqlWindow) node).getOperandList() ), litmus );
     }
@@ -564,8 +530,8 @@ public class SqlWindow extends SqlCall {
         SqlNodeList partitionList = this.partitionList;
         SqlNodeList orderList = this.orderList;
         SqlLiteral isRows = this.isRows;
-        SqlNode lowerBound = this.lowerBound;
-        SqlNode upperBound = this.upperBound;
+        Node lowerBound = this.lowerBound;
+        Node upperBound = this.upperBound;
         SqlLiteral allowPartial = this.allowPartial;
 
         if ( refName != null ) {
@@ -657,11 +623,11 @@ public class SqlWindow extends SqlCall {
     }
 
 
-    private void validateFrameBoundary( SqlNode bound, boolean isRows, PolyTypeFamily orderTypeFam, SqlValidator validator, SqlValidatorScope scope ) {
+    private void validateFrameBoundary( Node bound, boolean isRows, PolyTypeFamily orderTypeFam, SqlValidator validator, SqlValidatorScope scope ) {
         if ( null == bound ) {
             return;
         }
-        bound.validate( validator, scope );
+        ((SqlNode) bound).validate( validator, scope );
         switch ( bound.getKind() ) {
             case LITERAL:
                 // is there really anything to validate here? this covers "CURRENT_ROW","unbounded preceding" & "unbounded following"
@@ -731,8 +697,8 @@ public class SqlWindow extends SqlCall {
                         ImmutableList.of( new SqlIdentifier( columnName, ParserPos.ZERO ) ),
                         ParserPos.ZERO ),
                 SqlLiteral.createBoolean( true, ParserPos.ZERO ),
-                SqlWindow.createCurrentRow( ParserPos.ZERO ),
-                SqlWindow.createCurrentRow( ParserPos.ZERO ),
+                (SqlNode) SqlWindow.createCurrentRow( ParserPos.ZERO ),
+                (SqlNode) SqlWindow.createCurrentRow( ParserPos.ZERO ),
                 SqlLiteral.createBoolean( true, ParserPos.ZERO ),
                 ParserPos.ZERO );
     }
@@ -752,7 +718,7 @@ public class SqlWindow extends SqlCall {
                         ImmutableList.of( new SqlIdentifier( columnName, ParserPos.ZERO ) ),
                         ParserPos.ZERO ),
                 SqlLiteral.createBoolean( false, ParserPos.ZERO ),
-                SqlWindow.createUnboundedPreceding( ParserPos.ZERO ),
+                (SqlNode) SqlWindow.createUnboundedPreceding( ParserPos.ZERO ),
                 SqlWindow.createCurrentRow( ParserPos.ZERO ),
                 SqlLiteral.createBoolean( false, ParserPos.ZERO ),
                 ParserPos.ZERO );
@@ -781,36 +747,6 @@ public class SqlWindow extends SqlCall {
 
 
     /**
-     * An enumeration of types of bounds in a window: <code>CURRENT ROW</code>, <code>UNBOUNDED PRECEDING</code>, and <code>UNBOUNDED FOLLOWING</code>.
-     */
-    enum Bound {
-        CURRENT_ROW( "CURRENT ROW" ),
-        UNBOUNDED_PRECEDING( "UNBOUNDED PRECEDING" ),
-        UNBOUNDED_FOLLOWING( "UNBOUNDED FOLLOWING" );
-
-        private final String sql;
-
-
-        Bound( String sql ) {
-            this.sql = sql;
-        }
-
-
-        public String toString() {
-            return sql;
-        }
-
-
-        /**
-         * Creates a parse-tree node representing an occurrence of this bound type at a particular position in the parsed text.
-         */
-        public SqlNode symbol( ParserPos pos ) {
-            return SqlLiteral.createSymbol( this, pos );
-        }
-    }
-
-
-    /**
      * An operator describing a window specification.
      */
     private static class SqlWindowOperator extends SqlOperator {
@@ -830,7 +766,7 @@ public class SqlWindow extends SqlCall {
 
 
         @Override
-        public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
+        public Call createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
             assert functionQualifier == null;
             assert operands.length == 8;
             return create(
@@ -847,9 +783,9 @@ public class SqlWindow extends SqlCall {
 
 
         @Override
-        public <R> void acceptCall( SqlVisitor<R> visitor, SqlCall call, boolean onlyExpressions, ArgHandler<R> argHandler ) {
+        public <R> void acceptCall( NodeVisitor<R> visitor, SqlCall call, boolean onlyExpressions, ArgHandler<R> argHandler ) {
             if ( onlyExpressions ) {
-                for ( Ord<SqlNode> operand : Ord.zip( call.getOperandList() ) ) {
+                for ( Ord<Node> operand : Ord.zip( call.getOperandList() ) ) {
                     // If the second param is an Identifier then it's supposed to be a name from a window clause and isn't part of the group by check
                     if ( operand.e == null ) {
                         continue;
@@ -858,7 +794,7 @@ public class SqlWindow extends SqlCall {
                         // skip refName
                         continue;
                     }
-                    argHandler.visitChild( visitor, call, operand.i, operand.e );
+                    argHandler.visitChild( visitor, call, operand.i, (SqlNode) operand.e );
                 }
             } else {
                 super.acceptCall( visitor, call, onlyExpressions, argHandler );
@@ -893,16 +829,16 @@ public class SqlWindow extends SqlCall {
                 } else {
                     writer.sep( "RANGE" );
                 }
-                window.lowerBound.unparse( writer, 0, 0 );
+                ((SqlNode) window.lowerBound).unparse( writer, 0, 0 );
             } else {
                 if ( window.isRows() ) {
                     writer.sep( "ROWS BETWEEN" );
                 } else {
                     writer.sep( "RANGE BETWEEN" );
                 }
-                window.lowerBound.unparse( writer, 0, 0 );
+                ((SqlNode)window.lowerBound).unparse( writer, 0, 0 );
                 writer.keyword( "AND" );
-                window.upperBound.unparse( writer, 0, 0 );
+                ((SqlNode)window.upperBound).unparse( writer, 0, 0 );
             }
 
             // ALLOW PARTIAL/DISALLOW PARTIAL
@@ -916,6 +852,8 @@ public class SqlWindow extends SqlCall {
 
             writer.endList( frame );
         }
+
     }
+
 }
 

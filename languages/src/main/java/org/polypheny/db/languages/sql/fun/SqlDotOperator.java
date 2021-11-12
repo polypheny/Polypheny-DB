@@ -18,23 +18,24 @@ package org.polypheny.db.languages.sql.fun;
 
 
 import java.util.Arrays;
+import org.polypheny.db.core.BasicNodeVisitor.ArgHandler;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.NodeVisitor;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.languages.sql.util.SqlBasicVisitor.ArgHandler;
-import org.polypheny.db.languages.sql.util.SqlVisitor;
+import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.languages.sql.SqlCallBinding;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlOperatorBinding;
+import org.polypheny.db.languages.sql.SqlSpecialOperator;
+import org.polypheny.db.languages.sql.SqlUtil;
+import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.languages.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.languages.sql.SqlCall;
-import org.polypheny.db.languages.sql.SqlCallBinding;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlOperatorBinding;
-import org.polypheny.db.languages.sql.SqlSpecialOperator;
-import org.polypheny.db.languages.sql.SqlUtil;
-import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
@@ -86,7 +87,7 @@ public class SqlDotOperator extends SqlSpecialOperator {
 
 
     @Override
-    public <R> void acceptCall( SqlVisitor<R> visitor, SqlCall call, boolean onlyExpressions, ArgHandler<R> argHandler ) {
+    public <R> void acceptCall( NodeVisitor<R> visitor, SqlCall call, boolean onlyExpressions, ArgHandler<R> argHandler ) {
         if ( onlyExpressions ) {
             // Do not visit operands[1] -- it is not an expression.
             argHandler.visitChild( visitor, call, 0, call.operand( 0 ) );
@@ -98,7 +99,7 @@ public class SqlDotOperator extends SqlSpecialOperator {
 
     @Override
     public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
-        final SqlNode operand = call.getOperandList().get( 0 );
+        final Node operand = call.getOperandList().get( 0 );
         final RelDataType nodeType = validator.deriveType( scope, operand );
         assert nodeType != null;
         if ( !nodeType.isStruct() ) {

@@ -18,8 +18,8 @@ package org.polypheny.db.languages.sql;
 
 
 import java.util.List;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -69,13 +69,13 @@ public class SqlDescribeSchema extends SqlCall {
 
 
     @Override
-    public SqlOperator getOperator() {
+    public Operator getOperator() {
         return OPERATOR;
     }
 
 
     @Override
-    public List<SqlNode> getOperandList() {
+    public List<Node> getOperandList() {
         return ImmutableNullableList.of( schema );
     }
 

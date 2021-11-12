@@ -35,6 +35,17 @@ import java.util.TreeSet;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.languages.sql.SqlDataTypeSpec;
+import org.polypheny.db.languages.sql.SqlIdentifier;
+import org.polypheny.db.languages.sql.SqlLiteral;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlNodeList;
+import org.polypheny.db.languages.sql.SqlOperatorTable;
+import org.polypheny.db.languages.sql.SqlUtil;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.plan.RelOptSchemaWithSampling;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.prepare.Prepare;
@@ -50,16 +61,6 @@ import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema.TableEntry;
 import org.polypheny.db.schema.PolyphenyDbSchema.TypeEntry;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.languages.sql.SqlCall;
-import org.polypheny.db.languages.sql.SqlDataTypeSpec;
-import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.languages.sql.SqlLiteral;
-import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlNodeList;
-import org.polypheny.db.languages.sql.SqlOperatorTable;
-import org.polypheny.db.languages.sql.SqlUtil;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -292,73 +293,6 @@ public class SqlValidatorUtil {
      */
     public static SqlValidatorWithHints newValidator( SqlOperatorTable opTab, SqlValidatorCatalogReader catalogReader, RelDataTypeFactory typeFactory, Conformance conformance ) {
         return new SqlValidatorImpl( opTab, catalogReader, typeFactory, conformance );
-    }
-
-
-    /**
-     * Makes a name distinct from other names which have already been used, adds it to the list, and returns it.
-     *
-     * @param name Suggested name, may not be unique
-     * @param usedNames Collection of names already used
-     * @param suggester Base for name when input name is null
-     * @return Unique name
-     */
-    public static String uniquify( String name, Set<String> usedNames, Suggester suggester ) {
-        if ( name != null ) {
-            if ( usedNames.add( name ) ) {
-                return name;
-            }
-        }
-        final String originalName = name;
-        for ( int j = 0; ; j++ ) {
-            name = suggester.apply( originalName, j, usedNames.size() );
-            if ( usedNames.add( name ) ) {
-                return name;
-            }
-        }
-    }
-
-
-    /**
-     * Makes sure that the names in a list are unique.
-     *
-     * Does not modify the input list. Returns the input list if the strings are unique, otherwise allocates a new list.
-     *
-     * @param nameList List of strings
-     * @param caseSensitive Whether upper and lower case names are considered distinct
-     * @return List of unique strings
-     */
-    public static List<String> uniquify( List<String> nameList, boolean caseSensitive ) {
-        return uniquify( nameList, EXPR_SUGGESTER, caseSensitive );
-    }
-
-
-    /**
-     * Makes sure that the names in a list are unique.
-     *
-     * Does not modify the input list. Returns the input list if the strings are unique, otherwise allocates a new list.
-     *
-     * @param nameList List of strings
-     * @param suggester How to generate new names if duplicate names are found
-     * @param caseSensitive Whether upper and lower case names are considered distinct
-     * @return List of unique strings
-     */
-    public static List<String> uniquify( List<String> nameList, Suggester suggester, boolean caseSensitive ) {
-        final Set<String> used = caseSensitive
-                ? new LinkedHashSet<>()
-                : new TreeSet<>( String.CASE_INSENSITIVE_ORDER );
-        int changeCount = 0;
-        final List<String> newNameList = new ArrayList<>();
-        for ( String name : nameList ) {
-            String uniqueName = uniquify( name, used, suggester );
-            if ( !uniqueName.equals( name ) ) {
-                ++changeCount;
-            }
-            newNameList.add( uniqueName );
-        }
-        return changeCount == 0
-                ? nameList
-                : newNameList;
     }
 
 
@@ -629,8 +563,8 @@ public class SqlValidatorUtil {
         switch ( groupExpr.getKind() ) {
             case GROUPING_SETS:
                 final SqlCall call = (SqlCall) groupExpr;
-                for ( SqlNode node : call.getOperandList() ) {
-                    convertGroupSet( scope, groupAnalyzer, builder, node );
+                for ( Node node : call.getOperandList() ) {
+                    convertGroupSet( scope, groupAnalyzer, builder, (SqlNode) node );
                 }
                 return;
             case ROW:
@@ -668,10 +602,10 @@ public class SqlValidatorUtil {
      * Gathers into {@code groupExprs} the set of distinct expressions being grouped, and returns a bitmap indicating which expressions this tuple
      * is grouping.
      */
-    private static List<ImmutableBitSet> analyzeGroupTuple( SqlValidatorScope scope, GroupAnalyzer groupAnalyzer, List<SqlNode> operandList ) {
+    private static List<ImmutableBitSet> analyzeGroupTuple( SqlValidatorScope scope, GroupAnalyzer groupAnalyzer, List<Node> operandList ) {
         List<ImmutableBitSet> list = new ArrayList<>();
-        for ( SqlNode operand : operandList ) {
-            list.add( analyzeGroupExpr( scope, groupAnalyzer, operand ) );
+        for ( Node operand : operandList ) {
+            list.add( analyzeGroupExpr( scope, groupAnalyzer, (SqlNode) operand ) );
         }
         return list;
     }
@@ -932,23 +866,6 @@ public class SqlValidatorUtil {
         }
         return false;
     }
-
-
-    /**
-     * Suggests candidates for unique names, given the number of attempts so far and the number of expressions in the project list.
-     */
-    public interface Suggester {
-
-        String apply( String original, int attempt, int size );
-
-    }
-
-
-    public static final Suggester EXPR_SUGGESTER = ( original, attempt, size ) -> Util.first( original, "EXPR$" ) + attempt;
-
-    public static final Suggester F_SUGGESTER = ( original, attempt, size ) -> Util.first( original, "$f" ) + Math.max( size, attempt );
-
-    public static final Suggester ATTEMPT_SUGGESTER = ( original, attempt, size ) -> Util.first( original, "$" ) + attempt;
 
 
     /**

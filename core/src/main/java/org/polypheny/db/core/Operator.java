@@ -18,6 +18,7 @@ package org.polypheny.db.core;
 
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.core.BasicNodeVisitor.ArgHandler;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
@@ -123,6 +124,41 @@ public abstract class Operator {
     public String getAllowedSignatures( String opNameToUse ) {
         assert operandTypeChecker != null : "If you see this, assign operandTypeChecker a value or override this function";
         return operandTypeChecker.getAllowedSignatures( this, opNameToUse ).trim();
+    }
+
+
+    /**
+     * Accepts a {@link NodeVisitor}, visiting each operand of a call. Returns null.
+     *
+     * @param visitor Visitor
+     * @param call Call to visit
+     */
+    public <R> R acceptCall( NodeVisitor<R> visitor, Call call ) {
+        for ( Node operand : call.getOperandList() ) {
+            if ( operand == null ) {
+                continue;
+            }
+            operand.accept( visitor );
+        }
+        return null;
+    }
+
+
+    /**
+     * Accepts a {@link NodeVisitor}, directing an {@link ArgHandler} to visit an operand of a call.
+     *
+     * The argument handler allows fine control about how the operands are visited, and how the results are combined.
+     *
+     * @param visitor Visitor
+     * @param call Call to visit
+     * @param onlyExpressions If true, ignores operands which are not expressions. For example, in the call to the <code>AS</code> operator
+     * @param argHandler Called for each operand
+     */
+    public <R> void acceptCall( NodeVisitor<R> visitor, Call call, boolean onlyExpressions, ArgHandler<R> argHandler ) {
+        List<Node> operands = call.getOperandList();
+        for ( int i = 0; i < operands.size(); i++ ) {
+            argHandler.visitChild( visitor, (Node) call, i, operands.get( i ) );
+        }
     }
 
 }

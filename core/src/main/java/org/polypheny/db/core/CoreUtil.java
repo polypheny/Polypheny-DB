@@ -22,13 +22,24 @@ import com.google.common.base.Utf8;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.TreeSet;
 import org.apache.calcite.avatica.util.ByteString;
 import org.polypheny.db.util.ConversionUtil;
 import org.polypheny.db.util.SaffronProperties;
+import org.polypheny.db.util.Util;
 
 public class CoreUtil {
+
+    public static final Suggester EXPR_SUGGESTER = ( original, attempt, size ) -> Util.first( original, "EXPR$" ) + attempt;
+    public static final Suggester F_SUGGESTER = ( original, attempt, size ) -> Util.first( original, "$f" ) + Math.max( size, attempt );
+    public static final Suggester ATTEMPT_SUGGESTER = ( original, attempt, size ) -> Util.first( original, "$" ) + attempt;
+
 
     /**
      * Extracts the values from a collation name.
@@ -129,6 +140,83 @@ public class CoreUtil {
                 throw RESOURCE.charsetEncoding( string, charset.name() ).ex();
             }
         }
+    }
+
+
+    /**
+     * Makes a name distinct from other names which have already been used, adds it to the list, and returns it.
+     *
+     * @param name Suggested name, may not be unique
+     * @param usedNames Collection of names already used
+     * @param suggester Base for name when input name is null
+     * @return Unique name
+     */
+    public static String uniquify( String name, Set<String> usedNames, Suggester suggester ) {
+        if ( name != null ) {
+            if ( usedNames.add( name ) ) {
+                return name;
+            }
+        }
+        final String originalName = name;
+        for ( int j = 0; ; j++ ) {
+            name = suggester.apply( originalName, j, usedNames.size() );
+            if ( usedNames.add( name ) ) {
+                return name;
+            }
+        }
+    }
+
+
+    /**
+     * Makes sure that the names in a list are unique.
+     *
+     * Does not modify the input list. Returns the input list if the strings are unique, otherwise allocates a new list.
+     *
+     * @param nameList List of strings
+     * @param caseSensitive Whether upper and lower case names are considered distinct
+     * @return List of unique strings
+     */
+    public static List<String> uniquify( List<String> nameList, boolean caseSensitive ) {
+        return uniquify( nameList, EXPR_SUGGESTER, caseSensitive );
+    }
+
+
+    /**
+     * Makes sure that the names in a list are unique.
+     *
+     * Does not modify the input list. Returns the input list if the strings are unique, otherwise allocates a new list.
+     *
+     * @param nameList List of strings
+     * @param suggester How to generate new names if duplicate names are found
+     * @param caseSensitive Whether upper and lower case names are considered distinct
+     * @return List of unique strings
+     */
+    public static List<String> uniquify( List<String> nameList, Suggester suggester, boolean caseSensitive ) {
+        final Set<String> used = caseSensitive
+                ? new LinkedHashSet<>()
+                : new TreeSet<>( String.CASE_INSENSITIVE_ORDER );
+        int changeCount = 0;
+        final List<String> newNameList = new ArrayList<>();
+        for ( String name : nameList ) {
+            String uniqueName = uniquify( name, used, suggester );
+            if ( !uniqueName.equals( name ) ) {
+                ++changeCount;
+            }
+            newNameList.add( uniqueName );
+        }
+        return changeCount == 0
+                ? nameList
+                : newNameList;
+    }
+
+
+    /**
+     * Suggests candidates for unique names, given the number of attempts so far and the number of expressions in the project list.
+     */
+    public interface Suggester {
+
+        String apply( String original, int attempt, int size );
+
     }
 
 

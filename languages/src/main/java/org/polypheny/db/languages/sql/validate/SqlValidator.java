@@ -21,13 +21,9 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.core.Conformance;
 import org.polypheny.db.core.ConformanceEnum;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.SqlValidatorException;
 import org.polypheny.db.core.Validator;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.runtime.PolyphenyDbContextException;
-import org.polypheny.db.runtime.PolyphenyDbException;
-import org.polypheny.db.runtime.Resources;
 import org.polypheny.db.languages.sql.NullCollation;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDataTypeSpec;
@@ -48,6 +44,10 @@ import org.polypheny.db.languages.sql.SqlUpdate;
 import org.polypheny.db.languages.sql.SqlWindow;
 import org.polypheny.db.languages.sql.SqlWith;
 import org.polypheny.db.languages.sql.SqlWithItem;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.runtime.PolyphenyDbContextException;
+import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.runtime.Resources;
 import org.polypheny.db.util.Glossary;
 import org.polypheny.db.util.Util;
 
@@ -275,15 +275,6 @@ public interface SqlValidator extends Validator {
     void validateColumnListParams( SqlFunction function, List<RelDataType> argTypes, List<SqlNode> operands );
 
     /**
-     * Derives the type of a node in a given scope. If the type has already been inferred, returns the previous type.
-     *
-     * @param scope Syntactic scope
-     * @param operand Parse tree node
-     * @return Type of the SqlNode. Should never return <code>NULL</code>
-     */
-    RelDataType deriveType( SqlValidatorScope scope, SqlNode operand );
-
-    /**
      * Adds "line x, column y" context to a validator exception.
      *
      * Note that the input exception is checked (it derives from {@link Exception}) and the output exception is unchecked (it derives from {@link RuntimeException}). This is intentional -- it should remind code
@@ -293,7 +284,7 @@ public interface SqlValidator extends Validator {
      * @param e The validation error
      * @return Exception containing positional information, never null
      */
-    PolyphenyDbContextException newValidationError( SqlNode node, Resources.ExInst<SqlValidatorException> e );
+    PolyphenyDbContextException newValidationError( Node node, Resources.ExInst<SqlValidatorException> e );
 
     /**
      * Returns whether a SELECT statement is an aggregation. Criteria are:
@@ -365,13 +356,6 @@ public interface SqlValidator extends Validator {
      * @return naming scope of WHERE clause
      */
     SqlValidatorScope getWhereScope( SqlSelect select );
-
-    /**
-     * Returns the type factory used by this validator.
-     *
-     * @return type factory
-     */
-    RelDataTypeFactory getTypeFactory();
 
     /**
      * Removes a node from the set of validated nodes
