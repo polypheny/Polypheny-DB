@@ -5223,7 +5223,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     @Override
-    public void validateColumnListParams( SqlFunction function, List<RelDataType> argTypes, List<SqlNode> operands ) {
+    public void validateColumnListParams( SqlFunction function, List<RelDataType> argTypes, List<Node> operands ) {
         throw new UnsupportedOperationException();
     }
 

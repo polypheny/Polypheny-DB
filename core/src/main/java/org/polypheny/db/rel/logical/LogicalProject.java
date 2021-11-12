@@ -37,6 +37,7 @@ package org.polypheny.db.rel.logical;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -51,7 +52,6 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.validate.SqlValidatorUtil;
 
 
 /**
@@ -89,7 +89,7 @@ public final class LogicalProject extends Project {
      */
     public static LogicalProject create( final RelNode input, final List<? extends RexNode> projects, List<String> fieldNames ) {
         final RelOptCluster cluster = input.getCluster();
-        final RelDataType rowType = RexUtil.createStructType( cluster.getTypeFactory(), projects, fieldNames, SqlValidatorUtil.F_SUGGESTER );
+        final RelDataType rowType = RexUtil.createStructType( cluster.getTypeFactory(), projects, fieldNames, CoreUtil.F_SUGGESTER );
         return create( input, projects, rowType );
     }
 

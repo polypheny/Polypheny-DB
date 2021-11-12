@@ -19,6 +19,8 @@ package org.polypheny.db.languages.sql.validate;
 
 import com.google.common.collect.Lists;
 import java.util.List;
+import lombok.Getter;
+import org.polypheny.db.core.UserDefined;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.FunctionParameter;
@@ -37,8 +39,9 @@ import org.polypheny.db.util.Util;
  *
  * Created by the validator, after resolving a function call to a function defined in a Polypheny-DB schema.
  */
-public class SqlUserDefinedFunction extends SqlFunction {
+public class SqlUserDefinedFunction extends SqlFunction implements UserDefined {
 
+    @Getter
     public final Function function;
 
 
@@ -74,14 +77,6 @@ public class SqlUserDefinedFunction extends SqlFunction {
     }
 
 
-    /**
-     * Returns function that implements given operator call.
-     *
-     * @return function that implements given operator call
-     */
-    public Function getFunction() {
-        return function;
-    }
 
 
     @Override

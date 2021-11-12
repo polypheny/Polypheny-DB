@@ -23,6 +23,7 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.function.Functions;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
@@ -213,7 +214,7 @@ public class SqlFunction extends SqlOperator {
 
         final List<String> argNames = constructArgNameList( call );
 
-        final List<SqlNode> args = constructOperandList( validator, call, argNames );
+        final List<Node> args = constructOperandList( validator, call, argNames );
 
         final List<RelDataType> argTypes = constructArgTypeList( validator, scope, call, args, convertRowArgToColumnList );
 
@@ -224,9 +225,9 @@ public class SqlFunction extends SqlOperator {
             if ( convertRowArgToColumnList && containsRowArg( args ) ) {
                 if ( function == null && SqlUtil.matchRoutinesByParameterCount( validator.getOperatorTable(), getNameAsId(), argTypes, getFunctionType() ) ) {
                     // remove the already validated node types corresponding to row arguments before re-validating
-                    for ( SqlNode operand : args ) {
+                    for ( Node operand : args ) {
                         if ( operand.getKind() == Kind.ROW ) {
-                            validator.removeValidatedNodeType( operand );
+                            validator.removeValidatedNodeType( (SqlNode) operand );
                         }
                     }
                     return deriveType( validator, scope, call, false );
@@ -251,8 +252,8 @@ public class SqlFunction extends SqlOperator {
     }
 
 
-    private boolean containsRowArg( List<SqlNode> args ) {
-        for ( SqlNode operand : args ) {
+    private boolean containsRowArg( List<Node> args ) {
+        for ( Node operand : args ) {
             if ( operand.getKind() == Kind.ROW ) {
                 return true;
             }

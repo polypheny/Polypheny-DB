@@ -267,12 +267,11 @@ public interface SqlValidator extends Validator {
 
     /**
      * Validates a COLUMN_LIST parameter
-     *
-     * @param function function containing COLUMN_LIST parameter
+     *  @param function function containing COLUMN_LIST parameter
      * @param argTypes function arguments
      * @param operands operands passed into the function call
      */
-    void validateColumnListParams( SqlFunction function, List<RelDataType> argTypes, List<SqlNode> operands );
+    void validateColumnListParams( SqlFunction function, List<RelDataType> argTypes, List<Node> operands );
 
     /**
      * Adds "line x, column y" context to a validator exception.

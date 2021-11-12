@@ -49,7 +49,7 @@ public class LiteralOperandTypeChecker implements PolySingleOperandTypeChecker {
 
 
     @Override
-    public boolean checkSingleOperandType( SqlCallBinding callBinding, Node node, int iFormalOperand, boolean throwOnFailure ) {
+    public boolean checkSingleOperandType( CallBinding callBinding, Node node, int iFormalOperand, boolean throwOnFailure ) {
         Util.discard( iFormalOperand );
 
         if ( SqlUtil.isNullLiteral( node, true ) ) {

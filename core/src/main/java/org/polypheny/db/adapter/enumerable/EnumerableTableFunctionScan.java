@@ -41,6 +41,8 @@ import java.util.Set;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.core.TableFunction;
+import org.polypheny.db.core.UserDefined;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelNode;
@@ -51,7 +53,6 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.QueryableTable;
 import org.polypheny.db.schema.impl.TableFunctionImpl;
-import org.polypheny.db.sql.validate.SqlUserDefinedTableFunction;
 
 
 /**
@@ -97,10 +98,10 @@ public class EnumerableTableFunctionScan extends TableFunctionScan implements En
             return false;
         }
         final RexCall call = (RexCall) getCall();
-        if ( !(call.getOperator() instanceof SqlUserDefinedTableFunction) ) {
+        if ( !(call.getOperator() instanceof UserDefined && call.getOperator() instanceof TableFunction) ) {
             return false;
         }
-        final SqlUserDefinedTableFunction udtf = (SqlUserDefinedTableFunction) call.getOperator();
+        final UserDefined udtf = (UserDefined) call.getOperator();
         if ( !(udtf.getFunction() instanceof TableFunctionImpl) ) {
             return false;
         }
@@ -108,5 +109,6 @@ public class EnumerableTableFunctionScan extends TableFunctionScan implements En
         final Method method = tableFunction.method;
         return QueryableTable.class.isAssignableFrom( method.getReturnType() );
     }
+
 }
 

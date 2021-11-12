@@ -84,10 +84,13 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.BinaryOperator;
+import org.polypheny.db.core.JsonArrayAgg;
+import org.polypheny.db.core.JsonObjectAgg;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.MqlStdOperatorTable;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.UserDefined;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
@@ -567,8 +570,8 @@ public class RexImpTable {
 
 
     public CallImplementor get( final Operator operator ) {
-        if ( operator instanceof SqlUserDefinedFunction ) {
-            org.polypheny.db.schema.Function udf = ((SqlUserDefinedFunction) operator).getFunction();
+        if ( operator instanceof UserDefined ) {
+            org.polypheny.db.schema.Function udf = ((UserDefined) operator).getFunction();
             if ( !(udf instanceof ImplementableFunction) ) {
                 throw new IllegalStateException( "User defined function " + operator + " must implement ImplementableFunction" );
             }
@@ -579,12 +582,12 @@ public class RexImpTable {
 
 
     public AggImplementor get( final AggFunction aggregation, boolean forWindowAggregate ) {
-        if ( aggregation instanceof SqlUserDefinedAggFunction ) {
-            final SqlUserDefinedAggFunction udaf = (SqlUserDefinedAggFunction) aggregation;
-            if ( !(udaf.function instanceof ImplementableAggFunction) ) {
+        if ( aggregation instanceof UserDefined ) {
+            final UserDefined udaf = (UserDefined) aggregation;
+            if ( !(udaf.getFunction() instanceof ImplementableAggFunction) ) {
                 throw new IllegalStateException( "User defined aggregation " + aggregation + " must implement ImplementableAggFunction" );
             }
-            return ((ImplementableAggFunction) udaf.function).getImplementor( forWindowAggregate );
+            return ((ImplementableAggFunction) udaf.getFunction()).getImplementor( forWindowAggregate );
         }
         if ( forWindowAggregate ) {
             Supplier<? extends WinAggImplementor> winAgg = winAggMap.get( aggregation );
@@ -1205,7 +1208,7 @@ public class RexImpTable {
         @Override
         public Expression implementResult( AggContext info, AggResultContext result ) {
             final List<Integer> keys;
-            switch ( info.aggregation().kind ) {
+            switch ( info.aggregation().getKind() ) {
                 case GROUPING: // "GROUPING(e, ...)", also "GROUPING_ID(e, ...)"
                     keys = result.call().getArgList();
                     break;
@@ -1727,7 +1730,7 @@ public class RexImpTable {
 
         @Override
         public void implementAdd( AggContext info, AggAddContext add ) {
-            final SqlJsonObjectAggAggFunction function = (SqlJsonObjectAggAggFunction) info.aggregation();
+            final JsonObjectAgg function = (JsonObjectAgg) info.aggregation();
             add.currentBlock().add(
                     Expressions.statement(
                             Expressions.call(
@@ -1783,7 +1786,7 @@ public class RexImpTable {
 
         @Override
         public void implementAdd( AggContext info, AggAddContext add ) {
-            final SqlJsonArrayAggAggFunction function = (SqlJsonArrayAggAggFunction) info.aggregation();
+            final JsonArrayAgg function = (JsonArrayAgg) info.aggregation();
             add.currentBlock().add(
                     Expressions.statement(
                             Expressions.call(
@@ -2486,7 +2489,7 @@ public class RexImpTable {
                             )
                     ) );
             builder.add( Expressions.return_( null, predicate ) );
-            translator.getList().append( "forLoop" "), Builder.toBlock() );
+            translator.getList().append( "forLoop", builder.toBlock() );
             return predicate;
         }
 

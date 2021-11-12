@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.avatica.Meta;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.core.Validator;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
@@ -352,7 +353,7 @@ public abstract class Prepare {
 
     protected abstract void init( Class runtimeContextClass );
 
-    protected abstract SqlValidator getSqlValidator();
+    protected abstract Validator getSqlValidator();
 
 
     /**

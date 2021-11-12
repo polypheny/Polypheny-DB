@@ -37,9 +37,8 @@ package org.polypheny.db.rel.type;
 import java.nio.charset.Charset;
 import java.util.List;
 import org.polypheny.db.core.Collation;
-import org.polypheny.db.sql.SqlCollation;
-import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.SqlIntervalQualifier;
+import org.polypheny.db.core.Identifier;
+import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.type.PolyType;
 
 
@@ -153,7 +152,7 @@ public interface RelDataType {
      *
      * @return interval qualifier
      */
-    SqlIntervalQualifier getIntervalQualifier();
+    IntervalQualifier getIntervalQualifier();
 
     /**
      * Gets the JDBC-defined precision for values of this type. Note that this is not always the same as the user-specified
@@ -191,12 +190,12 @@ public interface RelDataType {
     PolyType getPolyType();
 
     /**
-     * Gets the {@link SqlIdentifier} associated with this type. For a predefined type, this is a simple identifier based on
+     * Gets the {#@link SqlIdentifier} associated with this type. For a predefined type, this is a simple identifier based on
      * {@link #getPolyType}. For a user-defined type, this is a compound identifier which uniquely names the type.
      *
      * @return SqlIdentifier, or null if this is not an SQL type
      */
-    SqlIdentifier getSqlIdentifier();
+    Identifier getSqlIdentifier();
 
     /**
      * Gets a string representation of this type without detail such as character set and nullability.

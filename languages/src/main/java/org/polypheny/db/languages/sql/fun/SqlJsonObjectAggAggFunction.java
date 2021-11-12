@@ -39,7 +39,7 @@ import org.polypheny.db.util.Optionality;
 /**
  * The <code>JSON_OBJECTAGG</code> aggregate function.
  */
-public class SqlJsonObjectAggAggFunction extends SqlAggFunction {
+public class SqlJsonObjectAggAggFunction extends SqlAggFunction implements JsonObjectAgg {
 
     private final SqlJsonConstructorNullClause nullClause;
 

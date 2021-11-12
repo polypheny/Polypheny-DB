@@ -39,6 +39,7 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.core.Identifier;
 import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -80,7 +81,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
 
 
     @Override
-    public RelDataType getNamedType( SqlIdentifier typeName ) {
+    public RelDataType getNamedType( Identifier typeName ) {
         if ( typeName.equalsDeep( fixture.addressType.getSqlIdentifier(), Litmus.IGNORE ) ) {
             return fixture.addressType;
         } else {

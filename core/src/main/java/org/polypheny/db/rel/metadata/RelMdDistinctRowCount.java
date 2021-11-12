@@ -36,6 +36,7 @@ package org.polypheny.db.rel.metadata;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.volcano.RelSubset;
 import org.polypheny.db.rel.RelNode;
@@ -51,7 +52,6 @@ import org.polypheny.db.rel.core.Values;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -162,7 +162,7 @@ public class RelMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
         RexNode newPred = RelMdUtil.makeSemiJoinSelectivityRexNode( mq, rel );
         if ( predicate != null ) {
             RexBuilder rexBuilder = rel.getCluster().getRexBuilder();
-            newPred = rexBuilder.makeCall( SqlStdOperatorTable.AND, newPred, predicate );
+            newPred = rexBuilder.makeCall( StdOperatorRegistry.get( "AND" ), newPred, predicate );
         }
 
         return mq.getDistinctRowCount( rel.getLeft(), groupKey, newPred );
@@ -282,4 +282,5 @@ public class RelMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
         }
         return d;
     }
+
 }

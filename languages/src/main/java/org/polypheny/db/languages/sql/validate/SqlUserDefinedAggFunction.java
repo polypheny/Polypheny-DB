@@ -20,7 +20,9 @@ package org.polypheny.db.languages.sql.validate;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 import org.apache.calcite.linq4j.function.Experimental;
+import org.polypheny.db.core.UserDefined;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -44,8 +46,9 @@ import org.polypheny.db.util.Util;
  *
  * Created by the validator, after resolving a function call to a function defined in a Polypheny-DB schema.
  */
-public class SqlUserDefinedAggFunction extends SqlAggFunction {
+public class SqlUserDefinedAggFunction extends SqlAggFunction implements UserDefined {
 
+    @Getter
     public final AggregateFunction function;
 
     /**

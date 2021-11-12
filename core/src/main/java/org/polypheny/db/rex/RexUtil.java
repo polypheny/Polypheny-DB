@@ -50,6 +50,9 @@ import java.util.Objects;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.function.Predicate1;
+import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
@@ -64,7 +67,7 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexTableInputRef.RelTableRef;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
@@ -178,7 +181,7 @@ public class RexUtil {
             }
         }
         if ( allowCast ) {
-            if ( node.isA( SqlKind.CAST ) ) {
+            if ( node.isA( Kind.CAST ) ) {
                 RexCall call = (RexCall) node;
                 if ( isNullLiteral( call.operands.get( 0 ), false ) ) {
                     // node is "CAST(NULL as type)"
@@ -222,11 +225,11 @@ public class RexUtil {
      */
     public static boolean isLiteral( RexNode node, boolean allowCast ) {
         assert node != null;
-        if ( node.isA( SqlKind.LITERAL ) ) {
+        if ( node.isA( Kind.LITERAL ) ) {
             return true;
         }
         if ( allowCast ) {
-            if ( node.isA( SqlKind.CAST ) ) {
+            if ( node.isA( Kind.CAST ) ) {
                 RexCall call = (RexCall) node;
                 if ( isLiteral( call.operands.get( 0 ), false ) ) {
                     // node is "CAST(literal as type)"
@@ -267,7 +270,7 @@ public class RexUtil {
             return true;
         }
         if ( allowCast ) {
-            if ( node.isA( SqlKind.CAST ) ) {
+            if ( node.isA( Kind.CAST ) ) {
                 RexCall call = (RexCall) node;
                 return isReferenceOrAccess( call.operands.get( 0 ), false );
             }
@@ -363,14 +366,14 @@ public class RexUtil {
 
 
     private static <C extends RexNode> void gatherConstraints( Class<C> clazz, RexNode predicate, Map<RexNode, C> map, Set<RexNode> excludeSet, RexBuilder rexBuilder ) {
-        if ( predicate.getKind() != SqlKind.EQUALS && predicate.getKind() != SqlKind.IS_NULL ) {
+        if ( predicate.getKind() != Kind.EQUALS && predicate.getKind() != Kind.IS_NULL ) {
             decompose( excludeSet, predicate );
             return;
         }
         final List<RexNode> operands = ((RexCall) predicate).getOperands();
         final RexNode left;
         final RexNode right;
-        if ( predicate.getKind() == SqlKind.EQUALS ) {
+        if ( predicate.getKind() == Kind.EQUALS ) {
             left = operands.get( 0 );
             right = operands.get( 1 );
         } else { // is null
@@ -591,7 +594,7 @@ public class RexUtil {
      * @param operator Operator to look for
      * @param node a RexNode tree
      */
-    public static RexCall findOperatorCall( final SqlOperator operator, RexNode node ) {
+    public static RexCall findOperatorCall( final Operator operator, RexNode node ) {
         try {
             RexVisitor<Void> visitor =
                     new RexVisitorImpl<Void>( true ) {
@@ -750,7 +753,7 @@ public class RexUtil {
 
 
     public static boolean canReinterpretOverflow( RexCall call ) {
-        assert call.isA( SqlKind.REINTERPRET ) : "call is not a reinterpret";
+        assert call.isA( Kind.REINTERPRET ) : "call is not a reinterpret";
         return call.operands.size() > 1;
     }
 
@@ -914,7 +917,7 @@ public class RexUtil {
      * @param suggester Generates alternative names if {@code names} is not null and its elements are not unique
      * @return Record type
      */
-    public static RelDataType createStructType( RelDataTypeFactory typeFactory, final List<? extends RexNode> exprs, List<String> names, SqlValidatorUtil.Suggester suggester ) {
+    public static RelDataType createStructType( RelDataTypeFactory typeFactory, final List<? extends RexNode> exprs, List<String> names, CoreUtil.Suggester suggester ) {
         if ( names != null && suggester != null ) {
             names = SqlValidatorUtil.uniquify( names, suggester, typeFactory.getTypeSystem().isSchemaCaseSensitive() );
         }
@@ -1363,7 +1366,7 @@ public class RexUtil {
      * However, it is not complete.
      */
     public static boolean isLosslessCast( RexNode node ) {
-        if ( !node.isA( SqlKind.CAST ) ) {
+        if ( !node.isA( Kind.CAST ) ) {
             return false;
         }
         final RelDataType source = ((RexCall) node).getOperands().get( 0 ).getType();
@@ -1474,7 +1477,7 @@ public class RexUtil {
      * We might well flatten the tree, and write "AND(x, y, z)".
      */
     private static boolean isAssociative( SqlOperator op ) {
-        return op.getKind() == SqlKind.AND || op.getKind() == SqlKind.OR;
+        return op.getKind() == Kind.AND || op.getKind() == Kind.OR;
     }
 
 
@@ -1626,7 +1629,7 @@ public class RexUtil {
     }
 
 
-    static SqlOperator op( SqlKind kind ) {
+    static SqlOperator op( Kind kind ) {
         switch ( kind ) {
             case IS_FALSE:
                 return SqlStdOperatorTable.IS_FALSE;
@@ -1752,7 +1755,7 @@ public class RexUtil {
      * A condition case (CASE WHEN p1 THEN v1 ... ELSE e END) has an odd number of arguments and even-numbered arguments are predicates, except for the last argument.
      */
     public static boolean isCasePredicate( RexCall call, int i ) {
-        assert call.getKind() == SqlKind.CASE;
+        assert call.getKind() == Kind.CASE;
         return i < call.operands.size() - 1 && (call.operands.size() - i) % 2 == 1;
     }
 
@@ -1785,7 +1788,7 @@ public class RexUtil {
                 ? rexBuilder.makeLiteral( false )
                 : input.isAlwaysFalse()
                         ? rexBuilder.makeLiteral( true )
-                        : input.getKind() == SqlKind.NOT
+                        : input.getKind() == Kind.NOT
                                 ? ((RexCall) input).operands.get( 0 )
                                 : rexBuilder.makeCall( SqlStdOperatorTable.NOT, input );
     }

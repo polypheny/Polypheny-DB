@@ -16,8 +16,16 @@
 
 package org.polypheny.db.core;
 
-public interface AggFunction {
+import org.polypheny.db.schema.Function;
 
-    Kind getKind();
+public interface UserDefined {
+
+
+    /**
+     * Returns function that implements given operator call.
+     *
+     * @return function that implements given operator call
+     */
+    Function getFunction();
 
 }

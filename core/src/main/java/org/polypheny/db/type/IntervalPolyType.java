@@ -36,6 +36,7 @@ package org.polypheny.db.type;
 
 import java.util.Objects;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
@@ -82,7 +83,7 @@ public class IntervalPolyType extends AbstractPolyType {
 
 
     @Override
-    public SqlIntervalQualifier getIntervalQualifier() {
+    public IntervalQualifier getIntervalQualifier() {
         return new SqlIntervalQualifier( intervalQualifier );
     }
 

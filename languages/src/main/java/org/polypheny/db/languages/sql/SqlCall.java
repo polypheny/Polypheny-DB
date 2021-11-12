@@ -178,7 +178,7 @@ public abstract class SqlCall extends SqlNode implements Call {
     public SqlMonotonicity getMonotonicity( SqlValidatorScope scope ) {
         // Delegate to operator.
         final SqlCallBinding binding = new SqlCallBinding( scope.getValidator(), scope, this );
-        return getOperator().getMonotonicity( binding );
+        return ((SqlOperator) getOperator()).getMonotonicity( binding );
     }
 
 
@@ -188,7 +188,7 @@ public abstract class SqlCall extends SqlNode implements Call {
      * @return boolean true if function call to COUNT(*)
      */
     public boolean isCountStar() {
-        if ( getOperator().isName( "COUNT" ) && operandCount() == 1 ) {
+        if ( ((SqlOperator) getOperator()).isName( "COUNT" ) && operandCount() == 1 ){
             final SqlNode parm = operand( 0 );
             if ( parm instanceof SqlIdentifier ) {
                 SqlIdentifier id = (SqlIdentifier) parm;

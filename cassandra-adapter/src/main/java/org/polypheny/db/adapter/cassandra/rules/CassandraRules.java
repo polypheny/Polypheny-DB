@@ -31,6 +31,8 @@ import org.polypheny.db.adapter.cassandra.CassandraTable;
 import org.polypheny.db.adapter.cassandra.CassandraTableScan;
 import org.polypheny.db.adapter.cassandra.CassandraToEnumerableConverter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
@@ -53,8 +55,6 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
@@ -93,7 +93,7 @@ public class CassandraRules {
 
 
     public static List<String> cassandraLogicalFieldNames( final RelDataType rowType ) {
-        return SqlValidatorUtil.uniquify( rowType.getFieldNames(), SqlValidatorUtil.EXPR_SUGGESTER, true );
+        return CoreUtil.uniquify( rowType.getFieldNames(), CoreUtil.EXPR_SUGGESTER, true );
     }
 
 
@@ -123,6 +123,7 @@ public class CassandraRules {
         public String visitInputRef( RexInputRef inputRef ) {
             return inFields.get( inputRef.getIndex() );
         }
+
     }
 
 
@@ -177,14 +178,14 @@ public class CassandraRules {
         /**
          * Check if the node is a supported predicate (primary key equality).
          *
-         * @param node           Condition node to check
-         * @param fieldNames     Names of all columns in the table
-         * @param partitionKeys  Names of primary key columns
+         * @param node Condition node to check
+         * @param fieldNames Names of all columns in the table
+         * @param partitionKeys Names of primary key columns
          * @param clusteringKeys Names of primary key columns
          * @return True if the node represents an equality predicate on a primary key
          */
         private boolean isEqualityOnKey( RexNode node, List<String> fieldNames, Set<String> partitionKeys, List<String> clusteringKeys ) {
-            if ( node.getKind() != SqlKind.EQUALS ) {
+            if ( node.getKind() != Kind.EQUALS ) {
                 return false;
             }
 
@@ -206,18 +207,18 @@ public class CassandraRules {
         /**
          * Check if an equality operation is comparing a primary key column with a literal.
          *
-         * @param left       Left operand of the equality
-         * @param right      Right operand of the equality
+         * @param left Left operand of the equality
+         * @param right Right operand of the equality
          * @param fieldNames Names of all columns in the table
          * @return The field being compared or null if there is no key equality
          */
         private String compareFieldWithLiteral( RexNode left, RexNode right, List<String> fieldNames ) {
             // FIXME Ignore casts for new and assume they aren't really necessary
-            if ( left.isA( SqlKind.CAST ) ) {
+            if ( left.isA( Kind.CAST ) ) {
                 left = ((RexCall) left).getOperands().get( 0 );
             }
 
-            if ( left.isA( SqlKind.INPUT_REF ) && right.isA( SqlKind.LITERAL ) ) {
+            if ( left.isA( Kind.INPUT_REF ) && right.isA( Kind.LITERAL ) ) {
                 final RexInputRef left1 = (RexInputRef) left;
                 return fieldNames.get( left1.getIndex() );
             } else {
@@ -247,6 +248,7 @@ public class CassandraRules {
             final Pair<List<String>, List<String>> keyFields = ((CassandraTable) scan.getTable()).getKeyFields();
             return new CassandraFilter( filter.getCluster(), traitSet, convert( filter.getInput(), filter.getInput().getTraitSet().replace( out ) ), filter.getCondition(), keyFields.left, keyFields.right, ((CassandraTable) scan.getTable()).getClusteringOrder() );
         }
+
     }
 
 
@@ -281,6 +283,7 @@ public class CassandraRules {
             final RelTraitSet traitSet = project.getTraitSet().replace( out );
             return new CassandraProject( project.getCluster(), traitSet, convert( project.getInput(), project.getInput().getTraitSet().replace( out ) ), project.getProjects(), project.getRowType(), false );
         }
+
     }
 
 
@@ -391,6 +394,8 @@ public class CassandraRules {
                 call.transformTo( converted );
             }
         }
+
     }
+
 }
 

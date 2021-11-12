@@ -35,6 +35,7 @@ package org.polypheny.db.adapter.enumerable;
 
 
 import java.util.List;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelCollationTraitDef;
@@ -45,7 +46,6 @@ import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.validate.SqlValidatorUtil;
 
 
 /**
@@ -84,7 +84,7 @@ public class EnumerableProject extends Project implements EnumerableRel {
 
     static RelNode create( RelNode child, List<? extends RexNode> projects, List<String> fieldNames ) {
         final RelOptCluster cluster = child.getCluster();
-        final RelDataType rowType = RexUtil.createStructType( cluster.getTypeFactory(), projects, fieldNames, SqlValidatorUtil.F_SUGGESTER );
+        final RelDataType rowType = RexUtil.createStructType( cluster.getTypeFactory(), projects, fieldNames, CoreUtil.F_SUGGESTER );
         return create( child, projects, rowType );
     }
 
@@ -100,5 +100,6 @@ public class EnumerableProject extends Project implements EnumerableRel {
         // EnumerableCalcRel is always better
         throw new UnsupportedOperationException();
     }
+
 }
 

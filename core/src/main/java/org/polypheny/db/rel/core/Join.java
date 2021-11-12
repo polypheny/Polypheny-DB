@@ -40,6 +40,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -55,7 +56,6 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexChecker;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
-import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Util;
@@ -192,7 +192,7 @@ public abstract class Join extends BiRel {
 
     @Override
     protected RelDataType deriveRowType() {
-        return SqlValidatorUtil.deriveJoinRowType( left.getRowType(), right.getRowType(), joinType, getCluster().getTypeFactory(), null, getSystemFieldList() );
+        return ValidatorUtil.deriveJoinRowType( left.getRowType(), right.getRowType(), joinType, getCluster().getTypeFactory(), null, getSystemFieldList() );
     }
 
 

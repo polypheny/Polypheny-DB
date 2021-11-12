@@ -36,8 +36,8 @@ package org.polypheny.db.rex;
 
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlKind;
 
 
 /**
@@ -69,8 +69,8 @@ public class RexLocalRef extends RexSlot {
 
 
     @Override
-    public SqlKind getKind() {
-        return SqlKind.LOCAL_REF;
+    public Kind getKind() {
+        return Kind.LOCAL_REF;
     }
 
 
@@ -102,4 +102,5 @@ public class RexLocalRef extends RexSlot {
     private static String createName( int index ) {
         return NAMES.get( index );
     }
+
 }

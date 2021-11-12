@@ -16,8 +16,6 @@
 
 package org.polypheny.db.core;
 
-public interface AggFunction {
-
-    Kind getKind();
+public interface TableFunction {
 
 }

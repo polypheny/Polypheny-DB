@@ -40,6 +40,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.core.AggFunction;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -60,8 +62,6 @@ import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexSlot;
 import org.polypheny.db.rex.RexWindowBound;
-import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Litmus;
@@ -252,7 +252,7 @@ public abstract class Window extends SingleRel {
         private final String digest;
 
         /**
-         * List of {@link Window.RexWinAggCall} objects, each of which is a call to a {@link org.polypheny.db.sql.SqlAggFunction}.
+         * List of {@link Window.RexWinAggCall} objects, each of which is a call to a {@link AggFunction}.
          */
         public final ImmutableList<RexWinAggCall> aggCalls;
 
@@ -322,9 +322,9 @@ public abstract class Window extends SingleRel {
          * Returns if the window is guaranteed to have rows. This is useful to refine data type of window aggregates. For instance sum(non-nullable) over (empty window) is NULL.
          *
          * @return true when the window is non-empty
-         * @see org.polypheny.db.sql.SqlWindow#isAlwaysNonEmpty()
-         * @see org.polypheny.db.sql.SqlOperatorBinding#getGroupCount()
-         * @see SqlValidatorImpl#resolveWindow(org.polypheny.db.sql.SqlNode, org.polypheny.db.sql.validate.SqlValidatorScope, boolean)
+         * #@see org.polypheny.db.sql.SqlWindow#isAlwaysNonEmpty()
+         * #@see org.polypheny.db.sql.SqlOperatorBinding#getGroupCount()
+         * #@see SqlValidatorImpl#resolveWindow(org.polypheny.db.sql.SqlNode, org.polypheny.db.sql.validate.SqlValidatorScope, boolean)
          */
         public boolean isAlwaysNonEmpty() {
             int lowerKey = lowerBound.getOrderKey();
@@ -348,7 +348,7 @@ public abstract class Window extends SingleRel {
                 @Override
                 public AggregateCall get( int index ) {
                     final RexWinAggCall aggCall = aggCalls.get( index );
-                    final SqlAggFunction op = (SqlAggFunction) aggCall.getOperator();
+                    final AggFunction op = (AggFunction) aggCall.getOperator();
                     return AggregateCall.create(
                             op,
                             aggCall.distinct,
@@ -361,6 +361,7 @@ public abstract class Window extends SingleRel {
                 }
             };
         }
+
     }
 
 
@@ -393,7 +394,7 @@ public abstract class Window extends SingleRel {
          * @param ordinal Ordinal within its partition
          * @param distinct Eliminate duplicates before applying aggregate function
          */
-        public RexWinAggCall( SqlAggFunction aggFun, RelDataType type, List<RexNode> operands, int ordinal, boolean distinct ) {
+        public <T extends Operator & AggFunction> RexWinAggCall( T aggFun, RelDataType type, List<RexNode> operands, int ordinal, boolean distinct ) {
             super( type, aggFun, operands );
             this.ordinal = ordinal;
             this.distinct = distinct;
@@ -421,6 +422,8 @@ public abstract class Window extends SingleRel {
         public RexCall clone( RelDataType type, List<RexNode> operands ) {
             throw new UnsupportedOperationException();
         }
+
     }
+
 }
 

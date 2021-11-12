@@ -21,10 +21,10 @@ import java.lang.reflect.Type;
 import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.schema.TableFunction;
 import org.polypheny.db.languages.sql.SqlFunctionCategory;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.schema.TableFunction;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
@@ -35,7 +35,7 @@ import org.polypheny.db.type.inference.PolyReturnTypeInference;
  *
  * Created by the validator, after resolving a function call to a function defined in a Polypheny-DB schema.
  */
-public class SqlUserDefinedTableFunction extends SqlUserDefinedFunction {
+public class SqlUserDefinedTableFunction extends SqlUserDefinedFunction implements org.polypheny.db.core.TableFunction {
 
     public SqlUserDefinedTableFunction( SqlIdentifier opName, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, List<RelDataType> paramTypes, TableFunction function ) {
         super(

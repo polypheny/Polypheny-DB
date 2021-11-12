@@ -19,6 +19,8 @@ package org.polypheny.db.languages.sql.fun;
 
 import java.util.Locale;
 import java.util.Objects;
+import org.polypheny.db.core.JsonArrayAgg;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -39,7 +41,7 @@ import org.polypheny.db.util.Optionality;
 /**
  * The <code>JSON_OBJECTAGG</code> aggregate function.
  */
-public class SqlJsonArrayAggAggFunction extends SqlAggFunction {
+public class SqlJsonArrayAggAggFunction extends SqlAggFunction implements JsonArrayAgg {
 
     private final SqlJsonConstructorNullClause nullClause;
 
@@ -73,9 +75,9 @@ public class SqlJsonArrayAggAggFunction extends SqlAggFunction {
     @Override
     public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
         // To prevent operator rewriting by SqlFunction#deriveType.
-        for ( SqlNode operand : call.getOperandList() ) {
+        for ( Node operand : call.getOperandList() ) {
             RelDataType nodeType = validator.deriveType( scope, operand );
-            ((SqlValidatorImpl) validator).setValidatedNodeType( operand, nodeType );
+            ((SqlValidatorImpl) validator).setValidatedNodeType( (SqlNode) operand, nodeType );
         }
         return validateOperands( validator, scope, call );
     }

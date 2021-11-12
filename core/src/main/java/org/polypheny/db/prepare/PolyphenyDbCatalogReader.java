@@ -46,6 +46,7 @@ import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.function.Predicate;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.Identifier;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.rel.type.RelDataType;
@@ -173,7 +174,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
 
     @Override
-    public RelDataType getNamedType( SqlIdentifier typeName ) {
+    public RelDataType getNamedType( Identifier typeName ) {
         PolyphenyDbSchema.TypeEntry typeEntry = SqlValidatorUtil.getTypeEntry( getRootSchema(), typeName );
         if ( typeEntry != null ) {
             return typeEntry.getType().apply( typeFactory );

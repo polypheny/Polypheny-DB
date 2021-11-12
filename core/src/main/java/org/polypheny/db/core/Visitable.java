@@ -16,8 +16,15 @@
 
 package org.polypheny.db.core;
 
-public interface AggFunction {
+public interface Visitable {
 
-    Kind getKind();
+    /**
+     * Accepts a generic visitor.
+     *
+     * Implementations of this method in subtypes simply call the appropriate <code>visit</code> method on the {@link NodeVisitor visitor object}.
+     *
+     * The type parameter <code>R</code> must be consistent with the type parameter of the visitor.
+     */
+    <R> R accept( NodeVisitor<R> visitor );
 
 }

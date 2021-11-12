@@ -40,6 +40,7 @@ import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.SqlCollation;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -253,7 +254,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
 
 
     @Override
-    public SqlIntervalQualifier getIntervalQualifier() {
+    public IntervalQualifier getIntervalQualifier() {
         return null;
     }
 

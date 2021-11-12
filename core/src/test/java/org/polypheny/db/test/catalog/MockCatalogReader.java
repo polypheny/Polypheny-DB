@@ -33,6 +33,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.jdbc.PolyphenyDbPrepare.AnalyzeViewResult;
 import org.polypheny.db.plan.RelOptSchema;
 import org.polypheny.db.plan.RelOptTable;
@@ -990,7 +991,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
-        public SqlIntervalQualifier getIntervalQualifier() {
+        public IntervalQualifier getIntervalQualifier() {
             return delegate.getIntervalQualifier();
         }
 

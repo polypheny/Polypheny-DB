@@ -61,7 +61,7 @@ public class FamilyOperandTypeChecker implements PolySingleOperandTypeChecker {
 
 
     @Override
-    public boolean checkSingleOperandType( SqlCallBinding callBinding, Node node, int iFormalOperand, boolean throwOnFailure ) {
+    public boolean checkSingleOperandType( CallBinding callBinding, Node node, int iFormalOperand, boolean throwOnFailure ) {
         PolyTypeFamily family = families.get( iFormalOperand );
         if ( family == PolyTypeFamily.ANY ) {
             // no need to check

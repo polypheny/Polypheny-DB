@@ -288,8 +288,8 @@ public abstract class SqlOperator extends Operator {
      */
     public void validateCall( SqlCall call, SqlValidator validator, SqlValidatorScope scope, SqlValidatorScope operandScope ) {
         assert call.getOperator() == this;
-        for ( SqlNode operand : call.getOperandList() ) {
-            operand.validateExpr( validator, operandScope );
+        for ( Node operand : call.getOperandList() ) {
+            ((SqlNode) operand).validateExpr( validator, operandScope );
         }
     }
 
@@ -362,12 +362,12 @@ public abstract class SqlOperator extends Operator {
      * @return Type of call
      */
     public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
-        for ( SqlNode operand : call.getOperandList() ) {
+        for ( Node operand : call.getOperandList() ) {
             RelDataType nodeType = validator.deriveType( scope, operand );
             assert nodeType != null;
         }
 
-        final List<SqlNode> args = constructOperandList( validator, call, null );
+        final List<Node> args = constructOperandList( validator, call, null );
 
         final List<RelDataType> argTypes = constructArgTypeList( validator, scope, call, args, false );
 
@@ -386,11 +386,11 @@ public abstract class SqlOperator extends Operator {
         // This will then cause validation issues.
         // Because the SqlCall already contains an SqlArrayValueConstructor, we can just reuse it.
         if ( sqlOperator instanceof SqlArrayValueConstructor ) {
-            sqlOperator = call.getOperator();
+            sqlOperator = (SqlOperator) call.getOperator();
         }
 
         ((SqlBasicCall) call).setOperator( sqlOperator );
-        RelDataType type = call.getOperator().validateOperands( validator, scope, call );
+        RelDataType type = ((SqlOperator) call.getOperator()).validateOperands( validator, scope, call );
 
         // Validate and determine coercibility and resulting collation name of binary operator if needed.
         type = adjustType( validator, call, type );
@@ -402,9 +402,9 @@ public abstract class SqlOperator extends Operator {
     protected List<String> constructArgNameList( SqlCall call ) {
         // If any arguments are named, construct a map.
         final ImmutableList.Builder<String> nameBuilder = ImmutableList.builder();
-        for ( SqlNode operand : call.getOperandList() ) {
+        for ( Node operand : call.getOperandList() ) {
             if ( operand.getKind() == Kind.ARGUMENT_ASSIGNMENT ) {
-                final List<SqlNode> operandList = ((SqlCall) operand).getOperandList();
+                final List<Node> operandList = ((SqlCall) operand).getOperandList();
                 nameBuilder.add( ((SqlIdentifier) operandList.get( 1 )).getSimple() );
             }
         }
@@ -418,7 +418,7 @@ public abstract class SqlOperator extends Operator {
     }
 
 
-    protected List<SqlNode> constructOperandList( SqlValidator validator, SqlCall call, List<String> argNames ) {
+    protected List<Node> constructOperandList( SqlValidator validator, SqlCall call, List<String> argNames ) {
         if ( argNames == null ) {
             return call.getOperandList();
         }
@@ -429,10 +429,10 @@ public abstract class SqlOperator extends Operator {
         if ( duplicate >= 0 ) {
             throw validator.newValidationError( call, Static.RESOURCE.duplicateArgumentName( argNames.get( duplicate ) ) );
         }
-        final ImmutableList.Builder<SqlNode> argBuilder = ImmutableList.builder();
-        for ( SqlNode operand : call.getOperandList() ) {
+        final ImmutableList.Builder<Node> argBuilder = ImmutableList.builder();
+        for ( Node operand : call.getOperandList() ) {
             if ( operand.getKind() == Kind.ARGUMENT_ASSIGNMENT ) {
-                final List<SqlNode> operandList = ((SqlCall) operand).getOperandList();
+                final List<Node> operandList = ((SqlCall) operand).getOperandList();
                 argBuilder.add( operandList.get( 0 ) );
             }
         }
@@ -440,19 +440,19 @@ public abstract class SqlOperator extends Operator {
     }
 
 
-    protected List<RelDataType> constructArgTypeList( SqlValidator validator, SqlValidatorScope scope, SqlCall call, List<SqlNode> args, boolean convertRowArgToColumnList ) {
+    protected List<RelDataType> constructArgTypeList( SqlValidator validator, SqlValidatorScope scope, SqlCall call, List<Node> args, boolean convertRowArgToColumnList ) {
         // Scope for operands. Usually the same as 'scope'.
         final SqlValidatorScope operandScope = scope.getOperandScope( call );
 
         final ImmutableList.Builder<RelDataType> argTypeBuilder = ImmutableList.builder();
-        for ( SqlNode operand : args ) {
+        for ( Node operand : args ) {
             RelDataType nodeType;
             // For row arguments that should be converted to ColumnList types, set the nodeType to a ColumnList type but defer validating the arguments of the row constructor until we know
             // for sure that the row argument maps to a ColumnList type
             if ( operand.getKind() == Kind.ROW && convertRowArgToColumnList ) {
                 RelDataTypeFactory typeFactory = validator.getTypeFactory();
                 nodeType = typeFactory.createPolyType( PolyType.COLUMN_LIST );
-                ((SqlValidatorImpl) validator).setValidatedNodeType( operand, nodeType );
+                ((SqlValidatorImpl) validator).setValidatedNodeType( (SqlNode) operand, nodeType );
             } else {
                 nodeType = validator.deriveType( operandScope, operand );
             }
@@ -518,7 +518,7 @@ public abstract class SqlOperator extends Operator {
 
 
     protected void checkOperandCount( SqlValidator validator, PolyOperandTypeChecker argType, SqlCall call ) {
-        OperandCountRange od = call.getOperator().getOperandCountRange();
+        OperandCountRange od = ((SqlOperator) call.getOperator()).getOperandCountRange();
         if ( od.isValidCount( call.operandCount() ) ) {
             return;
         }
@@ -544,23 +544,6 @@ public abstract class SqlOperator extends Operator {
 
     public PolyOperandTypeInference getOperandTypeInference() {
         return operandTypeInference;
-    }
-
-
-    /**
-     * Returns whether this operator is an aggregate function. By default, subclass type is used (an instance of SqlAggFunction is assumed to be an aggregator; anything else is not).
-     *
-     * Per SQL:2011, there are <dfn>aggregate functions</dfn> and <dfn>window functions</dfn>.
-     * Every aggregate function (e.g. SUM) is also a window function.
-     * There are window functions that are not aggregate functions, e.g. RANK, NTILE, LEAD, FIRST_VALUE.</p>
-     *
-     * Collectively, aggregate and window functions are called <dfn>analytic functions</dfn>. Despite its name, this method returns true for every analytic function.
-     *
-     * @return whether this operator is an analytic function (aggregate function or window function)
-     * @see #requiresOrder()
-     */
-    public boolean isAggregator() {
-        return false;
     }
 
 

@@ -25,6 +25,7 @@ import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.TrimFunction;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlFunction;
@@ -45,7 +46,7 @@ import org.polypheny.db.type.inference.ReturnTypes;
 /**
  * Definition of the "TRIM" builtin SQL function.
  */
-public class SqlTrimFunction extends SqlFunction {
+public class SqlTrimFunction extends SqlFunction implements TrimFunction {
 
     protected static final SqlTrimFunction INSTANCE =
             new SqlTrimFunction( "TRIM", Kind.TRIM,
