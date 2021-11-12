@@ -623,8 +623,6 @@ public class CottontailStore extends DataStore {
                     ccp.physicalColumnName,
                     false );
         }
-
-
     }
 
 

@@ -18,117 +18,161 @@ package org.polypheny.db.adapter.cottontail.util;
 
 
 import org.apache.calcite.avatica.util.ByteString;
+import org.polypheny.db.util.DateString;
+import org.polypheny.db.util.TimeString;
 import org.vitrivr.cottontail.client.language.basics.Distances;
-import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.*;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 
+/**
+ * A collections of conversion methods used for data access (sometimes used reflectively).
+ */
 public class Linq4JFixer {
-
-
-    public static Object getBooleanData( Object data ) {
-        return ((CottontailGrpc.Literal) data).getBooleanData();
+    /**
+     * Converts the given object and returns it as {@link String}.
+     *
+     * TODO: JSON conversion could probably take place here.
+     *
+     * @param data The data, expected to be {@link String}.
+     * @return {@link String}
+     */
+    public static String getJsonData( Object data ) {
+        if (data == null) {
+            return null;
+        } else {
+            return (String) data;
+        }
     }
 
-
-    public static Object getIntData( Object data ) {
-        return ((CottontailGrpc.Literal) data).getIntData();
-    }
-
-
-    public static Object getLongData( Object data ) {
-        return ((CottontailGrpc.Literal) data).getLongData();
-    }
-
-
-    public static Object getTinyIntData( Object data ) {
-        return Integer.valueOf( ((CottontailGrpc.Literal) data).getIntData() ).byteValue();
-    }
-
-
-    public static Object getSmallIntData( Object data ) {
-        return Integer.valueOf( ((CottontailGrpc.Literal) data).getIntData() ).shortValue();
-    }
-
-
-    public static Object getFloatData( Object data ) {
-        return ((CottontailGrpc.Literal) data).getFloatData();
-    }
-
-
-    public static Object getDoubleData( Object data ) {
-        return ((CottontailGrpc.Literal) data).getDoubleData();
-    }
-
-
-    public static String getStringData( Object data ) {
-        return ((CottontailGrpc.Literal) data).getStringData();
-    }
-
-
+    /**
+     * Converts the given object and returns it as {@link BigDecimal} object.
+     *
+     * @param data The data, expected to be {@link String}.
+     * @return {@link BigDecimal}
+     */
     public static Object getDecimalData( Object data ) {
-        return new BigDecimal( ((CottontailGrpc.Literal) data).getStringData() );
+        if (data == null) {
+            return null;
+        } else {
+            return new BigDecimal( (String) data );
+        }
     }
 
-
+    /**
+     * Converts the given object and returns it as {@link ByteString} object.
+     *
+     * @param data The data, expected to be {@link String}.
+     * @return {@link ByteString}
+     */
     public static Object getBinaryData( Object data ) {
-        return ByteString.parseBase64( ((CottontailGrpc.Literal) data).getStringData() );
+        if (data == null) {
+            return null;
+        } else {
+            return ByteString.parseBase64( (String) data );
+        }
     }
 
-
+    /**
+     * Converts the given object and returns it as {@link Integer} object.
+     *
+     * TODO: Internally, Polypheny DB uses {@link TimeString}. Conversion could take place here.
+     *
+     * @param data The data, expected to be {@link Integer}.
+     * @return {@link Integer}
+     */
     public static Object getTimeData( Object data ) {
-        return ((CottontailGrpc.Literal) data).getIntData();
+        if (data == null) {
+            return null;
+        } else {
+            return ((int)data);
+        }
     }
 
-
+    /**
+     * Converts the given object and returns it as {@link Integer} object.
+     *
+     * TODO: Internally, Polypheny DB uses {@link DateString}. Conversion could take place here.
+     *
+     * @param data The data, expected to be {@link Integer}.
+     * @return {@link Integer}
+     */
     public static Object getDateData( Object data ) {
-        return ((CottontailGrpc.Literal) data).getIntData();
+        if (data == null) {
+            return null;
+        } else {
+            return ((int)data);
+        }
     }
 
-
+    /**
+     * Converts a {@link java.util.Date} object to an {@link Integer}.
+     *
+     * @param data The data, expected to be {@link java.util.Date}.
+     * @return {@link Integer}
+     */
     public static Object getTimestampData( Object data ) {
-        return ((CottontailGrpc.Literal) data).getDateData().getUtcTimestamp();
+        if (data == null) {
+            return null;
+        } else {
+            return ((java.util.Date) data).getTime();
+        }
     }
+
 
     public static Object getBoolVector( Object data ) {
-        return ((CottontailGrpc.Literal) data).getVectorData().getBoolVector().getVectorList();
+        final List<Boolean> list = new ArrayList<>(((boolean[]) data).length);
+        for (boolean v : ((boolean[]) data))
+            list.add(v);
+        return list;
     }
 
-
     public static Object getTinyIntVector( Object data ) {
-        return ((CottontailGrpc.Literal) data).getVectorData().getIntVector().getVectorList().stream().map( Integer::byteValue ).collect( Collectors.toList() );
+        final List<Byte> list = new ArrayList<>(((int[]) data).length);
+        for (int v : ((int[]) data))
+            list.add((byte)v);
+        return list;
     }
 
 
     public static Object getSmallIntVector( Object data ) {
-        return ((CottontailGrpc.Literal) data).getVectorData().getIntVector().getVectorList().stream().map( Integer::shortValue ).collect( Collectors.toList() );
+        final List<Short> list = new ArrayList<>(((int[]) data).length);
+        for (int v : ((int[]) data))
+            list.add((short)v);
+        return list;
     }
 
 
     public static Object getIntVector( Object data ) {
-        return ((CottontailGrpc.Literal) data).getVectorData().getIntVector().getVectorList();
+        final List<Integer> list = new ArrayList<>(((int[]) data).length);
+        for (int v : ((int[]) data))
+            list.add(v);
+        return list;
     }
-
-
-    public static Object getFloatVector( Object data ) {
-        return ((CottontailGrpc.Literal) data).getVectorData().getFloatVector().getVectorList();
-    }
-
-
-    public static Object getDoubleVector( Object data ) {
-        return ((CottontailGrpc.Literal) data).getVectorData().getDoubleVector().getVectorList();
-    }
-
 
     public static Object getLongVector( Object data ) {
-        return ((CottontailGrpc.Literal) data).getVectorData().getLongVector().getVectorList();
+        final List<Long> list = new ArrayList<>(((long[]) data).length);
+        for (long v : ((long[]) data))
+            list.add(v);
+        return list;
     }
 
+    public static Object getFloatVector( Object data ) {
+        final List<Float> list = new ArrayList<>(((float[]) data).length);
+        for (float v : ((float[]) data))
+            list.add(v);
+        return list;
+    }
+
+    public static Object getDoubleVector( Object data ) {
+        final List<Double> list = new ArrayList<>(((double[]) data).length);
+        for (double v : ((double[]) data))
+            list.add(v);
+        return list;
+    }
 
     public static CompoundBooleanPredicate generateCompoundPredicate(
             Object operator_,

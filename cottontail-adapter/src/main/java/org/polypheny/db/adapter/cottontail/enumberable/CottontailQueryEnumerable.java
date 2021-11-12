@@ -15,13 +15,11 @@
  */
 
 package org.polypheny.db.adapter.cottontail.enumberable;
-
-import java.math.BigDecimal;
-import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.function.Function1;
 import org.polypheny.db.adapter.cottontail.CottontailToEnumerableConverter;
+import org.polypheny.db.adapter.cottontail.util.Linq4JFixer;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
@@ -29,7 +27,6 @@ import org.polypheny.db.type.ArrayType;
 import org.vitrivr.cottontail.client.iterators.Tuple;
 import org.vitrivr.cottontail.client.iterators.TupleIterator;
 
-import java.util.ArrayList;
 import java.util.List;
 
 
@@ -62,7 +59,6 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
             return ( (T) CottontailQueryEnumerable.this.parser.apply( this.tuple ) );
         }
 
-
         @Override
         public boolean moveNext() {
             if (CottontailQueryEnumerable.this.tupleIterator.hasNext()) {
@@ -88,48 +84,6 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
                 e.printStackTrace();
             }
         }
-
-        /**
-         * Internal conversion method that mainly converts arrays to lists.
-         *
-         * @param object The object to convert.
-         * @return Converted object.
-         */
-        private Object convert(Object object) {
-            if (object instanceof double[]) {
-                final List<Double> list = new ArrayList<>(((double[]) object).length);
-                for (double v : ((double[]) object)) {
-                    list.add(v);
-                }
-                return list;
-            } else if (object instanceof float[]) {
-                final List<Float> list = new ArrayList<>(((float[]) object).length);
-                for (float v : ((float[]) object)) {
-                    list.add(v);
-                }
-                return list;
-            } else if (object instanceof long[]) {
-                final List<Long> list = new ArrayList<>(((long[]) object).length);
-                for (long v : ((long[]) object)) {
-                    list.add(v);
-                }
-                return list;
-            } else if (object instanceof int[]) {
-                final List<Integer> list = new ArrayList<>(((int[]) object).length);
-                for (int v : ((int[]) object)) {
-                    list.add(v);
-                }
-                return list;
-            } else if (object instanceof boolean[]) {
-                final List<Boolean> list = new ArrayList<>(((boolean[]) object).length);
-                for (boolean v : ((boolean[]) object)) {
-                    list.add(v);
-                }
-                return list;
-            } else  {
-                return object;
-            }
-        }
     }
 
     public static class RowTypeParser implements Function1<Tuple, Object[]> {
@@ -150,17 +104,24 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
             final List<RelDataTypeField> fieldList = this.rowType.getFieldList();
             for ( int i = 0; i < fieldList.size(); i++ ) {
                 final RelDataType type = fieldList.get( i ).getType();
-                final String columnName = this.physicalColumnNames.get( i );
-                returnValue[i] = this.parseSingleField( a0.get( columnName ), type );
+                returnValue[i] = this.parseSingleField( a0.get( i ), type );
             }
 
             return returnValue;
         }
 
-
+        /**
+         * Internal method used to parse a single value returned from accessing a {@link Tuple}.
+         *
+         * @param data The data to convert.
+         * @param type The {@link RelDataType} expected by Polypheny-DB
+         * @return Converted value as {@link Object}
+         */
         private Object parseSingleField( Object data, RelDataType type ) {
             switch ( type.getPolyType() ) {
                 case BOOLEAN:
+                case TINYINT:
+                case SMALLINT:
                 case INTEGER:
                 case BIGINT:
                 case FLOAT:
@@ -168,44 +129,44 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
                 case DOUBLE:
                 case CHAR:
                 case VARCHAR:
-                case JSON:
+                    return data ; /* Pass through, no conversion needed. */
                 case NULL:
+                case JSON:
+                    return Linq4JFixer.getJsonData( data );
                 case DECIMAL:
-                    return new BigDecimal( (String) data );
+                    return Linq4JFixer.getDecimalData( data );
+                case DATE:
+                    return Linq4JFixer.getDateData( data );
+                case TIMESTAMP:
+                    return Linq4JFixer.getTimestampData( data );
+                case TIME:
+                    return Linq4JFixer.getTimeData( data );
                 case BINARY:
                 case VARBINARY:
-                    return ByteString.parseBase64( (String) data );
+                    return Linq4JFixer.getBinaryData( data );
                 case ARRAY:
                     ArrayType arrayType = (ArrayType) type;
                     if ( arrayType.getDimension() == 1 && CottontailToEnumerableConverter.SUPPORTED_ARRAY_COMPONENT_TYPES.contains( arrayType.getComponentType().getPolyType() ) ) {
-                        final List<Object> list = new ArrayList<>((int)arrayType.getCardinality());
                         switch ( arrayType.getComponentType().getPolyType() ) {
                             case INTEGER:
-                                for (long v : ((int[]) data)) list.add(v);
-                                break;
+                                return Linq4JFixer.getIntVector( data );
                             case BIGINT:
-                                for (long v : ((long[]) data)) list.add(v);
-                                break;
+                                return Linq4JFixer.getLongVector( data );
                             case DOUBLE:
-                                for (double v : ((double[]) data)) list.add(v);
-                                break;
+                                return Linq4JFixer.getDoubleVector( data );
                             case BOOLEAN:
-                                for (boolean v : ((boolean[]) data)) list.add(v);
-                                break;
+                                return Linq4JFixer.getBoolVector( data );
                             case FLOAT:
                             case REAL:
-                                for (float v : ((float[]) data)) list.add(v);
-                                break;
+                                return Linq4JFixer.getFloatVector( data );
                             default:
                                 throw new RuntimeException( "Impossible to reach statement." );
                         }
-                        return list;
                     } else {
                         SqlArrayValueConstructor.reparse( arrayType.getComponentType().getPolyType(), arrayType.getDimension(), (String) data );
                     }
             }
             throw new AssertionError( "Not yet supported type: " + type.getPolyType() );
         }
-
     }
 }

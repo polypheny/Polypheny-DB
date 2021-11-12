@@ -713,42 +713,4 @@ public class CottontailTypeUtil {
 
         return literal;
     }
-
-
-    public static Object dataToValue( CottontailGrpc.Literal data, PolyType type ) {
-        switch ( type ) {
-            case BOOLEAN:
-                return Linq4JFixer.getBooleanData( data );
-            case INTEGER:
-                return Linq4JFixer.getIntData( data );
-            case BIGINT:
-                return Linq4JFixer.getLongData( data );
-            case DOUBLE:
-                return Linq4JFixer.getDoubleData( data );
-            case REAL:
-            case FLOAT:
-                return Linq4JFixer.getFloatData( data );
-            case VARCHAR:
-            case CHAR:
-            case JSON:
-                return Linq4JFixer.getStringData( data );
-            case TIMESTAMP:
-                return Linq4JFixer.getTimestampData( data );
-            case DATE:
-            case TIME:
-                return Linq4JFixer.getTimeData( data );
-            case DECIMAL:
-                return Linq4JFixer.getDecimalData( data );
-            case VARBINARY:
-            case BINARY:
-                return Linq4JFixer.getBinaryData( data );
-            case TINYINT:
-                return Linq4JFixer.getTinyIntData( data );
-            case SMALLINT:
-                return Linq4JFixer.getSmallIntData( data );
-            default:
-                throw new RuntimeException( "Type " + type + " is not supported by the cottontail adapter." );
-        }
-    }
-
 }

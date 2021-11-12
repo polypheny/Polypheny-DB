@@ -124,29 +124,11 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                     Tuple.class, builder.newName( "resultDataMap" )
                 );
 
-                if ( fieldCount == 1 ) {
-                    final ParameterExpression value_ = Expressions.parameter( Object.class, builder.newName( "value" ) );
-                    builder.add( Expressions.declare( Modifier.FINAL, value_, null ) );
-                    this.generateGet( rowType, physicalFieldNames, builder, resultMap_, 0, value_ );
-                    builder.add( Expressions.return_( null, value_ ) );
-                } else {
-                    final Expression values_ = builder.append(
-                            "values",
-                            Expressions.newArrayBounds( Object.class, 1, Expressions.constant( fieldCount ) ) );
-
-                    for ( int i = 0; i < fieldCount; i++ ) {
-                        this.generateGet(
-                                rowType,
-                                physicalFieldNames, // PHYSICAL ROW NAMES
-                                builder,
-                                resultMap_, // Parameter expr result
-                                i,
-                                Expressions.arrayIndex( values_, Expressions.constant( i ) )
-                        );
-                    }
-
-                    builder.add( Expressions.return_( null, values_ ) );
+                final Expression values_ = builder.append("values", Expressions.newArrayBounds( Object.class, 1, Expressions.constant( fieldCount ) ) );
+                for ( int i = 0; i < fieldCount; i++ ) {
+                    this.generateGet(rowType, builder, resultMap_, i, Expressions.arrayIndex( values_, Expressions.constant( i ) ));
                 }
+                builder.add( Expressions.return_( null, values_ ) );
 
                 final Expression rowBuilder_ = list.append("rowBuilder", Expressions.lambda(Expressions.block( builder.toBlock() ), resultMap_ ) );
                 enumerable = list.append( "enumerable",
@@ -227,57 +209,23 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         return implementor.result( physType, list.toBlock() );
     }
 
-
-    private void generateGet(
-            RelDataType rowType,
-            List<String> physicalRowNames,
-            BlockBuilder blockBuilder,
-            ParameterExpression result_, /* This should be a DataMap<String, Data> */
-            int i,
-            Expression target
-    ) {
+    /**
+     * Generates accessor methods used to access data contained in {@link Tuple}s returned by Cottontail DB.
+     */
+    private void generateGet(RelDataType rowType, BlockBuilder blockBuilder, ParameterExpression result_, int i, Expression target) {
         final RelDataType fieldType = rowType.getFieldList().get( i ).getType();
 
         // Fetch Data from DataMap
         // This should generate: `result_.get(<physical field name>)`
         final Expression getDataFromMap_;
         try {
-            getDataFromMap_ = blockBuilder.append( "v" + i, Expressions.call( result_, BuiltInMethod.MAP_GET.method, Expressions.constant( physicalRowNames.get( i ).toLowerCase() ) ) );
+            getDataFromMap_ = blockBuilder.append( "v" + i, Expressions.call( result_, Types.lookupMethod(Tuple.class, "get", Integer.TYPE), Expressions.constant( i ) ) );
         } catch ( Exception e ) {
             throw new RuntimeException( e );
         }
 
+        // Create accessor + converter for values returned by Cottontail DB. */
         final Expression source;
-
-        //x Bigint
-        //x Boolean
-        // Date
-        //x Decimal -> BigDecimal STRING
-        //x Double
-        //x Integer
-        //x Real -> FLOAT
-        // Time
-        // Timestamp
-        //x Varchar
-        //X Char -> STRING
-        // Varbinary
-        // Binary
-
-        // ARRAYS:
-        //x Bigint -> LongVector
-        // Boolean -> BoolVector
-        // Date
-        // Decimal
-        // Double -> DoubleVector
-        // Integer -> IntVector
-        // Real
-        // Time
-        // Timestamp
-        // Varchar
-        // Char
-        // Varbinary
-        // Binary
-
         switch ( fieldType.getPolyType() ) {
             case BOOLEAN:
             case INTEGER:
@@ -287,12 +235,30 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
             case DOUBLE:
             case CHAR:
             case VARCHAR:
+            case TINYINT:
+            case SMALLINT:
+            case NULL:
+                source = getDataFromMap_ ; /* No conversion required since tuple returns primitive data types. */
+                break;
             case JSON:
+                source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getJsonData", Object.class ), getDataFromMap_ );
+                break;
             case DECIMAL:
                 // Polypheny uses BigDecimal internally to represent DECIMAL values.
                 // BigDecimal#toString gives an exact and unique representation of the value.
                 // Reversal is: new BigDecimal(<string>)
                 // Decimal decoding is handled properly in Linq4JFixer
+                source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getDecimalData", Object.class ), getDataFromMap_ );
+                break;
+            case DATE:
+                source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getDateData", Object.class ), getDataFromMap_ );
+                break;
+            case TIME:
+                source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getTimeData", Object.class ), getDataFromMap_ );
+                break;
+            case TIMESTAMP:
+                source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getTimestampData", Object.class ), getDataFromMap_ );
+                break;
             case BINARY:
             case VARBINARY:
             case IMAGE:
@@ -301,30 +267,44 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
             case FILE:
                 // Binary and VarBinary are turned into base64 string
                 // Linq4JFixer takes care of decoding
-            case TINYINT:
-            case SMALLINT:
-                // Handled by linq4jFixer
-            case DATE:
-            case TIME:
-            case TIMESTAMP:
-            case NULL:
-                /* These are all simple types to fetch from the result. */
-                source = Expressions.call( cottontailGetMethod( fieldType.getPolyType() ), getDataFromMap_ );
+                source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getBinaryData", Object.class ), getDataFromMap_ );
                 break;
             case ARRAY: {
                 ArrayType arrayType = (ArrayType) fieldType;
                 if ( arrayType.getDimension() == 1 && SUPPORTED_ARRAY_COMPONENT_TYPES.contains( arrayType.getComponentType().getPolyType() ) ) {
-                    // Cottontail supports flat arrays natively
-                    source = Expressions.call(
-                            cottontailGetVectorMethod( arrayType.getComponentType().getPolyType() ),
-                            getDataFromMap_ );
+                    switch ( arrayType.getComponentType().getPolyType() ) {
+                        case BOOLEAN:
+                            source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getBoolVector", Object.class ), getDataFromMap_ );
+                            break;
+                        case SMALLINT:
+                            source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getSmallIntVector", Object.class ), getDataFromMap_ );
+                            break;
+                        case TINYINT:
+                            source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getTinyIntVector", Object.class ), getDataFromMap_ );
+                            break;
+                        case INTEGER:
+                            source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getIntVector", Object.class ), getDataFromMap_ );
+                            break;
+                        case FLOAT:
+                        case REAL:
+                            source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getFloatVector", Object.class ), getDataFromMap_ );
+                            break;
+                        case DOUBLE:
+                            source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getDoubleVector", Object.class ), getDataFromMap_ );
+                            break;
+                        case BIGINT:
+                            source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getLongVector", Object.class ), getDataFromMap_ );
+                            break;
+                        default:
+                            throw new AssertionError( "No vector access method for inner type: " + arrayType.getPolyType() );
+                    }
                 } else {
                     // We need to handle nested arrays
                     source = Expressions.call(
                             BuiltInMethod.PARSE_ARRAY_FROM_TEXT.method,
                             Expressions.constant( fieldType.getComponentType().getPolyType() ),
                             Expressions.constant( arrayType.getDimension() ),
-                            Expressions.call( cottontailGetMethod( PolyType.VARCHAR ), getDataFromMap_ ) );
+                            Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getData", Object.class ), getDataFromMap_ ) );
                 }
             }
             break;
@@ -334,78 +314,6 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         }
 
         blockBuilder.add( Expressions.statement( Expressions.assign( target, source ) ) );
-    }
-
-
-    private Method cottontailGetMethod( PolyType polyType ) {
-        switch ( polyType ) {
-            case BOOLEAN:
-                return Types.lookupMethod( Linq4JFixer.class, "getBooleanData", Object.class );
-            case TINYINT:
-                return Types.lookupMethod( Linq4JFixer.class, "getTinyIntData", Object.class );
-            case SMALLINT:
-                return Types.lookupMethod( Linq4JFixer.class, "getSmallIntData", Object.class );
-            case INTEGER:
-                return Types.lookupMethod( Linq4JFixer.class, "getIntData", Object.class );
-            case BIGINT:
-                return Types.lookupMethod( Linq4JFixer.class, "getLongData", Object.class );
-            case FLOAT:
-            case REAL: // We are mapping REAL to CT FLOAT
-                return Types.lookupMethod( Linq4JFixer.class, "getFloatData", Object.class );
-            case DOUBLE:
-                return Types.lookupMethod( Linq4JFixer.class, "getDoubleData", Object.class );
-            case CHAR:
-            case VARCHAR:
-            case JSON:
-                return Types.lookupMethod( Linq4JFixer.class, "getStringData", Object.class );
-            case NULL:
-                return Types.lookupMethod( Linq4JFixer.class, "getNullData", Object.class );
-            case DECIMAL:
-                return Types.lookupMethod( Linq4JFixer.class, "getDecimalData", Object.class );
-            case BINARY:
-            case VARBINARY:
-            case IMAGE:
-            case SOUND:
-            case VIDEO:
-            case FILE:
-                return Types.lookupMethod( Linq4JFixer.class, "getBinaryData", Object.class );
-            case TIME:
-                return Types.lookupMethod( Linq4JFixer.class, "getTimeData", Object.class );
-            case DATE:
-                return Types.lookupMethod( Linq4JFixer.class, "getDateData", Object.class );
-            case TIMESTAMP:
-                return Types.lookupMethod( Linq4JFixer.class, "getTimestampData", Object.class );
-            case ANY:
-            default:
-                throw new AssertionError( "No primitive access method for type: " + polyType );
-        }
-    }
-
-    private Method cottontailGetVectorMethod( PolyType polyType ) {
-        switch ( polyType ) {
-            case BOOLEAN:
-                return Types.lookupMethod( Linq4JFixer.class, "getBoolVector", Object.class );
-            case SMALLINT:
-                return Types.lookupMethod( Linq4JFixer.class, "getSmallIntVector", Object.class );
-            case TINYINT:
-                return Types.lookupMethod( Linq4JFixer.class, "getTinyIntVector", Object.class );
-            case INTEGER:
-                return Types.lookupMethod( Linq4JFixer.class, "getIntVector", Object.class );
-            case FLOAT:
-            case REAL:
-                return Types.lookupMethod( Linq4JFixer.class, "getFloatVector", Object.class );
-            case DOUBLE:
-                return Types.lookupMethod( Linq4JFixer.class, "getDoubleVector", Object.class );
-            case BIGINT:
-                return Types.lookupMethod( Linq4JFixer.class, "getLongVector", Object.class );
-            default:
-                throw new AssertionError( "No vector access method for inner type: " + polyType );
-        }
-    }
-
-
-    public static BigDecimal bigDecimalFromString( final String string ) {
-        return new BigDecimal( string );
     }
 
     private static Expression expressionOrNullExpression( Expression expression ) {
