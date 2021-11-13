@@ -16,9 +16,10 @@
 
 package org.polypheny.db.monitoring.events.analyzer;
 
-import com.google.gson.Gson;
+
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.monitoring.events.DmlEvent;
 import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
 
@@ -35,42 +36,14 @@ public class DmlEventAnalyzer {
                 .rowCount( dmlEvent.getRowCount() )
                 .isSubQuery( dmlEvent.isSubQuery() )
                 .recordedTimestamp( dmlEvent.getRecordedTimestamp() )
-                .accessedPartitions( dmlEvent.getAccessedPartitions() )
+                .accessedPartitions( dmlEvent.getAccessedPartitions().values().stream().flatMap( Set::stream ).collect( Collectors.toList() ) )
                 .queryId( dmlEvent.getLogicalQueryInformation().getQueryClass() )
                 .monitoringType( "DML" )
                 .physicalQueryId( dmlEvent.getPhysicalQueryId() )
                 .build();
         metric.getTables().addAll( dmlEvent.getLogicalQueryInformation().getTables() );
 
-        if ( dmlEvent.isAnalyze() ) {
-            processDurationInfo( dmlEvent, metric );
-        }
-
         return metric;
     }
-
-
-    private static void processDurationInfo( DmlEvent dmlEvent, DmlDataPoint metric ) {
-        InformationDuration duration = new Gson().fromJson( dmlEvent.getDurations(), InformationDuration.class );
-        getDurationInfo( metric, "Plan Caching", duration );
-        getDurationInfo( metric, "Index Lookup Rewrite", duration );
-        getDurationInfo( metric, "Constraint Enforcement", duration );
-        getDurationInfo( metric, "Implementation Caching", duration );
-        getDurationInfo( metric, "Index Update", duration );
-        getDurationInfo( metric, "Routing", duration );
-        getDurationInfo( metric, "Planning & Optimization", duration );
-        getDurationInfo( metric, "Implementation", duration );
-        getDurationInfo( metric, "Locking", duration );
-        getDurationInfo( metric, "Analyze", duration );
-        getDurationInfo( metric, "Plan Selection", duration );
-        getDurationInfo( metric, "Parameter validation", duration );
-    }
-
-
-    private static void getDurationInfo( DmlDataPoint dmlMetric, String durationName, InformationDuration duration ) {
-        long time = duration.getDurationOrZero( durationName );
-        dmlMetric.getDataElements().put( durationName, time );
-    }
-
-
 }
+

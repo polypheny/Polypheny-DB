@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.val;
@@ -54,7 +55,8 @@ public class LogicalRelAnalyzeShuttle extends RelShuttleImpl {
 
     protected final LogicalRelAnalyzeRexShuttle rexShuttle;
     @Getter
-    protected final Map<Integer, List<String>> filterMap = new HashMap<>(); // logical filterId -> List partitionsValue
+    //protected final Map<Integer, List<String>> filterMap = new HashMap<>(); // logical filterId -> List partitionsValue
+    protected final Map<Long, Set<String>> partitionValueMap = new HashMap<>(); // logical filterId -> (logical tableId -> List partitionsValue)
     @Getter
     protected final HashSet<String> hashBasis = new HashSet<>();
     @Getter
@@ -253,11 +255,24 @@ public class LogicalRelAnalyzeShuttle extends RelShuttleImpl {
             WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor( statement, catalogTable.columnIds.indexOf( catalogTable.partitionColumnId ) );
             filter.accept( whereClauseVisitor );
 
-            if ( whereClauseVisitor.valueIdentified ) {
+            if ( !partitionValueMap.containsKey( catalogTable.id ) ) {
+                partitionValueMap.put( catalogTable.id, new HashSet<>() );
+            }
+
+            /*if ( whereClauseVisitor.valueIdentified ) {
                 if ( !whereClauseVisitor.getValues().isEmpty() && !whereClauseVisitor.isUnsupportedFilter() ) {
                     filterMap.put( filter.getId(), whereClauseVisitor.getValues().stream()
                             .map( Object::toString )
                             .collect( Collectors.toList() ) );
+                }
+            }*/
+
+            if ( whereClauseVisitor.valueIdentified ) {
+                if ( !whereClauseVisitor.getValues().isEmpty() && !whereClauseVisitor.isUnsupportedFilter() ) {
+
+                    partitionValueMap.get( catalogTable.id ).addAll( whereClauseVisitor.getValues().stream()
+                            .map( Object::toString )
+                            .collect( Collectors.toSet() ) );
                 }
             }
         }

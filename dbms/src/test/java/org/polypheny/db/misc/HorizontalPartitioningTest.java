@@ -740,6 +740,7 @@ public class HorizontalPartitioningTest {
                     List<CatalogPartition> hotPartitionsAfterChange = Catalog.getInstance().getPartitions( ((TemperaturePartitionProperty) updatedTable.partitionProperty).getHotPartitionGroupId() );
                     Assert.assertTrue( hotPartitionsAfterChange.contains( Catalog.getInstance().getPartition( targetId ) ) );
 
+                    //Todo @Hennlo check number of access
 
                 } finally {
                     // Drop tables and stores

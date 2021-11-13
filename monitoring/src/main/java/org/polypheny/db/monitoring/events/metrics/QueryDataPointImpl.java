@@ -16,12 +16,12 @@
 
 package org.polypheny.db.monitoring.events.metrics;
 
+
 import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -51,7 +51,7 @@ public class QueryDataPointImpl implements QueryDataPoint, Serializable {
     private boolean isSubQuery;
     private int rowCount;
     private List<String> fieldNames;
-    private Map<Long, List<Long>> accessedPartitions;
+    private List<Long> accessedPartitions;
     protected String relCompareString;
     protected String queryId;
     protected String physicalQueryId;

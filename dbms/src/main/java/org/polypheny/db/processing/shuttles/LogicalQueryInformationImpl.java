@@ -30,7 +30,6 @@ public class LogicalQueryInformationImpl implements LogicalQueryInformation {
     @Getter
     protected final Map<Long, String> availableColumns; // column id -> schemaName.tableName.ColumnName
     protected final Map<Long, Long> availableColumnsWithTable; // columnId -> tableId
-    protected final Map<Long, List<Long>> accessedPartitions; // tableId  -> partitionIds
     protected final String queryId;
     protected final Map<Long, String> usedColumns;
 
@@ -40,23 +39,15 @@ public class LogicalQueryInformationImpl implements LogicalQueryInformation {
 
     public LogicalQueryInformationImpl(
             String queryId,
-            Map<Long, List<Long>> accessedPartitionMap,
             LinkedHashMap<Long, String> availableColumns,
             HashMap<Long, Long> availableColumnsWithTable,
             Map<Long, String> usedColumns,
             List<String> tables) {
         this.queryId = queryId;
-        this.accessedPartitions = accessedPartitionMap;
         this.availableColumns =  availableColumns;
         this.availableColumnsWithTable = availableColumnsWithTable;
         this.usedColumns = usedColumns;
         this.tables = tables;
-    }
-
-
-    @Override
-    public Map<Long, List<Long>> getAccessedPartitions() {
-        return this.accessedPartitions;
     }
 
 

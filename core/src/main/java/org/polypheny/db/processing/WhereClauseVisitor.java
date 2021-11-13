@@ -55,7 +55,7 @@ public class WhereClauseVisitor extends RexShuttle {
         super.visitCall( call );
 
         if ( call.operands.size() == 2 ) {
-            if( call.op.equals( SqlKind.EQUALS )) {
+            if ( call.op.kind.equals( SqlKind.EQUALS ) ) {
                 if ( call.operands.get( 0 ) instanceof RexInputRef ) {
                     if ( ((RexInputRef) call.operands.get( 0 )).getIndex() == partitionColumnIndex ) {
                         if ( call.operands.get( 1 ) instanceof RexLiteral ) {

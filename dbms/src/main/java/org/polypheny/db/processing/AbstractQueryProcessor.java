@@ -23,7 +23,6 @@ import com.google.common.collect.Lists;
 import java.lang.reflect.Type;
 import java.util.AbstractList;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,6 +30,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -1293,63 +1293,87 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         logicalRoot.rel.accept( analyzeRelShuttle );
 
         // get partitions of logical information
-        List<String> partitionValues = analyzeRelShuttle.filterMap.values().stream().flatMap( Collection::stream ).collect( Collectors.toList() );
-        val accessedPartitionMap = this.getAccessedPartitionsPerTable( logicalRoot.rel, partitionValues );
+
+        // Map<Long,Set<String>> aggregatedPartitionValues = analyzeRelShuttle.getPartitionValueMap();
+        //List<String> aggregatedPartitionValues = analyzeRelShuttle.partitionValueMap.values().stream().flatMap( Collection::stream ).collect( Collectors.toList() );
+        //val accessedPartitionMap = this.getAccessedPartitionsPerTable( logicalRoot.rel, aggregatedPartitionValues );
 
         // build queryClass from query-name and partitions.
-        String queryClass = analyzeRelShuttle.getQueryName() + accessedPartitionMap;
+        String queryClass = analyzeRelShuttle.getQueryName();// + accessedPartitionMap;
 
         // build LogicalQueryInformation instance and prepare monitoring
-        val queryInformation = new LogicalQueryInformationImpl( queryClass, accessedPartitionMap, analyzeRelShuttle.availableColumns, analyzeRelShuttle.availableColumnsWithTable, analyzeRelShuttle.getUsedColumns(), analyzeRelShuttle.getTables() );
+        val queryInformation = new LogicalQueryInformationImpl( queryClass, analyzeRelShuttle.availableColumns, analyzeRelShuttle.availableColumnsWithTable, analyzeRelShuttle.getUsedColumns(), analyzeRelShuttle.getTables() );
         this.prepareMonitoring( statement, logicalRoot, isAnalyze, isSubquery, queryInformation );
 
         return queryInformation;
     }
 
 
-    private Map<Long, List<Long>> getAccessedPartitionsPerTable( RelNode rel, List<String> partitionValues ) {
+    /**
+     * Traverse all tables used during execution and identifies every partition that has been accessed.
+     *
+     * @param rel RelNode to be processed
+     * @param aggregatedPartitionValues Mapping of tables to identified partition Values
+     * @return Mapping of tables to identified partition Ids
+     */
+    private Map<Long, List<Long>> getAccessedPartitionsPerTable( RelNode rel, Map<Long, Set<String>> aggregatedPartitionValues ) {
         Map<Long, List<Long>> accessedPartitionList = new HashMap<>(); // tableId  -> partitionIds
+
+        //Check for each existing table in aggregatedPartitionValues
+
         if ( !(rel instanceof LogicalTableScan) ) {
             for ( int i = 0; i < rel.getInputs().size(); i++ ) {
-                val result = getAccessedPartitionsPerTable( rel.getInput( i ), partitionValues );
+                val result = getAccessedPartitionsPerTable( rel.getInput( i ), aggregatedPartitionValues );
                 if ( !result.isEmpty() ) {
                     for ( val elem : result.entrySet() ) {
                         accessedPartitionList.merge( elem.getKey(), elem.getValue(), ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
                     }
                 }
-
             }
         } else {
             if ( rel.getTable() != null ) {
+
                 RelOptTableImpl table = (RelOptTableImpl) rel.getTable();
                 if ( table.getTable() instanceof LogicalTable ) {
                     LogicalTable logicalTable = ((LogicalTable) table.getTable());
                     // Get placements of this table
                     CatalogTable catalogTable = Catalog.getInstance().getTable( logicalTable.getTableId() );
 
-                    if ( !partitionValues.isEmpty() ) {
-                        if ( log.isDebugEnabled() ) {
-                            log.debug( "TableID: {} is partitioned on column: {} - {}",
-                                    logicalTable.getTableId(),
-                                    catalogTable.partitionColumnId,
-                                    Catalog.getInstance().getColumn( catalogTable.partitionColumnId ).name );
-                        }
-                        List<Long> identifiedPartitions = new ArrayList<>();
-                        for ( String partitionValue : partitionValues ) {
-                            log.debug( "Extracted PartitionValue: {}", partitionValue );
-                            long identifiedPartition = PartitionManagerFactory.getInstance()
-                                    .getPartitionManager( catalogTable.partitionType )
-                                    .getTargetPartitionId( catalogTable, partitionValue );
+                    if ( !aggregatedPartitionValues.containsKey( catalogTable.id ) ) {
 
-                            identifiedPartitions.add( identifiedPartition );
-                            log.debug( "Identified PartitionId: {} for value: {}", identifiedPartition, partitionValue );
-                        }
+                        for ( Entry<Long, Set<String>> entry : aggregatedPartitionValues.entrySet() ) {
 
-                        // Currently only one partition is identified, therefore LIST is not needed YET.
-                        accessedPartitionList.merge( catalogTable.id, identifiedPartitions, ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
-                        // fallback
+                            long tableId = entry.getKey();
+                            Set<String> partitionValues = entry.getValue();
+
+                            if ( !partitionValues.isEmpty() ) {
+                                if ( log.isDebugEnabled() ) {
+                                    log.debug( "TableID: {} is partitioned on column: {} - {}",
+                                            tableId,
+                                            catalogTable.partitionColumnId,
+                                            Catalog.getInstance().getColumn( catalogTable.partitionColumnId ).name );
+                                }
+
+                                List<Long> identifiedPartitions = new ArrayList<>();
+
+                                for ( String partitionValue : partitionValues ) {
+                                    log.debug( "Extracted PartitionValue: {}", partitionValue );
+                                    long identifiedPartition = PartitionManagerFactory.getInstance()
+                                            .getPartitionManager( catalogTable.partitionType )
+                                            .getTargetPartitionId( catalogTable, partitionValue );
+
+                                    identifiedPartitions.add( identifiedPartition );
+                                    log.debug( "Identified PartitionId: {} for value: {}", identifiedPartition, partitionValue );
+                                }
+                                accessedPartitionList.put( catalogTable.id, identifiedPartitions );
+
+                                // fallback
+                            } else {
+                                accessedPartitionList.put( catalogTable.id, catalogTable.partitionProperty.partitionIds );
+                            }
+                        }
                     } else {
-                        accessedPartitionList.merge( catalogTable.id, catalogTable.partitionProperty.partitionIds, ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
+
                     }
                 }
             }
@@ -1364,7 +1388,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             StatementEvent event;
             if ( logicalRoot.kind.belongsTo( SqlKind.DML ) ) {
                 event = new DmlEvent();
-
             } else if ( logicalRoot.kind.belongsTo( SqlKind.QUERY ) ) {
                 event = new QueryEvent();
             } else {
@@ -1382,7 +1405,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     private void monitorResult( ProposedRoutingPlan selectedPlan ) {
         if ( statement.getTransaction().getMonitoringEvent() != null ) {
-            StatementEvent eventData = (StatementEvent) statement.getTransaction().getMonitoringEvent();
+            StatementEvent eventData = statement.getTransaction().getMonitoringEvent();
             eventData.setDurations( statement.getTotalDuration().asJson() );
             eventData.setRelCompareString( selectedPlan.getRoutedRoot().rel.relCompareString() );
             if ( selectedPlan.getOptionalPhysicalQueryClass().isPresent() ) {

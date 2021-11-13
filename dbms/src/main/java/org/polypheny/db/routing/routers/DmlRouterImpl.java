@@ -16,8 +16,10 @@
 
 package org.polypheny.db.routing.routers;
 
+
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -385,9 +387,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                             log.debug( "INSERT: Found PartitionColumnID: '{}' at column index: {}", catalogTable.partitionColumnId, j );
                                             worstCaseRouting = false;
 
-
-
-
                                         }
                                     }
                                 }
@@ -414,6 +413,11 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                                 for ( Map.Entry<Long, List<ImmutableList<RexLiteral>>> partitionMapping : tuplesOnPartition.entrySet() ) {
                                     Long currentPartitionId = partitionMapping.getKey();
+
+                                    if ( !catalog.getPartitionsOnDataPlacement( pkPlacement.adapterId, catalogTable.id ).contains( currentPartitionId ) ) {
+                                        continue;
+                                    }
+
                                     for ( ImmutableList<RexLiteral> row : partitionMapping.getValue() ) {
                                         LogicalValues newLogicalValues = new LogicalValues(
                                                 cluster,
@@ -588,6 +592,13 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         // unpartitioned tables only have one partition anyway
                         identPart = catalogTable.partitionProperty.partitionIds.get( 0 );
                         accessedPartitionList.add( identPart );
+                    }
+
+                    if ( statement.getTransaction().getMonitoringEvent() != null ) {
+                        statement.getTransaction().getMonitoringEvent()
+                                .updateAccessedPartitions(
+                                        Collections.singletonMap( catalogTable.id, accessedPartitionList )
+                                );
                     }
 
                     if ( !operationWasRewritten ) {

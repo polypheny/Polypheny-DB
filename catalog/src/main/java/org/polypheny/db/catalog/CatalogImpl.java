@@ -25,10 +25,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -174,7 +176,7 @@ public class CatalogImpl extends Catalog {
     private static BTreeMap<Long, CatalogPartitionGroup> partitionGroups;
     private static BTreeMap<Long, CatalogPartition> partitions;
     private static HTreeMap<Object[], ImmutableList<Long>> dataPartitionGroupPlacement; // <AdapterId.TableId, List of partitionGroupIds>
-    private static List<Long> frequencyDependentTables = new ArrayList<>(); //all tables to consider in periodic run
+    private static Set<Long> frequencyDependentTables = new HashSet<>(); //all tables to consider for periodic processing
 
     // adapterId + Partition
     private static BTreeMap<Object[], CatalogPartitionPlacement> partitionPlacements;
@@ -648,7 +650,7 @@ public class CatalogImpl extends Catalog {
         partitionPlacements = db.treeMap( "partitionPlacements", new SerializerArrayTuple( Serializer.INTEGER, Serializer.LONG ), Serializer.JAVA ).createOrOpen();
 
         //Restores all Tables dependent on periodic checks like TEMPERATURE Partitioning
-        frequencyDependentTables = tables.values().stream().filter( t -> t.partitionProperty.reliesOnPeriodicChecks ).map( t -> t.id ).collect( Collectors.toList() );
+        frequencyDependentTables = tables.values().stream().filter( t -> t.partitionProperty.reliesOnPeriodicChecks ).map( t -> t.id ).collect( Collectors.toSet() );
 
     }
 

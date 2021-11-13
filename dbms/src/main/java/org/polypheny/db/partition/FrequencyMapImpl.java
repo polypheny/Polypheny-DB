@@ -434,10 +434,10 @@ public class FrequencyMapImpl extends FrequencyMap {
         switch ( ((TemperaturePartitionProperty) table.partitionProperty).getPartitionCostIndication() ) {
             case ALL:
                 for ( QueryDataPointImpl queryDataPoint : MonitoringServiceProvider.getInstance().getDataPointsAfter( QueryDataPointImpl.class, queryStart ) ) {
-                    queryDataPoint.getAccessedPartitions().keySet().forEach( p -> incrementPartitionAccess( p, tempPartitionIds) );
+                    queryDataPoint.getAccessedPartitions().forEach( p -> incrementPartitionAccess( p, tempPartitionIds ) );
                 }
                 for ( DmlDataPoint dmlDataPoint : MonitoringServiceProvider.getInstance().getDataPointsAfter( DmlDataPoint.class, queryStart ) ) {
-                    dmlDataPoint.getAccessedPartitions().keySet().forEach( p -> incrementPartitionAccess( p, tempPartitionIds) );
+                    dmlDataPoint.getAccessedPartitions().forEach( p -> incrementPartitionAccess( p, tempPartitionIds ) );
                 }
 
                 break;
@@ -445,14 +445,14 @@ public class FrequencyMapImpl extends FrequencyMap {
             case READ:
                 List<QueryDataPointImpl> readAccesses = MonitoringServiceProvider.getInstance().getDataPointsAfter( QueryDataPointImpl.class, queryStart );
                 for ( QueryDataPointImpl queryDataPoint : readAccesses ) {
-                    queryDataPoint.getAccessedPartitions().keySet().forEach( p -> incrementPartitionAccess( p, tempPartitionIds) );
+                    queryDataPoint.getAccessedPartitions().forEach( p -> incrementPartitionAccess( p, tempPartitionIds ) );
                 }
                 break;
 
             case WRITE:
                 List<DmlDataPoint> writeAccesses = MonitoringServiceProvider.getInstance().getDataPointsAfter( DmlDataPoint.class, queryStart );
                 for ( DmlDataPoint dmlDataPoint : writeAccesses ) {
-                    dmlDataPoint.getAccessedPartitions().keySet().forEach( p -> incrementPartitionAccess( p, tempPartitionIds) );
+                    dmlDataPoint.getAccessedPartitions().forEach( p -> incrementPartitionAccess( p, tempPartitionIds ) );
                 }
         }
 

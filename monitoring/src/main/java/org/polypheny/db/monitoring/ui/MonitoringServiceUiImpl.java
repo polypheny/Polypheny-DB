@@ -16,6 +16,7 @@
 
 package org.polypheny.db.monitoring.ui;
 
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -30,7 +31,7 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.monitoring.core.MonitoringQueue;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
-import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
+import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 
 
@@ -121,7 +122,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
         table.addRow( "Number of processed events since restart", queue.getNumberOfProcessedEvents( false ) );
         table.addRow( "Number of events in queue", queue.getNumberOfElementsInQueue() );
         //table.addRow( "# Data Points", queue.getElementsInQueue().size() );
-        table.addRow( "# SELECT", MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPoint.class ).size() );
+        table.addRow( "# SELECT", MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPointImpl.class ).size() );
         table.addRow( "# DML", MonitoringServiceProvider.getInstance().getAllDataPoints( DmlDataPoint.class ).size() );
     }
 
