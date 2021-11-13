@@ -16,15 +16,47 @@
 
 package org.polypheny.db.processing;
 
-import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.QueryParameters;
+import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.QueryPlanBuilder;
 
-public class JsonRelProcessorImpl implements JsonRelProcessor {
+public class JsonRelProcessorImpl implements Processor {
+
 
     @Override
-    public RelNode parseJsonRel( Statement statement, String json ) {
-        return QueryPlanBuilder.buildFromJsonRel( statement, json );
+    public Node parse( String query ) {
+        throw new RuntimeException("JsonProcessor does not support Node representation!");
+    }
+
+
+    @Override
+    public Pair<Node, RelDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues ) {
+        throw new RuntimeException("JsonProcessor does not support validation!");
+    }
+
+
+    @Override
+    public RelRoot translate( Statement statement, Node query, QueryParameters parameters ) {
+        return RelRoot.of( QueryPlanBuilder.buildFromJsonRel( statement, parameters.getQuery() ), Kind.SELECT );
+    }
+
+
+    @Override
+    public PolyphenyDbSignature<?> prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
+        throw new RuntimeException("JsonProcessor does not support DDLs!");
+    }
+
+
+    @Override
+    public RelDataType getParameterRowType( Node left ) {
+        throw new RuntimeException("JsonProcessor does not support getParameterRowType!");
     }
 
 }

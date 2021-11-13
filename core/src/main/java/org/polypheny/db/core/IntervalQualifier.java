@@ -16,7 +16,11 @@
 
 package org.polypheny.db.core;
 
+import org.polypheny.db.type.PolyType;
+
 public interface IntervalQualifier extends Visitable {
+
+    PolyType typeName();
 
     boolean isSingleDatetimeField();
 

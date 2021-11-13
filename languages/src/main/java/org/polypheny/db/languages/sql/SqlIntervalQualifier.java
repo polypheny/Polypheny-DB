@@ -153,6 +153,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
     //~ Methods ----------------------------------------------------------------
 
 
+    @Override
     public PolyType typeName() {
         switch ( timeUnitRange ) {
             case YEAR:

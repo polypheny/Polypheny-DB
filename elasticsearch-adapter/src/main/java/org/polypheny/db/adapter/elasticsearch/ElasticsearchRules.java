@@ -40,7 +40,9 @@ import java.util.List;
 import org.polypheny.db.adapter.enumerable.RexImpTable;
 import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelTrait;
@@ -59,8 +61,6 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.type.PolyType;
 
 
@@ -90,7 +90,7 @@ class ElasticsearchRules {
      * @return literal value
      */
     static String isItem( RexCall call ) {
-        if ( call.getOperator() != SqlStdOperatorTable.ITEM ) {
+        if ( call.getOperator() != StdOperatorRegistry.get( "ITEM" ) ) {
             return null;
         }
         final RexNode op0 = call.getOperands().get( 0 );
@@ -118,7 +118,7 @@ class ElasticsearchRules {
 
 
     static List<String> elasticsearchFieldNames( final RelDataType rowType ) {
-        return SqlValidatorUtil.uniquify(
+        return ValidatorUtil.uniquify(
                 new AbstractList<String>() {
                     @Override
                     public String get( int index ) {
@@ -132,7 +132,7 @@ class ElasticsearchRules {
                         return rowType.getFieldCount();
                     }
                 },
-                SqlValidatorUtil.EXPR_SUGGESTER, true );
+                ValidatorUtil.EXPR_SUGGESTER, true );
     }
 
 
@@ -187,10 +187,10 @@ class ElasticsearchRules {
             }
 
             final List<String> strings = visitList( call.operands );
-            if ( call.getKind() == SqlKind.CAST ) {
+            if ( call.getKind() == Kind.CAST ) {
                 return strings.get( 0 ).startsWith( "$" ) ? strings.get( 0 ).substring( 1 ) : strings.get( 0 );
             }
-            if ( call.getOperator() == SqlStdOperatorTable.ITEM ) {
+            if ( call.getOperator() == StdOperatorRegistry.get( "ITEM" ) ) {
                 final RexNode op1 = call.getOperands().get( 1 );
                 if ( op1 instanceof RexLiteral && op1.getType().getPolyType() == PolyType.INTEGER ) {
                     return stripQuotes( strings.get( 0 ) ) + "[" + ((RexLiteral) op1).getValue2() + "]";
@@ -207,6 +207,7 @@ class ElasticsearchRules {
             }
             return strings;
         }
+
     }
 
 
@@ -222,6 +223,7 @@ class ElasticsearchRules {
             super( clazz, in, out, description );
             this.out = out;
         }
+
     }
 
 
@@ -244,6 +246,7 @@ class ElasticsearchRules {
             final RelTraitSet traitSet = sort.getTraitSet().replace( out ).replace( sort.getCollation() );
             return new ElasticsearchSort( relNode.getCluster(), traitSet, convert( sort.getInput(), traitSet.replace( RelCollations.EMPTY ) ), sort.getCollation(), sort.offset, sort.fetch );
         }
+
     }
 
 
@@ -266,6 +269,7 @@ class ElasticsearchRules {
             final RelTraitSet traitSet = filter.getTraitSet().replace( out );
             return new ElasticsearchFilter( relNode.getCluster(), traitSet, convert( filter.getInput(), out ), filter.getCondition() );
         }
+
     }
 
 
@@ -292,6 +296,7 @@ class ElasticsearchRules {
                 return null;
             }
         }
+
     }
 
 
@@ -314,6 +319,8 @@ class ElasticsearchRules {
             final RelTraitSet traitSet = project.getTraitSet().replace( out );
             return new ElasticsearchProject( project.getCluster(), traitSet, convert( project.getInput(), out ), project.getProjects(), project.getRowType() );
         }
+
     }
+
 }
 

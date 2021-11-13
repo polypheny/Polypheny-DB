@@ -26,6 +26,7 @@ import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -33,6 +34,7 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
@@ -46,7 +48,7 @@ import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.dialect.PolyphenyDbSqlDialect;
-import org.polypheny.db.processing.SqlProcessor;
+import org.polypheny.db.processing.Processor;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
@@ -114,10 +116,10 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
 
         PlacementType placementType = PlacementType.AUTOMATIC;
 
-        SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
+        Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
         RelRoot relRoot = sqlProcessor.translate(
                 statement,
-                sqlProcessor.validate( statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left );
+                sqlProcessor.validate( statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left, );
 
         RelNode relNode = relRoot.rel;
         RelCollation relCollation = relRoot.collation;
@@ -152,7 +154,7 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
     private List<String> getColumnInfo() {
         List<String> columnName = new ArrayList<>();
 
-        for ( Ord<SqlNode> c : Ord.zip( columnList ) ) {
+        for ( Ord<Node> c : Ord.zip( columnList ) ) {
             if ( c.e instanceof SqlIdentifier ) {
                 SqlIdentifier sqlIdentifier = (SqlIdentifier) c.e;
                 columnName.add( sqlIdentifier.getSimple() );
@@ -176,9 +178,9 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
         name.unparse( writer, leftPrec, rightPrec );
         if ( columnList != null ) {
             SqlWriter.Frame frame = writer.startList( "(", ")" );
-            for ( SqlNode c : columnList ) {
+            for ( Node c : columnList ) {
                 writer.sep( "," );
-                c.unparse( writer, 0, 0 );
+                ((SqlNode)c).unparse( writer, 0, 0 );
             }
             writer.endList( frame );
         }

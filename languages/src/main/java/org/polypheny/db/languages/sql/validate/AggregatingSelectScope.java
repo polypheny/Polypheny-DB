@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
@@ -89,8 +90,8 @@ public class AggregatingSelectScope extends DelegatingScope implements Aggregati
         if ( select.getGroup() != null ) {
             final SqlNodeList groupList = select.getGroup();
             final SqlValidatorUtil.GroupAnalyzer groupAnalyzer = new SqlValidatorUtil.GroupAnalyzer( temporaryGroupExprList );
-            for ( SqlNode groupExpr : groupList ) {
-                SqlValidatorUtil.analyzeGroupItem( this, groupAnalyzer, builder, groupExpr );
+            for ( Node groupExpr : groupList ) {
+                SqlValidatorUtil.analyzeGroupItem( this, groupAnalyzer, builder, (SqlNode) groupExpr );
             }
             extraExprs = groupAnalyzer.extraExprs;
             groupExprProjection = groupAnalyzer.groupExprProjection;

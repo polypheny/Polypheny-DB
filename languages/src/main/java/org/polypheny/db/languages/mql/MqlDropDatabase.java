@@ -19,6 +19,7 @@ package org.polypheny.db.languages.mql;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;
@@ -35,9 +36,10 @@ public class MqlDropDatabase extends MqlNode implements MqlExecutableStatement {
 
 
     @Override
-    public void execute( Context context, Statement statement, String database ) {
+    public void execute( Context context, Statement statement, QueryParameters parameters ) {
         Catalog catalog = Catalog.getInstance();
         CatalogSchema schema = catalog.getUser( context.getCurrentUserId() ).getDefaultSchema();
+        String database = ((MqlQueryParameters) parameters).getDatabase();
 
         try {
             DdlManager.getInstance().dropSchema( schema.databaseId, database, true, statement );
@@ -48,7 +50,7 @@ public class MqlDropDatabase extends MqlNode implements MqlExecutableStatement {
 
 
     @Override
-    public Type getKind() {
+    public Type getMqlKind() {
         return Type.DROP_DATABASE;
     }
 

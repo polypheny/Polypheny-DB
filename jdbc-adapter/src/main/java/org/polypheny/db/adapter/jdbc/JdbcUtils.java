@@ -68,8 +68,8 @@ import org.polypheny.db.information.InformationGraph.GraphType;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
-import org.polypheny.db.sql.SqlDialect;
-import org.polypheny.db.sql.SqlDialectFactory;
+import org.polypheny.db.languages.sql.SqlDialect;
+import org.polypheny.db.languages.sql.SqlDialectFactory;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Pair;
 

@@ -18,6 +18,8 @@ package org.polypheny.db.languages.sql;
 
 
 import java.util.List;
+import org.polypheny.db.core.ExplainFormat;
+import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
@@ -121,8 +123,8 @@ public class SqlExplain extends SqlCall {
     /**
      * @return detail level to be generated
      */
-    public SqlExplainLevel getDetailLevel() {
-        return detailLevel.symbolValue( SqlExplainLevel.class );
+    public ExplainLevel getDetailLevel() {
+        return detailLevel.symbolValue( ExplainLevel.class );
     }
 
 
@@ -161,8 +163,8 @@ public class SqlExplain extends SqlCall {
     /**
      * Returns the desired output format.
      */
-    public SqlExplainFormat getFormat() {
-        return format.symbolValue( SqlExplainFormat.class );
+    public ExplainFormat getFormat() {
+        return format.symbolValue( ExplainFormat.class );
     }
 
 
@@ -170,7 +172,7 @@ public class SqlExplain extends SqlCall {
      * Returns whether result is to be in JSON format.
      */
     public boolean isJson() {
-        return getFormat() == SqlExplainFormat.XML;
+        return getFormat() == ExplainFormat.XML;
     }
 
 

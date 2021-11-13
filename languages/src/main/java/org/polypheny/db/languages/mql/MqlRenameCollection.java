@@ -24,6 +24,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.jdbc.Context;
@@ -45,14 +46,15 @@ public class MqlRenameCollection extends MqlCollectionStatement implements MqlEx
 
 
     @Override
-    public Type getKind() {
+    public Type getMqlKind() {
         return Type.RENAME_COLLECTION;
     }
 
 
     @Override
-    public void execute( Context context, Statement statement, String database ) {
+    public void execute( Context context, Statement statement, QueryParameters parameters ) {
         Catalog catalog = Catalog.getInstance();
+        String database = ((MqlQueryParameters) parameters).getDatabase();
 
         try {
             CatalogSchema schema = catalog.getSchema( Catalog.defaultDatabaseId, database );

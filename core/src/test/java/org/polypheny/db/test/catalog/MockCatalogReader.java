@@ -33,7 +33,10 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.IntervalQualifier;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.jdbc.PolyphenyDbPrepare.AnalyzeViewResult;
 import org.polypheny.db.plan.RelOptSchema;
 import org.polypheny.db.plan.RelOptTable;
@@ -79,12 +82,8 @@ import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.schema.impl.ModifiableViewTable;
 import org.polypheny.db.schema.impl.ViewTableMacro;
 import org.polypheny.db.sql.SqlAccessType;
-import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlCollation;
 import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.SqlIntervalQualifier;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.validate.SqlModality;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
 import org.polypheny.db.sql.validate.SqlNameMatcher;
@@ -1123,9 +1122,9 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
-        public boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent ) {
+        public boolean rolledUpColumnValidInsideAgg( String column, Call call, Node parent ) {
             // For testing
-            return call.getKind() != SqlKind.MAX && (parent.getKind() == SqlKind.SELECT || parent.getKind() == SqlKind.FILTER);
+            return call.getKind() != Kind.MAX && (parent.getKind() == Kind.SELECT || parent.getKind() == Kind.FILTER);
         }
 
 

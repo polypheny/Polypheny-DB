@@ -68,7 +68,7 @@ public class MqlFindAndModify extends MqlCollectionStatement implements MqlQuery
 
 
     @Override
-    public Type getKind() {
+    public Type getMqlKind() {
         return Type.FIND_MODIFY;
     }
 

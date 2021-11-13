@@ -17,24 +17,26 @@
 package org.polypheny.db.processing;
 
 
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.Pair;
 
 
-public interface SqlProcessor {
+public interface Processor {
 
-    SqlNode parse( String sql );
+    Node parse( String query );
 
-    Pair<SqlNode, RelDataType> validate( Transaction transaction, SqlNode parsed, boolean addDefaultValues );
+    Pair<Node, RelDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues );
 
-    RelRoot translate( Statement statement, SqlNode sql );
+    RelRoot translate( Statement statement, Node query, QueryParameters parameters );
 
-    PolyphenyDbSignature<?> prepareDdl( Statement statement, SqlNode parsed );
+    PolyphenyDbSignature<?> prepareDdl( Statement statement, Node parsed, QueryParameters parameters );
 
-    RelDataType getParameterRowType( SqlNode left );
+    RelDataType getParameterRowType( Node left );
+
 }

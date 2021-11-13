@@ -26,8 +26,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.languages.sql.SqlExplainFormat;
-import org.polypheny.db.languages.sql.SqlExplainLevel;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptUtil;
@@ -134,8 +132,8 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
                     RelOptUtil.dumpPlan(
                             "Plan after trimming unused fields",
                             trimResult.left,
-                            SqlExplainFormat.TEXT,
-                            SqlExplainLevel.EXPPLAN_ATTRIBUTES ) );
+                            ExplainFormat.TEXT,
+                            ExplainLevel.EXPPLAN_ATTRIBUTES ) );
         }
         return trimResult.left;
     }

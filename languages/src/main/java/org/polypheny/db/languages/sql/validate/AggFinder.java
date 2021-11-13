@@ -111,7 +111,7 @@ class AggFinder extends AggVisitor {
 
         @Override
         protected Void found( Call call ) {
-            calls.add( call );
+            calls.add( (SqlCall) call );
             return null;
         }
 

@@ -38,16 +38,16 @@ import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.polypheny.db.core.InitializerContext;
+import org.polypheny.db.core.InitializerExpressionFactory;
+import org.polypheny.db.core.NullInitializerExpressionFactory;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ColumnStrategy;
-import org.polypheny.db.sql.SqlFunction;
-import org.polypheny.db.sql2rel.InitializerContext;
-import org.polypheny.db.sql2rel.InitializerExpressionFactory;
-import org.polypheny.db.sql2rel.NullInitializerExpressionFactory;
 
 
 /**
@@ -90,9 +90,10 @@ public class CountingFactory extends NullInitializerExpressionFactory {
 
 
     @Override
-    public RexNode newAttributeInitializer( RelDataType type, SqlFunction constructor, int iAttribute, List<RexNode> constructorArgs, InitializerContext context ) {
+    public RexNode newAttributeInitializer( RelDataType type, Operator constructor, int iAttribute, List<RexNode> constructorArgs, InitializerContext context ) {
         THREAD_CALL_COUNT.get().incrementAndGet();
         return super.newAttributeInitializer( type, constructor, iAttribute, constructorArgs, context );
     }
+
 }
 

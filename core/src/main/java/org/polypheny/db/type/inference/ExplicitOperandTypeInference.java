@@ -18,8 +18,8 @@ package org.polypheny.db.type.inference;
 
 
 import com.google.common.collect.ImmutableList;
+import org.polypheny.db.core.CallBinding;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlCallBinding;
 
 
 /**
@@ -39,7 +39,7 @@ public class ExplicitOperandTypeInference implements PolyOperandTypeInference {
 
 
     @Override
-    public void inferOperandTypes( SqlCallBinding callBinding, RelDataType returnType, RelDataType[] operandTypes ) {
+    public void inferOperandTypes( CallBinding callBinding, RelDataType returnType, RelDataType[] operandTypes ) {
         if ( operandTypes.length != paramTypes.size() ) {
             // This call does not match the inference strategy.
             // It's likely that we're just about to give a validation error.

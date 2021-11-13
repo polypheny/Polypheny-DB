@@ -16,6 +16,16 @@
 
 package org.polypheny.db.core;
 
-public interface Identifier extends Visitable {
+import java.util.List;
+
+public interface Identifier extends Visitable, Node {
+
+    String getSimple();
+
+    boolean isStar();
+
+    boolean isSimple();
+
+    List<String> getNames();
 
 }

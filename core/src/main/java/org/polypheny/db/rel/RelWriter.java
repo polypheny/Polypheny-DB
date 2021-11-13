@@ -35,7 +35,7 @@ package org.polypheny.db.rel;
 
 
 import java.util.List;
-import org.polypheny.db.sql.SqlExplainLevel;
+import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.util.Pair;
 
 
@@ -60,7 +60,7 @@ public interface RelWriter {
     /**
      * @return detail level at which plan should be generated
      */
-    SqlExplainLevel getDetailLevel();
+    ExplainLevel getDetailLevel();
 
     /**
      * Adds an input to the explanation of the current node.
@@ -92,5 +92,6 @@ public interface RelWriter {
      * Returns whether the writer prefers nested values. Traditional explain writers prefer flattened values.
      */
     boolean nest();
+
 }
 

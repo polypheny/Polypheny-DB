@@ -16,14 +16,21 @@
 
 package org.polypheny.db.core;
 
+import java.math.BigDecimal;
 import org.polypheny.db.type.PolyType;
 
-public interface Literal extends Visitable {
+public interface Literal extends Visitable, Node {
 
     PolyType getTypeName();
 
     Object getValue();
 
     <E extends Enum<E>> E symbolValue( Class<E> class_ );
+
+    int intValue( boolean exact );
+
+    long longValue( boolean exact );
+
+    BigDecimal bigDecimalValue();
 
 }

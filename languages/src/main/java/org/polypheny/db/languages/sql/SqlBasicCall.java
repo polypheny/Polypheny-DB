@@ -22,6 +22,7 @@ import java.util.Objects;
 import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.util.UnmodifiableArrayList;
 

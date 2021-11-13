@@ -52,6 +52,7 @@ import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.AggregateCall;
 import org.polypheny.db.rel.core.CorrelationId;
@@ -62,12 +63,9 @@ import org.polypheny.db.runtime.FlatLists;
 import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.SqlCollation;
 import org.polypheny.db.sql.SqlIntervalQualifier;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.fun.SqlCountAggFunction;
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.MapPolyType;
 import org.polypheny.db.type.MultisetPolyType;
@@ -93,7 +91,7 @@ public class RexBuilder {
      * Special operator that accesses an unadvertised field of an input record.
      * This operator cannot be used in SQL queries; it is introduced temporarily during sql-to-rel translation, then replaced during the process that trims unwanted fields.
      */
-    public static final SqlSpecialOperator GET_OPERATOR = new SqlSpecialOperator( "_get", Kind.OTHER_FUNCTION );
+    public static final Operator GET_OPERATOR = new SqlSpecialOperator( "_get", Kind.OTHER_FUNCTION );
 
     /**
      * The smallest valid {@code int} value, as a {@link BigDecimal}.

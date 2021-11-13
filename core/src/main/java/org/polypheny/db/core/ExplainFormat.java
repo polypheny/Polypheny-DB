@@ -14,16 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql;
-
-
-import org.polypheny.db.core.ParserPos;
+package org.polypheny.db.core;
 
 
 /**
  * Output format for {@code EXPLAIN PLAN} statement.
  */
-public enum SqlExplainFormat {
+public enum ExplainFormat {
     /**
      * Indicates that the plan should be output as a piece of indented text.
      */
@@ -39,11 +36,4 @@ public enum SqlExplainFormat {
      */
     JSON;
 
-
-    /**
-     * Creates a parse-tree node representing an occurrence of this symbol at a particular position in the parsed text.
-     */
-    public SqlLiteral symbol( ParserPos pos ) {
-        return SqlLiteral.createSymbol( this, pos );
-    }
 }

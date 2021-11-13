@@ -19,6 +19,8 @@ package org.polypheny.db.core;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.core.BasicNodeVisitor.ArgHandler;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
@@ -270,5 +272,10 @@ public abstract class Operator {
     public String getSignatureTemplate( final int operandsCount ) {
         return null;
     }
+
+
+    public abstract RelDataType inferReturnType( OperatorBinding opBinding );
+
+    public abstract RelDataType inferReturnType( RelDataTypeFactory typeFactory, List<RelDataType> operandTypes );
 
 }

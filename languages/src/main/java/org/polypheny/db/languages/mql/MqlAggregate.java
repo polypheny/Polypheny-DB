@@ -45,7 +45,7 @@ public class MqlAggregate extends MqlCollectionStatement {
 
 
     @Override
-    public Type getKind() {
+    public Type getMqlKind() {
         return Type.AGGREGATE;
     }
 

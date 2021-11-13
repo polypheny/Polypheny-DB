@@ -41,11 +41,11 @@ import java.util.List;
 import org.apache.calcite.avatica.util.Spacer;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelWriter;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.util.Pair;
 
 
@@ -55,7 +55,7 @@ import org.polypheny.db.util.Pair;
 public class RelWriterImpl implements RelWriter {
 
     protected final PrintWriter pw;
-    private final SqlExplainLevel detailLevel;
+    private final ExplainLevel detailLevel;
     private final boolean withIdPrefix;
     protected final Spacer spacer = new Spacer();
     private final boolean insertFieldNames;
@@ -63,16 +63,16 @@ public class RelWriterImpl implements RelWriter {
 
 
     public RelWriterImpl( PrintWriter pw ) {
-        this( pw, SqlExplainLevel.EXPPLAN_ATTRIBUTES, true );
+        this( pw, ExplainLevel.EXPPLAN_ATTRIBUTES, true );
     }
 
 
-    public RelWriterImpl( PrintWriter pw, SqlExplainLevel detailLevel, boolean withIdPrefix ) {
+    public RelWriterImpl( PrintWriter pw, ExplainLevel detailLevel, boolean withIdPrefix ) {
         this( pw, detailLevel, withIdPrefix, RuntimeConfig.REL_WRITER_INSERT_FIELD_NAMES.getBoolean() );
     }
 
 
-    public RelWriterImpl( PrintWriter pw, SqlExplainLevel detailLevel, boolean withIdPrefix, boolean insertFieldNames ) {
+    public RelWriterImpl( PrintWriter pw, ExplainLevel detailLevel, boolean withIdPrefix, boolean insertFieldNames ) {
         this.pw = pw;
         this.detailLevel = detailLevel;
         this.withIdPrefix = withIdPrefix;
@@ -95,7 +95,7 @@ public class RelWriterImpl implements RelWriter {
             s.append( rel.getId() ).append( ":" );
         }
         s.append( rel.getRelTypeName() );
-        if ( detailLevel != SqlExplainLevel.NO_ATTRIBUTES ) {
+        if ( detailLevel != ExplainLevel.NO_ATTRIBUTES ) {
             int j = 0;
             for ( Pair<String, Object> value : values ) {
                 if ( value.right instanceof RelNode ) {
@@ -174,7 +174,7 @@ public class RelWriterImpl implements RelWriter {
 
 
     @Override
-    public SqlExplainLevel getDetailLevel() {
+    public ExplainLevel getDetailLevel() {
         return detailLevel;
     }
 
@@ -246,5 +246,6 @@ public class RelWriterImpl implements RelWriter {
         buf.append( ")" );
         return buf.toString();
     }
+
 }
 

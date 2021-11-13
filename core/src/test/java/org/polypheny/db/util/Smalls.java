@@ -60,6 +60,8 @@ import org.apache.calcite.linq4j.function.SemiStrict;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
+import org.polypheny.db.core.Call;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rex.RexLiteral;
@@ -73,8 +75,6 @@ import org.polypheny.db.schema.Statistics;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTable;
 import org.polypheny.db.schema.impl.ViewTable;
-import org.polypheny.db.sql.SqlCall;
-import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.type.PolyType;
 
@@ -321,7 +321,7 @@ public class Smalls {
 
 
             @Override
-            public boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent ) {
+            public boolean rolledUpColumnValidInsideAgg( String column, Call call, Node parent ) {
                 return true;
             }
         };
@@ -417,6 +417,7 @@ public class Smalls {
         public String toString() {
             return "{n=" + n + ", s=" + s + "}";
         }
+
     }
 
 
@@ -437,6 +438,7 @@ public class Smalls {
         public int eval( @Parameter(name = "x") int x, @Parameter(name = "y") int y ) {
             return x + y;
         }
+
     }
 
 
@@ -457,6 +459,7 @@ public class Smalls {
         public int eval( @Parameter(name = "x") int x, @Parameter(name = "y") int y ) {
             return x + y;
         }
+
     }
 
 
@@ -468,6 +471,7 @@ public class Smalls {
         public String eval( @Parameter(name = "s") String s, @Parameter(name = "n") int n ) {
             return s.substring( 0, n );
         }
+
     }
 
 
@@ -484,6 +488,7 @@ public class Smalls {
                 @Parameter(name = "E", optional = true) Integer e ) {
             return "{a: " + a + ", b: " + b + ", c: " + c + ", d: " + d + ", e: " + e + "}";
         }
+
     }
 
 
@@ -498,6 +503,7 @@ public class Smalls {
             }
             return "<" + o.toString() + ">";
         }
+
     }
 
 
@@ -513,6 +519,7 @@ public class Smalls {
             }
             return s;
         }
+
     }
 
 
@@ -529,6 +536,7 @@ public class Smalls {
             }
             return s;
         }
+
     }
 
 
@@ -544,6 +552,7 @@ public class Smalls {
         public static int eval( int x ) {
             return x * 2;
         }
+
     }
 
 
@@ -555,6 +564,7 @@ public class Smalls {
         public float eval( int x, int y ) {
             return x + x * y / 100;
         }
+
     }
 
 
@@ -570,6 +580,7 @@ public class Smalls {
         public static int eval() {
             return 0;
         }
+
     }
 
 
@@ -585,6 +596,7 @@ public class Smalls {
         public static int eval( int x ) {
             return 1;
         }
+
     }
 
 
@@ -600,6 +612,7 @@ public class Smalls {
         public static int eval( Short x ) {
             return -1;
         }
+
     }
 
 
@@ -615,6 +628,7 @@ public class Smalls {
         public static int eval( int x, int y ) {
             return 2;
         }
+
     }
 
 
@@ -630,6 +644,7 @@ public class Smalls {
         public int eval( int x ) {
             return 0;
         }
+
     }
 
 
@@ -668,6 +683,7 @@ public class Smalls {
         public int nonStatic( int x ) {
             return x * 3;
         }
+
     }
 
 
@@ -797,6 +813,7 @@ public class Smalls {
         public long result( long accumulator ) {
             return accumulator;
         }
+
     }
 
 
@@ -816,6 +833,7 @@ public class Smalls {
         A merge( A accumulator1, A accumulator2 );
 
         R result( A accumulator );
+
     }
 
 
@@ -846,6 +864,7 @@ public class Smalls {
         public Integer result( Integer accumulator ) {
             return accumulator;
         }
+
     }
 
 
@@ -872,6 +891,7 @@ public class Smalls {
         public static long result( long accumulator ) {
             return accumulator;
         }
+
     }
 
 
@@ -905,6 +925,7 @@ public class Smalls {
         public int result( int accumulator ) {
             return accumulator;
         }
+
     }
 
 
@@ -938,6 +959,7 @@ public class Smalls {
         public long result( long accumulator ) {
             return accumulator;
         }
+
     }
 
 
@@ -967,6 +989,7 @@ public class Smalls {
         public static long result( long accumulator ) {
             return accumulator;
         }
+
     }
 
 
@@ -996,6 +1019,7 @@ public class Smalls {
         public static long result( long accumulator ) {
             return accumulator;
         }
+
     }
 
 
@@ -1012,6 +1036,7 @@ public class Smalls {
         public long add( short accumulator, int v ) {
             return accumulator + v;
         }
+
     }
 
 
@@ -1023,6 +1048,7 @@ public class Smalls {
         public TranslatableTable eval( String s ) {
             return view( s );
         }
+
     }
 
 
@@ -1034,6 +1060,7 @@ public class Smalls {
         public static TranslatableTable eval( String s ) {
             return view( s );
         }
+
     }
 
 
@@ -1059,6 +1086,7 @@ public class Smalls {
                 sb.append( '(' ).append( s ).append( ')' );
             }
         }
+
     }
 
 
@@ -1070,6 +1098,7 @@ public class Smalls {
         public QueryableTable eval( Integer s ) {
             return generateStrings( s );
         }
+
     }
 
 
@@ -1081,6 +1110,7 @@ public class Smalls {
         public QueryableTable eval( String s ) {
             return oneThreePlus( s );
         }
+
     }
 
 
@@ -1092,6 +1122,7 @@ public class Smalls {
         public static QueryableTable eval( String s ) {
             return oneThreePlus( s );
         }
+
     }
 
 
@@ -1136,6 +1167,7 @@ public class Smalls {
             Object[][] rows = { { "abcde" }, { "xyz" }, { content } };
             return Linq4j.asEnumerable( rows );
         }
+
     }
 
 
@@ -1154,6 +1186,7 @@ public class Smalls {
         public final WideProductSale[] prod = {
                 new WideProductSale( 100, 10 )
         };
+
     }
 
 
@@ -1370,6 +1403,8 @@ public class Smalls {
             this.prodId = prodId;
             this.sale0 = sale;
         }
+
     }
+
 }
 

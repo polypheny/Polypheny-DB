@@ -16,12 +16,13 @@
 
 package org.polypheny.db.languages.mql;
 
+import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.transaction.Statement;
 
 
 public interface MqlExecutableStatement {
 
-    void execute( Context context, Statement statement, String database );
+    void execute( Context context, Statement statement, QueryParameters parameters );
 
 }

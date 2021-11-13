@@ -28,7 +28,7 @@ public class MqlShowDatabase extends MqlNode {
 
 
     @Override
-    public Type getKind() {
+    public Type getMqlKind() {
         return Type.SHOW;
     }
 

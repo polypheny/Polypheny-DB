@@ -41,7 +41,7 @@ public class MqlFind extends MqlCollectionStatement implements MqlQueryStatement
 
 
     @Override
-    public Type getKind() {
+    public Type getMqlKind() {
         return Type.FIND;
     }
 

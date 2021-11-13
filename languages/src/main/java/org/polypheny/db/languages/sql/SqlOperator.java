@@ -27,6 +27,7 @@ import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.Syntax;
 import org.polypheny.db.core.ValidatorUtil;
@@ -345,7 +346,8 @@ public abstract class SqlOperator extends Operator {
      * @param opBinding description of invocation (not necessarily a {@link SqlCall})
      * @return inferred return type
      */
-    public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
+    @Override
+    public RelDataType inferReturnType( OperatorBinding opBinding ) {
         if ( returnTypeInference != null ) {
             RelDataType returnType = returnTypeInference.inferReturnType( opBinding );
             if ( returnType == null ) {
@@ -492,6 +494,7 @@ public abstract class SqlOperator extends Operator {
     /**
      * Infers the type of a call to this operator with a given set of operand types. Shorthand for {@link #inferReturnType(SqlOperatorBinding)}.
      */
+    @Override
     public final RelDataType inferReturnType( RelDataTypeFactory typeFactory, List<RelDataType> operandTypes ) {
         return inferReturnType( new ExplicitOperatorBinding( typeFactory, this, operandTypes ) );
     }

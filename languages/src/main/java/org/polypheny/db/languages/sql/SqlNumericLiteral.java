@@ -18,9 +18,10 @@ package org.polypheny.db.languages.sql;
 
 
 import java.math.BigDecimal;
+import org.polypheny.db.core.NumericLiteral;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Util;
 
@@ -28,7 +29,7 @@ import org.polypheny.db.util.Util;
 /**
  * A numeric SQL literal.
  */
-public class SqlNumericLiteral extends SqlLiteral {
+public class SqlNumericLiteral extends SqlLiteral implements NumericLiteral {
 
     private Integer prec;
     private Integer scale;

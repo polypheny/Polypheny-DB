@@ -6,6 +6,7 @@ version = versionMajor + "." + versionMinor + versionQualifier
 
 dependencies {
     implementation project(":core")
+    implementation project(":languages")
 
     // Cottontail DB
     implementation group: "org.vitrivr", name: "cottontaildb", version: cottontaildb_version

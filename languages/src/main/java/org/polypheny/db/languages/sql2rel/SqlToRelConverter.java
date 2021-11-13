@@ -51,6 +51,8 @@ import org.polypheny.db.core.BasicNodeVisitor;
 import org.polypheny.db.core.Call;
 import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.DataTypeSpec;
+import org.polypheny.db.core.ExplainFormat;
+import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.core.Identifier;
 import org.polypheny.db.core.InitializerContext;
 import org.polypheny.db.core.InitializerExpressionFactory;
@@ -75,8 +77,6 @@ import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlDelete;
 import org.polypheny.db.languages.sql.SqlDynamicParam;
-import org.polypheny.db.languages.sql.SqlExplainFormat;
-import org.polypheny.db.languages.sql.SqlExplainLevel;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlInsert;
@@ -481,8 +481,8 @@ public class SqlToRelConverter {
                         RelOptUtil.dumpPlan(
                                 "Plan after trimming unused fields",
                                 rootRel,
-                                SqlExplainFormat.TEXT,
-                                SqlExplainLevel.EXPPLAN_ATTRIBUTES ) );
+                                ExplainFormat.TEXT,
+                                ExplainLevel.EXPPLAN_ATTRIBUTES ) );
             }
         }
         return rootRel;
@@ -532,8 +532,8 @@ public class SqlToRelConverter {
                     RelOptUtil.dumpPlan(
                             "Plan after converting SqlNode to RelNode",
                             result,
-                            SqlExplainFormat.TEXT,
-                            SqlExplainLevel.EXPPLAN_ATTRIBUTES ) );
+                            ExplainFormat.TEXT,
+                            ExplainLevel.EXPPLAN_ATTRIBUTES ) );
         }
 
         final RelDataType validatedRowType = validator.getValidatedNodeType( query );

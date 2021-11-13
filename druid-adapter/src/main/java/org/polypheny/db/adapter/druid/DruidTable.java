@@ -47,8 +47,14 @@ import org.joda.time.DateTime;
 import org.joda.time.Interval;
 import org.joda.time.chrono.ISOChronology;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.Call;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.interpreter.BindableConvention;
+import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlSelectKeyword;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.rel.RelNode;
@@ -60,10 +66,6 @@ import org.polypheny.db.rel.type.RelProtoDataType;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTable;
-import org.polypheny.db.sql.SqlCall;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlSelectKeyword;
 import org.polypheny.db.type.PolyType;
 
 
@@ -172,37 +174,37 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
 
 
     @Override
-    public boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent ) {
+    public boolean rolledUpColumnValidInsideAgg( String column, Call call, Node parent ) {
         assert isRolledUp( column );
         final boolean approximateDistinctCount = RuntimeConfig.APPROXIMATE_DISTINCT_COUNT.getBoolean();
         // Our rolled up columns are only allowed in COUNT(DISTINCT ...) aggregate functions. We only allow this when approximate results are acceptable.
         return ((approximateDistinctCount
-                && isCountDistinct( call ))
+                && isCountDistinct( (SqlCall) call ))
                 || call.getOperator() == SqlStdOperatorTable.APPROX_COUNT_DISTINCT)
                 && call.getOperandList().size() == 1 // for COUNT(a_1, a_2, ... a_n). n should be 1
-                && isValidParentKind( parent );
+                && isValidParentKind( (SqlNode) parent );
     }
 
 
     private boolean isValidParentKind( SqlNode node ) {
-        return node.getKind() == SqlKind.SELECT
-                || node.getKind() == SqlKind.FILTER
+        return node.getKind() == Kind.SELECT
+                || node.getKind() == Kind.FILTER
                 || isSupportedPostAggOperation( node.getKind() );
     }
 
 
     private boolean isCountDistinct( SqlCall call ) {
-        return call.getKind() == SqlKind.COUNT
+        return call.getKind() == Kind.COUNT
                 && call.getFunctionQuantifier() != null
                 && call.getFunctionQuantifier().getValue() == SqlSelectKeyword.DISTINCT;
     }
 
 
     // Post aggs support +, -, /, * so we should allow the parent of a count distinct to be any one of those.
-    private boolean isSupportedPostAggOperation( SqlKind kind ) {
-        return kind == SqlKind.PLUS
-                || kind == SqlKind.MINUS
-                || kind == SqlKind.DIVIDE || kind == SqlKind.TIMES;
+    private boolean isSupportedPostAggOperation( Kind kind ) {
+        return kind == Kind.PLUS
+                || kind == Kind.MINUS
+                || kind == Kind.DIVIDE || kind == Kind.TIMES;
     }
 
 

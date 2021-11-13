@@ -37,8 +37,8 @@ package org.polypheny.db.rel.externalize;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.XmlOutput;
 
@@ -54,7 +54,7 @@ public class RelXmlWriter extends RelWriterImpl {
     // TODO jvs 23-Dec-2005:  honor detail level.  The current inheritance structure makes this difficult without duplication; need to factor out the filtering of attributes before rendering.
 
 
-    public RelXmlWriter( PrintWriter pw, SqlExplainLevel detailLevel ) {
+    public RelXmlWriter( PrintWriter pw, ExplainLevel detailLevel ) {
         super( pw, detailLevel, true );
         xmlOutput = new XmlOutput( pw );
         xmlOutput.setGlob( true );
@@ -162,5 +162,6 @@ public class RelXmlWriter extends RelWriterImpl {
         }
         spacer.subtract( 2 );
     }
+
 }
 

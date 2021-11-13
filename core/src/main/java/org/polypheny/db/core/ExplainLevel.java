@@ -14,16 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql;
-
-
-import org.polypheny.db.core.ParserPos;
+package org.polypheny.db.core;
 
 
 /**
- * SqlExplainLevel defines detail levels for EXPLAIN PLAN.
+ * ExplainLevel defines detail levels for EXPLAIN PLAN.
  */
-public enum SqlExplainLevel {
+public enum ExplainLevel {
     /**
      * Suppress all attributes.
      */
@@ -48,13 +45,5 @@ public enum SqlExplainLevel {
      * Display all attributes, including cost.
      */
     ALL_ATTRIBUTES;
-
-
-    /**
-     * Creates a parse-tree node representing an occurrence of this symbol at a particular position in the parsed text.
-     */
-    public SqlLiteral symbol( ParserPos pos ) {
-        return SqlLiteral.createSymbol( this, pos );
-    }
 }
 

@@ -25,13 +25,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.processing.SqlProcessor;
+import org.polypheny.db.processing.Processor;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlKind;
@@ -187,7 +188,7 @@ public class ExploreQueryProcessor {
 
     private PolyphenyDbSignature processQuery( Statement statement, String sql ) {
         PolyphenyDbSignature signature;
-        SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
+        Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
 
         SqlNode parsed = sqlProcessor.parse( sql );
 
@@ -196,7 +197,7 @@ public class ExploreQueryProcessor {
             throw new RuntimeException( "No DDL expected here" );
         } else {
             Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, false );
-            RelRoot logicalRoot = sqlProcessor.translate( statement, validated.left );
+            RelRoot logicalRoot = sqlProcessor.translate( statement, validated.left, );
 
             // Prepare
             signature = statement.getQueryProcessor().prepareQuery( logicalRoot );

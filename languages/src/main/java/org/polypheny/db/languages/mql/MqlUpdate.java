@@ -64,7 +64,7 @@ public class MqlUpdate extends MqlCollectionStatement implements MqlQueryStateme
 
 
     @Override
-    public Type getKind() {
+    public Type getMqlKind() {
         return Type.UPDATE;
     }
 

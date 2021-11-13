@@ -37,7 +37,6 @@ package org.polypheny.db.adapter.jdbc.rel2sql;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -45,8 +44,30 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.SortedSet;
+import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.polypheny.db.core.JoinConditionType;
+import org.polypheny.db.core.JoinType;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.languages.sql.SqlDelete;
+import org.polypheny.db.languages.sql.SqlDialect;
+import org.polypheny.db.languages.sql.SqlIdentifier;
+import org.polypheny.db.languages.sql.SqlInsert;
+import org.polypheny.db.languages.sql.SqlIntervalLiteral;
+import org.polypheny.db.languages.sql.SqlJoin;
+import org.polypheny.db.languages.sql.SqlLiteral;
+import org.polypheny.db.languages.sql.SqlMatchRecognize;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlNodeList;
+import org.polypheny.db.languages.sql.SqlSelect;
+import org.polypheny.db.languages.sql.SqlSetOperator;
+import org.polypheny.db.languages.sql.SqlUpdate;
+import org.polypheny.db.languages.sql.fun.SqlRowOperator;
+import org.polypheny.db.languages.sql.fun.SqlSingleValueAggFunction;
+import org.polypheny.db.languages.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.rel.RelFieldCollation;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Aggregate;
@@ -72,25 +93,6 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
-import org.polypheny.db.sql.JoinConditionType;
-import org.polypheny.db.sql.JoinType;
-import org.polypheny.db.sql.SqlCall;
-import org.polypheny.db.sql.SqlDelete;
-import org.polypheny.db.sql.SqlDialect;
-import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.SqlInsert;
-import org.polypheny.db.sql.SqlIntervalLiteral;
-import org.polypheny.db.sql.SqlJoin;
-import org.polypheny.db.sql.SqlLiteral;
-import org.polypheny.db.sql.SqlMatchRecognize;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlNodeList;
-import org.polypheny.db.sql.SqlSelect;
-import org.polypheny.db.sql.SqlUpdate;
-import org.polypheny.db.sql.fun.SqlRowOperator;
-import org.polypheny.db.sql.fun.SqlSingleValueAggFunction;
-import org.polypheny.db.core.SqlStdOperatorTable;
-import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.ReflectUtil;
 import org.polypheny.db.util.ReflectiveVisitor;
@@ -102,7 +104,7 @@ import org.polypheny.db.util.ReflectiveVisitor;
 public abstract class RelToSqlConverter extends SqlImplementor implements ReflectiveVisitor {
 
     /**
-     * Similar to {@link SqlStdOperatorTable#ROW}, but does not print "ROW".
+     * Similar to {@link StdOperatorRegistry ROW }, but does not print "ROW".
      */
     private static final SqlRowOperator ANONYMOUS_ROW = new SqlRowOperator( " " );
 
@@ -158,11 +160,11 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
         final Context leftContext = leftResult.qualifiedContext();
         final Context rightContext = rightResult.qualifiedContext();
         SqlNode sqlCondition = null;
-        SqlLiteral condType = JoinConditionType.ON.symbol( POS );
+        SqlLiteral condType = SqlLiteral.createSymbol( JoinConditionType.ON, POS );
         JoinType joinType = joinType( e.getJoinType() );
         if ( e.getJoinType() == JoinRelType.INNER && e.getCondition().isAlwaysTrue() ) {
             joinType = JoinType.COMMA;
-            condType = JoinConditionType.NONE.symbol( POS );
+            condType = SqlLiteral.createSymbol( JoinConditionType.NONE, POS );
         } else {
             sqlCondition = convertConditionToSqlNode(
                     e.getCondition(),
@@ -175,7 +177,7 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
                         POS,
                         leftResult.asFrom(),
                         SqlLiteral.createBoolean( false, POS ),
-                        joinType.symbol( POS ),
+                        SqlLiteral.createSymbol( joinType, POS ),
                         rightResult.asFrom(),
                         condType,
                         sqlCondition );
@@ -283,9 +285,9 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
      */
     public Result visit( Union e ) {
         isUnion = true;
-        Result result = setOpToSql( e.all
-                ? SqlStdOperatorTable.UNION_ALL
-                : SqlStdOperatorTable.UNION, e );
+        Result result = setOpToSql( (SqlSetOperator) (e.all
+                ? StdOperatorRegistry.get( "UNION_ALL" )
+                : StdOperatorRegistry.get( "UNION" )), e );
         isUnion = false;
         return result;
     }
@@ -295,9 +297,9 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
      * @see #dispatch
      */
     public Result visit( Intersect e ) {
-        return setOpToSql( e.all
-                ? SqlStdOperatorTable.INTERSECT_ALL
-                : SqlStdOperatorTable.INTERSECT, e );
+        return setOpToSql( (SqlSetOperator) (e.all
+                ? StdOperatorRegistry.get( "INTERSECT_ALL" )
+                : StdOperatorRegistry.get( "INTERSECT" )), e );
     }
 
 
@@ -305,9 +307,9 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
      * @see #dispatch
      */
     public Result visit( Minus e ) {
-        return setOpToSql( e.all
-                ? SqlStdOperatorTable.EXCEPT_ALL
-                : SqlStdOperatorTable.EXCEPT, e );
+        return setOpToSql( (SqlSetOperator) (e.all
+                ? StdOperatorRegistry.get( "EXCEPT_ALL" )
+                : StdOperatorRegistry.get( "EXCEPT" )), e );
     }
 
 
@@ -359,8 +361,8 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
             for ( List<RexLiteral> tuple : e.getTuples() ) {
                 final List<SqlNode> values2 = new ArrayList<>();
                 final SqlNodeList exprList = exprList( context, tuple );
-                for ( Pair<SqlNode, String> value : Pair.zip( exprList, fieldNames ) ) {
-                    values2.add( SqlStdOperatorTable.AS.createCall( POS, value.left, new SqlIdentifier( value.right, POS ) ) );
+                for ( Pair<Node, String> value : Pair.zip( exprList, fieldNames ) ) {
+                    values2.add( (SqlNode) StdOperatorRegistry.get( "AS" ).createCall( POS, value.left, new SqlIdentifier( value.right, POS ) ) );
                 }
                 list.add(
                         new SqlSelect(
@@ -379,7 +381,7 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
             if ( list.size() == 1 ) {
                 query = list.get( 0 );
             } else {
-                query = SqlStdOperatorTable.UNION_ALL.createCall( new SqlNodeList( list, POS ) );
+                query = (SqlNode) StdOperatorRegistry.get( "UNION_ALL" ).createCall( new SqlNodeList( list, POS ) );
             }
         } else {
             // Generate ANSI syntax
@@ -390,7 +392,7 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
             for ( List<RexLiteral> tuple : e.getTuples() ) {
                 selects.add( ANONYMOUS_ROW.createCall( exprList( context, tuple ) ) );
             }
-            query = SqlStdOperatorTable.VALUES.createCall( selects );
+            query = (SqlNode) StdOperatorRegistry.get( "VALUES" ).createCall( selects );
             if ( rename ) {
                 final List<SqlNode> list = new ArrayList<>();
                 list.add( query );
@@ -398,7 +400,7 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
                 for ( String fieldName : fieldNames ) {
                     list.add( new SqlIdentifier( fieldName, POS ) );
                 }
-                query = SqlStdOperatorTable.AS.createCall( POS, list );
+                query = (SqlNode) StdOperatorRegistry.get( "AS" ).createCall( POS, list );
             }
         }
         return result( query, clauses, e, null );
@@ -429,12 +431,12 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
         }
         if ( e.fetch != null ) {
             builder = x.builder( e, false, Clause.FETCH );
-            builder.setFetch( builder.context.toSql( null, e.fetch ) );
+            builder.setFetch( (SqlNode) builder.context.toSql( null, e.fetch ) );
             x = builder.result();
         }
         if ( e.offset != null ) {
             builder = x.builder( e, false, Clause.OFFSET );
-            builder.setOffset( builder.context.toSql( null, e.offset ) );
+            builder.setOffset( (SqlNode) builder.context.toSql( null, e.offset ) );
             x = builder.result();
         }
         return x;
@@ -500,7 +502,7 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
      * Converts a list of {@link RexNode} expressions to {@link SqlNode} expressions.
      */
     private SqlNodeList exprList( final Context context, List<? extends RexNode> exprs ) {
-        return new SqlNodeList( Lists.transform( exprs, e -> context.toSql( null, e ) ), POS );
+        return new SqlNodeList( exprs.stream().map( e -> context.toSql( null, e ) ).collect( Collectors.toList() ), POS );
     }
 
 
@@ -508,7 +510,7 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
      * Converts a list of names expressions to a list of single-part {@link SqlIdentifier}s.
      */
     private SqlNodeList identifierList( List<String> names ) {
-        return new SqlNodeList( Lists.transform( names, name -> new SqlIdentifier( name, POS ) ), POS );
+        return new SqlNodeList( names.stream().map( name -> new SqlIdentifier( name, POS ) ).collect( Collectors.toList() ), POS );
     }
 
 
@@ -516,7 +518,7 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
      * Converts a list of names expressions to a list of single-part {@link SqlIdentifier}s.
      */
     private SqlNodeList physicalIdentifierList( List<String> tableName, List<String> columnNames ) {
-        return new SqlNodeList( Lists.transform( columnNames, columnName -> getPhysicalColumnName( tableName, columnName ) ), POS );
+        return new SqlNodeList( columnNames.stream().map( columnName -> getPhysicalColumnName( tableName, columnName ) ).collect( Collectors.toList() ), POS );
     }
 
 
@@ -566,7 +568,7 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
         } else {
             RexCall call = (RexCall) e.getAfter();
             String operand = RexLiteral.stringValue( call.getOperands().get( 0 ) );
-            after = call.getOperator().createCall( POS, new SqlIdentifier( operand, POS ) );
+            after = (SqlNode) call.getOperator().createCall( POS, new SqlIdentifier( operand, POS ) );
         }
 
         RexNode rexPattern = e.getPattern();
@@ -587,7 +589,7 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
             for ( String right : entry.getValue() ) {
                 rhl.add( new SqlIdentifier( right, POS ) );
             }
-            subsetList.add( SqlStdOperatorTable.EQUALS.createCall( POS, left, new SqlNodeList( rhl, POS ) ) );
+            subsetList.add( StdOperatorRegistry.get( "EQUALS" ).createCall( POS, left, new SqlNodeList( rhl, POS ) ) );
         }
 
         final SqlNodeList measureList = new SqlNodeList( POS );
@@ -624,7 +626,7 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
 
 
     private SqlCall as( SqlNode e, String alias ) {
-        return SqlStdOperatorTable.AS.createCall( POS, e, new SqlIdentifier( alias, POS ) );
+        return (SqlCall) StdOperatorRegistry.get( "AS" ).createCall( POS, e, new SqlIdentifier( alias, POS ) );
     }
 
 

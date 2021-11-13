@@ -5,6 +5,7 @@ version = versionMajor + "." + versionMinor + versionQualifier
 
 dependencies {
     implementation project(":core")
+    implementation project(":languages")
 
     implementation group: "joda-time", name: "joda-time", version: joda_time_version  // Apache 2.0
 

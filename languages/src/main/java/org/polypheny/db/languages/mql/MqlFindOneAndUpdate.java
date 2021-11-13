@@ -64,7 +64,7 @@ public class MqlFindOneAndUpdate extends MqlCollectionStatement implements MqlQu
 
 
     @Override
-    public Type getKind() {
+    public Type getMqlKind() {
         return Type.FIND_UPDATE;
     }
 

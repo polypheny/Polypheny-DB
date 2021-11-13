@@ -21,18 +21,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.NodeList;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.languages.sql.SqlBasicCall;
+import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.languages.sql.SqlDataTypeSpec;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlNodeList;
+import org.polypheny.db.languages.sql.SqlOperator;
+import org.polypheny.db.languages.sql.fun.SqlCaseOperator;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlBasicCall;
-import org.polypheny.db.sql.SqlCall;
-import org.polypheny.db.sql.SqlDataTypeSpec;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlNodeList;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlCaseOperator;
 import org.polypheny.db.type.PolyTypeUtil;
 
 
@@ -142,10 +143,10 @@ public class RexSqlStandardConvertletTable extends RexSqlReflectiveConvertletTab
             return null;
         }
 
-        final SqlOperator op = call.getOperator();
+        final SqlOperator op = (SqlOperator) call.getOperator();
         final List<RexNode> operands = call.getOperands();
 
-        final SqlNode[] exprs = convertExpressionList( converter, operands );
+        final SqlNode[] exprs = (SqlNode[]) convertExpressionList( converter, operands );
         if ( exprs == null ) {
             return null;
         }
@@ -184,15 +185,15 @@ public class RexSqlStandardConvertletTable extends RexSqlReflectiveConvertletTab
     private void registerTypeAppendOp( final Operator op ) {
         registerOp(
                 op, ( converter, call ) -> {
-                    SqlNode[] operands = convertExpressionList( converter, call.operands );
+                    SqlNode[] operands = (SqlNode[]) convertExpressionList( converter, call.operands );
                     if ( operands == null ) {
                         return null;
                     }
                     List<SqlNode> operandList = new ArrayList<>( Arrays.asList( operands ) );
-                    SqlDataTypeSpec typeSpec = PolyTypeUtil.convertTypeToSpec( call.getType() );
+                    SqlDataTypeSpec typeSpec = (SqlDataTypeSpec) PolyTypeUtil.convertTypeToSpec( call.getType() );
                     operandList.add( typeSpec );
                     return new SqlBasicCall(
-                            op,
+                            (SqlOperator) op,
                             operandList.toArray( new SqlNode[0] ),
                             ParserPos.ZERO );
                 } );
@@ -208,12 +209,12 @@ public class RexSqlStandardConvertletTable extends RexSqlReflectiveConvertletTab
         registerOp(
                 op, ( converter, call ) -> {
                     assert op instanceof SqlCaseOperator;
-                    SqlNode[] operands = convertExpressionList( converter, call.operand" ));
+                    SqlNode[] operands = (SqlNode[]) convertExpressionList( converter, call.operands );
                     if ( operands == null ) {
                         return null;
                     }
-                    SqlNodeList whenList = new SqlNodeList( ParserPos.ZER" ));
-                            NodeList thenList = new SqlNodeList( ParserPos.ZER" ));
+                    SqlNodeList whenList = new SqlNodeList( ParserPos.ZERO );
+                    NodeList thenList = new SqlNodeList( ParserPos.ZERO );
                     int i = 0;
                     while ( i < operands.length - 1 ) {
                         whenList.add( operands[i] );
@@ -246,7 +247,7 @@ public class RexSqlStandardConvertletTable extends RexSqlReflectiveConvertletTab
             if ( operands == null ) {
                 return null;
             }
-            return new SqlBasicCall( op, operands, ParserPos.ZERO );
+            return new SqlBasicCall( (SqlOperator) op, (SqlNode[]) operands, ParserPos.ZERO );
         }
 
     }

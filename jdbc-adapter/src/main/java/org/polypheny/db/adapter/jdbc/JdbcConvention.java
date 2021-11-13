@@ -37,11 +37,11 @@ package org.polypheny.db.adapter.jdbc;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.languages.sql.SqlDialect;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.rel.rules.FilterSetOpTransposeRule;
-import org.polypheny.db.sql.SqlDialect;
 
 
 /**

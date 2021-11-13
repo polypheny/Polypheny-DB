@@ -47,7 +47,7 @@ public class MqlFindOneAndReplace extends MqlCollectionStatement implements MqlQ
 
 
     @Override
-    public Type getKind() {
+    public Type getMqlKind() {
         return Type.FIND_REPLACE;
     }
 

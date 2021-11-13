@@ -562,6 +562,7 @@ public class SqlLiteral extends SqlNode implements Literal {
      * @param exact Whether the value has to be exact. If true, and the literal is a fraction (e.g. 3.14), throws. If false, discards the fractional part of the value.
      * @return Integer value of this literal
      */
+    @Override
     public int intValue( boolean exact ) {
         switch ( typeName ) {
             case DECIMAL:
@@ -588,6 +589,7 @@ public class SqlLiteral extends SqlNode implements Literal {
      * @param exact Whether the value has to be exact. If true, and the literal is a fraction (e.g. 3.14), throws. If false, discards the fractional part of the value.
      * @return Long value of this literal
      */
+    @Override
     public long longValue( boolean exact ) {
         switch ( typeName ) {
             case DECIMAL:
@@ -622,6 +624,7 @@ public class SqlLiteral extends SqlNode implements Literal {
     /**
      * Returns a numeric literal's value as a {@link BigDecimal}.
      */
+    @Override
     public BigDecimal bigDecimalValue() {
         switch ( typeName ) {
             case DECIMAL:

@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.core.Identifier;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
@@ -49,6 +50,7 @@ public class SqlIdentifier extends SqlNode implements Identifier {
      * If you assign to this member, please use {@link #setNames(java.util.List, java.util.List)}.
      * And yes, we'd like to make identifiers immutable one day.
      */
+    @Getter
     public ImmutableList<String> names;
 
     /**
@@ -368,6 +370,7 @@ public class SqlIdentifier extends SqlNode implements Identifier {
     }
 
 
+    @Override
     public String getSimple() {
         assert names.size() == 1;
         return names.get( 0 );
@@ -377,6 +380,7 @@ public class SqlIdentifier extends SqlNode implements Identifier {
     /**
      * Returns whether this identifier is a star, such as "*" or "foo.bar.*".
      */
+    @Override
     public boolean isStar() {
         return Util.last( names ).equals( "" );
     }
@@ -385,6 +389,7 @@ public class SqlIdentifier extends SqlNode implements Identifier {
     /**
      * Returns whether this is a simple identifier. "FOO" is simple; "*", "FOO.*" and "FOO.BAR" are not.
      */
+    @Override
     public boolean isSimple() {
         return names.size() == 1 && !isStar();
     }

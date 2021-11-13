@@ -41,6 +41,7 @@ import java.util.IdentityHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelWriter;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
@@ -155,7 +156,7 @@ public class RelJsonWriter implements RelWriter {
 
 
     @Override
-    public SqlExplainLevel getDetailLevel() {
+    public ExplainLevel getDetailLevel() {
         return SqlExplainLevel.ALL_ATTRIBUTES;
     }
 

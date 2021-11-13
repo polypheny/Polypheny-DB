@@ -43,8 +43,6 @@ import java.util.TreeMap;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function2;
-import org.polypheny.db.languages.sql.SqlExplainFormat;
-import org.polypheny.db.languages.sql.SqlExplainLevel;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.fun.SqlCountAggFunction;
@@ -181,8 +179,8 @@ public class RelDecorrelator implements ReflectiveVisitor {
                     RelOptUtil.dumpPlan(
                             "Plan after removing Correlator",
                             newRootRel,
-                            SqlExplainFormat.TEXT,
-                            SqlExplainLevel.EXPPLAN_ATTRIBUTES ) );
+                            ExplainFormat.TEXT,
+                            ExplainLevel.EXPPLAN_ATTRIBUTES ) );
         }
 
         if ( !decorrelator.cm.mapCorToCorRel.isEmpty() ) {

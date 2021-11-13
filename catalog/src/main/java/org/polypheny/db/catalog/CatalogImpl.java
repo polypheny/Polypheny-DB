@@ -91,22 +91,21 @@ import org.polypheny.db.catalog.exceptions.UnknownTableIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.exceptions.UnknownUserIdRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.QueryParameters;
+import org.polypheny.db.languages.mql.MqlQueryParameters;
 import org.polypheny.db.partition.FrequencyMap;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
-import org.polypheny.db.processing.JsonRelProcessor;
-import org.polypheny.db.processing.MqlProcessor;
-import org.polypheny.db.processing.SqlProcessor;
+import org.polypheny.db.processing.Processor;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
@@ -452,18 +451,19 @@ public class CatalogImpl extends Catalog {
 
                 switch ( language ) {
                     case SQL:
-                        SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
-                        SqlNode sqlNode = sqlProcessor.parse( query );
+                        Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
+                        Node sqlNode = sqlProcessor.parse( query );
                         RelRoot relRoot = sqlProcessor.translate(
                                 statement,
-                                sqlProcessor.validate( statement.getTransaction(), sqlNode, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left );
+                                sqlProcessor.validate( statement.getTransaction(), sqlNode, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left,
+                                new QueryParameters( query ) );
                         nodeInfo.put( c.id, relRoot.rel );
                         relTypeInfo.put( c.id, relRoot.validatedRowType );
                         break;
 
                     case RELALG:
-                        JsonRelProcessor jsonRelProcessor = statement.getTransaction().getJsonRelProcessor();
-                        RelNode result = jsonRelProcessor.parseJsonRel( statement, query );
+                        Processor jsonRelProcessor = statement.getTransaction().getProcessor( QueryLanguage.RELALG );
+                        RelNode result = jsonRelProcessor.translate( statement, null, new QueryParameters( query ) ).rel;
 
                         final RelDataType rowType = result.getRowType();
                         final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
@@ -471,20 +471,20 @@ public class CatalogImpl extends Catalog {
                                 result instanceof Sort
                                         ? ((Sort) result).collation
                                         : RelCollations.EMPTY;
-                        RelRoot root = new RelRoot( result, result.getRowType(), SqlKind.SELECT, fields, collation );
+                        RelRoot root = new RelRoot( result, result.getRowType(), Kind.SELECT, fields, collation );
 
                         nodeInfo.put( c.id, root.rel );
                         relTypeInfo.put( c.id, root.validatedRowType );
                         break;
 
                     case MONGOQL:
-                        MqlProcessor mqlProcessor = statement.getTransaction().getMqlProcessor();
+                        Processor mqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.MONGOQL );
                         Node mqlNode = mqlProcessor.parse( query );
 
                         RelRoot mqlRel = mqlProcessor.translate(
                                 statement,
                                 mqlNode,
-                                getSchema( defaultDatabaseId ).name );
+                                new MqlQueryParameters( query, getSchema( defaultDatabaseId ).name ) );
                         nodeInfo.put( c.id, mqlRel.rel );
                         relTypeInfo.put( c.id, mqlRel.validatedRowType );
                         break;

@@ -21,6 +21,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.exceptions.SchemaAlreadyExistsException;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.mql.Mql.Type;
@@ -30,7 +31,7 @@ import org.polypheny.db.transaction.Statement;
 public class MqlUseDatabase extends MqlNode implements MqlExecutableStatement {
 
     @Getter
-    private String database;
+    private final String database;
 
 
     public MqlUseDatabase( ParserPos pos, String database ) {
@@ -40,15 +41,9 @@ public class MqlUseDatabase extends MqlNode implements MqlExecutableStatement {
 
 
     @Override
-    public void execute( Context context, Statement statement, String database ) {
-        Catalog catalog = Catalog.getInstance();
-
-        int userId = catalog.getUser( Catalog.defaultUser ).id;
-
+    public void execute( Context context, Statement statement, QueryParameters parameters ) {
         try {
             DdlManager.getInstance().createSchema( this.database, Catalog.defaultDatabaseId, SchemaType.DOCUMENT, Catalog.defaultUser, true, false );
-            /*long schemaId = catalog.getSchema( Catalog.defaultDatabaseId, this.database ).id;
-            catalog.setUserSchema( userId, schemaId );*/
         } catch ( SchemaAlreadyExistsException e ) {
             throw new RuntimeException( "The schema creation failed" );
         }
@@ -56,7 +51,7 @@ public class MqlUseDatabase extends MqlNode implements MqlExecutableStatement {
 
 
     @Override
-    public Type getKind() {
+    public Type getMqlKind() {
         return Type.USE_DATABASE;
     }
 

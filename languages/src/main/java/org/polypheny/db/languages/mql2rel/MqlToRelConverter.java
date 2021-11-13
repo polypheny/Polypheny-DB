@@ -39,10 +39,12 @@ import org.bson.BsonRegularExpression;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.MqlStdOperatorTable;
 import org.polypheny.db.core.Node;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.document.util.DocumentUtil;
 import org.polypheny.db.languages.mql.Mql.Type;
 import org.polypheny.db.languages.mql.MqlAggregate;
@@ -51,15 +53,16 @@ import org.polypheny.db.languages.mql.MqlCount;
 import org.polypheny.db.languages.mql.MqlDelete;
 import org.polypheny.db.languages.mql.MqlFind;
 import org.polypheny.db.languages.mql.MqlInsert;
+import org.polypheny.db.languages.mql.MqlQueryParameters;
 import org.polypheny.db.languages.mql.MqlQueryStatement;
 import org.polypheny.db.languages.mql.MqlUpdate;
-import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.languages.sql.SqlOperator;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.RelOptTableImpl;
-import org.polypheny.db.processing.MqlProcessor;
+import org.polypheny.db.processing.Processor;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelFieldCollation;
@@ -102,11 +105,11 @@ public class MqlToRelConverter {
     private final PolyphenyDbCatalogReader catalogReader;
     private final RelOptCluster cluster;
     private RexBuilder builder;
-    private final static Map<String, SqlOperator> mappings;
+    private final static Map<String, Operator> mappings;
     private final static List<String> operators;
-    private final static Map<String, List<SqlOperator>> gates;
-    private final static Map<String, SqlOperator> mathOperators;
-    private static final Map<String, SqlAggFunction> accumulators;
+    private final static Map<String, List<Operator>> gates;
+    private final static Map<String, Operator> mathOperators;
+    private static final Map<String, AggFunction> accumulators;
     private final RelDataType any;
     private final RelDataType nullableAny;
 
@@ -114,10 +117,10 @@ public class MqlToRelConverter {
     private final RelDataType nullableJsonType;
 
 
-    private static final HashMap<String, SqlOperator> singleMathOperators;
+    private static final HashMap<String, Operator> singleMathOperators;
 
 
-    private static final HashMap<String, SqlOperator> mathComparators;
+    private static final HashMap<String, Operator> mathComparators;
 
 
     static {
@@ -215,7 +218,7 @@ public class MqlToRelConverter {
     private boolean usesDocumentModel;
 
 
-    public MqlToRelConverter( MqlProcessor mqlProcessor, PolyphenyDbCatalogReader catalogReader, RelOptCluster cluster ) {
+    public MqlToRelConverter( Processor mqlProcessor, PolyphenyDbCatalogReader catalogReader, RelOptCluster cluster ) {
         this.catalogReader = catalogReader;
         this.cluster = Objects.requireNonNull( cluster );
         this.any = this.cluster.getTypeFactory().createPolyType( PolyType.ANY );
@@ -239,9 +242,9 @@ public class MqlToRelConverter {
     }
 
 
-    public RelRoot convert( Node query, String defaultDatabase ) {
+    public RelRoot convert( Node query, QueryParameters parameters ) {
         resetDefaults();
-        this.defaultDatabase = defaultDatabase;
+        this.defaultDatabase = ((MqlQueryParameters) parameters).getDatabase();
         if ( query instanceof MqlCollectionStatement ) {
             return convert( (MqlCollectionStatement) query );
         }
@@ -256,7 +259,7 @@ public class MqlToRelConverter {
      * @return the RelNode format of the initial query
      */
     public RelRoot convert( MqlCollectionStatement query ) {
-        Type kind = query.getKind();
+        Type kind = query.getMqlKind();
         RelOptTable table = getTable( query, defaultDatabase );
         if ( table == null ) {
             throw new RuntimeException( "The used collection does not exist." );
@@ -614,7 +617,7 @@ public class MqlToRelConverter {
      * Start translation of db.collection.update({$min: {"key": 3}}) or db.collection.update({$max: {"key": 3}})
      * this compares the key with the value and replaces it if it matches
      */
-    private Map<String, RexNode> translateMinMaxMul( BsonDocument doc, RelDataType rowType, SqlOperator operator ) {
+    private Map<String, RexNode> translateMinMaxMul( BsonDocument doc, RelDataType rowType, Operator operator ) {
         Map<String, RexNode> updates = new HashMap<>();
         for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
             RexNode id = getIdentifier( entry.getKey(), rowType, true );
@@ -1150,7 +1153,7 @@ public class MqlToRelConverter {
             throw new RuntimeException( "$group pipeline stage needs a document after, which defines a _id" );
         }
 
-        List<SqlAggFunction> ops = new ArrayList<>();
+        List<AggFunction> ops = new ArrayList<>();
         List<RexNode> nodes = new ArrayList<>();
         List<String> names = new ArrayList<>();
         List<String> aggNames = new ArrayList<>();
@@ -1211,7 +1214,7 @@ public class MqlToRelConverter {
     }
 
 
-    private RelNode groupBy( BsonValue value, RelNode node, RelDataType rowType, List<String> names, List<SqlAggFunction> aggs ) {
+    private RelNode groupBy( BsonValue value, RelNode node, RelDataType rowType, List<String> names, List<AggFunction> aggs ) {
         BsonValue groupBy = value.asDocument().get( "_id" );
 
         List<AggregateCall> convertedAggs = new ArrayList<>();
@@ -1543,7 +1546,7 @@ public class MqlToRelConverter {
         if ( key.equals( "$literal" ) ) {
             return convertLiteral( bsonValue );
         }
-        SqlOperator op;
+        Operator op;
         if ( !isExpr ) {
             op = mathOperators.get( key );
         } else {
@@ -1562,7 +1565,7 @@ public class MqlToRelConverter {
 
 
     private RexNode convertSingleMath( String key, BsonValue value, RelDataType rowType ) {
-        SqlOperator op = singleMathOperators.get( key );
+        Operator op = singleMathOperators.get( key );
         if ( value.isArray() ) {
             throw new RuntimeException( "The " + key + " operator needs either a single expression or a document." );
         }
@@ -1726,7 +1729,7 @@ public class MqlToRelConverter {
     }
 
 
-    private RexNode getFixedCall( List<RexNode> operands, SqlOperator op, PolyType polyType ) {
+    private RexNode getFixedCall( List<RexNode> operands, Operator op, PolyType polyType ) {
         if ( operands.size() == 1 ) {
             if ( op.kind == Kind.NOT && operands.get( 0 ) instanceof RexCall && ((RexCall) operands.get( 0 )).op.kind == Kind.NOT ) {
                 // we have a nested NOT, which can be removed
@@ -1770,7 +1773,7 @@ public class MqlToRelConverter {
 
 
     private RexNode translateLogical( String key, String parentKey, BsonValue bsonValue, RelDataType rowType ) {
-        SqlOperator op;
+        Operator op;
         List<RexNode> nodes = new ArrayList<>();
         op = mappings.get( key );
         switch ( op.kind ) {
@@ -2177,7 +2180,7 @@ public class MqlToRelConverter {
      * @param rowType the row information of the collection/table
      * @return the transformed $in operation
      */
-    private RexNode convertIn( BsonValue bsonValue, SqlOperator op, String key, RelDataType rowType ) {
+    private RexNode convertIn( BsonValue bsonValue, Operator op, String key, RelDataType rowType ) {
         RelDataType type = cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), true );
 
         List<RexNode> operands = new ArrayList<>();
@@ -2485,10 +2488,10 @@ public class MqlToRelConverter {
         REMOVE( MqlStdOperatorTable.DOC_UPDATE_REMOVE );
 
         @Getter
-        private final SqlOperator operator;
+        private final Operator operator;
 
 
-        UpdateOperation( SqlOperator operator ) {
+        UpdateOperation( Operator operator ) {
             this.operator = operator;
         }
     }

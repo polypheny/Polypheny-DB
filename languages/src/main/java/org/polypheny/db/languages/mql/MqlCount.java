@@ -46,7 +46,7 @@ public class MqlCount extends MqlCollectionStatement implements MqlQueryStatemen
 
 
     @Override
-    public Type getKind() {
+    public Type getMqlKind() {
         return Type.COUNT;
     }
 

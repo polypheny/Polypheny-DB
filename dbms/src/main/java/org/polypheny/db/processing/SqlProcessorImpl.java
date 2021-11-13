@@ -40,11 +40,35 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.ExplainFormat;
+import org.polypheny.db.core.ExplainLevel;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.ParseException;
+import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.QueryParameters;
+import org.polypheny.db.core.RelDecorrelator;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.languages.sql.SqlBasicCall;
+import org.polypheny.db.languages.sql.SqlExecutableStatement;
+import org.polypheny.db.languages.sql.SqlIdentifier;
+import org.polypheny.db.languages.sql.SqlInsert;
+import org.polypheny.db.languages.sql.SqlLiteral;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlNodeList;
+import org.polypheny.db.languages.sql.SqlUtil;
+import org.polypheny.db.languages.sql.dialect.PolyphenyDbSqlDialect;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.languages.sql.parser.SqlParser;
+import org.polypheny.db.languages.sql.parser.SqlParser.SqlParserConfig;
+import org.polypheny.db.languages.sql.validate.SqlValidator;
+import org.polypheny.db.languages.sql2rel.SqlToRelConverter;
+import org.polypheny.db.languages.sql2rel.StandardConvertletTable;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable.ViewExpander;
 import org.polypheny.db.plan.RelOptUtil;
@@ -56,27 +80,6 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.PolyphenyDbException;
-import org.polypheny.db.languages.sql.SqlBasicCall;
-import org.polypheny.db.languages.sql.SqlExecutableStatement;
-import org.polypheny.db.languages.sql.SqlExplainFormat;
-import org.polypheny.db.languages.sql.SqlExplainLevel;
-import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.languages.sql.SqlInsert;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.languages.sql.SqlLiteral;
-import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlNodeList;
-import org.polypheny.db.languages.sql.SqlUtil;
-import org.polypheny.db.languages.sql.dialect.PolyphenyDbSqlDialect;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.core.ParseException;
-import org.polypheny.db.languages.sql.parser.SqlParser;
-import org.polypheny.db.languages.sql.parser.SqlParser.SqlParserConfig;
-import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.Conformance;
-import org.polypheny.db.core.RelDecorrelator;
-import org.polypheny.db.languages.sql2rel.SqlToRelConverter;
-import org.polypheny.db.languages.sql2rel.StandardConvertletTable;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.DeadlockException;
 import org.polypheny.db.transaction.Lock.LockMode;
@@ -90,7 +93,7 @@ import org.polypheny.db.util.SourceStringReader;
 
 
 @Slf4j
-public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
+public class SqlProcessorImpl implements Processor, ViewExpander {
 
     private static final SqlParserConfig parserConfig;
     @Setter
@@ -112,7 +115,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
 
     @Override
-    public SqlNode parse( String sql ) {
+    public Node parse( String query ) {
         final StopWatch stopWatch = new StopWatch();
         if ( log.isDebugEnabled() ) {
             log.debug( "Parsing PolySQL statement ..." );
@@ -120,11 +123,11 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         stopWatch.start();
         SqlNode parsed;
         if ( log.isDebugEnabled() ) {
-            log.debug( "SQL: {}", sql );
+            log.debug( "SQL: {}", query );
         }
 
         try {
-            final SqlParser parser = SqlParser.create( new SourceStringReader( sql ), parserConfig );
+            final SqlParser parser = SqlParser.create( new SourceStringReader( query ), parserConfig );
             parsed = parser.parseStmt();
         } catch ( ParseException e ) {
             log.error( "Caught exception", e );
@@ -142,7 +145,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
 
     @Override
-    public Pair<SqlNode, RelDataType> validate( Transaction transaction, SqlNode parsed, boolean addDefaultValues ) {
+    public Pair<Node, RelDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues ) {
         final StopWatch stopWatch = new StopWatch();
         if ( log.isDebugEnabled() ) {
             log.debug( "Validating SQL ..." );
@@ -184,7 +187,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
 
     @Override
-    public RelRoot translate( Statement statement, SqlNode sql ) {
+    public RelRoot translate( Statement statement, Node query, QueryParameters parameters ) {
         final StopWatch stopWatch = new StopWatch();
         if ( log.isDebugEnabled() ) {
             log.debug( "Planning Statement ..." );
@@ -202,8 +205,8 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
                         .withTrimUnusedFields( false )
                         .withConvertTableAccess( false )
                         .build();
-        final SqlToRelConverter sqlToRelConverter = new SqlToRelConverter( this, validator, statement.getTransaction().getCatalogReader(), cluster, StandardConvertletTable.INSTANCE, config );
-        RelRoot logicalRoot = sqlToRelConverter.convertQuery( sql, false, true );
+        final SqlToRelConverter sqlToRelConverter = new SqlToRelConverter( this, (SqlValidator) validator, statement.getTransaction().getCatalogReader(), cluster, StandardConvertletTable.INSTANCE, config );
+        RelRoot logicalRoot = sqlToRelConverter.convertQuery( (SqlNode) query, false, true );
 
         if ( statement.getTransaction().isAnalyze() ) {
             InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
@@ -214,7 +217,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
             queryAnalyzer.addGroup( group );
             InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
                     group,
-                    RelOptUtil.dumpPlan( "Logical Query Plan", logicalRoot.rel, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+                    RelOptUtil.dumpPlan( "Logical Query Plan", logicalRoot.rel, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
             queryAnalyzer.registerInformation( informationQueryPlan );
         }
 
@@ -228,7 +231,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         }
 
         if ( log.isTraceEnabled() ) {
-            log.trace( "Logical query plan: [{}]", RelOptUtil.dumpPlan( "-- Logical Plan", logicalRoot.rel, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
+            log.trace( "Logical query plan: [{}]", RelOptUtil.dumpPlan( "-- Logical Plan", logicalRoot.rel, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
         }
         stopWatch.stop();
         if ( log.isDebugEnabled() ) {
@@ -240,7 +243,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
 
     @Override
-    public PolyphenyDbSignature<?> prepareDdl( Statement statement, SqlNode parsed ) {
+    public PolyphenyDbSignature<?> prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
         if ( parsed instanceof SqlExecutableStatement ) {
             try {
                 // Acquire global schema lock
@@ -250,7 +253,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
                 statement.getTransaction().commit();
                 Catalog.getInstance().commit();
                 return new PolyphenyDbSignature<>(
-                        parsed.toSqlString( PolyphenyDbSqlDialect.DEFAULT ).getSql(),
+                        ((SqlNode) parsed).toSqlString( PolyphenyDbSqlDialect.DEFAULT ).getSql(),
                         ImmutableList.of(),
                         ImmutableMap.of(),
                         null,
@@ -277,7 +280,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
 
     @Override
-    public RelDataType getParameterRowType( SqlNode sqlNode ) {
+    public RelDataType getParameterRowType( Node sqlNode ) {
         return validator.getParameterRowType( sqlNode );
     }
 
@@ -360,7 +363,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
             // add doc values back TODO DL: change
             if ( schemaType == SchemaType.DOCUMENT ) {
                 List<SqlIdentifier> documentColumns = new ArrayList<>();
-                for ( SqlNode column : oldColumnList.getList() ) {
+                for ( Node column : oldColumnList.getList() ) {
                     if ( newColumnList.getList()
                             .stream()
                             .filter( c -> c instanceof SqlIdentifier )
@@ -388,7 +391,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
             // Replace value in parser tree
             for ( int i = 0; i < newValues.length; i++ ) {
                 SqlBasicCall call = ((SqlBasicCall) ((SqlBasicCall) insert.getSource()).getOperands()[i]);
-                ((SqlBasicCall) insert.getSource()).getOperands()[i] = call.getOperator().createCall(
+                ((SqlBasicCall) insert.getSource()).getOperands()[i] = (SqlNode) call.getOperator().createCall(
                         call.getFunctionQuantifier(),
                         call.getPos(),
                         newValues[i] );
@@ -426,7 +429,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
     private int getPositionInSqlNodeList( SqlNodeList columnList, String name ) {
         int i = 0;
-        for ( SqlNode node : columnList.getList() ) {
+        for ( Node node : columnList.getList() ) {
             SqlIdentifier identifier = (SqlIdentifier) node;
             if ( RuntimeConfig.CASE_SENSITIVE.getBoolean() ) {
                 if ( identifier.getSimple().equals( name ) ) {

@@ -57,11 +57,11 @@ public class SqlFilterOperator extends SqlBinaryOperator {
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         assert call.operandCount() == 2;
         final SqlWriter.Frame frame = writer.startList( SqlWriter.FrameTypeEnum.SIMPLE );
-        call.operand( 0 ).unparse( writer, leftPrec, getLeftPrec() );
+        ((SqlNode) call.operand( 0 )).unparse( writer, leftPrec, getLeftPrec() );
         writer.sep( getName() );
         writer.sep( "(" );
         writer.sep( "WHERE" );
-        call.operand( 1 ).unparse( writer, getRightPrec(), rightPrec );
+        ((SqlNode) call.operand( 1 )).unparse( writer, getRightPrec(), rightPrec );
         writer.sep( ")" );
         writer.endList( frame );
     }
@@ -144,4 +144,5 @@ public class SqlFilterOperator extends SqlBinaryOperator {
         call = call.operand( 0 );
         return call.getOperator().getKind() == Kind.WITHIN_GROUP;
     }
+
 }

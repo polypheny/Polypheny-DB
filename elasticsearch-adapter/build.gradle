@@ -5,6 +5,7 @@ version = versionMajor + "." + versionMinor + versionQualifier
 
 dependencies {
     implementation project(":core")
+    implementation project(":languages")
 
     implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-client", version: elasticsearch_rest_client_version  // Apache 2.0
     implementation group: "org.apache.httpcomponents", name: "httpcore", version: httpcore_version  // Apache 2.0

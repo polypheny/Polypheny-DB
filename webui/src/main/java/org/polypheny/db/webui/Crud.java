@@ -111,6 +111,7 @@ import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.LanguageType;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.NameGenerator;
@@ -168,7 +169,7 @@ import org.polypheny.db.partition.PartitionFunctionInfo;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
-import org.polypheny.db.processing.SqlProcessor;
+import org.polypheny.db.processing.Processor;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
@@ -3962,14 +3963,14 @@ public class Crud implements InformationObserver {
 
     private PolyphenyDbSignature processQuery( Statement statement, String sql ) {
         PolyphenyDbSignature signature;
-        SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
+        Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
         SqlNode parsed = sqlProcessor.parse( sql );
         RelRoot logicalRoot = null;
         if ( parsed.isA( Kind.DDL ) ) {
-            signature = sqlProcessor.prepareDdl( statement, parsed );
+            signature = sqlProcessor.prepareDdl( statement, parsed, );
         } else {
             Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
-            logicalRoot = sqlProcessor.translate( statement, validated.left );
+            logicalRoot = sqlProcessor.translate( statement, validated.left, );
             signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
         }
         return signature;

@@ -33,7 +33,7 @@ public class MqlRemove extends MqlCollectionStatement {
 
 
     @Override
-    public Type getKind() {
+    public Type getMqlKind() {
         return Type.REMOVE;
     }
 

@@ -67,9 +67,9 @@ import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.schema.ExtensibleTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.ModifiableViewTable;
-import org.polypheny.db.sql.SqlExplain;
-import org.polypheny.db.sql.SqlExplainFormat;
-import org.polypheny.db.sql.SqlExplainLevel;
+import org.polypheny.db.sql.Explain;
+import org.polypheny.db.sql.ExplainFormat;
+import org.polypheny.db.sql.ExplainLevel;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperatorTable;
@@ -127,8 +127,8 @@ public abstract class Prepare {
             RelDataType resultType,
             RelDataType parameterRowType,
             RelRoot root,
-            SqlExplainFormat format,
-            SqlExplainLevel detailLevel );
+            ExplainFormat format,
+            ExplainLevel detailLevel );
 
 
     /**
@@ -166,7 +166,7 @@ public abstract class Prepare {
         final Program program = getProgram();
         final RelNode rootRel4 = program.run( planner, root.rel, desiredTraits );
         if ( LOGGER.isDebugEnabled() ) {
-            LOGGER.debug( "Plan after physical tweaks: {}", RelOptUtil.toString( rootRel4, SqlExplainLevel.ALL_ATTRIBUTES ) );
+            LOGGER.debug( "Plan after physical tweaks: {}", RelOptUtil.toString( rootRel4, ExplainLevel.ALL_ATTRIBUTES ) );
         }
 
         return root.withRel( rootRel4 );
@@ -218,12 +218,12 @@ public abstract class Prepare {
                         .withExplain( sqlQuery.getKind() == SqlKind.EXPLAIN );
         final SqlToRelConverter sqlToRelConverter = getSqlToRelConverter( validator, catalogReader, builder.build() );
 
-        SqlExplain sqlExplain = null;
+        Explain Explain = null;
         if ( sqlQuery.getKind() == SqlKind.EXPLAIN ) {
             // dig out the underlying SQL statement
-            sqlExplain = (SqlExplain) sqlQuery;
-            sqlQuery = sqlExplain.getExplicandum();
-            sqlToRelConverter.setDynamicParamCountInExplain( sqlExplain.getDynamicParamCount() );
+            Explain = (Explain) sqlQuery;
+            sqlQuery = Explain.getExplicandum();
+            sqlToRelConverter.setDynamicParamCountInExplain( Explain.getDynamicParamCount() );
         }
 
         RelRoot root = sqlToRelConverter.convertQuery( sqlQuery, needsValidation, true );
@@ -240,10 +240,10 @@ public abstract class Prepare {
         parameterRowType = validator.getParameterRowType( sqlQuery );
 
         // Display logical plans before view expansion, plugging in physical storage and decorrelation
-        if ( sqlExplain != null ) {
-            SqlExplain.Depth explainDepth = sqlExplain.getDepth();
-            SqlExplainFormat format = sqlExplain.getFormat();
-            SqlExplainLevel detailLevel = sqlExplain.getDetailLevel();
+        if ( Explain != null ) {
+            Explain.Depth explainDepth = Explain.getDepth();
+            ExplainFormat format = Explain.getFormat();
+            ExplainLevel detailLevel = Explain.getDetailLevel();
             switch ( explainDepth ) {
                 case TYPE:
                     return createPreparedExplanation( resultType, parameterRowType, null, format, detailLevel );
@@ -267,8 +267,8 @@ public abstract class Prepare {
         Hook.TRIMMED.run( root.rel );
 
         // Display physical plan after decorrelation.
-        if ( sqlExplain != null ) {
-            switch ( sqlExplain.getDepth() ) {
+        if ( Explain != null ) {
+            switch ( Explain.getDepth() ) {
                 case PHYSICAL:
                 default:
                     root = optimize( root );
@@ -276,8 +276,8 @@ public abstract class Prepare {
                             null,
                             parameterRowType,
                             root,
-                            sqlExplain.getFormat(),
-                            sqlExplain.getDetailLevel() );
+                            Explain.getFormat(),
+                            Explain.getDetailLevel() );
             }
         }
 
@@ -431,16 +431,16 @@ public abstract class Prepare {
         private final RelDataType rowType;
         private final RelDataType parameterRowType;
         private final RelRoot root;
-        private final SqlExplainFormat format;
-        private final SqlExplainLevel detailLevel;
+        private final ExplainFormat format;
+        private final ExplainLevel detailLevel;
 
 
         public PreparedExplain(
                 RelDataType rowType,
                 RelDataType parameterRowType,
                 RelRoot root,
-                SqlExplainFormat format,
-                SqlExplainLevel detailLevel ) {
+                ExplainFormat format,
+                ExplainLevel detailLevel ) {
             this.rowType = rowType;
             this.parameterRowType = parameterRowType;
             this.root = root;

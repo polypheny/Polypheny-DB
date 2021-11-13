@@ -17,8 +17,8 @@
 package org.polypheny.db.type.inference;
 
 
+import org.polypheny.db.core.CallBinding;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlCallBinding;
 
 
 /**
@@ -28,11 +28,10 @@ public interface PolyOperandTypeInference {
 
     /**
      * Infers any unknown operand types.
-     *
-     * @param callBinding  description of the call being analyzed
+     *  @param callBinding  description of the call being analyzed
      * @param returnType   the type known or inferred for the result of the call
      * @param operandTypes receives the inferred types for all operands
      */
-    void inferOperandTypes( SqlCallBinding callBinding, RelDataType returnType, RelDataType[] operandTypes );
+    void inferOperandTypes( CallBinding callBinding, RelDataType returnType, RelDataType[] operandTypes );
 }
 

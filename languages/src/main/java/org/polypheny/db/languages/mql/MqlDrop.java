@@ -22,6 +22,7 @@ import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.jdbc.Context;
@@ -37,15 +38,16 @@ public class MqlDrop extends MqlCollectionStatement implements MqlExecutableStat
 
 
     @Override
-    public Type getKind() {
+    public Type getMqlKind() {
         return Type.DROP;
     }
 
 
     @Override
-    public void execute( Context context, Statement statement, String database ) {
+    public void execute( Context context, Statement statement, QueryParameters parameters ) {
         DdlManager ddlManager = DdlManager.getInstance();
         Catalog catalog = Catalog.getInstance();
+        String database = ((MqlQueryParameters) parameters).getDatabase();
 
         try {
             if ( catalog.getSchemas( Catalog.defaultDatabaseId, new Pattern( database ) ).size() != 1 ) {

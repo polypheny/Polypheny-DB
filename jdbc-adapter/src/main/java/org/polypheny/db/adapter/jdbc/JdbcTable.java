@@ -48,7 +48,15 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.languages.sql.SqlBasicCall;
+import org.polypheny.db.languages.sql.SqlIdentifier;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlNodeList;
+import org.polypheny.db.languages.sql.SqlOperator;
+import org.polypheny.db.languages.sql.SqlSelect;
+import org.polypheny.db.languages.sql.pretty.SqlPrettyWriter;
+import org.polypheny.db.languages.sql.util.SqlString;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
@@ -67,13 +75,6 @@ import org.polypheny.db.schema.Schema.TableType;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
-import org.polypheny.db.sql.SqlBasicCall;
-import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlNodeList;
-import org.polypheny.db.sql.SqlSelect;
-import org.polypheny.db.sql.pretty.SqlPrettyWriter;
-import org.polypheny.db.sql.util.SqlString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -203,7 +204,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
                     new SqlIdentifier( Arrays.asList( physicalSchemaName, physicalTableName, str ), ParserPos.ZERO ),
                     new SqlIdentifier( Arrays.asList( logicalColumnNames.get( i++ ) ), ParserPos.ZERO )
             };
-            pcnl.add( new SqlBasicCall( SqlStdOperatorTable.AS, operands, ParserPos.ZERO ) );
+            pcnl.add( new SqlBasicCall( (SqlOperator) StdOperatorRegistry.get( "AS" ), operands, ParserPos.ZERO ) );
         }
         return new SqlNodeList( pcnl, ParserPos.ZERO );
     }

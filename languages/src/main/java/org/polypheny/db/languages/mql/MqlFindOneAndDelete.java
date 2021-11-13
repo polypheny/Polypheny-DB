@@ -38,7 +38,7 @@ public class MqlFindOneAndDelete extends MqlDelete implements MqlQueryStatement 
 
 
     @Override
-    public Type getKind() {
+    public Type getMqlKind() {
         return Type.FIND_DELETE;
     }
 

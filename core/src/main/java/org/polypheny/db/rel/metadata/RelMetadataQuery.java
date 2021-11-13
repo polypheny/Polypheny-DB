@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPredicateList;
 import org.polypheny.db.plan.RelOptTable;
@@ -52,7 +53,6 @@ import org.polypheny.db.rel.RelDistribution;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexTableInputRef.RelTableRef;
-import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
@@ -736,13 +736,13 @@ public class RelMetadataQuery {
 
 
     /**
-     * Returns the {@link BuiltInMetadata.ExplainVisibility#isVisibleInExplain(SqlExplainLevel)} statistic.
+     * Returns the {@link BuiltInMetadata.ExplainVisibility#isVisibleInExplain(ExplainLevel)} statistic.
      *
      * @param rel the relational expression
      * @param explainLevel level of detail
      * @return true for visible, false for invisible; if no metadata is available, defaults to true
      */
-    public boolean isVisibleInExplain( RelNode rel, SqlExplainLevel explainLevel ) {
+    public boolean isVisibleInExplain( RelNode rel, ExplainLevel explainLevel ) {
         for ( ; ; ) {
             try {
                 Boolean b = explainVisibilityHandler.isVisibleInExplain( rel, this, explainLevel );

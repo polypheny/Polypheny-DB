@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import java.util.List;
 import java.util.Set;
+import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPredicateList;
 import org.polypheny.db.rel.RelCollation;
@@ -46,7 +47,6 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexTableInputRef;
 import org.polypheny.db.rex.RexTableInputRef.RelTableRef;
-import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
 
@@ -77,7 +77,9 @@ public abstract class BuiltInMetadata {
         interface Handler extends MetadataHandler<Selectivity> {
 
             Double getSelectivity( RelNode r, RelMetadataQuery mq, RexNode predicate );
+
         }
+
     }
 
 
@@ -104,7 +106,9 @@ public abstract class BuiltInMetadata {
         interface Handler extends MetadataHandler<UniqueKeys> {
 
             Set<ImmutableBitSet> getUniqueKeys( RelNode r, RelMetadataQuery mq, boolean ignoreNulls );
+
         }
+
     }
 
 
@@ -139,7 +143,9 @@ public abstract class BuiltInMetadata {
         interface Handler extends MetadataHandler<ColumnUniqueness> {
 
             Boolean areColumnsUnique( RelNode r, RelMetadataQuery mq, ImmutableBitSet columns, boolean ignoreNulls );
+
         }
+
     }
 
 
@@ -161,7 +167,9 @@ public abstract class BuiltInMetadata {
         interface Handler extends MetadataHandler<Collation> {
 
             ImmutableList<RelCollation> collations( RelNode r, RelMetadataQuery mq );
+
         }
+
     }
 
 
@@ -188,7 +196,9 @@ public abstract class BuiltInMetadata {
         interface Handler extends MetadataHandler<Distribution> {
 
             RelDistribution distribution( RelNode r, RelMetadataQuery mq );
+
         }
+
     }
 
 
@@ -212,7 +222,9 @@ public abstract class BuiltInMetadata {
         interface Handler extends MetadataHandler<NodeTypes> {
 
             Multimap<Class<? extends RelNode>, RelNode> getNodeTypes( RelNode r, RelMetadataQuery mq );
+
         }
+
     }
 
 
@@ -237,7 +249,9 @@ public abstract class BuiltInMetadata {
         interface Handler extends MetadataHandler<RowCount> {
 
             Double getRowCount( RelNode r, RelMetadataQuery mq );
+
         }
+
     }
 
 
@@ -263,7 +277,9 @@ public abstract class BuiltInMetadata {
         interface Handler extends MetadataHandler<MaxRowCount> {
 
             Double getMaxRowCount( RelNode r, RelMetadataQuery mq );
+
         }
+
     }
 
 
@@ -289,7 +305,9 @@ public abstract class BuiltInMetadata {
         interface Handler extends MetadataHandler<MinRowCount> {
 
             Double getMinRowCount( RelNode r, RelMetadataQuery mq );
+
         }
+
     }
 
 
@@ -316,7 +334,9 @@ public abstract class BuiltInMetadata {
         interface Handler extends MetadataHandler<DistinctRowCount> {
 
             Double getDistinctRowCount( RelNode r, RelMetadataQuery mq, ImmutableBitSet groupKey, RexNode predicate );
+
         }
+
     }
 
 
@@ -340,7 +360,9 @@ public abstract class BuiltInMetadata {
         interface Handler extends MetadataHandler<PercentageOriginalRows> {
 
             Double getPercentageOriginalRows( RelNode r, RelMetadataQuery mq );
+
         }
+
     }
 
 
@@ -366,7 +388,9 @@ public abstract class BuiltInMetadata {
         interface Handler extends MetadataHandler<PopulationSize> {
 
             Double getPopulationSize( RelNode r, RelMetadataQuery mq, ImmutableBitSet groupKey );
+
         }
+
     }
 
 
@@ -404,7 +428,9 @@ public abstract class BuiltInMetadata {
             Double averageRowSize( RelNode r, RelMetadataQuery mq );
 
             List<Double> averageColumnSizes( RelNode r, RelMetadataQuery mq );
+
         }
+
     }
 
 
@@ -430,7 +456,9 @@ public abstract class BuiltInMetadata {
         interface Handler extends MetadataHandler<ColumnOrigin> {
 
             Set<RelColumnOrigin> getColumnOrigins( RelNode r, RelMetadataQuery mq, int outputColumn );
+
         }
+
     }
 
 
@@ -461,7 +489,9 @@ public abstract class BuiltInMetadata {
         interface Handler extends MetadataHandler<ExpressionLineage> {
 
             Set<RexNode> getExpressionLineage( RelNode r, RelMetadataQuery mq, RexNode expression );
+
         }
+
     }
 
 
@@ -491,7 +521,9 @@ public abstract class BuiltInMetadata {
         interface Handler extends MetadataHandler<TableReferences> {
 
             Set<RelTableRef> getTableReferences( RelNode r, RelMetadataQuery mq );
+
         }
+
     }
 
 
@@ -516,7 +548,9 @@ public abstract class BuiltInMetadata {
         interface Handler extends MetadataHandler<CumulativeCost> {
 
             RelOptCost getCumulativeCost( RelNode r, RelMetadataQuery mq );
+
         }
+
     }
 
 
@@ -541,7 +575,9 @@ public abstract class BuiltInMetadata {
         interface Handler extends MetadataHandler<NonCumulativeCost> {
 
             RelOptCost getNonCumulativeCost( RelNode r, RelMetadataQuery mq );
+
         }
+
     }
 
 
@@ -558,15 +594,17 @@ public abstract class BuiltInMetadata {
          * @param explainLevel level of detail
          * @return true for visible, false for invisible
          */
-        Boolean isVisibleInExplain( SqlExplainLevel explainLevel );
+        Boolean isVisibleInExplain( ExplainLevel explainLevel );
 
         /**
          * Handler API.
          */
         interface Handler extends MetadataHandler<ExplainVisibility> {
 
-            Boolean isVisibleInExplain( RelNode r, RelMetadataQuery mq, SqlExplainLevel explainLevel );
+            Boolean isVisibleInExplain( RelNode r, RelMetadataQuery mq, ExplainLevel explainLevel );
+
         }
+
     }
 
 
@@ -590,7 +628,9 @@ public abstract class BuiltInMetadata {
         interface Handler extends MetadataHandler<Predicates> {
 
             RelOptPredicateList getPredicates( RelNode r, RelMetadataQuery mq );
+
         }
+
     }
 
 
@@ -617,7 +657,9 @@ public abstract class BuiltInMetadata {
         interface Handler extends MetadataHandler<AllPredicates> {
 
             RelOptPredicateList getAllPredicates( RelNode r, RelMetadataQuery mq );
+
         }
+
     }
 
 
@@ -653,7 +695,9 @@ public abstract class BuiltInMetadata {
             Boolean isPhaseTransition( RelNode r, RelMetadataQuery mq );
 
             Integer splitCount( RelNode r, RelMetadataQuery mq );
+
         }
+
     }
 
 
@@ -704,7 +748,9 @@ public abstract class BuiltInMetadata {
             Double cumulativeMemoryWithinPhase( RelNode r, RelMetadataQuery mq );
 
             Double cumulativeMemoryWithinPhaseSplit( RelNode r, RelMetadataQuery mq );
+
         }
+
     }
 
 
@@ -714,5 +760,6 @@ public abstract class BuiltInMetadata {
     interface All extends Selectivity, UniqueKeys, RowCount, DistinctRowCount, PercentageOriginalRows, ColumnUniqueness, ColumnOrigin, Predicates, Collation, Distribution, Size, Parallelism, Memory, AllPredicates, ExpressionLineage, TableReferences, NodeTypes {
 
     }
+
 }
 

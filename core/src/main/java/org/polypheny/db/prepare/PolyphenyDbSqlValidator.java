@@ -35,10 +35,10 @@ package org.polypheny.db.prepare;
 
 
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.core.Conformance;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlInsert;
 import org.polypheny.db.sql.SqlOperatorTable;
-import org.polypheny.db.sql.validate.SqlConformance;
 import org.polypheny.db.sql.validate.SqlValidatorImpl;
 
 
@@ -51,7 +51,7 @@ public class PolyphenyDbSqlValidator extends SqlValidatorImpl {
             SqlOperatorTable opTab,
             PolyphenyDbCatalogReader catalogReader,
             JavaTypeFactory typeFactory,
-            SqlConformance conformance ) {
+            Conformance conformance ) {
         super( opTab, catalogReader, typeFactory, conformance );
     }
 

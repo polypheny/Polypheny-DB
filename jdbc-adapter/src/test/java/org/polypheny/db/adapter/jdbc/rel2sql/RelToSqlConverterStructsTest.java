@@ -42,6 +42,8 @@ import java.util.Set;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.junit.Test;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.core.Call;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelDistribution;
 import org.polypheny.db.rel.RelReferentialConstraint;
@@ -55,8 +57,6 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.SchemaVersion;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.SqlCall;
-import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -173,7 +173,7 @@ public class RelToSqlConverterStructsTest {
 
 
         @Override
-        public boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent ) {
+        public boolean rolledUpColumnValidInsideAgg( String column, Call call, Node parent ) {
             return false;
         }
     };

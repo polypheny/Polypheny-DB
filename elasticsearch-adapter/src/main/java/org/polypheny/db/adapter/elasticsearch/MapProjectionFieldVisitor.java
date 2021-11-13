@@ -34,7 +34,7 @@
 package org.polypheny.db.adapter.elasticsearch;
 
 
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexVisitorImpl;
@@ -55,9 +55,10 @@ class MapProjectionFieldVisitor extends RexVisitorImpl<String> {
 
     @Override
     public String visitCall( RexCall call ) {
-        if ( call.op == SqlStdOperatorTable.ITEM ) {
+        if ( call.op == StdOperatorRegistry.get( "ITEM" ) ) {
             return ((RexLiteral) call.getOperands().get( 1 )).getValueAs( String.class );
         }
         return super.visitCall( call );
     }
+
 }

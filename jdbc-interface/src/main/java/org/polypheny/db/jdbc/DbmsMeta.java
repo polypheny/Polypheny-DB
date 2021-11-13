@@ -62,6 +62,7 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.Catalog.TableType.PrimitiveTableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -86,6 +87,8 @@ import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.information.InformationGroup;
@@ -94,14 +97,12 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.StatementEvent;
-import org.polypheny.db.processing.SqlProcessor;
+import org.polypheny.db.processing.Processor;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
@@ -960,12 +961,12 @@ public class DbmsMeta implements ProtobufMeta {
             polyphenyDbStatement.setPreparedQuery( sql );
 
             Transaction transaction = connection.getCurrentOrCreateNewTransaction();
-            SqlProcessor sqlProcessor = transaction.getSqlProcessor();
+            Processor sqlProcessor = transaction.getProcessor( QueryLanguage.SQL );
 
-            SqlNode parsed = sqlProcessor.parse( sql );
+            Node parsed = sqlProcessor.parse( sql );
             // It is important not to add default values for missing fields in insert statements. If we would do this, the
             // JDBC driver would expect more parameter fields than there actually are in the query.
-            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( transaction, parsed, false );
+            Pair<Node, RelDataType> validated = sqlProcessor.validate( transaction, parsed, false );
             RelDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
 
             List<AvaticaParameter> avaticaParameters = deriveAvaticaParameters( parameterRowType );
@@ -1224,19 +1225,19 @@ public class DbmsMeta implements ProtobufMeta {
 
     private void prepare( StatementHandle h, String sql ) throws NoSuchStatementException {
         PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
-        SqlProcessor sqlProcessor = statementHandle.getStatement().getTransaction().getSqlProcessor();
+        Processor sqlProcessor = statementHandle.getStatement().getTransaction().getProcessor( QueryLanguage.SQL );
 
-        SqlNode parsed = sqlProcessor.parse( sql );
+        Node parsed = sqlProcessor.parse( sql );
 
         PolyphenyDbSignature signature;
-        if ( parsed.isA( SqlKind.DDL ) ) {
-            signature = sqlProcessor.prepareDdl( statementHandle.getStatement(), parsed );
+        if ( parsed.isA( Kind.DDL ) ) {
+            signature = sqlProcessor.prepareDdl( statementHandle.getStatement(), parsed, );
         } else {
-            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate(
+            Pair<Node, RelDataType> validated = sqlProcessor.validate(
                     statementHandle.getStatement().getTransaction(),
                     parsed,
                     RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
-            RelRoot logicalRoot = sqlProcessor.translate( statementHandle.getStatement(), validated.left );
+            RelRoot logicalRoot = sqlProcessor.translate( statementHandle.getStatement(), validated.left, );
             RelDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
 
             // Prepare

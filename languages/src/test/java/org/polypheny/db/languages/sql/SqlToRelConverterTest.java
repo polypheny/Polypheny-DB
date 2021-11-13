@@ -28,6 +28,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
 import org.polypheny.db.config.PolyphenyDbConnectionProperty;
+import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelVisitor;
@@ -2221,7 +2222,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
         final RelNode rel = tester.convertSqlToRel( sql ).rel;
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter( sw );
-        RelXmlWriter planWriter = new RelXmlWriter( pw, SqlExplainLevel.EXPPLAN_ATTRIBUTES );
+        RelXmlWriter planWriter = new RelXmlWriter( pw, ExplainLevel.EXPPLAN_ATTRIBUTES );
         rel.explain( planWriter );
         pw.flush();
         TestUtil.assertEqualsVerbose(

@@ -62,20 +62,21 @@ import org.polypheny.db.adapter.jdbc.JdbcImplementor;
 import org.polypheny.db.adapter.jdbc.JdbcRel;
 import org.polypheny.db.adapter.jdbc.JdbcRules;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.core.ExplainFormat;
+import org.polypheny.db.core.ExplainLevel;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.core.ParseException;
+import org.polypheny.db.interpreter.Node;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.sql.Lex;
 import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDialect;
-import org.polypheny.db.languages.sql.SqlExplainFormat;
-import org.polypheny.db.languages.sql.SqlExplainLevel;
-import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperatorTable;
-import org.polypheny.db.core.ParseException;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.parser.SqlParser;
 import org.polypheny.db.languages.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.languages.sql.util.ChainedSqlOperatorTable;
@@ -129,10 +130,10 @@ public class PlannerTest {
 
     private void checkParseAndConvert( String query, String queryFromParseTree, String expectedRelExpr ) throws Exception {
         Planner planner = getPlanner( null );
-        SqlNode parse = planner.parse( query );
+        Node parse = planner.parse( query );
         assertThat( Util.toLinux( parse.toString() ), equalTo( queryFromParseTree ) );
 
-        SqlNode validate = planner.validate( parse );
+        Node validate = planner.validate( parse );
         RelNode rel = planner.rel( validate ).project();
         assertThat( toString( rel ), equalTo( expectedRelExpr ) );
     }
@@ -187,7 +188,7 @@ public class PlannerTest {
 
 
     private String toString( RelNode rel ) {
-        return Util.toLinux( RelOptUtil.dumpPlan( "", rel, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
+        return Util.toLinux( RelOptUtil.dumpPlan( "", rel, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
     }
 
 
@@ -195,7 +196,7 @@ public class PlannerTest {
     public void testParseFails() throws ParseException {
         Planner planner = getPlanner( null );
         try {
-            SqlNode parse = planner.parse( "select * * from \"emps\"" );
+            Node parse = planner.parse( "select * * from \"emps\"" );
             fail( "expected error, got " + parse );
         } catch ( ParseException e ) {
             assertThat( e.getMessage(), containsString( "Encountered \"*\" at line 1, column 10." ) );
@@ -206,14 +207,14 @@ public class PlannerTest {
     @Test
     public void testValidateFails() throws ParseException {
         Planner planner = getPlanner( null );
-        SqlNode parse = planner.parse( "select * from \"emps\" where \"Xname\" like '%e%'" );
+        Node parse = planner.parse( "select * from \"emps\" where \"Xname\" like '%e%'" );
         assertThat( Util.toLinux( parse.toString() ),
                 equalTo( "SELECT *\n"
                         + "FROM `emps`\n"
                         + "WHERE `Xname` LIKE '%e%'" ) );
 
         try {
-            SqlNode validate = planner.validate( parse );
+            Node validate = planner.validate( parse );
             fail( "expected error, got " + validate );
         } catch ( ValidationException e ) {
             assertThat( Throwables.getStackTraceAsString( e ), containsString( "Column 'Xname' not found in any table" ) );
@@ -247,7 +248,7 @@ public class PlannerTest {
                         null ) )
                 .build();
         final Planner planner = Frameworks.getPlanner( config );
-        SqlNode parse =
+        Node parse =
                 planner.parse( "select \"deptno\", my_count(\"empid\") from \"emps\"\n"
                         + "group by \"deptno\"" );
         assertThat( Util.toLinux( parse.toString() ),
@@ -256,7 +257,7 @@ public class PlannerTest {
                         + "GROUP BY `deptno`" ) );
 
         // MY_COUNT is recognized as an aggregate function, and therefore it is OK that its argument empid is not in the GROUP BY clause.
-        SqlNode validate = planner.validate( parse );
+        Node validate = planner.validate( parse );
         assertThat( validate, notNullValue() );
 
         // The presence of an aggregate function in the SELECT clause causes it to become an aggregate query. Non-aggregate expressions become illegal.
@@ -305,12 +306,12 @@ public class PlannerTest {
 
 
     /**
-     * Tests that planner throws an error if you pass to {@link Planner#rel(SqlNode)} a {@link SqlNode} that has been parsed but not validated.
+     * Tests that planner throws an error if you pass to {@link Planner#rel(Node)} a {@link SqlNode} that has been parsed but not validated.
      */
     @Test
     public void testConvertWithoutValidateFails() throws Exception {
         Planner planner = getPlanner( null );
-        SqlNode parse = planner.parse( "select * from \"emps\"" );
+        Node parse = planner.parse( "select * from \"emps\"" );
         try {
             RelRoot rel = planner.rel( parse );
             fail( "expected error, got " + rel );
@@ -325,8 +326,8 @@ public class PlannerTest {
      */
     private void checkMetadataPredicates( String sql, String expectedPredicates ) throws Exception {
         Planner planner = getPlanner( null );
-        SqlNode parse = planner.parse( sql );
-        SqlNode validate = planner.validate( parse );
+        Node parse = planner.parse( sql );
+        Node validate = planner.validate( parse );
         RelNode rel = planner.rel( validate ).project();
         final RelMetadataQuery mq = RelMetadataQuery.instance();
         final RelOptPredicateList predicates = mq.getPulledUpPredicates( rel );
@@ -414,8 +415,8 @@ public class PlannerTest {
     public void testPlan() throws Exception {
         Program program = Programs.ofRules( FilterMergeRule.INSTANCE, EnumerableRules.ENUMERABLE_FILTER_RULE, EnumerableRules.ENUMERABLE_PROJECT_RULE );
         Planner planner = getPlanner( null, program );
-        SqlNode parse = planner.parse( "select * from \"emps\"" );
-        SqlNode validate = planner.validate( parse );
+        Node parse = planner.parse( "select * from \"emps\"" );
+        Node validate = planner.validate( parse );
         RelNode convert = planner.rel( validate ).project();
         RelTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
         RelNode transform = planner.transform( 0, traitSet, convert );
@@ -432,8 +433,8 @@ public class PlannerTest {
     public void testSortPlan() throws Exception {
         RuleSet ruleSet = RuleSets.ofList( SortRemoveRule.INSTANCE, EnumerableRules.ENUMERABLE_PROJECT_RULE, EnumerableRules.ENUMERABLE_SORT_RULE );
         Planner planner = getPlanner( null, Programs.of( ruleSet ) );
-        SqlNode parse = planner.parse( "select * from \"emps\" order by \"emps\".\"deptno\"" );
-        SqlNode validate = planner.validate( parse );
+        Node parse = planner.parse( "select * from \"emps\" order by \"emps\".\"deptno\"" );
+        Node validate = planner.validate( parse );
         RelNode convert = planner.rel( validate ).project();
         RelTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
         RelNode transform = planner.transform( 0, traitSet, convert );
@@ -461,8 +462,8 @@ public class PlannerTest {
                         EnumerableRules.ENUMERABLE_PROJECT_RULE,
                         EnumerableRules.ENUMERABLE_SORT_RULE );
         Planner planner = getPlanner( null, Programs.of( ruleSet ) );
-        SqlNode parse = planner.parse( "select e.\"deptno\" from \"emps\" e left outer join \"depts\" d on e.\"deptno\" = d.\"deptno\" order by e.\"deptno\" limit 10" );
-        SqlNode validate = planner.validate( parse );
+        Node parse = planner.parse( "select e.\"deptno\" from \"emps\" e left outer join \"depts\" d on e.\"deptno\" = d.\"deptno\" order by e.\"deptno\" limit 10" );
+        Node validate = planner.validate( parse );
         RelNode convert = planner.rel( validate ).rel;
         RelTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE ).simplify();
         RelNode transform = planner.transform( 0, traitSet, convert );
@@ -556,8 +557,8 @@ public class PlannerTest {
     private void runDuplicateSortCheck( String sql, String plan ) throws Exception {
         RuleSet ruleSet = RuleSets.ofList( SortRemoveRule.INSTANCE, EnumerableRules.ENUMERABLE_PROJECT_RULE, EnumerableRules.ENUMERABLE_WINDOW_RULE, EnumerableRules.ENUMERABLE_SORT_RULE, ProjectToWindowRule.PROJECT );
         Planner planner = getPlanner( null, SqlParser.configBuilder().setLex( Lex.JAVA ).build(), Programs.of( ruleSet ) );
-        SqlNode parse = planner.parse( sql );
-        SqlNode validate = planner.validate( parse );
+        Node parse = planner.parse( sql );
+        Node validate = planner.validate( parse );
         RelNode convert = planner.rel( validate ).rel;
         RelTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
         if ( traitSet.getTrait( RelCollationTraitDef.INSTANCE ) == null ) {
@@ -576,13 +577,13 @@ public class PlannerTest {
     public void testDuplicateSortPlanWORemoveSortRule() throws Exception {
         RuleSet ruleSet = RuleSets.ofList( EnumerableRules.ENUMERABLE_PROJECT_RULE, EnumerableRules.ENUMERABLE_SORT_RULE );
         Planner planner = getPlanner( null, Programs.of( ruleSet ) );
-        SqlNode parse = planner.parse(
+        Node parse = planner.parse(
                 "select \"empid\" from ( "
                         + "select * "
                         + "from \"emps\" "
                         + "order by \"emps\".\"deptno\") "
                         + "order by \"deptno\"" );
-        SqlNode validate = planner.validate( parse );
+        Node validate = planner.validate( parse );
         RelNode convert = planner.rel( validate ).rel;
         RelTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
         RelNode transform = planner.transform( 0, traitSet, convert );
@@ -605,8 +606,8 @@ public class PlannerTest {
 
         Planner planner = getPlanner( traitDefs, Programs.of( ruleSet ) );
 
-        SqlNode parse = planner.parse( "select * from \"emps\"" );
-        SqlNode validate = planner.validate( parse );
+        Node parse = planner.parse( "select * from \"emps\"" );
+        Node validate = planner.validate( parse );
         RelNode convert = planner.rel( validate ).project();
         RelTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
         RelNode transform = planner.transform( 0, traitSet, convert );
@@ -623,8 +624,8 @@ public class PlannerTest {
     public void testPlanTransformTwice() throws Exception {
         RuleSet ruleSet = RuleSets.ofList( FilterMergeRule.INSTANCE, EnumerableRules.ENUMERABLE_FILTER_RULE, EnumerableRules.ENUMERABLE_PROJECT_RULE );
         Planner planner = getPlanner( null, Programs.of( ruleSet ) );
-        SqlNode parse = planner.parse( "select * from \"emps\"" );
-        SqlNode validate = planner.validate( parse );
+        Node parse = planner.parse( "select * from \"emps\"" );
+        Node validate = planner.validate( parse );
         RelNode convert = planner.rel( validate ).project();
         RelTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
         RelNode transform = planner.transform( 0, traitSet, convert );
@@ -670,8 +671,8 @@ public class PlannerTest {
         RuleSet ruleSet2 = RuleSets.ofList( rule2 );
 
         Planner planner = getPlanner( null, Programs.of( ruleSet1 ), Programs.of( ruleSet2 ) );
-        SqlNode parse = planner.parse( "select * from \"emps\"" );
-        SqlNode validate = planner.validate( parse );
+        Node parse = planner.parse( "select * from \"emps\"" );
+        Node validate = planner.validate( parse );
         RelNode convert = planner.rel( validate ).rel;
         RelTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
         RelNode transform = planner.transform( 0, traitSet, convert );
@@ -688,10 +689,10 @@ public class PlannerTest {
     @Test
     public void testHiveDialect() throws ParseException {
         Planner planner = getPlanner( null );
-        SqlNode parse = planner.parse( "select * from (select * from \"emps\") as t\n" + "where \"name\" like '%e%'" );
+        Node parse = planner.parse( "select * from (select * from \"emps\") as t\n" + "where \"name\" like '%e%'" );
         final SqlDialect hiveDialect = SqlDialect.DatabaseProduct.HIVE.getDialect();
         assertThat(
-                Util.toLinux( parse.toSqlString( hiveDialect ).getSql() ),
+                Util.toLinux( ((SqlNode) parse).toSqlString( hiveDialect ).getSql() ),
                 equalTo( "SELECT *\n" + "FROM (SELECT *\n" + "FROM emps) T\n" + "WHERE name LIKE '%e%'" ) );
     }
 
@@ -710,9 +711,9 @@ public class PlannerTest {
         Program program1 = Programs.ofRules( new MockJdbcProjectRule( out ), new MockJdbcTableRule( out ) );
 
         Planner planner = getPlanner( null, program0, program1 );
-        SqlNode parse = planner.parse( "select T1.\"name\" from \"emps\" as T1 " );
+        Node parse = planner.parse( "select T1.\"name\" from \"emps\" as T1 " );
 
-        SqlNode validate = planner.validate( parse );
+        Node validate = planner.validate( parse );
         RelNode convert = planner.rel( validate ).project();
 
         RelTraitSet traitSet0 = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
@@ -774,9 +775,9 @@ public class PlannerTest {
                     .append( i - 1 ).append( ".\"deptno\"" );
         }
         Planner planner = getPlanner( null, Programs.heuristicJoinOrder( Programs.RULE_SET, false, 6 ) );
-        SqlNode parse = planner.parse( buf.toString() );
+        Node parse = planner.parse( buf.toString() );
 
-        SqlNode validate = planner.validate( parse );
+        Node validate = planner.validate( parse );
         RelNode convert = planner.rel( validate ).project();
         RelTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
         RelNode transform = planner.transform( 0, traitSet, convert );
@@ -856,8 +857,8 @@ public class PlannerTest {
 
     private void checkHeuristic( String sql, String expected ) throws Exception {
         Planner planner = getPlanner( null, Programs.heuristicJoinOrder( Programs.RULE_SET, false, 0 ) );
-        SqlNode parse = planner.parse( sql );
-        SqlNode validate = planner.validate( parse );
+        Node parse = planner.parse( sql );
+        Node validate = planner.validate( parse );
         RelNode convert = planner.rel( validate ).rel;
         RelTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
         RelNode transform = planner.transform( 0, traitSet, convert );
@@ -1034,9 +1035,9 @@ public class PlannerTest {
                         null ) )
                 .build();
         Planner planner = Frameworks.getPlanner( config );
-        SqlNode parse = planner.parse( sql );
+        Node parse = planner.parse( sql );
 
-        SqlNode validate = planner.validate( parse );
+        Node validate = planner.validate( parse );
         RelNode convert = planner.rel( validate ).project();
         RelTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
         RelNode transform = planner.transform( 0, traitSet, convert );
@@ -1166,7 +1167,7 @@ public class PlannerTest {
                 .build();
         String plan;
         try ( Planner p = Frameworks.getPlanner( config ) ) {
-            SqlNode n = p.parse( tpchTestQuery );
+            Node n = p.parse( tpchTestQuery );
             n = p.validate( n );
             RelNode r = p.rel( n ).project();
             plan = RelOptUtil.toString( r );
@@ -1236,7 +1237,7 @@ public class PlannerTest {
                 .build();
         String plan;
         try ( Planner p = Frameworks.getPlanner( config ) ) {
-            SqlNode n = p.parse( query );
+            Node n = p.parse( query );
             n = p.validate( n );
             RelNode r = p.rel( n ).project();
             plan = RelOptUtil.toString( r );
@@ -1306,8 +1307,8 @@ public class PlannerTest {
                         null ) )
                 .build();
         final Planner planner = Frameworks.getPlanner( config );
-        SqlNode parse = planner.parse( sql );
-        final SqlNode validate = planner.validate( parse );
+        Node parse = planner.parse( sql );
+        final Node validate = planner.validate( parse );
         final RelRoot root = planner.rel( validate );
         assertThat( toString( root.rel ), matcher );
     }

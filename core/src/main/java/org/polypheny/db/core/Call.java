@@ -26,7 +26,6 @@ public interface Call extends Visitable, Node {
 
     void setOperand( int i, Node operand );
 
-    @SuppressWarnings("unchecked")
     <S extends Node> S operand( int i );
 
 }

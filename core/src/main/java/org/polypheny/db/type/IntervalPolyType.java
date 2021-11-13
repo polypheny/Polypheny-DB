@@ -60,7 +60,7 @@ public class IntervalPolyType extends AbstractPolyType {
     /**
      * Constructs an IntervalSqlType. This should only be called from a factory method.
      */
-    public IntervalPolyType( RelDataTypeSystem typeSystem, SqlIntervalQualifier intervalQualifier, boolean isNullable ) {
+    public IntervalPolyType( RelDataTypeSystem typeSystem, IntervalQualifier intervalQualifier, boolean isNullable ) {
         super( intervalQualifier.typeName(), isNullable, null );
         this.typeSystem = Objects.requireNonNull( typeSystem );
         this.intervalQualifier = PolyIntervalQualifier.fromSqlQualifier( intervalQualifier );

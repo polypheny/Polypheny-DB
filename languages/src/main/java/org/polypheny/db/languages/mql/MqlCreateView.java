@@ -20,12 +20,14 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.mql.Mql.Type;
@@ -51,8 +53,9 @@ public class MqlCreateView extends MqlNode implements MqlExecutableStatement {
 
 
     @Override
-    public void execute( Context context, Statement statement, String database ) {
+    public void execute( Context context, Statement statement, QueryParameters parameters ) {
         Catalog catalog = Catalog.getInstance();
+        String database = ((MqlQueryParameters) parameters).getDatabase();
 
         long schemaId;
         try {
@@ -60,15 +63,14 @@ public class MqlCreateView extends MqlNode implements MqlExecutableStatement {
         } catch ( UnknownSchemaException e ) {
             throw new RuntimeException( "Poly schema was not found." );
         }
-        String json = getTransformedPipeline();
 
         Node mqlNode = statement.getTransaction()
-                .getMqlProcessor()
+                .getProcessor( QueryLanguage.MONGOQL )
                 .parse( buildQuery() );
 
         RelRoot relRoot = statement.getTransaction()
-                .getMqlProcessor()
-                .translate( statement, mqlNode, database );
+                .getProcessor( QueryLanguage.MONGOQL )
+                .translate( statement, mqlNode, parameters );
         PlacementType placementType = PlacementType.AUTOMATIC;
 
         RelNode relNode = relRoot.rel;
@@ -104,7 +106,7 @@ public class MqlCreateView extends MqlNode implements MqlExecutableStatement {
 
 
     @Override
-    public Type getKind() {
+    public Type getMqlKind() {
         return Type.CREATE_VIEW;
     }
 

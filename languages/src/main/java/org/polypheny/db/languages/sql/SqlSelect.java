@@ -22,6 +22,7 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -110,16 +111,16 @@ public class SqlSelect extends SqlCall {
                 selectList = (SqlNodeList) operand;
                 break;
             case 2:
-                from = operand;
+                from = (SqlNode) operand;
                 break;
             case 3:
-                where = operand;
+                where = (SqlNode) operand;
                 break;
             case 4:
                 groupBy = (SqlNodeList) operand;
                 break;
             case 5:
-                having = operand;
+                having = (SqlNode) operand;
                 break;
             case 6:
                 windowDecls = Objects.requireNonNull( (SqlNodeList) operand );
@@ -128,10 +129,10 @@ public class SqlSelect extends SqlCall {
                 orderBy = (SqlNodeList) operand;
                 break;
             case 8:
-                offset = operand;
+                offset = (SqlNode) operand;
                 break;
             case 9:
-                fetch = operand;
+                fetch = (SqlNode) operand;
                 break;
             default:
                 throw new AssertionError( i );
@@ -145,10 +146,10 @@ public class SqlSelect extends SqlCall {
 
 
     public final SqlNode getModifierNode( SqlSelectKeyword modifier ) {
-        for ( SqlNode keyword : keywordList ) {
+        for ( Node keyword : keywordList ) {
             SqlSelectKeyword keyword2 = ((SqlLiteral) keyword).symbolValue( SqlSelectKeyword.class );
             if ( keyword2 == modifier ) {
-                return keyword;
+                return (SqlNode) keyword;
             }
         }
         return null;
@@ -185,7 +186,7 @@ public class SqlSelect extends SqlCall {
     }
 
 
-    public final SqlNodeList getSelectList() {
+    public  final SqlNodeList getSelectList() {
         return selectList;
     }
 

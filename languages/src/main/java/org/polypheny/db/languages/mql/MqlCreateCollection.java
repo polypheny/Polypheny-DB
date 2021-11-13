@@ -29,6 +29,7 @@ import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.ddl.exception.PartitionGroupNamesNotUniqueException;
@@ -51,7 +52,7 @@ public class MqlCreateCollection extends MqlNode implements MqlExecutableStateme
 
 
     @Override
-    public Type getKind() {
+    public Type getMqlKind() {
         return Type.CREATE_COLLECTION;
     }
 
@@ -65,13 +66,13 @@ public class MqlCreateCollection extends MqlNode implements MqlExecutableStateme
 
 
     @Override
-    public void execute( Context context, Statement statement, String database ) {
+    public void execute( Context context, Statement statement, QueryParameters parameters ) {
         Catalog catalog = Catalog.getInstance();
         AdapterManager adapterManager = AdapterManager.getInstance();
 
         long schemaId;
         try {
-            schemaId = catalog.getSchema( Catalog.defaultDatabaseId, database ).id;
+            schemaId = catalog.getSchema( Catalog.defaultDatabaseId, ((MqlQueryParameters) parameters).getDatabase() ).id;
         } catch ( UnknownSchemaException e ) {
             throw new RuntimeException( "The used document database (Polypheny Schema) is not available." );
         }
