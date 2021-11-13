@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.utils;
+package org.polypheny.db.languages.sql.utils;
 
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -33,14 +33,14 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.calcite.avatica.ColumnMetaData;
+import org.polypheny.db.core.ParseException;
+import org.polypheny.db.languages.sql.parser.SqlParserUtil;
+import org.polypheny.db.languages.sql.parser.SqlParserUtil.StringAndPos;
+import org.polypheny.db.languages.sql.utils.SqlTester.ParameterChecker;
+import org.polypheny.db.languages.sql.utils.SqlTester.ResultChecker;
+import org.polypheny.db.languages.sql.utils.SqlTester.TypeChecker;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
-import org.polypheny.db.sql.parser.SqlParseException;
-import org.polypheny.db.sql.parser.SqlParserUtil;
-import org.polypheny.db.sql.parser.SqlParserUtil.StringAndPos;
-import org.polypheny.db.sql.utils.SqlTester.ParameterChecker;
-import org.polypheny.db.sql.utils.SqlTester.ResultChecker;
-import org.polypheny.db.sql.utils.SqlTester.TypeChecker;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.TestUtil;
 import org.polypheny.db.util.Util;
@@ -344,10 +344,10 @@ public abstract class SqlTests {
         }
 
         // Search for a SqlParseException -- with its position set -- somewhere in the stack.
-        SqlParseException spe = null;
+        ParseException spe = null;
         for ( Throwable x = ex; x != null; x = x.getCause() ) {
-            if ( (x instanceof SqlParseException) && (((SqlParseException) x).getPos() != null) ) {
-                spe = (SqlParseException) x;
+            if ( (x instanceof ParseException) && (((ParseException) x).getPos() != null) ) {
+                spe = (ParseException) x;
                 break;
             }
             if ( x.getCause() == x ) {
@@ -483,6 +483,7 @@ public abstract class SqlTests {
         public void checkType( RelDataType type ) {
             assertThat( type.toString(), is( typeName.toString() ) );
         }
+
     }
 
 
@@ -514,6 +515,7 @@ public abstract class SqlTests {
             String actual = getTypeString( type );
             assertThat( actual, is( expected ) );
         }
+
     }
 
 
@@ -556,6 +558,7 @@ public abstract class SqlTests {
         public void checkResult( ResultSet resultSet ) throws Exception {
             compareResultSetWithPattern( resultSet, pattern );
         }
+
     }
 
 
@@ -578,6 +581,7 @@ public abstract class SqlTests {
         public void checkResult( ResultSet resultSet ) throws Exception {
             compareResultSetWithDelta( resultSet, expected.doubleValue(), delta );
         }
+
     }
 
 
@@ -598,6 +602,8 @@ public abstract class SqlTests {
         public void checkResult( ResultSet resultSet ) throws Exception {
             compareResultSet( resultSet, expected );
         }
+
     }
+
 }
 

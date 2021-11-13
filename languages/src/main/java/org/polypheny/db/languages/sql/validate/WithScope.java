@@ -18,6 +18,7 @@ package org.polypheny.db.languages.sql.validate;
 
 
 import java.util.List;
+import org.polypheny.db.core.NameMatcher;
 import org.polypheny.db.rel.type.StructKind;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWithItem;
@@ -63,7 +64,7 @@ class WithScope extends ListScope {
 
 
     @Override
-    public void resolveTable( List<String> names, SqlNameMatcher nameMatcher, Path path, Resolved resolved ) {
+    public void resolveTable( List<String> names, NameMatcher nameMatcher, Path path, Resolved resolved ) {
         if ( names.size() == 1 && names.equals( withItem.name.names ) ) {
             final SqlValidatorNamespace ns = validator.getNamespace( withItem );
             final Step path2 = path.plus( ns.getRowType(), 0, names.get( 0 ), StructKind.FULLY_QUALIFIED );
@@ -75,7 +76,7 @@ class WithScope extends ListScope {
 
 
     @Override
-    public void resolve( List<String> names, SqlNameMatcher nameMatcher, boolean deep, Resolved resolved ) {
+    public void resolve( List<String> names, NameMatcher nameMatcher, boolean deep, Resolved resolved ) {
         if ( names.size() == 1 && names.equals( withItem.name.names ) ) {
             final SqlValidatorNamespace ns = validator.getNamespace( withItem );
             final Step path = Path.EMPTY.plus( ns.getRowType(), 0, names.get( 0 ), StructKind.FULLY_QUALIFIED );

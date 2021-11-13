@@ -31,9 +31,12 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TreeSet;
 import org.apache.calcite.avatica.util.ByteString;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.ConversionUtil;
+import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.SaffronProperties;
 import org.polypheny.db.util.Util;
 
@@ -213,6 +216,30 @@ public class CoreUtil {
             }
         }
         return false;
+    }
+
+
+    /**
+     * Creates the type of an {@link org.polypheny.db.util.NlsString}.
+     *
+     * The type inherits the NlsString's {@link Charset} and {@link Collation}, if they are set, otherwise it gets the system defaults.
+     *
+     * @param typeFactory Type factory
+     * @param str String
+     * @return Type, including collation and charset
+     */
+    public static RelDataType createNlsStringType( RelDataTypeFactory typeFactory, NlsString str ) {
+        Charset charset = str.getCharset();
+        if ( null == charset ) {
+            charset = typeFactory.getDefaultCharset();
+        }
+        Collation collation = str.getCollation();
+        if ( null == collation ) {
+            collation = Collation.COERCIBLE;
+        }
+        RelDataType type = typeFactory.createPolyType( PolyType.CHAR, str.getValue().length() );
+        type = typeFactory.createTypeWithCharsetAndCollation( type, charset, collation );
+        return type;
     }
 
 

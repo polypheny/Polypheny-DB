@@ -19,6 +19,7 @@ package org.polypheny.db.languages.sql;
 
 import java.util.Collections;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
@@ -46,7 +47,7 @@ public class SqlProcedureCallOperator extends SqlPrefixOperator {
                 new SqlNodeList(
                         Collections.singletonList( call.operand( 0 ) ),
                         ParserPos.ZERO ),
-                SqlStdOperatorTable.VALUES.createCall(
+                (SqlNode) StdOperatorRegistry.get( "VALUES" ).createCall(
                         ParserPos.ZERO,
                         SqlStdOperatorTable.ROW.createCall(
                                 ParserPos.ZERO,
@@ -59,5 +60,6 @@ public class SqlProcedureCallOperator extends SqlPrefixOperator {
                 null,
                 null );
     }
+
 }
 

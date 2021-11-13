@@ -20,6 +20,8 @@ package org.polypheny.db.languages.sql.validate;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
+import org.polypheny.db.core.NameMatcher;
+import org.polypheny.db.core.SqlMoniker;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
@@ -75,7 +77,7 @@ public class OrderByScope extends DelegatingScope {
             final SqlValidatorNamespace selectNs = validator.getNamespace( select );
             final RelDataType rowType = selectNs.getRowType();
 
-            final SqlNameMatcher nameMatcher = validator.catalogReader.nameMatcher();
+            final NameMatcher nameMatcher = validator.catalogReader.nameMatcher();
             final RelDataTypeField field = nameMatcher.field( rowType, name );
             final int aliasCount = aliasCount( nameMatcher, name );
             if ( aliasCount > 1 ) {
@@ -94,7 +96,7 @@ public class OrderByScope extends DelegatingScope {
     /**
      * Returns the number of columns in the SELECT clause that have {@code name} as their implicit (e.g. {@code t.name}) or explicit (e.g. {@code t.c as name}) alias.
      */
-    private int aliasCount( SqlNameMatcher nameMatcher, String name ) {
+    private int aliasCount( NameMatcher nameMatcher, String name ) {
         int n = 0;
         for ( SqlNode s : select.getSelectList() ) {
             final String alias = SqlValidatorUtil.getAlias( s, -1 );
@@ -110,7 +112,7 @@ public class OrderByScope extends DelegatingScope {
     public RelDataType resolveColumn( String name, SqlNode ctx ) {
         final SqlValidatorNamespace selectNs = validator.getNamespace( select );
         final RelDataType rowType = selectNs.getRowType();
-        final SqlNameMatcher nameMatcher = validator.catalogReader.nameMatcher();
+        final NameMatcher nameMatcher = validator.catalogReader.nameMatcher();
         final RelDataTypeField field = nameMatcher.field( rowType, name );
         if ( field != null ) {
             return field.getType();

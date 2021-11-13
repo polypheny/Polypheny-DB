@@ -25,6 +25,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.polypheny.db.core.NameMatcher;
+import org.polypheny.db.core.SqlMoniker;
 import org.polypheny.db.core.ValidatorScope;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIdentifier;
@@ -62,10 +64,10 @@ public interface SqlValidatorScope extends ValidatorScope {
      * @param deep Whether to look more than one level deep
      * @param resolved Callback wherein to write the match(es) we find
      */
-    void resolve( List<String> names, SqlNameMatcher nameMatcher, boolean deep, Resolved resolved );
+    void resolve( List<String> names, NameMatcher nameMatcher, boolean deep, Resolved resolved );
 
     /**
-     * @deprecated Use {@link #findQualifyingTableNames(String, SqlNode, SqlNameMatcher)}
+     * @deprecated Use {@link #findQualifyingTableNames(String, SqlNode, NameMatcher)}
      */
     @Deprecated
     // to be removed before 2.0
@@ -81,7 +83,7 @@ public interface SqlValidatorScope extends ValidatorScope {
      * @param nameMatcher Name matcher
      * @return Map of applicable table alias and namespaces, never null, empty if no aliases found
      */
-    Map<String, ScopeChild> findQualifyingTableNames( String columnName, SqlNode ctx, SqlNameMatcher nameMatcher );
+    Map<String, ScopeChild> findQualifyingTableNames( String columnName, SqlNode ctx, NameMatcher nameMatcher );
 
     /**
      * Collects the {@link SqlMoniker}s of all possible columns in this scope.
@@ -154,14 +156,14 @@ public interface SqlValidatorScope extends ValidatorScope {
     void validateExpr( SqlNode expr );
 
     /**
-     * @deprecated Use {@link #resolveTable(List, SqlNameMatcher, Path, Resolved)}.
+     * @deprecated Use {@link #resolveTable(List, NameMatcher, Path, Resolved)}.
      */
     @Deprecated
     // to be removed before 2.0
     SqlValidatorNamespace getTableNamespace( List<String> names );
 
     /**
-     * Looks up a table in this scope from its name. If found, calls {@link Resolved#resolve(List, SqlNameMatcher, boolean, Resolved)}. {@link TableNamespace} that wraps it. If the "table" is defined in a {@code WITH} clause it may be a query, not a table after all.
+     * Looks up a table in this scope from its name. If found, calls {@link Resolved#resolve(List, NameMatcher, boolean, Resolved)}. {@link TableNamespace} that wraps it. If the "table" is defined in a {@code WITH} clause it may be a query, not a table after all.
      *
      * The name matcher is not null, and one typically uses {@link SqlValidatorCatalogReader#nameMatcher()}.
      *
@@ -169,7 +171,7 @@ public interface SqlValidatorScope extends ValidatorScope {
      * @param nameMatcher Name matcher
      * @param path List of names that we have traversed through so far
      */
-    void resolveTable( List<String> names, SqlNameMatcher nameMatcher, Path path, Resolved resolved );
+    void resolveTable( List<String> names, NameMatcher nameMatcher, Path path, Resolved resolved );
 
     /**
      * Converts the type of an expression to nullable, if the context warrants it.

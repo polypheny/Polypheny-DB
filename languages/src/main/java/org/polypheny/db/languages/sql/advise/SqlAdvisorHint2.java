@@ -17,7 +17,7 @@
 package org.polypheny.db.languages.sql.advise;
 
 
-import org.polypheny.db.languages.sql.validate.SqlMoniker;
+import org.polypheny.db.core.SqlMoniker;
 
 
 /**

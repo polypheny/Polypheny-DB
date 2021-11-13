@@ -726,7 +726,7 @@ public abstract class SqlImplementor {
             // Not sure if we can collapse this CASE expression back into "disallow partial" and set the allowPartial = false.
             final SqlLiteral allowPartial = null;
 
-            SqlAggFunction sqlAggregateFunction = rexOver.getAggOperator();
+            SqlAggFunction sqlAggregateFunction = (SqlAggFunction) rexOver.getAggOperator();
 
             SqlNode lowerBound = null;
             SqlNode upperBound = null;

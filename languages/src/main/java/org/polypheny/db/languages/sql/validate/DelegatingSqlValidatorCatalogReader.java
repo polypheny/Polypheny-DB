@@ -18,6 +18,7 @@ package org.polypheny.db.languages.sql.validate;
 
 
 import java.util.List;
+import org.polypheny.db.core.SqlMoniker;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.rel.type.RelDataType;
 

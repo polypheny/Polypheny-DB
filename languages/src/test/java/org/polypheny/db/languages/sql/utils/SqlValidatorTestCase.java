@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.utils;
+package org.polypheny.db.languages.sql.utils;
 
 
 import static org.hamcrest.CoreMatchers.is;
@@ -26,23 +26,14 @@ import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
 import org.polypheny.db.core.Collation.Coercibility;
 import org.polypheny.db.core.Conformance;
-import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.core.ConformanceEnum;
 import org.polypheny.db.core.ParseException;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlTestFactory;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil;
-import org.polypheny.db.languages.sql.utils.AbstractSqlTester;
-import org.polypheny.db.languages.sql.utils.SqlValidatorTester;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlCollation.Coercibility;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.parser.SqlParseException;
-import org.polypheny.db.sql.parser.SqlParserUtil;
-import org.polypheny.db.sql.validate.SqlConformance;
-import org.polypheny.db.sql.validate.SqlConformanceEnum;
-import org.polypheny.db.sql.validate.SqlMonotonicity;
-import org.polypheny.db.sql.validate.SqlValidator;
-import org.polypheny.db.test.SqlTestFactory;
 import org.polypheny.db.test.catalog.MockCatalogReaderExtended;
 
 
@@ -56,12 +47,12 @@ import org.polypheny.db.test.catalog.MockCatalogReaderExtended;
 public class SqlValidatorTestCase {
 
     private static final SqlTestFactory EXTENDED_TEST_FACTORY = SqlTestFactory.INSTANCE.withCatalogReader( MockCatalogReaderExtended::new );
-    static final org.polypheny.db.sql.utils.SqlTester EXTENDED_CATALOG_TESTER = new SqlValidatorTester( EXTENDED_TEST_FACTORY );
-    static final org.polypheny.db.sql.utils.SqlTester EXTENDED_CATALOG_TESTER_2003 = new SqlValidatorTester( EXTENDED_TEST_FACTORY ).withConformance( SqlConformanceEnum.PRAGMATIC_2003 );
-    static final org.polypheny.db.sql.utils.SqlTester EXTENDED_CATALOG_TESTER_LENIENT = new SqlValidatorTester( EXTENDED_TEST_FACTORY ).withConformance( SqlConformanceEnum.LENIENT );
+    static final SqlTester EXTENDED_CATALOG_TESTER = new SqlValidatorTester( EXTENDED_TEST_FACTORY );
+    static final SqlTester EXTENDED_CATALOG_TESTER_2003 = new SqlValidatorTester( EXTENDED_TEST_FACTORY ).withConformance( ConformanceEnum.PRAGMATIC_2003 );
+    static final SqlTester EXTENDED_CATALOG_TESTER_LENIENT = new SqlValidatorTester( EXTENDED_TEST_FACTORY ).withConformance( ConformanceEnum.LENIENT );
     public static final MethodRule TESTER_CONFIGURATION_RULE = new TesterConfigurationRule();
 
-    protected org.polypheny.db.sql.utils.SqlTester tester;
+    protected SqlTester tester;
 
 
     /**
@@ -75,7 +66,7 @@ public class SqlValidatorTestCase {
     /**
      * Returns a tester. Derived classes should override this method to run the same set of tests in a different testing environment.
      */
-    public org.polypheny.db.sql.utils.SqlTester getTester() {
+    public SqlTester getTester() {
         return new SqlValidatorTester( SqlTestFactory.INSTANCE );
     }
 
@@ -213,7 +204,7 @@ public class SqlValidatorTestCase {
      * @param sap Query and (optional) position in query
      */
     public static void checkEx( Throwable ex, String expectedMsgPattern, SqlParserUtil.StringAndPos sap ) {
-        org.polypheny.db.sql.utils.SqlTests.checkEx( ex, expectedMsgPattern, sap, org.polypheny.db.sql.utils.SqlTests.Stage.VALIDATE );
+        SqlTests.checkEx( ex, expectedMsgPattern, sap, SqlTests.Stage.VALIDATE );
     }
 
 
@@ -305,6 +296,7 @@ public class SqlValidatorTestCase {
         SqlMonotonicity getMonotonicity( String sql );
 
         Conformance getConformance();
+
     }
 
 
@@ -313,7 +305,7 @@ public class SqlValidatorTestCase {
      */
     static class Sql {
 
-        private final org.polypheny.db.sql.utils.SqlTester tester;
+        private final SqlTester tester;
         private final String sql;
 
 
@@ -324,13 +316,13 @@ public class SqlValidatorTestCase {
          * @param sql SQL query or expression
          * @param query True if {@code sql} is a query, false if it is an expression
          */
-        Sql( org.polypheny.db.sql.utils.SqlTester tester, String sql, boolean query ) {
+        Sql( SqlTester tester, String sql, boolean query ) {
             this.tester = tester;
             this.sql = query ? sql : AbstractSqlTester.buildQuery( sql );
         }
 
 
-        Sql tester( org.polypheny.db.sql.utils.SqlTester tester ) {
+        Sql tester( SqlTester tester ) {
             return new Sql( tester, sql, true );
         }
 
@@ -408,6 +400,7 @@ public class SqlValidatorTestCase {
         public Sql sansCarets() {
             return new Sql( tester, sql.replace( "^", "" ), true );
         }
+
     }
 
 
@@ -423,8 +416,8 @@ public class SqlValidatorTestCase {
                 @Override
                 public void evaluate() throws Throwable {
                     SqlValidatorTestCase tc = (SqlValidatorTestCase) o;
-                    org.polypheny.db.sql.utils.SqlTester tester = tc.tester;
-                    org.polypheny.db.sql.utils.WithLex lex = frameworkMethod.getAnnotation( org.polypheny.db.sql.utils.WithLex.class );
+                    SqlTester tester = tc.tester;
+                    WithLex lex = frameworkMethod.getAnnotation( WithLex.class );
                     if ( lex != null ) {
                         tester = tester.withLex( lex.value() );
                     }
@@ -433,5 +426,7 @@ public class SqlValidatorTestCase {
                 }
             };
         }
+
     }
+
 }

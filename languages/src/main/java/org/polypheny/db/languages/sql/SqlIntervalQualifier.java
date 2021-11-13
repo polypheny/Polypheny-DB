@@ -97,6 +97,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
     //~ Instance fields --------------------------------------------------------
 
     private final int startPrecision;
+    @Getter
     public final TimeUnitRange timeUnitRange;
     @Getter
     private final int fractionalSecondPrecision;

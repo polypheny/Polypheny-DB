@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.core.NameMatcher;
+import org.polypheny.db.core.SqlMoniker;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDataTypeSpec;
 import org.polypheny.db.languages.sql.SqlDynamicParam;
@@ -78,7 +80,7 @@ class EmptyScope implements SqlValidatorScope {
 
 
     @Override
-    public void resolve( List<String> names, SqlNameMatcher nameMatcher, boolean deep, Resolved resolved ) {
+    public void resolve( List<String> names, NameMatcher nameMatcher, boolean deep, Resolved resolved ) {
     }
 
 
@@ -92,7 +94,7 @@ class EmptyScope implements SqlValidatorScope {
 
 
     @Override
-    public void resolveTable( List<String> names, SqlNameMatcher nameMatcher, Path path, Resolved resolved ) {
+    public void resolveTable( List<String> names, NameMatcher nameMatcher, Path path, Resolved resolved ) {
         final List<Resolve> imperfectResolves = new ArrayList<>();
         final List<Resolve> resolves = ((ResolvedImpl) resolved).resolves;
 
@@ -116,7 +118,7 @@ class EmptyScope implements SqlValidatorScope {
     }
 
 
-    private void resolve_( final PolyphenyDbSchema rootSchema, List<String> names, List<String> schemaNames, SqlNameMatcher nameMatcher, Path path, Resolved resolved ) {
+    private void resolve_( final PolyphenyDbSchema rootSchema, List<String> names, List<String> schemaNames, NameMatcher nameMatcher, Path path, Resolved resolved ) {
         final List<String> concat = ImmutableList.<String>builder().addAll( schemaNames ).addAll( names ).build();
         PolyphenyDbSchema schema = rootSchema;
         SqlValidatorNamespace namespace = null;
@@ -209,7 +211,7 @@ class EmptyScope implements SqlValidatorScope {
 
 
     @Override
-    public Map<String, ScopeChild> findQualifyingTableNames( String columnName, SqlNode ctx, SqlNameMatcher nameMatcher ) {
+    public Map<String, ScopeChild> findQualifyingTableNames( String columnName, SqlNode ctx, NameMatcher nameMatcher ) {
         return ImmutableMap.of();
     }
 

@@ -64,7 +64,7 @@ public enum SqlSyntax {
         public void unparse( SqlWriter writer, SqlOperator operator, SqlCall call, int leftPrec, int rightPrec ) {
             assert call.operandCount() == 1;
             writer.keyword( operator.getName() );
-            call.operand( 0 ).unparse( writer, operator.getLeftPrec(), operator.getRightPrec() );
+            ((SqlNode) call.operand( 0 )).unparse( writer, operator.getLeftPrec(), operator.getRightPrec() );
         }
     },
 
@@ -75,7 +75,7 @@ public enum SqlSyntax {
         @Override
         public void unparse( SqlWriter writer, SqlOperator operator, SqlCall call, int leftPrec, int rightPrec ) {
             assert call.operandCount() == 1;
-            call.operand( 0 ).unparse( writer, operator.getLeftPrec(), operator.getRightPrec() );
+            ((SqlNode) call.operand( 0 )).unparse( writer, operator.getLeftPrec(), operator.getRightPrec() );
             writer.keyword( operator.getName() );
         }
     },
@@ -112,6 +112,31 @@ public enum SqlSyntax {
             throw new UnsupportedOperationException( "Internal operator '" + operator + "' " + "cannot be un-parsed" );
         }
     };
+
+
+    public static SqlSyntax fromSyntax( Syntax syntax ) {
+        switch ( syntax ) {
+            case FUNCTION:
+                return SqlSyntax.FUNCTION;
+            case FUNCTION_STAR:
+                return SqlSyntax.FUNCTION_STAR;
+            case BINARY:
+                return SqlSyntax.BINARY;
+
+            case PREFIX:
+                return SqlSyntax.PREFIX;
+            case POSTFIX:
+                return SqlSyntax.POSTFIX;
+            case SPECIAL:
+                return SqlSyntax.SPECIAL;
+            case FUNCTION_ID:
+                return SqlSyntax.FUNCTION_ID;
+            case INTERNAL:
+                return SqlSyntax.INTERNAL;
+            default:
+                throw new RuntimeException( "There seems to be an internal error while translating the Syntax." );
+        }
+    }
 
 
     /**

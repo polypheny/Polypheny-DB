@@ -18,6 +18,8 @@ package org.polypheny.db.languages.sql.validate;
 
 
 import java.util.List;
+import org.polypheny.db.core.NameMatcher;
+import org.polypheny.db.core.SqlMoniker;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.Wrapper;
@@ -72,9 +74,9 @@ public interface SqlValidatorCatalogReader extends Wrapper {
     List<List<String>> getSchemaPaths();
 
     /**
-     * Returns an implementation of {@link SqlNameMatcher} that matches the case-sensitivity policy.
+     * Returns an implementation of {@link NameMatcher} that matches the case-sensitivity policy.
      */
-    SqlNameMatcher nameMatcher();
+    NameMatcher nameMatcher();
 
     RelDataType createTypeFromProjection( RelDataType type, List<String> columnNameList );
 

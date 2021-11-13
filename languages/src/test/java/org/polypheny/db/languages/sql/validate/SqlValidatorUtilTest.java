@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Locale;
 import org.junit.Test;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.NameMatcher;
 import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -151,10 +152,10 @@ public class SqlValidatorUtilTest {
     @Test
     public void testNameMatcher() {
         final ImmutableList<String> beatles = ImmutableList.of( "john", "paul", "ringo", "rinGo" );
-        final SqlNameMatcher insensitiveMatcher = SqlNameMatchers.withCaseSensitive( false );
+        final NameMatcher insensitiveMatcher = SqlNameMatchers.withCaseSensitive( false );
         assertThat( insensitiveMatcher.frequency( beatles, "ringo" ), is( 2 ) );
         assertThat( insensitiveMatcher.frequency( beatles, "rinGo" ), is( 2 ) );
-        final SqlNameMatcher sensitiveMatcher = SqlNameMatchers.withCaseSensitive( true );
+        final NameMatcher sensitiveMatcher = SqlNameMatchers.withCaseSensitive( true );
         assertThat( sensitiveMatcher.frequency( beatles, "ringo" ), is( 1 ) );
         assertThat( sensitiveMatcher.frequency( beatles, "rinGo" ), is( 1 ) );
         assertThat( sensitiveMatcher.frequency( beatles, "Ringo" ), is( 0 ) );

@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.function.Functions;
+import org.polypheny.db.core.Function;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.FunctionCategory;
@@ -38,7 +39,7 @@ import org.polypheny.db.util.Util;
 /**
  * A <code>SqlFunction</code> is a type of operator which has conventional function-call syntax.
  */
-public class SqlFunction extends SqlOperator {
+public class SqlFunction extends SqlOperator implements Function {
 
     private final FunctionCategory category;
 

@@ -54,6 +54,10 @@ import java.util.TimeZone;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.polypheny.db.core.Collation;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlCollation;
@@ -469,7 +473,7 @@ public class RexLiteral extends RexNode {
             if ( ((nlsString.getCharset() != null
                     && type.getCharset().equals( nlsString.getCharset() ))
                     || (nlsString.getCharset() == null
-                    && SqlCollation.IMPLICIT.getCharset().equals( type.getCharset() )))
+                    && Collation.IMPLICIT.getCharset().equals( type.getCharset() )))
                     && nlsString.getCollation().equals( type.getCollation() )
                     && ((NlsString) value).getValue().length() == type.getPrecision() ) {
                 includeType = RexDigestIncludeType.NO_TYPE;
@@ -740,7 +744,7 @@ public class RexLiteral extends RexNode {
         switch ( typeName ) {
             case CHAR:
                 Charset charset = type.getCharset();
-                SqlCollation collation = type.getCollation();
+                Collation collation = type.getCollation();
                 NlsString str = new NlsString( literal, charset.name(), collation );
                 return new RexLiteral( str, type, typeName );
             case BOOLEAN:
@@ -840,8 +844,8 @@ public class RexLiteral extends RexNode {
 
 
     @Override
-    public SqlKind getKind() {
-        return SqlKind.LITERAL;
+    public Kind getKind() {
+        return Kind.LITERAL;
     }
 
 
@@ -1218,11 +1222,11 @@ public class RexLiteral extends RexNode {
         }
         if ( node instanceof RexCall ) {
             final RexCall call = (RexCall) node;
-            final SqlOperator operator = call.getOperator();
-            if ( operator == SqlStdOperatorTable.CAST ) {
+            final Operator operator = call.getOperator();
+            if ( operator == StdOperatorRegistry.get( "CAST" ) ) {
                 return findValue( call.getOperands().get( 0 ) );
             }
-            if ( operator == SqlStdOperatorTable.UNARY_MINUS ) {
+            if ( operator == StdOperatorRegistry.get( "UNARY_MINUS" ) ) {
                 final BigDecimal value = (BigDecimal) findValue( call.getOperands().get( 0 ) );
                 return value.negate();
             }

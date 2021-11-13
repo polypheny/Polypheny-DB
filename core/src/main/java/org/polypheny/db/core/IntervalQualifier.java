@@ -16,6 +16,7 @@
 
 package org.polypheny.db.core;
 
+import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.type.PolyType;
 
 public interface IntervalQualifier extends Visitable {
@@ -25,5 +26,7 @@ public interface IntervalQualifier extends Visitable {
     boolean isSingleDatetimeField();
 
     boolean isYearMonth();
+
+    TimeUnitRange getTimeUnitRange();
 
 }

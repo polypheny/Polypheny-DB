@@ -20,6 +20,9 @@ package org.polypheny.db.languages.sql.validate;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.core.Identifier;
+import org.polypheny.db.core.SqlMoniker;
+import org.polypheny.db.core.SqlMonikerType;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.util.Util;
@@ -79,7 +82,7 @@ public class SqlMonikerImpl implements SqlMoniker {
 
 
     @Override
-    public SqlIdentifier toIdentifier() {
+    public Identifier toIdentifier() {
         return new SqlIdentifier( names, ParserPos.ZERO );
     }
 

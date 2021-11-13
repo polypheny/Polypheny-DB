@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import org.polypheny.db.core.NameMatcher;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.languages.sql.SqlIdentifier;
@@ -31,7 +32,7 @@ import org.polypheny.db.util.Util;
 
 
 /**
- * Helpers for {@link SqlNameMatcher}.
+ * Helpers for {@link NameMatcher}.
  */
 public class SqlNameMatchers {
 
@@ -46,7 +47,7 @@ public class SqlNameMatchers {
     /**
      * Returns a name matcher with the given case sensitivity.
      */
-    public static SqlNameMatcher withCaseSensitive( final boolean caseSensitive ) {
+    public static NameMatcher withCaseSensitive( final boolean caseSensitive ) {
         return caseSensitive ? CASE_SENSITIVE : CASE_INSENSITIVE;
     }
 
@@ -54,15 +55,15 @@ public class SqlNameMatchers {
     /**
      * Creates a name matcher that can suggest corrections to what the user typed. It matches liberally (case-insensitively) and also records the last match.
      */
-    public static SqlNameMatcher liberal() {
+    public static NameMatcher liberal() {
         return new LiberalNameMatcher();
     }
 
 
     /**
-     * Partial implementation of {@link SqlNameMatcher}.
+     * Partial implementation of {@link NameMatcher}.
      */
-    private static class BaseMatcher implements SqlNameMatcher, Serializable {
+    private static class BaseMatcher implements NameMatcher, Serializable {
 
         private final boolean caseSensitive;
 

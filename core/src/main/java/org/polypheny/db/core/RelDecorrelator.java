@@ -43,11 +43,7 @@ import java.util.TreeMap;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function2;
-import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlOperator;
-import org.polypheny.db.languages.sql.fun.SqlCountAggFunction;
-import org.polypheny.db.languages.sql.fun.SqlSingleValueAggFunction;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.core.Function.FunctionType;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCostImpl;
@@ -1011,7 +1007,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
             final int newRightPos = rightOutput.getValue();
             conditions.add(
                     relBuilder.call(
-                            SqlStdOperatorTable.EQUALS,
+                            StdOperatorRegistry.get( "EQUALS" ),
                             RexInputRef.of( newLeftPos, newLeftOutput ),
                             new RexInputRef( newLeftFieldCount + newRightPos, newRightOutput.get( newRightPos ).getType() ) ) );
 
@@ -1455,7 +1451,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
             // WHEN indicator IS NULL
             caseOperands[0] =
                     rexBuilder.makeCall(
-                            SqlStdOperatorTable.IS_NULL,
+                            StdOperatorRegistry.get( "IS_NULL" ),
                             new RexInputRef(
                                     nullInputRef.getIndex(),
                                     typeFactory.createTypeWithNullability(
@@ -1479,7 +1475,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
                             rexNode );
 
             return rexBuilder.makeCall(
-                    SqlStdOperatorTable.CASE,
+                    StdOperatorRegistry.get( "CASE" ),
                     caseOperands );
         }
 
@@ -1546,11 +1542,11 @@ public class RelDecorrelator implements ReflectiveVisitor {
             boolean[] update = { false };
             List<RexNode> clonedOperands = visitList( call.operands, update );
             if ( update[0] ) {
-                SqlOperator operator = call.getOperator();
+                Operator operator = call.getOperator();
 
                 boolean isSpecialCast = false;
-                if ( operator instanceof SqlFunction ) {
-                    SqlFunction function = (SqlFunction) operator;
+                if ( operator instanceof Function ) {
+                    Function function = (Function) operator;
                     if ( function.getKind() == Kind.CAST ) {
                         if ( call.operands.size() < 2 ) {
                             isSpecialCast = true;
@@ -1588,7 +1584,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
      *
      * <blockquote>AggRel single_value proj/filter/agg/ join on unique LHS key AggRel single group</blockquote>
      */
-    private final class RemoveSingleAggregateRule extends RelOptRule {
+    private static final class RemoveSingleAggregateRule extends RelOptRule {
 
         RemoveSingleAggregateRule( RelBuilderFactory relBuilderFactory ) {
             super(
@@ -1611,8 +1607,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
             // check singleAggRel is single_value agg
             if ( (!singleAggregate.getGroupSet().isEmpty())
                     || (singleAggregate.getAggCallList().size() != 1)
-                    || !(singleAggregate.getAggCallList().get( 0 ).getAggregation()
-                    instanceof SqlSingleValueAggFunction) ) {
+                    || !(singleAggregate.getAggCallList().get( 0 ).getAggregation().getFunctionType() == FunctionType.SINGLE_VALUE) ) {
                 return;
             }
 
@@ -1685,8 +1680,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
             // doing a single_value() on the entire input
             if ( (!aggregate.getGroupSet().isEmpty())
                     || (aggregate.getAggCallList().size() != 1)
-                    || !(aggregate.getAggCallList().get( 0 ).getAggregation()
-                    instanceof SqlSingleValueAggFunction) ) {
+                    || !(aggregate.getAggCallList().get( 0 ).getAggregation().getFunctionType() == FunctionType.SINGLE_VALUE) ) {
                 return;
             }
 
@@ -1881,7 +1875,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
             int k = -1;
             for ( AggregateCall aggCall : aggCalls ) {
                 ++k;
-                if ( (aggCall.getAggregation() instanceof SqlCountAggFunction) && (aggCall.getArgList().size() == 0) ) {
+                if ( (aggCall.getAggregation().getFunctionType() == FunctionType.COUNT) && (aggCall.getArgList().size() == 0) ) {
                     isCountStar.add( k );
                 }
             }
@@ -2238,7 +2232,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
             int i = -1;
             for ( AggregateCall aggCall : aggCalls ) {
                 ++i;
-                if ( aggCall.getAggregation() instanceof SqlCountAggFunction ) {
+                if ( aggCall.getAggregation().getFunctionType() == FunctionType.COUNT ) {
                     isCount.add( i );
                 }
             }

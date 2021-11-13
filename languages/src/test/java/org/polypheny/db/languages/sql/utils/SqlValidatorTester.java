@@ -19,8 +19,6 @@ package org.polypheny.db.languages.sql.utils;
 
 import org.polypheny.db.languages.sql.SqlTestFactory;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
-import org.polypheny.db.sql.validate.SqlValidator;
-import org.polypheny.db.test.SqlTestFactory;
 
 
 /**
@@ -37,5 +35,6 @@ public class SqlValidatorTester extends AbstractSqlTester {
     protected SqlTester with( SqlTestFactory factory ) {
         return new SqlValidatorTester( factory );
     }
+
 }
 

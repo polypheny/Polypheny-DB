@@ -66,7 +66,7 @@ public class SqlBasicCall extends SqlCall {
 
     @Override
     public void setOperand( int i, Node operand ) {
-        operands[i] = operand;
+        operands[i] = (SqlNode) operand;
     }
 
 
@@ -94,7 +94,7 @@ public class SqlBasicCall extends SqlCall {
 
     @SuppressWarnings("unchecked")
     @Override
-    public <S extends SqlNode> S operand( int i ) {
+    public <S extends Node> S operand( int i ) {
         return (S) operands[i];
     }
 

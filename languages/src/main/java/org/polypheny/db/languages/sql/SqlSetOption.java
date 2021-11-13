@@ -20,8 +20,11 @@ package org.polypheny.db.languages.sql;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
@@ -64,15 +67,15 @@ public class SqlSetOption extends SqlAlter {
     public static final SqlSpecialOperator OPERATOR =
             new SqlSpecialOperator( "SET_OPTION", Kind.SET_OPTION ) {
                 @Override
-                public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
-                    final SqlNode scopeNode = operands[0];
+                public Call createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
+                    final SqlNode scopeNode = (SqlNode) operands[0];
                     return new SqlSetOption(
                             pos,
                             scopeNode == null
                                     ? null
                                     : scopeNode.toString(),
                             (SqlIdentifier) operands[1],
-                            operands[2] );
+                            (SqlNode) operands[2] );
                 }
             };
 
@@ -93,8 +96,7 @@ public class SqlSetOption extends SqlAlter {
 
     /**
      * Creates a node.
-     *
-     * @param pos Parser position, must not be null.
+     *  @param pos Parser position, must not be null.
      * @param scope Scope (generally "SYSTEM" or "SESSION"), may be null.
      * @param name Name of option, as an identifier, must not be null.
      * @param value Value of option, as an identifier or literal, may be null. If null, assume RESET command, else assume SET command.
@@ -148,7 +150,7 @@ public class SqlSetOption extends SqlAlter {
                 name = (SqlIdentifier) operand;
                 break;
             case 2:
-                value = operand;
+                value = (SqlNode) operand;
                 break;
             default:
                 throw new AssertionError( i );

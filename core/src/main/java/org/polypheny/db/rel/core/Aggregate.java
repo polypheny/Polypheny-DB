@@ -44,6 +44,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.core.AggFunction;
+import org.polypheny.db.core.Function;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -401,7 +402,7 @@ public abstract class Aggregate extends SingleRel {
      * @return Whether the inferred and declared types match
      */
     private boolean typeMatchesInferred( final AggregateCall aggCall, final Litmus litmus ) {
-        SqlAggFunction aggFunction = aggCall.getAggregation();
+        Function aggFunction = aggCall.getAggregation();
         AggCallBinding callBinding = aggCall.createBinding( this );
         RelDataType type = aggFunction.inferReturnType( callBinding );
         RelDataType expectedType = aggCall.type;

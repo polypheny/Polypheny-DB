@@ -26,7 +26,7 @@ import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.dialect.AnsiSqlDialect;
 import org.polypheny.db.languages.sql.pretty.SqlPrettyWriter;
 import org.polypheny.db.languages.sql.util.SqlString;
-import org.polypheny.db.languages.sql.validate.SqlMoniker;
+import org.polypheny.db.core.SqlMoniker;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;

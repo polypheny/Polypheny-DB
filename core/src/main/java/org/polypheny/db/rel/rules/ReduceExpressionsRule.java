@@ -43,7 +43,10 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.RowOperator;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptPredicateList;
 import org.polypheny.db.plan.RelOptRule;
@@ -83,9 +86,6 @@ import org.polypheny.db.rex.RexSubQuery;
 import org.polypheny.db.rex.RexUnknownAs;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlRowOperator;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.type.PolyType;
@@ -174,7 +174,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
                         .filter( newConditionExp ).build() );
             } else {
                 if ( newConditionExp instanceof RexCall ) {
-                    boolean reverse = newConditionExp.getKind() == SqlKind.NOT;
+                    boolean reverse = newConditionExp.getKind() == Kind.NOT;
                     if ( reverse ) {
                         newConditionExp = ((RexCall) newConditionExp).getOperands().get( 0 );
                     }
@@ -231,6 +231,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
                 }
             }
         }
+
     }
 
 
@@ -261,6 +262,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
                 call.getPlanner().setImportance( project, 0.0 );
             }
         }
+
     }
 
 
@@ -306,6 +308,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
             // New plan is absolutely better than old plan.
             call.getPlanner().setImportance( join, 0.0 );
         }
+
     }
 
 
@@ -381,6 +384,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
         protected RelNode createEmptyRelOrEquivalent( RelOptRuleCall call, Calc input ) {
             return call.builder().push( input ).empty().build();
         }
+
     }
 
 
@@ -658,6 +662,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
             }
             return replacement;
         }
+
     }
 
 
@@ -686,7 +691,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
 
         private final List<RexNode> removableCasts;
 
-        private final Deque<SqlOperator> parentCallTypeStack = new ArrayDeque<>();
+        private final Deque<Operator> parentCallTypeStack = new ArrayDeque<>();
 
 
         ReducibleExprLocator( RelDataTypeFactory typeFactory, ImmutableMap<RexNode, RexNode> constants, List<RexNode> constExprs, List<Boolean> addCasts, List<RexNode> removableCasts ) {
@@ -725,7 +730,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
 
         private void addResult( RexNode exp ) {
             // Cast of literal can't be reduced, so skip those (otherwise we'd go into an infinite loop as we add them back).
-            if ( exp.getKind() == SqlKind.CAST ) {
+            if ( exp.getKind() == Kind.CAST ) {
                 RexCall cast = (RexCall) exp;
                 RexNode operand = cast.getOperands().get( 0 );
                 if ( operand instanceof RexLiteral ) {
@@ -745,7 +750,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
         }
 
 
-        private Boolean isUdf( SqlOperator operator ) {
+        private Boolean isUdf( Operator operator ) {
             // return operator instanceof UserDefinedRoutine
             return false;
         }
@@ -828,7 +833,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
             }
 
             // Row operator itself can't be reduced to a literal, but if the operands are constants, we still want to reduce those
-            if ( (callConstancy == Constancy.REDUCIBLE_CONSTANT) && (call.getOperator() instanceof SqlRowOperator) ) {
+            if ( (callConstancy == Constancy.REDUCIBLE_CONSTANT) && (call.getOperator() instanceof RowOperator) ) {
                 callConstancy = Constancy.NON_CONSTANT;
             }
 
@@ -842,7 +847,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
                 }
 
                 // if this cast expression can't be reduced to a literal, then see if we can remove the cast
-                if ( call.getOperator() == SqlStdOperatorTable.CAST ) {
+                if ( call.getOperator() == StdOperatorRegistry.get( "CAST" ) ) {
                     reduceCasts( call );
                 }
             }
@@ -879,7 +884,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
                 return;
             }
             RexCall innerCast = (RexCall) operands.get( 0 );
-            if ( innerCast.getOperator() != SqlStdOperatorTable.CAST ) {
+            if ( innerCast.getOperator() != StdOperatorRegistry.get( "CAST" ) ) {
                 return;
             }
             if ( innerCast.getOperands().size() != 1 ) {
@@ -912,6 +917,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
         public Void visitFieldAccess( RexFieldAccess fieldAccess ) {
             return pushVariable();
         }
+
     }
 
 
@@ -931,6 +937,8 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
                 }
             }
         }
+
     }
+
 }
 

@@ -14,15 +14,8 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql.validate;
+package org.polypheny.db.core;
 
+public class ParserUtil {
 
-/**
- * An enumeration of moniker types.
- *
- * Used in {@link SqlMoniker}.
- */
-public enum SqlMonikerType {
-    COLUMN, TABLE, VIEW, SCHEMA, CATALOG, REPOSITORY, FUNCTION, KEYWORD
 }
-

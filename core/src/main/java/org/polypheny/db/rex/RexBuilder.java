@@ -50,9 +50,15 @@ import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.polypheny.db.core.AggFunction;
+import org.polypheny.db.core.Collation;
+import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.Function.FunctionType;
+import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.Operator;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.AggregateCall;
 import org.polypheny.db.rel.core.CorrelationId;
@@ -60,12 +66,7 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.runtime.FlatLists;
-import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.sql.SqlCollation;
-import org.polypheny.db.sql.SqlIntervalQualifier;
 import org.polypheny.db.sql.SqlSpecialOperator;
-import org.polypheny.db.sql.SqlUtil;
-import org.polypheny.db.sql.fun.SqlCountAggFunction;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.MapPolyType;
 import org.polypheny.db.type.MultisetPolyType;
@@ -109,7 +110,6 @@ public class RexBuilder {
     private final RexLiteral booleanFalse;
     private final RexLiteral charEmpty;
     private final RexLiteral constantNull;
-    private final SqlStdOperatorTable opTab = SqlStdOperatorTable.instance();
 
 
     /**
@@ -157,16 +157,6 @@ public class RexBuilder {
      */
     public RelDataTypeFactory getTypeFactory() {
         return typeFactory;
-    }
-
-
-    /**
-     * Returns this RexBuilder's operator table
-     *
-     * @return operator table
-     */
-    public SqlStdOperatorTable getOpTab() {
-        return opTab;
     }
 
 
@@ -288,7 +278,7 @@ public class RexBuilder {
      * @return Rex expression for the given aggregate call
      */
     public RexNode addAggCall( AggregateCall aggCall, int groupCount, boolean indicator, List<AggregateCall> aggCalls, Map<AggregateCall, RexNode> aggCallMapping, final List<RelDataType> aggArgTypes ) {
-        if ( aggCall.getAggregation() instanceof SqlCountAggFunction && !aggCall.isDistinct() ) {
+        if ( aggCall.getAggregation().getFunctionType() == FunctionType.COUNT && !aggCall.isDistinct() ) {
             final List<Integer> args = aggCall.getArgList();
             final List<Integer> nullableArgs = nullableArgs( args, aggArgTypes );
             if ( !nullableArgs.equals( args ) ) {
@@ -320,13 +310,13 @@ public class RexBuilder {
     /**
      * Creates a call to a windowed agg.
      */
-    public RexNode makeOver( RelDataType type, SqlAggFunction operator, List<RexNode> exprs, List<RexNode> partitionKeys, ImmutableList<RexFieldCollation> orderKeys, RexWindowBound lowerBound, RexWindowBound upperBound, boolean physical, boolean allowPartial, boolean nullWhenCountZero, boolean distinct ) {
+    public RexNode makeOver( RelDataType type, AggFunction operator, List<RexNode> exprs, List<RexNode> partitionKeys, ImmutableList<RexFieldCollation> orderKeys, RexWindowBound lowerBound, RexWindowBound upperBound, boolean physical, boolean allowPartial, boolean nullWhenCountZero, boolean distinct ) {
         assert operator != null;
         assert exprs != null;
         assert partitionKeys != null;
         assert orderKeys != null;
         final RexWindow window = makeWindow( partitionKeys, orderKeys, lowerBound, upperBound, physical );
-        final RexOver over = new RexOver( type, operator, exprs, window, distinct );
+        final RexOver over = new RexOver( type, (Operator) operator, exprs, window, distinct );
         RexNode result = over;
 
         // This should be correct but need time to go over test results.
@@ -334,12 +324,12 @@ public class RexBuilder {
         if ( nullWhenCountZero ) {
             final RelDataType bigintType = getTypeFactory().createPolyType( PolyType.BIGINT );
             result = makeCall(
-                    SqlStdOperatorTable.CASE,
+                    StdOperatorRegistry.get( "CASE" ),
                     makeCall(
-                            SqlStdOperatorTable.GREATER_THAN,
+                            StdOperatorRegistry.get( "GREATER_THAN" ),
                             new RexOver(
                                     bigintType,
-                                    SqlStdOperatorTable.COUNT,
+                                    StdOperatorRegistry.get( "COUNT", Node.class ),
                                     exprs,
                                     window,
                                     distinct ),
@@ -351,7 +341,7 @@ public class RexBuilder {
                             type, // SUM0 is non-nullable, thus need a cast
                             new RexOver(
                                     typeFactory.createTypeWithNullability( type, false ),
-                                    operator,
+                                    (Operator) operator,
                                     exprs,
                                     window,
                                     distinct ),
@@ -364,12 +354,12 @@ public class RexBuilder {
             // todo: read bound
             result =
                     makeCall(
-                            SqlStdOperatorTable.CASE,
+                            StdOperatorRegistry.get( "CASE" ),
                             makeCall(
-                                    SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
+                                    StdOperatorRegistry.get( "GREATER_THAN_OR_EQUAL" ),
                                     new RexOver(
                                             bigintType,
-                                            SqlStdOperatorTable.COUNT,
+                                            StdOperatorRegistry.get( "COUNT" ),
                                             ImmutableList.of(),
                                             window,
                                             distinct ),
@@ -427,7 +417,7 @@ public class RexBuilder {
      * @return Expression invoking NEW operator
      */
     public RexNode makeNewInvocation( RelDataType type, List<RexNode> exprs ) {
-        return new RexCall( type, SqlStdOperatorTable.NEW, exprs );
+        return new RexCall( type, StdOperatorRegistry.get( "NEW" ), exprs );
     }
 
 
@@ -569,14 +559,14 @@ public class RexBuilder {
 
 
     private RexNode makeCastExactToBoolean( RelDataType toType, RexNode exp ) {
-        return makeCall( toType, SqlStdOperatorTable.NOT_EQUALS, ImmutableList.of( exp, makeZeroLiteral( exp.getType() ) ) );
+        return makeCall( toType, StdOperatorRegistry.get( "NOT_EQUALS" ), ImmutableList.of( exp, makeZeroLiteral( exp.getType() ) ) );
     }
 
 
     private RexNode makeCastBooleanToExact( RelDataType toType, RexNode exp ) {
         final RexNode casted =
                 makeCall(
-                        SqlStdOperatorTable.CASE,
+                        StdOperatorRegistry.get( "CASE" ),
                         exp,
                         makeExactLiteral( BigDecimal.ONE, toType ),
                         makeZeroLiteral( toType ) );
@@ -584,9 +574,9 @@ public class RexBuilder {
             return casted;
         }
         return makeCall( toType,
-                SqlStdOperatorTable.CASE,
+                StdOperatorRegistry.get( "CASE" ),
                 ImmutableList.of(
-                        makeCall( SqlStdOperatorTable.IS_NOT_NULL, exp ),
+                        makeCall( StdOperatorRegistry.get( "IS_NOT_NULL" ), exp ),
                         casted,
                         makeNullLiteral( toType ) ) );
     }
@@ -619,10 +609,10 @@ public class RexBuilder {
                 return e;
             case 1:
                 // E.g. multiplyDivide(e, 1000, 10) ==> e * 100
-                return makeCall( SqlStdOperatorTable.MULTIPLY, e, makeExactLiteral( multiplier.divide( divider, RoundingMode.UNNECESSARY ) ) );
+                return makeCall( StdOperatorRegistry.get( "MULTIPLY" ), e, makeExactLiteral( multiplier.divide( divider, RoundingMode.UNNECESSARY ) ) );
             case -1:
                 // E.g. multiplyDivide(e, 10, 1000) ==> e / 100
-                return makeCall( SqlStdOperatorTable.DIVIDE_INTEGER, e, makeExactLiteral( divider.divide( multiplier, RoundingMode.UNNECESSARY ) ) );
+                return makeCall( StdOperatorRegistry.get( "DIVIDE_INTEGER" ), e, makeExactLiteral( divider.divide( multiplier, RoundingMode.UNNECESSARY ) ) );
             default:
                 throw new AssertionError( multiplier + "/" + divider );
         }
@@ -667,7 +657,7 @@ public class RexBuilder {
      * @return Call to CAST operator
      */
     public RexNode makeAbstractCast( RelDataType type, RexNode exp ) {
-        return new RexCall( type, SqlStdOperatorTable.CAST, ImmutableList.of( exp ) );
+        return new RexCall( type, StdOperatorRegistry.get( "CAST" ), ImmutableList.of( exp ) );
     }
 
 
@@ -686,7 +676,7 @@ public class RexBuilder {
         } else {
             args = ImmutableList.of( exp );
         }
-        return new RexCall( type, SqlStdOperatorTable.REINTERPRET, args );
+        return new RexCall( type, StdOperatorRegistry.get( "REINTERPRET" ), args );
     }
 
 
@@ -964,7 +954,7 @@ public class RexBuilder {
      * @param collation Sql collation
      * @return String     literal
      */
-    protected RexLiteral makePreciseStringLiteral( ByteString value, String charsetName, SqlCollation collation ) {
+    protected RexLiteral makePreciseStringLiteral( ByteString value, String charsetName, Collation collation ) {
         return makeCharLiteral( new NlsString( value, charsetName, collation ) );
     }
 
@@ -1023,7 +1013,7 @@ public class RexBuilder {
      */
     public RexLiteral makeCharLiteral( NlsString str ) {
         assert str != null;
-        RelDataType type = SqlUtil.createNlsStringType( typeFactory, str );
+        RelDataType type = CoreUtil.createNlsStringType( typeFactory, str );
         return makeLiteral( str, type, PolyType.CHAR );
     }
 
@@ -1083,16 +1073,16 @@ public class RexBuilder {
     /**
      * Creates a literal representing an interval type, for example {@code YEAR TO MONTH} or {@code DOW}.
      */
-    public RexLiteral makeIntervalLiteral( SqlIntervalQualifier intervalQualifier ) {
+    public RexLiteral makeIntervalLiteral( IntervalQualifier intervalQualifier ) {
         assert intervalQualifier != null;
-        return makeFlag( intervalQualifier.timeUnitRange );
+        return makeFlag( intervalQualifier.getTimeUnitRange() );
     }
 
 
     /**
      * Creates a literal representing an interval value, for example {@code INTERVAL '3-7' YEAR TO MONTH}.
      */
-    public RexLiteral makeIntervalLiteral( BigDecimal v, SqlIntervalQualifier intervalQualifier ) {
+    public RexLiteral makeIntervalLiteral( BigDecimal v, IntervalQualifier intervalQualifier ) {
         return makeLiteral(
                 v,
                 typeFactory.createSqlIntervalType( intervalQualifier ),
@@ -1281,7 +1271,7 @@ public class RexBuilder {
                     operands.add( makeLiteral( entry.getKey(), mapType.getKeyType(), allowCast ) );
                     operands.add( makeLiteral( entry.getValue(), mapType.getValueType(), allowCast ) );
                 }
-                return makeCall( SqlStdOperatorTable.MAP_VALUE_CONSTRUCTOR, operands );
+                return makeCall( StdOperatorRegistry.get( "MAP_VALUE_CONSTRUCTOR" ), operands );
             case ARRAY:
                 final ArrayType arrayType = (ArrayType) type;
                 @SuppressWarnings("unchecked") final List<Object> listValue = (List) value;
@@ -1289,7 +1279,7 @@ public class RexBuilder {
                 for ( Object entry : listValue ) {
                     operands.add( makeLiteral( entry, arrayType.getComponentType(), allowCast ) );
                 }
-                return makeCall( SqlStdOperatorTable.ARRAY_VALUE_CONSTRUCTOR, operands );
+                return makeCall( StdOperatorRegistry.get( "ARRAY_VALUE_CONSTRUCTOR" ), operands );
             case MULTISET:
                 final MultisetPolyType multisetType = (MultisetPolyType) type;
                 operands = new ArrayList<>();
@@ -1301,7 +1291,7 @@ public class RexBuilder {
                     operands.add( e );
                 }
                 if ( allowCast ) {
-                    return makeCall( SqlStdOperatorTable.MULTISET_VALUE, operands );
+                    return makeCall( StdOperatorRegistry.get( "MULTISET_VALUE" ), operands );
                 } else {
                     return new RexLiteral( (Comparable) FlatLists.of( operands ), type, type.getPolyType() );
                 }

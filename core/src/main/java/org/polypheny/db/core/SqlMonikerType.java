@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,24 +14,15 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql.utils;
-
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import org.polypheny.db.languages.sql.Lex;
+package org.polypheny.db.core;
 
 
 /**
- * Annotation that indicates that test method should be run with given lex configuration.
+ * An enumeration of moniker types.
+ *
+ * Used in {@link SqlMoniker}.
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.METHOD })
-public @interface WithLex {
-
-    Lex value() default Lex.ORACLE;
-
+public enum SqlMonikerType {
+    COLUMN, TABLE, VIEW, SCHEMA, CATALOG, REPOSITORY, FUNCTION, KEYWORD
 }
 

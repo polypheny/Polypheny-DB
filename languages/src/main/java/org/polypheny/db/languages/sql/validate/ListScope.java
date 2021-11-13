@@ -25,6 +25,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.polypheny.db.core.NameMatcher;
+import org.polypheny.db.core.SqlMoniker;
+import org.polypheny.db.core.SqlMonikerType;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
@@ -77,7 +80,7 @@ public abstract class ListScope extends DelegatingScope {
     }
 
 
-    private ScopeChild findChild( List<String> names, SqlNameMatcher nameMatcher ) {
+    private ScopeChild findChild( List<String> names, NameMatcher nameMatcher ) {
         for ( ScopeChild child : children ) {
             String lastName = Util.last( names );
             if ( child.name != null ) {
@@ -129,7 +132,7 @@ public abstract class ListScope extends DelegatingScope {
     @Override
     public Pair<String, SqlValidatorNamespace>
     findQualifyingTableName( final String columnName, SqlNode ctx ) {
-        final SqlNameMatcher nameMatcher = validator.catalogReader.nameMatcher();
+        final NameMatcher nameMatcher = validator.catalogReader.nameMatcher();
         final Map<String, ScopeChild> map = findQualifyingTableNames( columnName, ctx, nameMatcher );
         switch ( map.size() ) {
             case 0:
@@ -145,7 +148,7 @@ public abstract class ListScope extends DelegatingScope {
 
     @Override
     public Map<String, ScopeChild>
-    findQualifyingTableNames( String columnName, SqlNode ctx, SqlNameMatcher nameMatcher ) {
+    findQualifyingTableNames( String columnName, SqlNode ctx, NameMatcher nameMatcher ) {
         final Map<String, ScopeChild> map = new HashMap<>();
         for ( ScopeChild child : children ) {
             final ResolvedImpl resolved = new ResolvedImpl();
@@ -164,7 +167,7 @@ public abstract class ListScope extends DelegatingScope {
 
 
     @Override
-    public void resolve( List<String> names, SqlNameMatcher nameMatcher, boolean deep, Resolved resolved ) {
+    public void resolve( List<String> names, NameMatcher nameMatcher, boolean deep, Resolved resolved ) {
         // First resolve by looking through the child namespaces.
         final ScopeChild child0 = findChild( names, nameMatcher );
         if ( child0 != null ) {
@@ -210,7 +213,7 @@ public abstract class ListScope extends DelegatingScope {
 
     @Override
     public RelDataType resolveColumn( String columnName, SqlNode ctx ) {
-        final SqlNameMatcher nameMatcher = validator.catalogReader.nameMatcher();
+        final NameMatcher nameMatcher = validator.catalogReader.nameMatcher();
         int found = 0;
         RelDataType type = null;
         for ( ScopeChild child : children ) {

@@ -20,8 +20,12 @@ package org.polypheny.db.languages.sql;
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import java.util.Objects;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.FunctionCategory;
+import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.languages.sql.fun.SqlTrimFunction;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
@@ -393,8 +397,8 @@ public class SqlJdbcFunctionCall extends SqlFunction {
 
 
     @Override
-    public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
-        thisOperands = operands;
+    public Call createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
+        thisOperands = (SqlNode[]) operands;
         return super.createCall( functionQualifier, pos, operands );
     }
 
@@ -427,16 +431,16 @@ public class SqlJdbcFunctionCall extends SqlFunction {
         // Override SqlFunction.deriveType, because function-resolution is not relevant to a JDBC function call.
         // REVIEW: jhyde: Should SqlJdbcFunctionCall even be a subclass of SqlFunction?
 
-        for ( SqlNode operand : call.getOperandList() ) {
+        for ( Node operand : call.getOperandList() ) {
             RelDataType nodeType = validator.deriveType( scope, operand );
-            ((SqlValidatorImpl) validator).setValidatedNodeType( operand, nodeType );
+            ((SqlValidatorImpl) validator).setValidatedNodeType( (SqlNode) operand, nodeType );
         }
         return validateOperands( validator, scope, call );
     }
 
 
     @Override
-    public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
+    public RelDataType inferReturnType( OperatorBinding opBinding ) {
         // only expected to come here if validator called this method
         SqlCallBinding callBinding = (SqlCallBinding) opBinding;
 
@@ -466,9 +470,9 @@ public class SqlJdbcFunctionCall extends SqlFunction {
         writer.print( "{fn " );
         writer.print( jdbcName );
         final SqlWriter.Frame frame = writer.startList( "(", ")" );
-        for ( SqlNode operand : call.getOperandList() ) {
+        for ( Node operand : call.getOperandList() ) {
             writer.sep( "," );
-            operand.unparse( writer, leftPrec, rightPrec );
+            ((SqlNode) operand).unparse( writer, leftPrec, rightPrec );
         }
         writer.endList( frame );
         writer.print( "}" );
@@ -522,6 +526,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
         SqlOperator getOperator();
 
         String isValidArgCount( SqlCallBinding binding );
+
     }
 
 
@@ -546,7 +551,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
 
         @Override
         public SqlCall createCall( ParserPos pos, SqlNode... operands ) {
-            return operator.createCall( pos, operands );
+            return (SqlCall) operator.createCall( pos, operands );
         }
 
 
@@ -554,6 +559,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
         public String isValidArgCount( SqlCallBinding binding ) {
             return null; // any number of arguments is valid
         }
+
     }
 
 
@@ -624,6 +630,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
             }
             return newOrder;
         }
+
     }
 
 
@@ -756,6 +763,8 @@ public class SqlJdbcFunctionCall extends SqlFunction {
         public MakeCall lookup( String name ) {
             return map.get( name );
         }
+
     }
+
 }
 

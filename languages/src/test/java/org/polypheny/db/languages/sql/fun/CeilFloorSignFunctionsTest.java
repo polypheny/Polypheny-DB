@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.fun;
+package org.polypheny.db.languages.sql.fun;
 
 
 import com.google.common.collect.ImmutableList;

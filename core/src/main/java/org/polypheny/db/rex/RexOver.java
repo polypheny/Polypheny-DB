@@ -74,7 +74,7 @@ public class RexOver extends RexCall {
      * @param window Window specification
      * @param distinct Aggregate operator is applied on distinct elements
      */
-    <T extends Operator & AggFunction> RexOver( RelDataType type, T op, List<RexNode> operands, RexWindow window, boolean distinct ) {
+    RexOver( RelDataType type, Operator op, List<RexNode> operands, RexWindow window, boolean distinct ) {
         super( type, op, operands );
         Preconditions.checkArgument( op.isAggregator() );
         this.window = Objects.requireNonNull( window );
@@ -85,8 +85,8 @@ public class RexOver extends RexCall {
     /**
      * Returns the aggregate operator for this expression.
      */
-    public <T extends Operator & AggFunction> T getAggOperator() {
-        return (T) getOperator();
+    public Operator getAggOperator() {
+        return getOperator();
     }
 
 

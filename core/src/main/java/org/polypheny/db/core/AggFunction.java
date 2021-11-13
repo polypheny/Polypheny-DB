@@ -16,7 +16,9 @@
 
 package org.polypheny.db.core;
 
-public interface AggFunction {
+import lombok.Getter;
+
+public interface AggFunction extends Function {
 
     Kind getKind();
 

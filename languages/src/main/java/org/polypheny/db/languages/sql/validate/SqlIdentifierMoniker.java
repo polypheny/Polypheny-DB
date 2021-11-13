@@ -19,6 +19,9 @@ package org.polypheny.db.languages.sql.validate;
 
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.core.Identifier;
+import org.polypheny.db.core.SqlMoniker;
+import org.polypheny.db.core.SqlMonikerType;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 
 
@@ -51,7 +54,7 @@ public class SqlIdentifierMoniker implements SqlMoniker {
 
 
     @Override
-    public SqlIdentifier toIdentifier() {
+    public Identifier toIdentifier() {
         return id;
     }
 

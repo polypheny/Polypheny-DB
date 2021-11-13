@@ -37,6 +37,7 @@ package org.polypheny.db.rel.rules;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.RelOptRuleOperand;
@@ -55,7 +56,6 @@ import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexProgramBuilder;
-import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.Pair;
@@ -175,7 +175,7 @@ public class JoinProjectTransposeRule extends RelOptRule {
         // Create a row type representing a concatenation of the inputs underneath the projects that feed into the join.  This is the input into the bottom RexProgram.  Note that the join type is an inner
         // join because the inputs haven't actually been joined yet.
         RelDataType joinChildrenRowType =
-                SqlValidatorUtil.deriveJoinRowType(
+                ValidatorUtil.deriveJoinRowType(
                         leftJoinChild.getRowType(),
                         rightJoinChild.getRowType(),
                         JoinRelType.INNER,
@@ -345,5 +345,6 @@ public class JoinProjectTransposeRule extends RelOptRule {
             }
         }
     }
+
 }
 

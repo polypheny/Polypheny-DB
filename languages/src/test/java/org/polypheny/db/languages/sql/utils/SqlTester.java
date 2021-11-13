@@ -25,9 +25,9 @@ import org.polypheny.db.languages.sql.Lex;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlOperatorTable;
 import org.polypheny.db.languages.sql.SqlTestFactory;
+import org.polypheny.db.languages.sql.utils.SqlValidatorTestCase.Tester;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.utils.SqlValidatorTestCase.Tester;
 
 
 /**

@@ -43,6 +43,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.SemiJoinType;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.Strong;
 import org.polypheny.db.rel.RelNode;
@@ -58,8 +60,6 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.sql.SemiJoinType;
-import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.util.BitSets;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -684,6 +684,7 @@ public class PushProjector {
 
             return -1;
         }
+
     }
 
 
@@ -712,15 +713,16 @@ public class PushProjector {
          * Constant condition that replies {@code true} for all expressions.
          */
         ExprCondition TRUE = expr -> true;
+
     }
 
 
     /**
      * An expression condition that evaluates to true if the expression is a call to one of a set of operators.
      */
-    class OperatorExprCondition implements ExprCondition {
+    static class OperatorExprCondition implements ExprCondition {
 
-        private final Set<SqlOperator> operatorSet;
+        private final Set<Operator> operatorSet;
 
 
         /**
@@ -728,7 +730,7 @@ public class PushProjector {
          *
          * @param operatorSet Set of operators
          */
-        OperatorExprCondition( Iterable<? extends SqlOperator> operatorSet ) {
+        OperatorExprCondition( Iterable<? extends Operator> operatorSet ) {
             this.operatorSet = ImmutableSet.copyOf( operatorSet );
         }
 
@@ -737,6 +739,8 @@ public class PushProjector {
         public boolean test( RexNode expr ) {
             return expr instanceof RexCall && operatorSet.contains( ((RexCall) expr).getOperator() );
         }
+
     }
+
 }
 

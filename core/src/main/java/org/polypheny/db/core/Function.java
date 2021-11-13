@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,24 +14,25 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql.utils;
+package org.polypheny.db.core;
+
+import lombok.Getter;
+
+public interface Function extends Node {
+
+    FunctionType getFunctionType();
+
+    enum FunctionType {
+        COUNT( true ),
+        SINGLE_VALUE( true );
+
+        @Getter
+        private final boolean isAgg;
 
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import org.polypheny.db.languages.sql.Lex;
-
-
-/**
- * Annotation that indicates that test method should be run with given lex configuration.
- */
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.METHOD })
-public @interface WithLex {
-
-    Lex value() default Lex.ORACLE;
+        FunctionType( boolean isAgg ) {
+            this.isAgg = isAgg;
+        }
+    }
 
 }
-

@@ -18,8 +18,8 @@ package org.polypheny.db.languages.sql.advise;
 
 
 import java.util.List;
-import org.polypheny.db.languages.sql.validate.SqlMoniker;
-import org.polypheny.db.languages.sql.validate.SqlMonikerType;
+import org.polypheny.db.core.SqlMoniker;
+import org.polypheny.db.core.SqlMonikerType;
 
 
 /**

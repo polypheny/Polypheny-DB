@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql.validate;
+package org.polypheny.db.core;
 
 
 import com.google.common.collect.Ordering;
 import java.util.Comparator;
 import java.util.List;
-import org.polypheny.db.languages.sql.SqlIdentifier;
 
 
 /**
@@ -54,10 +53,13 @@ public interface SqlMoniker {
     List<String> getFullyQualifiedNames();
 
     /**
-     * Creates a {@link SqlIdentifier} containing the fully-qualified name.
+     * Creates a {@link Identifier} containing the fully-qualified name.
+     *
+     * @return
      */
-    SqlIdentifier toIdentifier();
+    Identifier toIdentifier();
 
     String id();
+
 }
 

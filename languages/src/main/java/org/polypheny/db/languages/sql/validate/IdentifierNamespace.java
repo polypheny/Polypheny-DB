@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.NameMatcher;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -88,7 +89,7 @@ public class IdentifierNamespace extends AbstractNamespace {
 
 
     private SqlValidatorNamespace resolveImpl( SqlIdentifier id ) {
-        final SqlNameMatcher nameMatcher = validator.catalogReader.nameMatcher();
+        final NameMatcher nameMatcher = validator.catalogReader.nameMatcher();
         final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
         final List<String> names = SqlIdentifier.toStar( id.names );
         try {
@@ -115,7 +116,7 @@ public class IdentifierNamespace extends AbstractNamespace {
 
         // Failed to match.  If we're matching case-sensitively, try a more lenient match. If we find something we can offer a helpful hint.
         if ( nameMatcher.isCaseSensitive() ) {
-            final SqlNameMatcher liberalMatcher = SqlNameMatchers.liberal();
+            final NameMatcher liberalMatcher = SqlNameMatchers.liberal();
             resolved.clear();
             parentScope.resolveTable( names, liberalMatcher, SqlValidatorScope.Path.EMPTY, resolved );
             if ( resolved.count() == 1 ) {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql.validate;
+package org.polypheny.db.core;
 
 
 import java.util.List;
@@ -27,9 +27,9 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 /**
  * Checks whether two names are the same according to a case-sensitivity policy.
  *
- * @see SqlNameMatchers
+ * #@see SqlNameMatchers
  */
-public interface SqlNameMatcher {
+public interface NameMatcher {
 
     /**
      * Returns whether name matching is case-sensitive.
@@ -77,5 +77,6 @@ public interface SqlNameMatcher {
      * Creates a set that has the same case-sensitivity as this matcher.
      */
     Set<String> createSet();
+
 }
 

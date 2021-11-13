@@ -394,7 +394,7 @@ public abstract class Window extends SingleRel {
          * @param ordinal Ordinal within its partition
          * @param distinct Eliminate duplicates before applying aggregate function
          */
-        public <T extends Operator & AggFunction> RexWinAggCall( T aggFun, RelDataType type, List<RexNode> operands, int ordinal, boolean distinct ) {
+        public RexWinAggCall( Operator aggFun, RelDataType type, List<RexNode> operands, int ordinal, boolean distinct ) {
             super( type, aggFun, operands );
             this.ordinal = ordinal;
             this.distinct = distinct;

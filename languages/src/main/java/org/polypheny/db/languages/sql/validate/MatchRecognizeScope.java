@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.polypheny.db.core.NameMatcher;
 import org.polypheny.db.languages.sql.SqlMatchRecognize;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.rel.type.RelDataType;
@@ -74,7 +75,7 @@ public class MatchRecognizeScope extends ListScope {
 
     @Override
     public Map<String, ScopeChild>
-    findQualifyingTableNames( String columnName, SqlNode ctx, SqlNameMatcher nameMatcher ) {
+    findQualifyingTableNames( String columnName, SqlNode ctx, NameMatcher nameMatcher ) {
         final Map<String, ScopeChild> map = new HashMap<>();
         for ( ScopeChild child : children ) {
             final RelDataType rowType = child.namespace.getRowType();
@@ -92,7 +93,7 @@ public class MatchRecognizeScope extends ListScope {
 
 
     @Override
-    public void resolve( List<String> names, SqlNameMatcher nameMatcher, boolean deep, Resolved resolved ) {
+    public void resolve( List<String> names, NameMatcher nameMatcher, boolean deep, Resolved resolved ) {
         if ( patternVars.contains( names.get( 0 ) ) ) {
             final Step path = new EmptyPath().plus( null, 0, null, StructKind.FULLY_QUALIFIED );
             final ScopeChild child = children.get( 0 );

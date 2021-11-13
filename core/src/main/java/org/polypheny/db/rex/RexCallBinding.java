@@ -37,6 +37,9 @@ package org.polypheny.db.rex;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelFieldCollation;
@@ -53,9 +56,9 @@ import org.polypheny.db.sql.validate.SqlValidatorException;
 
 
 /**
- * <code>RexCallBinding</code> implements {@link SqlOperatorBinding} by referring to an underlying collection of {@link RexNode} operands.
+ * <code>RexCallBinding</code> implements {@link OperatorBinding} by referring to an underlying collection of {@link RexNode} operands.
  */
-public class RexCallBinding extends SqlOperatorBinding {
+public class RexCallBinding extends OperatorBinding {
 
     @Getter
     private final List<RexNode> operands;
@@ -63,7 +66,7 @@ public class RexCallBinding extends SqlOperatorBinding {
     private final List<RelCollation> inputCollations;
 
 
-    public RexCallBinding( RelDataTypeFactory typeFactory, SqlOperator sqlOperator, List<? extends RexNode> operands, List<RelCollation> inputCollations ) {
+    public RexCallBinding( RelDataTypeFactory typeFactory, Operator sqlOperator, List<? extends RexNode> operands, List<RelCollation> inputCollations ) {
         super( typeFactory, sqlOperator );
         this.operands = ImmutableList.copyOf( operands );
         this.inputCollations = ImmutableList.copyOf( inputCollations );
@@ -74,7 +77,7 @@ public class RexCallBinding extends SqlOperatorBinding {
      * Creates a binding of the appropriate type.
      */
     public static RexCallBinding create( RelDataTypeFactory typeFactory, RexCall call, List<RelCollation> inputCollations ) {
-        if ( call.getKind() == SqlKind.CAST ) {
+        if ( call.getKind() == Kind.CAST ) {
             return new RexCastCallBinding( typeFactory, call.getOperator(), call.getOperands(), call.getType(), inputCollations );
         }
         return new RexCallBinding( typeFactory, call.getOperator(), call.getOperands(), inputCollations );
@@ -158,7 +161,7 @@ public class RexCallBinding extends SqlOperatorBinding {
         private final RelDataType type;
 
 
-        RexCastCallBinding( RelDataTypeFactory typeFactory, SqlOperator sqlOperator, List<? extends RexNode> operands, RelDataType type, List<RelCollation> inputCollations ) {
+        RexCastCallBinding( RelDataTypeFactory typeFactory, Operator sqlOperator, List<? extends RexNode> operands, RelDataType type, List<RelCollation> inputCollations ) {
             super( typeFactory, sqlOperator, operands, inputCollations );
             this.type = type;
         }

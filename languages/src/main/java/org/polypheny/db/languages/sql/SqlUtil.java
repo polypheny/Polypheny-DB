@@ -269,12 +269,12 @@ public abstract class SqlUtil {
                         (operator instanceof SqlSetOperator)
                                 ? SqlWriter.FrameTypeEnum.SETOP
                                 : SqlWriter.FrameTypeEnum.SIMPLE );
-        call.operand( 0 ).unparse( writer, leftPrec, operator.getLeftPrec() );
+        ((SqlNode) call.operand( 0 )).unparse( writer, leftPrec, operator.getLeftPrec() );
         final boolean needsSpace = operator.needsSpace();
         writer.setNeedWhitespace( needsSpace );
         writer.sep( operator.getName() );
         writer.setNeedWhitespace( needsSpace );
-        call.operand( 1 ).unparse( writer, operator.getRightPrec(), rightPrec );
+        ((SqlNode) call.operand( 1 )).unparse( writer, operator.getRightPrec(), rightPrec );
         writer.endList( frame );
     }
 
@@ -616,30 +616,6 @@ public abstract class SqlUtil {
      */
     public static boolean isCallTo( SqlNode node, SqlOperator operator ) {
         return (node instanceof SqlCall) && (((SqlCall) node).getOperator() == operator);
-    }
-
-
-    /**
-     * Creates the type of an {@link org.polypheny.db.util.NlsString}.
-     *
-     * The type inherits the NlsString's {@link Charset} and {@link SqlCollation}, if they are set, otherwise it gets the system defaults.
-     *
-     * @param typeFactory Type factory
-     * @param str String
-     * @return Type, including collation and charset
-     */
-    public static RelDataType createNlsStringType( RelDataTypeFactory typeFactory, NlsString str ) {
-        Charset charset = str.getCharset();
-        if ( null == charset ) {
-            charset = typeFactory.getDefaultCharset();
-        }
-        Collation collation = str.getCollation();
-        if ( null == collation ) {
-            collation = Collation.COERCIBLE;
-        }
-        RelDataType type = typeFactory.createPolyType( PolyType.CHAR, str.getValue().length() );
-        type = typeFactory.createTypeWithCharsetAndCollation( type, charset, collation );
-        return type;
     }
 
 

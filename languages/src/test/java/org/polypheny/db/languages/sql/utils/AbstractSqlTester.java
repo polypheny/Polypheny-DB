@@ -33,47 +33,40 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
+import org.polypheny.db.core.Call;
+import org.polypheny.db.core.Collation;
+import org.polypheny.db.core.Collation.Coercibility;
 import org.polypheny.db.core.Conformance;
-import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.SqlStdOperatorTable;
-import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlTestFactory;
+import org.polypheny.db.core.ConformanceEnum;
+import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParseException;
+import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.languages.sql.Lex;
+import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.languages.sql.SqlIntervalLiteral;
+import org.polypheny.db.languages.sql.SqlLiteral;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlOperator;
+import org.polypheny.db.languages.sql.SqlOperatorTable;
+import org.polypheny.db.languages.sql.SqlSelect;
+import org.polypheny.db.languages.sql.SqlTestFactory;
+import org.polypheny.db.languages.sql.SqlUtil;
+import org.polypheny.db.languages.sql.dialect.AnsiSqlDialect;
 import org.polypheny.db.languages.sql.parser.SqlParser;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil.StringAndPos;
-import org.polypheny.db.languages.sql.utils.SqlTester.ParameterChecker;
-import org.polypheny.db.languages.sql.utils.SqlTester.ResultChecker;
-import org.polypheny.db.languages.sql.utils.SqlTester.VmName;
+import org.polypheny.db.languages.sql.util.SqlShuttle;
+import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
+import org.polypheny.db.languages.sql.validate.SqlValidatorNamespace;
+import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.runtime.Utilities;
-import org.polypheny.db.sql.Lex;
-import org.polypheny.db.sql.SqlCall;
-import org.polypheny.db.sql.SqlCollation;
-import org.polypheny.db.sql.SqlCollation.Coercibility;
-import org.polypheny.db.sql.SqlIntervalLiteral;
-import org.polypheny.db.sql.SqlLiteral;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.SqlOperatorTable;
-import org.polypheny.db.sql.SqlSelect;
-import org.polypheny.db.sql.SqlUtil;
-import org.polypheny.db.sql.dialect.AnsiSqlDialect;
-import org.polypheny.db.sql.parser.SqlParseException;
-import org.polypheny.db.sql.parser.SqlParser;
-import org.polypheny.db.sql.parser.SqlParserUtil;
-import org.polypheny.db.sql.parser.SqlParserUtil.StringAndPos;
-import org.polypheny.db.sql.util.SqlShuttle;
 import org.polypheny.db.sql.utils.SqlValidatorTestCase.Tester;
-import org.polypheny.db.sql.validate.SqlConformance;
-import org.polypheny.db.sql.validate.SqlConformanceEnum;
-import org.polypheny.db.sql.validate.SqlMonotonicity;
-import org.polypheny.db.sql.validate.SqlValidator;
-import org.polypheny.db.sql.validate.SqlValidatorNamespace;
-import org.polypheny.db.sql.validate.SqlValidatorScope;
-import org.polypheny.db.test.SqlTestFactory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TestUtil;
@@ -285,7 +278,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     public void checkCollation( String expression, String expectedCollationName, Coercibility expectedCoercibility ) {
         for ( String sql : buildQueries( expression ) ) {
             RelDataType actualType = getColumnType( sql );
-            SqlCollation collation = actualType.getCollation();
+            Collation collation = actualType.getCollation();
 
             assertEquals( expectedCollationName, collation.getCollationName() );
             assertEquals( expectedCoercibility, collation.getCoercibility() );
@@ -307,31 +300,31 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
 
 
     @Override
-    public org.polypheny.db.sql.utils.SqlTester withQuoting( Quoting quoting ) {
+    public SqlTester withQuoting( Quoting quoting ) {
         return with( "quoting", quoting );
     }
 
 
     @Override
-    public org.polypheny.db.sql.utils.SqlTester withQuotedCasing( Casing casing ) {
+    public SqlTester withQuotedCasing( Casing casing ) {
         return with( "quotedCasing", casing );
     }
 
 
     @Override
-    public org.polypheny.db.sql.utils.SqlTester withUnquotedCasing( Casing casing ) {
+    public SqlTester withUnquotedCasing( Casing casing ) {
         return with( "unquotedCasing", casing );
     }
 
 
     @Override
-    public org.polypheny.db.sql.utils.SqlTester withCaseSensitive( boolean sensitive ) {
+    public SqlTester withCaseSensitive( boolean sensitive ) {
         return with( "caseSensitive", sensitive );
     }
 
 
     @Override
-    public org.polypheny.db.sql.utils.SqlTester withLex( Lex lex ) {
+    public SqlTester withLex( Lex lex ) {
         return withQuoting( lex.quoting )
                 .withCaseSensitive( lex.caseSensitive )
                 .withQuotedCasing( lex.quotedCasing )
@@ -340,11 +333,11 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
 
 
     @Override
-    public org.polypheny.db.sql.utils.SqlTester withConformance( Conformance conformance ) {
+    public SqlTester withConformance( Conformance conformance ) {
         if ( conformance == null ) {
-            conformance = SqlConformanceEnum.DEFAULT;
+            conformance = ConformanceEnum.DEFAULT;
         }
-        final org.polypheny.db.sql.utils.SqlTester tester = with( "conformance", conformance );
+        final SqlTester tester = with( "conformance", conformance );
         // TODO MV: Fix
 //        if ( conformance instanceof SqlConformanceEnum ) {
 //            return tester.withConnectionFactory( PolyphenyDbAssert.EMPTY_CONNECTION_FACTORY.with( PolyphenyDbConnectionProperty.CONFORMANCE, conformance ) );
@@ -355,7 +348,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
 
 
     @Override
-    public org.polypheny.db.sql.utils.SqlTester withOperatorTable( SqlOperatorTable operatorTable ) {
+    public SqlTester withOperatorTable( SqlOperatorTable operatorTable ) {
         return with( "operatorTable", operatorTable );
     }
 
@@ -367,12 +360,12 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     } */
 
 
-    protected final org.polypheny.db.sql.utils.SqlTester with( final String name, final Object value ) {
+    protected final SqlTester with( final String name, final Object value ) {
         return with( factory.with( name, value ) );
     }
 
 
-    protected abstract org.polypheny.db.sql.utils.SqlTester with( SqlTestFactory factory );
+    protected abstract SqlTester with( SqlTestFactory factory );
 
     // SqlTester methods
 
@@ -547,7 +540,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
         final SqlValidator validator = getValidator();
         final SqlNode node = parseAndValidate( validator, sql );
         final SqlSelect select = (SqlSelect) node;
-        final SqlNode selectItem0 = select.getSelectList().get( 0 );
+        final SqlNode selectItem0 = select.getSelectList().getSqlList().get( 0 );
         final SqlValidatorScope scope = validator.getSelectScope( select );
         return selectItem0.getMonotonicity( scope );
     }
@@ -593,34 +586,39 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
         final Collection<SqlNode> literalSet = new LinkedHashSet<>();
         x.accept(
                 new SqlShuttle() {
-                    private final List<SqlOperator> ops = ImmutableList.of( SqlStdOperatorTable.LITERAL_CHAIN, SqlStdOperatorTable.LOCALTIME, SqlStdOperatorTable.LOCALTIMESTAMP, SqlStdOperatorTable.CURRENT_TIME, SqlStdOperatorTable.CURRENT_TIMESTAMP );
+                    private final List<Operator> ops = ImmutableList.of(
+                            StdOperatorRegistry.get( "LITERAL_CHAIN" ),
+                            StdOperatorRegistry.get( "LOCALTIME" ),
+                            StdOperatorRegistry.get( "LOCALTIMESTAMP" ),
+                            StdOperatorRegistry.get( "CURRENT_TIME" ),
+                            StdOperatorRegistry.get( "CURRENT_TIMESTAMP" ) );
 
 
                     @Override
-                    public SqlNode visit( SqlLiteral literal ) {
+                    public SqlNode visit( Literal literal ) {
                         if ( !isNull( literal ) && literal.getTypeName() != PolyType.SYMBOL ) {
-                            literalSet.add( literal );
+                            literalSet.add( (SqlNode) literal );
                         }
-                        return literal;
+                        return (SqlNode) literal;
                     }
 
 
                     @Override
-                    public SqlNode visit( SqlCall call ) {
-                        final SqlOperator operator = call.getOperator();
-                        if ( operator == SqlStdOperatorTable.CAST && isNull( call.operand( 0 ) ) ) {
-                            literalSet.add( call );
-                            return call;
+                    public SqlNode visit( Call call ) {
+                        final SqlOperator operator = (SqlOperator) call.getOperator();
+                        if ( operator == StdOperatorRegistry.get( "CAST" ) && isNull( call.operand( 0 ) ) ) {
+                            literalSet.add( (SqlNode) call );
+                            return (SqlNode) call;
                         } else if ( ops.contains( operator ) ) {
                             // "Argument to function 'LOCALTIME' must be a literal"
-                            return call;
+                            return (SqlNode) call;
                         } else {
                             return super.visit( call );
                         }
                     }
 
 
-                    private boolean isNull( SqlNode sqlNode ) {
+                    private boolean isNull( Node sqlNode ) {
                         return sqlNode instanceof SqlLiteral &&
                                 ((SqlLiteral) sqlNode).getTypeName() == PolyType.NULL;
                     }

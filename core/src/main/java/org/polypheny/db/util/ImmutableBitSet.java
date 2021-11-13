@@ -483,7 +483,7 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
      * Returns the index of the first bit that is set to {@code true} that occurs on or after the specified starting index. If no such
      * bit exists then {@code -1} is returned.
      *
-     * Based upon {@link BitSet#nextSetBit}.
+     * Based upon {#@link BitSet#nextSetBit}.
      *
      * @param fromIndex the index to start checking from (inclusive)
      * @return the index of the next set bit, or {@code -1} if there is no such bit

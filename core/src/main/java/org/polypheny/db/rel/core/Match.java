@@ -48,6 +48,8 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import org.polypheny.db.core.AggFunction;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -60,7 +62,6 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexPatternFieldRef;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.fun.SqlBitOpAggFunction;
 import org.polypheny.db.sql.fun.SqlMinMaxAggFunction;
 import org.polypheny.db.sql.fun.SqlSumAggFunction;
@@ -278,7 +279,7 @@ public abstract class Match extends SingleRel {
 
         @Override
         public Object visitCall( RexCall call ) {
-            SqlAggFunction aggFunction = null;
+            AggFunction aggFunction = null;
             switch ( call.getKind() ) {
                 case SUM:
                     aggFunction = new SqlSumAggFunction( call.getType() );
@@ -339,6 +340,7 @@ public abstract class Match extends SingleRel {
         public void go( RexCall call ) {
             call.accept( this );
         }
+
     }
 
 
@@ -383,6 +385,7 @@ public abstract class Match extends SingleRel {
             }
             return patternVars;
         }
+
     }
 
 
@@ -394,8 +397,8 @@ public abstract class Match extends SingleRel {
         public final int ordinal;
 
 
-        RexMRAggCall( SqlAggFunction aggFun, RelDataType type, List<RexNode> operands, int ordinal ) {
-            super( type, aggFun, operands );
+        RexMRAggCall( AggFunction aggFun, RelDataType type, List<RexNode> operands, int ordinal ) {
+            super( type, (Operator) aggFun, operands );
             this.ordinal = ordinal;
             digest = toString(); // can compute here because class is final
         }
@@ -405,6 +408,8 @@ public abstract class Match extends SingleRel {
         public int compareTo( RexMRAggCall o ) {
             return toString().compareTo( o.toString() );
         }
+
     }
+
 }
 

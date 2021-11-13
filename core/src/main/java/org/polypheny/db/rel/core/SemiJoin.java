@@ -36,6 +36,7 @@ package org.polypheny.db.rel.core;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -46,7 +47,6 @@ import org.polypheny.db.rel.metadata.RelMdUtil;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Util;
 
@@ -114,7 +114,7 @@ public class SemiJoin extends EquiJoin {
      */
     @Override
     public RelDataType deriveRowType() {
-        return SqlValidatorUtil.deriveJoinRowType(
+        return ValidatorUtil.deriveJoinRowType(
                 left.getRowType(),
                 null,
                 JoinRelType.INNER,
@@ -122,5 +122,6 @@ public class SemiJoin extends EquiJoin {
                 null,
                 ImmutableList.of() );
     }
+
 }
 

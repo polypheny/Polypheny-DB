@@ -41,6 +41,9 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.avatica.Meta;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.core.ExplainFormat;
+import org.polypheny.db.core.ExplainLevel;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Validator;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.plan.Convention;
@@ -289,14 +292,14 @@ public abstract class Prepare {
 
         // For transformation from DML -> DML, use result of rewrite (e.g. UPDATE -> MERGE).  For anything else
         // (e.g. CALL -> SELECT), use original kind.
-        if ( !root.kind.belongsTo( SqlKind.DML ) ) {
+        if ( !root.kind.belongsTo( Kind.DML ) ) {
             root = root.withKind( sqlNodeOriginal.getKind() );
         }
         return implement( root );
     }
 
 
-    protected LogicalTableModify.Operation mapTableModOp( boolean isDml, SqlKind sqlKind ) {
+    protected LogicalTableModify.Operation mapTableModOp( boolean isDml, Kind sqlKind ) {
         if ( !isDml ) {
             return null;
         }

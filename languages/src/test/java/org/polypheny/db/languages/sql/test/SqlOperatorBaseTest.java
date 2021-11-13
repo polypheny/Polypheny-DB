@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.test;
+package org.polypheny.db.languages.sql.test;
 
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -42,36 +42,38 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.polypheny.db.core.ConformanceEnum;
+import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.languages.sql.SqlAggFunction;
+import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.languages.sql.SqlCallBinding;
+import org.polypheny.db.languages.sql.SqlDataTypeSpec;
+import org.polypheny.db.languages.sql.SqlIdentifier;
+import org.polypheny.db.languages.sql.SqlJdbcFunctionCall;
+import org.polypheny.db.languages.sql.SqlLiteral;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlNodeList;
+import org.polypheny.db.languages.sql.SqlOperator;
+import org.polypheny.db.languages.sql.SqlSyntax;
+import org.polypheny.db.languages.sql.SqlTestFactory;
+import org.polypheny.db.languages.sql.dialect.PolyphenyDbSqlDialect;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.languages.sql.pretty.SqlPrettyWriter;
+import org.polypheny.db.languages.sql.utils.AbstractSqlTester;
+import org.polypheny.db.languages.sql.utils.SqlRuntimeTester;
+import org.polypheny.db.languages.sql.utils.SqlTester;
+import org.polypheny.db.languages.sql.utils.SqlTester.VmName;
+import org.polypheny.db.languages.sql.utils.SqlTests;
+import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
+import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.plan.Strong;
 import org.polypheny.db.plan.Strong.Policy;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Hook.Closeable;
-import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.sql.SqlCall;
-import org.polypheny.db.sql.SqlCallBinding;
-import org.polypheny.db.sql.SqlDataTypeSpec;
-import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.SqlJdbcFunctionCall;
-import org.polypheny.db.sql.SqlLiteral;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlNodeList;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
-import org.polypheny.db.core.SqlStdOperatorTable;
-import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.sql.pretty.SqlPrettyWriter;
-import org.polypheny.db.sql.utils.AbstractSqlTester;
-import org.polypheny.db.sql.utils.SqlRuntimeTester;
-import org.polypheny.db.sql.utils.SqlTester;
-import org.polypheny.db.sql.utils.SqlTester.VmName;
-import org.polypheny.db.sql.utils.SqlTests;
-import org.polypheny.db.sql.validate.SqlConformanceEnum;
-import org.polypheny.db.sql.validate.SqlValidatorImpl;
-import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.test.PolyphenyDbAssert;
-import org.polypheny.db.test.SqlTestFactory;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyType;
@@ -98,7 +100,7 @@ import org.polypheny.db.util.Util;
  * <li>Analyze which operators are adequately tested.
  * </ul>
  *
- * A typical method will be named after the operator it is testing (say <code>testSubstringFunc</code>). It first calls {@link SqlTester#setFor(org.polypheny.db.sql.SqlOperator, VmName...)}
+ * A typical method will be named after the operator it is testing (say <code>testSubstringFunc</code>). It first calls {@link SqlTester#setFor(SqlOperator, VmName...)}
  * to declare which operator it is testing.
  *
  * <code>
@@ -297,7 +299,7 @@ public abstract class SqlOperatorBaseTest {
         for ( SqlOperator sqlOperator : operatorTable.getOperatorList() ) {
             String operatorName = sqlOperator.getName();
             List<SqlOperator> routines = new ArrayList<>();
-            operatorTable.lookupOperatorOverloads( new SqlIdentifier( operatorName, ParserPos.ZERO ), null, sqlOperator.getSyntax(), routines );
+            operatorTable.lookupOperatorOverloads( new SqlIdentifier( operatorName, ParserPos.ZERO ), null, SqlSyntax.fromSyntax( sqlOperator.getSyntax() ), routines );
 
             routines.removeIf( operator -> !sqlOperator.getClass().isInstance( operator ) );
             assertThat( routines.size(), equalTo( 1 ) );
@@ -1343,7 +1345,7 @@ public abstract class SqlOperatorBaseTest {
                 "CHAR(17) NOT NULL" );
 
         // tests with SqlConformance
-        final SqlTester tester2 = tester.withConformance( SqlConformanceEnum.PRAGMATIC_2003 );
+        final SqlTester tester2 = tester.withConformance( ConformanceEnum.PRAGMATIC_2003 );
         tester2.checkString(
                 "case 2 when 1 then 'a' when 2 then 'bcd' end",
                 "bcd",
@@ -1833,7 +1835,7 @@ public abstract class SqlOperatorBaseTest {
     @Ignore
     public void testModOperator() {
         // "%" is allowed under MYSQL_5 SQL conformance level
-        final SqlTester tester1 = tester.withConformance( SqlConformanceEnum.MYSQL_5 );
+        final SqlTester tester1 = tester.withConformance( ConformanceEnum.MYSQL_5 );
         tester1.setFor( SqlStdOperatorTable.PERCENT_REMAINDER );
         tester1.checkScalarExact( "4%2", "0" );
         tester1.checkScalarExact( "8%5", "3" );
@@ -1863,7 +1865,7 @@ public abstract class SqlOperatorBaseTest {
     @Ignore
     public void testModPrecedence() {
         // "%" is allowed under MYSQL_5 SQL conformance level
-        final SqlTester tester1 = tester.withConformance( SqlConformanceEnum.MYSQL_5 );
+        final SqlTester tester1 = tester.withConformance( ConformanceEnum.MYSQL_5 );
         tester1.setFor( SqlStdOperatorTable.PERCENT_REMAINDER );
         tester1.checkScalarExact( "1 + 5 % 3 % 4 * 14 % 17", "12" );
         tester1.checkScalarExact( "(1 + 5 % 3) % 4 + 14 % 17", "17" );
@@ -1874,7 +1876,7 @@ public abstract class SqlOperatorBaseTest {
     @Ignore
     public void testModOperatorNull() {
         // "%" is allowed under MYSQL_5 SQL conformance level
-        final SqlTester tester1 = tester.withConformance( SqlConformanceEnum.MYSQL_5 );
+        final SqlTester tester1 = tester.withConformance( ConformanceEnum.MYSQL_5 );
         tester1.checkNull( "cast(null as integer) % 2" );
         tester1.checkNull( "4 % cast(null as tinyint)" );
         if ( !DECIMAL ) {
@@ -1887,7 +1889,7 @@ public abstract class SqlOperatorBaseTest {
     @Test
     public void testModOperatorDivByZero() {
         // "%" is allowed under MYSQL_5 SQL conformance level
-        final SqlTester tester1 = tester.withConformance( SqlConformanceEnum.MYSQL_5 );
+        final SqlTester tester1 = tester.withConformance( ConformanceEnum.MYSQL_5 );
         // The extra CASE expression is to fool Janino.  It does constant reduction and will throw the divide by zero exception while compiling the expression.  The test frame work would then issue
         // unexpected exception occurred during "validation".  You cannot submit as non-runtime because the janino exception does not have error position information and the framework is unhappy with that.
         tester1.checkFails( "3 % case 'a' when 'a' then 0 end", DIVISION_BY_ZERO_MESSAGE, true );
@@ -2785,7 +2787,7 @@ public abstract class SqlOperatorBaseTest {
         checkNullOperand( tester, "<>" );
 
         // "!=" is allowed under ORACLE_10 SQL conformance level
-        final SqlTester tester1 = tester.withConformance( SqlConformanceEnum.ORACLE_10 );
+        final SqlTester tester1 = tester.withConformance( ConformanceEnum.ORACLE_10 );
         checkNullOperand( tester1, "<>" );
     }
 
@@ -2812,7 +2814,7 @@ public abstract class SqlOperatorBaseTest {
                 "Bang equal '!=' is not allowed under the current SQL conformance level",
                 false );
         // "!=" is allowed under ORACLE_10 SQL conformance level
-        final SqlTester tester1 = tester.withConformance( SqlConformanceEnum.ORACLE_10 );
+        final SqlTester tester1 = tester.withConformance( ConformanceEnum.ORACLE_10 );
 
         tester1.checkBoolean( "1 <> 1", Boolean.FALSE );
         tester1.checkBoolean( "1 != 1", Boolean.FALSE );
@@ -5195,7 +5197,7 @@ public abstract class SqlOperatorBaseTest {
         tester.setFor( SqlStdOperatorTable.CURRENT_DATE, VM_FENNEL );
 
         // A tester with a lenient conformance that allows parentheses.
-        final SqlTester tester1 = tester.withConformance( SqlConformanceEnum.LENIENT );
+        final SqlTester tester1 = tester.withConformance( ConformanceEnum.LENIENT );
 
         tester.checkScalar(
                 "CURRENT_DATE",
@@ -5393,7 +5395,7 @@ public abstract class SqlOperatorBaseTest {
                 "Trim error: trim character must be exactly 1 character",
                 true );
 
-        final SqlTester tester1 = tester.withConformance( SqlConformanceEnum.MYSQL_5 );
+        final SqlTester tester1 = tester.withConformance( ConformanceEnum.MYSQL_5 );
         tester1.checkString(
                 "trim(leading 'eh' from 'hehe__hehe')",
                 "__hehe",
@@ -6452,7 +6454,7 @@ public abstract class SqlOperatorBaseTest {
                 "(CHAR(10) NOT NULL, INTEGER NOT NULL) MAP NOT NULL",
                 "{washington=1, obama=44}" );
 
-        final SqlTester tester2 = tester.withConformance( SqlConformanceEnum.PRAGMATIC_2003 );
+        final SqlTester tester2 = tester.withConformance( ConformanceEnum.PRAGMATIC_2003 );
         tester2.checkScalarExact(
                 "map['washington', 1, 'obama', 44]",
                 "(VARCHAR(10) NOT NULL, INTEGER NOT NULL) MAP NOT NULL",
@@ -7784,7 +7786,7 @@ public abstract class SqlOperatorBaseTest {
                         }
                         nodeList.add( arg.node );
                     }
-                    final SqlCall call = op.createCall( nodeList );
+                    final SqlCall call = (SqlCall) op.createCall( nodeList );
                     final SqlCallBinding binding = new SqlCallBinding( validator, scope, call );
                     if ( !typeChecker.checkOperandTypes( binding, false ) ) {
                         continue;
@@ -7994,7 +7996,7 @@ public abstract class SqlOperatorBaseTest {
                 if ( !type.getPolyType().allowsScale() ) {
                     scale = -1;
                 }
-                return SqlStdOperatorTable.CAST.createCall(
+                return (SqlNode) StdOperatorRegistry.get( "CAST" ).createCall(
                         ParserPos.ZERO, SqlLiteral.createNull( ParserPos.ZERO ),
                         new SqlDataTypeSpec( new SqlIdentifier( type.getPolyType().getName(), ParserPos.ZERO ), precision, scale, null, null, ParserPos.ZERO ) );
             }

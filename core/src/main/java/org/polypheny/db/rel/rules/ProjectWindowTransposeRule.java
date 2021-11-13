@@ -52,7 +52,6 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
-import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.BitSets;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -130,7 +129,7 @@ public class ProjectWindowTransposeRule extends RelOptRule {
                     final List<RexNode> clonedOperands = visitList( call.operands, update );
                     if ( update[0] ) {
                         return new RexWinAggCall(
-                                (SqlAggFunction) call.getOperator(),
+                                call.getOperator(),
                                 call.getType(),
                                 clonedOperands,
                                 ((RexWinAggCall) call).ordinal,

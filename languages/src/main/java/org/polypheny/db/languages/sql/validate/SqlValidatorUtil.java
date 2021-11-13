@@ -20,7 +20,6 @@ package org.polypheny.db.languages.sql.validate;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +35,8 @@ import org.polypheny.db.core.Conformance;
 import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.NameMatcher;
+import org.polypheny.db.core.SqlMoniker;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDataTypeSpec;
@@ -54,9 +55,6 @@ import org.polypheny.db.rel.type.RelDataTypeFieldImpl;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.schema.CustomColumnResolvingTable;
 import org.polypheny.db.schema.ExtensibleTable;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.PolyphenyDbSchema.TableEntry;
-import org.polypheny.db.schema.PolyphenyDbSchema.TypeEntry;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
@@ -280,7 +278,7 @@ public class SqlValidatorUtil {
         final Table t = table == null ? null : table.unwrap( Table.class );
 
         if ( !(t instanceof CustomColumnResolvingTable) ) {
-            final SqlNameMatcher nameMatcher = catalogReader.nameMatcher();
+            final NameMatcher nameMatcher = catalogReader.nameMatcher();
             RelDataTypeField typeField = nameMatcher.field( rowType, id.getSimple() );
 
             if ( typeField == null && isDocument ) {
@@ -308,7 +306,7 @@ public class SqlValidatorUtil {
      */
     public static SqlValidatorNamespace lookup( SqlValidatorScope scope, List<String> names ) {
         assert names.size() > 0;
-        final SqlNameMatcher nameMatcher = scope.getValidator().getCatalogReader().nameMatcher();
+        final NameMatcher nameMatcher = scope.getValidator().getCatalogReader().nameMatcher();
         final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
         scope.resolve( ImmutableList.of( names.get( 0 ) ), nameMatcher, false, resolved );
         assert resolved.count() == 1;
@@ -363,7 +361,7 @@ public class SqlValidatorUtil {
      * @param rightRowType Row type of right input to the join
      * @return List of columns that occur once on each side
      */
-    public static List<String> deriveNaturalJoinColumnList( SqlNameMatcher nameMatcher, RelDataType leftRowType, RelDataType rightRowType ) {
+    public static List<String> deriveNaturalJoinColumnList( NameMatcher nameMatcher, RelDataType leftRowType, RelDataType rightRowType ) {
         final List<String> naturalColumnNames = new ArrayList<>();
         final List<String> leftNames = leftRowType.getFieldNames();
         final List<String> rightNames = rightRowType.getFieldNames();
@@ -373,17 +371,6 @@ public class SqlValidatorUtil {
             }
         }
         return naturalColumnNames;
-    }
-
-
-    public static RelDataType createTypeFromProjection( RelDataType type, List<String> columnNameList, RelDataTypeFactory typeFactory, boolean caseSensitive ) {
-        // If the names in columnNameList and type have case-sensitive differences, the resulting type will use those from type. These are presumably more canonical.
-        final List<RelDataTypeField> fields = new ArrayList<>( columnNameList.size() );
-        for ( String name : columnNameList ) {
-            RelDataTypeField field = type.getField( name, caseSensitive, false );
-            fields.add( type.getFieldList().get( field.getIndex() ) );
-        }
-        return typeFactory.createStructType( fields );
     }
 
 
@@ -512,7 +499,7 @@ public class SqlValidatorUtil {
             String originalRelName = expr.names.get( 0 );
             String originalFieldName = expr.names.get( 1 );
 
-            final SqlNameMatcher nameMatcher = scope.getValidator().getCatalogReader().nameMatcher();
+            final NameMatcher nameMatcher = scope.getValidator().getCatalogReader().nameMatcher();
             final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
             scope.resolve( ImmutableList.of( originalRelName ), nameMatcher, false, resolved );
 
@@ -604,102 +591,6 @@ public class SqlValidatorUtil {
             flattenedBitSets.add( ImmutableBitSet.union( o ) );
         }
         return ImmutableList.copyOf( flattenedBitSets );
-    }
-
-
-    /**
-     * Finds a {@link TypeEntry} in a given schema whose type has the given name, possibly qualified.
-     *
-     * @param rootSchema root schema
-     * @param typeName name of the type, may be qualified or fully-qualified
-     * @return TypeEntry with a table with the given name, or null
-     */
-    public static TypeEntry getTypeEntry( PolyphenyDbSchema rootSchema, SqlIdentifier typeName ) {
-        final String name;
-        final List<String> path;
-        if ( typeName.isSimple() ) {
-            path = ImmutableList.of();
-            name = typeName.getSimple();
-        } else {
-            path = Util.skipLast( typeName.names );
-            name = Util.last( typeName.names );
-        }
-        PolyphenyDbSchema schema = rootSchema;
-        for ( String p : path ) {
-            if ( schema == rootSchema && SqlNameMatchers.withCaseSensitive( true ).matches( p, schema.getName() ) ) {
-                continue;
-            }
-            schema = schema.getSubSchema( p, true );
-        }
-        return schema == null ? null : schema.getType( name, false );
-    }
-
-
-    /**
-     * Finds a {@link TableEntry} in a given catalog reader whose table has the given name, possibly qualified.
-     *
-     * Uses the case-sensitivity policy of the specified catalog reader.
-     *
-     * If not found, returns null.
-     *
-     * @param catalogReader accessor to the table metadata
-     * @param names Name of table, may be qualified or fully-qualified
-     * @return TableEntry with a table with the given name, or null
-     */
-    public static PolyphenyDbSchema.TableEntry getTableEntry( SqlValidatorCatalogReader catalogReader, List<String> names ) {
-        // First look in the default schema, if any.
-        // If not found, look in the root schema.
-        for ( List<String> schemaPath : catalogReader.getSchemaPaths() ) {
-            PolyphenyDbSchema schema =
-                    getSchema(
-                            catalogReader.getRootSchema(),
-                            Iterables.concat( schemaPath, Util.skipLast( names ) ),
-                            catalogReader.nameMatcher() );
-            if ( schema == null ) {
-                continue;
-            }
-            PolyphenyDbSchema.TableEntry entry = getTableEntryFrom( schema, Util.last( names ), catalogReader.nameMatcher().isCaseSensitive() );
-            if ( entry != null ) {
-                return entry;
-            }
-        }
-        return null;
-    }
-
-
-    /**
-     * Finds and returns {@link PolyphenyDbSchema} nested to the given rootSchema with specified schemaPath.
-     *
-     * Uses the case-sensitivity policy of specified nameMatcher.
-     *
-     * If not found, returns null.
-     *
-     * @param rootSchema root schema
-     * @param schemaPath full schema path of required schema
-     * @param nameMatcher name matcher
-     * @return PolyphenyDbSchema that corresponds specified schemaPath
-     */
-    public static PolyphenyDbSchema getSchema( PolyphenyDbSchema rootSchema, Iterable<String> schemaPath, SqlNameMatcher nameMatcher ) {
-        PolyphenyDbSchema schema = rootSchema;
-        for ( String schemaName : schemaPath ) {
-            if ( schema == rootSchema && nameMatcher.matches( schemaName, schema.getName() ) ) {
-                continue;
-            }
-            schema = schema.getSubSchema( schemaName, nameMatcher.isCaseSensitive() );
-            if ( schema == null ) {
-                return null;
-            }
-        }
-        return schema;
-    }
-
-
-    private static PolyphenyDbSchema.TableEntry getTableEntryFrom( PolyphenyDbSchema schema, String name, boolean caseSensitive ) {
-        PolyphenyDbSchema.TableEntry entry = schema.getTable( name, caseSensitive );
-        if ( entry == null ) {
-            entry = schema.getTableBasedOnNullaryFunction( name, caseSensitive );
-        }
-        return entry;
     }
 
 

@@ -46,7 +46,14 @@ import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.function.Predicate;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Identifier;
+import org.polypheny.db.core.NameMatcher;
+import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.SqlMoniker;
+import org.polypheny.db.core.SqlMonikerType;
+import org.polypheny.db.core.Syntax;
+import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.rel.type.RelDataType;
@@ -62,21 +69,6 @@ import org.polypheny.db.schema.TableFunction;
 import org.polypheny.db.schema.TableMacro;
 import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.schema.impl.ScalarFunctionImpl;
-import org.polypheny.db.sql.SqlFunctionCategory;
-import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.SqlOperatorTable;
-import org.polypheny.db.sql.SqlSyntax;
-import org.polypheny.db.sql.validate.SqlMoniker;
-import org.polypheny.db.sql.validate.SqlMonikerImpl;
-import org.polypheny.db.sql.validate.SqlMonikerType;
-import org.polypheny.db.sql.validate.SqlNameMatcher;
-import org.polypheny.db.sql.validate.SqlNameMatchers;
-import org.polypheny.db.sql.validate.SqlUserDefinedAggFunction;
-import org.polypheny.db.sql.validate.SqlUserDefinedFunction;
-import org.polypheny.db.sql.validate.SqlUserDefinedTableFunction;
-import org.polypheny.db.sql.validate.SqlUserDefinedTableMacro;
-import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.checker.FamilyOperandTypeChecker;
@@ -89,7 +81,7 @@ import org.polypheny.db.util.Util;
 
 
 /**
- * Implementation of {@link org.polypheny.db.prepare.Prepare.CatalogReader} and also {@link SqlOperatorTable} based on
+ * Implementation of {@link org.polypheny.db.prepare.Prepare.CatalogReader} and also {#@link SqlOperatorTable} based on
  * tables and functions defined schemas.
  */
 public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
@@ -97,7 +89,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     protected final PolyphenyDbSchema rootSchema;
     protected final RelDataTypeFactory typeFactory;
     private final List<List<String>> schemaPaths;
-    protected final SqlNameMatcher nameMatcher;
+    protected final NameMatcher nameMatcher;
 
 
     public PolyphenyDbCatalogReader( PolyphenyDbSchema rootSchema, List<String> defaultSchema, RelDataTypeFactory typeFactory ) {
@@ -109,7 +101,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     }
 
 
-    protected PolyphenyDbCatalogReader( PolyphenyDbSchema rootSchema, SqlNameMatcher nameMatcher, List<List<String>> schemaPaths, RelDataTypeFactory typeFactory ) {
+    protected PolyphenyDbCatalogReader( PolyphenyDbSchema rootSchema, NameMatcher nameMatcher, List<List<String>> schemaPaths, RelDataTypeFactory typeFactory ) {
         this.rootSchema = Objects.requireNonNull( rootSchema );
         this.nameMatcher = nameMatcher;
         this.schemaPaths =
@@ -129,7 +121,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     @Override
     public Prepare.PreparingTable getTable( final List<String> names ) {
         // First look in the default schema, if any. If not found, look in the root schema.
-        PolyphenyDbSchema.TableEntry entry = SqlValidatorUtil.getTableEntry( this, names );
+        PolyphenyDbSchema.TableEntry entry = ValidatorUtil.getTableEntry( this, names );
         if ( entry != null ) {
             final Table table = entry.getTable();
             if ( table instanceof Wrapper ) {
@@ -156,14 +148,14 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
             }
         } else {
             for ( List<String> schemaPath : schemaPaths ) {
-                PolyphenyDbSchema schema = SqlValidatorUtil.getSchema( rootSchema, schemaPath, nameMatcher );
+                PolyphenyDbSchema schema = ValidatorUtil.getSchema( rootSchema, schemaPath, nameMatcher );
                 if ( schema != null ) {
                     schemaNameList.addAll( schema.getPath() );
                 }
             }
         }
         for ( List<String> schemaNames : schemaNameList ) {
-            PolyphenyDbSchema schema = SqlValidatorUtil.getSchema( rootSchema, Iterables.concat( schemaNames, Util.skipLast( names ) ), nameMatcher );
+            PolyphenyDbSchema schema = ValidatorUtil.getSchema( rootSchema, Iterables.concat( schemaNames, Util.skipLast( names ) ), nameMatcher );
             if ( schema != null ) {
                 final String name = Util.last( names );
                 functions2.addAll( schema.getFunctions( name, true ) );
@@ -175,7 +167,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
     @Override
     public RelDataType getNamedType( Identifier typeName ) {
-        PolyphenyDbSchema.TypeEntry typeEntry = SqlValidatorUtil.getTypeEntry( getRootSchema(), typeName );
+        PolyphenyDbSchema.TypeEntry typeEntry = ValidatorUtil.getTypeEntry( getRootSchema(), typeName );
         if ( typeEntry != null ) {
             return typeEntry.getType().apply( typeFactory );
         } else {
@@ -186,7 +178,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
     @Override
     public List<SqlMoniker> getAllSchemaObjectNames( List<String> names ) {
-        final PolyphenyDbSchema schema = SqlValidatorUtil.getSchema( rootSchema, names, nameMatcher );
+        final PolyphenyDbSchema schema = ValidatorUtil.getSchema( rootSchema, names, nameMatcher );
         if ( schema == null ) {
             return ImmutableList.of();
         }
@@ -215,7 +207,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     }
 
 
-    private SqlMonikerImpl moniker( PolyphenyDbSchema schema, String name, SqlMonikerType type ) {
+    private SqlMoniker moniker( PolyphenyDbSchema schema, String name, SqlMonikerType type ) {
         final List<String> path = schema.path( name );
         if ( path.size() == 1 && !schema.root().getName().equals( "" ) && type == SqlMonikerType.SCHEMA ) {
             type = SqlMonikerType.CATALOG;
@@ -238,13 +230,13 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
     @Override
     public RelDataType createTypeFromProjection( final RelDataType type, final List<String> columnNameList ) {
-        return SqlValidatorUtil.createTypeFromProjection( type, columnNameList, typeFactory, nameMatcher.isCaseSensitive() );
+        return ValidatorUtil.createTypeFromProjection( type, columnNameList, typeFactory, nameMatcher.isCaseSensitive() );
     }
 
 
     @Override
-    public void lookupOperatorOverloads( final SqlIdentifier opName, SqlFunctionCategory category, SqlSyntax syntax, List<SqlOperator> operatorList ) {
-        if ( syntax != SqlSyntax.FUNCTION ) {
+    public void lookupOperatorOverloads( final Identifier opName, FunctionCategory category, Syntax syntax, List<Operator> operatorList ) {
+        if ( syntax != Syntax.FUNCTION ) {
             return;
         }
 
@@ -256,7 +248,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
         } else {
             predicate = function -> !(function instanceof TableMacro || function instanceof TableFunction);
         }
-        getFunctionsFrom( opName.names )
+        getFunctionsFrom( opName.getNames() )
                 .stream()
                 .filter( predicate )
                 .map( function -> toOp( opName, function ) )
@@ -264,17 +256,17 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     }
 
 
-    private SqlOperator toOp( SqlIdentifier name, final Function function ) {
+    private Operator toOp( Identifier name, final Function function ) {
         return toOp( typeFactory, name, function );
     }
 
 
     /**
-     * Converts a function to a {@link org.polypheny.db.sql.SqlOperator}.
+     * Converts a function to a {@link Operator}.
      *
      * The {@code typeFactory} argument is technical debt; see [POLYPHENYDB-2082] Remove RelDataTypeFactory argument from SqlUserDefinedAggFunction constructor.
      */
-    private static SqlOperator toOp( RelDataTypeFactory typeFactory, SqlIdentifier name, final Function function ) {
+    private static Operator toOp( RelDataTypeFactory typeFactory, Identifier name, final Function function ) {
         List<RelDataType> argTypes = new ArrayList<>();
         List<PolyTypeFamily> typeFamilies = new ArrayList<>();
         for ( FunctionParameter o : function.getParameters() ) {
@@ -344,7 +336,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
 
     @Override
-    public List<SqlOperator> getOperatorList() {
+    public List<Operator> getOperatorList() {
         return null;
     }
 
@@ -367,7 +359,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
 
     @Override
-    public SqlNameMatcher nameMatcher() {
+    public NameMatcher nameMatcher() {
         return nameMatcher;
     }
 

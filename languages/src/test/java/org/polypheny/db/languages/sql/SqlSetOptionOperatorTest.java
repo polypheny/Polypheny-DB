@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql;
+package org.polypheny.db.languages.sql;
 
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -22,10 +22,10 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 import org.junit.Test;
+import org.polypheny.db.core.ParseException;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlSetOption;
-import org.polypheny.db.core.ParseException;
 import org.polypheny.db.languages.sql.parser.SqlParser;
 
 
@@ -56,7 +56,7 @@ public class SqlSetOptionOperatorTest {
     private static void checkSqlSetOptionSame( SqlNode node ) {
         SqlSetOption opt = (SqlSetOption) node;
         SqlNode[] sqlNodes = new SqlNode[opt.getOperandList().size()];
-        SqlCall returned = opt.getOperator().createCall( opt.getFunctionQuantifier(), opt.getPos(), opt.getOperandList().toArray( sqlNodes ) );
+        SqlCall returned = (SqlCall) opt.getOperator().createCall( opt.getFunctionQuantifier(), opt.getPos(), opt.getOperandList().toArray( sqlNodes ) );
         assertThat( opt.getClass(), equalTo( (Class) returned.getClass() ) );
         SqlSetOption optRet = (SqlSetOption) returned;
         assertThat( optRet.getScope(), is( opt.getScope() ) );

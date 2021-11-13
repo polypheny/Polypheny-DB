@@ -45,6 +45,8 @@ import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.enumerable.EnumerableTableScan;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.core.InitializerExpressionFactory;
+import org.polypheny.db.core.NullInitializerExpressionFactory;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptSchema;
 import org.polypheny.db.plan.RelOptTable;

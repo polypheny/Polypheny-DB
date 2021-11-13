@@ -36,6 +36,7 @@ import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.core.Call;
 import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.NameMatcher;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.jdbc.PolyphenyDbPrepare.AnalyzeViewResult;
 import org.polypheny.db.plan.RelOptSchema;
@@ -128,7 +129,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
     @Override
-    public SqlNameMatcher nameMatcher() {
+    public NameMatcher nameMatcher() {
         return nameMatcher;
     }
 

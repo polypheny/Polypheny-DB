@@ -116,7 +116,7 @@ import org.polypheny.db.languages.sql.validate.MatchRecognizeScope;
 import org.polypheny.db.languages.sql.validate.ParameterScope;
 import org.polypheny.db.languages.sql.validate.SelectScope;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
-import org.polypheny.db.languages.sql.validate.SqlNameMatcher;
+import org.polypheny.db.core.NameMatcher;
 import org.polypheny.db.languages.sql.validate.SqlQualified;
 import org.polypheny.db.languages.sql.validate.SqlUserDefinedTableFunction;
 import org.polypheny.db.languages.sql.validate.SqlUserDefinedTableMacro;
@@ -2213,7 +2213,7 @@ public class SqlToRelConverter {
             String originalRelName = lookup.getOriginalRelName();
             String originalFieldName = fieldAccess.getField().getName();
 
-            final SqlNameMatcher nameMatcher = bb.getValidator().getCatalogReader().nameMatcher();
+            final NameMatcher nameMatcher = bb.getValidator().getCatalogReader().nameMatcher();
             final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
             lookup.bb.scope.resolve( ImmutableList.of( originalRelName ), nameMatcher, false, resolved );
             assert resolved.count() == 1;
@@ -2304,7 +2304,7 @@ public class SqlToRelConverter {
             DeferredLookup lookup = mapCorrelToDeferred.get( correlName );
             String originalRelName = lookup.getOriginalRelName();
 
-            final SqlNameMatcher nameMatcher = lookup.bb.scope.getValidator().getCatalogReader().nameMatcher();
+            final NameMatcher nameMatcher = lookup.bb.scope.getValidator().getCatalogReader().nameMatcher();
             final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
             lookup.bb.scope.resolve( ImmutableList.of( originalRelName ), nameMatcher, false, resolved );
 
@@ -2372,7 +2372,7 @@ public class SqlToRelConverter {
      */
     private @Nonnull
     RexNode convertUsing( SqlValidatorNamespace leftNamespace, SqlValidatorNamespace rightNamespace, List<String> nameList ) {
-        final SqlNameMatcher nameMatcher = catalogReader.nameMatcher();
+        final NameMatcher nameMatcher = catalogReader.nameMatcher();
         final List<RexNode> list = new ArrayList<>();
         for ( String name : nameList ) {
             List<RexNode> operands = new ArrayList<>();
@@ -3001,7 +3001,7 @@ public class SqlToRelConverter {
 
         // Walk the name list and place the associated value in the expression list according to the ordinal value returned from the table construct, leaving nulls in the list for columns
         // that are not referenced.
-        final SqlNameMatcher nameMatcher = catalogReader.nameMatcher();
+        final NameMatcher nameMatcher = catalogReader.nameMatcher();
 
         for ( Pair<String, RexNode> p : Pair.zip( targetColumnNames, columnExprs ) ) {
             RelDataTypeField field = nameMatcher.field( targetRowType, p.left );
@@ -3869,7 +3869,7 @@ public class SqlToRelConverter {
                 }
                 return Pair.of( node, null );
             }
-            final SqlNameMatcher nameMatcher = scope.getValidator().getCatalogReader().nameMatcher();
+            final NameMatcher nameMatcher = scope.getValidator().getCatalogReader().nameMatcher();
             final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
             scope.resolve( qualified.prefix(), nameMatcher, false, resolved );
             if ( !(resolved.count() == 1) ) {

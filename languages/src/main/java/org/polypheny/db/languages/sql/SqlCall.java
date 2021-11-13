@@ -26,7 +26,7 @@ import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeVisitor;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.languages.sql.validate.SqlMoniker;
+import org.polypheny.db.core.SqlMoniker;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeList;
@@ -50,6 +51,7 @@ public class SqlNodeList extends SqlNode implements NodeList {
 
 
     private final List<Node> list;
+    private final List<SqlNode> sqllist;
 
 
     /**
@@ -58,6 +60,7 @@ public class SqlNodeList extends SqlNode implements NodeList {
     public SqlNodeList( ParserPos pos ) {
         super( pos );
         list = new ArrayList<>();
+        sqllist = new ArrayList<>();
     }
 
 
@@ -67,6 +70,7 @@ public class SqlNodeList extends SqlNode implements NodeList {
     public SqlNodeList( Collection<? extends Node> collection, ParserPos pos ) {
         super( pos );
         list = new ArrayList<>( collection );
+        sqllist = list.stream().map( e -> (SqlNode) e ).collect( Collectors.toList() );
     }
 
 
@@ -83,9 +87,15 @@ public class SqlNodeList extends SqlNode implements NodeList {
     }
 
 
+    public List<SqlNode> getSqlList() {
+        return sqllist;
+    }
+
+
     @Override
     public void add( Node node ) {
         list.add( node );
+        sqllist.add( (SqlNode) node );
     }
 
 
@@ -103,6 +113,7 @@ public class SqlNodeList extends SqlNode implements NodeList {
 
     @Override
     public Node set( int n, Node node ) {
+        sqllist.set( n, (SqlNode) node );
         return list.set( n, node );
     }
 

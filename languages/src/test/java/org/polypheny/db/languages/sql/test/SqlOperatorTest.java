@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.test;
+package org.polypheny.db.languages.sql.test;
 
 
-import org.polypheny.db.sql.utils.SqlTester;
-import org.polypheny.db.sql.utils.SqlValidatorTestCase;
-import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.languages.sql.utils.SqlTester;
+import org.polypheny.db.languages.sql.utils.SqlValidatorTestCase;
+import org.polypheny.db.languages.sql.validate.SqlValidator;
 
 
 /**
@@ -36,4 +36,5 @@ public class SqlOperatorTest extends SqlOperatorBaseTest {
     public SqlOperatorTest() {
         super( false, DEFAULT_TESTER );
     }
+
 }

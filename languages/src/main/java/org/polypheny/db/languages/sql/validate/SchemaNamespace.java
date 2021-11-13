@@ -20,6 +20,7 @@ package org.polypheny.db.languages.sql.validate;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.core.SqlMoniker;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.languages.sql.SqlNode;

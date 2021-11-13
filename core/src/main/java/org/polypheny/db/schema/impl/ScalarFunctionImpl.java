@@ -43,11 +43,11 @@ import org.polypheny.db.adapter.enumerable.CallImplementor;
 import org.polypheny.db.adapter.enumerable.NullPolicy;
 import org.polypheny.db.adapter.enumerable.ReflectiveCallNotNullImplementor;
 import org.polypheny.db.adapter.enumerable.RexImpTable;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.schema.ImplementableFunction;
 import org.polypheny.db.schema.ScalarFunction;
-import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.util.Static;
 
 
@@ -157,7 +157,7 @@ public class ScalarFunctionImpl extends ReflectiveFunctionBase implements Scalar
     }
 
 
-    public RelDataType getReturnType( RelDataTypeFactory typeFactory, SqlOperatorBinding opBinding ) {
+    public RelDataType getReturnType( RelDataTypeFactory typeFactory, OperatorBinding opBinding ) {
         // Strict and semi-strict functions can return null even if their Java functions return a primitive type. Because when one of their arguments
         // is null, they won't even be called.
         final RelDataType returnType = getReturnType( typeFactory );
@@ -174,5 +174,6 @@ public class ScalarFunctionImpl extends ReflectiveFunctionBase implements Scalar
         }
         return returnType;
     }
+
 }
 

@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.utils;
+package org.polypheny.db.languages.sql.utils;
 
 
 import static org.junit.Assert.assertNotNull;
 
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.parser.SqlParserUtil;
-import org.polypheny.db.sql.parser.SqlParserUtil.StringAndPos;
-import org.polypheny.db.sql.utils.SqlTests.Stage;
-import org.polypheny.db.sql.validate.SqlValidator;
-import org.polypheny.db.test.SqlTestFactory;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlTestFactory;
+import org.polypheny.db.languages.sql.parser.SqlParserUtil;
+import org.polypheny.db.languages.sql.parser.SqlParserUtil.StringAndPos;
+import org.polypheny.db.languages.sql.utils.SqlTests.Stage;
+import org.polypheny.db.languages.sql.validate.SqlValidator;
 
 
 /**
@@ -92,4 +92,5 @@ public class SqlRuntimeTester extends AbstractSqlTester {
 
         SqlTests.checkEx( thrown, expectedMsgPattern, sap, stage );
     }
+
 }

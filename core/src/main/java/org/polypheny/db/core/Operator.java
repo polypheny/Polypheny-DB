@@ -26,7 +26,7 @@ import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
 import org.polypheny.db.util.Litmus;
 
-public abstract class Operator {
+public abstract class Operator implements Node {
 
     /**
      * See {@link Kind}. It's possible to have a name that doesn't match the kind

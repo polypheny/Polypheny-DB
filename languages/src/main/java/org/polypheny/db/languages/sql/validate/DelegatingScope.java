@@ -25,6 +25,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.NameMatcher;
+import org.polypheny.db.core.SqlMoniker;
+import org.polypheny.db.core.SqlMonikerType;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -78,7 +81,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
 
 
     @Override
-    public void resolve( List<String> names, SqlNameMatcher nameMatcher, boolean deep, Resolved resolved ) {
+    public void resolve( List<String> names, NameMatcher nameMatcher, boolean deep, Resolved resolved ) {
         parent.resolve( names, nameMatcher, deep, resolved );
     }
 
@@ -86,7 +89,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
     /**
      * If a record type allows implicit references to fields, recursively looks into the fields. Otherwise returns immediately.
      */
-    void resolveInNamespace( SqlValidatorNamespace ns, boolean nullable, List<String> names, SqlNameMatcher nameMatcher, Path path, Resolved resolved ) {
+    void resolveInNamespace( SqlValidatorNamespace ns, boolean nullable, List<String> names, NameMatcher nameMatcher, Path path, Resolved resolved ) {
         if ( names.isEmpty() ) {
             resolved.found( ns, nullable, this, path, null );
             return;
@@ -167,7 +170,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
 
 
     @Override
-    public Map<String, ScopeChild> findQualifyingTableNames( String columnName, SqlNode ctx, SqlNameMatcher nameMatcher ) {
+    public Map<String, ScopeChild> findQualifyingTableNames( String columnName, SqlNode ctx, NameMatcher nameMatcher ) {
         return parent.findQualifyingTableNames( columnName, ctx, nameMatcher );
     }
 
@@ -192,7 +195,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
 
 
     @Override
-    public void resolveTable( List<String> names, SqlNameMatcher nameMatcher, Path path, Resolved resolved ) {
+    public void resolveTable( List<String> names, NameMatcher nameMatcher, Path path, Resolved resolved ) {
         parent.resolveTable( names, nameMatcher, path, resolved );
     }
 
@@ -224,7 +227,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
         }
 
         final SqlIdentifier previous = identifier;
-        final SqlNameMatcher nameMatcher = validator.catalogReader.nameMatcher();
+        final NameMatcher nameMatcher = validator.catalogReader.nameMatcher();
         String columnName;
         final String tableName;
         final SqlValidatorNamespace namespace;
@@ -235,7 +238,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                 switch ( map.size() ) {
                     case 0:
                         if ( nameMatcher.isCaseSensitive() ) {
-                            final SqlNameMatcher liberalMatcher = SqlNameMatchers.liberal();
+                            final NameMatcher liberalMatcher = SqlNameMatchers.liberal();
                             final Map<String, ScopeChild> map2 = findQualifyingTableNames( columnName, identifier, liberalMatcher );
                             if ( !map2.isEmpty() ) {
                                 final List<String> list = new ArrayList<>();
@@ -296,7 +299,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                     }
                     // Look for a table alias that is the wrong case.
                     if ( nameMatcher.isCaseSensitive() ) {
-                        final SqlNameMatcher liberalMatcher = SqlNameMatchers.liberal();
+                        final NameMatcher liberalMatcher = SqlNameMatchers.liberal();
                         resolved.clear();
                         resolve( prefix.names, liberalMatcher, false, resolved );
                         if ( resolved.count() == 1 ) {
@@ -380,7 +383,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                     case 0:
                         // Maybe the last component was correct, just wrong case
                         if ( nameMatcher.isCaseSensitive() ) {
-                            SqlNameMatcher liberalMatcher = SqlNameMatchers.liberal();
+                            NameMatcher liberalMatcher = SqlNameMatchers.liberal();
                             resolved.clear();
                             resolveInNamespace( fromNs, false, suffix.names, liberalMatcher, Path.EMPTY, resolved );
                             if ( resolved.count() > 0 ) {
