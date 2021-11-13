@@ -22,6 +22,7 @@ import com.google.common.collect.Iterables;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory.Builder;
@@ -136,7 +137,7 @@ class TableNamespace extends AbstractNamespace {
     private void checkExtendedColumnTypes( SqlNodeList extendList ) {
         final List<RelDataTypeField> extendedFields = SqlValidatorUtil.getExtendedColumns( validator.getTypeFactory(), table, extendList );
         final List<RelDataTypeField> baseFields = getBaseRowType().getFieldList();
-        final Map<String, Integer> nameToIndex = SqlValidatorUtil.mapNameToIndex( baseFields );
+        final Map<String, Integer> nameToIndex = ValidatorUtil.mapNameToIndex( baseFields );
 
         for ( final RelDataTypeField extendedField : extendedFields ) {
             final String extFieldName = extendedField.getName();

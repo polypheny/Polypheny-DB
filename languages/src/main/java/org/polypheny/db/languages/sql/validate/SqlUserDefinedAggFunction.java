@@ -30,7 +30,7 @@ import org.polypheny.db.rel.type.RelDataTypeFactoryImpl.JavaType;
 import org.polypheny.db.schema.AggregateFunction;
 import org.polypheny.db.schema.FunctionParameter;
 import org.polypheny.db.languages.sql.SqlAggFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.type.PolyType;
@@ -78,7 +78,7 @@ public class SqlUserDefinedAggFunction extends SqlAggFunction implements UserDef
                 returnTypeInference,
                 operandTypeInference,
                 operandTypeChecker,
-                SqlFunctionCategory.USER_DEFINED_FUNCTION,
+                FunctionCategory.USER_DEFINED_FUNCTION,
                 requiresOrder,
                 requiresOver,
                 requiresGroupOrder );

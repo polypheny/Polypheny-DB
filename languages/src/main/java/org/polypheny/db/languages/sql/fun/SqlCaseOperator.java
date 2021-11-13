@@ -22,6 +22,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
@@ -38,7 +39,6 @@ import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.SqlSyntax;
-import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
@@ -166,12 +166,12 @@ public class SqlCaseOperator extends SqlOperator {
 
         boolean foundNotNull = false;
         for ( SqlNode node : thenList ) {
-            if ( !SqlUtil.isNullLiteral( node, false ) ) {
+            if ( !CoreUtil.isNullLiteral( node, false ) ) {
                 foundNotNull = true;
             }
         }
 
-        if ( !SqlUtil.isNullLiteral( caseCall.getElseOperand(), false ) ) {
+        if ( !CoreUtil.isNullLiteral( caseCall.getElseOperand(), false ) ) {
             foundNotNull = true;
         }
 
@@ -203,13 +203,13 @@ public class SqlCaseOperator extends SqlOperator {
         List<RelDataType> argTypes = new ArrayList<>();
         for ( SqlNode node : thenList ) {
             argTypes.add( callBinding.getValidator().deriveType( callBinding.getScope(), node ) );
-            if ( SqlUtil.isNullLiteral( node, false ) ) {
+            if ( CoreUtil.isNullLiteral( node, false ) ) {
                 nullList.add( node );
             }
         }
         SqlNode elseOp = caseCall.getElseOperand();
         argTypes.add( callBinding.getValidator().deriveType( callBinding.getScope(), caseCall.getElseOperand() ) );
-        if ( SqlUtil.isNullLiteral( elseOp, false ) ) {
+        if ( CoreUtil.isNullLiteral( elseOp, false ) ) {
             nullList.add( elseOp );
         }
 
@@ -245,7 +245,7 @@ public class SqlCaseOperator extends SqlOperator {
 
 
     @Override
-    public SqlSyntax getSyntax() {
+    public SqlSyntax getSqlSyntax() {
         return SqlSyntax.SPECIAL;
     }
 

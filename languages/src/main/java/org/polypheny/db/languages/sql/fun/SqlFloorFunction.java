@@ -21,7 +21,7 @@ import com.google.common.base.Preconditions;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -52,7 +52,7 @@ public class SqlFloorFunction extends SqlMonotonicUnaryFunction {
                                         + "'" + kind + "(<TIMESTAMP> TO <TIME_UNIT>)'",
                                 OperandTypes.DATETIME,
                                 OperandTypes.ANY ) ),
-                SqlFunctionCategory.NUMERIC );
+                FunctionCategory.NUMERIC );
         Preconditions.checkArgument( kind == Kind.FLOOR || kind == Kind.CEIL );
     }
 
@@ -108,7 +108,7 @@ public class SqlFloorFunction extends SqlMonotonicUnaryFunction {
                 ReturnTypes.ARG0_NULLABLE_VARYING,
                 null,
                 null,
-                SqlFunctionCategory.STRING );
+                FunctionCategory.STRING );
 
         SqlCall call1;
         if ( datetimeFirst ) {

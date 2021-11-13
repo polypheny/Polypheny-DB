@@ -17,11 +17,15 @@
 package org.polypheny.db.languages.sql.fun;
 
 
+import java.util.Arrays;
+import org.polypheny.db.core.Call;
+import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
-import org.polypheny.db.languages.sql.SqlJsonQueryEmptyOrErrorBehavior;
-import org.polypheny.db.languages.sql.SqlJsonQueryWrapperBehavior;
+import org.polypheny.db.core.FunctionCategory;
+import org.polypheny.db.core.json.JsonQueryEmptyOrErrorBehavior;
+import org.polypheny.db.core.json.JsonQueryWrapperBehavior;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -45,7 +49,7 @@ public class SqlJsonQueryFunction extends SqlFunction {
                 ReturnTypes.cascade( ReturnTypes.VARCHAR_2000, PolyTypeTransforms.FORCE_NULLABLE ),
                 null,
                 OperandTypes.family( PolyTypeFamily.ANY, PolyTypeFamily.ANY, PolyTypeFamily.ANY, PolyTypeFamily.ANY ),
-                SqlFunctionCategory.SYSTEM );
+                FunctionCategory.SYSTEM );
     }
 
 
@@ -59,7 +63,7 @@ public class SqlJsonQueryFunction extends SqlFunction {
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startFunCall( getName() );
         call.operand( 0 ).unparse( writer, 0, 0 );
-        final SqlJsonQueryWrapperBehavior wrapperBehavior =
+        final JsonQueryWrapperBehavior wrapperBehavior =
                 getEnumValue( call.operand( 1 ) );
         switch ( wrapperBehavior ) {
             case WITHOUT_ARRAY:
@@ -83,22 +87,23 @@ public class SqlJsonQueryFunction extends SqlFunction {
     }
 
 
+
     @Override
-    public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
+    public Call createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
         if ( operands[1] == null ) {
-            operands[1] = SqlLiteral.createSymbol( SqlJsonQueryWrapperBehavior.WITHOUT_ARRAY, pos );
+            operands[1] = SqlLiteral.createSymbol( JsonQueryWrapperBehavior.WITHOUT_ARRAY, pos );
         }
         if ( operands[2] == null ) {
-            operands[2] = SqlLiteral.createSymbol( SqlJsonQueryEmptyOrErrorBehavior.NULL, pos );
+            operands[2] = SqlLiteral.createSymbol( JsonQueryEmptyOrErrorBehavior.NULL, pos );
         }
         if ( operands[3] == null ) {
-            operands[3] = SqlLiteral.createSymbol( SqlJsonQueryEmptyOrErrorBehavior.NULL, pos );
+            operands[3] = SqlLiteral.createSymbol( JsonQueryEmptyOrErrorBehavior.NULL, pos );
         }
         return super.createCall( functionQualifier, pos, operands );
     }
 
 
-    private void unparseEmptyOrErrorBehavior( SqlWriter writer, SqlJsonQueryEmptyOrErrorBehavior emptyBehavior ) {
+    private void unparseEmptyOrErrorBehavior( SqlWriter writer, JsonQueryEmptyOrErrorBehavior emptyBehavior ) {
         switch ( emptyBehavior ) {
             case NULL:
                 writer.keyword( "NULL" );

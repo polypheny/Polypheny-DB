@@ -20,7 +20,7 @@ package org.polypheny.db.languages.sql.fun;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.SqlSyntax;
@@ -42,13 +42,13 @@ public class SqlAbstractTimeFunction extends SqlFunction {
 
 
     protected SqlAbstractTimeFunction( String name, PolyType typeName ) {
-        super( name, Kind.OTHER_FUNCTION, null, null, OTC_CUSTOM, SqlFunctionCategory.TIMEDATE );
+        super( name, Kind.OTHER_FUNCTION, null, null, OTC_CUSTOM, FunctionCategory.TIMEDATE );
         this.typeName = typeName;
     }
 
 
     @Override
-    public SqlSyntax getSyntax() {
+    public SqlSyntax getSqlSyntax() {
         return SqlSyntax.FUNCTION_ID;
     }
 

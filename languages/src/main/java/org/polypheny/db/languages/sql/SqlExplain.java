@@ -19,6 +19,7 @@ package org.polypheny.db.languages.sql;
 
 import java.util.List;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -89,7 +90,7 @@ public class SqlExplain extends SqlCall {
 
 
     @Override
-    public void setOperand( int i, SqlNode operand ) {
+    public void setOperand( int i, Node operand ) {
         switch ( i ) {
             case 0:
                 explicandum = operand;

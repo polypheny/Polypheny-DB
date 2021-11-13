@@ -22,7 +22,7 @@ import java.util.List;
 import org.polypheny.db.core.BasicNodeVisitor;
 import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
-import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlOperatorTable;
@@ -76,7 +76,7 @@ abstract class AggVisitor extends BasicNodeVisitor<Void> {
 
     @Override
     public Void visit( Call call ) {
-        final SqlOperator operator = call.getOperator();
+        final Operator operator = call.getOperator();
         // If nested aggregates disallowed or found an aggregate at invalid level
         if ( operator.isAggregator() && !(operator instanceof SqlAbstractGroupFunction) && !operator.requiresOver() ) {
             if ( delegate != null ) {
@@ -121,6 +121,6 @@ abstract class AggVisitor extends BasicNodeVisitor<Void> {
     }
 
 
-    protected abstract Void found( SqlCall call );
+    protected abstract Void found( Call call );
 }
 

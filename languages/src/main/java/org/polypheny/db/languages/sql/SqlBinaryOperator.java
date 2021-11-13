@@ -73,7 +73,7 @@ public class SqlBinaryOperator extends SqlOperator implements BinaryOperator {
 
 
     @Override
-    public SqlSyntax getSyntax() {
+    public SqlSyntax getSqlSyntax() {
         return SqlSyntax.BINARY;
     }
 

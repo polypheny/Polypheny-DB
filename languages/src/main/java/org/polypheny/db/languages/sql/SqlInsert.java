@@ -20,6 +20,7 @@ import java.util.List;
 import lombok.Setter;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -80,7 +81,7 @@ public class SqlInsert extends SqlCall {
 
 
     @Override
-    public void setOperand( int i, SqlNode operand ) {
+    public void setOperand( int i, Node operand ) {
         switch ( i ) {
             case 0:
                 keywords = (SqlNodeList) operand;

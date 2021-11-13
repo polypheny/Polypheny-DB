@@ -40,12 +40,12 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
@@ -68,7 +68,7 @@ import org.polypheny.db.util.ImmutableBitSet;
  */
 public class Strong {
 
-    private static final Map<SqlKind, Policy> MAP = createPolicyMap();
+    private static final Map<Kind, Policy> MAP = createPolicyMap();
 
 
     public Strong() {
@@ -108,7 +108,7 @@ public class Strong {
     /**
      * Returns how to deduce whether a particular kind of expression is null, given whether its arguments are null.
      */
-    public static Policy policy( SqlKind kind ) {
+    public static Policy policy( Kind kind ) {
         return MAP.getOrDefault( kind, Policy.AS_IS );
     }
 
@@ -205,73 +205,73 @@ public class Strong {
     }
 
 
-    private static Map<SqlKind, Policy> createPolicyMap() {
-        EnumMap<SqlKind, Policy> map = new EnumMap<>( SqlKind.class );
+    private static Map<Kind, Policy> createPolicyMap() {
+        EnumMap<Kind, Policy> map = new EnumMap<>( Kind.class );
 
-        map.put( SqlKind.INPUT_REF, Policy.AS_IS );
-        map.put( SqlKind.LOCAL_REF, Policy.AS_IS );
-        map.put( SqlKind.DYNAMIC_PARAM, Policy.AS_IS );
-        map.put( SqlKind.OTHER_FUNCTION, Policy.AS_IS );
+        map.put( Kind.INPUT_REF, Policy.AS_IS );
+        map.put( Kind.LOCAL_REF, Policy.AS_IS );
+        map.put( Kind.DYNAMIC_PARAM, Policy.AS_IS );
+        map.put( Kind.OTHER_FUNCTION, Policy.AS_IS );
 
         // The following types of expressions could potentially be custom.
-        map.put( SqlKind.CASE, Policy.AS_IS );
-        map.put( SqlKind.DECODE, Policy.AS_IS );
+        map.put( Kind.CASE, Policy.AS_IS );
+        map.put( Kind.DECODE, Policy.AS_IS );
         // NULLIF(1, NULL) yields 1, but NULLIF(1, 1) yields NULL
-        map.put( SqlKind.NULLIF, Policy.AS_IS );
+        map.put( Kind.NULLIF, Policy.AS_IS );
         // COALESCE(NULL, 2) yields 2
-        map.put( SqlKind.COALESCE, Policy.AS_IS );
-        map.put( SqlKind.NVL, Policy.AS_IS );
+        map.put( Kind.COALESCE, Policy.AS_IS );
+        map.put( Kind.NVL, Policy.AS_IS );
         // FALSE AND NULL yields FALSE
         // TRUE AND NULL yields NULL
-        map.put( SqlKind.AND, Policy.AS_IS );
+        map.put( Kind.AND, Policy.AS_IS );
         // TRUE OR NULL yields TRUE
         // FALSE OR NULL yields NULL
-        map.put( SqlKind.OR, Policy.AS_IS );
+        map.put( Kind.OR, Policy.AS_IS );
 
         // Expression types with custom handlers.
-        map.put( SqlKind.LITERAL, Policy.CUSTOM );
+        map.put( Kind.LITERAL, Policy.CUSTOM );
 
-        map.put( SqlKind.EXISTS, Policy.NOT_NULL );
-        map.put( SqlKind.IS_DISTINCT_FROM, Policy.NOT_NULL );
-        map.put( SqlKind.IS_NOT_DISTINCT_FROM, Policy.NOT_NULL );
-        map.put( SqlKind.IS_NULL, Policy.NOT_NULL );
-        map.put( SqlKind.IS_NOT_NULL, Policy.NOT_NULL );
-        map.put( SqlKind.IS_TRUE, Policy.NOT_NULL );
-        map.put( SqlKind.IS_NOT_TRUE, Policy.NOT_NULL );
-        map.put( SqlKind.IS_FALSE, Policy.NOT_NULL );
-        map.put( SqlKind.IS_NOT_FALSE, Policy.NOT_NULL );
+        map.put( Kind.EXISTS, Policy.NOT_NULL );
+        map.put( Kind.IS_DISTINCT_FROM, Policy.NOT_NULL );
+        map.put( Kind.IS_NOT_DISTINCT_FROM, Policy.NOT_NULL );
+        map.put( Kind.IS_NULL, Policy.NOT_NULL );
+        map.put( Kind.IS_NOT_NULL, Policy.NOT_NULL );
+        map.put( Kind.IS_TRUE, Policy.NOT_NULL );
+        map.put( Kind.IS_NOT_TRUE, Policy.NOT_NULL );
+        map.put( Kind.IS_FALSE, Policy.NOT_NULL );
+        map.put( Kind.IS_NOT_FALSE, Policy.NOT_NULL );
 
-        map.put( SqlKind.NOT, Policy.ANY );
-        map.put( SqlKind.EQUALS, Policy.ANY );
-        map.put( SqlKind.NOT_EQUALS, Policy.ANY );
-        map.put( SqlKind.LESS_THAN, Policy.ANY );
-        map.put( SqlKind.LESS_THAN_OR_EQUAL, Policy.ANY );
-        map.put( SqlKind.GREATER_THAN, Policy.ANY );
-        map.put( SqlKind.GREATER_THAN_OR_EQUAL, Policy.ANY );
-        map.put( SqlKind.LIKE, Policy.ANY );
-        map.put( SqlKind.SIMILAR, Policy.ANY );
-        map.put( SqlKind.PLUS, Policy.ANY );
-        map.put( SqlKind.PLUS_PREFIX, Policy.ANY );
-        map.put( SqlKind.MINUS, Policy.ANY );
-        map.put( SqlKind.MINUS_PREFIX, Policy.ANY );
-        map.put( SqlKind.TIMES, Policy.ANY );
-        map.put( SqlKind.DIVIDE, Policy.ANY );
-        map.put( SqlKind.CAST, Policy.ANY );
-        map.put( SqlKind.REINTERPRET, Policy.ANY );
-        map.put( SqlKind.TRIM, Policy.ANY );
-        map.put( SqlKind.LTRIM, Policy.ANY );
-        map.put( SqlKind.RTRIM, Policy.ANY );
-        map.put( SqlKind.CEIL, Policy.ANY );
-        map.put( SqlKind.FLOOR, Policy.ANY );
-        map.put( SqlKind.EXTRACT, Policy.ANY );
-        map.put( SqlKind.GREATEST, Policy.ANY );
-        map.put( SqlKind.LEAST, Policy.ANY );
-        map.put( SqlKind.TIMESTAMP_ADD, Policy.ANY );
-        map.put( SqlKind.TIMESTAMP_DIFF, Policy.ANY );
+        map.put( Kind.NOT, Policy.ANY );
+        map.put( Kind.EQUALS, Policy.ANY );
+        map.put( Kind.NOT_EQUALS, Policy.ANY );
+        map.put( Kind.LESS_THAN, Policy.ANY );
+        map.put( Kind.LESS_THAN_OR_EQUAL, Policy.ANY );
+        map.put( Kind.GREATER_THAN, Policy.ANY );
+        map.put( Kind.GREATER_THAN_OR_EQUAL, Policy.ANY );
+        map.put( Kind.LIKE, Policy.ANY );
+        map.put( Kind.SIMILAR, Policy.ANY );
+        map.put( Kind.PLUS, Policy.ANY );
+        map.put( Kind.PLUS_PREFIX, Policy.ANY );
+        map.put( Kind.MINUS, Policy.ANY );
+        map.put( Kind.MINUS_PREFIX, Policy.ANY );
+        map.put( Kind.TIMES, Policy.ANY );
+        map.put( Kind.DIVIDE, Policy.ANY );
+        map.put( Kind.CAST, Policy.ANY );
+        map.put( Kind.REINTERPRET, Policy.ANY );
+        map.put( Kind.TRIM, Policy.ANY );
+        map.put( Kind.LTRIM, Policy.ANY );
+        map.put( Kind.RTRIM, Policy.ANY );
+        map.put( Kind.CEIL, Policy.ANY );
+        map.put( Kind.FLOOR, Policy.ANY );
+        map.put( Kind.EXTRACT, Policy.ANY );
+        map.put( Kind.GREATEST, Policy.ANY );
+        map.put( Kind.LEAST, Policy.ANY );
+        map.put( Kind.TIMESTAMP_ADD, Policy.ANY );
+        map.put( Kind.TIMESTAMP_DIFF, Policy.ANY );
 
         // Assume that any other expressions cannot be simplified.
-        for ( SqlKind k
-                : Iterables.concat( SqlKind.EXPRESSION, SqlKind.AGGREGATE ) ) {
+        for ( Kind k
+                : Iterables.concat( Kind.EXPRESSION, Kind.AGGREGATE ) ) {
             if ( !map.containsKey( k ) ) {
                 map.put( k, Policy.AS_IS );
             }
@@ -304,4 +304,5 @@ public class Strong {
          */
         AS_IS,
     }
+
 }

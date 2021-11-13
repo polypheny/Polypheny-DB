@@ -20,6 +20,8 @@ package org.polypheny.db.type.checker;
 import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.List;
+import org.polypheny.db.core.CallBinding;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlOperator;
@@ -44,7 +46,7 @@ public class SameOperandTypeExceptLastOperandChecker extends SameOperandTypeChec
 
 
     @Override
-    protected boolean checkOperandTypesImpl( SqlOperatorBinding operatorBinding, boolean throwOnFailure, SqlCallBinding callBinding ) {
+    protected boolean checkOperandTypesImpl( OperatorBinding operatorBinding, boolean throwOnFailure, CallBinding callBinding ) {
         int nOperandsActual = nOperands;
         if ( nOperandsActual == -1 ) {
             nOperandsActual = operatorBinding.getOperandCount();

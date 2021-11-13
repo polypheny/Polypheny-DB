@@ -41,6 +41,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.core.InitializerContext;
+import org.polypheny.db.core.InitializerExpressionFactory;
+import org.polypheny.db.core.NullInitializerExpressionFactory;
+import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.type.RelDataType;
@@ -56,11 +61,6 @@ import org.polypheny.db.schema.ModifiableView;
 import org.polypheny.db.schema.Path;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.Wrapper;
-import org.polypheny.db.sql.SqlFunction;
-import org.polypheny.db.sql.validate.SqlValidatorUtil;
-import org.polypheny.db.sql2rel.InitializerContext;
-import org.polypheny.db.sql2rel.InitializerExpressionFactory;
-import org.polypheny.db.sql2rel.NullInitializerExpressionFactory;
 import org.polypheny.db.util.ImmutableIntList;
 
 
@@ -165,7 +165,7 @@ public class ModifiableViewTable extends ViewTable implements ModifiableView, Wr
      */
     private static ImmutableIntList getNewColumnMapping( Table underlying, ImmutableIntList oldColumnMapping, List<RelDataTypeField> extendedColumns, RelDataTypeFactory typeFactory ) {
         final List<RelDataTypeField> baseColumns = underlying.getRowType( typeFactory ).getFieldList();
-        final Map<String, Integer> nameToIndex = SqlValidatorUtil.mapNameToIndex( baseColumns );
+        final Map<String, Integer> nameToIndex = ValidatorUtil.mapNameToIndex( baseColumns );
 
         final ImmutableList.Builder<Integer> newMapping = ImmutableList.builder();
         newMapping.addAll( oldColumnMapping );
@@ -263,9 +263,11 @@ public class ModifiableViewTable extends ViewTable implements ModifiableView, Wr
 
 
         @Override
-        public RexNode newAttributeInitializer( RelDataType type, SqlFunction constructor, int iAttribute, List<RexNode> constructorArgs, InitializerContext context ) {
+        public RexNode newAttributeInitializer( RelDataType type, Operator constructor, int iAttribute, List<RexNode> constructorArgs, InitializerContext context ) {
             throw new UnsupportedOperationException( "Not implemented - unknown requirements" );
         }
+
     }
+
 }
 

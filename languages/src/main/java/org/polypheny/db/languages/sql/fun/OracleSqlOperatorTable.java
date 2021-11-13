@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.util.ReflectiveSqlOperatorTable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -71,7 +71,7 @@ public class OracleSqlOperatorTable extends ReflectiveSqlOperatorTable {
                     DECODE_RETURN_TYPE,
                     null,
                     OperandTypes.VARIADIC,
-                    SqlFunctionCategory.SYSTEM );
+                    FunctionCategory.SYSTEM );
 
     /**
      * The "NVL(value, value)" function.
@@ -83,7 +83,7 @@ public class OracleSqlOperatorTable extends ReflectiveSqlOperatorTable {
                     ReturnTypes.cascade( ReturnTypes.LEAST_RESTRICTIVE, PolyTypeTransforms.TO_NULLABLE_ALL ),
                     null,
                     OperandTypes.SAME_SAME,
-                    SqlFunctionCategory.SYSTEM );
+                    FunctionCategory.SYSTEM );
 
     /**
      * The "LTRIM(string)" function.
@@ -95,7 +95,7 @@ public class OracleSqlOperatorTable extends ReflectiveSqlOperatorTable {
                     ReturnTypes.cascade( ReturnTypes.ARG0, PolyTypeTransforms.TO_NULLABLE, PolyTypeTransforms.TO_VARYING ),
                     null,
                     OperandTypes.STRING,
-                    SqlFunctionCategory.STRING );
+                    FunctionCategory.STRING );
 
     /**
      * The "RTRIM(string)" function.
@@ -107,7 +107,7 @@ public class OracleSqlOperatorTable extends ReflectiveSqlOperatorTable {
                     ReturnTypes.cascade( ReturnTypes.ARG0, PolyTypeTransforms.TO_NULLABLE, PolyTypeTransforms.TO_VARYING ),
                     null,
                     OperandTypes.STRING,
-                    SqlFunctionCategory.STRING );
+                    FunctionCategory.STRING );
 
     /**
      * Oracle's "SUBSTR(string, position [, substringLength ])" function.
@@ -121,7 +121,7 @@ public class OracleSqlOperatorTable extends ReflectiveSqlOperatorTable {
                     ReturnTypes.ARG0_NULLABLE_VARYING,
                     null,
                     null,
-                    SqlFunctionCategory.STRING );
+                    FunctionCategory.STRING );
 
     /**
      * The "GREATEST(value, value)" function.
@@ -133,7 +133,7 @@ public class OracleSqlOperatorTable extends ReflectiveSqlOperatorTable {
                     ReturnTypes.cascade( ReturnTypes.LEAST_RESTRICTIVE, PolyTypeTransforms.TO_NULLABLE ),
                     null,
                     OperandTypes.SAME_VARIADIC,
-                    SqlFunctionCategory.SYSTEM );
+                    FunctionCategory.SYSTEM );
 
     /**
      * The "LEAST(value, value)" function.
@@ -145,7 +145,7 @@ public class OracleSqlOperatorTable extends ReflectiveSqlOperatorTable {
                     ReturnTypes.cascade( ReturnTypes.LEAST_RESTRICTIVE, PolyTypeTransforms.TO_NULLABLE ),
                     null,
                     OperandTypes.SAME_VARIADIC,
-                    SqlFunctionCategory.SYSTEM );
+                    FunctionCategory.SYSTEM );
 
     /**
      * The <code>TRANSLATE(<i>string_expr</i>, <i>search_chars</i>, <i>replacement_chars</i>)</code> function returns <i>string_expr</i> with all occurrences of each character in

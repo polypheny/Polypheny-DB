@@ -29,7 +29,7 @@ import org.polypheny.db.core.TrimFunction;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWriter;
@@ -99,7 +99,7 @@ public class SqlTrimFunction extends SqlFunction implements TrimFunction {
 
 
     public SqlTrimFunction( String name, Kind kind, PolyTypeTransformCascade returnTypeInference, PolySingleOperandTypeChecker operandTypeChecker ) {
-        super( name, kind, returnTypeInference, null, operandTypeChecker, SqlFunctionCategory.STRING );
+        super( name, kind, returnTypeInference, null, operandTypeChecker, FunctionCategory.STRING );
     }
 
 

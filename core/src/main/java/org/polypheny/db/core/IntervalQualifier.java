@@ -18,4 +18,8 @@ package org.polypheny.db.core;
 
 public interface IntervalQualifier extends Visitable {
 
+    boolean isSingleDatetimeField();
+
+    boolean isYearMonth();
+
 }

@@ -19,7 +19,7 @@ package org.polypheny.db.languages.sql.fun;
 
 import com.google.common.base.Preconditions;
 import org.polypheny.db.languages.sql.SqlAggFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlSplittableAggFunction;
 import org.polypheny.db.type.checker.OperandTypes;
@@ -56,7 +56,7 @@ public class SqlMinMaxAggFunction extends SqlAggFunction {
                 ReturnTypes.ARG0_NULLABLE_IF_EMPTY,
                 null,
                 OperandTypes.COMPARABLE_ORDERED,
-                SqlFunctionCategory.SYSTEM,
+                FunctionCategory.SYSTEM,
                 false,
                 false,
                 Optionality.FORBIDDEN );

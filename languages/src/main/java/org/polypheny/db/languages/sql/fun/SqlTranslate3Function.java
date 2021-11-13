@@ -19,7 +19,7 @@ package org.polypheny.db.languages.sql.fun;
 
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWriter;
@@ -45,7 +45,7 @@ public class SqlTranslate3Function extends SqlFunction {
                 ReturnTypes.ARG0_NULLABLE_VARYING,
                 null,
                 OperandTypes.STRING_STRING_STRING,
-                SqlFunctionCategory.STRING );
+                FunctionCategory.STRING );
     }
 
 

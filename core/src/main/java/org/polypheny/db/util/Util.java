@@ -96,16 +96,14 @@ import javax.annotation.Nonnull;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.BasicNodeVisitor;
 import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.Node;
-import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.sql.SqlCall;
-import org.polypheny.db.sql.SqlLiteral;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlValuesOperator;
-import org.polypheny.db.sql.fun.SqlRowOperator;
+import org.polypheny.db.core.RowOperator;
+import org.polypheny.db.core.ValuesOperator;
 import org.slf4j.Logger;
 
 
@@ -160,29 +158,29 @@ public class Util {
      * @param call the expression to evaluate
      * @return Whether it is ensured that the call produces a single value
      */
-    public static boolean isSingleValue( SqlCall call ) {
-        if ( call.getOperator() instanceof SqlAggFunction ) {
+    public static boolean isSingleValue( Call call ) {
+        if ( call.getOperator() instanceof AggFunction ) {
             return true;
-        } else if ( call.getOperator() instanceof SqlValuesOperator || call.getOperator() instanceof SqlRowOperator ) {
-            List<SqlNode> operands = call.getOperandList();
+        } else if ( call.getOperator() instanceof ValuesOperator || call.getOperator() instanceof RowOperator ) {
+            List<Node> operands = call.getOperandList();
             if ( operands.size() == 1 ) {
-                SqlNode operand = operands.get( 0 );
-                if ( operand instanceof SqlLiteral ) {
+                Node operand = operands.get( 0 );
+                if ( operand instanceof Literal ) {
                     return true;
-                } else if ( operand instanceof SqlCall ) {
-                    return isSingleValue( (SqlCall) operand );
+                } else if ( operand instanceof Call ) {
+                    return isSingleValue( (Call) operand );
                 }
             }
 
             return false;
         } else {
             boolean isScalar = true;
-            for ( SqlNode operand : call.getOperandList() ) {
-                if ( operand instanceof SqlLiteral ) {
+            for ( Node operand : call.getOperandList() ) {
+                if ( operand instanceof Literal ) {
                     continue;
                 }
 
-                if ( !(operand instanceof SqlCall) || !Util.isSingleValue( (SqlCall) operand ) ) {
+                if ( !(operand instanceof Call) || !Util.isSingleValue( (Call) operand ) ) {
                     isScalar = false;
                     break;
                 }
@@ -2075,7 +2073,6 @@ public class Util {
     }
 
 
-
     /**
      * Exception used to interrupt a tree walk of any kind.
      */
@@ -2097,6 +2094,7 @@ public class Util {
         public Object getNode() {
             return node;
         }
+
     }
 
 
@@ -2108,9 +2106,8 @@ public class Util {
         public static final OverFinder INSTANCE = new Util.OverFinder();
 
 
-
         @Override
-        public <T extends Node & Call> Void visit( T call ) {
+        public Void visit( Call call ) {
             if ( call.getKind() == Kind.OVER ) {
                 throw FoundOne.NULL;
             }
@@ -2155,6 +2152,7 @@ public class Util {
         public Iterator<T> iterator() {
             return listIterator();
         }
+
     }
 
 
@@ -2169,6 +2167,7 @@ public class Util {
         RandomAccessTransformingList( List<F> list, java.util.function.Function<F, T> function ) {
             super( list, function );
         }
+
     }
 
 
@@ -2215,6 +2214,8 @@ public class Util {
             }
             return (T) DUMMY;
         }
+
     }
+
 }
 

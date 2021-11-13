@@ -82,7 +82,7 @@ public class SqlOrderBy extends SqlCall {
 
 
         @Override
-        public SqlSyntax getSyntax() {
+        public SqlSyntax getSqlSyntax() {
             return SqlSyntax.POSTFIX;
         }
 

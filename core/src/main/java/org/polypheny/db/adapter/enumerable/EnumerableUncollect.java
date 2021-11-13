@@ -46,7 +46,7 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Uncollect;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.runtime.SqlFunctions.FlatProductInputType;
+import org.polypheny.db.runtime.Functions.FlatProductInputType;
 import org.polypheny.db.type.MapPolyType;
 import org.polypheny.db.util.BuiltInMethod;
 

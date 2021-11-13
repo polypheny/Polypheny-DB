@@ -17,6 +17,7 @@
 package org.polypheny.db.languages.sql;
 
 
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -89,7 +90,7 @@ public class SqlUnnestOperator extends SqlFunctionalOperator {
                 if ( type.getComponentType().isStruct() ) {
                     builder.addAll( type.getComponentType().getFieldList() );
                 } else {
-                    builder.add( SqlUtil.deriveAliasFromOrdinal( operand ), null, type.getComponentType() );
+                    builder.add( CoreUtil.deriveAliasFromOrdinal( operand ), null, type.getComponentType() );
                 }
             }
         }

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.polypheny.db.core.Call;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeVisitor;
@@ -56,11 +57,11 @@ public abstract class SqlCall extends SqlNode implements Call {
 
     /**
      * Changes the value of an operand. Allows some rewrite by {@link SqlValidator}; use sparingly.
-     *
-     * @param i Operand index
+     *  @param i Operand index
      * @param operand Operand value
      */
-    public void setOperand( int i, SqlNode operand ) {
+    @Override
+    public void setOperand( int i, Node operand ) {
         throw new UnsupportedOperationException();
     }
 
@@ -71,8 +72,9 @@ public abstract class SqlCall extends SqlNode implements Call {
     }
 
 
+    @Override
     @SuppressWarnings("unchecked")
-    public <S extends SqlNode> S operand( int i ) {
+    public <S extends Node> S operand( int i ) {
         return (S) getOperandList().get( i );
     }
 
@@ -170,7 +172,7 @@ public abstract class SqlCall extends SqlNode implements Call {
             }
             signatureList.add( argType.toString() );
         }
-        return SqlUtil.getOperatorSignature( (SqlOperator) getOperator(), signatureList );
+        return CoreUtil.getOperatorSignature( (SqlOperator) getOperator(), signatureList );
     }
 
 

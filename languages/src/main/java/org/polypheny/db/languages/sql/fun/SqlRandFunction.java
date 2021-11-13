@@ -18,7 +18,7 @@ package org.polypheny.db.languages.sql.fun;
 
 
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlSyntax;
 import org.polypheny.db.type.checker.OperandTypes;
@@ -43,12 +43,12 @@ public class SqlRandFunction extends SqlFunction {
                 ReturnTypes.DOUBLE,
                 null,
                 OperandTypes.or( OperandTypes.NILADIC, OperandTypes.NUMERIC ),
-                SqlFunctionCategory.NUMERIC );
+                FunctionCategory.NUMERIC );
     }
 
 
     @Override
-    public SqlSyntax getSyntax() {
+    public SqlSyntax getSqlSyntax() {
         return SqlSyntax.FUNCTION;
     }
 

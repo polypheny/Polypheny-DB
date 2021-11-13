@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.languages.sql.SqlAggFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeTransform;
@@ -79,7 +79,7 @@ public class SqlLeadLagAggFunction extends SqlAggFunction {
                 RETURN_TYPE,
                 null,
                 OPERAND_TYPES,
-                SqlFunctionCategory.NUMERIC,
+                FunctionCategory.NUMERIC,
                 false,
                 true,
                 Optionality.FORBIDDEN );

@@ -22,6 +22,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.Calendar;
 import java.util.Objects;
+import lombok.Getter;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.Kind;
@@ -130,11 +131,13 @@ public class SqlLiteral extends SqlNode implements Literal {
      * The type with which this literal was declared. This type is very approximate: the literal may have a different type once validated. For example, all numeric literals have a type name of
      * {@link PolyType#DECIMAL}, but on validation may become {@link PolyType#INTEGER}.
      */
+    @Getter
     private final PolyType typeName;
 
     /**
      * The value of this literal. The type of the value must be appropriate for the typeName, as defined by the {@link #valueMatchesType} method.
      */
+    @Getter
     protected final Object value;
 
 
@@ -147,14 +150,6 @@ public class SqlLiteral extends SqlNode implements Literal {
         this.typeName = typeName;
         assert typeName != null;
         assert valueMatchesType( value, typeName );
-    }
-
-
-    /**
-     * @return value of {@link #typeName}
-     */
-    public PolyType getTypeName() {
-        return typeName;
     }
 
 
@@ -217,20 +212,6 @@ public class SqlLiteral extends SqlNode implements Literal {
     @Override
     public Kind getKind() {
         return Kind.LITERAL;
-    }
-
-
-    /**
-     * Returns the value of this literal.
-     *
-     * Try not to use this method! There are so many different kinds of values, it's better to to let SqlLiteral do whatever it is you want to do.
-     *
-     * @see #booleanValue()
-     * @see #symbolValue(Class)
-     */
-    @Override
-    public Object getValue() {
-        return value;
     }
 
 

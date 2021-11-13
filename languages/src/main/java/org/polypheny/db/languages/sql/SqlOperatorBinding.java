@@ -17,6 +17,7 @@
 package org.polypheny.db.languages.sql;
 
 
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -35,7 +36,7 @@ public abstract class SqlOperatorBinding extends OperatorBinding {
      * @param typeFactory Type factory
      * @param sqlOperator Operator which is subject of this call
      */
-    protected SqlOperatorBinding( RelDataTypeFactory typeFactory, SqlOperator sqlOperator ) {
+    protected SqlOperatorBinding( RelDataTypeFactory typeFactory, Operator sqlOperator ) {
         super( typeFactory, sqlOperator );
     }
 

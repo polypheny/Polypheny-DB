@@ -53,7 +53,7 @@ public class SqlSelectOperator extends SqlOperator {
 
 
     @Override
-    public SqlSyntax getSyntax() {
+    public SqlSyntax getSqlSyntax() {
         return SqlSyntax.SPECIAL;
     }
 

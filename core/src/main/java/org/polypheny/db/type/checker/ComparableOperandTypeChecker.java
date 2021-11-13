@@ -19,10 +19,9 @@ package org.polypheny.db.type.checker;
 
 import java.util.Objects;
 import org.polypheny.db.core.CallBinding;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeComparability;
-import org.polypheny.db.sql.SqlCallBinding;
-import org.polypheny.db.sql.SqlOperatorBinding;
 
 
 /**
@@ -61,7 +60,7 @@ public class ComparableOperandTypeChecker extends SameOperandTypeChecker {
     }
 
 
-    private boolean checkType( SqlCallBinding callBinding, boolean throwOnFailure, RelDataType type ) {
+    private boolean checkType( CallBinding callBinding, boolean throwOnFailure, RelDataType type ) {
         if ( type.getComparability().ordinal() < requiredComparability.ordinal() ) {
             if ( throwOnFailure ) {
                 throw callBinding.newValidationSignatureError();
@@ -79,7 +78,7 @@ public class ComparableOperandTypeChecker extends SameOperandTypeChecker {
      * and cannot throw an error.
      */
     @Override
-    public boolean checkOperandTypes( SqlOperatorBinding callBinding ) {
+    public boolean checkOperandTypes( OperatorBinding callBinding ) {
         boolean b = true;
         for ( int i = 0; i < nOperands; ++i ) {
             RelDataType type = callBinding.getOperandType( i );
@@ -104,5 +103,6 @@ public class ComparableOperandTypeChecker extends SameOperandTypeChecker {
     public Consistency getConsistency() {
         return consistency;
     }
+
 }
 

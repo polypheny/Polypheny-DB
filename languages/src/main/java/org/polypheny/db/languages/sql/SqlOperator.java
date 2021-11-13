@@ -28,13 +28,14 @@ import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.Syntax;
+import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.languages.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.languages.sql.fun.SqlBetweenOperator;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.languages.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.type.OperandCountRange;
@@ -184,7 +185,13 @@ public abstract class SqlOperator extends Operator {
     /**
      * Returns the syntactic type of this operator, never null.
      */
-    public abstract SqlSyntax getSyntax();
+    public abstract SqlSyntax getSqlSyntax();
+
+
+    @Override
+    public Syntax getSyntax() {
+        return getSqlSyntax().getSyntax();
+    }
 
 
     /**
@@ -195,6 +202,7 @@ public abstract class SqlOperator extends Operator {
      * @param functionQualifier function qualifier (e.g. "DISTINCT"), may be
      * @param pos parser position of the identifier of the call
      * @param operands array of operands
+     * @return
      */
     @Override
     public Call createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
@@ -223,7 +231,7 @@ public abstract class SqlOperator extends Operator {
      * The default implementation of this method delegates to {@link SqlSyntax#unparse}.
      */
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
-        getSyntax().unparse( writer, this, call, leftPrec, rightPrec );
+        getSqlSyntax().unparse( writer, this, call, leftPrec, rightPrec );
     }
 
 
@@ -378,7 +386,7 @@ public abstract class SqlOperator extends Operator {
                         argTypes,
                         null,
                         null,
-                        getSyntax(),
+                        getSqlSyntax(),
                         getKind() );
 
         // This is a fix for array usage in calls like `select ARRAY[1,2];`
@@ -394,7 +402,7 @@ public abstract class SqlOperator extends Operator {
 
         // Validate and determine coercibility and resulting collation name of binary operator if needed.
         type = adjustType( validator, call, type );
-        SqlValidatorUtil.checkCharsetAndCollateConsistentIfCharType( type );
+        ValidatorUtil.checkCharsetAndCollateConsistentIfCharType( type );
         return type;
     }
 
@@ -504,7 +512,7 @@ public abstract class SqlOperator extends Operator {
         }
 
         if ( kind != Kind.ARGUMENT_ASSIGNMENT ) {
-            for ( Ord<SqlNode> operand : Ord.zip( callBinding.operands() ) ) {
+            for ( Ord<Node> operand : Ord.zip( callBinding.operands() ) ) {
                 if ( operand.e != null
                         && operand.e.getKind() == Kind.DEFAULT
                         && !operandTypeChecker.isOptional( operand.i ) ) {
@@ -530,48 +538,8 @@ public abstract class SqlOperator extends Operator {
     }
 
 
-    /**
-     * Returns a template describing how the operator signature is to be built.
-     * E.g for the binary + operator the template looks like "{1} {0} {2}" {0} is the operator, subsequent numbers are operands.
-     *
-     * @param operandsCount is used with functions that can take a variable number of operands
-     * @return signature template, or null to indicate that a default template will suffice
-     */
-    public String getSignatureTemplate( final int operandsCount ) {
-        return null;
-    }
-
-
     public PolyOperandTypeInference getOperandTypeInference() {
         return operandTypeInference;
-    }
-
-
-    /**
-     * Returns whether this is a window function that requires an OVER clause.
-     *
-     * For example, returns true for {@code RANK}, {@code DENSE_RANK} and other ranking functions; returns false for {@code SUM}, {@code COUNT}, {@code MIN}, {@code MAX}, {@code AVG}
-     * (they can be used as non-window aggregate functions).
-     *
-     * If {@code requiresOver} returns true, then {@link #isAggregator()} must also return true.
-     *
-     * @see #allowsFraming()
-     * @see #requiresOrder()
-     */
-    public boolean requiresOver() {
-        return false;
-    }
-
-
-    /**
-     * Returns whether this is a window function that requires ordering.
-     *
-     * Per SQL:2011, 2, 6.10: "If &lt;ntile function&gt;, &lt;lead or lag function&gt;, RANK or DENSE_RANK is specified, then the window ordering clause shall be present."
-     *
-     * @see #isAggregator()
-     */
-    public boolean requiresOrder() {
-        return false;
     }
 
 
@@ -580,32 +548,6 @@ public abstract class SqlOperator extends Operator {
      */
     public boolean allowsFraming() {
         return true;
-    }
-
-
-    /**
-     * Returns whether this is a group function.
-     *
-     * Group functions can only appear in the GROUP BY clause.
-     *
-     * Examples are {@code HOP}, {@code TUMBLE}, {@code SESSION}.
-     *
-     * Group functions have auxiliary functions, e.g. {@code HOP_START}, but these are not group functions.
-     */
-    public boolean isGroup() {
-        return false;
-    }
-
-
-    /**
-     * Returns whether this is an group auxiliary function.
-     *
-     * Examples are {@code HOP_START} and {@code HOP_END} (both auxiliary to {@code HOP}).
-     *
-     * @see #isGroup()
-     */
-    public boolean isGroupAuxiliary() {
-        return false;
     }
 
 
@@ -626,31 +568,6 @@ public abstract class SqlOperator extends Operator {
      */
     public SqlMonotonicity getMonotonicity( SqlOperatorBinding call ) {
         return SqlMonotonicity.NOT_MONOTONIC;
-    }
-
-
-    /**
-     * @return true iff a call to this operator is guaranteed to always return the same result given the same operands; true is assumed by default
-     */
-    public boolean isDeterministic() {
-        return true;
-    }
-
-
-    /**
-     * @return true iff it is unsafe to cache query plans referencing this operator; false is assumed by default
-     */
-    public boolean isDynamicFunction() {
-        return false;
-    }
-
-
-    /**
-     * Method to check if call requires expansion when it has decimal operands.
-     * The default implementation is to return true.
-     */
-    public boolean requiresDecimalExpansion() {
-        return true;
     }
 
 

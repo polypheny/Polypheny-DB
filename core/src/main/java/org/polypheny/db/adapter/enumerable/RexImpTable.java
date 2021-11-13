@@ -84,12 +84,12 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.BinaryOperator;
-import org.polypheny.db.core.JsonArrayAgg;
-import org.polypheny.db.core.JsonObjectAgg;
+import org.polypheny.db.core.JsonAgg;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.MqlStdOperatorTable;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.TrimFunction.Flag;
 import org.polypheny.db.core.UserDefined;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -97,16 +97,10 @@ import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.SqlFunctions;
+import org.polypheny.db.runtime.Functions;
 import org.polypheny.db.schema.ImplementableAggFunction;
 import org.polypheny.db.schema.ImplementableFunction;
 import org.polypheny.db.schema.impl.AggregateFunctionImpl;
-import org.polypheny.db.sql.fun.SqlJsonArrayAggAggFunction;
-import org.polypheny.db.sql.fun.SqlJsonObjectAggAggFunction;
-import org.polypheny.db.sql.fun.SqlTrimFunction;
-import org.polypheny.db.sql.fun.SqlTrimFunction.Flag;
-import org.polypheny.db.sql.validate.SqlUserDefinedAggFunction;
-import org.polypheny.db.sql.validate.SqlUserDefinedFunction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BuiltInMethod;
@@ -1730,7 +1724,7 @@ public class RexImpTable {
 
         @Override
         public void implementAdd( AggContext info, AggAddContext add ) {
-            final JsonObjectAgg function = (JsonObjectAgg) info.aggregation();
+            final JsonAgg function = (JsonAgg) info.aggregation();
             add.currentBlock().add(
                     Expressions.statement(
                             Expressions.call(
@@ -1786,7 +1780,7 @@ public class RexImpTable {
 
         @Override
         public void implementAdd( AggContext info, AggAddContext add ) {
-            final JsonArrayAgg function = (JsonArrayAgg) info.aggregation();
+            final JsonAgg function = (JsonAgg) info.aggregation();
             add.currentBlock().add(
                     Expressions.statement(
                             Expressions.call(
@@ -1815,11 +1809,11 @@ public class RexImpTable {
         public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
             final boolean strict = !translator.conformance.allowExtendedTrim();
             final Object value = ((ConstantExpression) translatedOperands.get( 0 )).value;
-            Flag flag = (Flag) value;
+            Flag flag = (Flag) value; // todo dl this could lead to errors further down the road
             return Expressions.call(
                     BuiltInMethod.TRIM.method,
-                    Expressions.constant( flag == SqlTrimFunction.Flag.BOTH || flag == SqlTrimFunction.Flag.LEADING ),
-                    Expressions.constant( flag == SqlTrimFunction.Flag.BOTH || flag == SqlTrimFunction.Flag.TRAILING ),
+                    Expressions.constant( flag == Flag.BOTH || flag == Flag.LEADING ),
+                    Expressions.constant( flag == Flag.BOTH || flag == Flag.TRAILING ),
                     translatedOperands.get( 1 ),
                     translatedOperands.get( 2 ),
                     Expressions.constant( strict ) );
@@ -1891,7 +1885,7 @@ public class RexImpTable {
 
 
         private Expression call( Expression operand, Type type, TimeUnit timeUnit ) {
-            return Expressions.call( SqlFunctions.class, methodName,
+            return Expressions.call( Functions.class, methodName,
                     Types.castIfNecessary( type, operand ),
                     Types.castIfNecessary( type, Expressions.constant( timeUnit.multiplier ) ) );
         }
@@ -1945,7 +1939,7 @@ public class RexImpTable {
 
         @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
-            return Expressions.call( SqlFunctions.class, methodName, translatedOperands );
+            return Expressions.call( Functions.class, methodName, translatedOperands );
         }
 
     }
@@ -2008,7 +2002,7 @@ public class RexImpTable {
                         || type1 == BigDecimal.class
                         || COMPARISON_OPERATORS.contains( op )
                         && !COMP_OP_TYPES.contains( primitive ) ) {
-                    return Expressions.call( SqlFunctions.class, backupMethodName, expressions );
+                    return Expressions.call( Functions.class, backupMethodName, expressions );
                 }
             }
 
@@ -2036,7 +2030,7 @@ public class RexImpTable {
             // one or both of parameter(s) is(are) ANY type
             final Expression expression0 = maybeBox( expressions.get( 0 ) );
             final Expression expression1 = maybeBox( expressions.get( 1 ) );
-            return Expressions.call( SqlFunctions.class, backupMethodNameForAnyType, expression0, expression1 );
+            return Expressions.call( Functions.class, backupMethodNameForAnyType, expression0, expression1 );
         }
 
 

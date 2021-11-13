@@ -34,20 +34,18 @@ import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.languages.sql.SqlAsOperator;
-import org.polypheny.db.languages.sql.SqlBasicCall;
 import org.polypheny.db.languages.sql.SqlBinaryOperator;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlFilterOperator;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlGroupedWindowFunction;
 import org.polypheny.db.languages.sql.SqlInternalOperator;
-import org.polypheny.db.languages.sql.SqlJsonConstructorNullClause;
+import org.polypheny.db.core.json.JsonConstructorNullClause;
 import org.polypheny.db.languages.sql.SqlLateralOperator;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNumericLiteral;
-import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlOverOperator;
 import org.polypheny.db.languages.sql.SqlPostfixOperator;
 import org.polypheny.db.languages.sql.SqlPrefixOperator;
@@ -61,7 +59,6 @@ import org.polypheny.db.languages.sql.SqlValuesOperator;
 import org.polypheny.db.languages.sql.SqlWithinGroupOperator;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.validate.SqlModality;
-import org.polypheny.db.languages.sql2rel.AuxiliaryConverter;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
@@ -70,7 +67,6 @@ import org.polypheny.db.type.inference.InferTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Optionality;
-import org.polypheny.db.util.Pair;
 
 public class SqlRegisterer {
 
@@ -1013,7 +1009,7 @@ public class SqlRegisterer {
                         ReturnTypes.ARG0_NULLABLE,
                         null,
                         OperandTypes.NUMERIC_OR_STRING,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         /**
          * <code>HISTOGRAM_MAX</code> window aggregate function.
@@ -1025,7 +1021,7 @@ public class SqlRegisterer {
                         ReturnTypes.ARG0_NULLABLE,
                         null,
                         OperandTypes.NUMERIC_OR_STRING,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         /**
          * <code>HISTOGRAM_FIRST_VALUE</code> window aggregate function.
@@ -1037,7 +1033,7 @@ public class SqlRegisterer {
                         ReturnTypes.ARG0_NULLABLE,
                         null,
                         OperandTypes.NUMERIC_OR_STRING,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         /**
          * <code>HISTOGRAM_LAST_VALUE</code> window aggregate function.
@@ -1049,7 +1045,7 @@ public class SqlRegisterer {
                         ReturnTypes.ARG0_NULLABLE,
                         null,
                         OperandTypes.NUMERIC_OR_STRING,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         /**
          * <code>SUM0</code> aggregate function.
@@ -1188,11 +1184,11 @@ public class SqlRegisterer {
 
         register( "JSON_OBJECT", new SqlJsonObjectFunction() );
 
-        register( "JSON_OBJECTAGG", new SqlJsonObjectAggAggFunction( "JSON_OBJECTAGG", SqlJsonConstructorNullClause.NULL_ON_NULL ) );
+        register( "JSON_OBJECTAGG", new SqlJsonObjectAggAggFunction( "JSON_OBJECTAGG", JsonConstructorNullClause.NULL_ON_NULL ) );
 
         register( "JSON_ARRAY", new SqlJsonArrayFunction() );
 
-        register( "JSON_ARRAYAGG", new SqlJsonArrayAggAggFunction( "JSON_ARRAYAGG", SqlJsonConstructorNullClause.NULL_ON_NULL ) );
+        register( "JSON_ARRAYAGG", new SqlJsonArrayAggAggFunction( "JSON_ARRAYAGG", JsonConstructorNullClause.NULL_ON_NULL ) );
 
         register( "BETWEEN", new SqlBetweenOperator( SqlBetweenOperator.Flag.ASYMMETRIC, false ) );
 
@@ -1276,7 +1272,7 @@ public class SqlRegisterer {
                         ReturnTypes.ARG0_NULLABLE_VARYING,
                         null,
                         OperandTypes.STRING_STRING_STRING,
-                        SqlFunctionCategory.STRING ) );
+                        FunctionCategory.STRING ) );
 
         register( "CONVERT", new SqlConvertFunction( "CONVERT" ) );
 
@@ -1303,7 +1299,7 @@ public class SqlRegisterer {
                         ReturnTypes.INTEGER_NULLABLE,
                         null,
                         OperandTypes.CHARACTER,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         register( "CHARACTER_LENGTH",
                 new SqlFunction(
@@ -1312,7 +1308,7 @@ public class SqlRegisterer {
                         ReturnTypes.INTEGER_NULLABLE,
                         null,
                         OperandTypes.CHARACTER,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         register( "UPPER",
                 new SqlFunction(
@@ -1321,7 +1317,7 @@ public class SqlRegisterer {
                         ReturnTypes.ARG0_NULLABLE,
                         null,
                         OperandTypes.CHARACTER,
-                        SqlFunctionCategory.STRING ) );
+                        FunctionCategory.STRING ) );
 
         register( "LOWER",
                 new SqlFunction(
@@ -1330,7 +1326,7 @@ public class SqlRegisterer {
                         ReturnTypes.ARG0_NULLABLE,
                         null,
                         OperandTypes.CHARACTER,
-                        SqlFunctionCategory.STRING ) );
+                        FunctionCategory.STRING ) );
 
         register( "INITCAP",
                 new SqlFunction(
@@ -1339,7 +1335,7 @@ public class SqlRegisterer {
                         ReturnTypes.ARG0_NULLABLE,
                         null,
                         OperandTypes.CHARACTER,
-                        SqlFunctionCategory.STRING ) );
+                        FunctionCategory.STRING ) );
 
         /**
          * Uses SqlOperatorTable.useDouble for its return type since we don't know what the result type will be by just looking at the operand types. For example POW(int, int) can return a non integer if the second operand is negative.
@@ -1351,7 +1347,7 @@ public class SqlRegisterer {
                         ReturnTypes.DOUBLE_NULLABLE,
                         null,
                         OperandTypes.NUMERIC_NUMERIC,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         register( "SQRT",
                 new SqlFunction(
@@ -1360,7 +1356,7 @@ public class SqlRegisterer {
                         ReturnTypes.DOUBLE_NULLABLE,
                         null,
                         OperandTypes.NUMERIC,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         /**
          * Arithmetic remainder function {@code MOD}.
@@ -1376,7 +1372,7 @@ public class SqlRegisterer {
                         ReturnTypes.ARG1_NULLABLE,
                         null,
                         OperandTypes.EXACT_NUMERIC_EXACT_NUMERIC,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         register( "LN",
                 new SqlFunction(
@@ -1385,7 +1381,7 @@ public class SqlRegisterer {
                         ReturnTypes.DOUBLE_NULLABLE,
                         null,
                         OperandTypes.NUMERIC,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         register( "LOG10",
                 new SqlFunction(
@@ -1394,7 +1390,7 @@ public class SqlRegisterer {
                         ReturnTypes.DOUBLE_NULLABLE,
                         null,
                         OperandTypes.NUMERIC,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         register( "ABS",
                 new SqlFunction(
@@ -1403,7 +1399,7 @@ public class SqlRegisterer {
                         ReturnTypes.ARG0,
                         null,
                         OperandTypes.NUMERIC_OR_INTERVAL,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         register( "ACOS",
                 new SqlFunction(
@@ -1412,7 +1408,7 @@ public class SqlRegisterer {
                         ReturnTypes.DOUBLE_NULLABLE,
                         null,
                         OperandTypes.NUMERIC,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         register( "ASIN",
                 new SqlFunction(
@@ -1421,7 +1417,7 @@ public class SqlRegisterer {
                         ReturnTypes.DOUBLE_NULLABLE,
                         null,
                         OperandTypes.NUMERIC,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         register( "ATAN",
                 new SqlFunction(
@@ -1430,7 +1426,7 @@ public class SqlRegisterer {
                         ReturnTypes.DOUBLE_NULLABLE,
                         null,
                         OperandTypes.NUMERIC,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         register( "ATAN2",
                 new SqlFunction(
@@ -1439,7 +1435,7 @@ public class SqlRegisterer {
                         ReturnTypes.DOUBLE_NULLABLE,
                         null,
                         OperandTypes.NUMERIC_NUMERIC,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         register( "COS",
                 new SqlFunction(
@@ -1448,7 +1444,7 @@ public class SqlRegisterer {
                         ReturnTypes.DOUBLE_NULLABLE,
                         null,
                         OperandTypes.NUMERIC,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         register( "COT",
                 new SqlFunction(
@@ -1457,7 +1453,7 @@ public class SqlRegisterer {
                         ReturnTypes.DOUBLE_NULLABLE,
                         null,
                         OperandTypes.NUMERIC,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         register( "DEGREES",
                 new SqlFunction(
@@ -1466,7 +1462,7 @@ public class SqlRegisterer {
                         ReturnTypes.DOUBLE_NULLABLE,
                         null,
                         OperandTypes.NUMERIC,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         register( "EXP",
                 new SqlFunction(
@@ -1475,7 +1471,7 @@ public class SqlRegisterer {
                         ReturnTypes.DOUBLE_NULLABLE,
                         null,
                         OperandTypes.NUMERIC,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         register( "RADIANS",
                 new SqlFunction(
@@ -1484,7 +1480,7 @@ public class SqlRegisterer {
                         ReturnTypes.DOUBLE_NULLABLE,
                         null,
                         OperandTypes.NUMERIC,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         register( "ROUND",
                 new SqlFunction(
@@ -1493,7 +1489,7 @@ public class SqlRegisterer {
                         ReturnTypes.ARG0_NULLABLE,
                         null,
                         OperandTypes.NUMERIC_OPTIONAL_INTEGER,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         register( "SIGN",
                 new SqlFunction(
@@ -1502,7 +1498,7 @@ public class SqlRegisterer {
                         ReturnTypes.ARG0,
                         null,
                         OperandTypes.NUMERIC,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         register( "SIN",
                 new SqlFunction(
@@ -1511,7 +1507,7 @@ public class SqlRegisterer {
                         ReturnTypes.DOUBLE_NULLABLE,
                         null,
                         OperandTypes.NUMERIC,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         register( "TAN",
                 new SqlFunction(
@@ -1520,7 +1516,7 @@ public class SqlRegisterer {
                         ReturnTypes.DOUBLE_NULLABLE,
                         null,
                         OperandTypes.NUMERIC,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         register( "TRUNCATE",
                 new SqlFunction(
@@ -1529,13 +1525,13 @@ public class SqlRegisterer {
                         ReturnTypes.ARG0_NULLABLE,
                         null,
                         OperandTypes.NUMERIC_OPTIONAL_INTEGER,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         register( "PI",
                 new SqlBaseContextVariable(
                         "PI",
                         ReturnTypes.DOUBLE,
-                        SqlFunctionCategory.NUMERIC ) );
+                        FunctionCategory.NUMERIC ) );
 
         /**
          * {@code FIRST} function to be used within {@code MATCH_RECOGNIZE}.
@@ -1547,7 +1543,7 @@ public class SqlRegisterer {
                         ReturnTypes.ARG0_NULLABLE,
                         null,
                         OperandTypes.ANY_NUMERIC,
-                        SqlFunctionCategory.MATCH_RECOGNIZE ) );
+                        FunctionCategory.MATCH_RECOGNIZE ) );
 
         /**
          * {@code LAST} function to be used within {@code MATCH_RECOGNIZE}.
@@ -1559,7 +1555,7 @@ public class SqlRegisterer {
                         ReturnTypes.ARG0_NULLABLE,
                         null,
                         OperandTypes.ANY_NUMERIC,
-                        SqlFunctionCategory.MATCH_RECOGNIZE ) );
+                        FunctionCategory.MATCH_RECOGNIZE ) );
 
         /**
          * {@code PREV} function to be used within {@code MATCH_RECOGNIZE}.
@@ -1571,7 +1567,7 @@ public class SqlRegisterer {
                         ReturnTypes.ARG0_NULLABLE,
                         null,
                         OperandTypes.ANY_NUMERIC,
-                        SqlFunctionCategory.MATCH_RECOGNIZE ) );
+                        FunctionCategory.MATCH_RECOGNIZE ) );
 
         /**
          * {@code NEXT} function to be used within {@code MATCH_RECOGNIZE}.
@@ -1583,7 +1579,7 @@ public class SqlRegisterer {
                         ReturnTypes.ARG0_NULLABLE,
                         null,
                         OperandTypes.ANY_NUMERIC,
-                        SqlFunctionCategory.MATCH_RECOGNIZE ) );
+                        FunctionCategory.MATCH_RECOGNIZE ) );
 
         /**
          * {@code CLASSIFIER} function to be used within {@code MATCH_RECOGNIZE}.
@@ -1595,7 +1591,7 @@ public class SqlRegisterer {
                         ReturnTypes.VARCHAR_2000,
                         null,
                         OperandTypes.NILADIC,
-                        SqlFunctionCategory.MATCH_RECOGNIZE ) );
+                        FunctionCategory.MATCH_RECOGNIZE ) );
 
         /**
          * {@code MATCH_NUMBER} function to be used within {@code MATCH_RECOGNIZE}.
@@ -1607,7 +1603,7 @@ public class SqlRegisterer {
                         ReturnTypes.BIGINT_NULLABLE,
                         null,
                         OperandTypes.NILADIC,
-                        SqlFunctionCategory.MATCH_RECOGNIZE ) );
+                        FunctionCategory.MATCH_RECOGNIZE ) );
 
         register( "NULLIF", new SqlNullifFunction() );
 
@@ -1711,7 +1707,7 @@ public class SqlRegisterer {
                         ReturnTypes.ARG0,
                         null,
                         OperandTypes.ANY,
-                        SqlFunctionCategory.SYSTEM ) );
+                        FunctionCategory.SYSTEM ) );
 
         /**
          * The SQL <code>CAST</code> operator.
@@ -1806,7 +1802,7 @@ public class SqlRegisterer {
                         ReturnTypes.MULTISET_ELEMENT_NULLABLE,
                         null,
                         OperandTypes.COLLECTION,
-                        SqlFunctionCategory.SYSTEM ) );
+                        FunctionCategory.SYSTEM ) );
 
         /**
          * The item operator {@code [ ... ]}, used to access a given element of an array or map. For example, {@code myArray[3]} or {@code "myMap['foo']"}.
@@ -1915,7 +1911,7 @@ public class SqlRegisterer {
                         ReturnTypes.INTEGER_NULLABLE,
                         null,
                         OperandTypes.COLLECTION_OR_MAP,
-                        SqlFunctionCategory.SYSTEM ) );
+                        FunctionCategory.SYSTEM ) );
 
         /**
          * The COLLECT operator. Multiset aggregator function.
@@ -1928,7 +1924,7 @@ public class SqlRegisterer {
                         ReturnTypes.TO_MULTISET,
                         null,
                         OperandTypes.ANY,
-                        SqlFunctionCategory.SYSTEM,
+                        FunctionCategory.SYSTEM,
                         false,
                         false,
                         Optionality.OPTIONAL ) {
@@ -1945,7 +1941,7 @@ public class SqlRegisterer {
                         ReturnTypes.ARG0,
                         null,
                         OperandTypes.MULTISET,
-                        SqlFunctionCategory.SYSTEM,
+                        FunctionCategory.SYSTEM,
                         false,
                         false,
                         Optionality.FORBIDDEN ) {
@@ -2002,7 +1998,7 @@ public class SqlRegisterer {
                         ReturnTypes.ARG0,
                         null,
                         OperandTypes.or( OperandTypes.DATETIME_INTERVAL, OperandTypes.DATETIME_INTERVAL_TIME ),
-                        SqlFunctionCategory.SYSTEM ) {
+                        FunctionCategory.SYSTEM ) {
                     @Override
                     public List<SqlGroupedWindowFunction> getAuxiliaryFunctions() {
                         return ImmutableList.of( TUMBLE_START, TUMBLE_END );
@@ -2030,7 +2026,7 @@ public class SqlRegisterer {
                         ReturnTypes.ARG0,
                         null,
                         OperandTypes.or( OperandTypes.DATETIME_INTERVAL_INTERVAL, OperandTypes.DATETIME_INTERVAL_INTERVAL_TIME ),
-                        SqlFunctionCategory.SYSTEM ) {
+                        FunctionCategory.SYSTEM ) {
                     @Override
                     public List<SqlGroupedWindowFunction> getAuxiliaryFunctions() {
                         return ImmutableList.of( HOP_START, HOP_END );
@@ -2058,7 +2054,7 @@ public class SqlRegisterer {
                         ReturnTypes.ARG0,
                         null,
                         OperandTypes.or( OperandTypes.DATETIME_INTERVAL, OperandTypes.DATETIME_INTERVAL_TIME ),
-                        SqlFunctionCategory.SYSTEM ) {
+                        FunctionCategory.SYSTEM ) {
                     @Override
                     public List<SqlGroupedWindowFunction> getAuxiliaryFunctions() {
                         return ImmutableList.of( SESSION_START, SESSION_END );

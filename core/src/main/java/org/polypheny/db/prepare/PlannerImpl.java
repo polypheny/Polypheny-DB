@@ -39,6 +39,8 @@ import java.io.Reader;
 import java.util.List;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
+import org.polypheny.db.core.ParseException;
+import org.polypheny.db.interpreter.Node;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -105,7 +107,7 @@ public class PlannerImpl implements Planner, ViewExpander {
 
     // set in STATE_4_VALIDATE
     private PolyphenyDbSqlValidator validator;
-    private SqlNode validatedSqlNode;
+    private Node validatedSqlNode;
 
     // set in STATE_5_CONVERT
     private RelRoot root;
@@ -196,7 +198,7 @@ public class PlannerImpl implements Planner, ViewExpander {
 
 
     @Override
-    public SqlNode parse( final Reader reader ) throws SqlParseException {
+    public Node parse( final Reader reader ) throws ParseException {
         switch ( state ) {
             case STATE_0_CLOSED:
             case STATE_1_RESET:
@@ -211,7 +213,7 @@ public class PlannerImpl implements Planner, ViewExpander {
 
 
     @Override
-    public SqlNode validate( SqlNode sqlNode ) throws ValidationException {
+    public Node validate( Node sqlNode ) throws ValidationException {
         ensure( State.STATE_3_PARSED );
         final SqlConformance conformance = conformance();
         final PolyphenyDbCatalogReader catalogReader = createCatalogReader();
@@ -240,7 +242,7 @@ public class PlannerImpl implements Planner, ViewExpander {
 
 
     @Override
-    public Pair<SqlNode, RelDataType> validateAndGetType( SqlNode sqlNode ) throws ValidationException {
+    public Pair<Node, RelDataType> validateAndGetType( Node sqlNode ) throws ValidationException {
         final SqlNode validatedNode = this.validate( sqlNode );
         final RelDataType type = this.validator.getValidatedNodeType( validatedNode );
         return Pair.of( validatedNode, type );
@@ -248,7 +250,7 @@ public class PlannerImpl implements Planner, ViewExpander {
 
 
     @Override
-    public RelRoot rel( SqlNode sql ) throws RelConversionException {
+    public RelRoot rel( Node sql ) throws RelConversionException {
         ensure( State.STATE_4_VALIDATED );
         assert validatedSqlNode != null;
         final RexBuilder rexBuilder = createRexBuilder();

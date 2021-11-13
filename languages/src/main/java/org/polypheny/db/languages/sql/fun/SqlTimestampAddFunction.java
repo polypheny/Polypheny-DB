@@ -21,7 +21,7 @@ import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -110,7 +110,7 @@ public class SqlTimestampAddFunction extends SqlFunction {
                 RETURN_TYPE_INFERENCE,
                 null,
                 OperandTypes.family( PolyTypeFamily.ANY, PolyTypeFamily.INTEGER, PolyTypeFamily.DATETIME ),
-                SqlFunctionCategory.TIMEDATE );
+                FunctionCategory.TIMEDATE );
     }
 }
 

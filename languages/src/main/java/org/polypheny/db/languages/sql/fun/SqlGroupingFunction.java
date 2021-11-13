@@ -17,7 +17,7 @@
 package org.polypheny.db.languages.sql.fun;
 
 
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -46,7 +46,7 @@ public class SqlGroupingFunction extends SqlAbstractGroupFunction {
                 ReturnTypes.BIGINT,
                 null,
                 OperandTypes.ONE_OR_MORE,
-                SqlFunctionCategory.SYSTEM );
+                FunctionCategory.SYSTEM );
     }
 }
 

@@ -18,7 +18,7 @@ package org.polypheny.db.languages.sql.fun;
 
 
 import org.polypheny.db.languages.sql.SqlAggFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlSplittableAggFunction;
 import org.polypheny.db.type.checker.OperandTypes;
@@ -41,7 +41,7 @@ public class SqlSumEmptyIsZeroAggFunction extends SqlAggFunction {
                 ReturnTypes.AGG_SUM_EMPTY_IS_ZERO,
                 null,
                 OperandTypes.NUMERIC,
-                SqlFunctionCategory.NUMERIC,
+                FunctionCategory.NUMERIC,
                 false,
                 false,
                 Optionality.FORBIDDEN );

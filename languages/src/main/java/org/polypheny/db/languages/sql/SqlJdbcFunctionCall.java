@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import java.util.Objects;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.fun.SqlTrimFunction;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
@@ -368,7 +369,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
                 null,
                 null,
                 OperandTypes.VARIADIC,
-                SqlFunctionCategory.SYSTEM );
+                FunctionCategory.SYSTEM );
         jdbcName = name;
         lookupMakeCallObj = JdbcToInternalLookupTable.INSTANCE.lookup( name );
         lookupCall = null;

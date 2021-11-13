@@ -18,6 +18,7 @@ package org.polypheny.db.languages.sql;
 
 
 import java.util.List;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.type.PolyType;
@@ -43,7 +44,7 @@ public class SqlUnresolvedFunction extends SqlFunction {
      * @param paramTypes           array of parameter types
      * @param funcType             function category
      */
-    public SqlUnresolvedFunction( SqlIdentifier sqlIdentifier, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, List<RelDataType> paramTypes, SqlFunctionCategory funcType ) {
+    public SqlUnresolvedFunction( SqlIdentifier sqlIdentifier, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, List<RelDataType> paramTypes, FunctionCategory funcType ) {
         super( sqlIdentifier, returnTypeInference, operandTypeInference, operandTypeChecker, paramTypes, funcType );
     }
 

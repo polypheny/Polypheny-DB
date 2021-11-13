@@ -31,8 +31,8 @@ import org.polypheny.db.adapter.cassandra.CassandraTable;
 import org.polypheny.db.adapter.cassandra.CassandraTableScan;
 import org.polypheny.db.adapter.cassandra.CassandraToEnumerableConverter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
@@ -93,7 +93,7 @@ public class CassandraRules {
 
 
     public static List<String> cassandraLogicalFieldNames( final RelDataType rowType ) {
-        return CoreUtil.uniquify( rowType.getFieldNames(), CoreUtil.EXPR_SUGGESTER, true );
+        return ValidatorUtil.uniquify( rowType.getFieldNames(), ValidatorUtil.EXPR_SUGGESTER, true );
     }
 
 

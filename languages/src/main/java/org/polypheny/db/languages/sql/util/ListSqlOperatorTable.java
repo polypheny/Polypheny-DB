@@ -20,7 +20,7 @@ package org.polypheny.db.languages.sql.util;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlOperatorTable;
@@ -51,9 +51,9 @@ public class ListSqlOperatorTable implements SqlOperatorTable {
 
 
     @Override
-    public void lookupOperatorOverloads( SqlIdentifier opName, SqlFunctionCategory category, SqlSyntax syntax, List<SqlOperator> operatorList ) {
+    public void lookupOperatorOverloads( SqlIdentifier opName, FunctionCategory category, SqlSyntax syntax, List<SqlOperator> operatorList ) {
         for ( SqlOperator operator : this.operatorList ) {
-            if ( operator.getSyntax() != syntax ) {
+            if ( operator.getSqlSyntax() != syntax ) {
                 continue;
             }
             if ( !opName.isSimple() || !operator.isName( opName.getSimple() ) ) {
@@ -67,11 +67,11 @@ public class ListSqlOperatorTable implements SqlOperatorTable {
     }
 
 
-    protected static SqlFunctionCategory category( SqlOperator operator ) {
+    protected static FunctionCategory category( SqlOperator operator ) {
         if ( operator instanceof SqlFunction ) {
             return ((SqlFunction) operator).getFunctionType();
         } else {
-            return SqlFunctionCategory.SYSTEM;
+            return FunctionCategory.SYSTEM;
         }
     }
 

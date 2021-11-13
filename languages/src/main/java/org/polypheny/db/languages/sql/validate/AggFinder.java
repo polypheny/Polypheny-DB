@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import javax.annotation.Nonnull;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperatorTable;
@@ -78,7 +79,7 @@ class AggFinder extends AggVisitor {
 
 
     @Override
-    protected Void found( SqlCall call ) {
+    protected Void found( Call call ) {
         throw new Util.FoundOne( call );
     }
 
@@ -109,7 +110,7 @@ class AggFinder extends AggVisitor {
 
 
         @Override
-        protected Void found( SqlCall call ) {
+        protected Void found( Call call ) {
             calls.add( call );
             return null;
         }

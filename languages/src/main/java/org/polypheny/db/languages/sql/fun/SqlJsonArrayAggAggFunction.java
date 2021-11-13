@@ -19,19 +19,19 @@ package org.polypheny.db.languages.sql.fun;
 
 import java.util.Locale;
 import java.util.Objects;
-import org.polypheny.db.core.JsonArrayAgg;
+import org.polypheny.db.core.FunctionCategory;
+import org.polypheny.db.core.JsonAgg;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.json.JsonConstructorNullClause;
+import org.polypheny.db.languages.sql.SqlAggFunction;
+import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.languages.sql.SqlAggFunction;
-import org.polypheny.db.languages.sql.SqlCall;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
-import org.polypheny.db.languages.sql.SqlJsonConstructorNullClause;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -41,12 +41,12 @@ import org.polypheny.db.util.Optionality;
 /**
  * The <code>JSON_OBJECTAGG</code> aggregate function.
  */
-public class SqlJsonArrayAggAggFunction extends SqlAggFunction implements JsonArrayAgg {
+public class SqlJsonArrayAggAggFunction extends SqlAggFunction implements JsonAgg {
 
-    private final SqlJsonConstructorNullClause nullClause;
+    private final JsonConstructorNullClause nullClause;
 
 
-    public SqlJsonArrayAggAggFunction( String name, SqlJsonConstructorNullClause nullClause ) {
+    public SqlJsonArrayAggAggFunction( String name, JsonConstructorNullClause nullClause ) {
         super(
                 name,
                 null,
@@ -54,7 +54,7 @@ public class SqlJsonArrayAggAggFunction extends SqlAggFunction implements JsonAr
                 ReturnTypes.VARCHAR_2000,
                 null,
                 OperandTypes.family( PolyTypeFamily.ANY ),
-                SqlFunctionCategory.SYSTEM,
+                FunctionCategory.SYSTEM,
                 false,
                 false,
                 Optionality.FORBIDDEN );
@@ -89,15 +89,16 @@ public class SqlJsonArrayAggAggFunction extends SqlAggFunction implements JsonAr
     }
 
 
-    public SqlJsonArrayAggAggFunction with( SqlJsonConstructorNullClause nullClause ) {
+    public SqlJsonArrayAggAggFunction with( JsonConstructorNullClause nullClause ) {
         return this.nullClause == nullClause
                 ? this
                 : new SqlJsonArrayAggAggFunction( getName(), nullClause );
     }
 
 
-    public SqlJsonConstructorNullClause getNullClause() {
+    public JsonConstructorNullClause getNullClause() {
         return nullClause;
     }
+
 }
 

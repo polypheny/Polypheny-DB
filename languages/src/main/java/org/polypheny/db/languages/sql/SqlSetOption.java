@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
@@ -134,7 +135,7 @@ public class SqlSetOption extends SqlAlter {
 
 
     @Override
-    public void setOperand( int i, SqlNode operand ) {
+    public void setOperand( int i, Node operand ) {
         switch ( i ) {
             case 0:
                 if ( operand != null ) {

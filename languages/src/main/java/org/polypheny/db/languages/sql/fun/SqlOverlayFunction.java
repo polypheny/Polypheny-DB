@@ -19,7 +19,7 @@ package org.polypheny.db.languages.sql.fun;
 
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.type.checker.OperandTypes;
@@ -45,7 +45,7 @@ public class SqlOverlayFunction extends SqlFunction {
                 ReturnTypes.DYADIC_STRING_SUM_PRECISION_NULLABLE_VARYING,
                 null,
                 OTC_CUSTOM,
-                SqlFunctionCategory.STRING );
+                FunctionCategory.STRING );
     }
 
 

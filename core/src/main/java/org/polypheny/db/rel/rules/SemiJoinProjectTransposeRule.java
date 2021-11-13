@@ -36,6 +36,7 @@ package org.polypheny.db.rel.rules;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.rel.RelNode;
@@ -51,7 +52,6 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexProgramBuilder;
-import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.ImmutableIntList;
@@ -129,7 +129,7 @@ public class SemiJoinProjectTransposeRule extends RelOptRule {
 
         // for the bottom RexProgram, the input is a concatenation of the child of the project and the RHS of the semijoin
         RelDataType bottomInputRowType =
-                SqlValidatorUtil.deriveJoinRowType(
+                ValidatorUtil.deriveJoinRowType(
                         project.getInput().getRowType(),
                         rightChild.getRowType(),
                         JoinRelType.INNER,
@@ -154,7 +154,7 @@ public class SemiJoinProjectTransposeRule extends RelOptRule {
 
         // input rowtype into the top program is the concatenation of the project and the RHS of the semijoin
         RelDataType topInputRowType =
-                SqlValidatorUtil.deriveJoinRowType(
+                ValidatorUtil.deriveJoinRowType(
                         project.getRowType(),
                         rightChild.getRowType(),
                         JoinRelType.INNER,
@@ -171,5 +171,6 @@ public class SemiJoinProjectTransposeRule extends RelOptRule {
 
         return mergedProgram.expandLocalRef( mergedProgram.getCondition() );
     }
+
 }
 

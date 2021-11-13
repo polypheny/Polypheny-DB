@@ -18,7 +18,7 @@ package org.polypheny.db.languages.sql.fun;
 
 
 import org.polypheny.db.languages.sql.SqlAggFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -38,7 +38,7 @@ public class SqlNtileAggFunction extends SqlAggFunction {
                 ReturnTypes.RANK,
                 null,
                 OperandTypes.POSITIVE_INTEGER_LITERAL,
-                SqlFunctionCategory.NUMERIC,
+                FunctionCategory.NUMERIC,
                 false,
                 true,
                 Optionality.FORBIDDEN );

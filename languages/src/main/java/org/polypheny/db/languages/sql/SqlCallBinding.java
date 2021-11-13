@@ -21,9 +21,13 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.Lists;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.Getter;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.CallBinding;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.SqlValidatorException;
 import org.polypheny.db.core.StdOperatorRegistry;
@@ -44,7 +48,7 @@ import org.polypheny.db.runtime.Resources;
  */
 public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
 
-    private static final SqlCall DEFAULT_CALL = StdOperatorRegistry.get( "DEFAULT" ).createCall( ParserPos.ZERO );
+    private static final Call DEFAULT_CALL = StdOperatorRegistry.get( "DEFAULT" ).createCall( ParserPos.ZERO );
 
     @Getter
     private final SqlValidator validator;
@@ -79,7 +83,7 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
         final SqlNodeList group = select.getGroup();
         if ( group != null ) {
             int n = 0;
-            for ( SqlNode groupItem : group ) {
+            for ( Node groupItem : group ) {
                 if ( !(groupItem instanceof SqlNodeList) || ((SqlNodeList) groupItem).size() != 0 ) {
                     ++n;
                 }
@@ -101,15 +105,16 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
     /**
      * Returns the operands to a call permuted into the same order as the formal parameters of the function.
      */
-    public List<SqlNode> operands() {
+    @Override
+    public List<Node> operands() {
         if ( hasAssignment() && !(call.getOperator() instanceof SqlUnresolvedFunction) ) {
             return permutedOperands( call );
         } else {
-            final List<SqlNode> operandList = call.getOperandList();
+            final List<Node> operandList = call.getOperandList();
             if ( call.getOperator() instanceof SqlFunction ) {
                 final List<RelDataType> paramTypes = ((SqlFunction) call.getOperator()).getParamTypes();
                 if ( paramTypes != null && operandList.size() < paramTypes.size() ) {
-                    final List<SqlNode> list = Lists.newArrayList( operandList );
+                    final List<Node> list = Lists.newArrayList( operandList );
                     while ( list.size() < paramTypes.size() ) {
                         list.add( DEFAULT_CALL );
                     }
@@ -125,7 +130,7 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
      * Returns whether arguments have name assignment.
      */
     private boolean hasAssignment() {
-        for ( SqlNode operand : call.getOperandList() ) {
+        for ( Node operand : call.getOperandList() ) {
             if ( operand != null && operand.getKind() == Kind.ARGUMENT_ASSIGNMENT ) {
                 return true;
             }
@@ -137,10 +142,10 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
     /**
      * Returns the operands to a call permuted into the same order as the formal parameters of the function.
      */
-    private List<SqlNode> permutedOperands( final SqlCall call ) {
+    private List<Node> permutedOperands( final SqlCall call ) {
         final SqlFunction operator = (SqlFunction) call.getOperator();
-        return Lists.transform( operator.getParamNames(), paramName -> {
-            for ( SqlNode operand2 : call.getOperandList() ) {
+        return operator.getParamNames().stream().map( paramName -> {
+            for ( Node operand2 : call.getOperandList() ) {
                 final SqlCall call2 = (SqlCall) operand2;
                 assert operand2.getKind() == Kind.ARGUMENT_ASSIGNMENT;
                 final SqlIdentifier id = call2.operand( 1 );
@@ -149,14 +154,14 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
                 }
             }
             return DEFAULT_CALL;
-        } );
+        } ).collect( Collectors.toList() );
     }
 
 
     /**
      * Returns a particular operand.
      */
-    public SqlNode operand( int i ) {
+    public Node operand( int i ) {
         return operands().get( i );
     }
 
@@ -166,17 +171,17 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
      * used are null.
      */
     public SqlCall permutedCall() {
-        final List<SqlNode> operandList = operands();
+        final List<Node> operandList = operands();
         if ( operandList.equals( call.getOperandList() ) ) {
             return call;
         }
-        return call.getOperator().createCall( call.pos, operandList );
+        return (SqlCall) call.getOperator().createCall( call.pos, operandList );
     }
 
 
     @Override
     public SqlMonotonicity getOperandMonotonicity( int ordinal ) {
-        return call.getOperandList().get( ordinal ).getMonotonicity( scope );
+        return ((SqlNode) call.getOperandList().get( ordinal )).getMonotonicity( scope );
     }
 
 
@@ -193,7 +198,7 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
 
     @Override
     public boolean isOperandNull( int ordinal, boolean allowCast ) {
-        return SqlUtil.isNullLiteral( call.operand( ordinal ), allowCast );
+        return CoreUtil.isNullLiteral( call.operand( ordinal ), allowCast );
     }
 
 
@@ -239,7 +244,7 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
         if ( !SqlUtil.isCallTo( operand, SqlStdOperatorTable.ROW ) ) {
             return null;
         }
-        for ( SqlNode id : ((SqlCall) operand).getOperandList() ) {
+        for ( Node id : ((SqlCall) operand).getOperandList() ) {
             columnList.add( ((SqlIdentifier) id).getSimple() );
         }
         return validator.getParentCursor( paramName );
@@ -257,6 +262,7 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
      *
      * @return signature exception
      */
+    @Override
     public PolyphenyDbException newValidationSignatureError() {
         return validator.newValidationError(
                 call,
@@ -273,6 +279,7 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
      * @param ex underlying exception
      * @return wrapped exception
      */
+    @Override
     public PolyphenyDbException newValidationError( Resources.ExInst<SqlValidatorException> ex ) {
         return validator.newValidationError( call, ex );
     }

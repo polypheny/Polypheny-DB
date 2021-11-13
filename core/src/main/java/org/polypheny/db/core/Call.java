@@ -18,10 +18,15 @@ package org.polypheny.db.core;
 
 import java.util.List;
 
-public interface Call extends Visitable {
+public interface Call extends Visitable, Node {
 
     List<Node> getOperandList();
 
     Operator getOperator();
+
+    void setOperand( int i, Node operand );
+
+    @SuppressWarnings("unchecked")
+    <S extends Node> S operand( int i );
 
 }

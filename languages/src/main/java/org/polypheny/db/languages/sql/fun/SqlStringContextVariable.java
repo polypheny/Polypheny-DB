@@ -17,7 +17,7 @@
 package org.polypheny.db.languages.sql.fun;
 
 
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.type.inference.ReturnTypes;
 
 
@@ -27,7 +27,7 @@ import org.polypheny.db.type.inference.ReturnTypes;
 public class SqlStringContextVariable extends SqlBaseContextVariable {
 
     protected SqlStringContextVariable( String name ) {
-        super( name, ReturnTypes.VARCHAR_2000, SqlFunctionCategory.SYSTEM );
+        super( name, ReturnTypes.VARCHAR_2000, FunctionCategory.SYSTEM );
     }
 }
 

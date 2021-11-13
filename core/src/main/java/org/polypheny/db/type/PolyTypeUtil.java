@@ -53,10 +53,14 @@ import java.util.Objects;
 import org.apache.commons.lang3.reflect.TypeUtils;
 import org.polypheny.db.core.Call;
 import org.polypheny.db.core.CallBinding;
+import org.polypheny.db.core.Collation;
+import org.polypheny.db.core.DataTypeSpec;
+import org.polypheny.db.core.Identifier;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.Validator;
 import org.polypheny.db.core.ValidatorScope;
+import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeFamily;
@@ -865,12 +869,12 @@ public abstract class PolyTypeUtil {
      * @param type type descriptor
      * @return corresponding parse representation
      */
-    public static SqlDataTypeSpec convertTypeToSpec( RelDataType type ) {
+    public static DataTypeSpec convertTypeToSpec( RelDataType type ) {
         PolyType typeName = type.getPolyType();
 
         // TODO jvs: support row types, user-defined types, interval types, multiset types, etc
         assert typeName != null;
-        SqlIdentifier typeIdentifier = new SqlIdentifier( typeName.name(), ParserPos.ZERO );
+        Identifier typeIdentifier = new SqlIdentifier( typeName.name(), ParserPos.ZERO );
 
         String charSetName = null;
 
@@ -901,7 +905,7 @@ public abstract class PolyTypeUtil {
                     ParserPos.ZERO );
         } else if ( typeName.getFamily() == PolyTypeFamily.ARRAY ) {
             ArrayType arrayType = (ArrayType) type;
-            SqlIdentifier componentTypeIdentifier = new SqlIdentifier( arrayType.getComponentType().getPolyType().getName(), ParserPos.ZERO );
+            Identifier componentTypeIdentifier = new SqlIdentifier( arrayType.getComponentType().getPolyType().getName(), ParserPos.ZERO );
             return new SqlDataTypeSpec(
                     typeIdentifier,
                     componentTypeIdentifier,
@@ -958,14 +962,14 @@ public abstract class PolyTypeUtil {
         if ( charset == null ) {
             charset = typeFactory.getDefaultCharset();
         }
-        SqlCollation collation = type.getCollation();
+        Collation collation = type.getCollation();
         if ( collation == null ) {
-            collation = SqlCollation.IMPLICIT;
+            collation = Collation.IMPLICIT;
         }
 
         // todo: should get the implicit collation from repository instead of null
         type = typeFactory.createTypeWithCharsetAndCollation( type, charset, collation );
-        SqlValidatorUtil.checkCharsetAndCollateConsistentIfCharType( type );
+        ValidatorUtil.checkCharsetAndCollateConsistentIfCharType( type );
         return type;
     }
 

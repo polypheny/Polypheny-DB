@@ -31,7 +31,7 @@ import java.util.TreeSet;
 import org.apache.calcite.avatica.util.Casing;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.parser.SqlAbstractParserImpl;
-import org.polypheny.db.languages.sql.parser.SqlParseException;
+import org.polypheny.db.core.ParseException;
 import org.polypheny.db.languages.sql.parser.SqlParser;
 import org.polypheny.db.languages.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil;
@@ -337,7 +337,7 @@ public class SqlAdvisor {
     private SqlNode tryParse( String sql, List<SqlMoniker> hintList ) {
         try {
             return parseQuery( sql );
-        } catch ( SqlParseException e ) {
+        } catch ( ParseException e ) {
             for ( String tokenName : e.getExpectedTokenNames() ) {
                 // Only add tokens which are keywords, like '"BY"'; ignore symbols such as '<Identifier>'.
                 if ( tokenName.startsWith( "\"" ) && tokenName.endsWith( "\"" ) ) {
@@ -500,13 +500,13 @@ public class SqlAdvisor {
 
 
     /**
-     * Wrapper function to parse a SQL query (SELECT or VALUES, but not INSERT, UPDATE, DELETE, CREATE, DROP etc.), throwing a {@link SqlParseException} if the statement is not syntactically valid.
+     * Wrapper function to parse a SQL query (SELECT or VALUES, but not INSERT, UPDATE, DELETE, CREATE, DROP etc.), throwing a {@link ParseException} if the statement is not syntactically valid.
      *
      * @param sql SQL statement
      * @return parse tree
-     * @throws SqlParseException if not syntactically valid
+     * @throws ParseException if not syntactically valid
      */
-    protected SqlNode parseQuery( String sql ) throws SqlParseException {
+    protected SqlNode parseQuery( String sql ) throws ParseException {
         SqlParser parser = SqlParser.create( sql, parserConfig );
         return parser.parseStmt();
     }
@@ -522,7 +522,7 @@ public class SqlAdvisor {
     protected SqlNode collectParserError( String sql, List<ValidateErrorInfo> errorList ) {
         try {
             return parseQuery( sql );
-        } catch ( SqlParseException e ) {
+        } catch ( ParseException e ) {
             ValidateErrorInfo errInfo = new ValidateErrorInfo( e.getPos(), e.getMessage() );
 
             // parser only returns 1 exception now

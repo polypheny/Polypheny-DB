@@ -19,6 +19,8 @@ package org.polypheny.db.languages.sql.fun;
 
 import java.util.AbstractList;
 import java.util.Map;
+import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.RowOperator;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.core.Kind;
@@ -37,7 +39,7 @@ import org.polypheny.db.util.Pair;
  *
  * TODO: describe usage for row-value construction and row-type construction (SQL supports both).
  */
-public class SqlRowOperator extends SqlSpecialOperator {
+public class SqlRowOperator extends SqlSpecialOperator implements RowOperator {
 
 
     public SqlRowOperator( String name ) {
@@ -54,7 +56,7 @@ public class SqlRowOperator extends SqlSpecialOperator {
 
     // implement SqlOperator
     @Override
-    public SqlSyntax getSyntax() {
+    public SqlSyntax getSqlSyntax() {
         // Function syntax would work too.
         return SqlSyntax.SPECIAL;
     }
@@ -68,7 +70,7 @@ public class SqlRowOperator extends SqlSpecialOperator {
                     @Override
                     public Map.Entry<String, RelDataType> get( int index ) {
                         return Pair.of(
-                                SqlUtil.deriveAliasFromOrdinal( index ),
+                                CoreUtil.deriveAliasFromOrdinal( index ),
                                 opBinding.getOperandType( index ) );
                     }
 

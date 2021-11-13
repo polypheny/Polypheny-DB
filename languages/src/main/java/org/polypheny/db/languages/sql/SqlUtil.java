@@ -26,12 +26,10 @@ import com.google.common.collect.Lists;
 import java.nio.charset.Charset;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -41,14 +39,18 @@ import org.apache.calcite.linq4j.function.Functions;
 import org.polypheny.db.core.BasicNodeVisitor;
 import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Collation;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.DataTypeSpec;
+import org.polypheny.db.core.DynamicParam;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Identifier;
 import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeList;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
@@ -56,7 +58,6 @@ import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BarfingInvocationHandler;
 import org.polypheny.db.util.Glossary;
@@ -75,7 +76,7 @@ public abstract class SqlUtil {
         if ( node1 == null ) {
             return node2;
         }
-        ArrayList<SqlNode> list = new ArrayList<>();
+        ArrayList<Node> list = new ArrayList<>();
         if ( node1.getKind() == Kind.AND ) {
             list.addAll( ((SqlCall) node1).getOperandList() );
         } else {
@@ -86,7 +87,7 @@ public abstract class SqlUtil {
         } else {
             list.add( node2 );
         }
-        return SqlStdOperatorTable.AND.createCall( ParserPos.ZERO, list );
+        return (SqlNode) StdOperatorRegistry.get( "AND" ).createCall( ParserPos.ZERO, list );
     }
 
 
@@ -137,46 +138,11 @@ public abstract class SqlUtil {
 
 
     /**
-     * Returns whether a node represents the NULL value.
-     *
-     * Examples:
-     *
-     * <ul>
-     * <li>For {@link SqlLiteral} Unknown, returns false.</li>
-     * <li>For <code>CAST(NULL AS <i>type</i>)</code>, returns true if <code>allowCast</code> is true, false otherwise.</li>
-     * <li>For <code>CAST(CAST(NULL AS <i>type</i>) AS <i>type</i>))</code>, returns false.</li>
-     * </ul>
-     */
-    public static boolean isNullLiteral( SqlNode node, boolean allowCast ) {
-        if ( node instanceof SqlLiteral ) {
-            SqlLiteral literal = (SqlLiteral) node;
-            if ( literal.getTypeName() == PolyType.NULL ) {
-                assert null == literal.getValue();
-                return true;
-            } else {
-                // We don't regard UNKNOWN -- SqlLiteral(null,Boolean) -- as NULL.
-                return false;
-            }
-        }
-        if ( allowCast ) {
-            if ( node.getKind() == Kind.CAST ) {
-                SqlCall call = (SqlCall) node;
-                if ( isNullLiteral( call.operand( 0 ), false ) ) {
-                    // node is "CAST(NULL as type)"
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-
-    /**
      * Returns whether a node represents the NULL value or a series of nested <code>CAST(NULL AS type)</code> calls. For example:
      * <code>isNull(CAST(CAST(NULL as INTEGER) AS VARCHAR(1)))</code> returns {@code true}.
      */
     public static boolean isNull( SqlNode node ) {
-        return isNullLiteral( node, false )
+        return CoreUtil.isNullLiteral( node, false )
                 || node.getKind() == Kind.CAST
                 && isNull( ((SqlCall) node).operand( 0 ) );
     }
@@ -217,7 +183,7 @@ public abstract class SqlUtil {
     /**
      * Returns whether a node is a literal.
      *
-     * Many constructs which require literals also accept <code>CAST(NULL AS <i>type</i>)</code>. This method does not accept casts, so you should call {@link #isNullLiteral} first.
+     * Many constructs which require literals also accept <code>CAST(NULL AS <i>type</i>)</code>. This method does not accept casts, so you should call {@link CoreUtil#isNullLiteral} first.
      *
      * @param node The node, never null.
      * @return Whether the node is a literal
@@ -288,9 +254,9 @@ public abstract class SqlUtil {
                     writer.sep( "*" );
             }
         }
-        for ( SqlNode operand : call.getOperandList() ) {
+        for ( Node operand : call.getOperandList() ) {
             writer.sep( "," );
-            operand.unparse( writer, 0, 0 );
+            ((SqlNode) operand).unparse( writer, 0, 0 );
         }
         writer.endList( frame );
     }
@@ -342,7 +308,7 @@ public abstract class SqlUtil {
      * @return matching routine, or null if none found
      * @see Glossary#SQL99 SQL:1999 Part 2 Section 10.4
      */
-    public static SqlOperator lookupRoutine( SqlOperatorTable opTab, SqlIdentifier funcName, List<RelDataType> argTypes, List<String> argNames, SqlFunctionCategory category, SqlSyntax syntax, Kind sqlKind ) {
+    public static SqlOperator lookupRoutine( SqlOperatorTable opTab, SqlIdentifier funcName, List<RelDataType> argTypes, List<String> argNames, FunctionCategory category, SqlSyntax syntax, Kind sqlKind ) {
         Iterator<SqlOperator> list =
                 lookupSubjectRoutines(
                         opTab,
@@ -378,7 +344,7 @@ public abstract class SqlUtil {
      * @return list of matching routines
      * @see Glossary#SQL99 SQL:1999 Part 2 Section 10.4
      */
-    public static Iterator<SqlOperator> lookupSubjectRoutines( SqlOperatorTable opTab, SqlIdentifier funcName, List<RelDataType> argTypes, List<String> argNames, SqlSyntax sqlSyntax, Kind sqlKind, SqlFunctionCategory category ) {
+    public static Iterator<SqlOperator> lookupSubjectRoutines( SqlOperatorTable opTab, SqlIdentifier funcName, List<RelDataType> argTypes, List<String> argNames, SqlSyntax sqlSyntax, Kind sqlKind, FunctionCategory category ) {
         // start with all routines matching by name
         Iterator<SqlOperator> routines = lookupSubjectRoutinesByName( opTab, funcName, sqlSyntax, category );
 
@@ -386,7 +352,7 @@ public abstract class SqlUtil {
         routines = filterRoutinesByParameterCount( routines, argTypes );
 
         // NOTE: according to SQL99, procedures are NOT overloaded on type, only on number of arguments.
-        if ( category == SqlFunctionCategory.USER_DEFINED_PROCEDURE ) {
+        if ( category == FunctionCategory.USER_DEFINED_PROCEDURE ) {
             return routines;
         }
 
@@ -417,7 +383,7 @@ public abstract class SqlUtil {
      * @param category category of routine to look up
      * @return true if match found
      */
-    public static boolean matchRoutinesByParameterCount( SqlOperatorTable opTab, SqlIdentifier funcName, List<RelDataType> argTypes, SqlFunctionCategory category ) {
+    public static boolean matchRoutinesByParameterCount( SqlOperatorTable opTab, SqlIdentifier funcName, List<RelDataType> argTypes, FunctionCategory category ) {
         // start with all routines matching by name
         Iterator<SqlOperator> routines = lookupSubjectRoutinesByName( opTab, funcName, SqlSyntax.FUNCTION, category );
 
@@ -428,14 +394,14 @@ public abstract class SqlUtil {
     }
 
 
-    private static Iterator<SqlOperator> lookupSubjectRoutinesByName( SqlOperatorTable opTab, SqlIdentifier funcName, final SqlSyntax syntax, SqlFunctionCategory category ) {
+    private static Iterator<SqlOperator> lookupSubjectRoutinesByName( SqlOperatorTable opTab, SqlIdentifier funcName, final SqlSyntax syntax, FunctionCategory category ) {
         final List<SqlOperator> sqlOperators = new ArrayList<>();
         opTab.lookupOperatorOverloads( funcName, category, syntax, sqlOperators );
         switch ( syntax ) {
             case FUNCTION:
                 return Iterators.filter( sqlOperators.iterator(), Predicates.instanceOf( SqlFunction.class ) );
             default:
-                return Iterators.filter( sqlOperators.iterator(), operator -> Objects.requireNonNull( operator ).getSyntax() == syntax );
+                return Iterators.filter( sqlOperators.iterator(), operator -> Objects.requireNonNull( operator ).getSqlSyntax() == syntax );
         }
     }
 
@@ -571,7 +537,7 @@ public abstract class SqlUtil {
                 if ( i >= fields.size() ) {
                     i = 0;
                 }
-                return fields.get( i );
+                return (SqlNode) fields.get( i );
 
             case VALUES:
                 SqlCall call = (SqlCall) query;
@@ -595,7 +561,7 @@ public abstract class SqlUtil {
             final List<SqlOperator> list = new ArrayList<>();
             opTab.lookupOperatorOverloads( id, null, SqlSyntax.FUNCTION, list );
             for ( SqlOperator operator : list ) {
-                if ( operator.getSyntax() == SqlSyntax.FUNCTION_ID ) {
+                if ( operator.getSqlSyntax() == SqlSyntax.FUNCTION_ID ) {
                     // Even though this looks like an identifier, it is a actually a call to a function. Construct a fake call to this function, so we can use the regular operator validation.
                     return new SqlBasicCall(
                             operator,
@@ -607,64 +573,6 @@ public abstract class SqlUtil {
             }
         }
         return null;
-    }
-
-
-    public static String deriveAliasFromOrdinal( int ordinal ) {
-        // Use a '$' so that queries can't easily reference the generated name.
-        return "EXPR$" + ordinal;
-    }
-
-
-    /**
-     * Constructs an operator signature from a type list.
-     *
-     * @param op operator
-     * @param typeList list of types to use for operands. Types may be represented as {@link String}, {@link PolyTypeFamily}, or any object with a valid {@link Object#toString()} method.
-     * @return constructed signature
-     */
-    public static String getOperatorSignature( SqlOperator op, List<?> typeList ) {
-        return getAliasedSignature( op, op.getName(), typeList );
-    }
-
-
-    /**
-     * Constructs an operator signature from a type list, substituting an alias for the operator name.
-     *
-     * @param op operator
-     * @param opName name to use for operator
-     * @param typeList list of {@link PolyType} or {@link String} to use for operands
-     * @return constructed signature
-     */
-    public static String getAliasedSignature( SqlOperator op, String opName, List<?> typeList ) {
-        StringBuilder ret = new StringBuilder();
-        String template = op.getSignatureTemplate( typeList.size() );
-        if ( null == template ) {
-            ret.append( "'" );
-            ret.append( opName );
-            ret.append( "(" );
-            for ( int i = 0; i < typeList.size(); i++ ) {
-                if ( i > 0 ) {
-                    ret.append( ", " );
-                }
-                final String t = typeList.get( i ).toString().toUpperCase( Locale.ROOT );
-                ret.append( "<" ).append( t ).append( ">" );
-            }
-            ret.append( ")'" );
-        } else {
-            Object[] values = new Object[typeList.size() + 1];
-            values[0] = opName;
-            ret.append( "'" );
-            for ( int i = 0; i < typeList.size(); i++ ) {
-                final String t = typeList.get( i ).toString().toUpperCase( Locale.ROOT );
-                values[i + 1] = "<" + t + ">";
-            }
-            ret.append( new MessageFormat( template, Locale.ROOT ).format( values ) );
-            ret.append( "'" );
-            assert (typeList.size() + 1) == values.length;
-        }
-
-        return ret.toString();
     }
 
 
@@ -841,51 +749,51 @@ public abstract class SqlUtil {
 
         @Override
         public Void visit( Identifier id ) {
-            return check( id );
+            return check( (SqlNode) id );
         }
 
 
         @Override
         public Void visit( Call call ) {
-            preCheck( call );
-            for ( SqlNode node : call.getOperandList() ) {
-                visitChild( node );
+            preCheck( (SqlNode) call );
+            for ( Node node : call.getOperandList() ) {
+                visitChild( (SqlNode) node );
             }
-            return postCheck( call );
+            return postCheck( (SqlNode) call );
         }
 
 
         @Override
         public Void visit( IntervalQualifier intervalQualifier ) {
-            return check( intervalQualifier );
+            return check( (SqlNode) intervalQualifier );
         }
 
 
         @Override
         public Void visit( Literal literal ) {
-            return check( literal );
+            return check( (SqlNode) literal );
         }
 
 
         @Override
         public Void visit( NodeList nodeList ) {
-            preCheck( nodeList );
-            for ( SqlNode node : nodeList ) {
-                visitChild( node );
+            preCheck( (SqlNode) nodeList );
+            for ( Node node : nodeList ) {
+                visitChild( (SqlNode) node );
             }
-            return postCheck( nodeList );
+            return postCheck( (SqlNode) nodeList );
         }
 
 
         @Override
-        public Void visit( SqlDynamicParam param ) {
-            return check( param );
+        public Void visit( DynamicParam param ) {
+            return check( (SqlNode) param );
         }
 
 
         @Override
         public Void visit( DataTypeSpec type ) {
-            return check( type );
+            return check( (SqlNode) type );
         }
 
     }

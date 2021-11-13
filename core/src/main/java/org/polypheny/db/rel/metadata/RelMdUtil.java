@@ -41,6 +41,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import org.polypheny.db.core.FunctionCategory;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelNode;
@@ -63,8 +66,6 @@ import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.sql.SqlFunction;
-import org.polypheny.db.sql.SqlFunctionCategory;
-import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -77,14 +78,14 @@ import org.polypheny.db.util.NumberUtil;
  */
 public class RelMdUtil {
 
-    public static final SqlFunction ARTIFICIAL_SELECTIVITY_FUNC =
+    public static final Operator ARTIFICIAL_SELECTIVITY_FUNC =
             new SqlFunction(
                     "ARTIFICIAL_SELECTIVITY",
-                    SqlKind.OTHER_FUNCTION,
+                    Kind.OTHER_FUNCTION,
                     ReturnTypes.BOOLEAN, // returns boolean since we'll AND it
                     null,
                     OperandTypes.NUMERIC, // takes a numeric param
-                    SqlFunctionCategory.SYSTEM );
+                    FunctionCategory.SYSTEM );
 
 
     private RelMdUtil() {
@@ -369,13 +370,13 @@ public class RelMdUtil {
         double artificialSel = 1.0;
 
         for ( RexNode pred : RelOptUtil.conjunctions( predicate ) ) {
-            if ( pred.getKind() == SqlKind.IS_NOT_NULL ) {
+            if ( pred.getKind() == Kind.IS_NOT_NULL ) {
                 sel *= .9;
             } else if ( (pred instanceof RexCall) && (((RexCall) pred).getOperator() == RelMdUtil.ARTIFICIAL_SELECTIVITY_FUNC) ) {
                 artificialSel *= RelMdUtil.getSelectivityValue( pred );
-            } else if ( pred.isA( SqlKind.EQUALS ) ) {
+            } else if ( pred.isA( Kind.EQUALS ) ) {
                 sel *= .15;
-            } else if ( pred.isA( SqlKind.COMPARISON ) ) {
+            } else if ( pred.isA( Kind.COMPARISON ) ) {
                 sel *= .5;
             } else {
 
@@ -712,9 +713,9 @@ public class RelMdUtil {
         public Double visitCall( RexCall call ) {
             Double distinctRowCount;
             Double rowCount = mq.getRowCount( rel );
-            if ( call.isA( SqlKind.MINUS_PREFIX ) ) {
+            if ( call.isA( Kind.MINUS_PREFIX ) ) {
                 distinctRowCount = cardOfProjExpr( mq, rel, call.getOperands().get( 0 ) );
-            } else if ( call.isA( ImmutableList.of( SqlKind.PLUS, SqlKind.MINUS ) ) ) {
+            } else if ( call.isA( ImmutableList.of( Kind.PLUS, Kind.MINUS ) ) ) {
                 Double card0 = cardOfProjExpr( mq, rel, call.getOperands().get( 0 ) );
                 if ( card0 == null ) {
                     return null;
@@ -724,7 +725,7 @@ public class RelMdUtil {
                     return null;
                 }
                 distinctRowCount = Math.max( card0, card1 );
-            } else if ( call.isA( ImmutableList.of( SqlKind.TIMES, SqlKind.DIVIDE ) ) ) {
+            } else if ( call.isA( ImmutableList.of( Kind.TIMES, Kind.DIVIDE ) ) ) {
                 distinctRowCount =
                         NumberUtil.multiply(
                                 cardOfProjExpr( mq, rel, call.getOperands().get( 0 ) ),
@@ -741,6 +742,7 @@ public class RelMdUtil {
 
             return numDistinctVals( distinctRowCount, rowCount );
         }
+
     }
 
 
@@ -770,4 +772,5 @@ public class RelMdUtil {
         }
         return alreadySorted && alreadySmaller;
     }
+
 }

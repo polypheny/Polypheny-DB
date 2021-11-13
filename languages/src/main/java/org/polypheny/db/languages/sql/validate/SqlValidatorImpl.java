@@ -68,6 +68,7 @@ import org.polypheny.db.core.NodeVisitor;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.SqlValidatorException;
 import org.polypheny.db.core.ValidatorScope;
+import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.document.util.DocumentUtil;
 import org.polypheny.db.languages.sql.NullCollation;
 import org.polypheny.db.languages.sql.SqlAccessEnum;
@@ -82,7 +83,7 @@ import org.polypheny.db.languages.sql.SqlDelete;
 import org.polypheny.db.languages.sql.SqlDynamicParam;
 import org.polypheny.db.languages.sql.SqlExplain;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlInsert;
 import org.polypheny.db.languages.sql.SqlIntervalLiteral;
@@ -109,7 +110,7 @@ import org.polypheny.db.languages.sql.SqlWithItem;
 import org.polypheny.db.languages.sql.fun.SqlCase;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.util.SqlShuttle;
-import org.polypheny.db.languages.sql2rel.InitializerContext;
+import org.polypheny.db.core.InitializerContext;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.prepare.Prepare;
@@ -149,6 +150,7 @@ import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
+import sun.security.validator.ValidatorException;
 
 
 /**
@@ -812,7 +814,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             if ( call != null ) {
                 result.add( new SqlMonikerImpl( op.getName(), SqlMonikerType.FUNCTION ) );
             } else {
-                if ( (op.getSyntax() == SqlSyntax.FUNCTION) || (op.getSyntax() == SqlSyntax.PREFIX) ) {
+                if ( (op.getSqlSyntax() == SqlSyntax.FUNCTION) || (op.getSqlSyntax() == SqlSyntax.PREFIX) ) {
                     if ( op.getOperandTypeChecker() != null ) {
                         String sig = op.getAllowedSignatures();
                         sig = sig.replaceAll( "'", "" );
@@ -1423,7 +1425,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         int ordinal = 0;
         for ( SqlNode exp : call.getSourceExpressionList() ) {
             // Force unique aliases to avoid a duplicate for Y with SET X=Y
-            String alias = SqlUtil.deriveAliasFromOrdinal( ordinal );
+            String alias = CoreUtil.deriveAliasFromOrdinal( ordinal );
             selectList.add( SqlValidatorUtil.addAlias( exp, alias ) );
             ++ordinal;
         }
@@ -1629,7 +1631,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                                 null,
                                 null,
                                 null,
-                                SqlFunctionCategory.USER_DEFINED_CONSTRUCTOR ) );
+                                FunctionCategory.USER_DEFINED_CONSTRUCTOR ) );
             }
         }
         return type;
@@ -1643,7 +1645,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         opTab.lookupOperatorOverloads( unresolvedFunction.getNameAsId(), null, SqlSyntax.FUNCTION, overloads );
         if ( overloads.size() == 1 ) {
             SqlFunction fun = (SqlFunction) overloads.get( 0 );
-            if ( (fun.getSqlIdentifier() == null) && (fun.getSyntax() != SqlSyntax.FUNCTION_ID) ) {
+            if ( (fun.getSqlIdentifier() == null) && (fun.getSqlSyntax() != SqlSyntax.FUNCTION_ID) ) {
                 final int expectedArgCount = fun.getOperandCountRange().getMin();
                 throw newValidationError( call, RESOURCE.invalidArgCount( call.getOperator().getName(), expectedArgCount ) );
             }
@@ -1663,7 +1665,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         if ( newScope != null ) {
             scope = newScope;
         }
-        boolean isNullLiteral = SqlUtil.isNullLiteral( node, false );
+        boolean isNullLiteral = CoreUtil.isNullLiteral( node, false );
         if ( (node instanceof SqlDynamicParam) || isNullLiteral ) {
             if ( inferredType.equals( unknownType ) ) {
                 if ( isNullLiteral ) {
@@ -1712,7 +1714,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 inferUnknownTypes( returnType, scope, sqlNode );
             }
 
-            if ( !SqlUtil.isNullLiteral( caseCall.getElseOperand(), false ) ) {
+            if ( !CoreUtil.isNullLiteral( caseCall.getElseOperand(), false ) ) {
                 inferUnknownTypes( returnType, scope, caseCall.getElseOperand() );
             } else {
                 setValidatedNodeType( caseCall.getElseOperand(), returnType );
@@ -1746,7 +1748,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      */
     protected void addToSelectList( List<SqlNode> list, Set<String> aliases, List<Map.Entry<String, RelDataType>> fieldList, SqlNode exp, SqlValidatorScope scope, final boolean includeSystemVars ) {
         String alias = SqlValidatorUtil.getAlias( exp, -1 );
-        String uniqueAlias = CoreUtil.uniquify( alias, aliases, CoreUtil.EXPR_SUGGESTER );
+        String uniqueAlias = ValidatorUtil.uniquify( alias, aliases, ValidatorUtil.EXPR_SUGGESTER );
         if ( !alias.equals( uniqueAlias ) ) {
             exp = SqlValidatorUtil.addAlias( exp, uniqueAlias );
         }
@@ -4021,7 +4023,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         final List<Map.Entry<String, RelDataType>> fields = new ArrayList<>();
         if ( append ) {
             for ( RelDataTypeField targetField : targetFields ) {
-                fields.add( Pair.of( SqlUtil.deriveAliasFromOrdinal( fields.size() ), targetField.getType() ) );
+                fields.add( Pair.of( CoreUtil.deriveAliasFromOrdinal( fields.size() ), targetField.getType() ) );
             }
         }
         final Set<Integer> assignedFields = new HashSet<>();
@@ -4171,7 +4173,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             final RelDataType tableRowType = table.getRowType( typeFactory );
 
             final Map<Integer, RexNode> projectMap = RelOptUtil.getColumnConstraints( modifiableViewTable, targetRowType, typeFactory );
-            final Map<String, Integer> nameToIndex = SqlValidatorUtil.mapNameToIndex( tableRowType.getFieldList() );
+            final Map<String, Integer> nameToIndex = ValidatorUtil.mapNameToIndex( tableRowType.getFieldList() );
 
             // Validate update values against the view constraint.
             final List<SqlNode> targets = update.getTargetColumnList().getList();
@@ -4540,7 +4542,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
             if ( targetRowType.isStruct() ) {
                 for ( Pair<SqlNode, RelDataTypeField> pair : Pair.zip( rowConstructor.getOperandList(), targetRowType.getFieldList() ) ) {
-                    if ( !pair.right.getType().isNullable() && SqlUtil.isNullLiteral( pair.left, false ) ) {
+                    if ( !pair.right.getType().isNullable() && CoreUtil.isNullLiteral( pair.left, false ) ) {
                         throw newValidationError( node, RESOURCE.columnNotNullable( pair.right.getName() ) );
                     }
                 }
@@ -4647,7 +4649,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     @Override
-    public PolyphenyDbContextException newValidationError( Node node, ExInst<SqlValidatorException> e ) {
+    public PolyphenyDbContextException newValidationError( Node node, ExInst<ValidatorException> e ) {
         assert node != null;
         final ParserPos pos = node.getPos();
         return SqlUtil.newContextException( pos, e );
@@ -5078,7 +5080,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     public void validateCall( SqlCall call, SqlValidatorScope scope ) {
         final SqlOperator operator = call.getOperator();
         if ( (call.operandCount() == 0)
-                && (operator.getSyntax() == SqlSyntax.FUNCTION_ID)
+                && (operator.getSqlSyntax() == SqlSyntax.FUNCTION_ID)
                 && !call.isExpanded()
                 && !conformance.allowNiladicParentheses() ) {
             // For example, "LOCALTIME()" is illegal. (It should be "LOCALTIME", which would have been handled as a SqlIdentifier.)
@@ -5089,7 +5091,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
         if ( operator instanceof SqlFunction
                 && ((SqlFunction) operator).getFunctionType()
-                == SqlFunctionCategory.MATCH_RECOGNIZE
+                == FunctionCategory.MATCH_RECOGNIZE
                 && !(operandScope instanceof MatchRecognizeScope) ) {
             throw newValidationError( call, Static.RESOURCE.functionMatchRecognizeOnly( call.toString() ) );
         }

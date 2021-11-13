@@ -73,7 +73,7 @@ public class SqlUpdate extends SqlCall {
 
 
     @Override
-    public void setOperand( int i, SqlNode operand ) {
+    public void setOperand( int i, Node operand ) {
         switch ( i ) {
             case 0:
                 assert operand instanceof SqlIdentifier;

@@ -50,6 +50,7 @@ import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
 import org.polypheny.db.util.Glossary;
 import org.polypheny.db.util.Util;
+import sun.security.validator.ValidatorException;
 
 
 /**
@@ -272,18 +273,6 @@ public interface SqlValidator extends Validator {
      * @param operands operands passed into the function call
      */
     void validateColumnListParams( SqlFunction function, List<RelDataType> argTypes, List<Node> operands );
-
-    /**
-     * Adds "line x, column y" context to a validator exception.
-     *
-     * Note that the input exception is checked (it derives from {@link Exception}) and the output exception is unchecked (it derives from {@link RuntimeException}). This is intentional -- it should remind code
-     * authors to provide context for their validation errors.
-     *
-     * @param node The place where the exception occurred, not null
-     * @param e The validation error
-     * @return Exception containing positional information, never null
-     */
-    PolyphenyDbContextException newValidationError( Node node, Resources.ExInst<SqlValidatorException> e );
 
     /**
      * Returns whether a SELECT statement is an aggregation. Criteria are:

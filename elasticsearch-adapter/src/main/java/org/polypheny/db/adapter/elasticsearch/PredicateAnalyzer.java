@@ -47,7 +47,9 @@ import java.util.stream.Collectors;
 import org.polypheny.db.adapter.elasticsearch.QueryBuilders.BoolQueryBuilder;
 import org.polypheny.db.adapter.elasticsearch.QueryBuilders.QueryBuilder;
 import org.polypheny.db.adapter.elasticsearch.QueryBuilders.RangeQueryBuilder;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.Syntax;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
@@ -57,8 +59,6 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlSyntax;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 
@@ -84,6 +84,7 @@ class PredicateAnalyzer {
         PredicateAnalyzerException( Throwable cause ) {
             super( cause );
         }
+
     }
 
 
@@ -95,6 +96,7 @@ class PredicateAnalyzer {
         ExpressionNotAnalyzableException( String message, Throwable cause ) {
             super( message, cause );
         }
+
     }
 
 
@@ -144,18 +146,19 @@ class PredicateAnalyzer {
 
         @Override
         public RexNode visitCall( RexCall call ) {
-            if ( call.getOperator().getKind() == SqlKind.NOT ) {
+            if ( call.getOperator().getKind() == Kind.NOT ) {
                 RexNode child = call.getOperands().get( 0 );
-                if ( child.getKind() == SqlKind.LIKE ) {
+                if ( child.getKind() == Kind.LIKE ) {
                     List<RexNode> operands = ((RexCall) child).getOperands()
                             .stream()
                             .map( rexNode -> rexNode.accept( NotLikeConverter.this ) )
                             .collect( Collectors.toList() );
-                    return rexBuilder.makeCall( SqlStdOperatorTable.NOT_LIKE, operands );
+                    return rexBuilder.makeCall( StdOperatorRegistry.get( "NOT_LIKE" ), operands );
                 }
             }
             return super.visitCall( call );
         }
+
     }
 
 
@@ -182,7 +185,7 @@ class PredicateAnalyzer {
 
 
         private boolean supportedRexCall( RexCall call ) {
-            final SqlSyntax syntax = call.getOperator().getSyntax();
+            final Syntax syntax = call.getOperator().getSyntax();
             switch ( syntax ) {
                 case BINARY:
                     switch ( call.getKind() ) {
@@ -235,7 +238,7 @@ class PredicateAnalyzer {
         @Override
         public Expression visitCall( RexCall call ) {
 
-            SqlSyntax syntax = call.getOperator().getSyntax();
+            Syntax syntax = call.getOperator().getSyntax();
             if ( !supportedRexCall( call ) ) {
                 String message = String.format( Locale.ROOT, "Unsupported call: [%s]", call );
                 throw new PredicateAnalyzerException( message );
@@ -274,7 +277,7 @@ class PredicateAnalyzer {
                     }
                     // fall through
                 default:
-                    String message = format( Locale.ROOT, "Unsupported syntax [%s] for call: [%s]", syntax, call );
+                    String message = String.format( Locale.ROOT, "Unsupported syntax [%s] for call: [%s]", syntax, call );
                     throw new PredicateAnalyzerException( message );
             }
         }
@@ -301,7 +304,7 @@ class PredicateAnalyzer {
 
 
         private QueryExpression prefix( RexCall call ) {
-            Preconditions.checkArgument( call.getKind() == SqlKind.NOT, "Expected %s got %s", SqlKind.NOT, call.getKind() );
+            Preconditions.checkArgument( call.getKind() == Kind.NOT, "Expected %s got %s", Kind.NOT, call.getKind() );
 
             if ( call.getOperands().size() != 1 ) {
                 String message = String.format( Locale.ROOT, "Unsupported NOT operator: [%s]", call );
@@ -314,7 +317,7 @@ class PredicateAnalyzer {
 
 
         private QueryExpression postfix( RexCall call ) {
-            Preconditions.checkArgument( call.getKind() == SqlKind.IS_NULL || call.getKind() == SqlKind.IS_NOT_NULL );
+            Preconditions.checkArgument( call.getKind() == Kind.IS_NULL || call.getKind() == Kind.IS_NOT_NULL );
             if ( call.getOperands().size() != 1 ) {
                 String message = String.format( Locale.ROOT, "Unsupported operator: [%s]", call );
                 throw new PredicateAnalyzerException( message );
@@ -324,7 +327,7 @@ class PredicateAnalyzer {
             isColumn( a, call, ElasticsearchConstants.ID, true );
             isColumn( a, call, ElasticsearchConstants.INDEX, true );
             QueryExpression operand = QueryExpression.create( (TerminalExpression) a );
-            return call.getKind() == SqlKind.IS_NOT_NULL ? operand.exists() : operand.notExists();
+            return call.getKind() == Kind.IS_NOT_NULL ? operand.exists() : operand.notExists();
         }
 
 
@@ -338,7 +341,7 @@ class PredicateAnalyzer {
         private QueryExpression binary( RexCall call ) {
 
             // if AND/OR, do special handling
-            if ( call.getKind() == SqlKind.AND || call.getKind() == SqlKind.OR ) {
+            if ( call.getKind() == Kind.AND || call.getKind() == Kind.OR ) {
                 return andOr( call );
             }
 
@@ -471,6 +474,7 @@ class PredicateAnalyzer {
             boolean isSwapped() {
                 return swapped;
             }
+
         }
 
 
@@ -547,6 +551,7 @@ class PredicateAnalyzer {
             }
             return false;
         }
+
     }
 
 
@@ -749,6 +754,7 @@ class PredicateAnalyzer {
         public QueryExpression isTrue() {
             throw new PredicateAnalyzerException( "isTrue cannot be applied to a compound expression" );
         }
+
     }
 
 
@@ -893,6 +899,7 @@ class PredicateAnalyzer {
             builder = QueryBuilders.termQuery( getFieldReference(), true );
             return this;
         }
+
     }
 
 
@@ -990,6 +997,7 @@ class PredicateAnalyzer {
         String getReference() {
             return getRootName();
         }
+
     }
 
 
@@ -1065,6 +1073,7 @@ class PredicateAnalyzer {
         Object rawValue() {
             return literal.getValue();
         }
+
     }
 
 
@@ -1087,5 +1096,6 @@ class PredicateAnalyzer {
             throw new PredicateAnalyzerException( "Cannot handle " + call.getKind() + " expression for _id field, " + call );
         }
     }
+
 }
 

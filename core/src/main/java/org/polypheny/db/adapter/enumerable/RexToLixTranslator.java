@@ -78,7 +78,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
-import org.polypheny.db.runtime.SqlFunctions;
+import org.polypheny.db.runtime.Functions;
 import org.polypheny.db.sql.SqlIntervalQualifier;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BuiltInMethod;
@@ -96,10 +96,10 @@ public class RexToLixTranslator {
     public static final Map<Method, Operator> JAVA_TO_SQL_METHOD_MAP =
             Util.mapOf(
                     findMethod( String.class, "toUpperCase" ), StdOperatorRegistry.get( "UPPER" ),
-                    findMethod( SqlFunctions.class, "substring", String.class, Integer.TYPE, Integer.TYPE ), StdOperatorRegistry.get( "SUBSTRING" ),
-                    findMethod( SqlFunctions.class, "charLength", String.class ), StdOperatorRegistry.get( "CHARACTER_LENGTH" ),
-                    findMethod( SqlFunctions.class, "charLength", String.class ), StdOperatorRegistry.get( "CHAR_LENGTH" ),
-                    findMethod( SqlFunctions.class, "translate3", String.class, String.class, String.class ), StdOperatorRegistry.get( "0_TRANSLATE3" ) );
+                    findMethod( Functions.class, "substring", String.class, Integer.TYPE, Integer.TYPE ), StdOperatorRegistry.get( "SUBSTRING" ),
+                    findMethod( Functions.class, "charLength", String.class ), StdOperatorRegistry.get( "CHARACTER_LENGTH" ),
+                    findMethod( Functions.class, "charLength", String.class ), StdOperatorRegistry.get( "CHAR_LENGTH" ),
+                    findMethod( Functions.class, "translate3", String.class, String.class, String.class ), StdOperatorRegistry.get( "0_TRANSLATE3" ) );
 
     final JavaTypeFactory typeFactory;
     final RexBuilder builder;
@@ -911,14 +911,14 @@ public class RexToLixTranslator {
                     case DOUBLE:
                         // Generate "SqlFunctions.toShort(x)".
                         return Expressions.call(
-                                SqlFunctions.class,
-                                "to" + SqlFunctions.initcap( toPrimitive.primitiveName ),
+                                Functions.class,
+                                "to" + Functions.initcap( toPrimitive.primitiveName ),
                                 operand );
                     default:
                         // Generate "Short.parseShort(x)".
                         return Expressions.call(
                                 toPrimitive.boxClass,
-                                "parse" + SqlFunctions.initcap( toPrimitive.primitiveName ),
+                                "parse" + Functions.initcap( toPrimitive.primitiveName ),
                                 operand );
                 }
             }
@@ -927,8 +927,8 @@ public class RexToLixTranslator {
                     case CHAR:
                         // Generate "SqlFunctions.toCharBoxed(x)".
                         return Expressions.call(
-                                SqlFunctions.class,
-                                "to" + SqlFunctions.initcap( toBox.primitiveName ) + "Boxed",
+                                Functions.class,
+                                "to" + Functions.initcap( toBox.primitiveName ) + "Boxed",
                                 operand );
                     default:
                         // Generate "Short.valueOf(x)".
@@ -951,8 +951,8 @@ public class RexToLixTranslator {
                 // E.g. from "Object" to "short".
                 // Generate "SqlFunctions.toShort(x)"
                 return Expressions.call(
-                        SqlFunctions.class,
-                        "to" + SqlFunctions.initcap( toPrimitive.primitiveName ),
+                        Functions.class,
+                        "to" + Functions.initcap( toPrimitive.primitiveName ),
                         operand );
             }
         } else if ( fromNumber && toBox != null ) {
@@ -1022,7 +1022,7 @@ public class RexToLixTranslator {
             return Expressions.condition(
                     Expressions.equal( operand, RexImpTable.NULL_EXPR ),
                     RexImpTable.NULL_EXPR,
-                    Expressions.call( SqlFunctions.class, "toBigDecimal", operand ) );
+                    Expressions.call( Functions.class, "toBigDecimal", operand ) );
         } else if ( toType == String.class ) {
             if ( fromPrimitive != null ) {
                 switch ( fromPrimitive ) {
@@ -1031,7 +1031,7 @@ public class RexToLixTranslator {
                         // E.g. from "double" to "String"
                         // Generate "SqlFunctions.toString(x)"
                         return Expressions.call(
-                                SqlFunctions.class,
+                                Functions.class,
                                 "toString",
                                 operand );
                     default:
@@ -1049,7 +1049,7 @@ public class RexToLixTranslator {
                         Expressions.equal( operand, RexImpTable.NULL_EXPR ),
                         RexImpTable.NULL_EXPR,
                         Expressions.call(
-                                SqlFunctions.class,
+                                Functions.class,
                                 "toString",
                                 operand ) );
             } else {

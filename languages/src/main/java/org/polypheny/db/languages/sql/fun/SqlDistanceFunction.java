@@ -20,13 +20,13 @@ package org.polypheny.db.languages.sql.fun;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlOperator;
-import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -49,7 +49,7 @@ public class SqlDistanceFunction extends SqlFunction {
                 ReturnTypes.DOUBLE,
                 null,
                 DISTANCE_ARG_CHECKER,
-                SqlFunctionCategory.DISTANCE );
+                FunctionCategory.DISTANCE );
     }
 
 
@@ -91,7 +91,7 @@ public class SqlDistanceFunction extends SqlFunction {
             // TODO js: maybe check whether the first argument is a reference to a column?
 
             // Make sure the second argument is not null
-            if ( SqlUtil.isNullLiteral( callBinding.operand( 1 ), false ) ) {
+            if ( CoreUtil.isNullLiteral( callBinding.operand( 1 ), false ) ) {
                 if ( throwOnFailure ) {
                     throw callBinding.getValidator().newValidationError( callBinding.operand( 1 ), RESOURCE.nullIllegal() );
                 } else {
@@ -112,7 +112,7 @@ public class SqlDistanceFunction extends SqlFunction {
 
             // Check whether third argument is a string
             // TODO js: implement string check
-            if ( SqlUtil.isNullLiteral( callBinding.operand( 2 ), false ) ) {
+            if ( CoreUtil.isNullLiteral( callBinding.operand( 2 ), false ) ) {
                 if ( throwOnFailure ) {
                     throw callBinding.getValidator().newValidationError( callBinding.operand( 2 ), RESOURCE.nullIllegal() );
                 } else {
@@ -131,7 +131,7 @@ public class SqlDistanceFunction extends SqlFunction {
 
             // Check, if present, whether fourth argument is an array
             if ( nOperandsActual == 4 ) {
-                if ( SqlUtil.isNullLiteral( callBinding.operand( 3 ), false ) ) {
+                if ( CoreUtil.isNullLiteral( callBinding.operand( 3 ), false ) ) {
                     if ( throwOnFailure ) {
                         throw callBinding.getValidator().newValidationError( callBinding.operand( 3 ), RESOURCE.nullIllegal() );
                     } else {

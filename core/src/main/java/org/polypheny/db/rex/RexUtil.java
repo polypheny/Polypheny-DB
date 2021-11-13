@@ -48,11 +48,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.function.Predicate1;
-import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.ValidatorUtil;
+import org.polypheny.db.core.ValidatorUtil.Suggester;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
@@ -66,11 +71,6 @@ import org.polypheny.db.rel.type.RelDataTypeFamily;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexTableInputRef.RelTableRef;
 import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.sql.Kind;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.core.SqlStdOperatorTable;
-import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -536,6 +536,7 @@ public class RexUtil {
             // "<expr>.FIELD" is constant iff "<expr>" is constant.
             return fieldAccess.getReferenceExpr().accept( this );
         }
+
     }
 
 
@@ -810,7 +811,7 @@ public class RexUtil {
         for ( RexNode expr : exprs ) {
             if ( expr instanceof RexCall ) {
                 RexCall rexCall = (RexCall) expr;
-                if ( rexCall.getOperator() instanceof SqlAggFunction ) {
+                if ( rexCall.getOperator() instanceof AggFunction ) {
                     for ( RexNode operand : rexCall.operands ) {
                         if ( !(operand instanceof RexLocalRef) && !(operand instanceof RexLiteral) ) {
                             return litmus.fail( "contains non trivial agg: {}", operand );
@@ -886,9 +887,9 @@ public class RexUtil {
 
 
     /**
-     * Returns whether a {@link RexNode node} is a {@link RexCall call} to a given {@link SqlOperator operator}.
+     * Returns whether a {@link RexNode node} is a {@link RexCall call} to a given {@link Operator operator}.
      */
-    public static boolean isCallTo( RexNode expr, SqlOperator op ) {
+    public static boolean isCallTo( RexNode expr, Operator op ) {
         return (expr instanceof RexCall) && (((RexCall) expr).getOperator() == op);
     }
 
@@ -917,9 +918,9 @@ public class RexUtil {
      * @param suggester Generates alternative names if {@code names} is not null and its elements are not unique
      * @return Record type
      */
-    public static RelDataType createStructType( RelDataTypeFactory typeFactory, final List<? extends RexNode> exprs, List<String> names, CoreUtil.Suggester suggester ) {
+    public static RelDataType createStructType( RelDataTypeFactory typeFactory, final List<? extends RexNode> exprs, List<String> names, Suggester suggester ) {
         if ( names != null && suggester != null ) {
-            names = SqlValidatorUtil.uniquify( names, suggester, typeFactory.getTypeSystem().isSchemaCaseSensitive() );
+            names = ValidatorUtil.uniquify( names, suggester, typeFactory.getTypeSystem().isSchemaCaseSensitive() );
         }
         final RelDataTypeFactory.Builder builder = typeFactory.builder();
         for ( int i = 0; i < exprs.size(); i++ ) {
@@ -1030,7 +1031,7 @@ public class RexUtil {
                 if ( containsFalse( list ) ) {
                     return rexBuilder.makeLiteral( false );
                 }
-                return rexBuilder.makeCall( SqlStdOperatorTable.AND, list );
+                return rexBuilder.makeCall( StdOperatorRegistry.get( "AND" ), list );
         }
     }
 
@@ -1102,7 +1103,7 @@ public class RexUtil {
                 if ( containsTrue( list ) ) {
                     return rexBuilder.makeLiteral( true );
                 }
-                return rexBuilder.makeCall( SqlStdOperatorTable.OR, list );
+                return rexBuilder.makeCall( StdOperatorRegistry.get( "OR" ), list );
         }
     }
 
@@ -1300,7 +1301,7 @@ public class RexUtil {
     public static RexNode flatten( RexBuilder rexBuilder, RexNode node ) {
         if ( node instanceof RexCall ) {
             RexCall call = (RexCall) node;
-            final SqlOperator op = call.getOperator();
+            final Operator op = call.getOperator();
             final List<RexNode> flattenedOperands = flatten( call.getOperands(), op );
             if ( !isFlat( call.getOperands(), op ) ) {
                 return rexBuilder.makeCall( call.getType(), op, flattenedOperands );
@@ -1313,7 +1314,7 @@ public class RexUtil {
     /**
      * Converts a list of operands into a list that is flat with respect to the given operator. The operands are assumed to be flat already.
      */
-    public static List<RexNode> flatten( List<? extends RexNode> exprs, SqlOperator op ) {
+    public static List<RexNode> flatten( List<? extends RexNode> exprs, Operator op ) {
         if ( isFlat( exprs, op ) ) {
             //noinspection unchecked
             return (List) exprs;
@@ -1329,7 +1330,7 @@ public class RexUtil {
      *
      * For example, {@code isFlat([w, AND[x, y], z, AND)} returns false; {@code isFlat([w, x, y, z], AND)} returns true.
      */
-    private static boolean isFlat( List<? extends RexNode> exprs, final SqlOperator op ) {
+    private static boolean isFlat( List<? extends RexNode> exprs, final Operator op ) {
         return !isAssociative( op ) || !exists( exprs, (Predicate1<RexNode>) expr -> isCallTo( expr, op ) );
     }
 
@@ -1346,7 +1347,7 @@ public class RexUtil {
     }
 
 
-    private static void flattenRecurse( List<RexNode> list, List<? extends RexNode> exprs, SqlOperator op ) {
+    private static void flattenRecurse( List<RexNode> list, List<? extends RexNode> exprs, Operator op ) {
         for ( RexNode expr : exprs ) {
             if ( expr instanceof RexCall && ((RexCall) expr).getOperator() == op ) {
                 flattenRecurse( list, ((RexCall) expr).getOperands(), op );
@@ -1476,7 +1477,7 @@ public class RexUtil {
      * Returns whether an operator is associative. AND is associative, which means that "(x AND y) and z" is equivalent to "x AND (y AND z)".
      * We might well flatten the tree, and write "AND(x, y, z)".
      */
-    private static boolean isAssociative( SqlOperator op ) {
+    private static boolean isAssociative( Operator op ) {
         return op.getKind() == Kind.AND || op.getKind() == Kind.OR;
     }
 
@@ -1625,48 +1626,48 @@ public class RexUtil {
 
 
     private static RexNode addNot( RexNode e ) {
-        return new RexCall( e.getType(), SqlStdOperatorTable.NOT, ImmutableList.of( e ) );
+        return new RexCall( e.getType(), StdOperatorRegistry.get( "NOT" ), ImmutableList.of( e ) );
     }
 
 
-    static SqlOperator op( Kind kind ) {
+    static Operator op( Kind kind ) {
         switch ( kind ) {
             case IS_FALSE:
-                return SqlStdOperatorTable.IS_FALSE;
+                return StdOperatorRegistry.get( "IS_FALSE" );
             case IS_TRUE:
-                return SqlStdOperatorTable.IS_TRUE;
+                return StdOperatorRegistry.get( "IS_TRUE" );
             case IS_UNKNOWN:
-                return SqlStdOperatorTable.IS_UNKNOWN;
+                return StdOperatorRegistry.get( "IS_UNKNOWN" );
             case IS_NULL:
-                return SqlStdOperatorTable.IS_NULL;
+                return StdOperatorRegistry.get( "IS_NULL" );
             case IS_NOT_FALSE:
-                return SqlStdOperatorTable.IS_NOT_FALSE;
+                return StdOperatorRegistry.get( "IS_NOT_FALSE" );
             case IS_NOT_TRUE:
-                return SqlStdOperatorTable.IS_NOT_TRUE;
+                return StdOperatorRegistry.get( "IS_NOT_TRUE" );
             case IS_NOT_NULL:
-                return SqlStdOperatorTable.IS_NOT_NULL;
+                return StdOperatorRegistry.get( "IS_NOT_NULL" );
             case IS_DISTINCT_FROM:
-                return SqlStdOperatorTable.IS_DISTINCT_FROM;
+                return StdOperatorRegistry.get( "IS_DISTINCT_FROM" );
             case IS_NOT_DISTINCT_FROM:
-                return SqlStdOperatorTable.IS_NOT_DISTINCT_FROM;
+                return StdOperatorRegistry.get( "IS_NOT_DISTINCT_FROM" );
             case EQUALS:
-                return SqlStdOperatorTable.EQUALS;
+                return StdOperatorRegistry.get( "EQUALS" );
             case NOT_EQUALS:
-                return SqlStdOperatorTable.NOT_EQUALS;
+                return StdOperatorRegistry.get( "NOT_EQUALS" );
             case LESS_THAN:
-                return SqlStdOperatorTable.LESS_THAN;
+                return StdOperatorRegistry.get( "LESS_THAN" );
             case GREATER_THAN:
-                return SqlStdOperatorTable.GREATER_THAN;
+                return StdOperatorRegistry.get( "GREATER_THAN" );
             case LESS_THAN_OR_EQUAL:
-                return SqlStdOperatorTable.LESS_THAN_OR_EQUAL;
+                return StdOperatorRegistry.get( "LESS_THAN_OR_EQUAL" );
             case GREATER_THAN_OR_EQUAL:
-                return SqlStdOperatorTable.GREATER_THAN_OR_EQUAL;
+                return StdOperatorRegistry.get( "GREATER_THAN_OR_EQUAL" );
             case AND:
-                return SqlStdOperatorTable.AND;
+                return StdOperatorRegistry.get( "AND" );
             case OR:
-                return SqlStdOperatorTable.OR;
+                return StdOperatorRegistry.get( "OR" );
             case COALESCE:
-                return SqlStdOperatorTable.COALESCE;
+                return StdOperatorRegistry.get( "COALESCE" );
             default:
                 throw new AssertionError( kind );
         }
@@ -1681,7 +1682,7 @@ public class RexUtil {
             case GREATER_THAN:
             case LESS_THAN_OR_EQUAL:
             case GREATER_THAN_OR_EQUAL:
-                final SqlOperator op = op( call.getKind().negateNullSafe() );
+                final Operator op = op( call.getKind().negateNullSafe() );
                 return rexBuilder.makeCall( op, call.getOperands() );
         }
         return null;
@@ -1696,7 +1697,7 @@ public class RexUtil {
             case GREATER_THAN:
             case LESS_THAN_OR_EQUAL:
             case GREATER_THAN_OR_EQUAL:
-                final SqlOperator op = op( call.getKind().reverse() );
+                final Operator op = op( call.getKind().reverse() );
                 return rexBuilder.makeCall( op, Lists.reverse( call.getOperands() ) );
         }
         return null;
@@ -1743,7 +1744,7 @@ public class RexUtil {
                             } );
                 }
         }
-        return composeConjunction( rexBuilder, Iterables.concat( ImmutableList.of( e ), Iterables.transform( notTerms, e2 -> not( rexBuilder, e2 ) ) ) );
+        return composeConjunction( rexBuilder, Iterables.concat( ImmutableList.of( e ), StreamSupport.stream( notTerms.spliterator(), false ).map( e2 -> not( rexBuilder, e2 ) ).collect( Collectors.toList() ) ) );
     }
 
 
@@ -1790,7 +1791,7 @@ public class RexUtil {
                         ? rexBuilder.makeLiteral( true )
                         : input.getKind() == Kind.NOT
                                 ? ((RexCall) input).operands.get( 0 )
-                                : rexBuilder.makeCall( SqlStdOperatorTable.NOT, input );
+                                : rexBuilder.makeCall( StdOperatorRegistry.get( "NOT" ), input );
     }
 
 
@@ -2000,7 +2001,9 @@ public class RexUtil {
             SubExprExistsException( RexNode expr ) {
                 Util.discard( expr );
             }
+
         }
+
     }
 
 
@@ -2052,6 +2055,7 @@ public class RexUtil {
         static class IllegalForwardRefException extends ControlFlowException {
 
         }
+
     }
 
 
@@ -2088,6 +2092,7 @@ public class RexUtil {
         public List<RexFieldAccess> getFieldAccessList() {
             return fieldAccessList;
         }
+
     }
 
 
@@ -2194,6 +2199,7 @@ public class RexUtil {
 
             private OverflowError() {
             }
+
         }
 
 
@@ -2271,6 +2277,7 @@ public class RexUtil {
         private RexNode or( Iterable<? extends RexNode> nodes ) {
             return composeDisjunction( rexBuilder, nodes );
         }
+
     }
 
 
@@ -2360,6 +2367,7 @@ public class RexUtil {
         private RexNode or( Iterable<? extends RexNode> nodes ) {
             return composeDisjunction( rexBuilder, nodes );
         }
+
     }
 
 
@@ -2380,6 +2388,7 @@ public class RexUtil {
         public RexNode visitInputRef( RexInputRef input ) {
             return new RexInputRef( input.getIndex() + offset, input.getType() );
         }
+
     }
 
 
@@ -2400,6 +2409,7 @@ public class RexUtil {
         public Void visitCorrelVariable( RexCorrelVariable var ) {
             throw Util.FoundOne.NULL;
         }
+
     }
 
 
@@ -2431,6 +2441,7 @@ public class RexUtil {
             }
             throw new AssertionError( "mismatched type " + ref + " " + rightType );
         }
+
     }
 
 
@@ -2514,6 +2525,7 @@ public class RexUtil {
                 return (RexSubQuery) e.getNode();
             }
         }
+
     }
 
 }

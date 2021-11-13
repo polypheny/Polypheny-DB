@@ -19,7 +19,7 @@ package org.polypheny.db.languages.sql.fun;
 
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.languages.sql.SqlAggFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -40,7 +40,7 @@ public class SqlSingleValueAggFunction extends SqlAggFunction {
                 ReturnTypes.ARG0,
                 null,
                 OperandTypes.ANY,
-                SqlFunctionCategory.SYSTEM,
+                FunctionCategory.SYSTEM,
                 false,
                 false,
                 Optionality.FORBIDDEN );

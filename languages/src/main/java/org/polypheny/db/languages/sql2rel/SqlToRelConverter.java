@@ -52,6 +52,8 @@ import org.polypheny.db.core.Call;
 import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.DataTypeSpec;
 import org.polypheny.db.core.Identifier;
+import org.polypheny.db.core.InitializerContext;
+import org.polypheny.db.core.InitializerExpressionFactory;
 import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.core.JoinConditionType;
 import org.polypheny.db.core.JoinType;
@@ -60,11 +62,13 @@ import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeList;
 import org.polypheny.db.core.NodeVisitor;
+import org.polypheny.db.core.NullInitializerExpressionFactory;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.RelDecorrelator;
 import org.polypheny.db.core.RelFieldTrimmer;
 import org.polypheny.db.core.RelStructuredTypeFlattener;
 import org.polypheny.db.core.SemiJoinType;
+import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.languages.sql.SqlBasicCall;
 import org.polypheny.db.languages.sql.SqlCall;
@@ -391,7 +395,7 @@ public class SqlToRelConverter {
         final RelDataType validatedRowType =
                 validator.getTypeFactory().createStructType(
                         Pair.right( validatedFields ),
-                        CoreUtil.uniquify(
+                        ValidatorUtil.uniquify(
                                 Pair.left( validatedFields ),
                                 catalogReader.nameMatcher().isCaseSensitive() ) );
         /*int diff = validatedFields.size() - result.getRowType().getFieldList().size();
@@ -3455,7 +3459,7 @@ public class SqlToRelConverter {
                     // REVIEW angel 5-June-2005: Use deriveAliasFromOrdinal instead of deriveAlias to match field names from SqlRowOperator. Otherwise, get error   Type
                     // 'RecordType(INTEGER EMPNO)' has no field 'EXPR$0' when doing select * from unnest( select multiset[empno] from sales.emps);
 
-                    fieldNameList.add( SqlUtil.deriveAliasFromOrdinal( j ) );
+                    fieldNameList.add( CoreUtil.deriveAliasFromOrdinal( j ) );
                 }
 
                 relBuilder.push( LogicalValues.createOneRow( cluster ) ).projectNamed( selectList, fieldNameList, true );
@@ -3515,7 +3519,7 @@ public class SqlToRelConverter {
             fieldNames.add( deriveAlias( expr, aliases, i ) );
         }
 
-        fieldNames = CoreUtil.uniquify( fieldNames, catalogReader.nameMatcher().isCaseSensitive() );
+        fieldNames = ValidatorUtil.uniquify( fieldNames, catalogReader.nameMatcher().isCaseSensitive() );
 
         relBuilder.push( bb.root ).projectNamed( exprs, fieldNames, true );
         bb.setRoot( relBuilder.build(), false );

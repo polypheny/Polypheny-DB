@@ -21,7 +21,7 @@ import java.lang.reflect.Type;
 import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.schema.TableFunction;
@@ -45,7 +45,7 @@ public class SqlUserDefinedTableFunction extends SqlUserDefinedFunction implemen
                 operandTypeChecker,
                 paramTypes,
                 function,
-                SqlFunctionCategory.USER_DEFINED_TABLE_FUNCTION );
+                FunctionCategory.USER_DEFINED_TABLE_FUNCTION );
     }
 
 

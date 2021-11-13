@@ -16,7 +16,11 @@
 
 package org.polypheny.db.core;
 
+import org.polypheny.db.type.PolyType;
+
 public interface Literal extends Visitable {
+
+    PolyType getTypeName();
 
     Object getValue();
 

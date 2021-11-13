@@ -31,7 +31,7 @@ import org.polypheny.db.type.inference.ReturnTypes;
 /**
  * Generic operator for nodes with internal syntax.
  *
- * If you do not override {@link #getSyntax()} or {@link #unparse(SqlWriter, SqlCall, int, int)}, they will be unparsed using function syntax, {@code F(arg1, arg2, ...)}. This may be OK for operators that never appear in SQL, only as structural elements in an abstract syntax tree.
+ * If you do not override {@link #getSqlSyntax()} or {@link #unparse(SqlWriter, SqlCall, int, int)}, they will be unparsed using function syntax, {@code F(arg1, arg2, ...)}. This may be OK for operators that never appear in SQL, only as structural elements in an abstract syntax tree.
  *
  * You can use this operator, without creating a sub-class, for non-expression nodes. Validate will validate the arguments, but will not attempt to deduce a type.
  */
@@ -61,7 +61,7 @@ public class SqlInternalOperator extends SqlSpecialOperator {
 
 
     @Override
-    public SqlSyntax getSyntax() {
+    public SqlSyntax getSqlSyntax() {
         return SqlSyntax.FUNCTION;
     }
 

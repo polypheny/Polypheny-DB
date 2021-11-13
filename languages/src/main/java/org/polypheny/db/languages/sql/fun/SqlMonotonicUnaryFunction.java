@@ -19,7 +19,7 @@ package org.polypheny.db.languages.sql.fun;
 
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
@@ -33,7 +33,7 @@ import org.polypheny.db.type.inference.PolyReturnTypeInference;
 public class SqlMonotonicUnaryFunction extends SqlFunction {
 
 
-    protected SqlMonotonicUnaryFunction( String name, Kind kind, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, SqlFunctionCategory funcType ) {
+    protected SqlMonotonicUnaryFunction( String name, Kind kind, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, FunctionCategory funcType ) {
         super( name, kind, returnTypeInference, operandTypeInference, operandTypeChecker, funcType );
     }
 

@@ -47,7 +47,7 @@ public class SqlPostfixOperator extends SqlOperator {
 
 
     @Override
-    public SqlSyntax getSyntax() {
+    public SqlSyntax getSqlSyntax() {
         return SqlSyntax.POSTFIX;
     }
 

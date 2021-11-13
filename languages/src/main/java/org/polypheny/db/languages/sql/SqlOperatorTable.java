@@ -18,6 +18,7 @@ package org.polypheny.db.languages.sql;
 
 
 import java.util.List;
+import org.polypheny.db.core.FunctionCategory;
 
 
 /**
@@ -33,7 +34,7 @@ public interface SqlOperatorTable {
      * @param syntax syntax type of operator
      * @param operatorList mutable list to which to append matches
      */
-    void lookupOperatorOverloads( SqlIdentifier opName, SqlFunctionCategory category, SqlSyntax syntax, List<SqlOperator> operatorList );
+    void lookupOperatorOverloads( SqlIdentifier opName, FunctionCategory category, SqlSyntax syntax, List<SqlOperator> operatorList );
 
     /**
      * Retrieves a list of all functions and operators in this table. Used for automated testing.

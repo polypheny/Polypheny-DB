@@ -19,6 +19,7 @@ package org.polypheny.db.languages.sql.fun;
 
 import java.util.List;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlLiteral;
@@ -108,7 +109,7 @@ public class SqlCase extends SqlCall {
 
 
     @Override
-    public void setOperand( int i, SqlNode operand ) {
+    public void setOperand( int i, Node operand ) {
         switch ( i ) {
             case 0:
                 value = operand;

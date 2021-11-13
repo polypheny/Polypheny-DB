@@ -21,6 +21,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
@@ -68,7 +69,7 @@ public class SqlGroupedWindowFunction extends SqlFunction {
             PolyReturnTypeInference returnTypeInference,
             PolyOperandTypeInference operandTypeInference,
             PolyOperandTypeChecker operandTypeChecker,
-            SqlFunctionCategory category ) {
+            FunctionCategory category ) {
         super( name, kind, returnTypeInference, operandTypeInference, operandTypeChecker, category );
         this.groupFunction = groupFunction;
         Preconditions.checkArgument( groupFunction == null || groupFunction.groupFunction == null );
@@ -92,7 +93,7 @@ public class SqlGroupedWindowFunction extends SqlFunction {
      * @param kind Kind
      */
     public SqlGroupedWindowFunction auxiliary( String name, Kind kind ) {
-        return new SqlGroupedWindowFunction( name, kind, this, ReturnTypes.ARG0, null, getOperandTypeChecker(), SqlFunctionCategory.SYSTEM );
+        return new SqlGroupedWindowFunction( name, kind, this, ReturnTypes.ARG0, null, getOperandTypeChecker(), FunctionCategory.SYSTEM );
     }
 
 

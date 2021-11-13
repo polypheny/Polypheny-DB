@@ -29,7 +29,7 @@ import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDataTypeSpec;
 import org.polypheny.db.languages.sql.SqlDialect;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlIntervalQualifier;
 import org.polypheny.db.languages.sql.SqlLiteral;
@@ -60,7 +60,7 @@ public class MysqlSqlDialect extends SqlDialect {
     /**
      * MySQL specific function.
      */
-    public static final SqlFunction ISNULL_FUNCTION = new SqlFunction( "ISNULL", Kind.OTHER_FUNCTION, ReturnTypes.BOOLEAN, InferTypes.FIRST_KNOWN, OperandTypes.ANY, SqlFunctionCategory.SYSTEM );
+    public static final SqlFunction ISNULL_FUNCTION = new SqlFunction( "ISNULL", Kind.OTHER_FUNCTION, ReturnTypes.BOOLEAN, InferTypes.FIRST_KNOWN, OperandTypes.ANY, FunctionCategory.SYSTEM );
 
 
     /**

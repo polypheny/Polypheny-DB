@@ -24,6 +24,7 @@ import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.function.Functions;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
@@ -39,7 +40,7 @@ import org.polypheny.db.util.Util;
  */
 public class SqlFunction extends SqlOperator {
 
-    private final SqlFunctionCategory category;
+    private final FunctionCategory category;
 
     private final SqlIdentifier sqlIdentifier;
 
@@ -56,11 +57,11 @@ public class SqlFunction extends SqlOperator {
      * @param operandTypeChecker   strategy to use for parameter type checking
      * @param category             categorization for function
      */
-    public SqlFunction( String name, Kind kind, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, SqlFunctionCategory category ) {
+    public SqlFunction( String name, Kind kind, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, FunctionCategory category ) {
         // We leave sqlIdentifier as null to indicate that this is a builtin.  Same for paramTypes.
         this( name, null, kind, returnTypeInference, operandTypeInference, operandTypeChecker, null, category );
 
-        assert !((category == SqlFunctionCategory.USER_DEFINED_CONSTRUCTOR) && (returnTypeInference == null));
+        assert !((category == FunctionCategory.USER_DEFINED_CONSTRUCTOR) && (returnTypeInference == null));
     }
 
 
@@ -80,7 +81,7 @@ public class SqlFunction extends SqlOperator {
             PolyOperandTypeInference operandTypeInference,
             PolyOperandTypeChecker operandTypeChecker,
             List<RelDataType> paramTypes,
-            SqlFunctionCategory funcType ) {
+            FunctionCategory funcType ) {
         this(
                 Util.last( sqlIdentifier.names ),
                 sqlIdentifier,
@@ -104,7 +105,7 @@ public class SqlFunction extends SqlOperator {
             PolyOperandTypeInference operandTypeInference,
             PolyOperandTypeChecker operandTypeChecker,
             List<RelDataType> paramTypes,
-            SqlFunctionCategory category ) {
+            FunctionCategory category ) {
         super( name, kind, 100, 100, returnTypeInference, operandTypeInference, operandTypeChecker );
 
         this.sqlIdentifier = sqlIdentifier;
@@ -114,7 +115,7 @@ public class SqlFunction extends SqlOperator {
 
 
     @Override
-    public SqlSyntax getSyntax() {
+    public SqlSyntax getSqlSyntax() {
         return SqlSyntax.FUNCTION;
     }
 
@@ -156,7 +157,7 @@ public class SqlFunction extends SqlOperator {
 
     @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
-        getSyntax().unparse( writer, this, call, leftPrec, rightPrec );
+        getSqlSyntax().unparse( writer, this, call, leftPrec, rightPrec );
     }
 
 
@@ -164,7 +165,7 @@ public class SqlFunction extends SqlOperator {
      * @return function category
      */
     @Nonnull
-    public SqlFunctionCategory getFunctionType() {
+    public FunctionCategory getFunctionType() {
         return this.category;
     }
 
@@ -236,7 +237,7 @@ public class SqlFunction extends SqlOperator {
                 }
             }
 
-            if ( getFunctionType() == SqlFunctionCategory.USER_DEFINED_CONSTRUCTOR ) {
+            if ( getFunctionType() == FunctionCategory.USER_DEFINED_CONSTRUCTOR ) {
                 return validator.deriveConstructorType( scope, call, this, function, argTypes );
             }
             if ( function == null ) {

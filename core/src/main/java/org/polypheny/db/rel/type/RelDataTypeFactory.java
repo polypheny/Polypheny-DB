@@ -41,9 +41,9 @@ import java.util.Map;
 import java.util.Objects;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.core.Collation;
-import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.sql.SqlIntervalQualifier;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Glossary;
@@ -552,7 +552,7 @@ public interface RelDataTypeFactory {
          * Makes sure that field names are unique.
          */
         public Builder uniquify() {
-            final List<String> uniqueNames = CoreUtil.uniquify( names, typeFactory.getTypeSystem().isSchemaCaseSensitive() );
+            final List<String> uniqueNames = ValidatorUtil.uniquify( names, typeFactory.getTypeSystem().isSchemaCaseSensitive() );
             if ( uniqueNames != names ) {
                 names.clear();
                 names.addAll( uniqueNames );

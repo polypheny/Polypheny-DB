@@ -35,13 +35,13 @@ package org.polypheny.db.tools;
 
 
 import java.io.Reader;
+import org.polypheny.db.core.ParseException;
+import org.polypheny.db.interpreter.Node;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.parser.SqlParseException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SourceStringReader;
 
@@ -60,9 +60,9 @@ public interface Planner extends AutoCloseable {
      *
      * @param sql The SQL statement to parse.
      * @return The root node of the SQL parse tree.
-     * @throws SqlParseException on parse error
+     * @throws ParseException on parse error
      */
-    default SqlNode parse( String sql ) throws SqlParseException {
+    default Node parse( String sql ) throws ParseException {
         return parse( new SourceStringReader( sql ) );
     }
 
@@ -71,9 +71,9 @@ public interface Planner extends AutoCloseable {
      *
      * @param source A reader which will provide the SQL statement to parse.
      * @return The root node of the SQL parse tree.
-     * @throws SqlParseException on parse error
+     * @throws ParseException on parse error
      */
-    SqlNode parse( Reader source ) throws SqlParseException;
+    Node parse( Reader source ) throws ParseException;
 
     /**
      * Validates a SQL statement.
@@ -82,7 +82,7 @@ public interface Planner extends AutoCloseable {
      * @return Validated node
      * @throws ValidationException if not valid
      */
-    SqlNode validate( SqlNode sqlNode ) throws ValidationException;
+    Node validate( Node sqlNode ) throws ValidationException;
 
     /**
      * Validates a SQL statement.
@@ -91,18 +91,18 @@ public interface Planner extends AutoCloseable {
      * @return Validated node and its validated type.
      * @throws ValidationException if not valid
      */
-    Pair<SqlNode, RelDataType> validateAndGetType( SqlNode sqlNode ) throws ValidationException;
+    Pair<Node, RelDataType> validateAndGetType( Node sqlNode ) throws ValidationException;
 
     /**
      * Converts a SQL parse tree into a tree of relational expressions.
      *
-     * You must call {@link #validate(org.polypheny.db.sql.SqlNode)} first.
+     * You must call {@link #validate(Node)} first.
      *
      * @param sql The root node of the SQL parse tree.
      * @return The root node of the newly generated RelNode tree.
      * @throws org.polypheny.db.tools.RelConversionException if the node cannot be converted or has not been validated
      */
-    RelRoot rel( SqlNode sql ) throws RelConversionException;
+    RelRoot rel( Node sql ) throws RelConversionException;
 
     /**
      * Returns the type factory.
@@ -132,5 +132,6 @@ public interface Planner extends AutoCloseable {
     void close();
 
     RelTraitSet getEmptyTraitSet();
+
 }
 

@@ -23,6 +23,7 @@ import java.util.Objects;
 import org.polypheny.db.core.JoinConditionType;
 import org.polypheny.db.core.JoinType;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableNullableList;
@@ -90,7 +91,7 @@ public class SqlJoin extends SqlCall {
 
 
     @Override
-    public void setOperand( int i, SqlNode operand ) {
+    public void setOperand( int i, Node operand ) {
         switch ( i ) {
             case 0:
                 left = operand;
@@ -191,7 +192,7 @@ public class SqlJoin extends SqlCall {
 
 
         @Override
-        public SqlSyntax getSyntax() {
+        public SqlSyntax getSqlSyntax() {
             return SqlSyntax.SPECIAL;
         }
 

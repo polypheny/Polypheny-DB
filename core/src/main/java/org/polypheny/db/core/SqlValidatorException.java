@@ -31,7 +31,7 @@ import org.polypheny.db.util.PolyphenyDbValidatorException;
  * Unlike {@link PolyphenyDbException}, this is a checked exception, which reminds code authors to wrap it in another exception containing the line/column context.
  */
 @Slf4j
-public class SqlValidatorException extends Exception implements PolyphenyDbValidatorException {
+public class SqlValidatorException extends Exception implements PolyphenyDbValidatorException, ValidatorException {
 
     static final long serialVersionUID = -831683113957131387L;
 

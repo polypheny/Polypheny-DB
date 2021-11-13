@@ -24,7 +24,7 @@ import org.polypheny.db.languages.sql.SqlAbstractDateTimeLiteral;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDialect;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlIntervalLiteral;
 import org.polypheny.db.languages.sql.SqlIntervalQualifier;
 import org.polypheny.db.languages.sql.SqlLiteral;
@@ -54,7 +54,7 @@ public class MssqlSqlDialect extends SqlDialect {
                     ReturnTypes.ARG0_NULLABLE_VARYING,
                     null,
                     null,
-                    SqlFunctionCategory.STRING );
+                    FunctionCategory.STRING );
 
 
     /**

@@ -25,7 +25,7 @@ import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDataTypeSpec;
 import org.polypheny.db.languages.sql.SqlDialect;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -210,7 +210,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
                                 ReturnTypes.INTEGER,
                                 null,
                                 null,
-                                SqlFunctionCategory.USER_DEFINED_FUNCTION );
+                                FunctionCategory.USER_DEFINED_FUNCTION );
                         SqlCall call1 = call.getOperator().createCall( call.getPos(), call.getOperandList().get( 1 ) );
                         SqlUtil.unparseFunctionSyntax( func, writer, call1 );
                     } else {

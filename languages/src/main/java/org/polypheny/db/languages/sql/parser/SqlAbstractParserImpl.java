@@ -31,10 +31,11 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import org.apache.calcite.avatica.util.Casing;
+import org.polypheny.db.core.ParseException;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.Conformance;
 import org.polypheny.db.languages.sql.SqlCall;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -349,7 +350,7 @@ public abstract class SqlAbstractParserImpl {
      * @param operands Operands to call
      * @return Call
      */
-    protected SqlCall createCall( SqlIdentifier funName, ParserPos pos, SqlFunctionCategory funcType, SqlLiteral functionQualifier, Iterable<? extends SqlNode> operands ) {
+    protected SqlCall createCall( SqlIdentifier funName, ParserPos pos, FunctionCategory funcType, SqlLiteral functionQualifier, Iterable<? extends SqlNode> operands ) {
         return createCall( funName, pos, funcType, functionQualifier, Iterables.toArray( operands, SqlNode.class ) );
     }
 
@@ -364,7 +365,7 @@ public abstract class SqlAbstractParserImpl {
      * @param operands Operands to call
      * @return Call
      */
-    protected SqlCall createCall( SqlIdentifier funName, ParserPos pos, SqlFunctionCategory funcType, SqlLiteral functionQualifier, SqlNode[] operands ) {
+    protected SqlCall createCall( SqlIdentifier funName, ParserPos pos, FunctionCategory funcType, SqlLiteral functionQualifier, SqlNode[] operands ) {
         SqlOperator fun = null;
 
         // First, try a half-hearted resolution as a builtin function.
@@ -392,12 +393,12 @@ public abstract class SqlAbstractParserImpl {
     public abstract Metadata getMetadata();
 
     /**
-     * Removes or transforms misleading information from a parse exception or error, and converts to {@link SqlParseException}.
+     * Removes or transforms misleading information from a parse exception or error, and converts to {@link ParseException}.
      *
      * @param ex dirty excn
      * @return clean excn
      */
-    public abstract SqlParseException normalizeException( Throwable ex );
+    public abstract ParseException normalizeException( Throwable ex );
 
     protected abstract ParserPos getPos() throws Exception;
 
@@ -582,7 +583,7 @@ public abstract class SqlAbstractParserImpl {
             try {
                 Object o = virtualCall( parserImpl, name );
                 throw new AssertionError( "expected call to fail, got " + o );
-            } catch ( SqlParseException parseException ) {
+            } catch ( ParseException parseException ) {
                 // First time through, build the list of all tokens.
                 final String[] tokenImages = parseException.getTokenImages();
                 if ( tokenSet.isEmpty() ) {

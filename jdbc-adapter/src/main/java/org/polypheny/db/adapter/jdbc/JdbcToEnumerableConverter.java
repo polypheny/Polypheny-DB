@@ -73,7 +73,7 @@ import org.polypheny.db.rel.convert.ConverterImpl;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.runtime.Hook;
-import org.polypheny.db.runtime.SqlFunctions;
+import org.polypheny.db.runtime.Functions;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.SqlDialect.CalendarPolicy;
@@ -425,7 +425,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     private String jdbcGetMethod( Primitive primitive ) {
         return primitive == null
                 ? "getObject"
-                : "get" + SqlFunctions.initcap( primitive.primitiveName );
+                : "get" + Functions.initcap( primitive.primitiveName );
     }
 
 

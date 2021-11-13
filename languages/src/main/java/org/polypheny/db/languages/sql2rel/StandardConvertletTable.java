@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.InitializerContext;
 import org.polypheny.db.languages.sql2rel.SqlToRelConverter.Blackboard;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.type.RelDataType;
@@ -43,7 +45,7 @@ import org.polypheny.db.languages.sql.SqlBinaryOperator;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDataTypeSpec;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlIntervalLiteral;
 import org.polypheny.db.languages.sql.SqlIntervalQualifier;
@@ -54,7 +56,6 @@ import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlNumericLiteral;
 import org.polypheny.db.languages.sql.SqlOperator;
-import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.fun.OracleSqlOperatorTable;
 import org.polypheny.db.languages.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.languages.sql.fun.SqlBetweenOperator;
@@ -337,18 +338,18 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         RexBuilder rexBuilder = cx.getRexBuilder();
         final List<RexNode> exprList = new ArrayList<>();
         for ( int i = 0; i < whenList.size(); i++ ) {
-            if ( SqlUtil.isNullLiteral( whenList.get( i ), false ) ) {
+            if ( CoreUtil.isNullLiteral( whenList.get( i ), false ) ) {
                 exprList.add( rexBuilder.constantNull() );
             } else {
                 exprList.add( cx.convertExpression( whenList.get( i ) ) );
             }
-            if ( SqlUtil.isNullLiteral( thenList.get( i ), false ) ) {
+            if ( CoreUtil.isNullLiteral( thenList.get( i ), false ) ) {
                 exprList.add( rexBuilder.constantNull() );
             } else {
                 exprList.add( cx.convertExpression( thenList.get( i ) ) );
             }
         }
-        if ( SqlUtil.isNullLiteral( call.getElseOperand(), false ) ) {
+        if ( CoreUtil.isNullLiteral( call.getElseOperand(), false ) ) {
             exprList.add( rexBuilder.constantNull() );
         } else {
             exprList.add( cx.convertExpression( call.getElseOperand() ) );
@@ -438,7 +439,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         }
         SqlDataTypeSpec dataType = (SqlDataTypeSpec) right;
         RelDataType type = dataType.deriveType( typeFactory );
-        if ( SqlUtil.isNullLiteral( left, false ) ) {
+        if ( CoreUtil.isNullLiteral( left, false ) ) {
             final SqlValidatorImpl validator = (SqlValidatorImpl) cx.getValidator();
             validator.setValidatedNodeType( left, type );
             return cx.convertExpression( left );
@@ -550,7 +551,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     public RexNode convertFunction( SqlRexContext cx, SqlFunction fun, SqlCall call ) {
         final List<SqlNode> operands = call.getOperandList();
         final List<RexNode> exprs = convertExpressionList( cx, operands, PolyOperandTypeChecker.Consistency.NONE );
-        if ( fun.getFunctionType() == SqlFunctionCategory.USER_DEFINED_CONSTRUCTOR ) {
+        if ( fun.getFunctionType() == FunctionCategory.USER_DEFINED_CONSTRUCTOR ) {
             return makeConstructorCall( cx, fun, exprs );
         }
         RelDataType returnType = cx.getValidator().getValidatedNodeTypeIfKnown( call );

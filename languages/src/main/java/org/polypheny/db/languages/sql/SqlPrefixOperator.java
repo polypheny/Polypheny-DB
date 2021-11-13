@@ -48,7 +48,7 @@ public class SqlPrefixOperator extends SqlOperator {
 
 
     @Override
-    public SqlSyntax getSyntax() {
+    public SqlSyntax getSqlSyntax() {
         return SqlSyntax.PREFIX;
     }
 

@@ -22,7 +22,7 @@ import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.languages.sql.SqlCall;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlSplittableAggFunction;
 import org.polypheny.db.languages.sql.SqlSyntax;
@@ -54,7 +54,7 @@ public class SqlCountAggFunction extends SqlAggFunction {
                 ReturnTypes.BIGINT,
                 null,
                 polyOperandTypeChecker,
-                SqlFunctionCategory.NUMERIC,
+                FunctionCategory.NUMERIC,
                 false,
                 false,
                 Optionality.FORBIDDEN );
@@ -62,7 +62,7 @@ public class SqlCountAggFunction extends SqlAggFunction {
 
 
     @Override
-    public SqlSyntax getSyntax() {
+    public SqlSyntax getSqlSyntax() {
         return SqlSyntax.FUNCTION_STAR;
     }
 

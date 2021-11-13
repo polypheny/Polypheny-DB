@@ -107,7 +107,7 @@ import org.junit.Test;
 import org.polypheny.db.runtime.ConsList;
 import org.polypheny.db.runtime.FlatLists;
 import org.polypheny.db.runtime.Resources;
-import org.polypheny.db.runtime.SqlFunctions;
+import org.polypheny.db.runtime.Functions;
 import org.polypheny.db.sql.SqlCollation;
 import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.util.SqlBuilder;
@@ -1280,7 +1280,7 @@ public class UtilTest {
         final List<Enumerator<List<String>>> list = new ArrayList<>();
         list.add( Linq4j.enumerator( l2( l1( "a" ), l1( "b" ) ) ) );
         list.add( Linq4j.enumerator( l3( l2( "x", "p" ), l2( "y", "q" ), l2( "z", "r" ) ) ) );
-        final Enumerable<FlatLists.ComparableList<String>> product = SqlFunctions.product( list, 3, false );
+        final Enumerable<FlatLists.ComparableList<String>> product = Functions.product( list, 3, false );
         int n = 0;
         FlatLists.ComparableList<String> previous = FlatLists.of();
         for ( FlatLists.ComparableList<String> strings : product ) {

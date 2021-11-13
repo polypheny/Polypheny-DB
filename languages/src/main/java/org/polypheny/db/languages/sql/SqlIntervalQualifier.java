@@ -373,11 +373,13 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
      * <p>Returns {@code true} if it is of the form {@code unit},
      * {@code false} if it is of the form {@code unit TO unit}.
      */
+    @Override
     public boolean isSingleDatetimeField() {
         return timeUnitRange.endUnit == null;
     }
 
 
+    @Override
     public final boolean isYearMonth() {
         return timeUnitRange.startUnit.yearMonth;
     }

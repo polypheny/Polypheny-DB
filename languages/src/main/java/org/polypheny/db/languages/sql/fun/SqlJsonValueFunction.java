@@ -26,9 +26,9 @@ import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlDataTypeSpec;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.languages.sql.SqlJsonValueEmptyOrErrorBehavior;
+import org.polypheny.db.core.json.JsonValueEmptyOrErrorBehavior;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -62,7 +62,7 @@ public class SqlJsonValueFunction extends SqlFunction {
                     }
                 },
                 null,
-                SqlFunctionCategory.SYSTEM );
+                FunctionCategory.SYSTEM );
         this.returnAny = returnAny;
     }
 
@@ -72,14 +72,14 @@ public class SqlJsonValueFunction extends SqlFunction {
         List<SqlNode> operandList = new ArrayList<>();
         operandList.add( operands[0] );
         if ( operands[1] == null ) {
-            operandList.add( SqlLiteral.createSymbol( SqlJsonValueEmptyOrErrorBehavior.NULL, pos ) );
+            operandList.add( SqlLiteral.createSymbol( JsonValueEmptyOrErrorBehavior.NULL, pos ) );
             operandList.add( SqlLiteral.createNull( pos ) );
         } else {
             operandList.add( operands[1] );
             operandList.add( operands[2] );
         }
         if ( operands[3] == null ) {
-            operandList.add( SqlLiteral.createSymbol( SqlJsonValueEmptyOrErrorBehavior.NULL, pos ) );
+            operandList.add( SqlLiteral.createSymbol( JsonValueEmptyOrErrorBehavior.NULL, pos ) );
             operandList.add( SqlLiteral.createNull( pos ) );
         } else {
             operandList.add( operands[3] );
@@ -181,7 +181,7 @@ public class SqlJsonValueFunction extends SqlFunction {
 
 
     private boolean isDefaultLiteral( SqlLiteral literal ) {
-        return literal.getValueAs( SqlJsonValueEmptyOrErrorBehavior.class ) == SqlJsonValueEmptyOrErrorBehavior.DEFAULT;
+        return literal.getValueAs( JsonValueEmptyOrErrorBehavior.class ) == JsonValueEmptyOrErrorBehavior.DEFAULT;
     }
 
 

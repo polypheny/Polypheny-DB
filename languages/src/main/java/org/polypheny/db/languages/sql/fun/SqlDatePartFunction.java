@@ -19,12 +19,14 @@ package org.polypheny.db.languages.sql.fun;
 
 import java.util.List;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlIntervalQualifier;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -50,16 +52,16 @@ public class SqlDatePartFunction extends SqlFunction {
                 ReturnTypes.BIGINT_NULLABLE,
                 InferTypes.FIRST_KNOWN,
                 OperandTypes.DATETIME,
-                SqlFunctionCategory.TIMEDATE );
+                FunctionCategory.TIMEDATE );
         this.timeUnit = timeUnit;
     }
 
 
     @Override
     public SqlNode rewriteCall( SqlValidator validator, SqlCall call ) {
-        final List<SqlNode> operands = call.getOperandList();
+        final List<Node> operands = call.getOperandList();
         final ParserPos pos = call.getPos();
-        return SqlStdOperatorTable.EXTRACT.createCall(
+        return (SqlNode) StdOperatorRegistry.get( "EXTRACT").createCall(
                 pos,
                 new SqlIntervalQualifier( timeUnit, null, ParserPos.ZERO ),
                 operands.get( 0 ) );

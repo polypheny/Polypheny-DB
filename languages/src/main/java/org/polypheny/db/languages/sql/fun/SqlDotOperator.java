@@ -24,6 +24,7 @@ import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeVisitor;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlIdentifier;
@@ -34,7 +35,6 @@ import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.languages.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
@@ -118,7 +118,7 @@ public class SqlDotOperator extends SqlSpecialOperator {
 
         // Validate and determine coercibility and resulting collation name of binary operator if needed.
         type = adjustType( validator, call, type );
-        SqlValidatorUtil.checkCharsetAndCollateConsistentIfCharType( type );
+        ValidatorUtil.checkCharsetAndCollateConsistentIfCharType( type );
         return type;
     }
 

@@ -21,6 +21,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.rel.type.RelDataType;
@@ -30,14 +31,13 @@ import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlDynamicParam;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlIntervalQualifier;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.SqlSyntax;
-import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
@@ -79,7 +79,7 @@ public class SqlCastFunction extends SqlFunction {
                 null,
                 InferTypes.FIRST_KNOWN,
                 null,
-                SqlFunctionCategory.SYSTEM );
+                FunctionCategory.SYSTEM );
     }
 
 
@@ -127,7 +127,7 @@ public class SqlCastFunction extends SqlFunction {
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
         final SqlNode left = callBinding.operand( 0 );
         final SqlNode right = callBinding.operand( 1 );
-        if ( SqlUtil.isNullLiteral( left, false ) || left instanceof SqlDynamicParam ) {
+        if ( CoreUtil.isNullLiteral( left, false ) || left instanceof SqlDynamicParam ) {
             return true;
         }
         RelDataType validatedNodeType = callBinding.getValidator().getValidatedNodeType( left );
@@ -150,7 +150,7 @@ public class SqlCastFunction extends SqlFunction {
 
 
     @Override
-    public SqlSyntax getSyntax() {
+    public SqlSyntax getSqlSyntax() {
         return SqlSyntax.SPECIAL;
     }
 

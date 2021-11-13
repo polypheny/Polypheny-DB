@@ -18,6 +18,7 @@ package org.polypheny.db.languages.sql;
 
 
 import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.Syntax;
 import org.polypheny.db.util.Util;
 
 
@@ -117,5 +118,28 @@ public enum SqlSyntax {
      * Converts a call to an operator of this syntax into a string.
      */
     public abstract void unparse( SqlWriter writer, SqlOperator operator, SqlCall call, int leftPrec, int rightPrec );
+
+
+    public Syntax getSyntax() {
+        switch ( this ) {
+            case FUNCTION:
+                return Syntax.FUNCTION;
+            case FUNCTION_STAR:
+                return Syntax.FUNCTION_STAR;
+            case BINARY:
+                return Syntax.BINARY;
+            case PREFIX:
+                return Syntax.PREFIX;
+            case POSTFIX:
+                return Syntax.POSTFIX;
+            case SPECIAL:
+                return Syntax.SPECIAL;
+            case FUNCTION_ID:
+                return Syntax.FUNCTION_ID;
+            case INTERNAL:
+                return Syntax.INTERNAL;
+        }
+        throw new RuntimeException( "There seems to be an internal error while translating the Syntax." );
+    }
 }
 

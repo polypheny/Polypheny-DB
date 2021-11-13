@@ -21,7 +21,7 @@ import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.SqlWriter;
@@ -44,7 +44,7 @@ public class SqlExtractFunction extends SqlFunction {
                 ReturnTypes.BIGINT_NULLABLE,
                 null,
                 OperandTypes.INTERVALINTERVAL_INTERVALDATETIME,
-                SqlFunctionCategory.SYSTEM );
+                FunctionCategory.SYSTEM );
     }
 
 

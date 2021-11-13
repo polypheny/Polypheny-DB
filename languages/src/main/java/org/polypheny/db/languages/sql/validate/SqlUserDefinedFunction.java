@@ -25,7 +25,7 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.FunctionParameter;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
@@ -56,14 +56,14 @@ public class SqlUserDefinedFunction extends SqlFunction implements UserDefined {
                 operandTypeChecker,
                 paramTypes,
                 function,
-                SqlFunctionCategory.USER_DEFINED_FUNCTION );
+                FunctionCategory.USER_DEFINED_FUNCTION );
     }
 
 
     /**
      * Constructor used internally and by derived classes.
      */
-    protected SqlUserDefinedFunction( SqlIdentifier opName, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, List<RelDataType> paramTypes, Function function, SqlFunctionCategory category ) {
+    protected SqlUserDefinedFunction( SqlIdentifier opName, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, List<RelDataType> paramTypes, Function function, FunctionCategory category ) {
         super(
                 Util.last( opName.names ),
                 opName,

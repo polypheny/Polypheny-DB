@@ -50,7 +50,7 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.mongoql.model.Result;
-import org.polypheny.db.runtime.SqlFunctions;
+import org.polypheny.db.runtime.Functions;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 
@@ -258,7 +258,7 @@ public class TestHelper {
                         row[i - 1] = resultSet.getObject( i );
                     }
                 } else {
-                    row[i - 1] = SqlFunctions.deepArrayToList( resultSet.getArray( i ) );
+                    row[i - 1] = Functions.deepArrayToList( resultSet.getArray( i ) );
                 }
             }
             list.add( row );

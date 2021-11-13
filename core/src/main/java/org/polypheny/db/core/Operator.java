@@ -70,7 +70,9 @@ public abstract class Operator {
     }
 
 
-    public abstract <T extends Call & Node> T createCall( Literal functionQualifier, ParserPos pos, Node... operands );
+    public abstract Syntax getSyntax();
+
+    public abstract Call createCall( Literal functionQualifier, ParserPos pos, Node... operands );
 
 
     /**
@@ -82,7 +84,7 @@ public abstract class Operator {
      * @param operands List of arguments
      * @return call to this operator
      */
-    public final <T extends Call & Node> T  createCall( ParserPos pos, Node... operands ) {
+    public final Call createCall( ParserPos pos, Node... operands ) {
         return createCall( null, pos, operands );
     }
 
@@ -95,7 +97,7 @@ public abstract class Operator {
      * @param nodeList List of arguments
      * @return call to this operator
      */
-    public final <T extends Call & Node> T createCall( NodeList nodeList ) {
+    public final Call createCall( NodeList nodeList ) {
         return createCall( null, nodeList.getPos(), nodeList.toArray() );
     }
 
@@ -105,7 +107,7 @@ public abstract class Operator {
      *
      * The position of the resulting call is the union of the <code>pos</code> and the positions of all the operands.
      */
-    public final <T extends Call & Node> T createCall( ParserPos pos, List<? extends Node> operandList ) {
+    public final Call createCall( ParserPos pos, List<? extends Node> operandList ) {
         return createCall( null, pos, operandList.toArray( new Node[0] ) );
     }
 
@@ -172,10 +174,101 @@ public abstract class Operator {
      * Collectively, aggregate and window functions are called <dfn>analytic functions</dfn>. Despite its name, this method returns true for every analytic function.
      *
      * @return whether this operator is an analytic function (aggregate function or window function)
-     * @see #requiresOrder()
+     * #@see #requiresOrder()
      */
     public boolean isAggregator() {
         return false;
+    }
+
+
+    /**
+     * Returns whether this is a window function that requires an OVER clause.
+     *
+     * For example, returns true for {@code RANK}, {@code DENSE_RANK} and other ranking functions; returns false for {@code SUM}, {@code COUNT}, {@code MIN}, {@code MAX}, {@code AVG}
+     * (they can be used as non-window aggregate functions).
+     *
+     * If {@code requiresOver} returns true, then {@link #isAggregator()} must also return true.
+     *
+     * #@see #allowsFraming()
+     * @see #requiresOrder()
+     */
+    public boolean requiresOver() {
+        return false;
+    }
+
+
+    /**
+     * Returns whether this is a window function that requires ordering.
+     *
+     * Per SQL:2011, 2, 6.10: "If &lt;ntile function&gt;, &lt;lead or lag function&gt;, RANK or DENSE_RANK is specified, then the window ordering clause shall be present."
+     *
+     * @see #isAggregator()
+     */
+    public boolean requiresOrder() {
+        return false;
+    }
+
+
+    /**
+     * Returns whether this is a group function.
+     *
+     * Group functions can only appear in the GROUP BY clause.
+     *
+     * Examples are {@code HOP}, {@code TUMBLE}, {@code SESSION}.
+     *
+     * Group functions have auxiliary functions, e.g. {@code HOP_START}, but these are not group functions.
+     */
+    public boolean isGroup() {
+        return false;
+    }
+
+
+    /**
+     * Returns whether this is an group auxiliary function.
+     *
+     * Examples are {@code HOP_START} and {@code HOP_END} (both auxiliary to {@code HOP}).
+     *
+     * @see #isGroup()
+     */
+    public boolean isGroupAuxiliary() {
+        return false;
+    }
+
+
+    /**
+     * @return true iff a call to this operator is guaranteed to always return the same result given the same operands; true is assumed by default
+     */
+    public boolean isDeterministic() {
+        return true;
+    }
+
+
+    /**
+     * @return true iff it is unsafe to cache query plans referencing this operator; false is assumed by default
+     */
+    public boolean isDynamicFunction() {
+        return false;
+    }
+
+
+    /**
+     * Method to check if call requires expansion when it has decimal operands.
+     * The default implementation is to return true.
+     */
+    public boolean requiresDecimalExpansion() {
+        return true;
+    }
+
+
+    /**
+     * Returns a template describing how the operator signature is to be built.
+     * E.g for the binary + operator the template looks like "{1} {0} {2}" {0} is the operator, subsequent numbers are operands.
+     *
+     * @param operandsCount is used with functions that can take a variable number of operands
+     * @return signature template, or null to indicate that a default template will suffice
+     */
+    public String getSignatureTemplate( final int operandsCount ) {
+        return null;
     }
 
 }

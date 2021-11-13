@@ -19,11 +19,12 @@ package org.polypheny.db.languages.sql;
 
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.ValuesOperator;
 
 /**
  * The <code>VALUES</code> operator.
  */
-public class SqlValuesOperator extends SqlSpecialOperator {
+public class SqlValuesOperator extends SqlSpecialOperator implements ValuesOperator {
 
     public SqlValuesOperator() {
         super( "VALUES", Kind.VALUES );

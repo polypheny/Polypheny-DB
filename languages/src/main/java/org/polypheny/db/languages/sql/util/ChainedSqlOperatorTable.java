@@ -20,7 +20,7 @@ package org.polypheny.db.languages.sql.util;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlOperatorTable;
@@ -64,7 +64,7 @@ public class ChainedSqlOperatorTable implements SqlOperatorTable {
 
 
     @Override
-    public void lookupOperatorOverloads( SqlIdentifier opName, SqlFunctionCategory category, SqlSyntax syntax, List<SqlOperator> operatorList ) {
+    public void lookupOperatorOverloads( SqlIdentifier opName, FunctionCategory category, SqlSyntax syntax, List<SqlOperator> operatorList ) {
         for ( SqlOperatorTable table : tableList ) {
             table.lookupOperatorOverloads( opName, category, syntax, operatorList );
         }

@@ -35,10 +35,11 @@ package org.polypheny.db.type;
 
 
 import java.util.List;
+import lombok.Getter;
+import org.polypheny.db.core.Identifier;
 import org.polypheny.db.rel.type.RelDataTypeComparability;
 import org.polypheny.db.rel.type.RelDataTypeFamily;
 import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.sql.SqlIdentifier;
 
 
 /**
@@ -46,24 +47,27 @@ import org.polypheny.db.sql.SqlIdentifier;
  */
 public class ObjectPolyType extends AbstractPolyType {
 
-    private final SqlIdentifier sqlIdentifier;
+    @Getter
+    private final Identifier sqlIdentifier;
 
+    @Getter
     private final RelDataTypeComparability comparability;
 
+    @Getter
     private RelDataTypeFamily family;
 
 
     /**
      * Constructs an object type. This should only be called from a factory method.
      *
-     * @param typeName      PolyType for this type (either Distinct or Structured)
+     * @param typeName PolyType for this type (either Distinct or Structured)
      * @param sqlIdentifier identifier for this type
-     * @param nullable      whether type accepts nulls
-     * @param fields        object attribute definitions
+     * @param nullable whether type accepts nulls
+     * @param fields object attribute definitions
      */
     public ObjectPolyType(
             PolyType typeName,
-            SqlIdentifier sqlIdentifier,
+            Identifier sqlIdentifier,
             boolean nullable,
             List<? extends RelDataTypeField> fields,
             RelDataTypeComparability comparability ) {
@@ -79,29 +83,6 @@ public class ObjectPolyType extends AbstractPolyType {
     }
 
 
-    // implement RelDataType
-    @Override
-    public RelDataTypeComparability getComparability() {
-        return comparability;
-    }
-
-
-    // override AbstractSqlType
-    @Override
-    public SqlIdentifier getSqlIdentifier() {
-        return sqlIdentifier;
-    }
-
-
-    // override AbstractSqlType
-    @Override
-    public RelDataTypeFamily getFamily() {
-        // each UDT is in its own lonely family, until one day when we support inheritance (at which time also need
-        // to implement getPrecedenceList).
-        return family;
-    }
-
-
     // implement RelDataTypeImpl
     @Override
     protected void generateTypeString( StringBuilder sb, boolean withDetail ) {
@@ -110,5 +91,6 @@ public class ObjectPolyType extends AbstractPolyType {
         sb.append( sqlIdentifier.toString() );
         sb.append( ")" );
     }
+
 }
 

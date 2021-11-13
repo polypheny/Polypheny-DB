@@ -16,6 +16,8 @@
 
 package org.polypheny.db.core;
 
+import java.util.List;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
 
@@ -25,6 +27,16 @@ public interface CallBinding {
 
     ValidatorScope getScope();
 
+    List<Node> operands();
+
+    int getOperandCount();
+
+    RelDataType getOperandType( int ordinal );
+
     PolyphenyDbException newError( Resources.ExInst<SqlValidatorException> e );
+
+    PolyphenyDbException newValidationSignatureError();
+
+    PolyphenyDbException newValidationError( Resources.ExInst<SqlValidatorException> ex );
 
 }

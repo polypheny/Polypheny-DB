@@ -41,7 +41,7 @@ import org.polypheny.db.rel.core.Aggregate;
 import org.polypheny.db.rel.core.RelFactories;
 import org.polypheny.db.rel.logical.LogicalAggregate;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.runtime.SqlFunctions;
+import org.polypheny.db.runtime.Functions;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
 
@@ -74,7 +74,7 @@ public class AggregateRemoveRule extends RelOptRule {
             return;
         }
         final RelMetadataQuery mq = call.getMetadataQuery();
-        if ( !SqlFunctions.isTrue( mq.areColumnsUnique( input, aggregate.getGroupSet() ) ) ) {
+        if ( !Functions.isTrue( mq.areColumnsUnique( input, aggregate.getGroupSet() ) ) ) {
             return;
         }
         // Distinct is "GROUP BY c1, c2" (where c1, c2 are a set of columns on which the input is unique, i.e. contain a key) and has no aggregate functions. It can be removed.

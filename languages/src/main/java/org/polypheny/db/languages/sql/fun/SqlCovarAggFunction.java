@@ -19,7 +19,7 @@ package org.polypheny.db.languages.sql.fun;
 
 import com.google.common.base.Preconditions;
 import org.polypheny.db.languages.sql.SqlAggFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -43,7 +43,7 @@ public class SqlCovarAggFunction extends SqlAggFunction {
                 kind == Kind.REGR_COUNT ? ReturnTypes.BIGINT : ReturnTypes.COVAR_REGR_FUNCTION,
                 null,
                 OperandTypes.NUMERIC_NUMERIC,
-                SqlFunctionCategory.NUMERIC,
+                FunctionCategory.NUMERIC,
                 false,
                 false,
                 Optionality.FORBIDDEN );

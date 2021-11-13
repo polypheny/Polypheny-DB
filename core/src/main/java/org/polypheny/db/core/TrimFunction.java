@@ -18,4 +18,8 @@ package org.polypheny.db.core;
 
 public interface TrimFunction {
 
+    enum Flag {
+        BOTH, LEADING, TRAILING;
+    }
+
 }

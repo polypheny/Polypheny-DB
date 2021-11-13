@@ -22,21 +22,21 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
+import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDataTypeSpec;
 import org.polypheny.db.languages.sql.SqlIdentifier;
@@ -44,12 +44,9 @@ import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlOperatorTable;
-import org.polypheny.db.languages.sql.SqlUtil;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.plan.RelOptSchemaWithSampling;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.prepare.Prepare;
-import org.polypheny.db.rel.core.JoinRelType;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
@@ -63,7 +60,6 @@ import org.polypheny.db.schema.PolyphenyDbSchema.TypeEntry;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
@@ -201,39 +197,10 @@ public class SqlValidatorUtil {
 
 
     /**
-     * Returns a map from field names to indexes.
-     */
-    public static Map<String, Integer> mapNameToIndex( List<RelDataTypeField> fields ) {
-        ImmutableMap.Builder<String, Integer> output = ImmutableMap.builder();
-        for ( RelDataTypeField field : fields ) {
-            output.put( field.getName(), field.getIndex() );
-        }
-        return output.build();
-    }
-
-
-    public static void checkCharsetAndCollateConsistentIfCharType( RelDataType type ) {
-        // (every charset must have a default collation)
-        if ( PolyTypeUtil.inCharFamily( type ) ) {
-            Charset strCharset = type.getCharset();
-            Charset colCharset = type.getCollation().getCharset();
-            assert null != strCharset;
-            assert null != colCharset;
-            if ( !strCharset.equals( colCharset ) ) {
-                if ( false ) {
-                    // todo: enable this checking when we have a charset to collation mapping
-                    throw new Error( type.toString() + " was found to have charset '" + strCharset.name() + "' and a mismatched collation charset '" + colCharset.name() + "'" );
-                }
-            }
-        }
-    }
-
-
-    /**
      * Checks that there are no duplicates in a list of {@link SqlIdentifier}.
      */
     static void checkIdentifierListForDuplicates( List<SqlNode> columnList, SqlValidatorImpl.ValidationErrorFunction validationErrorFunction ) {
-        final List<List<String>> names = Lists.transform( columnList, o -> ((SqlIdentifier) o).names );
+        final List<List<String>> names = columnList.stream().map( o -> ((SqlIdentifier) o).names ).collect( Collectors.toList() );
         final int i = Util.firstDuplicate( names );
         if ( i >= 0 ) {
             throw validationErrorFunction.apply( columnList.get( i ), Static.RESOURCE.duplicateNameInColumnList( Util.last( names.get( i ) ) ) );
@@ -244,10 +211,10 @@ public class SqlValidatorUtil {
     /**
      * Converts an expression "expr" into "expr AS alias".
      */
-    public static SqlNode addAlias( SqlNode expr, String alias ) {
+    public static Node addAlias( SqlNode expr, String alias ) {
         final ParserPos pos = expr.getPos();
         final SqlIdentifier id = new SqlIdentifier( alias, pos );
-        return SqlStdOperatorTable.AS.createCall( pos, expr, id );
+        return StdOperatorRegistry.get( "AS" ).createCall( pos, expr, id );
     }
 
 
@@ -282,7 +249,7 @@ public class SqlValidatorUtil {
                 if ( ordinal < 0 ) {
                     return null;
                 } else {
-                    return SqlUtil.deriveAliasFromOrdinal( ordinal );
+                    return CoreUtil.deriveAliasFromOrdinal( ordinal );
                 }
         }
     }

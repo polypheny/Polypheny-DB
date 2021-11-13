@@ -63,7 +63,7 @@ import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.runtime.SqlFunctions;
+import org.polypheny.db.runtime.Functions;
 import org.polypheny.db.schema.QueryableTable;
 import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.schema.Schema;
@@ -685,17 +685,17 @@ public class Smalls {
 
 
         public static long dateFun( java.sql.Date v ) {
-            return v == null ? -1L : SqlFunctions.toLong( v );
+            return v == null ? -1L : Functions.toLong( v );
         }
 
 
         public static long timestampFun( java.sql.Timestamp v ) {
-            return v == null ? -1L : SqlFunctions.toLong( v );
+            return v == null ? -1L : Functions.toLong( v );
         }
 
 
         public static long timeFun( java.sql.Time v ) {
-            return v == null ? -1L : SqlFunctions.toLong( v );
+            return v == null ? -1L : Functions.toLong( v );
         }
 
 
@@ -703,22 +703,22 @@ public class Smalls {
          * Overloaded, in a challenging way, with {@link #toDateFun(Long)}.
          */
         public static java.sql.Date toDateFun( int v ) {
-            return SqlFunctions.internalToDate( v );
+            return Functions.internalToDate( v );
         }
 
 
         public static java.sql.Date toDateFun( Long v ) {
-            return v == null ? null : SqlFunctions.internalToDate( v.intValue() );
+            return v == null ? null : Functions.internalToDate( v.intValue() );
         }
 
 
         public static java.sql.Timestamp toTimestampFun( Long v ) {
-            return SqlFunctions.internalToTimestamp( v );
+            return Functions.internalToTimestamp( v );
         }
 
 
         public static java.sql.Time toTimeFun( Long v ) {
-            return v == null ? null : SqlFunctions.internalToTime( v.intValue() );
+            return v == null ? null : Functions.internalToTime( v.intValue() );
         }
 
 
@@ -754,17 +754,17 @@ public class Smalls {
          * Overloaded functions with DATE, TIMESTAMP and TIME arguments.
          */
         public static long toLong( Date date ) {
-            return date == null ? 0 : SqlFunctions.toLong( date );
+            return date == null ? 0 : Functions.toLong( date );
         }
 
 
         public static long toLong( Timestamp timestamp ) {
-            return timestamp == null ? 0 : SqlFunctions.toLong( timestamp );
+            return timestamp == null ? 0 : Functions.toLong( timestamp );
         }
 
 
         public static long toLong( Time time ) {
-            return time == null ? 0 : SqlFunctions.toLong( time );
+            return time == null ? 0 : Functions.toLong( time );
         }
 
     }

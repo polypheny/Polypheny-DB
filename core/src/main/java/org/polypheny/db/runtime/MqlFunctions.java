@@ -518,7 +518,7 @@ public class MqlFunctions {
             }
         }
 
-        return SqlFunctions.eqAny( b0, b1 );
+        return Functions.eqAny( b0, b1 );
     }
 
 
@@ -535,7 +535,7 @@ public class MqlFunctions {
         return compNullExecute(
                 b0,
                 b1,
-                () -> SqlFunctions.gtAny( b0, b1 ) );
+                () -> Functions.gtAny( b0, b1 ) );
     }
 
 
@@ -552,7 +552,7 @@ public class MqlFunctions {
         return compNullExecute(
                 b0,
                 b1,
-                () -> (SqlFunctions.gtAny( b0, b1 ) || SqlFunctions.eqAny( b0, b1 )) );
+                () -> (Functions.gtAny( b0, b1 ) || Functions.eqAny( b0, b1 )) );
     }
 
 
@@ -569,7 +569,7 @@ public class MqlFunctions {
         return compNullExecute(
                 b0,
                 b1,
-                () -> SqlFunctions.ltAny( b0, b1 ) );
+                () -> Functions.ltAny( b0, b1 ) );
     }
 
 
@@ -586,7 +586,7 @@ public class MqlFunctions {
         return compNullExecute(
                 b0,
                 b1,
-                () -> (SqlFunctions.ltAny( b0, b1 ) || SqlFunctions.eqAny( b0, b1 )) );
+                () -> (Functions.ltAny( b0, b1 ) || Functions.eqAny( b0, b1 )) );
     }
 
 

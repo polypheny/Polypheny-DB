@@ -23,7 +23,7 @@ import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
@@ -47,7 +47,7 @@ public class SqlCoalesceFunction extends SqlFunction {
                 ReturnTypes.cascade( ReturnTypes.LEAST_RESTRICTIVE, PolyTypeTransforms.LEAST_NULLABLE ),
                 null,
                 OperandTypes.SAME_VARIADIC,
-                SqlFunctionCategory.SYSTEM );
+                FunctionCategory.SYSTEM );
     }
 
 

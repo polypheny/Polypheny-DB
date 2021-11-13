@@ -25,7 +25,7 @@ import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.languages.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.languages.sql.SqlCall;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlSelect;
@@ -51,7 +51,7 @@ public class SqlAbstractGroupFunction extends SqlAggFunction {
      * @param operandTypeChecker   strategy to use for parameter type checking
      * @param category             categorization for function
      */
-    public SqlAbstractGroupFunction( String name, Kind kind, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, SqlFunctionCategory category ) {
+    public SqlAbstractGroupFunction( String name, Kind kind, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, FunctionCategory category ) {
         super( name, null, kind, returnTypeInference, operandTypeInference, operandTypeChecker, category, false, false, Optionality.FORBIDDEN );
     }
 

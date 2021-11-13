@@ -23,6 +23,7 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import org.polypheny.db.core.BasicNodeVisitor.ArgHandler;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeVisitor;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
@@ -147,7 +148,7 @@ public class SqlMatchRecognize extends SqlCall {
 
 
     @Override
-    public void setOperand( int i, SqlNode operand ) {
+    public void setOperand( int i, Node operand ) {
         switch ( i ) {
             case OPERAND_TABLE_REF:
                 tableRef = Objects.requireNonNull( operand );
@@ -334,7 +335,7 @@ public class SqlMatchRecognize extends SqlCall {
 
 
         @Override
-        public SqlSyntax getSyntax() {
+        public SqlSyntax getSqlSyntax() {
             return SqlSyntax.SPECIAL;
         }
 

@@ -28,6 +28,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.FunctionExpression;
 import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
@@ -37,7 +38,7 @@ import org.polypheny.db.schema.TableMacro;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlLiteral;
@@ -71,7 +72,7 @@ public class SqlUserDefinedTableMacro extends SqlFunction {
                 operandTypeInference,
                 operandTypeChecker,
                 Objects.requireNonNull( paramTypes ),
-                SqlFunctionCategory.USER_DEFINED_TABLE_FUNCTION );
+                FunctionCategory.USER_DEFINED_TABLE_FUNCTION );
         this.tableMacro = tableMacro;
     }
 
@@ -145,7 +146,7 @@ public class SqlUserDefinedTableMacro extends SqlFunction {
                 }
                 return builder2.build();
             default:
-                if ( SqlUtil.isNullLiteral( right, true ) ) {
+                if ( CoreUtil.isNullLiteral( right, true ) ) {
                     return null;
                 }
                 if ( SqlUtil.isLiteral( right ) ) {

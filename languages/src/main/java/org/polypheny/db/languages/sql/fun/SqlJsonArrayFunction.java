@@ -21,8 +21,8 @@ import java.util.Locale;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
-import org.polypheny.db.languages.sql.SqlJsonConstructorNullClause;
+import org.polypheny.db.core.FunctionCategory;
+import org.polypheny.db.core.json.JsonConstructorNullClause;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -47,7 +47,7 @@ public class SqlJsonArrayFunction extends SqlFunction {
                 ReturnTypes.VARCHAR_2000,
                 null,
                 OperandTypes.VARIADIC,
-                SqlFunctionCategory.SYSTEM );
+                FunctionCategory.SYSTEM );
     }
 
 
@@ -66,7 +66,7 @@ public class SqlJsonArrayFunction extends SqlFunction {
     @Override
     public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
         if ( operands[0] == null ) {
-            operands[0] = SqlLiteral.createSymbol( SqlJsonConstructorNullClause.ABSENT_ON_NULL, pos );
+            operands[0] = SqlLiteral.createSymbol( JsonConstructorNullClause.ABSENT_ON_NULL, pos );
         }
         return super.createCall( functionQualifier, pos, operands );
     }
@@ -96,7 +96,7 @@ public class SqlJsonArrayFunction extends SqlFunction {
         }
         writer.endList( listFrame );
 
-        SqlJsonConstructorNullClause nullClause = getEnumValue( call.operand( 0 ) );
+        JsonConstructorNullClause nullClause = getEnumValue( call.operand( 0 ) );
         switch ( nullClause ) {
             case ABSENT_ON_NULL:
                 writer.keyword( "ABSENT ON NULL" );

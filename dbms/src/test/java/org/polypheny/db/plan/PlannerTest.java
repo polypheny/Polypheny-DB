@@ -72,10 +72,10 @@ import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDialect;
 import org.polypheny.db.languages.sql.SqlExplainFormat;
 import org.polypheny.db.languages.sql.SqlExplainLevel;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperatorTable;
-import org.polypheny.db.languages.sql.parser.SqlParseException;
+import org.polypheny.db.core.ParseException;
 import org.polypheny.db.languages.sql.parser.SqlParser;
 import org.polypheny.db.languages.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.languages.sql.util.ChainedSqlOperatorTable;
@@ -153,7 +153,7 @@ public class PlannerTest {
     }
 
 
-    @Test(expected = SqlParseException.class)
+    @Test(expected = ParseException.class)
     public void testParseIdentiferMaxLengthWithDefault() throws Exception {
         Planner planner = getPlanner( null, SqlParser.configBuilder().build() );
         planner.parse( "select name as " + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa from \"emps\"" );
@@ -192,19 +192,19 @@ public class PlannerTest {
 
 
     @Test
-    public void testParseFails() throws SqlParseException {
+    public void testParseFails() throws ParseException {
         Planner planner = getPlanner( null );
         try {
             SqlNode parse = planner.parse( "select * * from \"emps\"" );
             fail( "expected error, got " + parse );
-        } catch ( SqlParseException e ) {
+        } catch ( ParseException e ) {
             assertThat( e.getMessage(), containsString( "Encountered \"*\" at line 1, column 10." ) );
         }
     }
 
 
     @Test
-    public void testValidateFails() throws SqlParseException {
+    public void testValidateFails() throws ParseException {
         Planner planner = getPlanner( null );
         SqlNode parse = planner.parse( "select * from \"emps\" where \"Xname\" like '%e%'" );
         assertThat( Util.toLinux( parse.toString() ),
@@ -686,7 +686,7 @@ public class PlannerTest {
      * Tests that Hive dialect does not generate "AS".
      */
     @Test
-    public void testHiveDialect() throws SqlParseException {
+    public void testHiveDialect() throws ParseException {
         Planner planner = getPlanner( null );
         SqlNode parse = planner.parse( "select * from (select * from \"emps\") as t\n" + "where \"name\" like '%e%'" );
         final SqlDialect hiveDialect = SqlDialect.DatabaseProduct.HIVE.getDialect();
@@ -1182,7 +1182,7 @@ public class PlannerTest {
 
         public MyCountAggFunction() {
             super( "MY_COUNT", null, Kind.OTHER_FUNCTION, ReturnTypes.BIGINT, null, OperandTypes.ANY,
-                    SqlFunctionCategory.NUMERIC, false, false, Optionality.FORBIDDEN );
+                    FunctionCategory.NUMERIC, false, false, Optionality.FORBIDDEN );
         }
 
 
@@ -1285,7 +1285,7 @@ public class PlannerTest {
     }
 
 
-    private void checkView( String sql, Matcher<String> matcher ) throws SqlParseException, ValidationException, RelConversionException {
+    private void checkView( String sql, Matcher<String> matcher ) throws ParseException, ValidationException, RelConversionException {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
                 .add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );

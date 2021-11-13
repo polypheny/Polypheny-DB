@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.util.UnmodifiableArrayList;
 
@@ -63,7 +64,7 @@ public class SqlBasicCall extends SqlCall {
 
 
     @Override
-    public void setOperand( int i, SqlNode operand ) {
+    public void setOperand( int i, Node operand ) {
         operands[i] = operand;
     }
 

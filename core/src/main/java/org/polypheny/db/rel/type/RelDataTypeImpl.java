@@ -40,6 +40,8 @@ import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.core.Collation;
+import org.polypheny.db.core.Identifier;
 import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.sql.SqlCollation;
@@ -248,7 +250,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
 
 
     @Override
-    public SqlCollation getCollation() {
+    public Collation getCollation() {
         return null;
     }
 
@@ -284,7 +286,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
 
 
     @Override
-    public SqlIdentifier getSqlIdentifier() {
+    public Identifier getSqlIdentifier() {
         PolyType typeName = getPolyType();
         if ( typeName == null ) {
             return null;

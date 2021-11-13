@@ -20,7 +20,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.type.OperandCountRange;
@@ -40,7 +40,7 @@ public class SqlMetaFunction extends SqlFunction {
                 null,
                 //OperandTypes.family( PolyTypeFamily.BINARY ),
                 META_ARG_CHECKER,
-                SqlFunctionCategory.MULTIMEDIA );
+                FunctionCategory.MULTIMEDIA );
     }
 
 

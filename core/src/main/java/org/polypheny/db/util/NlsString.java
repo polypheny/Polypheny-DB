@@ -55,7 +55,8 @@ import lombok.Getter;
 import org.apache.calcite.avatica.util.ByteString;
 import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.CoreUtil;
-import org.polypheny.db.runtime.SqlFunctions;
+import org.polypheny.db.core.ValidatorUtil;
+import org.polypheny.db.runtime.Functions;
 
 
 /**
@@ -143,7 +144,7 @@ public class NlsString implements Comparable<NlsString>, Cloneable, Externalizab
             if ( charsetName == null ) {
                 throw new IllegalArgumentException( "Bytes value requires charset" );
             }
-            CoreUtil.validateCharset( bytesValue, charset );
+            ValidatorUtil.validateCharset( bytesValue, charset );
         } else {
             // Java string can be malformed if LATIN1 is required.
             if ( this.charsetName != null && (this.charsetName.equals( "LATIN1" ) || this.charsetName.equals( "ISO-8859-1" )) ) {
@@ -207,7 +208,7 @@ public class NlsString implements Comparable<NlsString>, Cloneable, Externalizab
      * Returns a string the same as this but with spaces trimmed from the right.
      */
     public NlsString rtrim() {
-        String trimmed = SqlFunctions.rtrim( getValue() );
+        String trimmed = Functions.rtrim( getValue() );
         if ( !trimmed.equals( getValue() ) ) {
             return new NlsString( trimmed, charsetName, collation );
         }

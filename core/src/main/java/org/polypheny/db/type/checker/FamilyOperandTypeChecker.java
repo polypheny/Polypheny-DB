@@ -24,12 +24,10 @@ import java.util.List;
 import java.util.function.Predicate;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.core.CallBinding;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlCallBinding;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
@@ -67,7 +65,7 @@ public class FamilyOperandTypeChecker implements PolySingleOperandTypeChecker {
             // no need to check
             return true;
         }
-        if ( SqlUtil.isNullLiteral( node, false ) ) {
+        if ( CoreUtil.isNullLiteral( node, false ) ) {
             if ( throwOnFailure ) {
                 throw callBinding.getValidator().newValidationError( node, RESOURCE.nullIllegal() );
             } else {
@@ -100,7 +98,7 @@ public class FamilyOperandTypeChecker implements PolySingleOperandTypeChecker {
             return false;
         }
 
-        for ( Ord<SqlNode> op : Ord.zip( callBinding.operands() ) ) {
+        for ( Ord<Node> op : Ord.zip( callBinding.operands() ) ) {
             if ( !checkSingleOperandType( callBinding, op.e, op.i, throwOnFailure ) ) {
                 return false;
             }
@@ -122,7 +120,7 @@ public class FamilyOperandTypeChecker implements PolySingleOperandTypeChecker {
 
     @Override
     public String getAllowedSignatures( Operator op, String opName ) {
-        return SqlUtil.getAliasedSignature( op, opName, families );
+        return CoreUtil.getAliasedSignature( op, opName, families );
     }
 
 

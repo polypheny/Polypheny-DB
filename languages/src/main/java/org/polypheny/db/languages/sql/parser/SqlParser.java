@@ -22,6 +22,7 @@ import java.io.StringReader;
 import java.util.Objects;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
+import org.polypheny.db.core.ParseException;
 import org.polypheny.db.languages.sql.SqlBinaryOperator;
 import org.polypheny.db.core.Conformance;
 import org.polypheny.db.core.ConformanceEnum;
@@ -106,9 +107,9 @@ public class SqlParser {
     /**
      * Parses a SQL expression.
      *
-     * @throws SqlParseException if there is a parse error
+     * @throws ParseException if there is a parse error
      */
-    public SqlNode parseExpression() throws SqlParseException {
+    public SqlNode parseExpression() throws ParseException {
         try {
             return parser.parseSqlExpressionEof();
         } catch ( Throwable ex ) {
@@ -127,9 +128,9 @@ public class SqlParser {
      * Parses a <code>SELECT</code> statement.
      *
      * @return A {@link SqlSelect} for a regular <code>SELECT</code> statement; a {@link SqlBinaryOperator} for a <code>UNION</code>, <code>INTERSECT</code>, or <code>EXCEPT</code>.
-     * @throws SqlParseException if there is a parse error
+     * @throws ParseException if there is a parse error
      */
-    public SqlNode parseQuery() throws SqlParseException {
+    public SqlNode parseQuery() throws ParseException {
         try {
             return parser.parseSqlStmtEof();
         } catch ( Throwable ex ) {
@@ -149,9 +150,9 @@ public class SqlParser {
      *
      * @param sql sql to parse
      * @return A {@link SqlSelect} for a regular <code>SELECT</code> statement; a {@link SqlBinaryOperator} for a <code>UNION</code>, <code>INTERSECT</code>, or <code>EXCEPT</code>.
-     * @throws SqlParseException if there is a parse error
+     * @throws ParseException if there is a parse error
      */
-    public SqlNode parseQuery( String sql ) throws SqlParseException {
+    public SqlNode parseQuery( String sql ) throws ParseException {
         parser.ReInit( new StringReader( sql ) );
         return parseQuery();
     }
@@ -161,9 +162,9 @@ public class SqlParser {
      * Parses an SQL statement.
      *
      * @return top-level SqlNode representing stmt
-     * @throws SqlParseException if there is a parse error
+     * @throws ParseException if there is a parse error
      */
-    public SqlNode parseStmt() throws SqlParseException {
+    public SqlNode parseStmt() throws ParseException {
         return parseQuery();
     }
 

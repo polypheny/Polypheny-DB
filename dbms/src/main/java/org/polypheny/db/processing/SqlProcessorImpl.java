@@ -69,7 +69,7 @@ import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.languages.sql.parser.SqlParseException;
+import org.polypheny.db.core.ParseException;
 import org.polypheny.db.languages.sql.parser.SqlParser;
 import org.polypheny.db.languages.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.core.ParserPos;
@@ -126,7 +126,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         try {
             final SqlParser parser = SqlParser.create( new SourceStringReader( sql ), parserConfig );
             parsed = parser.parseStmt();
-        } catch ( SqlParseException e ) {
+        } catch ( ParseException e ) {
             log.error( "Caught exception", e );
             throw new RuntimeException( e );
         }

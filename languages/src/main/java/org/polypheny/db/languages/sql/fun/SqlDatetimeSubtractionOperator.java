@@ -54,7 +54,7 @@ public class SqlDatetimeSubtractionOperator extends SqlSpecialOperator {
 
 
     @Override
-    public SqlSyntax getSyntax() {
+    public SqlSyntax getSqlSyntax() {
         return SqlSyntax.SPECIAL;
     }
 

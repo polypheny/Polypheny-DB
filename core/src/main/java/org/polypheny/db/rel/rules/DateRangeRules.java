@@ -72,7 +72,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.runtime.SqlFunctions;
+import org.polypheny.db.runtime.Functions;
 import org.polypheny.db.sql.SqlBinaryOperator;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.tools.RelBuilder;
@@ -602,7 +602,7 @@ public abstract class DateRangeRules {
             switch ( timeLiteral.getTypeName() ) {
                 case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                     final TimeZone tz = TimeZone.getTimeZone( this.timeZone );
-                    return Util.calendar( SqlFunctions.timestampWithLocalTimeZoneToTimestamp( timeLiteral.getValueAs( Long.class ), tz ) );
+                    return Util.calendar( Functions.timestampWithLocalTimeZoneToTimestamp( timeLiteral.getValueAs( Long.class ), tz ) );
                 case TIMESTAMP:
                     return Util.calendar( timeLiteral.getValueAs( Long.class ) );
                 case DATE:

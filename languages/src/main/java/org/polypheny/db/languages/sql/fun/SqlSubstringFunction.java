@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -28,11 +29,10 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperatorBinding;
-import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
@@ -57,7 +57,7 @@ public class SqlSubstringFunction extends SqlFunction {
                 ReturnTypes.ARG0_NULLABLE_VARYING,
                 null,
                 null,
-                SqlFunctionCategory.STRING );
+                FunctionCategory.STRING );
     }
 
 
@@ -82,13 +82,13 @@ public class SqlSubstringFunction extends SqlFunction {
                 ret.append( NL );
             }
             ret.append(
-                    SqlUtil.getAliasedSignature(
+                    CoreUtil.getAliasedSignature(
                             this,
                             opName,
                             ImmutableList.of( typeName.e, PolyType.INTEGER ) ) );
             ret.append( NL );
             ret.append(
-                    SqlUtil.getAliasedSignature(
+                    CoreUtil.getAliasedSignature(
                             this,
                             opName,
                             ImmutableList.of( typeName.e, PolyType.INTEGER, PolyType.INTEGER ) ) );

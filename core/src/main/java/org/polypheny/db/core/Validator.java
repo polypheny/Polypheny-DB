@@ -19,6 +19,9 @@ package org.polypheny.db.core;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.runtime.PolyphenyDbContextException;
+import org.polypheny.db.runtime.Resources;
+import org.polypheny.db.runtime.Resources.ExInst;
 
 public interface Validator {
 
@@ -47,5 +50,17 @@ public interface Validator {
      * @return type factory
      */
     RelDataTypeFactory getTypeFactory();
+
+    /**
+     * Adds "line x, column y" context to a validator exception.
+     *
+     * Note that the input exception is checked (it derives from {@link Exception}) and the output exception is unchecked (it derives from {@link RuntimeException}). This is intentional -- it should remind code
+     * authors to provide context for their validation errors.
+     *
+     * @param node The place where the exception occurred, not null
+     * @param e The validation error
+     * @return Exception containing positional information, never null
+     */
+    <T extends Exception & ValidatorException> PolyphenyDbContextException newValidationError( Node node, Resources.ExInst<T> e );
 
 }

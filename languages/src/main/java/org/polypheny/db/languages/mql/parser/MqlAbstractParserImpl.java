@@ -30,7 +30,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.languages.mql.MqlNode;
 import org.polypheny.db.languages.sql.parser.SqlAbstractParserImpl;
-import org.polypheny.db.languages.sql.parser.SqlParseException;
+import org.polypheny.db.core.ParseException;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil;
 
 
@@ -55,7 +55,7 @@ public abstract class MqlAbstractParserImpl {
 
 
     /**
-     * Removes or transforms misleading information from a parse exception or error, and converts to {@link SqlParseException}.
+     * Removes or transforms misleading information from a parse exception or error, and converts to {@link ParseException}.
      *
      * @param ex dirty excn
      * @return clean excn
@@ -168,7 +168,7 @@ public abstract class MqlAbstractParserImpl {
             try {
                 Object o = virtualCall( parserImpl, name );
                 throw new AssertionError( "expected call to fail, got " + o );
-            } catch ( SqlParseException parseException ) {
+            } catch ( ParseException parseException ) {
                 // First time through, build the list of all tokens.
                 final String[] tokenImages = parseException.getTokenImages();
                 if ( tokenSet.isEmpty() ) {

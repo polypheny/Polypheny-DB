@@ -19,7 +19,7 @@ package org.polypheny.db.languages.sql.fun;
 
 import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.SqlSyntax;
@@ -39,12 +39,12 @@ public class SqlCurrentDateFunction extends SqlFunction {
                 ReturnTypes.DATE,
                 null,
                 OperandTypes.NILADIC,
-                SqlFunctionCategory.TIMEDATE );
+                FunctionCategory.TIMEDATE );
     }
 
 
     @Override
-    public SqlSyntax getSyntax() {
+    public SqlSyntax getSqlSyntax() {
         return SqlSyntax.FUNCTION_ID;
     }
 

@@ -25,7 +25,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlFunctionCategory;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlOperatorTable;
@@ -74,7 +74,7 @@ public abstract class ReflectiveSqlOperatorTable implements SqlOperatorTable {
 
     // implement SqlOperatorTable
     @Override
-    public void lookupOperatorOverloads( SqlIdentifier opName, SqlFunctionCategory category, SqlSyntax syntax, List<SqlOperator> operatorList ) {
+    public void lookupOperatorOverloads( SqlIdentifier opName, FunctionCategory category, SqlSyntax syntax, List<SqlOperator> operatorList ) {
         // NOTE jvs 3-Mar-2005:  ignore category until someone cares
 
         String simpleName;
@@ -95,7 +95,7 @@ public abstract class ReflectiveSqlOperatorTable implements SqlOperatorTable {
             return;
         }
         for ( SqlOperator op : list ) {
-            if ( op.getSyntax() == syntax ) {
+            if ( op.getSqlSyntax() == syntax ) {
                 operatorList.add( op );
             } else if ( syntax == SqlSyntax.FUNCTION && op instanceof SqlFunction ) {
                 // this special case is needed for operators like CAST, which are treated as functions but have special syntax
@@ -123,7 +123,7 @@ public abstract class ReflectiveSqlOperatorTable implements SqlOperatorTable {
      * Registers a function or operator in the table.
      */
     public void register( SqlOperator op ) {
-        operators.put( new Key( op.getName(), op.getSyntax() ), op );
+        operators.put( new Key( op.getName(), op.getSqlSyntax() ), op );
     }
 
 

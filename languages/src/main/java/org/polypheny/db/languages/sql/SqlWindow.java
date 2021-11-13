@@ -185,7 +185,7 @@ public class SqlWindow extends SqlCall implements Window {
 
 
     @Override
-    public void setOperand( int i, SqlNode operand ) {
+    public void setOperand( int i, Node operand ) {
         switch ( i ) {
             case 0:
                 this.declName = (SqlIdentifier) operand;
@@ -760,7 +760,7 @@ public class SqlWindow extends SqlCall implements Window {
 
 
         @Override
-        public SqlSyntax getSyntax() {
+        public SqlSyntax getSqlSyntax() {
             return SqlSyntax.SPECIAL;
         }
 
