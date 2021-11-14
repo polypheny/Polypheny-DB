@@ -24,6 +24,7 @@ import org.polypheny.db.config.Config;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlAlter;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -72,7 +73,7 @@ public class SqlAlterConfig extends SqlAlter {
 
 
     @Override
-    public void execute( Context context, Statement statement ) {
+    public void execute( Context context, Statement statement, QueryParameters parameters ) {
         String keyStr = key.toString();
         String valueStr = value.toString();
         if ( keyStr.startsWith( "'" ) ) {

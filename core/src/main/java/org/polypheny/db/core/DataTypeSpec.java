@@ -16,6 +16,29 @@
 
 package org.polypheny.db.core;
 
+import java.util.TimeZone;
+import org.polypheny.db.type.PolyType;
+
 public interface DataTypeSpec extends Visitable {
+
+    int getScale();
+
+    int getPrecision();
+
+    int getDimension();
+
+    int getCardinality();
+
+    String getCharSetName();
+
+    TimeZone getTimeZone();
+
+    Boolean getNullable();
+
+    Identifier getCollectionsTypeName();
+
+    PolyType getCollectionsType();
+
+    PolyType getType();
 
 }

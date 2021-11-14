@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql.validate;
+package org.polypheny.db.core;
 
 
 /**
  * Enumeration of types of monotonicity.
  */
-public enum SqlMonotonicity {
+public enum Monotonicity {
     STRICTLY_INCREASING,
     INCREASING,
     STRICTLY_DECREASING,
@@ -39,7 +39,7 @@ public enum SqlMonotonicity {
      *
      * @return non-strict equivalent monotonicity
      */
-    public SqlMonotonicity unstrict() {
+    public Monotonicity unstrict() {
         switch ( this ) {
             case STRICTLY_INCREASING:
                 return INCREASING;
@@ -56,7 +56,7 @@ public enum SqlMonotonicity {
      *
      * @return reverse monotonicity
      */
-    public SqlMonotonicity reverse() {
+    public Monotonicity reverse() {
         switch ( this ) {
             case STRICTLY_INCREASING:
                 return STRICTLY_DECREASING;

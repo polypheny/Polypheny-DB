@@ -22,23 +22,23 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
 import org.polypheny.db.core.CoreUtil;
-import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
-import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFamily;
+import org.polypheny.db.core.FunctionCategory;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.languages.sql.SqlBasicCall;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlDynamicParam;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlIntervalQualifier;
-import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.SqlSyntax;
 import org.polypheny.db.languages.sql.SqlWriter;
+import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFamily;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -170,11 +170,11 @@ public class SqlCastFunction extends SqlFunction {
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( SqlOperatorBinding call ) {
+    public Monotonicity getMonotonicity( SqlOperatorBinding call ) {
         RelDataTypeFamily castFrom = call.getOperandType( 0 ).getFamily();
         RelDataTypeFamily castTo = call.getOperandType( 1 ).getFamily();
         if ( castFrom instanceof PolyTypeFamily && castTo instanceof PolyTypeFamily && nonMonotonicCasts.containsEntry( castFrom, castTo ) ) {
-            return SqlMonotonicity.NOT_MONOTONIC;
+            return Monotonicity.NOT_MONOTONIC;
         } else {
             return call.getOperandMonotonicity( 0 );
         }

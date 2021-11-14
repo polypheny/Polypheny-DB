@@ -21,10 +21,12 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.core.Conformance;
 import org.polypheny.db.core.ConformanceEnum;
+import org.polypheny.db.core.Modality;
 import org.polypheny.db.core.Node;
-import org.polypheny.db.core.SqlValidatorException;
+import org.polypheny.db.core.NullCollation;
+import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.core.Validator;
-import org.polypheny.db.languages.sql.NullCollation;
+import org.polypheny.db.core.ValidatorCatalogReader;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDataTypeSpec;
 import org.polypheny.db.languages.sql.SqlDelete;
@@ -38,19 +40,15 @@ import org.polypheny.db.languages.sql.SqlMatchRecognize;
 import org.polypheny.db.languages.sql.SqlMerge;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
-import org.polypheny.db.languages.sql.SqlOperatorTable;
 import org.polypheny.db.languages.sql.SqlSelect;
 import org.polypheny.db.languages.sql.SqlUpdate;
 import org.polypheny.db.languages.sql.SqlWindow;
 import org.polypheny.db.languages.sql.SqlWith;
 import org.polypheny.db.languages.sql.SqlWithItem;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
-import org.polypheny.db.runtime.Resources;
 import org.polypheny.db.util.Glossary;
 import org.polypheny.db.util.Util;
-import sun.security.validator.ValidatorException;
 
 
 /**
@@ -106,14 +104,14 @@ public interface SqlValidator extends Validator {
      *
      * @return catalog reader
      */
-    SqlValidatorCatalogReader getCatalogReader();
+    ValidatorCatalogReader getCatalogReader();
 
     /**
      * Returns the operator table used by this validator.
      *
      * @return operator table
      */
-    SqlOperatorTable getOperatorTable();
+    OperatorTable getOperatorTable();
 
     /**
      * Validates an expression tree. You can call this method multiple times, but not reentrantly.
@@ -121,7 +119,7 @@ public interface SqlValidator extends Validator {
      * @param topNode top of expression tree to be validated
      * @return validated tree (possibly rewritten)
      */
-    SqlNode validate( SqlNode topNode );
+    SqlNode validateSql( SqlNode topNode );
 
     /**
      * Validates an expression tree. You can call this method multiple times, but not reentrantly.
@@ -150,14 +148,6 @@ public interface SqlValidator extends Validator {
      * @throws RuntimeException if the query is not valid
      */
     void validateQuery( SqlNode node, SqlValidatorScope scope, RelDataType targetRowType );
-
-    /**
-     * Returns the type assigned to a node by validation.
-     *
-     * @param node the node of interest
-     * @return validated type, never null
-     */
-    RelDataType getValidatedNodeType( SqlNode node );
 
     /**
      * Returns the type assigned to a node by validation, or null if unknown.
@@ -475,13 +465,6 @@ public interface SqlValidator extends Validator {
     String getParentCursor( String columnListParamName );
 
     /**
-     * Enables or disables expansion of identifiers other than column references.
-     *
-     * @param expandIdentifiers new setting
-     */
-    void setIdentifierExpansion( boolean expandIdentifiers );
-
-    /**
      * Enables or disables expansion of column references. (Currently this does not apply to the ORDER BY clause; may be fixed in the future.)
      *
      * @param expandColumnReferences new setting
@@ -492,11 +475,6 @@ public interface SqlValidator extends Validator {
      * @return whether column reference expansion is enabled
      */
     boolean getColumnReferenceExpansion();
-
-    /**
-     * Sets how NULL values should be collated if an ORDER BY item does not contain NULLS FIRST or NULLS LAST.
-     */
-    void setDefaultNullCollation( NullCollation nullCollation );
 
     /**
      * Returns how NULL values should be collated if an ORDER BY item does not contain NULLS FIRST or NULLS LAST.
@@ -565,26 +543,6 @@ public interface SqlValidator extends Validator {
     SqlNode expand( SqlNode expr, SqlValidatorScope scope );
 
     /**
-     * Returns a description of how each field in the row type maps to a catalog, schema, table and column in the schema.
-     *
-     * The returned list is never null, and has one element for each field in the row type. Each element is a list of four elements (catalog, schema, table, column), or may be null
-     * if the column is an expression.
-     *
-     * @param sqlQuery Query
-     * @return Description of how each field in the row type maps to a schema object
-     */
-    List<List<String>> getFieldOrigins( SqlNode sqlQuery );
-
-    /**
-     * Returns a record type that contains the name and type of each parameter.
-     * Returns a record type with no fields if there are no parameters.
-     *
-     * @param sqlQuery Query
-     * @return Record type
-     */
-    RelDataType getParameterRowType( SqlNode sqlQuery );
-
-    /**
      * Returns the scope of an OVER or VALUES node.
      *
      * @param node Node
@@ -600,7 +558,7 @@ public interface SqlValidator extends Validator {
      * @param fail Whether to throw a user error if does not support required modality
      * @return whether query supports the given modality
      */
-    boolean validateModality( SqlSelect select, SqlModality modality, boolean fail );
+    boolean validateModality( SqlSelect select, Modality modality, boolean fail );
 
     void validateWith( SqlWith with, SqlValidatorScope scope );
 

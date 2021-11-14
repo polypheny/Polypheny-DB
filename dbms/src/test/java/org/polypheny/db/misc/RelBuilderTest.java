@@ -43,11 +43,11 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.sql.SqlMatchRecognize;
-import org.polypheny.db.languages.sql.parser.SqlParser.SqlParserConfig;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.plan.RelTraitDef;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelDistributions;
@@ -135,7 +135,7 @@ public class RelBuilderTest {
     private RelBuilder createRelBuilder() {
         final SchemaPlus rootSchema = transaction.getSchema().plus();
         FrameworkConfig config = Frameworks.newConfigBuilder()
-                .parserConfig( SqlParserConfig.DEFAULT )
+                .parserConfig( Parser.ParserConfig.DEFAULT )
                 .defaultSchema( rootSchema.getSubSchema( transaction.getDefaultSchema().name ) )
                 .traitDefs( (List<RelTraitDef>) null )
                 .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) )

@@ -73,7 +73,7 @@ public class SqlRuntimeTester extends AbstractSqlTester {
         final SqlValidator validator = getValidator();
         if ( runtime ) {
             stage = SqlTests.Stage.RUNTIME;
-            SqlNode validated = validator.validate( sqlNode );
+            SqlNode validated = validator.validateSql( sqlNode );
             assertNotNull( validated );
             try {
                 check( sap.sql, SqlTests.ANY_TYPE_CHECKER, SqlTests.ANY_PARAMETER_CHECKER, SqlTests.ANY_RESULT_CHECKER );
@@ -84,7 +84,7 @@ public class SqlRuntimeTester extends AbstractSqlTester {
         } else {
             stage = SqlTests.Stage.VALIDATE;
             try {
-                validator.validate( sqlNode );
+                validator.validateSql( sqlNode );
             } catch ( Throwable ex ) {
                 thrown = ex;
             }

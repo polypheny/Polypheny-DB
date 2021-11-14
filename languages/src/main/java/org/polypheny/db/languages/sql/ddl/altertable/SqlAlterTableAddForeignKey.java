@@ -29,6 +29,7 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionException;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlIdentifier;
@@ -100,7 +101,7 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
 
 
     @Override
-    public void execute( Context context, Statement statement ) {
+    public void execute( Context context, Statement statement, QueryParameters parameters ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
         CatalogTable refTable = getCatalogTable( context, referencesTable );
 

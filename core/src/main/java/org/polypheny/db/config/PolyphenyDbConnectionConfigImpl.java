@@ -40,13 +40,14 @@ import java.util.Properties;
 import org.apache.calcite.avatica.ConnectionConfigImpl;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
+import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.sql.Lex;
 import org.polypheny.db.sql.NullCollation;
 import org.polypheny.db.sql.SqlOperatorTable;
 import org.polypheny.db.sql.fun.OracleSqlOperatorTable;
 import org.polypheny.db.sql.util.ChainedSqlOperatorTable;
-import org.polypheny.db.sql.validate.SqlConformance;
 import org.polypheny.db.sql.validate.SqlConformanceEnum;
 
 
@@ -82,7 +83,7 @@ public class PolyphenyDbConnectionConfigImpl extends ConnectionConfigImpl implem
         if ( fun == null || fun.equals( "" ) || fun.equals( "standard" ) ) {
             return defaultOperatorTable;
         }
-        final Collection<SqlOperatorTable> tables = new LinkedHashSet<>();
+        final Collection<OperatorTable> tables = new LinkedHashSet<>();
         for ( String s : fun.split( "," ) ) {
             operatorTable( s, tables );
         }
@@ -157,7 +158,7 @@ public class PolyphenyDbConnectionConfigImpl extends ConnectionConfigImpl implem
 
 
     @Override
-    public SqlConformance conformance() {
+    public Conformance conformance() {
         return PolyphenyDbConnectionProperty.CONFORMANCE.wrap( properties ).getEnum( SqlConformanceEnum.class );
     }
 

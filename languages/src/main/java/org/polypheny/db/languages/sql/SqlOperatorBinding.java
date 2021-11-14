@@ -17,9 +17,9 @@
 package org.polypheny.db.languages.sql;
 
 
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.OperatorBinding;
-import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.util.NlsString;
 
@@ -68,8 +68,8 @@ public abstract class SqlOperatorBinding extends OperatorBinding {
      * @param ordinal zero-based ordinal of operand of interest
      * @return monotonicity of operand
      */
-    public SqlMonotonicity getOperandMonotonicity( int ordinal ) {
-        return SqlMonotonicity.NOT_MONOTONIC;
+    public Monotonicity getOperandMonotonicity( int ordinal ) {
+        return Monotonicity.NOT_MONOTONIC;
     }
 
 

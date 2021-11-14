@@ -21,9 +21,10 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.core.SqlMoniker;
+import org.polypheny.db.core.ValidatorTable;
+import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.util.Util;
 
 
@@ -54,7 +55,7 @@ class SchemaNamespace extends AbstractNamespace {
         final RelDataTypeFactory.Builder builder = validator.getTypeFactory().builder();
         for ( SqlMoniker moniker : validator.catalogReader.getAllSchemaObjectNames( names ) ) {
             final List<String> names1 = moniker.getFullyQualifiedNames();
-            final SqlValidatorTable table = validator.catalogReader.getTable( names1 );
+            final ValidatorTable table = validator.catalogReader.getTable( names1 );
             builder.add( Util.last( names1 ), null, table.getRowType() );
         }
         return builder.build();

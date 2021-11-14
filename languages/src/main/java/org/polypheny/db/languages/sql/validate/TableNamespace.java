@@ -22,7 +22,12 @@ import com.google.common.collect.Iterables;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.polypheny.db.core.Monotonicity;
+import org.polypheny.db.core.ValidatorTable;
 import org.polypheny.db.core.ValidatorUtil;
+import org.polypheny.db.languages.sql.SqlIdentifier;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory.Builder;
@@ -30,9 +35,6 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.schema.ExtensibleTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.ModifiableViewTable;
-import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
 
@@ -42,21 +44,21 @@ import org.polypheny.db.util.Util;
  */
 class TableNamespace extends AbstractNamespace {
 
-    private final SqlValidatorTable table;
+    private final ValidatorTable table;
     public final ImmutableList<RelDataTypeField> extendedFields;
 
 
     /**
      * Creates a TableNamespace.
      */
-    private TableNamespace( SqlValidatorImpl validator, SqlValidatorTable table, List<RelDataTypeField> fields ) {
+    private TableNamespace( SqlValidatorImpl validator, ValidatorTable table, List<RelDataTypeField> fields ) {
         super( validator, null );
         this.table = Objects.requireNonNull( table );
         this.extendedFields = ImmutableList.copyOf( fields );
     }
 
 
-    TableNamespace( SqlValidatorImpl validator, SqlValidatorTable table ) {
+    TableNamespace( SqlValidatorImpl validator, ValidatorTable table ) {
         this( validator, table, ImmutableList.of() );
     }
 
@@ -81,14 +83,14 @@ class TableNamespace extends AbstractNamespace {
 
 
     @Override
-    public SqlValidatorTable getTable() {
+    public ValidatorTable getTable() {
         return table;
     }
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( String columnName ) {
-        final SqlValidatorTable table = getTable();
+    public Monotonicity getMonotonicity( String columnName ) {
+        final ValidatorTable table = getTable();
         return table.getMonotonicity( columnName );
     }
 
@@ -110,7 +112,7 @@ class TableNamespace extends AbstractNamespace {
         if ( schemaTable != null && table instanceof RelOptTable && (schemaTable instanceof ExtensibleTable || schemaTable instanceof ModifiableViewTable) ) {
             checkExtendedColumnTypes( extendList );
             final RelOptTable relOptTable = ((RelOptTable) table).extend( extendedFields );
-            final SqlValidatorTable validatorTable = relOptTable.unwrap( SqlValidatorTable.class );
+            final ValidatorTable validatorTable = relOptTable.unwrap( ValidatorTable.class );
             return new TableNamespace( validator, validatorTable, ImmutableList.of() );
         }
         return new TableNamespace( validator, table, extendedFields );

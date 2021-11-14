@@ -18,7 +18,7 @@ package org.polypheny.db.languages.sql;
 
 
 import org.polypheny.db.core.Kind;
-import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -80,7 +80,7 @@ public class SqlPrefixOperator extends SqlOperator {
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( SqlOperatorBinding call ) {
+    public Monotonicity getMonotonicity( SqlOperatorBinding call ) {
         if ( getName().equals( "-" ) ) {
             return call.getOperandMonotonicity( 0 ).reverse();
         }

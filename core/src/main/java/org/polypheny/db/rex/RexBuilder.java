@@ -59,6 +59,7 @@ import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.AggregateCall;
 import org.polypheny.db.rel.core.CorrelationId;
@@ -66,7 +67,6 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.runtime.FlatLists;
-import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.MapPolyType;
 import org.polypheny.db.type.MultisetPolyType;
@@ -92,7 +92,8 @@ public class RexBuilder {
      * Special operator that accesses an unadvertised field of an input record.
      * This operator cannot be used in SQL queries; it is introduced temporarily during sql-to-rel translation, then replaced during the process that trims unwanted fields.
      */
-    public static final Operator GET_OPERATOR = new SqlSpecialOperator( "_get", Kind.OTHER_FUNCTION );
+    public static final Operator GET_OPERATOR = LanguageManager.getInstance().createOperator( "_get", Kind.OTHER_FUNCTION );
+
 
     /**
      * The smallest valid {@code int} value, as a {@link BigDecimal}.

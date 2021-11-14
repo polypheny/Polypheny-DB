@@ -19,7 +19,9 @@ package org.polypheny.db.languages.sql.validate;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.ValidatorTable;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -112,7 +114,7 @@ public class SelectScope extends ListScope {
     }
 
 
-    public SqlValidatorTable getTable() {
+    public ValidatorTable getTable() {
         return null;
     }
 
@@ -145,9 +147,9 @@ public class SelectScope extends ListScope {
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( SqlNode expr ) {
-        SqlMonotonicity monotonicity = expr.getMonotonicity( this );
-        if ( monotonicity != SqlMonotonicity.NOT_MONOTONIC ) {
+    public Monotonicity getMonotonicity( SqlNode expr ) {
+        Monotonicity monotonicity = expr.getMonotonicity( this );
+        if ( monotonicity != Monotonicity.NOT_MONOTONIC ) {
             return monotonicity;
         }
 
@@ -155,7 +157,7 @@ public class SelectScope extends ListScope {
         final SqlNodeList orderList = getOrderList();
         if ( orderList.size() > 0 ) {
             SqlNode order0 = orderList.get( 0 );
-            monotonicity = SqlMonotonicity.INCREASING;
+            monotonicity = Monotonicity.INCREASING;
             if ( (order0 instanceof SqlCall) && (((SqlCall) order0).getOperator() == SqlStdOperatorTable.DESC) ) {
                 monotonicity = monotonicity.reverse();
                 order0 = ((SqlCall) order0).operand( 0 );
@@ -165,7 +167,7 @@ public class SelectScope extends ListScope {
             }
         }
 
-        return SqlMonotonicity.NOT_MONOTONIC;
+        return Monotonicity.NOT_MONOTONIC;
     }
 
 
@@ -176,7 +178,7 @@ public class SelectScope extends ListScope {
             orderList = new SqlNodeList( ParserPos.ZERO );
             if ( children.size() == 1 ) {
                 final SqlValidatorNamespace child = children.get( 0 ).namespace;
-                final List<Pair<SqlNode, SqlMonotonicity>> monotonicExprs = child.getMonotonicExprs();
+                final List<Pair<SqlNode, Monotonicity>> monotonicExprs = child.getMonotonicExprs();
                 if ( monotonicExprs.size() > 0 ) {
                     orderList.add( monotonicExprs.get( 0 ).left );
                 }

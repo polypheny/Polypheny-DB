@@ -28,6 +28,7 @@ import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.core.ExecutableStatement;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
@@ -38,7 +39,7 @@ import org.polypheny.db.languages.mql.Mql.Type;
 import org.polypheny.db.transaction.Statement;
 
 
-public class MqlCreateCollection extends MqlNode implements MqlExecutableStatement {
+public class MqlCreateCollection extends MqlNode implements ExecutableStatement {
 
     private final BsonDocument options;
     private final String name;

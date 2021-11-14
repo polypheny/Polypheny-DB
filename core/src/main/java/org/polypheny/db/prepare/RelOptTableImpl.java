@@ -45,7 +45,10 @@ import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.enumerable.EnumerableTableScan;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.core.AccessType;
 import org.polypheny.db.core.InitializerExpressionFactory;
+import org.polypheny.db.core.Modality;
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.NullInitializerExpressionFactory;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptSchema;
@@ -79,11 +82,6 @@ import org.polypheny.db.schema.StreamableTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.Wrapper;
-import org.polypheny.db.sql.SqlAccessType;
-import org.polypheny.db.sql.validate.SqlModality;
-import org.polypheny.db.sql.validate.SqlMonotonicity;
-import org.polypheny.db.sql2rel.InitializerExpressionFactory;
-import org.polypheny.db.sql2rel.NullInitializerExpressionFactory;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -362,7 +360,7 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
 
 
     @Override
-    public boolean supportsModality( SqlModality modality ) {
+    public boolean supportsModality( Modality modality ) {
         switch ( modality ) {
             case STREAM:
                 return table instanceof StreamableTable;
@@ -379,7 +377,7 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( String columnName ) {
+    public Monotonicity getMonotonicity( String columnName ) {
         for ( RelCollation collation : table.getStatistic().getCollations() ) {
             final RelFieldCollation fieldCollation = collation.getFieldCollations().get( 0 );
             final int fieldIndex = fieldCollation.getFieldIndex();
@@ -387,13 +385,13 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
                 return fieldCollation.direction.monotonicity();
             }
         }
-        return SqlMonotonicity.NOT_MONOTONIC;
+        return Monotonicity.NOT_MONOTONIC;
     }
 
 
     @Override
-    public SqlAccessType getAllowedAccess() {
-        return SqlAccessType.ALL;
+    public AccessType getAllowedAccess() {
+        return AccessType.ALL;
     }
 
 

@@ -20,14 +20,15 @@ package org.polypheny.db.languages.sql;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.SqlMoniker;
 import org.polypheny.db.languages.sql.dialect.AnsiSqlDialect;
 import org.polypheny.db.languages.sql.pretty.SqlPrettyWriter;
 import org.polypheny.db.languages.sql.util.SqlString;
-import org.polypheny.db.core.SqlMoniker;
-import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.Util;
@@ -64,6 +65,12 @@ public abstract class SqlNode implements Node {
     @SuppressWarnings("MethodDoesntCallSuperMethod")
     public Object clone() {
         return clone( getPos() );
+    }
+
+
+    @Override
+    public QueryLanguage getLanguage() {
+        return QueryLanguage.MONGOQL;
     }
 
 
@@ -196,12 +203,12 @@ public abstract class SqlNode implements Node {
      * Returns whether expression is always ascending, descending or constant.
      * This property is useful because it allows to safely aggregate infinite streams of values.
      *
-     * The default implementation returns {@link SqlMonotonicity#NOT_MONOTONIC}.
+     * The default implementation returns {@link Monotonicity#NOT_MONOTONIC}.
      *
      * @param scope Scope
      */
-    public SqlMonotonicity getMonotonicity( SqlValidatorScope scope ) {
-        return SqlMonotonicity.NOT_MONOTONIC;
+    public Monotonicity getMonotonicity( SqlValidatorScope scope ) {
+        return Monotonicity.NOT_MONOTONIC;
     }
 
 

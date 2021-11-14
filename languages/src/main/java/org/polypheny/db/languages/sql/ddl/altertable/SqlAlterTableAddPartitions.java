@@ -21,6 +21,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
@@ -28,8 +29,10 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
+import org.polypheny.db.core.Identifier;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.PartitionInformation;
 import org.polypheny.db.ddl.exception.PartitionGroupNamesNotUniqueException;
@@ -130,7 +133,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
 
 
     @Override
-    public void execute( Context context, Statement statement ) {
+    public void execute( Context context, Statement statement, QueryParameters parameters ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
 
         if ( catalogTable.tableType != TableType.TABLE ) {
@@ -141,14 +144,14 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
             // Check if table is already partitioned
             if ( catalogTable.partitionType == Catalog.PartitionType.NONE ) {
                 DdlManager.getInstance().addPartitioning(
-                        PartitionInformation.fromSqlLists(
+                        PartitionInformation.fromNodeLists(
                                 catalogTable,
                                 partitionType.getSimple(),
                                 partitionColumn.getSimple(),
-                                partitionGroupNamesList,
+                                partitionGroupNamesList.stream().map( n -> (Identifier) n ).collect( Collectors.toList() ),
                                 numPartitionGroups,
                                 numPartitions,
-                                partitionQualifierList,
+                                partitionQualifierList.stream().map( l -> l.stream().map( e -> (Node) e ).collect( Collectors.toList() ) ).collect( Collectors.toList() ),
                                 rawPartitionInformation ),
                         null,
                         statement );

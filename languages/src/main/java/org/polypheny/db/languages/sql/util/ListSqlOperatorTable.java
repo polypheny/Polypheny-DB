@@ -19,18 +19,18 @@ package org.polypheny.db.languages.sql.util;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.core.FunctionCategory;
+import org.polypheny.db.core.OperatorTable;
+import org.polypheny.db.core.Syntax;
+import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlOperator;
-import org.polypheny.db.languages.sql.SqlOperatorTable;
-import org.polypheny.db.languages.sql.SqlSyntax;
 
 
 /**
- * Implementation of the {@link SqlOperatorTable} interface by using a list of {@link SqlOperator operators}.
+ * Implementation of the {@link OperatorTable} interface by using a list of {@link SqlOperator operators}.
  */
-public class ListSqlOperatorTable implements SqlOperatorTable {
+public class ListSqlOperatorTable implements OperatorTable {
 
     private final List<SqlOperator> operatorList;
 
@@ -51,7 +51,7 @@ public class ListSqlOperatorTable implements SqlOperatorTable {
 
 
     @Override
-    public void lookupOperatorOverloads( SqlIdentifier opName, FunctionCategory category, SqlSyntax syntax, List<SqlOperator> operatorList ) {
+    public void lookupOperatorOverloads( SqlIdentifier opName, FunctionCategory category, Syntax syntax, List<SqlOperator> operatorList ) {
         for ( SqlOperator operator : this.operatorList ) {
             if ( operator.getSqlSyntax() != syntax ) {
                 continue;
@@ -77,7 +77,7 @@ public class ListSqlOperatorTable implements SqlOperatorTable {
 
 
     @Override
-    public List<SqlOperator> getOperatorList() {
+    public List<Operator> getOperatorList() {
         return operatorList;
     }
 }

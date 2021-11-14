@@ -35,9 +35,12 @@ import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.core.ExecutableStatement;
+import org.polypheny.db.core.Identifier;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.ColumnInformation;
 import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
@@ -47,7 +50,6 @@ import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.ddl.exception.PartitionGroupNamesNotUniqueException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlCreate;
-import org.polypheny.db.languages.sql.SqlExecutableStatement;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
@@ -65,7 +67,7 @@ import org.polypheny.db.util.Pair;
  * Parse tree for {@code CREATE TABLE} statement.
  */
 @Slf4j
-public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement {
+public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
 
     private final SqlIdentifier name;
     private final SqlNodeList columnList;
@@ -132,7 +134,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         name.unparse( writer, leftPrec, rightPrec );
         if ( columnList != null ) {
             SqlWriter.Frame frame = writer.startList( "(", ")" );
-            for ( SqlNode c : columnList ) {
+            for ( SqlNode c : columnList.getSqlList() ) {
                 writer.sep( "," );
                 c.unparse( writer, 0, 0 );
             }
@@ -188,7 +190,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
 
     @Override
-    public void execute( Context context, Statement statement ) {
+    public void execute( Context context, Statement statement, QueryParameters parameters ) {
         if ( query != null ) {
             throw new RuntimeException( "Not supported yet" );
         }
@@ -240,14 +242,14 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
             if ( partitionType != null ) {
                 DdlManager.getInstance().addPartitioning(
-                        PartitionInformation.fromSqlLists(
+                        PartitionInformation.fromNodeLists(
                                 getCatalogTable( context, new SqlIdentifier( tableName, ParserPos.ZERO ) ),
                                 partitionType.getSimple(),
                                 partitionColumn.getSimple(),
-                                partitionGroupNamesList,
+                                partitionGroupNamesList.stream().map( n -> (Identifier) n ).collect( Collectors.toList() ),
                                 numPartitionGroups,
                                 numPartitions,
-                                partitionQualifierList,
+                                partitionQualifierList.stream().map( l -> l.stream().map( e -> (Node) e ).collect( Collectors.toList() ) ).collect( Collectors.toList() ), // TODO DL, there needs to be a better way...
                                 rawPartitionInfo ),
                         stores,
                         statement );
@@ -273,7 +275,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         List<ConstraintInformation> constraintInformation = new ArrayList<>();
 
         int position = 1;
-        for ( Ord<SqlNode> c : Ord.zip( columnList ) ) {
+        for ( Ord<SqlNode> c : Ord.zip( columnList.getSqlList() ) ) {
             if ( c.e instanceof SqlColumnDeclaration ) {
                 final SqlColumnDeclaration columnDeclaration = (SqlColumnDeclaration) c.e;
 
@@ -282,7 +284,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 columnInformation.add(
                         new ColumnInformation(
                                 columnDeclaration.getName().getSimple(),
-                                ColumnTypeInformation.fromSqlDataTypeSpec( columnDeclaration.getDataType() ),
+                                ColumnTypeInformation.fromDataTypeSpec( columnDeclaration.getDataType() ),
                                 columnDeclaration.getCollation(),
                                 defaultValue,
                                 position ) );
@@ -294,7 +296,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 ConstraintInformation ci = new ConstraintInformation(
                         constraintName,
                         constraint.getConstraintType(),
-                        constraint.getColumnList().getList().stream()
+                        constraint.getColumnList().getSqlList().stream()
                                 .map( SqlNode::toString )
                                 .collect( Collectors.toList() )
                 );

@@ -17,10 +17,10 @@
 package org.polypheny.db.languages.sql.fun;
 
 
-import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
-import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Monotonicity;
+import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.SqlSyntax;
 import org.polypheny.db.type.checker.OperandTypes;
@@ -50,8 +50,8 @@ public class SqlCurrentDateFunction extends SqlFunction {
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( SqlOperatorBinding call ) {
-        return SqlMonotonicity.INCREASING;
+    public Monotonicity getMonotonicity( SqlOperatorBinding call ) {
+        return Monotonicity.INCREASING;
     }
 
 

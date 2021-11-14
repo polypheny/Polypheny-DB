@@ -17,10 +17,10 @@
 package org.polypheny.db.languages.sql.fun;
 
 
-import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
-import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Monotonicity;
+import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
@@ -39,7 +39,7 @@ public class SqlMonotonicUnaryFunction extends SqlFunction {
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( SqlOperatorBinding call ) {
+    public Monotonicity getMonotonicity( SqlOperatorBinding call ) {
         return call.getOperandMonotonicity( 0 ).unstrict();
     }
 }

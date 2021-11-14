@@ -62,24 +62,24 @@ import org.polypheny.db.adapter.jdbc.JdbcImplementor;
 import org.polypheny.db.adapter.jdbc.JdbcRel;
 import org.polypheny.db.adapter.jdbc.JdbcRules;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.core.ChainedOperatorTable;
 import org.polypheny.db.core.ExplainFormat;
 import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Lex;
+import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.core.ParseException;
 import org.polypheny.db.interpreter.Node;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
-import org.polypheny.db.languages.sql.Lex;
+import org.polypheny.db.languages.Parser;
+import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDialect;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlOperatorTable;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.languages.sql.parser.SqlParser;
-import org.polypheny.db.languages.sql.parser.SqlParser.SqlParserConfig;
-import org.polypheny.db.languages.sql.util.ChainedSqlOperatorTable;
 import org.polypheny.db.languages.sql.util.ListSqlOperatorTable;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -156,14 +156,14 @@ public class PlannerTest {
 
     @Test(expected = ParseException.class)
     public void testParseIdentiferMaxLengthWithDefault() throws Exception {
-        Planner planner = getPlanner( null, SqlParser.configBuilder().build() );
+        Planner planner = getPlanner( null, Parser.configBuilder().build() );
         planner.parse( "select name as " + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa from \"emps\"" );
     }
 
 
     @Test
     public void testParseIdentiferMaxLengthWithIncreased() throws Exception {
-        Planner planner = getPlanner( null, SqlParser.configBuilder().setIdentifierMaxLength( 512 ).build() );
+        Planner planner = getPlanner( null, Parser.configBuilder().setIdentifierMaxLength( 512 ).build() );
         planner.parse( "select name as " + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa from \"emps\"" );
     }
 
@@ -230,7 +230,7 @@ public class PlannerTest {
                 .add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
 
         final SqlStdOperatorTable stdOpTab = SqlStdOperatorTable.instance();
-        SqlOperatorTable opTab = ChainedSqlOperatorTable.of( stdOpTab, new ListSqlOperatorTable( ImmutableList.of( new MyCountAggFunction() ) ) );
+        OperatorTable opTab = ChainedOperatorTable.of( stdOpTab, new ListSqlOperatorTable( ImmutableList.of( new MyCountAggFunction() ) ) );
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .defaultSchema( schema )
                 .operatorTable( opTab )
@@ -274,11 +274,11 @@ public class PlannerTest {
 
 
     private Planner getPlanner( List<RelTraitDef> traitDefs, Program... programs ) {
-        return getPlanner( traitDefs, SqlParserConfig.DEFAULT, programs );
+        return getPlanner( traitDefs, Parser.ParserConfig.DEFAULT, programs );
     }
 
 
-    private Planner getPlanner( List<RelTraitDef> traitDefs, SqlParserConfig parserConfig, Program... programs ) {
+    private Planner getPlanner( List<RelTraitDef> traitDefs, ParserConfig parserConfig, Program... programs ) {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
                 .add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
@@ -556,7 +556,7 @@ public class PlannerTest {
     // "Redundant throws: 'RelConversionException' listed more then one time"
     private void runDuplicateSortCheck( String sql, String plan ) throws Exception {
         RuleSet ruleSet = RuleSets.ofList( SortRemoveRule.INSTANCE, EnumerableRules.ENUMERABLE_PROJECT_RULE, EnumerableRules.ENUMERABLE_WINDOW_RULE, EnumerableRules.ENUMERABLE_SORT_RULE, ProjectToWindowRule.PROJECT );
-        Planner planner = getPlanner( null, SqlParser.configBuilder().setLex( Lex.JAVA ).build(), Programs.of( ruleSet ) );
+        Planner planner = getPlanner( null, Parser.configBuilder().setLex( Lex.JAVA ).build(), Programs.of( ruleSet ) );
         Node parse = planner.parse( sql );
         Node validate = planner.validate( parse );
         RelNode convert = planner.rel( validate ).rel;
@@ -1017,7 +1017,7 @@ public class PlannerTest {
         final SchemaPlus schema = Frameworks.createRootSchema( false ).add( "foodmart", new ReflectiveSchema( new FoodmartSchema() ), SchemaType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
-                .parserConfig( SqlParserConfig.DEFAULT )
+                .parserConfig( Parser.ParserConfig.DEFAULT )
                 .defaultSchema( schema )
                 .traitDefs( (List<RelTraitDef>) null )
                 .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) )
@@ -1149,7 +1149,7 @@ public class PlannerTest {
         final SchemaPlus schema = Frameworks.createRootSchema( false ).add( "tpch", new ReflectiveSchema( new TpchSchema() ), SchemaType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
-                .parserConfig( SqlParser.configBuilder().setLex( Lex.MYSQL ).build() )
+                .parserConfig( Parser.configBuilder().setLex( Lex.MYSQL ).build() )
                 .defaultSchema( schema )
                 .programs( Programs.ofRules( Programs.RULE_SET ) )
                 .prepareContext( new ContextImpl(
@@ -1216,7 +1216,7 @@ public class PlannerTest {
         List<RelTraitDef> traitDefs = new ArrayList<>();
         traitDefs.add( ConventionTraitDef.INSTANCE );
         traitDefs.add( RelCollationTraitDef.INSTANCE );
-        final SqlParserConfig parserConfig = SqlParser.configBuilder().setLex( Lex.MYSQL ).build();
+        final ParserConfig parserConfig = Parser.configBuilder().setLex( Lex.MYSQL ).build();
         FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
                 .defaultSchema( schema )

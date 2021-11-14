@@ -23,6 +23,7 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.core.ExecutableStatement;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
@@ -32,7 +33,7 @@ import org.polypheny.db.languages.mql.Mql.Type;
 import org.polypheny.db.transaction.Statement;
 
 
-public class MqlRenameCollection extends MqlCollectionStatement implements MqlExecutableStatement {
+public class MqlRenameCollection extends MqlCollectionStatement implements ExecutableStatement {
 
     private final String newName;
     private final boolean dropTarget;

@@ -18,6 +18,7 @@ package org.polypheny.db.core;
 
 import java.util.List;
 import java.util.Set;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.util.Litmus;
 
 public interface Node extends Cloneable, Visitable {
@@ -72,6 +73,8 @@ public interface Node extends Cloneable, Visitable {
     Node clone( ParserPos pos );
 
     Kind getKind();
+
+    QueryLanguage getLanguage();
 
     boolean isA( Set<Kind> category );
 

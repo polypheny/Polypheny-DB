@@ -14,18 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql;
-
-
-import org.polypheny.db.jdbc.Context;
-import org.polypheny.db.transaction.Statement;
+package org.polypheny.db.core;
 
 
 /**
- * Mix-in interface for {@link SqlNode} that allows DDL commands to be executed directly.
+ * Relational or streaming.
  */
-public interface SqlExecutableStatement {
-
-    void execute( Context context, Statement statement );
-
+public enum Modality {
+    RELATION,
+    STREAM
 }
+

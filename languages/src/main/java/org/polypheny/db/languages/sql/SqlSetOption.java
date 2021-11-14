@@ -26,6 +26,7 @@ import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
@@ -179,7 +180,7 @@ public class SqlSetOption extends SqlAlter {
 
     @Override
     public void validate( SqlValidator validator, SqlValidatorScope scope ) {
-        validator.validate( value );
+        validator.validateSql( value );
     }
 
 
@@ -204,7 +205,7 @@ public class SqlSetOption extends SqlAlter {
 
 
     @Override
-    public void execute( Context context, Statement statement ) {
+    public void execute( Context context, Statement statement, QueryParameters parameters ) {
         DdlManager.getInstance().setOption();
     }
 

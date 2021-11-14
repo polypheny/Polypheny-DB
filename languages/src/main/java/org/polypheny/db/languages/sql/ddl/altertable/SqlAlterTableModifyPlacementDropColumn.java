@@ -26,6 +26,7 @@ import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.ddl.exception.IndexPreventsRemovalException;
@@ -82,7 +83,7 @@ public class SqlAlterTableModifyPlacementDropColumn extends SqlAlterTable {
 
 
     @Override
-    public void execute( Context context, Statement statement ) {
+    public void execute( Context context, Statement statement, QueryParameters parameters ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
         DataStore storeInstance = getDataStoreInstance( storeName );
 

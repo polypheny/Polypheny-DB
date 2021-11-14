@@ -23,11 +23,11 @@ import java.util.List;
 import org.polypheny.db.core.Call;
 import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeVisitor;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.SqlMoniker;
-import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -177,7 +177,7 @@ public abstract class SqlCall extends SqlNode implements Call {
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( SqlValidatorScope scope ) {
+    public Monotonicity getMonotonicity( SqlValidatorScope scope ) {
         // Delegate to operator.
         final SqlCallBinding binding = new SqlCallBinding( scope.getValidator(), scope, this );
         return ((SqlOperator) getOperator()).getMonotonicity( binding );

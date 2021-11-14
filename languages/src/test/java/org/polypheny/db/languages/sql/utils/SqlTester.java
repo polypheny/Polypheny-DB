@@ -21,12 +21,12 @@ import java.sql.ResultSet;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.polypheny.db.core.Conformance;
-import org.polypheny.db.languages.sql.Lex;
+import org.polypheny.db.core.Lex;
+import org.polypheny.db.core.Monotonicity;
+import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.languages.sql.SqlOperator;
-import org.polypheny.db.languages.sql.SqlOperatorTable;
 import org.polypheny.db.languages.sql.SqlTestFactory;
 import org.polypheny.db.languages.sql.utils.SqlValidatorTestCase.Tester;
-import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.rel.type.RelDataType;
 
 
@@ -90,7 +90,7 @@ public interface SqlTester extends AutoCloseable, Tester {
     /**
      * Returns a tester that uses a given operator table.
      */
-    SqlTester withOperatorTable( SqlOperatorTable operatorTable );
+    SqlTester withOperatorTable( OperatorTable operatorTable );
 
     /**
      * Tests that a scalar SQL expression returns the expected result and the expected type. For example,
@@ -230,7 +230,7 @@ public interface SqlTester extends AutoCloseable, Tester {
      * @param expectedMonotonicity Expected monotonicity
      * @param query SQL query
      */
-    void checkMonotonic( String query, SqlMonotonicity expectedMonotonicity );
+    void checkMonotonic( String query, Monotonicity expectedMonotonicity );
 
     /**
      * Declares that this test is for a given operator. So we can check that all operators are tested.

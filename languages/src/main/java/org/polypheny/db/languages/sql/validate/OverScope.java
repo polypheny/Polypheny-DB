@@ -18,6 +18,7 @@ package org.polypheny.db.languages.sql.validate;
 
 
 import java.util.List;
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.util.Litmus;
@@ -65,16 +66,16 @@ public class OverScope extends ListScope {
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( SqlNode expr ) {
-        SqlMonotonicity monotonicity = expr.getMonotonicity( this );
-        if ( monotonicity != SqlMonotonicity.NOT_MONOTONIC ) {
+    public Monotonicity getMonotonicity( SqlNode expr ) {
+        Monotonicity monotonicity = expr.getMonotonicity( this );
+        if ( monotonicity != Monotonicity.NOT_MONOTONIC ) {
             return monotonicity;
         }
 
         if ( children.size() == 1 ) {
             final SqlValidatorNamespace child = children.get( 0 ).namespace;
-            final List<Pair<SqlNode, SqlMonotonicity>> monotonicExprs = child.getMonotonicExprs();
-            for ( Pair<SqlNode, SqlMonotonicity> pair : monotonicExprs ) {
+            final List<Pair<SqlNode, Monotonicity>> monotonicExprs = child.getMonotonicExprs();
+            for ( Pair<SqlNode, Monotonicity> pair : monotonicExprs ) {
                 if ( expr.equalsDeep( pair.left, Litmus.IGNORE ) ) {
                     return pair.right;
                 }

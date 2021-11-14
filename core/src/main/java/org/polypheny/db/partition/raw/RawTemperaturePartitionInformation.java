@@ -19,25 +19,25 @@ package org.polypheny.db.partition.raw;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.core.Identifier;
+import org.polypheny.db.core.Node;
 
 
 @Getter
 @Setter
 public class RawTemperaturePartitionInformation extends RawPartitionInformation {
 
-    public SqlIdentifier internalPartitionFunction;
-    public SqlIdentifier accessPattern;
+    public Identifier internalPartitionFunction;
+    public Identifier accessPattern;
 
     public long interval;
-    public SqlIdentifier intervalUnit; // minutes | hours | days
+    public Identifier intervalUnit; // minutes | hours | days
 
-    public List<SqlIdentifier> partitionNamesList;
-    public List<List<SqlNode>> partitionQualifierList;
+    public List<Identifier> partitionNamesList;
+    public List<List<Node>> partitionQualifierList;
 
-    private SqlNode hotAccessPercentageIn;
-    private SqlNode hotAccessPercentageOut;
+    private Node hotAccessPercentageIn;
+    private Node hotAccessPercentageOut;
 
     public long numPartitionGroups;
 

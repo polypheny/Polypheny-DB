@@ -14,31 +14,26 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql.util;
+package org.polypheny.db.core;
 
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.core.FunctionCategory;
-import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.languages.sql.SqlOperator;
-import org.polypheny.db.languages.sql.SqlOperatorTable;
-import org.polypheny.db.languages.sql.SqlSyntax;
 
 
 /**
- * ChainedSqlOperatorTable implements the {@link SqlOperatorTable} interface by chaining together any number of underlying operator table instances.
+ * ChainedSqlOperatorTable implements the {@link OperatorTable} interface by chaining together any number of underlying operator table instances.
  */
-public class ChainedSqlOperatorTable implements SqlOperatorTable {
+public class ChainedOperatorTable implements OperatorTable {
 
-    protected final List<SqlOperatorTable> tableList;
+    protected final List<OperatorTable> tableList;
 
 
     /**
      * Creates a table based on a given list.
      */
-    public ChainedSqlOperatorTable( List<SqlOperatorTable> tableList ) {
+    public ChainedOperatorTable( List<OperatorTable> tableList ) {
         this.tableList = ImmutableList.copyOf( tableList );
     }
 
@@ -46,8 +41,8 @@ public class ChainedSqlOperatorTable implements SqlOperatorTable {
     /**
      * Creates a {@code ChainedSqlOperatorTable}.
      */
-    public static SqlOperatorTable of( SqlOperatorTable... tables ) {
-        return new ChainedSqlOperatorTable( ImmutableList.copyOf( tables ) );
+    public static OperatorTable of( OperatorTable... tables ) {
+        return new ChainedOperatorTable( ImmutableList.copyOf( tables ) );
     }
 
 
@@ -56,7 +51,7 @@ public class ChainedSqlOperatorTable implements SqlOperatorTable {
      *
      * @param table table to add
      */
-    public void add( SqlOperatorTable table ) {
+    public void add( OperatorTable table ) {
         if ( !tableList.contains( table ) ) {
             tableList.add( table );
         }
@@ -64,20 +59,21 @@ public class ChainedSqlOperatorTable implements SqlOperatorTable {
 
 
     @Override
-    public void lookupOperatorOverloads( SqlIdentifier opName, FunctionCategory category, SqlSyntax syntax, List<SqlOperator> operatorList ) {
-        for ( SqlOperatorTable table : tableList ) {
+    public void lookupOperatorOverloads( Identifier opName, FunctionCategory category, Syntax syntax, List<Operator> operatorList ) {
+        for ( OperatorTable table : tableList ) {
             table.lookupOperatorOverloads( opName, category, syntax, operatorList );
         }
     }
 
 
     @Override
-    public List<SqlOperator> getOperatorList() {
-        List<SqlOperator> list = new ArrayList<>();
-        for ( SqlOperatorTable table : tableList ) {
+    public List<Operator> getOperatorList() {
+        List<Operator> list = new ArrayList<>();
+        for ( OperatorTable table : tableList ) {
             list.addAll( table.getOperatorList() );
         }
         return list;
     }
+
 }
 

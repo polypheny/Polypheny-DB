@@ -17,13 +17,14 @@
 package org.polypheny.db.languages.sql;
 
 
+import org.polypheny.db.core.ExecutableStatement;
 import org.polypheny.db.core.ParserPos;
 
 
 /**
  * Base class for an ALTER statements parse tree nodes.
  */
-public abstract class SqlAlter extends SqlDdl implements SqlExecutableStatement {
+public abstract class SqlAlter extends SqlDdl implements ExecutableStatement {
 
     /**
      * Creates a SqlDdl.

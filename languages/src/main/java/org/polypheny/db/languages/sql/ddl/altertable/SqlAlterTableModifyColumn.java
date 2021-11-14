@@ -27,6 +27,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
@@ -136,7 +137,7 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
 
 
     @Override
-    public void execute( Context context, Statement statement ) {
+    public void execute( Context context, Statement statement, QueryParameters parameters ) {
         CatalogTable catalogTable = getCatalogTable( context, tableName );
 
         if ( catalogTable.tableType != TableType.TABLE ) {
@@ -145,7 +146,7 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
 
         try {
             if ( type != null ) {
-                DdlManager.getInstance().setColumnType( catalogTable, columnName.getSimple(), ColumnTypeInformation.fromSqlDataTypeSpec( type ), statement );
+                DdlManager.getInstance().setColumnType( catalogTable, columnName.getSimple(), ColumnTypeInformation.fromDataTypeSpec( type ), statement );
             } else if ( nullable != null ) {
                 DdlManager.getInstance().setColumnNullable( catalogTable, columnName.getSimple(), nullable, statement );
             } else if ( beforeColumn != null || afterColumn != null ) {

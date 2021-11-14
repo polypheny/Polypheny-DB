@@ -27,13 +27,13 @@ import org.polypheny.db.core.Call;
 import org.polypheny.db.core.CallBinding;
 import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.SqlValidatorException;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.validate.SelectScope;
-import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorNamespace;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -180,7 +180,7 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
 
 
     @Override
-    public SqlMonotonicity getOperandMonotonicity( int ordinal ) {
+    public Monotonicity getOperandMonotonicity( int ordinal ) {
         return ((SqlNode) call.getOperandList().get( ordinal )).getMonotonicity( scope );
     }
 

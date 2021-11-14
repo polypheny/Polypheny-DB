@@ -61,16 +61,21 @@ import org.polypheny.db.core.JoinConditionType;
 import org.polypheny.db.core.JoinType;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.Monotonicity;
+import org.polypheny.db.core.NameMatcher;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeList;
 import org.polypheny.db.core.NodeVisitor;
 import org.polypheny.db.core.NullInitializerExpressionFactory;
+import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.RelDecorrelator;
 import org.polypheny.db.core.RelFieldTrimmer;
 import org.polypheny.db.core.RelStructuredTypeFlattener;
 import org.polypheny.db.core.SemiJoinType;
+import org.polypheny.db.core.ValidatorTable;
 import org.polypheny.db.core.ValidatorUtil;
+import org.polypheny.db.languages.NodeToRelConverter;
 import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.languages.sql.SqlBasicCall;
 import org.polypheny.db.languages.sql.SqlCall;
@@ -89,7 +94,6 @@ import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlNumericLiteral;
 import org.polypheny.db.languages.sql.SqlOperator;
-import org.polypheny.db.languages.sql.SqlOperatorTable;
 import org.polypheny.db.languages.sql.SqlOrderBy;
 import org.polypheny.db.languages.sql.SqlSampleSpec;
 import org.polypheny.db.languages.sql.SqlSelect;
@@ -115,8 +119,6 @@ import org.polypheny.db.languages.sql.validate.ListScope;
 import org.polypheny.db.languages.sql.validate.MatchRecognizeScope;
 import org.polypheny.db.languages.sql.validate.ParameterScope;
 import org.polypheny.db.languages.sql.validate.SelectScope;
-import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
-import org.polypheny.db.core.NameMatcher;
 import org.polypheny.db.languages.sql.validate.SqlQualified;
 import org.polypheny.db.languages.sql.validate.SqlUserDefinedTableFunction;
 import org.polypheny.db.languages.sql.validate.SqlUserDefinedTableMacro;
@@ -124,7 +126,6 @@ import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.languages.sql.validate.SqlValidatorNamespace;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.languages.sql.validate.SqlValidatorTable;
 import org.polypheny.db.languages.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
@@ -205,7 +206,6 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.tools.RelBuilder;
-import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
@@ -226,16 +226,11 @@ import org.slf4j.Logger;
  *
  * The public entry points are: {@link #convertQuery}, {@link #convertExpression(SqlNode)}.
  */
-public class SqlToRelConverter {
+public class SqlToRelConverter implements NodeToRelConverter {
 
     protected static final Logger SQL2REL_LOGGER = PolyphenyDbTrace.getSqlToRelTracer();
 
     private static final BigDecimal TWO = BigDecimal.valueOf( 2L );
-
-    /**
-     * Size of the smallest IN list that will be converted to a semijoin to a static table.
-     */
-    public static final int DEFAULT_IN_SUB_QUERY_THRESHOLD = 20;
 
     protected final SqlValidator validator;
     protected final RexBuilder rexBuilder;
@@ -244,11 +239,11 @@ public class SqlToRelConverter {
     private SubQueryConverter subQueryConverter;
     protected final List<RelNode> leaves = new ArrayList<>();
     private final List<SqlDynamicParam> dynamicParamSqlNodes = new ArrayList<>();
-    private final SqlOperatorTable opTab;
+    private final OperatorTable opTab;
     protected final RelDataTypeFactory typeFactory;
     private final SqlNodeToRexConverter exprConverter;
     private int explainParamCount;
-    public final SqlToRelConverter.Config config;
+    public final Config config;
     private final RelBuilder relBuilder;
 
     /**
@@ -284,7 +279,7 @@ public class SqlToRelConverter {
         this.cluster = Objects.requireNonNull( cluster );
         this.exprConverter = new SqlNodeToRexConverterImpl( convertletTable );
         this.explainParamCount = 0;
-        this.config = new ConfigBuilder().withConfig( config ).build();
+        this.config = (Config) new ConfigBuilder().withConfig( config ).build();
         this.relBuilder = config.getRelBuilderFactory().create( cluster, null );
     }
 
@@ -378,13 +373,14 @@ public class SqlToRelConverter {
      *
      * @param explainParamCount number of dynamic parameters in the statement
      */
+    @Override
     public void setDynamicParamCountInExplain( int explainParamCount ) {
         assert config.isExplain();
         this.explainParamCount = explainParamCount;
     }
 
 
-    private void checkConvertedType( SqlNode query, RelNode result ) {
+    private void checkConvertedType( Node query, RelNode result ) {
         if ( query.isA( Kind.DML ) ) {
             return;
         }
@@ -421,6 +417,7 @@ public class SqlToRelConverter {
     }
 
 
+    @Override
     public RelNode flattenTypes( RelNode rootRel, boolean restructure ) {
         RelStructuredTypeFlattener typeFlattener =
                 new RelStructuredTypeFlattener(
@@ -439,7 +436,8 @@ public class SqlToRelConverter {
      * @param rootRel Root relational expression
      * @return New root relational expression after decorrelation
      */
-    public RelNode decorrelate( SqlNode query, RelNode rootRel ) {
+    @Override
+    public RelNode decorrelate( Node query, RelNode rootRel ) {
         if ( !enableDecorrelation() ) {
             return rootRel;
         }
@@ -463,6 +461,7 @@ public class SqlToRelConverter {
      * @param rootRel Relational expression that is at the root of the tree
      * @return Trimmed relational expression
      */
+    @Override
     public RelNode trimUnusedFields( boolean ordered, RelNode rootRel ) {
         // Trim fields that are not used by their consumer.
         if ( isTrimUnusedFields() ) {
@@ -494,7 +493,8 @@ public class SqlToRelConverter {
      *
      * @return Field trimmer
      */
-    protected RelFieldTrimmer newFieldTrimmer() {
+    @Override
+    public RelFieldTrimmer newFieldTrimmer() {
         return new RelFieldTrimmer( validator, relBuilder );
     }
 
@@ -502,13 +502,15 @@ public class SqlToRelConverter {
     /**
      * Converts an unvalidated query's parse tree into a relational expression.
      *
-     * @param query Query to convert
+     * @param rawQuery Query to convert
      * @param needsValidation Whether to validate the query before converting; <code>false</code> if the query has already been validated.
      * @param top Whether the query is top-level, say if its result will become a JDBC result set; <code>false</code> if the query will be part of a view.
      */
-    public RelRoot convertQuery( SqlNode query, final boolean needsValidation, final boolean top ) {
+    @Override
+    public RelRoot convertQuery( Node rawQuery, final boolean needsValidation, final boolean top ) {
+        SqlNode query = (SqlNode) rawQuery;
         if ( needsValidation ) {
-            query = validator.validate( query );
+            query = validator.validateSql( query );
         }
 
         RelMetadataQuery.THREAD_PROVIDERS.set( JaninoRelMetadataProvider.of( cluster.getMetadataProvider() ) );
@@ -2085,7 +2087,7 @@ public class SqlToRelConverter {
         RelOptTable table = SqlValidatorUtil.getRelOptTable( fromNamespace, catalogReader, datasetName, usedDataset );
         if ( extendedColumns != null && extendedColumns.size() > 0 ) {
             assert table != null;
-            final SqlValidatorTable validatorTable = table.unwrap( SqlValidatorTable.class );
+            final ValidatorTable validatorTable = table.unwrap( ValidatorTable.class );
             final List<RelDataTypeField> extendedFields = SqlValidatorUtil.getExtendedColumns( validator.getTypeFactory(), validatorTable, extendedColumns );
             table = table.extend( extendedFields );
         }
@@ -2748,6 +2750,7 @@ public class SqlToRelConverter {
      *
      * @return Whether to trim unused fields
      */
+    @Override
     @Deprecated // to be removed before 2.0
     public boolean isTrimUnusedFields() {
         return config.isTrimUnusedFields();
@@ -3056,7 +3059,7 @@ public class SqlToRelConverter {
     }
 
 
-    private InitializerExpressionFactory getInitializerFactory( SqlValidatorTable validatorTable ) {
+    private InitializerExpressionFactory getInitializerFactory( ValidatorTable validatorTable ) {
         // We might unwrap a null instead of a InitializerExpressionFactory.
         final Table table = unwrap( validatorTable, Table.class );
         if ( table != null ) {
@@ -3494,7 +3497,7 @@ public class SqlToRelConverter {
         final Collection<String> aliases = new TreeSet<>();
 
         // Project any system fields. (Must be done before regular select items, because offsets may be affected.)
-        final List<SqlMonotonicity> columnMonotonicityList = new ArrayList<>();
+        final List<Monotonicity> columnMonotonicityList = new ArrayList<>();
         extraSelectItems(
                 bb,
                 select,
@@ -3542,7 +3545,7 @@ public class SqlToRelConverter {
      * @param aliasList Collection of aliases that have been used already
      * @param columnMonotonicityList List of monotonicity, one per column
      */
-    protected void extraSelectItems( Blackboard bb, SqlSelect select, List<RexNode> exprList, List<String> nameList, Collection<String> aliasList, List<SqlMonotonicity> columnMonotonicityList ) {
+    protected void extraSelectItems( Blackboard bb, SqlSelect select, List<RexNode> exprList, List<String> nameList, Collection<String> aliasList, List<Monotonicity> columnMonotonicityList ) {
     }
 
 
@@ -3676,7 +3679,7 @@ public class SqlToRelConverter {
          */
         private final Map<RelNode, Map<Integer, Integer>> mapRootRelToFieldProjection = new HashMap<>();
 
-        private final List<SqlMonotonicity> columnMonotonicities = new ArrayList<>();
+        private final List<Monotonicity> columnMonotonicities = new ArrayList<>();
 
         private final List<RelDataTypeField> systemFieldList = new ArrayList<>();
         final boolean top;
@@ -4317,7 +4320,7 @@ public class SqlToRelConverter {
         }
 
 
-        public List<SqlMonotonicity> getColumnMonotonicities() {
+        public List<Monotonicity> getColumnMonotonicities() {
             return columnMonotonicities;
         }
 
@@ -5085,245 +5088,6 @@ public class SqlToRelConverter {
 
     }
 
-
-    /**
-     * Creates a builder for a {@link Config}.
-     */
-    public static ConfigBuilder configBuilder() {
-        return new ConfigBuilder();
-    }
-
-
-    /**
-     * Interface to define the configuration for a SqlToRelConverter.
-     * Provides methods to set each configuration option.
-     *
-     * @see ConfigBuilder
-     * @see SqlToRelConverter#configBuilder()
-     */
-    public interface Config {
-
-        /**
-         * Default configuration.
-         */
-        Config DEFAULT = configBuilder().build();
-
-        /**
-         * Returns the {@code convertTableAccess} option. Controls whether table access references are converted to physical rels immediately. The optimizer doesn't like leaf rels to have {@link Convention#NONE}.
-         * However, if we are doing further conversion passes (e.g. {@link RelStructuredTypeFlattener}), then we may need to defer conversion.
-         */
-        boolean isConvertTableAccess();
-
-        /**
-         * Returns the {@code decorrelationEnabled} option. Controls whether to disable sub-query decorrelation when needed. e.g. if outer joins are not supported.
-         */
-        boolean isDecorrelationEnabled();
-
-        /**
-         * Returns the {@code trimUnusedFields} option. Controls whether to trim unused fields as part of the conversion process.
-         */
-        boolean isTrimUnusedFields();
-
-        /**
-         * Returns the {@code createValuesRel} option. Controls whether instances of {@link LogicalValues} are generated.
-         * These may not be supported by all physical implementations.
-         */
-        boolean isCreateValuesRel();
-
-        /**
-         * Returns the {@code explain} option. Describes whether the current statement is part of an EXPLAIN PLAN statement.
-         */
-        boolean isExplain();
-
-        /**
-         * Returns the {@code expand} option. Controls whether to expand sub-queries. If false, each sub-query becomes a {@link RexSubQuery}.
-         */
-        boolean isExpand();
-
-        /**
-         * Returns the {@code inSubQueryThreshold} option, default {@link #DEFAULT_IN_SUB_QUERY_THRESHOLD}. Controls the list size threshold under which {@link #convertInToOr} is used. Lists of this size
-         * or greater will instead be converted to use a join against an inline table ({@link LogicalValues}) rather than a predicate. A threshold of 0 forces usage of an inline table in all
-         * cases; a threshold of {@link Integer#MAX_VALUE} forces usage of OR in all cases.
-         */
-        int getInSubQueryThreshold();
-
-        /**
-         * Returns the factory to create {@link RelBuilder}, never null. Default is {@link RelFactories#LOGICAL_BUILDER}.
-         */
-        RelBuilderFactory getRelBuilderFactory();
-
-    }
-
-
-    /**
-     * Builder for a {@link Config}.
-     */
-    public static class ConfigBuilder {
-
-        private boolean convertTableAccess = true;
-        private boolean decorrelationEnabled = true;
-        private boolean trimUnusedFields = false;
-        private boolean createValuesRel = true;
-        private boolean explain;
-        private boolean expand = true;
-        private int inSubQueryThreshold = DEFAULT_IN_SUB_QUERY_THRESHOLD;
-        private RelBuilderFactory relBuilderFactory = RelFactories.LOGICAL_BUILDER;
-
-
-        private ConfigBuilder() {
-        }
-
-
-        /**
-         * Sets configuration identical to a given {@link Config}.
-         */
-        public ConfigBuilder withConfig( Config config ) {
-            this.convertTableAccess = config.isConvertTableAccess();
-            this.decorrelationEnabled = config.isDecorrelationEnabled();
-            this.trimUnusedFields = config.isTrimUnusedFields();
-            this.createValuesRel = config.isCreateValuesRel();
-            this.explain = config.isExplain();
-            this.expand = config.isExpand();
-            this.inSubQueryThreshold = config.getInSubQueryThreshold();
-            this.relBuilderFactory = config.getRelBuilderFactory();
-            return this;
-        }
-
-
-        public ConfigBuilder withConvertTableAccess( boolean convertTableAccess ) {
-            this.convertTableAccess = convertTableAccess;
-            return this;
-        }
-
-
-        public ConfigBuilder withDecorrelationEnabled( boolean enabled ) {
-            this.decorrelationEnabled = enabled;
-            return this;
-        }
-
-
-        public ConfigBuilder withTrimUnusedFields( boolean trimUnusedFields ) {
-            this.trimUnusedFields = trimUnusedFields;
-            return this;
-        }
-
-
-        public ConfigBuilder withCreateValuesRel( boolean createValuesRel ) {
-            this.createValuesRel = createValuesRel;
-            return this;
-        }
-
-
-        public ConfigBuilder withExplain( boolean explain ) {
-            this.explain = explain;
-            return this;
-        }
-
-
-        public ConfigBuilder withExpand( boolean expand ) {
-            this.expand = expand;
-            return this;
-        }
-
-
-        public ConfigBuilder withInSubQueryThreshold( int inSubQueryThreshold ) {
-            this.inSubQueryThreshold = inSubQueryThreshold;
-            return this;
-        }
-
-
-        public ConfigBuilder withRelBuilderFactory( RelBuilderFactory relBuilderFactory ) {
-            this.relBuilderFactory = relBuilderFactory;
-            return this;
-        }
-
-
-        /**
-         * Builds a {@link Config}.
-         */
-        public Config build() {
-            return new ConfigImpl( convertTableAccess, decorrelationEnabled, trimUnusedFields, createValuesRel, explain, expand, inSubQueryThreshold, relBuilderFactory );
-        }
-
-    }
-
-
-    /**
-     * Implementation of {@link Config}.
-     * Called by builder; all values are in private final fields.
-     */
-    private static class ConfigImpl implements Config {
-
-        private final boolean convertTableAccess;
-        private final boolean decorrelationEnabled;
-        private final boolean trimUnusedFields;
-        private final boolean createValuesRel;
-        private final boolean explain;
-        private final boolean expand;
-        private final int inSubQueryThreshold;
-        private final RelBuilderFactory relBuilderFactory;
-
-
-        private ConfigImpl( boolean convertTableAccess, boolean decorrelationEnabled, boolean trimUnusedFields, boolean createValuesRel, boolean explain, boolean expand, int inSubQueryThreshold, RelBuilderFactory relBuilderFactory ) {
-            this.convertTableAccess = convertTableAccess;
-            this.decorrelationEnabled = decorrelationEnabled;
-            this.trimUnusedFields = trimUnusedFields;
-            this.createValuesRel = createValuesRel;
-            this.explain = explain;
-            this.expand = expand;
-            this.inSubQueryThreshold = inSubQueryThreshold;
-            this.relBuilderFactory = relBuilderFactory;
-        }
-
-
-        @Override
-        public boolean isConvertTableAccess() {
-            return convertTableAccess;
-        }
-
-
-        @Override
-        public boolean isDecorrelationEnabled() {
-            return decorrelationEnabled;
-        }
-
-
-        @Override
-        public boolean isTrimUnusedFields() {
-            return trimUnusedFields;
-        }
-
-
-        @Override
-        public boolean isCreateValuesRel() {
-            return createValuesRel;
-        }
-
-
-        @Override
-        public boolean isExplain() {
-            return explain;
-        }
-
-
-        @Override
-        public boolean isExpand() {
-            return expand;
-        }
-
-
-        @Override
-        public int getInSubQueryThreshold() {
-            return inSubQueryThreshold;
-        }
-
-
-        @Override
-        public RelBuilderFactory getRelBuilderFactory() {
-            return relBuilderFactory;
-        }
-
-    }
 
 }
 

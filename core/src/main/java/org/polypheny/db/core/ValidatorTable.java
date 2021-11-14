@@ -14,21 +14,20 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql.validate;
+package org.polypheny.db.core;
 
 
 import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.schema.Wrapper;
-import org.polypheny.db.languages.sql.SqlAccessType;
 
 
 /**
- * Supplies a {@link SqlValidator} with the metadata for a table.
+ * Supplies a {@link Validator} with the metadata for a table.
  *
- * @see SqlValidatorCatalogReader
+ * #@see ValidatorCatalogReader
  */
-public interface SqlValidatorTable extends Wrapper {
+public interface ValidatorTable extends Wrapper {
 
 
     RelDataType getRowType();
@@ -38,14 +37,14 @@ public interface SqlValidatorTable extends Wrapper {
     /**
      * Returns whether a given column is monotonic.
      */
-    SqlMonotonicity getMonotonicity( String columnName );
+    Monotonicity getMonotonicity( String columnName );
 
     /**
      * Returns the access type of the table
      */
-    SqlAccessType getAllowedAccess();
+    AccessType getAllowedAccess();
 
-    boolean supportsModality( SqlModality modality );
+    boolean supportsModality( Modality modality );
 
 }
 

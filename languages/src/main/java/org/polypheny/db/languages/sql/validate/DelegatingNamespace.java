@@ -18,6 +18,8 @@ package org.polypheny.db.languages.sql.validate;
 
 
 import java.util.List;
+import org.polypheny.db.core.Monotonicity;
+import org.polypheny.db.core.ValidatorTable;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.util.Pair;
@@ -48,7 +50,7 @@ public abstract class DelegatingNamespace implements SqlValidatorNamespace {
 
 
     @Override
-    public SqlValidatorTable getTable() {
+    public ValidatorTable getTable() {
         return namespace.getTable();
     }
 
@@ -108,13 +110,13 @@ public abstract class DelegatingNamespace implements SqlValidatorNamespace {
 
 
     @Override
-    public List<Pair<SqlNode, SqlMonotonicity>> getMonotonicExprs() {
+    public List<Pair<SqlNode, Monotonicity>> getMonotonicExprs() {
         return namespace.getMonotonicExprs();
     }
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( String columnName ) {
+    public Monotonicity getMonotonicity( String columnName ) {
         return namespace.getMonotonicity( columnName );
     }
 

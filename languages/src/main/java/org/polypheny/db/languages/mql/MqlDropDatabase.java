@@ -18,6 +18,7 @@ package org.polypheny.db.languages.mql;
 
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.core.ExecutableStatement;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
@@ -28,7 +29,7 @@ import org.polypheny.db.languages.mql.Mql.Type;
 import org.polypheny.db.transaction.Statement;
 
 
-public class MqlDropDatabase extends MqlNode implements MqlExecutableStatement {
+public class MqlDropDatabase extends MqlNode implements ExecutableStatement {
 
     public MqlDropDatabase( ParserPos pos ) {
         super( pos );

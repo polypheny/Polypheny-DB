@@ -29,19 +29,20 @@ import static org.polypheny.db.languages.sql.fun.SqlStdOperatorTable.TUMBLE_STAR
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Modality;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.json.JsonConstructorNullClause;
 import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.languages.sql.SqlAsOperator;
 import org.polypheny.db.languages.sql.SqlBinaryOperator;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlFilterOperator;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlGroupedWindowFunction;
 import org.polypheny.db.languages.sql.SqlInternalOperator;
-import org.polypheny.db.core.json.JsonConstructorNullClause;
 import org.polypheny.db.languages.sql.SqlLateralOperator;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -51,14 +52,15 @@ import org.polypheny.db.languages.sql.SqlPostfixOperator;
 import org.polypheny.db.languages.sql.SqlPrefixOperator;
 import org.polypheny.db.languages.sql.SqlProcedureCallOperator;
 import org.polypheny.db.languages.sql.SqlRankFunction;
+import org.polypheny.db.languages.sql.SqlSampleSpec;
 import org.polypheny.db.languages.sql.SqlSetOperator;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlUnnestOperator;
 import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlValuesOperator;
+import org.polypheny.db.languages.sql.SqlWindow;
 import org.polypheny.db.languages.sql.SqlWithinGroupOperator;
 import org.polypheny.db.languages.sql.SqlWriter;
-import org.polypheny.db.languages.sql.validate.SqlModality;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
@@ -1144,7 +1146,7 @@ public class SqlRegisterer {
          *
          * This operator has function syntax (with one argument), whereas {@link #EXPLICIT_TABLE} is a prefix operator.
          */
-        register( "COLLECTION_TABLE", new SqlCollectionTableOperator( "TABLE", SqlModality.RELATION ) );
+        register( "COLLECTION_TABLE", new SqlCollectionTableOperator( "TABLE", Modality.RELATION ) );
 
         register( "OVERLAPS", new SqlOverlapsOperator( Kind.OVERLAPS ) );
 

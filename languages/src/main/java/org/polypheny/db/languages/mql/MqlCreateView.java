@@ -25,6 +25,7 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.core.ExecutableStatement;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
@@ -37,7 +38,7 @@ import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.transaction.Statement;
 
 
-public class MqlCreateView extends MqlNode implements MqlExecutableStatement {
+public class MqlCreateView extends MqlNode implements ExecutableStatement {
 
     private final String source;
     private final String name;

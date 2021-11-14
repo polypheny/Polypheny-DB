@@ -41,6 +41,10 @@ import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.core.DataTypeSpec;
+import org.polypheny.db.core.Identifier;
+import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.ddl.exception.AlterSourceException;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
@@ -59,10 +63,6 @@ import org.polypheny.db.partition.raw.RawPartitionInformation;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.sql.SqlDataTypeSpec;
-import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.SqlLiteral;
-import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.PolyType;
@@ -636,7 +636,7 @@ public abstract class DdlManager {
         }
 
 
-        public static ColumnTypeInformation fromSqlDataTypeSpec( SqlDataTypeSpec sqlDataType ) {
+        public static ColumnTypeInformation fromDataTypeSpec( DataTypeSpec sqlDataType ) {
             return new ColumnTypeInformation(
                     sqlDataType.getType(),
                     sqlDataType.getCollectionsType(),
@@ -682,18 +682,18 @@ public abstract class DdlManager {
         }
 
 
-        public static PartitionInformation fromSqlLists(
+        public static PartitionInformation fromNodeLists(
                 CatalogTable table,
                 String typeName,
                 String columnName,
-                List<SqlIdentifier> partitionGroupNames,
+                List<Identifier> partitionGroupNames,
                 int numberOfPartitionGroups,
                 int numberOfPartitions,
-                List<List<SqlNode>> partitionQualifierList,
+                List<List<Node>> partitionQualifierList,
                 RawPartitionInformation rawPartitionInformation ) {
             List<String> names = partitionGroupNames
                     .stream()
-                    .map( SqlIdentifier::getSimple )
+                    .map( Identifier::getSimple )
                     .collect( Collectors.toList() );
             List<List<String>> qualifiers = partitionQualifierList
                     .stream()
@@ -710,10 +710,10 @@ public abstract class DdlManager {
          * @param node Node to be modified
          * @return String
          */
-        public static String getValueOfSqlNode( SqlNode node ) {
+        public static String getValueOfSqlNode( Node node ) {
 
-            if ( node instanceof SqlLiteral ) {
-                return ((SqlLiteral) node).toValue();
+            if ( node instanceof Literal ) {
+                return ((Literal) node).toValue();
             }
             return node.toString();
         }

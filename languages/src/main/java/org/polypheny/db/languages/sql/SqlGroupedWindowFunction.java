@@ -20,9 +20,9 @@ package org.polypheny.db.languages.sql;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.FunctionCategory;
-import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
@@ -119,7 +119,7 @@ public class SqlGroupedWindowFunction extends SqlFunction {
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( SqlOperatorBinding call ) {
+    public Monotonicity getMonotonicity( SqlOperatorBinding call ) {
         // Monotonic iff its first argument is, but not strict.
         //
         // Note: This strategy happens to works for all current group functions (HOP, TUMBLE, SESSION). When there are exceptions to this rule, we'll make the method abstract.

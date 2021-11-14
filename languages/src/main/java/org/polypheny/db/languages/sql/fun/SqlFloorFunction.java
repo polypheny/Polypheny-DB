@@ -18,17 +18,17 @@ package org.polypheny.db.languages.sql.fun;
 
 
 import com.google.common.base.Preconditions;
-import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
-import org.polypheny.db.languages.sql.SqlCall;
-import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Monotonicity;
+import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
 
@@ -58,7 +58,7 @@ public class SqlFloorFunction extends SqlMonotonicUnaryFunction {
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( SqlOperatorBinding call ) {
+    public Monotonicity getMonotonicity( SqlOperatorBinding call ) {
         // Monotonic iff its first argument is, but not strict.
         return call.getOperandMonotonicity( 0 ).unstrict();
     }

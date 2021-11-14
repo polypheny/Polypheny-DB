@@ -20,17 +20,17 @@ package org.polypheny.db.languages.sql.advise;
 import java.util.HashSet;
 import java.util.Set;
 import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.Modality;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.ValidatorCatalogReader;
 import org.polypheny.db.core.ValidatorScope;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlOperatorTable;
 import org.polypheny.db.languages.sql.SqlSelect;
 import org.polypheny.db.languages.sql.validate.OverScope;
-import org.polypheny.db.languages.sql.validate.SqlModality;
-import org.polypheny.db.languages.sql.validate.SqlValidatorCatalogReader;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.languages.sql.validate.SqlValidatorNamespace;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -60,7 +60,7 @@ public class SqlAdvisorValidator extends SqlValidatorImpl {
      * @param typeFactory Type factory
      * @param conformance Compatibility mode
      */
-    public SqlAdvisorValidator( SqlOperatorTable opTab, SqlValidatorCatalogReader catalogReader, RelDataTypeFactory typeFactory, Conformance conformance ) {
+    public SqlAdvisorValidator( OperatorTable opTab, ValidatorCatalogReader catalogReader, RelDataTypeFactory typeFactory, Conformance conformance ) {
         super( opTab, catalogReader, typeFactory, conformance );
     }
 
@@ -189,7 +189,7 @@ public class SqlAdvisorValidator extends SqlValidatorImpl {
 
 
     @Override
-    public boolean validateModality( SqlSelect select, SqlModality modality, boolean fail ) {
+    public boolean validateModality( SqlSelect select, Modality modality, boolean fail ) {
         return true;
     }
 

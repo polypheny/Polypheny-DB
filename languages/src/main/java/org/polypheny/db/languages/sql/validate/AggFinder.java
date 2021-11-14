@@ -22,9 +22,9 @@ import java.util.Iterator;
 import java.util.List;
 import javax.annotation.Nonnull;
 import org.polypheny.db.core.Call;
+import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlOperatorTable;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.Util.FoundOne;
 
@@ -43,7 +43,7 @@ class AggFinder extends AggVisitor {
      * @param group Whether to find group functions (e.g. {@code TUMBLE})
      * @param delegate Finder to which to delegate when processing the arguments
      */
-    AggFinder( SqlOperatorTable opTab, boolean over, boolean aggregate, boolean group, AggFinder delegate ) {
+    AggFinder( OperatorTable opTab, boolean over, boolean aggregate, boolean group, AggFinder delegate ) {
         super( opTab, over, aggregate, group, delegate );
     }
 
@@ -104,7 +104,7 @@ class AggFinder extends AggVisitor {
         private final List<SqlCall> calls = new ArrayList<>();
 
 
-        AggIterable( SqlOperatorTable opTab, boolean over, boolean aggregate, boolean group, AggFinder delegate ) {
+        AggIterable( OperatorTable opTab, boolean over, boolean aggregate, boolean group, AggFinder delegate ) {
             super( opTab, over, aggregate, group, delegate );
         }
 

@@ -21,14 +21,15 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import org.polypheny.db.core.ExecutableStatement;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlDrop;
-import org.polypheny.db.languages.sql.SqlExecutableStatement;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
@@ -40,7 +41,7 @@ import org.polypheny.db.transaction.Statement;
 /**
  * Parse tree for {@code DROP SCHEMA} statement.
  */
-public class SqlDropSchema extends SqlDrop implements SqlExecutableStatement {
+public class SqlDropSchema extends SqlDrop implements ExecutableStatement {
 
     private final SqlIdentifier name;
 
@@ -73,7 +74,7 @@ public class SqlDropSchema extends SqlDrop implements SqlExecutableStatement {
 
 
     @Override
-    public void execute( Context context, Statement statement ) {
+    public void execute( Context context, Statement statement, QueryParameters parameters ) {
         try {
             DdlManager.getInstance().dropSchema( context.getDatabaseId(), name.getSimple(), ifExists, statement );
         } catch ( SchemaNotExistException e ) {

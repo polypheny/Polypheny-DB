@@ -26,6 +26,7 @@ import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
@@ -111,7 +112,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
 
 
     @Override
-    public void execute( Context context, Statement statement ) {
+    public void execute( Context context, Statement statement, QueryParameters parameters ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
 
         if ( catalogTable.tableType != TableType.TABLE ) {
@@ -135,7 +136,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                     catalogTable,
                     beforeColumnName == null ? null : beforeColumnName.getSimple(),
                     afterColumnName == null ? null : afterColumnName.getSimple(),
-                    ColumnTypeInformation.fromSqlDataTypeSpec( type ),
+                    ColumnTypeInformation.fromDataTypeSpec( type ),
                     nullable,
                     defaultValue,
                     statement );

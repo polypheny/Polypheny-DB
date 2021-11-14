@@ -42,9 +42,13 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.PolyphenyDbConnectionProperty;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.languages.LanguageManager;
+import org.polypheny.db.languages.NodeToRelConverter;
+import org.polypheny.db.languages.Parser.ParserConfig;
+import org.polypheny.db.languages.RexConvertletTable;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCostFactory;
@@ -58,11 +62,6 @@ import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.sql.SqlOperatorTable;
-import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
-import org.polypheny.db.sql2rel.SqlRexConvertletTable;
-import org.polypheny.db.sql2rel.SqlToRelConverter;
-import org.polypheny.db.sql2rel.StandardConvertletTable;
 import org.polypheny.db.util.Util;
 
 
@@ -95,6 +94,7 @@ public class Frameworks {
     public interface PlannerAction<R> {
 
         R apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema );
+
     }
 
 
@@ -124,6 +124,7 @@ public class Frameworks {
                 RelOptCluster cluster,
                 RelOptSchema relOptSchema,
                 SchemaPlus rootSchema );
+
     }
 
 
@@ -228,13 +229,13 @@ public class Frameworks {
      */
     public static class ConfigBuilder {
 
-        private SqlRexConvertletTable convertletTable;
-        private SqlOperatorTable operatorTable;
+        private RexConvertletTable convertletTable;
+        private OperatorTable operatorTable;
         private ImmutableList<Program> programs;
         private Context context;
         private ImmutableList<RelTraitDef> traitDefs;
-        private SqlParserConfig parserConfig;
-        private SqlToRelConverter.Config sqlToRelConverterConfig;
+        private ParserConfig parserConfig;
+        private NodeToRelConverter.Config sqlToRelConverterConfig;
         private SchemaPlus defaultSchema;
         private RexExecutor executor;
         private RelOptCostFactory costFactory;
@@ -246,12 +247,12 @@ public class Frameworks {
         /**
          * Creates a ConfigBuilder, initializing to defaults.
          */
-        private ConfigBuilder() {
-            convertletTable = StandardConvertletTable.INSTANCE;
-            operatorTable = SqlStdOperatorTable.instance();
+        public ConfigBuilder() {
+            convertletTable = LanguageManager.getInstance().getStandardConvertlet();
+            operatorTable = LanguageManager.getInstance().getStdOperatorTable();
             programs = ImmutableList.of();
-            parserConfig = SqlParserConfig.DEFAULT;
-            sqlToRelConverterConfig = SqlToRelConverter.Config.DEFAULT;
+            parserConfig = ParserConfig.DEFAULT;
+            sqlToRelConverterConfig = NodeToRelConverter.Config.DEFAULT;
             typeSystem = RelDataTypeSystem.DEFAULT;
         }
 
@@ -305,13 +306,13 @@ public class Frameworks {
         }
 
 
-        public ConfigBuilder convertletTable( SqlRexConvertletTable convertletTable ) {
+        public ConfigBuilder convertletTable( RexConvertletTable convertletTable ) {
             this.convertletTable = Objects.requireNonNull( convertletTable );
             return this;
         }
 
 
-        public ConfigBuilder operatorTable( SqlOperatorTable operatorTable ) {
+        public ConfigBuilder operatorTable( OperatorTable operatorTable ) {
             this.operatorTable = Objects.requireNonNull( operatorTable );
             return this;
         }
@@ -333,13 +334,13 @@ public class Frameworks {
         }
 
 
-        public ConfigBuilder parserConfig( SqlParserConfig parserConfig ) {
+        public ConfigBuilder parserConfig( ParserConfig parserConfig ) {
             this.parserConfig = Objects.requireNonNull( parserConfig );
             return this;
         }
 
 
-        public ConfigBuilder sqlToRelConverterConfig( SqlToRelConverter.Config sqlToRelConverterConfig ) {
+        public ConfigBuilder sqlToRelConverterConfig( NodeToRelConverter.Config sqlToRelConverterConfig ) {
             this.sqlToRelConverterConfig = Objects.requireNonNull( sqlToRelConverterConfig );
             return this;
         }
@@ -395,6 +396,7 @@ public class Frameworks {
             this.prepareContext = prepareContext;
             return this;
         }
+
     }
 
 
@@ -404,12 +406,12 @@ public class Frameworks {
     static class StdFrameworkConfig implements FrameworkConfig {
 
         private final Context context;
-        private final SqlRexConvertletTable convertletTable;
-        private final SqlOperatorTable operatorTable;
+        private final RexConvertletTable convertletTable;
+        private final OperatorTable operatorTable;
         private final ImmutableList<Program> programs;
         private final ImmutableList<RelTraitDef> traitDefs;
-        private final SqlParserConfig parserConfig;
-        private final SqlToRelConverter.Config sqlToRelConverterConfig;
+        private final ParserConfig parserConfig;
+        private final NodeToRelConverter.Config sqlToRelConverterConfig;
         private final SchemaPlus defaultSchema;
         private final RelOptCostFactory costFactory;
         private final RelDataTypeSystem typeSystem;
@@ -420,12 +422,12 @@ public class Frameworks {
 
         StdFrameworkConfig(
                 Context context,
-                SqlRexConvertletTable convertletTable,
-                SqlOperatorTable operatorTable,
+                RexConvertletTable convertletTable,
+                OperatorTable operatorTable,
                 ImmutableList<Program> programs,
                 ImmutableList<RelTraitDef> traitDefs,
-                SqlParserConfig parserConfig,
-                SqlToRelConverter.Config sqlToRelConverterConfig,
+                ParserConfig parserConfig,
+                NodeToRelConverter.Config sqlToRelConverterConfig,
                 SchemaPlus defaultSchema,
                 RelOptCostFactory costFactory,
                 RelDataTypeSystem typeSystem,
@@ -449,13 +451,13 @@ public class Frameworks {
 
 
         @Override
-        public SqlParserConfig getParserConfig() {
+        public ParserConfig getParserConfig() {
             return parserConfig;
         }
 
 
         @Override
-        public SqlToRelConverter.Config getSqlToRelConverterConfig() {
+        public NodeToRelConverter.Config getSqlToRelConverterConfig() {
             return sqlToRelConverterConfig;
         }
 
@@ -491,7 +493,7 @@ public class Frameworks {
 
 
         @Override
-        public SqlRexConvertletTable getConvertletTable() {
+        public RexConvertletTable getConvertletTable() {
             return convertletTable;
         }
 
@@ -503,7 +505,7 @@ public class Frameworks {
 
 
         @Override
-        public SqlOperatorTable getOperatorTable() {
+        public OperatorTable getOperatorTable() {
             return operatorTable;
         }
 
@@ -524,6 +526,8 @@ public class Frameworks {
         public org.polypheny.db.jdbc.Context getPrepareContext() {
             return prepareContext;
         }
+
     }
+
 }
 

@@ -28,6 +28,7 @@ import java.util.Objects;
 import org.polypheny.db.core.NameMatcher;
 import org.polypheny.db.core.SqlMoniker;
 import org.polypheny.db.core.SqlMonikerType;
+import org.polypheny.db.core.ValidatorTable;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
@@ -95,7 +96,7 @@ public abstract class ListScope extends DelegatingScope {
             }
 
             // Look up the 2 tables independently, in case one is qualified with catalog & schema and the other is not.
-            final SqlValidatorTable table = child.namespace.getTable();
+            final ValidatorTable table = child.namespace.getTable();
             if ( table != null ) {
                 final ResolvedImpl resolved = new ResolvedImpl();
                 resolveTable( names, nameMatcher, Path.EMPTY, resolved );

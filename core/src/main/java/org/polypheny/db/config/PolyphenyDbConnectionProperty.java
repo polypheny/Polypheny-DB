@@ -45,9 +45,9 @@ import java.util.TimeZone;
 import org.apache.calcite.avatica.ConnectionProperty;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
-import org.polypheny.db.sql.Lex;
-import org.polypheny.db.sql.NullCollation;
-import org.polypheny.db.sql.validate.SqlConformanceEnum;
+import org.polypheny.db.core.ConformanceEnum;
+import org.polypheny.db.core.Lex;
+import org.polypheny.db.core.NullCollation;
 import org.polypheny.db.util.Bug;
 
 
@@ -96,11 +96,10 @@ public enum PolyphenyDbConnectionProperty implements ConnectionProperty {
      */
     UNQUOTED_CASING( "unquotedCasing", Type.ENUM, null, false, Casing.class ),
 
-
     /**
      * Parser factory.
      *
-     * The name of a class that implements {@link org.polypheny.db.sql.parser.SqlParserImplFactory}.
+     * The name of a class that implements {#@link org.polypheny.db.sql.parser.SqlParserImplFactory}.
      */
     PARSER_FACTORY( "parserFactory", Type.PLUGIN, null, false ),
 
@@ -128,7 +127,7 @@ public enum PolyphenyDbConnectionProperty implements ConnectionProperty {
     /**
      * SQL conformance level.
      */
-    CONFORMANCE( "conformance", Type.ENUM, SqlConformanceEnum.DEFAULT, false );
+    CONFORMANCE( "conformance", Type.ENUM, ConformanceEnum.DEFAULT, false );
 
     private final String camelName;
     private final Type type;

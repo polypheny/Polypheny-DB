@@ -18,10 +18,15 @@ package org.polypheny.db.languages.sql;
 
 
 import java.util.List;
+import lombok.Getter;
+import org.polypheny.db.core.Call;
+import org.polypheny.db.core.Explain;
 import org.polypheny.db.core.ExplainFormat;
 import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -29,33 +34,17 @@ import org.polypheny.db.util.ImmutableNullableList;
 /**
  * A <code>SqlExplain</code> is a node of a parse tree which represents an EXPLAIN PLAN statement.
  */
-public class SqlExplain extends SqlCall {
+public class SqlExplain extends SqlCall implements Explain {
 
     public static final SqlSpecialOperator OPERATOR =
             new SqlSpecialOperator( "EXPLAIN", Kind.EXPLAIN ) {
                 @Override
-                public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
-                    return new SqlExplain( pos, operands[0], (SqlLiteral) operands[1], (SqlLiteral) operands[2], (SqlLiteral) operands[3], 0 );
+                public Call createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
+                    return new SqlExplain( pos, (SqlNode) operands[0], (SqlLiteral) operands[1], (SqlLiteral) operands[2], (SqlLiteral) operands[3], 0 );
                 }
             };
 
-
-    /**
-     * The level of abstraction with which to display the plan.
-     */
-    public enum Depth {
-        TYPE, LOGICAL, PHYSICAL;
-
-
-        /**
-         * Creates a parse-tree node representing an occurrence of this symbol at a particular position in the parsed text.
-         */
-        public SqlLiteral symbol( ParserPos pos ) {
-            return SqlLiteral.createSymbol( this, pos );
-        }
-    }
-
-
+    @Getter
     SqlNode explicandum;
     SqlLiteral detailLevel;
     SqlLiteral depth;
@@ -95,7 +84,7 @@ public class SqlExplain extends SqlCall {
     public void setOperand( int i, Node operand ) {
         switch ( i ) {
             case 0:
-                explicandum = operand;
+                explicandum = (SqlNode) operand;
                 break;
             case 1:
                 detailLevel = (SqlLiteral) operand;
@@ -113,16 +102,9 @@ public class SqlExplain extends SqlCall {
 
 
     /**
-     * @return the underlying SQL statement to be explained
-     */
-    public SqlNode getExplicandum() {
-        return explicandum;
-    }
-
-
-    /**
      * @return detail level to be generated
      */
+    @Override
     public ExplainLevel getDetailLevel() {
         return detailLevel.symbolValue( ExplainLevel.class );
     }
@@ -131,6 +113,7 @@ public class SqlExplain extends SqlCall {
     /**
      * Returns the level of abstraction at which this plan should be displayed.
      */
+    @Override
     public Depth getDepth() {
         return depth.symbolValue( Depth.class );
     }
@@ -139,6 +122,7 @@ public class SqlExplain extends SqlCall {
     /**
      * @return the number of dynamic parameters in the statement
      */
+    @Override
     public int getDynamicParamCount() {
         return dynamicParameterCount;
     }
@@ -148,21 +132,23 @@ public class SqlExplain extends SqlCall {
      * @return whether physical plan implementation should be returned
      */
     public boolean withImplementation() {
-        return getDepth() == Depth.PHYSICAL;
+        return getDepth() == Explain.Depth.PHYSICAL;
     }
 
 
     /**
      * @return whether type should be returned
      */
+    @Override
     public boolean withType() {
-        return getDepth() == Depth.TYPE;
+        return getDepth() == Explain.Depth.TYPE;
     }
 
 
     /**
      * Returns the desired output format.
      */
+    @Override
     public ExplainFormat getFormat() {
         return format.symbolValue( ExplainFormat.class );
     }
@@ -214,7 +200,8 @@ public class SqlExplain extends SqlCall {
         }
         writer.keyword( "FOR" );
         writer.newlineAndIndent();
-        explicandum.unparse( writer, getOperator().getLeftPrec(), getOperator().getRightPrec() );
+        explicandum.unparse( writer, ((SqlOperator) getOperator()).getLeftPrec(), ((SqlOperator) getOperator()).getRightPrec() );
     }
+
 }
 

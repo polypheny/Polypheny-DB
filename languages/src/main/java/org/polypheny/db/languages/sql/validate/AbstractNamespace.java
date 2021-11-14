@@ -20,6 +20,9 @@ package org.polypheny.db.languages.sql.validate;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import org.polypheny.db.core.Modality;
+import org.polypheny.db.core.Monotonicity;
+import org.polypheny.db.core.ValidatorTable;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -144,7 +147,7 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
 
 
     @Override
-    public SqlValidatorTable getTable() {
+    public ValidatorTable getTable() {
         return null;
     }
 
@@ -163,14 +166,14 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
 
 
     @Override
-    public List<Pair<SqlNode, SqlMonotonicity>> getMonotonicExprs() {
+    public List<Pair<SqlNode, Monotonicity>> getMonotonicExprs() {
         return ImmutableList.of();
     }
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( String columnName ) {
-        return SqlMonotonicity.NOT_MONOTONIC;
+    public Monotonicity getMonotonicity( String columnName ) {
+        return Monotonicity.NOT_MONOTONIC;
     }
 
 
@@ -186,7 +189,7 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
 
 
     @Override
-    public boolean supportsModality( SqlModality modality ) {
+    public boolean supportsModality( Modality modality ) {
         return true;
     }
 

@@ -19,16 +19,18 @@ package org.polypheny.db.languages.sql.validate;
 
 import java.util.List;
 import org.polypheny.db.core.SqlMoniker;
+import org.polypheny.db.core.ValidatorCatalogReader;
+import org.polypheny.db.core.ValidatorTable;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.rel.type.RelDataType;
 
 
 /**
- * Implementation of {@link SqlValidatorCatalogReader} that passes all calls to a parent catalog reader.
+ * Implementation of {@link ValidatorCatalogReader} that passes all calls to a parent catalog reader.
  */
-public abstract class DelegatingSqlValidatorCatalogReader implements SqlValidatorCatalogReader {
+public abstract class DelegatingSqlValidatorCatalogReader implements ValidatorCatalogReader {
 
-    protected final SqlValidatorCatalogReader catalogReader;
+    protected final ValidatorCatalogReader catalogReader;
 
 
     /**
@@ -36,13 +38,13 @@ public abstract class DelegatingSqlValidatorCatalogReader implements SqlValidato
      *
      * @param catalogReader Parent catalog reader
      */
-    public DelegatingSqlValidatorCatalogReader( SqlValidatorCatalogReader catalogReader ) {
+    public DelegatingSqlValidatorCatalogReader( ValidatorCatalogReader catalogReader ) {
         this.catalogReader = catalogReader;
     }
 
 
     @Override
-    public SqlValidatorTable getTable( List<String> names ) {
+    public ValidatorTable getTable( List<String> names ) {
         return catalogReader.getTable( names );
     }
 

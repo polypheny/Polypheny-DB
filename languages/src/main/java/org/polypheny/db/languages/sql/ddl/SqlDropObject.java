@@ -19,9 +19,9 @@ package org.polypheny.db.languages.sql.ddl;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import org.polypheny.db.core.ExecutableStatement;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.SqlDrop;
-import org.polypheny.db.languages.sql.SqlExecutableStatement;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlWriter;
@@ -30,7 +30,7 @@ import org.polypheny.db.languages.sql.SqlWriter;
 /**
  * Base class for parse trees of {@code DROP TABLE}, {@code DROP VIEW}, and {@code DROP TYPE} statements.
  */
-abstract class SqlDropObject extends SqlDrop implements SqlExecutableStatement {
+abstract class SqlDropObject extends SqlDrop implements ExecutableStatement {
 
     protected final SqlIdentifier name;
 

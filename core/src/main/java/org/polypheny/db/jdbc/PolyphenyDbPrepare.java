@@ -45,6 +45,10 @@ import java.util.List;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.tree.ClassDeclaration;
+import org.polypheny.db.core.CyclicDefinitionException;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Validator;
 import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.prepare.PolyphenyDbPrepareImpl;
@@ -55,10 +59,6 @@ import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.ArrayBindable;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.validate.CyclicDefinitionException;
-import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.util.ImmutableIntList;
 
 
@@ -79,7 +79,7 @@ public interface PolyphenyDbPrepare {
      *
      * The statement identified itself as DDL in the {@link PolyphenyDbPrepare.ParseResult#kind} field.
      */
-    void executeDdl( Context context, SqlNode node );
+    void executeDdl( Context context, Node node );
 
     /**
      * Analyzes a view.
@@ -94,8 +94,6 @@ public interface PolyphenyDbPrepare {
     <T> PolyphenyDbSignature<T> prepareSql( Context context, Query<T> query, Type elementType, long maxRowCount );
 
     <T> PolyphenyDbSignature<T> prepareQueryable( Context context, Queryable<T> queryable );
-
-
 
 
     /**
@@ -121,7 +119,9 @@ public interface PolyphenyDbPrepare {
             void addRule( RelOptRule rule );
 
             void removeRule( RelOptRule rule );
+
         }
+
     }
 
 
@@ -220,6 +220,7 @@ public interface PolyphenyDbPrepare {
             public Object sparkContext() {
                 throw new UnsupportedOperationException();
             }
+
         }
 
     }
@@ -232,12 +233,12 @@ public interface PolyphenyDbPrepare {
 
         public final PolyphenyDbPrepareImpl prepare;
         public final String sql; // for debug
-        public final SqlNode sqlNode;
+        public final Node sqlNode;
         public final RelDataType rowType;
         public final RelDataTypeFactory typeFactory;
 
 
-        public ParseResult( PolyphenyDbPrepareImpl prepare, SqlValidator validator, String sql, SqlNode sqlNode, RelDataType rowType ) {
+        public ParseResult( PolyphenyDbPrepareImpl prepare, Validator validator, String sql, Node sqlNode, RelDataType rowType ) {
             super();
             this.prepare = prepare;
             this.sql = sql;
@@ -253,17 +254,18 @@ public interface PolyphenyDbPrepare {
          * Possibilities include:
          *
          * <ul>
-         * <li>Queries: usually {@link SqlKind#SELECT}, but other query operators such as {@link SqlKind#UNION} and {@link SqlKind#ORDER_BY} are possible
-         * <li>DML statements: {@link SqlKind#INSERT}, {@link SqlKind#UPDATE} etc.
-         * <li>Session control statements: {@link SqlKind#COMMIT}
-         * <li>DDL statements: {@link SqlKind#CREATE_TABLE}, {@link SqlKind#DROP_INDEX}
+         * <li>Queries: usually {@link Kind#SELECT}, but other query operators such as {@link Kind#UNION} and {@link Kind#ORDER_BY} are possible
+         * <li>DML statements: {@link Kind#INSERT}, {@link Kind#UPDATE} etc.
+         * <li>Session control statements: {@link Kind#COMMIT}
+         * <li>DDL statements: {@link Kind#CREATE_TABLE}, {@link Kind#DROP_INDEX}
          * </ul>
          *
          * @return Kind of statement, never null
          */
-        public SqlKind kind() {
+        public Kind kind() {
             return sqlNode.getKind();
         }
+
     }
 
 
@@ -275,10 +277,11 @@ public interface PolyphenyDbPrepare {
         public final RelRoot root;
 
 
-        public ConvertResult( PolyphenyDbPrepareImpl prepare, SqlValidator validator, String sql, SqlNode sqlNode, RelDataType rowType, RelRoot root ) {
+        public ConvertResult( PolyphenyDbPrepareImpl prepare, Validator validator, String sql, Node sqlNode, RelDataType rowType, RelRoot root ) {
             super( prepare, validator, sql, sqlNode, rowType );
             this.root = root;
         }
+
     }
 
 
@@ -299,9 +302,9 @@ public interface PolyphenyDbPrepare {
 
         public AnalyzeViewResult(
                 PolyphenyDbPrepareImpl prepare,
-                SqlValidator validator,
+                Validator validator,
                 String sql,
-                SqlNode sqlNode,
+                Node sqlNode,
                 RelDataType rowType,
                 RelRoot root,
                 Table table,
@@ -317,6 +320,7 @@ public interface PolyphenyDbPrepare {
             this.modifiable = modifiable;
             Preconditions.checkArgument( modifiable == (table != null) );
         }
+
     }
 
 
@@ -354,6 +358,8 @@ public interface PolyphenyDbPrepare {
         public static <T> Query<T> of( RelNode rel ) {
             return new Query<>( null, null, rel );
         }
+
     }
+
 }
 

@@ -38,9 +38,19 @@ import com.google.common.collect.ImmutableList;
 import java.io.Reader;
 import java.util.List;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
+import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.core.ParseException;
-import org.polypheny.db.interpreter.Node;
+import org.polypheny.db.core.RelDecorrelator;
+import org.polypheny.db.core.Validator;
+import org.polypheny.db.languages.LanguageManager;
+import org.polypheny.db.languages.NodeToRelConverter;
+import org.polypheny.db.languages.Parser;
+import org.polypheny.db.languages.Parser.ParserConfig;
+import org.polypheny.db.languages.RexConvertletTable;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -55,16 +65,6 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperatorTable;
-import org.polypheny.db.sql.parser.SqlParseException;
-import org.polypheny.db.sql.parser.SqlParser;
-import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
-import org.polypheny.db.sql.validate.SqlConformance;
-import org.polypheny.db.sql.validate.SqlValidator;
-import org.polypheny.db.sql2rel.RelDecorrelator;
-import org.polypheny.db.sql2rel.SqlRexConvertletTable;
-import org.polypheny.db.sql2rel.SqlToRelConverter;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.Planner;
@@ -81,7 +81,7 @@ import org.polypheny.db.util.Util;
  */
 public class PlannerImpl implements Planner, ViewExpander {
 
-    private final SqlOperatorTable operatorTable;
+    private final OperatorTable operatorTable;
     private final ImmutableList<Program> programs;
     private final FrameworkConfig config;
 
@@ -90,9 +90,9 @@ public class PlannerImpl implements Planner, ViewExpander {
      */
     private final ImmutableList<RelTraitDef> traitDefs;
 
-    private final SqlParserConfig parserConfig;
-    private final SqlToRelConverter.Config sqlToRelConverterConfig;
-    private final SqlRexConvertletTable convertletTable;
+    private final ParserConfig parserConfig;
+    private final NodeToRelConverter.Config sqlToRelConverterConfig;
+    private final RexConvertletTable convertletTable;
 
     private State state;
 
@@ -106,7 +106,7 @@ public class PlannerImpl implements Planner, ViewExpander {
     private RexExecutor executor;
 
     // set in STATE_4_VALIDATE
-    private PolyphenyDbSqlValidator validator;
+    private Validator validator;
     private Node validatedSqlNode;
 
     // set in STATE_5_CONVERT
@@ -205,8 +205,8 @@ public class PlannerImpl implements Planner, ViewExpander {
                 ready();
         }
         ensure( State.STATE_2_READY );
-        SqlParser parser = SqlParser.create( reader, parserConfig );
-        SqlNode sqlNode = parser.parseStmt();
+        Parser parser = Parser.create( reader, parserConfig );
+        Node sqlNode = parser.parseStmt();
         state = State.STATE_3_PARSED;
         return sqlNode;
     }
@@ -215,9 +215,9 @@ public class PlannerImpl implements Planner, ViewExpander {
     @Override
     public Node validate( Node sqlNode ) throws ValidationException {
         ensure( State.STATE_3_PARSED );
-        final SqlConformance conformance = conformance();
+        final Conformance conformance = conformance();
         final PolyphenyDbCatalogReader catalogReader = createCatalogReader();
-        this.validator = new PolyphenyDbSqlValidator( operatorTable, catalogReader, typeFactory, conformance );
+        this.validator = LanguageManager.getInstance().createPolyphenyValidator( QueryLanguage.SQL, operatorTable, catalogReader, typeFactory, conformance );
         this.validator.setIdentifierExpansion( true );
         try {
             validatedSqlNode = validator.validate( sqlNode );
@@ -229,7 +229,7 @@ public class PlannerImpl implements Planner, ViewExpander {
     }
 
 
-    private SqlConformance conformance() {
+    private Conformance conformance() {
         final Context context = config.getContext();
         if ( context != null ) {
             final PolyphenyDbConnectionConfig connectionConfig = context.unwrap( PolyphenyDbConnectionConfig.class );
@@ -243,7 +243,7 @@ public class PlannerImpl implements Planner, ViewExpander {
 
     @Override
     public Pair<Node, RelDataType> validateAndGetType( Node sqlNode ) throws ValidationException {
-        final SqlNode validatedNode = this.validate( sqlNode );
+        final Node validatedNode = this.validate( sqlNode );
         final RelDataType type = this.validator.getValidatedNodeType( validatedNode );
         return Pair.of( validatedNode, type );
     }
@@ -255,13 +255,13 @@ public class PlannerImpl implements Planner, ViewExpander {
         assert validatedSqlNode != null;
         final RexBuilder rexBuilder = createRexBuilder();
         final RelOptCluster cluster = RelOptCluster.create( planner, rexBuilder );
-        final SqlToRelConverter.Config config =
-                SqlToRelConverter.configBuilder()
+        final NodeToRelConverter.Config config =
+                NodeToRelConverter.configBuilder()
                         .withConfig( sqlToRelConverterConfig )
                         .withTrimUnusedFields( false )
                         .withConvertTableAccess( false )
                         .build();
-        final SqlToRelConverter sqlToRelConverter = new SqlToRelConverter( this, validator, createCatalogReader(), cluster, convertletTable, config );
+        final NodeToRelConverter sqlToRelConverter = LanguageManager.getInstance().createToRelConverter( QueryLanguage.SQL, this, validator, createCatalogReader(), cluster, convertletTable, config );
         root = sqlToRelConverter.convertQuery( validatedSqlNode, false, true );
         root = root.withRel( sqlToRelConverter.flattenTypes( root.rel, true ) );
         final RelBuilder relBuilder = config.getRelBuilderFactory().create( cluster, null );
@@ -276,29 +276,29 @@ public class PlannerImpl implements Planner, ViewExpander {
         if ( planner == null ) {
             ready();
         }
-        SqlParser parser = SqlParser.create( queryString, parserConfig );
-        SqlNode sqlNode;
+        Parser parser = Parser.create( queryString, parserConfig );
+        Node sqlNode;
         try {
             sqlNode = parser.parseQuery();
-        } catch ( SqlParseException e ) {
+        } catch ( ParseException e ) {
             throw new RuntimeException( "parse failed", e );
         }
 
-        final SqlConformance conformance = conformance();
+        final Conformance conformance = conformance();
         final PolyphenyDbCatalogReader catalogReader = createCatalogReader().withSchemaPath( schemaPath );
-        final SqlValidator validator = new PolyphenyDbSqlValidator( operatorTable, catalogReader, typeFactory, conformance );
+        final Validator validator = LanguageManager.getInstance().createPolyphenyValidator( QueryLanguage.SQL, operatorTable, catalogReader, typeFactory, conformance );
         validator.setIdentifierExpansion( true );
 
         final RexBuilder rexBuilder = createRexBuilder();
         final RelOptCluster cluster = RelOptCluster.create( planner, rexBuilder );
-        final SqlToRelConverter.Config config =
-                SqlToRelConverter
+        final NodeToRelConverter.Config config =
+                NodeToRelConverter
                         .configBuilder()
                         .withConfig( sqlToRelConverterConfig )
                         .withTrimUnusedFields( false )
                         .withConvertTableAccess( false )
                         .build();
-        final SqlToRelConverter sqlToRelConverter = new SqlToRelConverter( this, validator, catalogReader, cluster, convertletTable, config );
+        final NodeToRelConverter sqlToRelConverter = LanguageManager.getInstance().createToRelConverter( QueryLanguage.SQL, this, validator, catalogReader, cluster, convertletTable, config );
 
         final RelRoot root = sqlToRelConverter.convertQuery( sqlNode, true, false );
         final RelRoot root2 = root.withRel( sqlToRelConverter.flattenTypes( root.rel, true ) );
@@ -387,5 +387,6 @@ public class PlannerImpl implements Planner, ViewExpander {
             throw new IllegalArgumentException( "cannot move from " + planner.state + " to " + this );
         }
     }
+
 }
 

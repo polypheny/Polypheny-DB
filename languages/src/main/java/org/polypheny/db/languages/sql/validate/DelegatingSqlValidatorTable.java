@@ -18,16 +18,18 @@ package org.polypheny.db.languages.sql.validate;
 
 
 import java.util.List;
-import org.polypheny.db.languages.sql.SqlAccessType;
+import org.polypheny.db.core.AccessType;
+import org.polypheny.db.core.Monotonicity;
+import org.polypheny.db.core.ValidatorTable;
 import org.polypheny.db.rel.type.RelDataType;
 
 
 /**
- * Implements {@link SqlValidatorTable} by delegating to a parent table.
+ * Implements {@link ValidatorTable} by delegating to a parent table.
  */
-public abstract class DelegatingSqlValidatorTable implements SqlValidatorTable {
+public abstract class DelegatingSqlValidatorTable implements ValidatorTable {
 
-    protected final SqlValidatorTable table;
+    protected final ValidatorTable table;
 
 
     /**
@@ -35,7 +37,7 @@ public abstract class DelegatingSqlValidatorTable implements SqlValidatorTable {
      *
      * @param table Parent table
      */
-    public DelegatingSqlValidatorTable( SqlValidatorTable table ) {
+    public DelegatingSqlValidatorTable( ValidatorTable table ) {
         this.table = table;
     }
 
@@ -53,13 +55,13 @@ public abstract class DelegatingSqlValidatorTable implements SqlValidatorTable {
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( String columnName ) {
+    public Monotonicity getMonotonicity( String columnName ) {
         return table.getMonotonicity( columnName );
     }
 
 
     @Override
-    public SqlAccessType getAllowedAccess() {
+    public AccessType getAllowedAccess() {
         return table.getAllowedAccess();
     }
 }

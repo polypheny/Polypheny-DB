@@ -23,8 +23,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.NameMatcher;
 import org.polypheny.db.core.SqlMoniker;
+import org.polypheny.db.core.ValidatorTable;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDataTypeSpec;
 import org.polypheny.db.languages.sql.SqlDynamicParam;
@@ -86,7 +88,7 @@ class EmptyScope implements SqlValidatorScope {
 
     @Override
     public SqlValidatorNamespace getTableNamespace( List<String> names ) {
-        SqlValidatorTable table = validator.catalogReader.getTable( names );
+        ValidatorTable table = validator.catalogReader.getTable( names );
         return table != null
                 ? new TableNamespace( validator, table )
                 : null;
@@ -144,7 +146,7 @@ class EmptyScope implements SqlValidatorScope {
                 path = path.plus( null, -1, entry.name, StructKind.NONE );
                 remainingNames = Util.skip( remainingNames );
                 final Table table = entry.getTable();
-                SqlValidatorTable table2 = null;
+                ValidatorTable table2 = null;
                 if ( table instanceof Wrapper ) {
                     table2 = ((Wrapper) table).unwrap( Prepare.PreparingTable.class );
                 }
@@ -231,10 +233,10 @@ class EmptyScope implements SqlValidatorScope {
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( SqlNode expr ) {
+    public Monotonicity getMonotonicity( SqlNode expr ) {
         return ((expr instanceof SqlLiteral) || (expr instanceof SqlDynamicParam) || (expr instanceof SqlDataTypeSpec))
-                ? SqlMonotonicity.CONSTANT
-                : SqlMonotonicity.NOT_MONOTONIC;
+                ? Monotonicity.CONSTANT
+                : Monotonicity.NOT_MONOTONIC;
     }
 
 

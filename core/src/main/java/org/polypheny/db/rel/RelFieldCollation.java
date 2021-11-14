@@ -36,7 +36,7 @@ package org.polypheny.db.rel;
 
 import java.io.Serializable;
 import java.util.Objects;
-import org.polypheny.db.sql.validate.SqlMonotonicity;
+import org.polypheny.db.core.Monotonicity;
 
 
 /**
@@ -102,20 +102,20 @@ public class RelFieldCollation implements Serializable {
 
 
         /**
-         * Converts the direction to a {@link SqlMonotonicity}.
+         * Converts the direction to a {@link Monotonicity}.
          */
-        public SqlMonotonicity monotonicity() {
+        public Monotonicity monotonicity() {
             switch ( this ) {
                 case ASCENDING:
-                    return SqlMonotonicity.INCREASING;
+                    return Monotonicity.INCREASING;
                 case STRICTLY_ASCENDING:
-                    return SqlMonotonicity.STRICTLY_INCREASING;
+                    return Monotonicity.STRICTLY_INCREASING;
                 case DESCENDING:
-                    return SqlMonotonicity.DECREASING;
+                    return Monotonicity.DECREASING;
                 case STRICTLY_DESCENDING:
-                    return SqlMonotonicity.STRICTLY_DECREASING;
+                    return Monotonicity.STRICTLY_DECREASING;
                 case CLUSTERED:
-                    return SqlMonotonicity.MONOTONIC;
+                    return Monotonicity.MONOTONIC;
                 default:
                     throw new AssertionError( "unknown: " + this );
             }
@@ -123,9 +123,9 @@ public class RelFieldCollation implements Serializable {
 
 
         /**
-         * Converts a {@link SqlMonotonicity} to a direction.
+         * Converts a {@link Monotonicity} to a direction.
          */
-        public static Direction of( SqlMonotonicity monotonicity ) {
+        public static Direction of( Monotonicity monotonicity ) {
             switch ( monotonicity ) {
                 case INCREASING:
                     return ASCENDING;

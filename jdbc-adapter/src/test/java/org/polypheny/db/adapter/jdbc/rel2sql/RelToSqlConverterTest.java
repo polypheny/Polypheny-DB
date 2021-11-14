@@ -30,8 +30,28 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.adapter.jdbc.rel2sql.RelToSqlConverter.PlainRelToSqlConverter;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.NullCollation;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.languages.NodeToRelConverter;
+import org.polypheny.db.languages.NodeToRelConverter.Config;
+import org.polypheny.db.languages.Parser;
+import org.polypheny.db.languages.Parser.ParserConfig;
+import org.polypheny.db.languages.sql.SqlAggFunction;
+import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.languages.sql.SqlDialect;
+import org.polypheny.db.languages.sql.SqlDialect.Context;
+import org.polypheny.db.languages.sql.SqlDialect.DatabaseProduct;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlSelect;
+import org.polypheny.db.languages.sql.SqlWriter;
+import org.polypheny.db.languages.sql.dialect.HiveSqlDialect;
+import org.polypheny.db.languages.sql.dialect.JethroDataSqlDialect;
+import org.polypheny.db.languages.sql.dialect.MysqlSqlDialect;
+import org.polypheny.db.languages.sql.dialect.PolyphenyDbSqlDialect;
+import org.polypheny.db.languages.sql.dialect.PostgresqlSqlDialect;
 import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.plan.RelTraitDef;
 import org.polypheny.db.plan.hep.HepPlanner;
@@ -46,22 +66,6 @@ import org.polypheny.db.schema.FoodmartSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.ScottSchema;
-import org.polypheny.db.sql.NullCollation;
-import org.polypheny.db.sql.SqlCall;
-import org.polypheny.db.sql.SqlDialect;
-import org.polypheny.db.sql.SqlDialect.Context;
-import org.polypheny.db.sql.SqlDialect.DatabaseProduct;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlSelect;
-import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.dialect.HiveSqlDialect;
-import org.polypheny.db.sql.dialect.JethroDataSqlDialect;
-import org.polypheny.db.sql.dialect.MysqlSqlDialect;
-import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
-import org.polypheny.db.sql.dialect.PostgresqlSqlDialect;
-import org.polypheny.db.core.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
-import org.polypheny.db.sql2rel.SqlToRelConverter;
 import org.polypheny.db.test.Matchers;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
@@ -79,14 +83,14 @@ import org.polypheny.db.type.PolyType;
  */
 public class RelToSqlConverterTest {
 
-    static final SqlToRelConverter.Config DEFAULT_REL_CONFIG =
-            SqlToRelConverter.configBuilder()
+    static final Config DEFAULT_REL_CONFIG =
+            NodeToRelConverter.configBuilder()
                     .withTrimUnusedFields( false )
                     .withConvertTableAccess( false )
                     .build();
 
-    static final SqlToRelConverter.Config NO_EXPAND_CONFIG =
-            SqlToRelConverter.configBuilder()
+    static final Config NO_EXPAND_CONFIG =
+            NodeToRelConverter.configBuilder()
                     .withTrimUnusedFields( false )
                     .withConvertTableAccess( false )
                     .withExpand( false )
@@ -104,7 +108,7 @@ public class RelToSqlConverterTest {
     }
 
 
-    private static Planner getPlanner( List<RelTraitDef> traitDefs, SqlParserConfig parserConfig, SchemaPlus schema, SqlToRelConverter.Config sqlToRelConf, Program... programs ) {
+    private static Planner getPlanner( List<RelTraitDef> traitDefs, ParserConfig parserConfig, SchemaPlus schema, Config sqlToRelConf, Program... programs ) {
         final SchemaPlus rootSchema = Frameworks.createRootSchema( false );
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
@@ -156,7 +160,7 @@ public class RelToSqlConverterTest {
         // Creates a config based on the "scott" schema.
         final SchemaPlus schema = Frameworks.createRootSchema( true ).add( "scott", new ReflectiveSchema( new ScottSchema() ), SchemaType.RELATIONAL );
         Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder()
-                .parserConfig( SqlParserConfig.DEFAULT )
+                .parserConfig( Parser.ParserConfig.DEFAULT )
                 .defaultSchema( schema )
                 .traitDefs( (List<RelTraitDef>) null )
                 .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) )
@@ -374,7 +378,7 @@ public class RelToSqlConverterTest {
         final RelBuilder builder = relBuilder();
         final RelNode root = builder
                 .scan( "emp" )
-                .aggregate( builder.groupKey(), builder.aggregateCall( SqlStdOperatorTable.SUM0, builder.field( 3 ) ).as( "s" ) )
+                .aggregate( builder.groupKey(), builder.aggregateCall( StdOperatorRegistry.get( "SUM0", SqlAggFunction.class ), builder.field( 3 ) ).as( "s" ) )
                 .build();
         final String expectedMysql = "SELECT COALESCE(SUM(`mgr`), 0) AS `s`\n"
                 + "FROM `scott`.`emp`";
@@ -624,7 +628,7 @@ public class RelToSqlConverterTest {
     @Test
     public void testUnparseIn1() {
         final RelBuilder builder = relBuilder().scan( "emp" );
-        final RexNode condition = builder.call( SqlStdOperatorTable.IN, builder.field( "deptno" ), builder.literal( 21 ) );
+        final RexNode condition = builder.call( StdOperatorRegistry.get( "IN" ), builder.field( "deptno" ), builder.literal( 21 ) );
         final RelNode root = relBuilder().scan( "emp" ).filter( condition ).build();
         final String sql = toSql( root );
         final String expectedSql = "SELECT *\n"
@@ -639,7 +643,7 @@ public class RelToSqlConverterTest {
         final RelBuilder builder = relBuilder();
         final RelNode rel = builder
                 .scan( "emp" )
-                .filter( builder.call( SqlStdOperatorTable.IN, builder.field( "deptno" ), builder.literal( 20 ), builder.literal( 21 ) ) )
+                .filter( builder.call( StdOperatorRegistry.get( "IN" ), builder.field( "deptno" ), builder.literal( 20 ), builder.literal( 21 ) ) )
                 .build();
         final String sql = toSql( rel );
         final String expectedSql = "SELECT *\n"
@@ -652,9 +656,9 @@ public class RelToSqlConverterTest {
     @Test
     public void testUnparseInStruct1() {
         final RelBuilder builder = relBuilder().scan( "emp" );
-        final RexNode condition = builder.call( SqlStdOperatorTable.IN,
-                builder.call( SqlStdOperatorTable.ROW, builder.field( "deptno" ), builder.field( "job" ) ),
-                builder.call( SqlStdOperatorTable.ROW, builder.literal( 1 ), builder.literal( "president" ) ) );
+        final RexNode condition = builder.call( StdOperatorRegistry.get( "IN" ),
+                builder.call( StdOperatorRegistry.get( "ROW" ), builder.field( "deptno" ), builder.field( "job" ) ),
+                builder.call( StdOperatorRegistry.get( "ROW" ), builder.literal( 1 ), builder.literal( "president" ) ) );
         final RelNode root = relBuilder().scan( "emp" ).filter( condition ).build();
         final String sql = toSql( root );
         final String expectedSql = "SELECT *\n"
@@ -668,10 +672,10 @@ public class RelToSqlConverterTest {
     public void testUnparseInStruct2() {
         final RelBuilder builder = relBuilder().scan( "emp" );
         final RexNode condition =
-                builder.call( SqlStdOperatorTable.IN,
-                        builder.call( SqlStdOperatorTable.ROW, builder.field( "deptno" ), builder.field( "job" ) ),
-                        builder.call( SqlStdOperatorTable.ROW, builder.literal( 1 ), builder.literal( "president" ) ),
-                        builder.call( SqlStdOperatorTable.ROW, builder.literal( 2 ), builder.literal( "president" ) ) );
+                builder.call( StdOperatorRegistry.get( "IN" ),
+                        builder.call( StdOperatorRegistry.get( "ROW" ), builder.field( "deptno" ), builder.field( "job" ) ),
+                        builder.call( StdOperatorRegistry.get( "ROW" ), builder.literal( 1 ), builder.literal( "president" ) ),
+                        builder.call( StdOperatorRegistry.get( "ROW" ), builder.literal( 2 ), builder.literal( "president" ) ) );
         final RelNode root = relBuilder().scan( "emp" ).filter( condition ).build();
         final String sql = toSql( root );
         final String expectedSql = "SELECT *\n"
@@ -3313,10 +3317,10 @@ public class RelToSqlConverterTest {
         private final String sql;
         private final SqlDialect dialect;
         private final List<Function<RelNode, RelNode>> transforms;
-        private final SqlToRelConverter.Config config;
+        private final Config config;
 
 
-        Sql( SchemaPlus schema, String sql, SqlDialect dialect, SqlToRelConverter.Config config, List<Function<RelNode, RelNode>> transforms ) {
+        Sql( SchemaPlus schema, String sql, SqlDialect dialect, Config config, List<Function<RelNode, RelNode>> transforms ) {
             this.schema = schema;
             this.sql = sql;
             this.dialect = dialect;
@@ -3396,7 +3400,7 @@ public class RelToSqlConverterTest {
         }
 
 
-        Sql config( SqlToRelConverter.Config config ) {
+        Sql config( Config config ) {
             return new Sql( schema, sql, dialect, config, transforms );
         }
 
@@ -3428,10 +3432,10 @@ public class RelToSqlConverterTest {
 
 
         String exec() {
-            final Planner planner = getPlanner( null, SqlParserConfig.DEFAULT, schema, config );
+            final Planner planner = getPlanner( null, Parser.ParserConfig.DEFAULT, schema, config );
             try {
-                SqlNode parse = planner.parse( sql );
-                SqlNode validate = planner.validate( parse );
+                Node parse = planner.parse( sql );
+                Node validate = planner.validate( parse );
                 RelNode rel = planner.rel( validate ).rel;
                 for ( Function<RelNode, RelNode> transform : transforms ) {
                     rel = transform.apply( rel );

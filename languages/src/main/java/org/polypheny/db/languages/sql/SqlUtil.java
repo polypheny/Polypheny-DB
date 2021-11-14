@@ -23,7 +23,6 @@ import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
-import java.nio.charset.Charset;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -38,7 +37,6 @@ import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Functions;
 import org.polypheny.db.core.BasicNodeVisitor;
 import org.polypheny.db.core.Call;
-import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.DataTypeSpec;
 import org.polypheny.db.core.DynamicParam;
@@ -49,19 +47,17 @@ import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeList;
+import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BarfingInvocationHandler;
 import org.polypheny.db.util.Glossary;
-import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -308,7 +304,7 @@ public abstract class SqlUtil {
      * @return matching routine, or null if none found
      * @see Glossary#SQL99 SQL:1999 Part 2 Section 10.4
      */
-    public static SqlOperator lookupRoutine( SqlOperatorTable opTab, SqlIdentifier funcName, List<RelDataType> argTypes, List<String> argNames, FunctionCategory category, SqlSyntax syntax, Kind sqlKind ) {
+    public static SqlOperator lookupRoutine( OperatorTable opTab, SqlIdentifier funcName, List<RelDataType> argTypes, List<String> argNames, FunctionCategory category, SqlSyntax syntax, Kind sqlKind ) {
         Iterator<SqlOperator> list =
                 lookupSubjectRoutines(
                         opTab,
@@ -344,7 +340,7 @@ public abstract class SqlUtil {
      * @return list of matching routines
      * @see Glossary#SQL99 SQL:1999 Part 2 Section 10.4
      */
-    public static Iterator<SqlOperator> lookupSubjectRoutines( SqlOperatorTable opTab, SqlIdentifier funcName, List<RelDataType> argTypes, List<String> argNames, SqlSyntax sqlSyntax, Kind sqlKind, FunctionCategory category ) {
+    public static Iterator<SqlOperator> lookupSubjectRoutines( OperatorTable opTab, SqlIdentifier funcName, List<RelDataType> argTypes, List<String> argNames, SqlSyntax sqlSyntax, Kind sqlKind, FunctionCategory category ) {
         // start with all routines matching by name
         Iterator<SqlOperator> routines = lookupSubjectRoutinesByName( opTab, funcName, sqlSyntax, category );
 
@@ -383,7 +379,7 @@ public abstract class SqlUtil {
      * @param category category of routine to look up
      * @return true if match found
      */
-    public static boolean matchRoutinesByParameterCount( SqlOperatorTable opTab, SqlIdentifier funcName, List<RelDataType> argTypes, FunctionCategory category ) {
+    public static boolean matchRoutinesByParameterCount( OperatorTable opTab, SqlIdentifier funcName, List<RelDataType> argTypes, FunctionCategory category ) {
         // start with all routines matching by name
         Iterator<SqlOperator> routines = lookupSubjectRoutinesByName( opTab, funcName, SqlSyntax.FUNCTION, category );
 
@@ -394,7 +390,7 @@ public abstract class SqlUtil {
     }
 
 
-    private static Iterator<SqlOperator> lookupSubjectRoutinesByName( SqlOperatorTable opTab, SqlIdentifier funcName, final SqlSyntax syntax, FunctionCategory category ) {
+    private static Iterator<SqlOperator> lookupSubjectRoutinesByName( OperatorTable opTab, SqlIdentifier funcName, final SqlSyntax syntax, FunctionCategory category ) {
         final List<SqlOperator> sqlOperators = new ArrayList<>();
         opTab.lookupOperatorOverloads( funcName, category, syntax, sqlOperators );
         switch ( syntax ) {
@@ -556,7 +552,7 @@ public abstract class SqlUtil {
     /**
      * If an identifier is a legitimate call to a function which has no arguments and requires no parentheses (for example "CURRENT_USER"), returns a call to that function, otherwise returns null.
      */
-    public static SqlCall makeCall( SqlOperatorTable opTab, SqlIdentifier id ) {
+    public static SqlCall makeCall( OperatorTable opTab, SqlIdentifier id ) {
         if ( id.names.size() == 1 ) {
             final List<SqlOperator> list = new ArrayList<>();
             opTab.lookupOperatorOverloads( id, null, SqlSyntax.FUNCTION, list );

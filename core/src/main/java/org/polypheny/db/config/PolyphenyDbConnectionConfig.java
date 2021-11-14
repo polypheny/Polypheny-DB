@@ -34,13 +34,12 @@
 package org.polypheny.db.config;
 
 
+import javassist.compiler.Lex;
 import org.apache.calcite.avatica.ConnectionConfig;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
-import org.polypheny.db.sql.Lex;
-import org.polypheny.db.sql.NullCollation;
-import org.polypheny.db.sql.validate.SqlConformance;
-
+import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.NullCollation;
 
 /**
  * Interface for reading connection properties within Polypheny-DB code. There is a method for every property.
@@ -100,8 +99,9 @@ public interface PolyphenyDbConnectionConfig extends ConnectionConfig {
 
     /**
      * @see PolyphenyDbConnectionProperty#CONFORMANCE
+     * @return
      */
-    SqlConformance conformance();
+    Conformance conformance();
 
     /**
      * @see PolyphenyDbConnectionProperty#TIME_ZONE

@@ -41,6 +41,7 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.ExecutableStatement;
 import org.polypheny.db.core.ExplainFormat;
 import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.core.Kind;
@@ -54,8 +55,12 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.languages.NodeToRelConverter;
+import org.polypheny.db.languages.NodeToRelConverter.Config;
+import org.polypheny.db.languages.NodeToRelConverter.ConfigBuilder;
+import org.polypheny.db.languages.Parser;
+import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.sql.SqlBasicCall;
-import org.polypheny.db.languages.sql.SqlExecutableStatement;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlInsert;
 import org.polypheny.db.languages.sql.SqlLiteral;
@@ -65,7 +70,7 @@ import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.parser.SqlParser;
-import org.polypheny.db.languages.sql.parser.SqlParser.SqlParserConfig;
+import org.polypheny.db.languages.sql.validate.PolyphenyDbSqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql2rel.SqlToRelConverter;
 import org.polypheny.db.languages.sql2rel.StandardConvertletTable;
@@ -73,7 +78,6 @@ import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable.ViewExpander;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.prepare.PolyphenyDbSqlValidator;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;
@@ -95,13 +99,13 @@ import org.polypheny.db.util.SourceStringReader;
 @Slf4j
 public class SqlProcessorImpl implements Processor, ViewExpander {
 
-    private static final SqlParserConfig parserConfig;
+    private static final ParserConfig parserConfig;
     @Setter
     private PolyphenyDbSqlValidator validator;
 
 
     static {
-        SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
+        SqlParser.ConfigBuilder configConfigBuilder = Parser.configBuilder();
         configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
         configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
         configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
@@ -127,7 +131,7 @@ public class SqlProcessorImpl implements Processor, ViewExpander {
         }
 
         try {
-            final SqlParser parser = SqlParser.create( new SourceStringReader( query ), parserConfig );
+            final SqlParser parser = Parser.create( new SourceStringReader( query ), parserConfig );
             parsed = parser.parseStmt();
         } catch ( ParseException e ) {
             log.error( "Caught exception", e );
@@ -194,13 +198,13 @@ public class SqlProcessorImpl implements Processor, ViewExpander {
         }
         stopWatch.start();
 
-        SqlToRelConverter.ConfigBuilder sqlToRelConfigBuilder = SqlToRelConverter.configBuilder();
-        SqlToRelConverter.Config sqlToRelConfig = sqlToRelConfigBuilder.build();
+        ConfigBuilder sqlToRelConfigBuilder = NodeToRelConverter.configBuilder();
+        Config sqlToRelConfig = sqlToRelConfigBuilder.build();
         final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
 
         final RelOptCluster cluster = RelOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
-        final SqlToRelConverter.Config config =
-                SqlToRelConverter.configBuilder()
+        final Config config =
+                NodeToRelConverter.configBuilder()
                         .withConfig( sqlToRelConfig )
                         .withTrimUnusedFields( false )
                         .withConvertTableAccess( false )
@@ -244,12 +248,12 @@ public class SqlProcessorImpl implements Processor, ViewExpander {
 
     @Override
     public PolyphenyDbSignature<?> prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
-        if ( parsed instanceof SqlExecutableStatement ) {
+        if ( parsed instanceof ExecutableStatement ) {
             try {
                 // Acquire global schema lock
                 LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
                 // Execute statement
-                ((SqlExecutableStatement) parsed).execute( statement.getPrepareContext(), statement );
+                ((ExecutableStatement) parsed).execute( statement.getPrepareContext(), statement, );
                 statement.getTransaction().commit();
                 Catalog.getInstance().commit();
                 return new PolyphenyDbSignature<>(
@@ -469,7 +473,7 @@ public class SqlProcessorImpl implements Processor, ViewExpander {
      * @return Trimmed relational expression
      */
     protected RelRoot trimUnusedFields( RelRoot root, SqlToRelConverter sqlToRelConverter ) {
-        final SqlToRelConverter.Config config = SqlToRelConverter.configBuilder()
+        final Config config = NodeToRelConverter.configBuilder()
                 .withTrimUnusedFields( shouldTrim( root.rel ) )
                 .withExpand( false )
                 .build();

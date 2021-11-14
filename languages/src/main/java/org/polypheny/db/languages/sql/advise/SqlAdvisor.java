@@ -29,22 +29,23 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import org.apache.calcite.avatica.util.Casing;
-import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.languages.sql.parser.SqlAbstractParserImpl;
 import org.polypheny.db.core.ParseException;
-import org.polypheny.db.languages.sql.parser.SqlParser;
-import org.polypheny.db.languages.sql.parser.SqlParser.SqlParserConfig;
-import org.polypheny.db.languages.sql.parser.SqlParserUtil;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.SqlMoniker;
-import org.polypheny.db.languages.sql.validate.SqlMonikerImpl;
 import org.polypheny.db.core.SqlMonikerType;
-import org.polypheny.db.languages.sql.validate.SqlValidatorWithHints;
-import org.polypheny.db.runtime.PolyphenyDbContextException;
-import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.languages.Parser;
+import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlSelect;
 import org.polypheny.db.languages.sql.SqlUtil;
+import org.polypheny.db.languages.sql.parser.SqlAbstractParserImpl;
+import org.polypheny.db.languages.sql.parser.SqlParser;
+import org.polypheny.db.languages.sql.parser.SqlParserUtil;
+import org.polypheny.db.languages.sql.validate.SqlMonikerImpl;
+import org.polypheny.db.languages.sql.validate.SqlValidatorWithHints;
+import org.polypheny.db.runtime.PolyphenyDbContextException;
+import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
@@ -61,7 +62,7 @@ public class SqlAdvisor {
 
     // Flags indicating precision/scale combinations
     private final SqlValidatorWithHints validator;
-    private final SqlParserConfig parserConfig;
+    private final ParserConfig parserConfig;
 
     // Cache for getPreferredCasing
     private String prevWord;
@@ -78,7 +79,7 @@ public class SqlAdvisor {
      * @param validator Validator
      * @param parserConfig parser config
      */
-    public SqlAdvisor( SqlValidatorWithHints validator, SqlParserConfig parserConfig ) {
+    public SqlAdvisor( SqlValidatorWithHints validator, ParserConfig parserConfig ) {
         this.validator = validator;
         this.parserConfig = parserConfig;
     }
@@ -301,7 +302,7 @@ public class SqlAdvisor {
 
         // Add the identifiers which are expected at the point of interest.
         try {
-            validator.validate( sqlNode );
+            validator.validateSql( sqlNode );
         } catch ( Exception e ) {
             // mask any exception that is thrown during the validation, i.e. try to continue even if the sql is invalid. we are doing a best effort here to try to come up with the requested completion hints
             Util.swallow( e, LOGGER );
@@ -364,7 +365,7 @@ public class SqlAdvisor {
         SqlNode sqlNode;
         try {
             sqlNode = parseQuery( sql );
-            validator.validate( sqlNode );
+            validator.validateSql( sqlNode );
         } catch ( Exception e ) {
             return null;
         }
@@ -394,7 +395,7 @@ public class SqlAdvisor {
             return false;
         }
         try {
-            validator.validate( sqlNode );
+            validator.validateSql( sqlNode );
         } catch ( Exception e ) {
             return false;
         }
@@ -417,7 +418,7 @@ public class SqlAdvisor {
             return errorList;
         }
         try {
-            validator.validate( sqlNode );
+            validator.validateSql( sqlNode );
         } catch ( PolyphenyDbContextException e ) {
             ValidateErrorInfo errInfo = new ValidateErrorInfo( e );
 
@@ -494,7 +495,7 @@ public class SqlAdvisor {
      * @return metadata
      */
     protected SqlAbstractParserImpl.Metadata getParserMetadata() {
-        SqlParser parser = SqlParser.create( "", parserConfig );
+        SqlParser parser = Parser.create( "", parserConfig );
         return parser.getMetadata();
     }
 
@@ -507,7 +508,7 @@ public class SqlAdvisor {
      * @throws ParseException if not syntactically valid
      */
     protected SqlNode parseQuery( String sql ) throws ParseException {
-        SqlParser parser = SqlParser.create( sql, parserConfig );
+        SqlParser parser = Parser.create( sql, parserConfig );
         return parser.parseStmt();
     }
 

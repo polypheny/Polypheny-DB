@@ -27,11 +27,11 @@ import org.junit.runners.model.Statement;
 import org.polypheny.db.core.Collation.Coercibility;
 import org.polypheny.db.core.Conformance;
 import org.polypheny.db.core.ConformanceEnum;
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.ParseException;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlTestFactory;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil;
-import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.test.catalog.MockCatalogReaderExtended;
@@ -293,7 +293,7 @@ public class SqlValidatorTestCase {
          * @param sql SQL query
          * @return Monotonicity
          */
-        SqlMonotonicity getMonotonicity( String sql );
+        Monotonicity getMonotonicity( String sql );
 
         Conformance getConformance();
 
@@ -381,7 +381,7 @@ public class SqlValidatorTestCase {
         }
 
 
-        public Sql monotonic( SqlMonotonicity expectedMonotonicity ) {
+        public Sql monotonic( Monotonicity expectedMonotonicity ) {
             tester.checkMonotonic( sql, expectedMonotonicity );
             return this;
         }

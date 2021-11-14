@@ -20,16 +20,17 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.jdbc.Context;
-import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlUtil;
+import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.view.MaterializedViewManager;
 
@@ -47,7 +48,7 @@ public class SqlDropMaterializedView extends SqlDropObject {
 
 
     @Override
-    public void execute( Context context, Statement statement ) {
+    public void execute( Context context, Statement statement, QueryParameters parameters ) {
         final CatalogTable catalogTable;
 
         try {

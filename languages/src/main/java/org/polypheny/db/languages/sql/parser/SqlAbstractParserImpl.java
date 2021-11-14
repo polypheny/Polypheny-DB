@@ -31,16 +31,16 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import org.apache.calcite.avatica.util.Casing;
+import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.FunctionCategory;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParseException;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.Syntax;
 import org.polypheny.db.languages.sql.SqlCall;
-import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlOperator;
-import org.polypheny.db.languages.sql.SqlSyntax;
 import org.polypheny.db.languages.sql.SqlUnresolvedFunction;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.util.Glossary;
@@ -366,13 +366,13 @@ public abstract class SqlAbstractParserImpl {
      * @return Call
      */
     protected SqlCall createCall( SqlIdentifier funName, ParserPos pos, FunctionCategory funcType, SqlLiteral functionQualifier, SqlNode[] operands ) {
-        SqlOperator fun = null;
+        Operator fun = null;
 
         // First, try a half-hearted resolution as a builtin function.
         // If we find one, use it; this will guarantee that we preserve the correct syntax (i.e. don't quote builtin function / name when regenerating SQL).
         if ( funName.isSimple() ) {
-            final List<SqlOperator> list = new ArrayList<>();
-            opTab.lookupOperatorOverloads( funName, funcType, SqlSyntax.FUNCTION, list );
+            final List<Operator> list = new ArrayList<>();
+            opTab.lookupOperatorOverloads( funName, funcType, Syntax.FUNCTION, list );
             if ( list.size() == 1 ) {
                 fun = list.get( 0 );
             }
@@ -383,7 +383,7 @@ public abstract class SqlAbstractParserImpl {
             fun = new SqlUnresolvedFunction( funName, null, null, null, null, funcType );
         }
 
-        return fun.createCall( functionQualifier, pos, operands );
+        return (SqlCall) fun.createCall( functionQualifier, pos, operands );
     }
 
 

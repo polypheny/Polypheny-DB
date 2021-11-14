@@ -41,11 +41,17 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.avatica.Meta;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.core.Explain;
 import org.polypheny.db.core.ExplainFormat;
 import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.core.Validator;
+import org.polypheny.db.core.ValidatorCatalogReader;
+import org.polypheny.db.core.ValidatorTable;
 import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.languages.NodeToRelConverter;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -70,16 +76,6 @@ import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.schema.ExtensibleTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.ModifiableViewTable;
-import org.polypheny.db.sql.Explain;
-import org.polypheny.db.sql.ExplainFormat;
-import org.polypheny.db.sql.ExplainLevel;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperatorTable;
-import org.polypheny.db.sql.validate.SqlValidator;
-import org.polypheny.db.sql.validate.SqlValidatorCatalogReader;
-import org.polypheny.db.sql.validate.SqlValidatorTable;
-import org.polypheny.db.sql2rel.SqlToRelConverter;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
 import org.polypheny.db.util.Holder;
@@ -206,23 +202,23 @@ public abstract class Prepare {
     protected abstract PreparedResult implement( RelRoot root );
 
 
-    public PreparedResult prepareSql( SqlNode sqlQuery, Class runtimeContextClass, SqlValidator validator, boolean needsValidation ) {
+    public PreparedResult prepareSql( Node sqlQuery, Class runtimeContextClass, Validator validator, boolean needsValidation ) {
         return prepareSql( sqlQuery, sqlQuery, runtimeContextClass, validator, needsValidation );
     }
 
 
-    public PreparedResult prepareSql( SqlNode sqlQuery, SqlNode sqlNodeOriginal, Class runtimeContextClass, SqlValidator validator, boolean needsValidation ) {
+    public PreparedResult prepareSql( Node sqlQuery, Node sqlNodeOriginal, Class runtimeContextClass, Validator validator, boolean needsValidation ) {
         init( runtimeContextClass );
 
-        final SqlToRelConverter.ConfigBuilder builder =
-                SqlToRelConverter.configBuilder()
+        final NodeToRelConverter.ConfigBuilder builder =
+                NodeToRelConverter.configBuilder()
                         .withTrimUnusedFields( true )
                         .withExpand( THREAD_EXPAND.get() )
-                        .withExplain( sqlQuery.getKind() == SqlKind.EXPLAIN );
-        final SqlToRelConverter sqlToRelConverter = getSqlToRelConverter( validator, catalogReader, builder.build() );
+                        .withExplain( sqlQuery.getKind() == Kind.EXPLAIN );
+        final NodeToRelConverter sqlToRelConverter = getSqlToRelConverter( validator, catalogReader, builder.build() );
 
         Explain Explain = null;
-        if ( sqlQuery.getKind() == SqlKind.EXPLAIN ) {
+        if ( sqlQuery.getKind() == Kind.EXPLAIN ) {
             // dig out the underlying SQL statement
             Explain = (Explain) sqlQuery;
             sqlQuery = Explain.getExplicandum();
@@ -321,11 +317,11 @@ public abstract class Prepare {
     /**
      * Protected method to allow subclasses to override construction of SqlToRelConverter.
      */
-    protected abstract SqlToRelConverter getSqlToRelConverter( SqlValidator validator, CatalogReader catalogReader, SqlToRelConverter.Config config );
+    protected abstract NodeToRelConverter getSqlToRelConverter( Validator validator, CatalogReader catalogReader, NodeToRelConverter.Config config );
 
     public abstract RelNode flattenTypes( RelNode rootRel, boolean restructure );
 
-    protected abstract RelNode decorrelate( SqlToRelConverter sqlToRelConverter, SqlNode query, RelNode rootRel );
+    protected abstract RelNode decorrelate( NodeToRelConverter sqlToRelConverter, Node query, RelNode rootRel );
 
 
     /**
@@ -336,13 +332,13 @@ public abstract class Prepare {
      * @return Trimmed relational expression
      */
     protected RelRoot trimUnusedFields( RelRoot root ) {
-        final SqlToRelConverter.Config config = SqlToRelConverter.configBuilder()
+        final NodeToRelConverter.Config config = NodeToRelConverter.configBuilder()
                 .withTrimUnusedFields( shouldTrim( root.rel ) )
                 .withExpand( THREAD_EXPAND.get() )
                 .build();
-        final SqlToRelConverter converter = getSqlToRelConverter( getSqlValidator(), catalogReader, config );
+        final NodeToRelConverter converter = getSqlToRelConverter( getSqlValidator(), catalogReader, config );
         final boolean ordered = !root.collation.getFieldCollations().isEmpty();
-        final boolean dml = SqlKind.DML.contains( root.kind );
+        final boolean dml = Kind.DML.contains( root.kind );
         return root.withRel( converter.trimUnusedFields( dml || ordered, root.rel ) );
     }
 
@@ -362,7 +358,7 @@ public abstract class Prepare {
     /**
      * Interface by which validator and planner can read table metadata.
      */
-    public interface CatalogReader extends RelOptSchema, SqlValidatorCatalogReader, SqlOperatorTable {
+    public interface CatalogReader extends RelOptSchema, ValidatorCatalogReader, OperatorTable {
 
         @Override
         PreparingTable getTableForMember( List<String> names );
@@ -376,13 +372,14 @@ public abstract class Prepare {
         PreparingTable getTable( List<String> names );
 
         ThreadLocal<CatalogReader> THREAD_LOCAL = new ThreadLocal<>();
+
     }
 
 
     /**
      * Definition of a table, for the purposes of the validator and planner.
      */
-    public interface PreparingTable extends RelOptTable, SqlValidatorTable {
+    public interface PreparingTable extends RelOptTable, ValidatorTable {
 
     }
 
@@ -423,6 +420,7 @@ public abstract class Prepare {
         public List<ColumnStrategy> getColumnStrategies() {
             return RelOptTableImpl.columnStrategies( AbstractPreparingTable.this );
         }
+
     }
 
 
@@ -484,6 +482,7 @@ public abstract class Prepare {
         public List<List<String>> getFieldOrigins() {
             return Collections.singletonList( Collections.nCopies( 4, null ) );
         }
+
     }
 
 
@@ -527,6 +526,7 @@ public abstract class Prepare {
          * @return producer of rows resulting from execution
          */
         Bindable getBindable( Meta.CursorFactory cursorFactory );
+
     }
 
 
@@ -602,6 +602,7 @@ public abstract class Prepare {
         public RelNode getRootRel() {
             return rootRel;
         }
+
     }
 
 }

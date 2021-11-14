@@ -25,8 +25,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.NameMatcher;
 import org.polypheny.db.core.SqlMoniker;
+import org.polypheny.db.core.ValidatorCatalogReader;
 import org.polypheny.db.core.ValidatorScope;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIdentifier;
@@ -123,7 +125,7 @@ public interface SqlValidatorScope extends ValidatorScope {
     /**
      * Returns whether an expression is monotonic in this scope. For example, if the scope has previously been sorted by columns X, Y, then X is monotonic in this scope, but Y is not.
      */
-    SqlMonotonicity getMonotonicity( SqlNode expr );
+    Monotonicity getMonotonicity( SqlNode expr );
 
     /**
      * Returns the expressions by which the rows in this scope are sorted. If the rows are unsorted, returns null.
@@ -165,7 +167,7 @@ public interface SqlValidatorScope extends ValidatorScope {
     /**
      * Looks up a table in this scope from its name. If found, calls {@link Resolved#resolve(List, NameMatcher, boolean, Resolved)}. {@link TableNamespace} that wraps it. If the "table" is defined in a {@code WITH} clause it may be a query, not a table after all.
      *
-     * The name matcher is not null, and one typically uses {@link SqlValidatorCatalogReader#nameMatcher()}.
+     * The name matcher is not null, and one typically uses {@link ValidatorCatalogReader#nameMatcher()}.
      *
      * @param names Name of table, may be qualified or fully-qualified
      * @param nameMatcher Name matcher

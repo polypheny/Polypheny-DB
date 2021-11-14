@@ -23,9 +23,9 @@ import org.polypheny.db.core.BasicNodeVisitor;
 import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlOperator;
-import org.polypheny.db.languages.sql.SqlOperatorTable;
 import org.polypheny.db.languages.sql.SqlSyntax;
 import org.polypheny.db.languages.sql.fun.SqlAbstractGroupFunction;
 
@@ -37,7 +37,7 @@ import org.polypheny.db.languages.sql.fun.SqlAbstractGroupFunction;
  */
 abstract class AggVisitor extends BasicNodeVisitor<Void> {
 
-    protected final SqlOperatorTable opTab;
+    protected final OperatorTable opTab;
 
     /**
      * Whether to find windowed aggregates.
@@ -65,7 +65,7 @@ abstract class AggVisitor extends BasicNodeVisitor<Void> {
      * @param group Whether to find group functions (e.g. {@code TUMBLE})
      * @param delegate Finder to which to delegate when processing the arguments
      */
-    AggVisitor( SqlOperatorTable opTab, boolean over, boolean aggregate, boolean group, AggFinder delegate ) {
+    AggVisitor( OperatorTable opTab, boolean over, boolean aggregate, boolean group, AggFinder delegate ) {
         this.group = group;
         this.over = over;
         this.aggregate = aggregate;

@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql.validate;
+package org.polypheny.db.core;
 
 
 /**
- * Relational or streaming.
+ * Enumeration representing different access types
  */
-public enum SqlModality {
-    RELATION,
-    STREAM
+public enum AccessEnum {
+    SELECT, UPDATE, INSERT, DELETE
 }
 

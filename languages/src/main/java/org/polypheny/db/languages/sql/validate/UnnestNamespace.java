@@ -17,11 +17,12 @@
 package org.polypheny.db.languages.sql.validate;
 
 
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.core.ValidatorTable;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlUnnestOperator;
+import org.polypheny.db.rel.type.RelDataType;
 
 
 /**
@@ -43,7 +44,7 @@ class UnnestNamespace extends AbstractNamespace {
 
 
     @Override
-    public SqlValidatorTable getTable() {
+    public ValidatorTable getTable() {
         final SqlNode toUnnest = unnest.operand( 0 );
         if ( toUnnest instanceof SqlIdentifier ) {
             // When operand of SqlIdentifier type does not have struct, fake a table for UnnestNamespace

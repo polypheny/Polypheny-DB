@@ -23,8 +23,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.CyclicDefinitionException;
+import org.polypheny.db.core.Modality;
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.NameMatcher;
+import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.ValidatorTable;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -52,7 +56,7 @@ public class IdentifierNamespace extends AbstractNamespace {
     /**
      * List of monotonic expressions. Set on validate.
      */
-    private List<Pair<SqlNode, SqlMonotonicity>> monotonicExprs;
+    private List<Pair<SqlNode, Monotonicity>> monotonicExprs;
 
 
     /**
@@ -149,7 +153,7 @@ public class IdentifierNamespace extends AbstractNamespace {
     public RelDataType validateImpl( RelDataType targetRowType ) {
         resolvedNamespace = Objects.requireNonNull( resolveImpl( id ) );
         if ( resolvedNamespace instanceof TableNamespace ) {
-            SqlValidatorTable table = resolvedNamespace.getTable();
+            ValidatorTable table = resolvedNamespace.getTable();
             if ( validator.shouldExpandIdentifiers() ) {
                 // TODO:  expand qualifiers for column references also
                 List<String> qualifiedNames = table.getQualifiedName();
@@ -180,12 +184,12 @@ public class IdentifierNamespace extends AbstractNamespace {
         }
 
         // Build a list of monotonic expressions.
-        final ImmutableList.Builder<Pair<SqlNode, SqlMonotonicity>> builder = ImmutableList.builder();
+        final ImmutableList.Builder<Pair<SqlNode, Monotonicity>> builder = ImmutableList.builder();
         List<RelDataTypeField> fields = rowType.getFieldList();
         for ( RelDataTypeField field : fields ) {
             final String fieldName = field.getName();
-            final SqlMonotonicity monotonicity = resolvedNamespace.getMonotonicity( fieldName );
-            if ( monotonicity != SqlMonotonicity.NOT_MONOTONIC ) {
+            final Monotonicity monotonicity = resolvedNamespace.getMonotonicity( fieldName );
+            if ( monotonicity != Monotonicity.NOT_MONOTONIC ) {
                 builder.add( Pair.of( (SqlNode) new SqlIdentifier( fieldName, ParserPos.ZERO ), monotonicity ) );
             }
         }
@@ -215,29 +219,29 @@ public class IdentifierNamespace extends AbstractNamespace {
 
 
     @Override
-    public SqlValidatorTable getTable() {
+    public ValidatorTable getTable() {
         return resolvedNamespace == null ? null : resolve().getTable();
     }
 
 
     @Override
-    public List<Pair<SqlNode, SqlMonotonicity>> getMonotonicExprs() {
+    public List<Pair<SqlNode, Monotonicity>> getMonotonicExprs() {
         return monotonicExprs;
     }
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( String columnName ) {
-        final SqlValidatorTable table = getTable();
+    public Monotonicity getMonotonicity( String columnName ) {
+        final ValidatorTable table = getTable();
         return table.getMonotonicity( columnName );
     }
 
 
     @Override
-    public boolean supportsModality( SqlModality modality ) {
-        final SqlValidatorTable table = getTable();
+    public boolean supportsModality( Modality modality ) {
+        final ValidatorTable table = getTable();
         if ( table == null ) {
-            return modality == SqlModality.RELATION;
+            return modality == Modality.RELATION;
         }
         return table.supportsModality( modality );
     }

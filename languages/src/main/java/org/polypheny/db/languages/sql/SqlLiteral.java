@@ -27,13 +27,13 @@ import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeVisitor;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.fun.SqlLiteralChainOperator;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil;
-import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
@@ -453,6 +453,7 @@ public class SqlLiteral extends SqlNode implements Literal {
      *
      * @return string representation of the value
      */
+    @Override
     public String toValue() {
         if ( value == null ) {
             return null;
@@ -494,8 +495,8 @@ public class SqlLiteral extends SqlNode implements Literal {
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( SqlValidatorScope scope ) {
-        return SqlMonotonicity.CONSTANT;
+    public Monotonicity getMonotonicity( SqlValidatorScope scope ) {
+        return Monotonicity.CONSTANT;
     }
 
 

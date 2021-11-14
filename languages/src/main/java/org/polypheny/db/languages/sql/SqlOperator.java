@@ -25,6 +25,7 @@ import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.OperatorBinding;
@@ -33,7 +34,6 @@ import org.polypheny.db.core.Syntax;
 import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.languages.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.languages.sql.fun.SqlBetweenOperator;
-import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -565,12 +565,12 @@ public abstract class SqlOperator extends Operator {
     /**
      * Returns whether a call to this operator is monotonic.
      *
-     * Default implementation returns {@link SqlMonotonicity#NOT_MONOTONIC}.
+     * Default implementation returns {@link Monotonicity#NOT_MONOTONIC}.
      *
      * @param call Call to this operator with particular arguments and information about the monotonicity of the arguments
      */
-    public SqlMonotonicity getMonotonicity( SqlOperatorBinding call ) {
-        return SqlMonotonicity.NOT_MONOTONIC;
+    public Monotonicity getMonotonicity( SqlOperatorBinding call ) {
+        return Monotonicity.NOT_MONOTONIC;
     }
 
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql;
+package org.polypheny.db.core;
 
 
 import java.util.EnumSet;
@@ -24,21 +24,21 @@ import java.util.Locale;
 /**
  * SqlAccessType is represented by a set of allowed access types
  */
-public class SqlAccessType {
+public class AccessType {
 
-    public static final SqlAccessType ALL = new SqlAccessType( EnumSet.allOf( SqlAccessEnum.class ) );
-    public static final SqlAccessType READ_ONLY = new SqlAccessType( EnumSet.of( SqlAccessEnum.SELECT ) );
-    public static final SqlAccessType WRITE_ONLY = new SqlAccessType( EnumSet.of( SqlAccessEnum.INSERT ) );
+    public static final AccessType ALL = new AccessType( EnumSet.allOf( AccessEnum.class ) );
+    public static final AccessType READ_ONLY = new AccessType( EnumSet.of( AccessEnum.SELECT ) );
+    public static final AccessType WRITE_ONLY = new AccessType( EnumSet.of( AccessEnum.INSERT ) );
 
-    private final EnumSet<SqlAccessEnum> accessEnums;
+    private final EnumSet<AccessEnum> accessEnums;
 
 
-    public SqlAccessType( EnumSet<SqlAccessEnum> accessEnums ) {
+    public AccessType( EnumSet<AccessEnum> accessEnums ) {
         this.accessEnums = accessEnums;
     }
 
 
-    public boolean allowsAccess( SqlAccessEnum access ) {
+    public boolean allowsAccess( AccessEnum access ) {
         return accessEnums.contains( access );
     }
 
@@ -48,17 +48,17 @@ public class SqlAccessType {
     }
 
 
-    public static SqlAccessType create( String[] accessNames ) {
+    public static AccessType create( String[] accessNames ) {
         assert accessNames != null;
-        EnumSet<SqlAccessEnum> enumSet = EnumSet.noneOf( SqlAccessEnum.class );
+        EnumSet<AccessEnum> enumSet = EnumSet.noneOf( AccessEnum.class );
         for ( String accessName : accessNames ) {
-            enumSet.add( SqlAccessEnum.valueOf( accessName.trim().toUpperCase( Locale.ROOT ) ) );
+            enumSet.add( AccessEnum.valueOf( accessName.trim().toUpperCase( Locale.ROOT ) ) );
         }
-        return new SqlAccessType( enumSet );
+        return new AccessType( enumSet );
     }
 
 
-    public static SqlAccessType create( String accessString ) {
+    public static AccessType create( String accessString ) {
         assert accessString != null;
         accessString = accessString.replace( '[', ' ' );
         accessString = accessString.replace( ']', ' ' );

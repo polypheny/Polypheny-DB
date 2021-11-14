@@ -24,10 +24,12 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.NameMatcher;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.SqlMoniker;
 import org.polypheny.db.core.SqlMonikerType;
+import org.polypheny.db.core.ValidatorTable;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -96,7 +98,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
         }
         final RelDataType rowType = ns.getRowType();
         if ( rowType.isStruct() ) {
-            SqlValidatorTable validatorTable = ns.getTable();
+            ValidatorTable validatorTable = ns.getTable();
             if ( validatorTable instanceof Prepare.PreparingTable ) {
                 Table t = ((Prepare.PreparingTable) validatorTable).unwrap( Table.class );
                 if ( t instanceof CustomColumnResolvingTable ) {
@@ -502,7 +504,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( SqlNode expr ) {
+    public Monotonicity getMonotonicity( SqlNode expr ) {
         return parent.getMonotonicity( expr );
     }
 

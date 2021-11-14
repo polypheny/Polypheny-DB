@@ -18,13 +18,13 @@ package org.polypheny.db.languages;
 
 
 import com.google.common.collect.ImmutableList;
+import org.polypheny.db.core.ChainedOperatorTable;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlOperatorBinding;
-import org.polypheny.db.languages.sql.SqlOperatorTable;
-import org.polypheny.db.languages.sql.util.ChainedSqlOperatorTable;
 import org.polypheny.db.languages.sql.util.ListSqlOperatorTable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -35,12 +35,12 @@ import org.polypheny.db.type.checker.OperandTypes;
 /**
  * Mock operator table for testing purposes. Contains the standard SQL operator table, plus a list of operators.
  */
-public class MockSqlOperatorTable extends ChainedSqlOperatorTable {
+public class MockSqlOperatorTable extends ChainedOperatorTable {
 
     private final ListSqlOperatorTable listOpTab;
 
 
-    public MockSqlOperatorTable( SqlOperatorTable parentTable ) {
+    public MockSqlOperatorTable( OperatorTable parentTable ) {
         super( ImmutableList.of( parentTable, new ListSqlOperatorTable() ) );
         listOpTab = (ListSqlOperatorTable) tableList.get( 1 );
     }

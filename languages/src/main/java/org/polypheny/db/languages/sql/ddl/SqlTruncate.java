@@ -20,12 +20,13 @@ package org.polypheny.db.languages.sql.ddl;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.core.ExecutableStatement;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlDdl;
-import org.polypheny.db.languages.sql.SqlExecutableStatement;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
@@ -36,7 +37,7 @@ import org.polypheny.db.transaction.Statement;
 /**
  * Parse tree for {@code TRUNCATE TABLE } statement.
  */
-public class SqlTruncate extends SqlDdl implements SqlExecutableStatement {
+public class SqlTruncate extends SqlDdl implements ExecutableStatement {
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "TRUNCATE", Kind.TRUNCATE );
 
@@ -67,7 +68,7 @@ public class SqlTruncate extends SqlDdl implements SqlExecutableStatement {
 
 
     @Override
-    public void execute( Context context, Statement statement ) {
+    public void execute( Context context, Statement statement, QueryParameters parameters ) {
         CatalogTable table = getCatalogTable( context, name );
 
         DdlManager.getInstance().truncate( table, statement );

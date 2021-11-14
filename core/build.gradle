@@ -151,7 +151,7 @@ task generateJdbcVersionProperties(type: Copy) {
     expand(version: project.version, versionMajor: versionMajor, versionMinor: versionMinor, buildTimestamp: new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"))
 }
 compileJava {
-    dependsOn("generateParser", "generateJdbcVersionProperties")
+    dependsOn("generateJdbcVersionProperties")
 }
 
 

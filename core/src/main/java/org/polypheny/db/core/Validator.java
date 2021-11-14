@@ -16,12 +16,12 @@
 
 package org.polypheny.db.core;
 
+import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.Resources;
-import org.polypheny.db.runtime.Resources.ExInst;
 
 public interface Validator {
 
@@ -51,6 +51,8 @@ public interface Validator {
      */
     RelDataTypeFactory getTypeFactory();
 
+    Node validate( Node node );
+
     /**
      * Adds "line x, column y" context to a validator exception.
      *
@@ -62,5 +64,45 @@ public interface Validator {
      * @return Exception containing positional information, never null
      */
     <T extends Exception & ValidatorException> PolyphenyDbContextException newValidationError( Node node, Resources.ExInst<T> e );
+
+    /**
+     * Returns the type assigned to a node by validation.
+     *
+     * @param node the node of interest
+     * @return validated type, never null
+     */
+    RelDataType getValidatedNodeType( Node node );
+
+    /**
+     * Enables or disables expansion of identifiers other than column references.
+     *
+     * @param expandIdentifiers new setting
+     */
+    void setIdentifierExpansion( boolean expandIdentifiers );
+
+    /**
+     * Sets how NULL values should be collated if an ORDER BY item does not contain NULLS FIRST or NULLS LAST.
+     */
+    void setDefaultNullCollation( NullCollation nullCollation );
+
+    /**
+     * Returns a description of how each field in the row type maps to a catalog, schema, table and column in the schema.
+     *
+     * The returned list is never null, and has one element for each field in the row type. Each element is a list of four elements (catalog, schema, table, column), or may be null
+     * if the column is an expression.
+     *
+     * @param sqlQuery Query
+     * @return Description of how each field in the row type maps to a schema object
+     */
+    List<List<String>> getFieldOrigins( Node sqlQuery );
+
+    /**
+     * Returns a record type that contains the name and type of each parameter.
+     * Returns a record type with no fields if there are no parameters.
+     *
+     * @param sqlQuery Query
+     * @return Record type
+     */
+    RelDataType getParameterRowType( Node sqlQuery );
 
 }

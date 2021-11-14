@@ -22,8 +22,8 @@ import java.nio.charset.Charset;
 import org.polypheny.db.core.BinaryOperator;
 import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
@@ -160,11 +160,11 @@ public class SqlBinaryOperator extends SqlOperator implements BinaryOperator {
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( SqlOperatorBinding call ) {
+    public Monotonicity getMonotonicity( SqlOperatorBinding call ) {
         if ( getName().equals( "/" ) ) {
-            final SqlMonotonicity mono0 = call.getOperandMonotonicity( 0 );
-            final SqlMonotonicity mono1 = call.getOperandMonotonicity( 1 );
-            if ( mono1 == SqlMonotonicity.CONSTANT ) {
+            final Monotonicity mono0 = call.getOperandMonotonicity( 0 );
+            final Monotonicity mono1 = call.getOperandMonotonicity( 1 );
+            if ( mono1 == Monotonicity.CONSTANT ) {
                 if ( call.isOperandLiteral( 1, false ) ) {
                     switch ( call.getOperandLiteralValue( 1, BigDecimal.class ).signum() ) {
                         case -1:
@@ -173,7 +173,7 @@ public class SqlBinaryOperator extends SqlOperator implements BinaryOperator {
 
                         case 0:
                             // mono / zero --> constant (infinity!)
-                            return SqlMonotonicity.CONSTANT;
+                            return Monotonicity.CONSTANT;
 
                         default:
                             // mono / +ve constant * mono1 --> mono, unstrict

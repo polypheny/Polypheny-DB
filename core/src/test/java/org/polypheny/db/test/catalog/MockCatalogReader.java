@@ -33,11 +33,19 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.core.AccessType;
 import org.polypheny.db.core.Call;
+import org.polypheny.db.core.Collation;
+import org.polypheny.db.core.Identifier;
+import org.polypheny.db.core.InitializerExpressionFactory;
 import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Modality;
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.NameMatcher;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.NullInitializerExpressionFactory;
+import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.jdbc.PolyphenyDbPrepare.AnalyzeViewResult;
 import org.polypheny.db.plan.RelOptSchema;
 import org.polypheny.db.plan.RelOptTable;
@@ -82,17 +90,8 @@ import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.schema.impl.ModifiableViewTable;
 import org.polypheny.db.schema.impl.ViewTableMacro;
-import org.polypheny.db.sql.SqlAccessType;
-import org.polypheny.db.sql.SqlCollation;
-import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.validate.SqlModality;
-import org.polypheny.db.sql.validate.SqlMonotonicity;
-import org.polypheny.db.sql.validate.SqlNameMatcher;
 import org.polypheny.db.sql.validate.SqlNameMatchers;
-import org.polypheny.db.sql.validate.SqlValidatorCatalogReader;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
-import org.polypheny.db.sql2rel.InitializerExpressionFactory;
-import org.polypheny.db.sql2rel.NullInitializerExpressionFactory;
 import org.polypheny.db.test.JdbcTest;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -102,7 +101,7 @@ import org.polypheny.db.util.Util;
 
 
 /**
- * Mock implementation of {@link SqlValidatorCatalogReader} which returns tables "EMP", "DEPT", "BONUS", "SALGRADE" (same as Oracle's SCOTT schema).
+ * Mock implementation of {#@link SqlValidatorCatalogReader} which returns tables "EMP", "DEPT", "BONUS", "SALGRADE" (same as Oracle's SCOTT schema).
  * Also two streams "ORDERS", "SHIPMENTS"; and a view "EMP_20".
  */
 public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
@@ -176,7 +175,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
     protected void registerType( final List<String> names, final RelProtoDataType relProtoDataType ) {
         assert names.get( 0 ).equals( DEFAULT_CATALOG );
         final List<String> schemaPath = Util.skipLast( names );
-        final PolyphenyDbSchema schema = SqlValidatorUtil.getSchema( rootSchema, schemaPath, SqlNameMatchers.withCaseSensitive( true ) );
+        final PolyphenyDbSchema schema = ValidatorUtil.getSchema( rootSchema, schemaPath, SqlNameMatchers.withCaseSensitive( true ) );
         schema.add( Util.last( names ), relProtoDataType );
     }
 
@@ -224,8 +223,8 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         int i = -1;
         for ( RelDataTypeField field : table.getRowType().getFieldList() ) {
             ++i;
-            final SqlMonotonicity monotonicity = table.getMonotonicity( field.getName() );
-            if ( monotonicity != SqlMonotonicity.NOT_MONOTONIC ) {
+            final Monotonicity monotonicity = table.getMonotonicity( field.getName() );
+            if ( monotonicity != Monotonicity.NOT_MONOTONIC ) {
                 final RelFieldCollation.Direction direction =
                         monotonicity.isDecreasing()
                                 ? RelFieldCollation.Direction.DESCENDING
@@ -515,8 +514,8 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
-        public boolean supportsModality( SqlModality modality ) {
-            return modality == (stream ? SqlModality.STREAM : SqlModality.RELATION);
+        public boolean supportsModality( Modality modality ) {
+            return modality == (stream ? Modality.STREAM : Modality.RELATION);
         }
 
 
@@ -533,16 +532,16 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
-        public SqlMonotonicity getMonotonicity( String columnName ) {
+        public Monotonicity getMonotonicity( String columnName ) {
             return monotonicColumnSet.contains( columnName )
-                    ? SqlMonotonicity.INCREASING
-                    : SqlMonotonicity.NOT_MONOTONIC;
+                    ? Monotonicity.INCREASING
+                    : Monotonicity.NOT_MONOTONIC;
         }
 
 
         @Override
-        public SqlAccessType getAllowedAccess() {
-            return SqlAccessType.ALL;
+        public AccessType getAllowedAccess() {
+            return AccessType.ALL;
         }
 
 
@@ -985,7 +984,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
-        public SqlCollation getCollation() {
+        public Collation getCollation() {
             return delegate.getCollation();
         }
 
@@ -1021,7 +1020,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
-        public SqlIdentifier getSqlIdentifier() {
+        public Identifier getSqlIdentifier() {
             return delegate.getSqlIdentifier();
         }
 

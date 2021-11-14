@@ -19,19 +19,19 @@ package org.polypheny.db.partition.raw;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.core.Identifier;
+import org.polypheny.db.core.Node;
 
 
 @Getter
 @Setter
 public class RawPartitionInformation {
 
-    public SqlIdentifier partitionColumn;
-    public SqlIdentifier partitionType;
+    public Identifier partitionColumn;
+    public Identifier partitionType;
 
-    public List<SqlIdentifier> partitionNamesList;
-    public List<List<SqlNode>> partitionQualifierList;
+    public List<Identifier> partitionNamesList;
+    public List<List<Node>> partitionQualifierList;
 
     public long numPartitionGroups;
     public long numPartitions;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql;
+package org.polypheny.db.core;
 
 
 import org.apache.calcite.avatica.util.Casing;

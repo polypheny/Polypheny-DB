@@ -18,9 +18,12 @@ package org.polypheny.db.languages.sql.validate;
 
 
 import java.util.List;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.core.Modality;
+import org.polypheny.db.core.Monotonicity;
+import org.polypheny.db.core.ValidatorTable;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.util.Pair;
 
 
@@ -50,7 +53,7 @@ public interface SqlValidatorNamespace {
     /**
      * Returns the underlying table, or null if there is none.
      */
-    SqlValidatorTable getTable();
+    ValidatorTable getTable();
 
     /**
      * Returns the row type of this namespace, which comprises a list of names and types of the output columns. If the scope's type has not yet been derived, derives it.
@@ -126,12 +129,12 @@ public interface SqlValidatorNamespace {
     /**
      * Returns a list of expressions which are monotonic in this namespace. For example, if the namespace represents a relation ordered by a column called "TIMESTAMP", then the list would contain a {@link SqlIdentifier} called "TIMESTAMP".
      */
-    List<Pair<SqlNode, SqlMonotonicity>> getMonotonicExprs();
+    List<Pair<SqlNode, Monotonicity>> getMonotonicExprs();
 
     /**
      * Returns whether and how a given column is sorted.
      */
-    SqlMonotonicity getMonotonicity( String columnName );
+    Monotonicity getMonotonicity( String columnName );
 
     /**
      * Returns this namespace, or a wrapped namespace, cast to a particular class.
@@ -164,6 +167,6 @@ public interface SqlValidatorNamespace {
      *
      * @param modality Modality
      */
-    boolean supportsModality( SqlModality modality );
+    boolean supportsModality( Modality modality );
 }
 

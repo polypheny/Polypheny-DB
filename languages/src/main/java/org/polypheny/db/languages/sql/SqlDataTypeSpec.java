@@ -20,13 +20,14 @@ package org.polypheny.db.languages.sql;
 import java.nio.charset.Charset;
 import java.util.Objects;
 import java.util.TimeZone;
+import lombok.Getter;
 import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.DataTypeSpec;
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeVisitor;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
@@ -55,14 +56,23 @@ import org.polypheny.db.util.Util;
  */
 public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
 
+    @Getter
     private final SqlIdentifier collectionsTypeName;
+    @Getter
     private final SqlIdentifier typeName;
+    @Getter
     private final SqlIdentifier baseTypeName;
+    @Getter
     private final int scale;
+    @Getter
     private final int precision;
+    @Getter
     private final int dimension;
+    @Getter
     private final int cardinality;
+    @Getter
     private final String charSetName;
+    @Getter
     private final TimeZone timeZone;
 
     /**
@@ -70,6 +80,7 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
      *
      * Nullable is nullable! Null means "not specified". E.g. {@code CAST(x AS INTEGER)} preserves has the same nullability as {@code x}.
      */
+    @Getter
     private Boolean nullable;
 
 
@@ -159,13 +170,8 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( SqlValidatorScope scope ) {
-        return SqlMonotonicity.CONSTANT;
-    }
-
-
-    public SqlIdentifier getCollectionsTypeName() {
-        return collectionsTypeName;
+    public Monotonicity getMonotonicity( SqlValidatorScope scope ) {
+        return Monotonicity.CONSTANT;
     }
 
 
@@ -174,13 +180,9 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
      *
      * @return the parsed collection
      */
+    @Override
     public PolyType getCollectionsType() {
         return collectionsTypeName == null ? null : PolyType.get( collectionsTypeName.getSimple() );
-    }
-
-
-    public SqlIdentifier getTypeName() {
-        return typeName;
     }
 
 
@@ -189,43 +191,9 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
      *
      * @return the parsed type
      */
+    @Override
     public PolyType getType() {
         return typeName == null ? null : PolyType.get( typeName.getSimple() );
-    }
-
-
-    public int getScale() {
-        return scale;
-    }
-
-
-    public int getPrecision() {
-        return precision;
-    }
-
-
-    public int getDimension() {
-        return dimension;
-    }
-
-
-    public int getCardinality() {
-        return cardinality;
-    }
-
-
-    public String getCharSetName() {
-        return charSetName;
-    }
-
-
-    public TimeZone getTimeZone() {
-        return timeZone;
-    }
-
-
-    public Boolean getNullable() {
-        return nullable;
     }
 
 

@@ -17,9 +17,9 @@
 package org.polypheny.db.languages.sql.fun;
 
 
-import org.polypheny.db.languages.sql.validate.SqlModality;
-import org.polypheny.db.languages.sql.SqlFunctionalOperator;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Modality;
+import org.polypheny.db.languages.sql.SqlFunctionalOperator;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
 
@@ -31,16 +31,16 @@ import org.polypheny.db.type.inference.ReturnTypes;
  */
 public class SqlCollectionTableOperator extends SqlFunctionalOperator {
 
-    private final SqlModality modality;
+    private final Modality modality;
 
 
-    public SqlCollectionTableOperator( String name, SqlModality modality ) {
+    public SqlCollectionTableOperator( String name, Modality modality ) {
         super( name, Kind.COLLECTION_TABLE, 200, true, ReturnTypes.ARG0, null, OperandTypes.ANY );
         this.modality = modality;
     }
 
 
-    public SqlModality getModality() {
+    public Modality getModality() {
         return modality;
     }
 }

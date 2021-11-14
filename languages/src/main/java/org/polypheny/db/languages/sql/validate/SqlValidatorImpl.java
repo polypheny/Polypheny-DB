@@ -50,7 +50,10 @@ import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.function.Functions;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.core.AccessEnum;
+import org.polypheny.db.core.AccessType;
 import org.polypheny.db.core.BasicNodeVisitor;
 import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Conformance;
@@ -65,24 +68,27 @@ import org.polypheny.db.core.JoinConditionType;
 import org.polypheny.db.core.JoinType;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.Modality;
+import org.polypheny.db.core.Monotonicity;
+import org.polypheny.db.core.NameMatcher;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeList;
 import org.polypheny.db.core.NodeVisitor;
+import org.polypheny.db.core.NullCollation;
 import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.NameMatcher;
 import org.polypheny.db.core.SqlMoniker;
 import org.polypheny.db.core.SqlMonikerType;
 import org.polypheny.db.core.SqlValidatorException;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.Syntax;
+import org.polypheny.db.core.ValidatorCatalogReader;
 import org.polypheny.db.core.ValidatorScope;
+import org.polypheny.db.core.ValidatorTable;
 import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.document.util.DocumentUtil;
 import org.polypheny.db.languages.SqlRelOptUtil;
-import org.polypheny.db.languages.sql.NullCollation;
-import org.polypheny.db.languages.sql.SqlAccessEnum;
-import org.polypheny.db.languages.sql.SqlAccessType;
 import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.languages.sql.SqlBasicCall;
 import org.polypheny.db.languages.sql.SqlCall;
@@ -104,7 +110,6 @@ import org.polypheny.db.languages.sql.SqlMerge;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlOperator;
-import org.polypheny.db.languages.sql.SqlOperatorTable;
 import org.polypheny.db.languages.sql.SqlOrderBy;
 import org.polypheny.db.languages.sql.SqlSampleSpec;
 import org.polypheny.db.languages.sql.SqlSelect;
@@ -122,6 +127,7 @@ import org.polypheny.db.languages.sql.util.SqlShuttle;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.prepare.Prepare;
+import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rel.type.DynamicRecordType;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -183,8 +189,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     public static final String UPDATE_ANON_PREFIX = "SYS$ANON";
 
 
-    private final SqlOperatorTable opTab;
-    final SqlValidatorCatalogReader catalogReader;
+    private final OperatorTable opTab;
+    final ValidatorCatalogReader catalogReader;
 
     /**
      * Maps ParsePosition strings to the {@link SqlIdentifier} identifier objects at these positions
@@ -290,7 +296,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @param typeFactory Type factory
      * @param conformance Compatibility mode
      */
-    protected SqlValidatorImpl( SqlOperatorTable opTab, SqlValidatorCatalogReader catalogReader, RelDataTypeFactory typeFactory, Conformance conformance ) {
+    protected SqlValidatorImpl( OperatorTable opTab, ValidatorCatalogReader catalogReader, RelDataTypeFactory typeFactory, Conformance conformance ) {
         this.opTab = Objects.requireNonNull( opTab );
         this.catalogReader = Objects.requireNonNull( catalogReader );
         this.typeFactory = Objects.requireNonNull( typeFactory );
@@ -316,13 +322,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     @Override
-    public SqlValidatorCatalogReader getCatalogReader() {
+    public ValidatorCatalogReader getCatalogReader() {
         return catalogReader;
     }
 
 
     @Override
-    public SqlOperatorTable getOperatorTable() {
+    public OperatorTable getOperatorTable() {
         return opTab;
     }
 
@@ -330,6 +336,16 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     @Override
     public RelDataTypeFactory getTypeFactory() {
         return typeFactory;
+    }
+
+
+    @Override
+    public Node validate( Node node ) {
+        if ( node.getLanguage() != QueryLanguage.SQL ) {
+            throw new RuntimeException( "Non-SQL queries cannot be evaluated with an SQL validator" );
+        }
+
+        return validateSql( (SqlNode) node );
     }
 
 
@@ -602,7 +618,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     @Override
-    public SqlNode validate( SqlNode topNode ) {
+    public SqlNode validateSql( SqlNode topNode ) {
         SqlValidatorScope scope = new EmptyScope( this );
         scope = new CatalogScope( scope, ImmutableList.of( "CATALOG" ) );
         final SqlNode topNode2 = validateScopedExpression( topNode, scope );
@@ -882,7 +898,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         if ( node == top ) {
             validateModality( node );
         }
-        validateAccess( node, ns.getTable(), SqlAccessEnum.SELECT );
+        validateAccess( node, ns.getTable(), AccessEnum.SELECT );
     }
 
 
@@ -1520,7 +1536,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     @Override
-    public RelDataType getValidatedNodeType( SqlNode node ) {
+    public RelDataType getValidatedNodeType( Node node ) {
         RelDataType type = getValidatedNodeTypeIfKnown( node );
         if ( type == null ) {
             throw Util.needToImplement( node );
@@ -3411,7 +3427,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             return findTable( catalogReader.getRootSchema(), names.get( 0 ), catalogReader.nameMatcher().isCaseSensitive() );
         }
 
-        PolyphenyDbSchema.TableEntry entry = ValidatorUtil.getTableEntry( catalogReader, names );
+        PolyphenyDbSchema.TableEntry entry = ValidatorUtil.getTableEntry( (CatalogReader) catalogReader, names );
 
         return entry == null ? null : entry.getTable();
     }
@@ -3430,7 +3446,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * Validates that a query can deliver the modality it promises. Only called on the top-most SELECT or set operator in the tree.
      */
     private void validateModality( SqlNode query ) {
-        final SqlModality modality = deduceModality( query );
+        final Modality modality = deduceModality( query );
         if ( query instanceof SqlSelect ) {
             final SqlSelect select = (SqlSelect) query;
             validateModality( select, modality, true );
@@ -3456,14 +3472,14 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     /**
      * Return the intended modality of a SELECT or set-op.
      */
-    private SqlModality deduceModality( SqlNode query ) {
+    private Modality deduceModality( SqlNode query ) {
         if ( query instanceof SqlSelect ) {
             SqlSelect select = (SqlSelect) query;
             return select.getModifierNode( SqlSelectKeyword.STREAM ) != null
-                    ? SqlModality.STREAM
-                    : SqlModality.RELATION;
+                    ? Modality.STREAM
+                    : Modality.RELATION;
         } else if ( query.getKind() == Kind.VALUES ) {
-            return SqlModality.RELATION;
+            return Modality.RELATION;
         } else {
             assert query.isA( Kind.SET_QUERY );
             final SqlCall call = (SqlCall) query;
@@ -3473,7 +3489,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     @Override
-    public boolean validateModality( SqlSelect select, SqlModality modality, boolean fail ) {
+    public boolean validateModality( SqlSelect select, Modality modality, boolean fail ) {
         final SelectScope scope = getRawSelectScope( select );
 
         switch ( modality ) {
@@ -3565,7 +3581,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             case DESCENDING:
                 return isSortCompatible( scope, (SqlNode) ((SqlCall) node).getOperandList().get( 0 ), true );
         }
-        final SqlMonotonicity monotonicity = scope.getMonotonicity( node );
+        final Monotonicity monotonicity = scope.getMonotonicity( node );
         switch ( monotonicity ) {
             case INCREASING:
             case STRICTLY_INCREASING:
@@ -4008,7 +4024,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
-    protected RelDataType createTargetRowType( SqlValidatorTable table, SqlNodeList targetColumnList, boolean append ) {
+    protected RelDataType createTargetRowType( ValidatorTable table, SqlNodeList targetColumnList, boolean append ) {
         return createTargetRowType( table, targetColumnList, append, false );
     }
 
@@ -4021,7 +4037,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @param append Whether to append fields to those in <code>baseRowType</code>
      * @return Rowtype
      */
-    protected RelDataType createTargetRowType( SqlValidatorTable table, SqlNodeList targetColumnList, boolean append, boolean allowDynamic ) {
+    protected RelDataType createTargetRowType( ValidatorTable table, SqlNodeList targetColumnList, boolean append, boolean allowDynamic ) {
         RelDataType baseRowType = table.getRowType();
         if ( targetColumnList == null ) {
             return baseRowType;
@@ -4071,10 +4087,10 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                         catalogReader.unwrap( Prepare.CatalogReader.class ),
                         null,
                         null );
-        final SqlValidatorTable table =
+        final ValidatorTable table =
                 relOptTable == null
                         ? targetNamespace.getTable()
-                        : relOptTable.unwrap( SqlValidatorTable.class );
+                        : relOptTable.unwrap( ValidatorTable.class );
 
         boolean allowDynamic = false;
         if ( insert.getSchemaType() == SchemaType.DOCUMENT ) {
@@ -4120,7 +4136,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         validateAccess(
                 insert.getTargetTable(),
                 table,
-                SqlAccessEnum.INSERT );
+                AccessEnum.INSERT );
     }
 
 
@@ -4131,7 +4147,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @param source The values being inserted
      * @param targetRowType The target type for the view
      */
-    private void checkConstraint( SqlValidatorTable validatorTable, SqlNode source, RelDataType targetRowType ) {
+    private void checkConstraint( ValidatorTable validatorTable, SqlNode source, RelDataType targetRowType ) {
         final ModifiableViewTable modifiableViewTable = validatorTable.unwrap( ModifiableViewTable.class );
         if ( modifiableViewTable != null && source instanceof SqlCall ) {
             final Table table = modifiableViewTable.unwrap( Table.class );
@@ -4169,11 +4185,11 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     /**
      * Validates updates against the constraint of a modifiable view.
      *
-     * @param validatorTable A {@link SqlValidatorTable} that may wrap a ModifiableViewTable
+     * @param validatorTable A {@link ValidatorTable} that may wrap a ModifiableViewTable
      * @param update The UPDATE parse tree node
      * @param targetRowType The target type
      */
-    private void checkConstraint( SqlValidatorTable validatorTable, SqlUpdate update, RelDataType targetRowType ) {
+    private void checkConstraint( ValidatorTable validatorTable, SqlUpdate update, RelDataType targetRowType ) {
         final ModifiableViewTable modifiableViewTable = validatorTable.unwrap( ModifiableViewTable.class );
         if ( modifiableViewTable != null ) {
             final Table table = modifiableViewTable.unwrap( Table.class );
@@ -4204,7 +4220,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
-    private void checkFieldCount( SqlNode node, SqlValidatorTable table, SqlNode source, RelDataType logicalSourceRowType, RelDataType logicalTargetRowType ) {
+    private void checkFieldCount( SqlNode node, ValidatorTable table, SqlNode source, RelDataType logicalSourceRowType, RelDataType logicalTargetRowType ) {
         final int sourceFieldCount = logicalSourceRowType.getFieldCount();
         final int targetFieldCount = logicalTargetRowType.getFieldCount();
         if ( sourceFieldCount != targetFieldCount ) {
@@ -4424,9 +4440,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
         final SqlValidatorNamespace targetNamespace = getNamespace( call );
         validateNamespace( targetNamespace, unknownType );
-        final SqlValidatorTable table = targetNamespace.getTable();
+        final ValidatorTable table = targetNamespace.getTable();
 
-        validateAccess( call.getTargetTable(), table, SqlAccessEnum.DELETE );
+        validateAccess( call.getTargetTable(), table, AccessEnum.DELETE );
     }
 
 
@@ -4440,10 +4456,10 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                         catalogReader.unwrap( Prepare.CatalogReader.class ),
                         null,
                         null );
-        final SqlValidatorTable table =
+        final ValidatorTable table =
                 relOptTable == null
                         ? targetNamespace.getTable()
-                        : relOptTable.unwrap( SqlValidatorTable.class );
+                        : relOptTable.unwrap( ValidatorTable.class );
 
         final RelDataType targetRowType =
                 createTargetRowType(
@@ -4459,7 +4475,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
         checkConstraint( table, call, targetRowType );
 
-        validateAccess( call.getTargetTable(), table, SqlAccessEnum.UPDATE );
+        validateAccess( call.getTargetTable(), table, AccessEnum.UPDATE );
     }
 
 
@@ -4475,8 +4491,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         IdentifierNamespace targetNamespace = (IdentifierNamespace) getNamespace( call.getTargetTable() );
         validateNamespace( targetNamespace, unknownType );
 
-        SqlValidatorTable table = targetNamespace.getTable();
-        validateAccess( call.getTargetTable(), table, SqlAccessEnum.UPDATE );
+        ValidatorTable table = targetNamespace.getTable();
+        validateAccess( call.getTargetTable(), table, AccessEnum.UPDATE );
 
         RelDataType targetRowType = unknownType;
 
@@ -4512,9 +4528,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @param table Table
      * @param requiredAccess Access requested on table
      */
-    private void validateAccess( SqlNode node, SqlValidatorTable table, SqlAccessEnum requiredAccess ) {
+    private void validateAccess( SqlNode node, ValidatorTable table, AccessEnum requiredAccess ) {
         if ( table != null ) {
-            SqlAccessType access = table.getAllowedAccess();
+            AccessType access = table.getAllowedAccess();
             if ( !access.allowsAccess( requiredAccess ) ) {
                 throw newValidationError( node, RESOURCE.accessNotAllowed( requiredAccess.name(), table.getQualifiedName().toString() ) );
             }
@@ -5147,7 +5163,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     @Override
-    public List<List<String>> getFieldOrigins( SqlNode sqlQuery ) {
+    public List<List<String>> getFieldOrigins( Node sqlQuery ) {
         if ( sqlQuery instanceof SqlExplain ) {
             return Collections.emptyList();
         }
@@ -5173,7 +5189,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             if ( selectItem instanceof SqlIdentifier ) {
                 final SqlQualified qualified = scope.fullyQualify( (SqlIdentifier) selectItem );
                 SqlValidatorNamespace namespace = qualified.namespace;
-                final SqlValidatorTable table = namespace.getTable();
+                final ValidatorTable table = namespace.getTable();
                 if ( table == null ) {
                     return null;
                 }
@@ -5197,7 +5213,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     @Override
-    public RelDataType getParameterRowType( SqlNode sqlQuery ) {
+    public RelDataType getParameterRowType( Node sqlQuery ) {
         // NOTE: We assume that bind variables occur in depth-first tree traversal in the same order that they occurred in the SQL text.
         final List<RelDataType> types = new ArrayList<>();
         // NOTE: but parameters on fetch/offset would be counted twice as they are counted in the SqlOrderBy call and the inner SqlSelect call

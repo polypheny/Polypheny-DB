@@ -24,10 +24,10 @@ import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.core.Identifier;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeVisitor;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlQualified;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -396,10 +396,10 @@ public class SqlIdentifier extends SqlNode implements Identifier {
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( SqlValidatorScope scope ) {
+    public Monotonicity getMonotonicity( SqlValidatorScope scope ) {
         // for "star" column, whether it's static or dynamic return not_monotonic directly.
         if ( Util.last( names ).equals( "" ) || DynamicRecordType.isDynamicStarColName( Util.last( names ) ) ) {
-            return SqlMonotonicity.NOT_MONOTONIC;
+            return Monotonicity.NOT_MONOTONIC;
         }
 
         // First check for builtin functions which don't have parentheses, like "LOCALTIME".

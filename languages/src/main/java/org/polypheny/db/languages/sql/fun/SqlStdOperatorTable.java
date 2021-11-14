@@ -20,8 +20,14 @@ package org.polypheny.db.languages.sql.fun;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.Modality;
+import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.json.JsonConstructorNullClause;
 import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.languages.sql.SqlAsOperator;
 import org.polypheny.db.languages.sql.SqlBasicCall;
@@ -29,15 +35,13 @@ import org.polypheny.db.languages.sql.SqlBinaryOperator;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlFilterOperator;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlGroupedWindowFunction;
 import org.polypheny.db.languages.sql.SqlInternalOperator;
-import org.polypheny.db.core.json.JsonConstructorNullClause;
+import org.polypheny.db.languages.sql.SqlLateralOperator;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNumericLiteral;
 import org.polypheny.db.languages.sql.SqlOperator;
-import org.polypheny.db.languages.sql.SqlOperatorTable;
 import org.polypheny.db.languages.sql.SqlOverOperator;
 import org.polypheny.db.languages.sql.SqlPostfixOperator;
 import org.polypheny.db.languages.sql.SqlPrefixOperator;
@@ -48,45 +52,12 @@ import org.polypheny.db.languages.sql.SqlSetOperator;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlUnnestOperator;
 import org.polypheny.db.languages.sql.SqlUtil;
+import org.polypheny.db.languages.sql.SqlValuesOperator;
 import org.polypheny.db.languages.sql.SqlWindow;
 import org.polypheny.db.languages.sql.SqlWithinGroupOperator;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.util.ReflectiveSqlOperatorTable;
-import org.polypheny.db.core.Conformance;
 import org.polypheny.db.languages.sql2rel.AuxiliaryConverter;
-import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.sql.SqlAsOperator;
-import org.polypheny.db.sql.SqlBasicCall;
-import org.polypheny.db.sql.SqlCall;
-import org.polypheny.db.sql.SqlFilterOperator;
-import org.polypheny.db.sql.SqlFunction;
-import org.polypheny.db.sql.SqlFunctionCategory;
-import org.polypheny.db.sql.SqlGroupedWindowFunction;
-import org.polypheny.db.sql.SqlInternalOperator;
-import org.polypheny.db.sql.SqlJsonConstructorNullClause;
-import org.polypheny.db.sql.SqlLateralOperator;
-import org.polypheny.db.sql.SqlLiteral;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlNumericLiteral;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.SqlOperatorTable;
-import org.polypheny.db.sql.SqlOverOperator;
-import org.polypheny.db.sql.SqlPostfixOperator;
-import org.polypheny.db.sql.SqlPrefixOperator;
-import org.polypheny.db.sql.SqlProcedureCallOperator;
-import org.polypheny.db.sql.SqlRankFunction;
-import org.polypheny.db.sql.SqlSampleSpec;
-import org.polypheny.db.sql.SqlSpecialOperator;
-import org.polypheny.db.sql.SqlUnnestOperator;
-import org.polypheny.db.sql.SqlUtil;
-import org.polypheny.db.sql.SqlValuesOperator;
-import org.polypheny.db.sql.SqlWindow;
-import org.polypheny.db.sql.SqlWithinGroupOperator;
-import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.util.ReflectiveSqlOperatorTable;
-import org.polypheny.db.sql.validate.SqlConformance;
-import org.polypheny.db.sql.validate.SqlModality;
-import org.polypheny.db.sql2rel.AuxiliaryConverter;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
@@ -99,7 +70,7 @@ import org.polypheny.db.util.Pair;
 
 
 /**
- * Implementation of {@link SqlOperatorTable} containing the standard operators and functions.
+ * Implementation of {@link OperatorTable} containing the standard operators and functions.
  */
 public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
 
@@ -1202,7 +1173,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
      *
      * This operator has function syntax (with one argument), whereas {@link #EXPLICIT_TABLE} is a prefix operator.
      */
-    public static final SqlSpecialOperator COLLECTION_TABLE = new SqlCollectionTableOperator( "TABLE", SqlModality.RELATION );
+    public static final SqlSpecialOperator COLLECTION_TABLE = new SqlCollectionTableOperator( "TABLE", Modality.RELATION );
 
     public static final SqlOverlapsOperator OVERLAPS = new SqlOverlapsOperator( Kind.OVERLAPS );
 
@@ -1283,7 +1254,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
      *
      * <ol>
      * <li>name of window function ({@link SqlCall})</li>
-     * <li>window name ({@link org.polypheny.db.sql.SqlLiteral}) or window in-line specification (@link SqlWindowOperator})</li>
+     * <li>window name ({@link Literal}) or window in-line specification (@link SqlWindowOperator})</li>
      * </ol>
      */
     public static final SqlBinaryOperator OVER = new SqlOverOperator();
@@ -2281,7 +2252,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
      * For example, converts {@code TUMBLE_START(rowtime, INTERVAL '1' HOUR))} to {@code TUMBLE(rowtime, INTERVAL '1' HOUR))}.
      */
     public static SqlCall convertAuxiliaryToGroupCall( SqlCall call ) {
-        final SqlOperator op = call.getOperator();
+        final SqlOperator op = (SqlOperator) call.getOperator();
         if ( op instanceof SqlGroupedWindowFunction && op.isGroupAuxiliary() ) {
             return copy( call, ((SqlGroupedWindowFunction) op).groupFunction );
         }
@@ -2295,7 +2266,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
      * For example, converts {@code TUMBLE_START(rowtime, INTERVAL '1' HOUR))} to {@code TUMBLE(rowtime, INTERVAL '1' HOUR))}.
      */
     public static List<Pair<SqlNode, AuxiliaryConverter>> convertGroupToAuxiliaryCalls( SqlCall call ) {
-        final SqlOperator op = call.getOperator();
+        final SqlOperator op = (SqlOperator) call.getOperator();
         if ( op instanceof SqlGroupedWindowFunction && op.isGroup() ) {
             ImmutableList.Builder<Pair<SqlNode, AuxiliaryConverter>> builder = ImmutableList.builder();
             for ( final SqlGroupedWindowFunction f : ((SqlGroupedWindowFunction) op).getAuxiliaryFunctions() ) {
@@ -2311,7 +2282,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
      * Creates a copy of a call with a new operator.
      */
     private static SqlCall copy( SqlCall call, SqlOperator operator ) {
-        final List<SqlNode> list = call.getOperandList();
+        final List<Node> list = call.getOperandList();
         return new SqlBasicCall( operator, list.toArray( SqlNode.EMPTY_ARRAY ), call.getPos() );
     }
 

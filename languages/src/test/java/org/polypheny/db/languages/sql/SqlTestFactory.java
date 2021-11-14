@@ -27,18 +27,20 @@ import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.polypheny.db.core.Conformance;
 import org.polypheny.db.core.ConformanceEnum;
+import org.polypheny.db.core.OperatorTable;
+import org.polypheny.db.core.ValidatorCatalogReader;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.languages.MockSqlOperatorTable;
+import org.polypheny.db.languages.Parser;
+import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.sql.advise.SqlAdvisor;
 import org.polypheny.db.languages.sql.parser.SqlParser;
-import org.polypheny.db.languages.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
-import org.polypheny.db.languages.sql.validate.SqlValidatorCatalogReader;
 import org.polypheny.db.languages.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.languages.sql.validate.SqlValidatorWithHints;
 import org.polypheny.db.rel.type.DelegatingTypeSystem;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.languages.MockSqlOperatorTable;
 import org.polypheny.db.test.catalog.MockCatalogReader;
 import org.polypheny.db.test.catalog.MockCatalogReaderSimple;
 import org.polypheny.db.util.SourceStringReader;
@@ -68,9 +70,9 @@ public class SqlTestFactory {
     private final ValidatorFactory validatorFactory;
 
     private final Supplier<RelDataTypeFactory> typeFactory;
-    private final Supplier<SqlOperatorTable> operatorTable;
-    private final Supplier<SqlValidatorCatalogReader> catalogReader;
-    private final Supplier<SqlParserConfig> parserConfig;
+    private final Supplier<OperatorTable> operatorTable;
+    private final Supplier<ValidatorCatalogReader> catalogReader;
+    private final Supplier<ParserConfig> parserConfig;
 
 
     protected SqlTestFactory() {
@@ -82,7 +84,7 @@ public class SqlTestFactory {
         this.options = options;
         this.catalogReaderFactory = catalogReaderFactory;
         this.validatorFactory = validatorFactory;
-        this.operatorTable = Suppliers.memoize( () -> createOperatorTable( (SqlOperatorTable) options.get( "operatorTable" ) ) );
+        this.operatorTable = Suppliers.memoize( () -> createOperatorTable( (OperatorTable) options.get( "operatorTable" ) ) );
         this.typeFactory = Suppliers.memoize( () -> createTypeFactory( (Conformance) options.get( "conformance" ) ) );
         Boolean caseSensitive = (Boolean) options.get( "caseSensitive" );
         this.catalogReader = Suppliers.memoize( () -> catalogReaderFactory.create( typeFactory.get(), caseSensitive ).init() );
@@ -90,25 +92,25 @@ public class SqlTestFactory {
     }
 
 
-    private static SqlOperatorTable createOperatorTable( SqlOperatorTable opTab0 ) {
+    private static OperatorTable createOperatorTable( OperatorTable opTab0 ) {
         MockSqlOperatorTable opTab = new MockSqlOperatorTable( opTab0 );
         MockSqlOperatorTable.addRamp( opTab );
         return opTab;
     }
 
 
-    public SqlParserConfig getParserConfig() {
+    public ParserConfig getParserConfig() {
         return parserConfig.get();
     }
 
 
     public SqlParser createParser( String sql ) {
-        return SqlParser.create( new SourceStringReader( sql ), parserConfig.get() );
+        return Parser.create( new SourceStringReader( sql ), parserConfig.get() );
     }
 
 
-    public static SqlParserConfig createParserConfig( ImmutableMap<String, Object> options ) {
-        return SqlParser.configBuilder()
+    public static ParserConfig createParserConfig( ImmutableMap<String, Object> options ) {
+        return Parser.configBuilder()
                 .setQuoting( (Quoting) options.get( "quoting" ) )
                 .setUnquotedCasing( (Casing) options.get( "unquotedCasing" ) )
                 .setQuotedCasing( (Casing) options.get( "quotedCasing" ) )
@@ -191,7 +193,7 @@ public class SqlTestFactory {
      */
     public interface ValidatorFactory {
 
-        SqlValidator create( SqlOperatorTable opTab, SqlValidatorCatalogReader catalogReader, RelDataTypeFactory typeFactory, Conformance conformance );
+        SqlValidator create( OperatorTable opTab, ValidatorCatalogReader catalogReader, RelDataTypeFactory typeFactory, Conformance conformance );
     }
 
 

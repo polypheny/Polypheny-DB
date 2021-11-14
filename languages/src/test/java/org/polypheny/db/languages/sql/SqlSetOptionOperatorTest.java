@@ -23,10 +23,7 @@ import static org.junit.Assert.assertThat;
 
 import org.junit.Test;
 import org.polypheny.db.core.ParseException;
-import org.polypheny.db.languages.sql.SqlCall;
-import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlSetOption;
-import org.polypheny.db.languages.sql.parser.SqlParser;
+import org.polypheny.db.languages.Parser;
 
 
 /**
@@ -42,7 +39,7 @@ public class SqlSetOptionOperatorTest {
 
 
     public SqlNode parse( String s ) throws ParseException {
-        return SqlParser.create( s ).parseStmt();
+        return Parser.create( s ).parseStmt();
     }
 
 

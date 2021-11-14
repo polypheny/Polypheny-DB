@@ -20,8 +20,8 @@ package org.polypheny.db.languages.sql;
 import java.util.List;
 import org.polypheny.db.core.BasicNodeVisitor.ArgHandler;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.NodeVisitor;
-import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
@@ -133,7 +133,7 @@ public class SqlAsOperator extends SqlSpecialOperator {
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( SqlOperatorBinding call ) {
+    public Monotonicity getMonotonicity( SqlOperatorBinding call ) {
         return call.getOperandMonotonicity( 0 );
     }
 }

@@ -27,6 +27,8 @@ public interface Literal extends Visitable, Node {
 
     <E extends Enum<E>> E symbolValue( Class<E> class_ );
 
+    String toValue();
+
     int intValue( boolean exact );
 
     long longValue( boolean exact );

@@ -21,6 +21,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.core.ExecutableStatement;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
@@ -30,7 +31,7 @@ import org.polypheny.db.languages.mql.Mql.Type;
 import org.polypheny.db.transaction.Statement;
 
 
-public class MqlDrop extends MqlCollectionStatement implements MqlExecutableStatement {
+public class MqlDrop extends MqlCollectionStatement implements ExecutableStatement {
 
     public MqlDrop( ParserPos pos, String collection ) {
         super( collection, pos );

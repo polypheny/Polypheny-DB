@@ -23,6 +23,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeVisitor;
@@ -42,6 +43,12 @@ public abstract class MqlNode implements Node {
     @Setter
     @Getter
     List<String> primary = new ArrayList<>();
+
+
+    @Override
+    public QueryLanguage getLanguage() {
+        return QueryLanguage.MONGOQL;
+    }
 
 
     protected MqlNode( ParserPos pos ) {

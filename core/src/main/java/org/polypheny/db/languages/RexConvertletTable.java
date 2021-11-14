@@ -14,29 +14,8 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql.validate;
+package org.polypheny.db.languages;
 
+public interface RexConvertletTable {
 
-import com.google.common.collect.ImmutableList;
-import java.util.List;
-
-
-/**
- * Thrown when an object, such as a view, is found to have a cylic definition.
- */
-public class CyclicDefinitionException extends RuntimeException {
-
-    public final int depth;
-    public final List<String> path;
-
-
-    /**
-     * Creates CyclicDefinitionException.
-     */
-    public CyclicDefinitionException( int depth, List<String> path ) {
-        super( "Cyclic object definition: " + path );
-        this.depth = depth;
-        this.path = ImmutableList.copyOf( path );
-    }
 }
-

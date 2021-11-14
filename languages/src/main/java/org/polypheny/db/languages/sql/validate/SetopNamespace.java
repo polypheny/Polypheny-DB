@@ -19,10 +19,11 @@ package org.polypheny.db.languages.sql.validate;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Monotonicity;
+import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.rel.type.RelDataType;
 
 
 /**
@@ -53,11 +54,11 @@ public class SetopNamespace extends AbstractNamespace {
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( String columnName ) {
-        SqlMonotonicity monotonicity = null;
+    public Monotonicity getMonotonicity( String columnName ) {
+        Monotonicity monotonicity = null;
         int index = getRowType().getFieldNames().indexOf( columnName );
         if ( index < 0 ) {
-            return SqlMonotonicity.NOT_MONOTONIC;
+            return Monotonicity.NOT_MONOTONIC;
         }
         for ( SqlNode operand : call.getOperandList() ) {
             final SqlValidatorNamespace namespace = validator.getNamespace( operand );
@@ -67,7 +68,7 @@ public class SetopNamespace extends AbstractNamespace {
     }
 
 
-    private SqlMonotonicity combine( SqlMonotonicity m0, SqlMonotonicity m1 ) {
+    private Monotonicity combine( Monotonicity m0, Monotonicity m1 ) {
         if ( m0 == null ) {
             return m1;
         }
@@ -83,7 +84,7 @@ public class SetopNamespace extends AbstractNamespace {
         if ( m1.unstrict() == m0 ) {
             return m0;
         }
-        return SqlMonotonicity.NOT_MONOTONIC;
+        return Monotonicity.NOT_MONOTONIC;
     }
 
 

@@ -44,6 +44,8 @@ import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.information.HostInformation;
 import org.polypheny.db.information.JavaInformation;
+import org.polypheny.db.languages.LanguageManager;
+import org.polypheny.db.languages.LanguageManagerImpl;
 import org.polypheny.db.monitoring.core.MonitoringService;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.partition.FrequencyMap;
@@ -195,6 +197,9 @@ public class PolyphenyDb {
 
         final ShutdownHelper sh = new ShutdownHelper();
         // shutdownHookId = addShutdownHook( "Component Terminator", sh );
+
+        final LanguageManagerImpl languageManager = new LanguageManagerImpl();
+        LanguageManager.setAndGetInstance( languageManager );
 
         final ConfigServer configServer = new ConfigServer( RuntimeConfig.CONFIG_SERVER_PORT.getInteger() );
         final InformationServer informationServer = new InformationServer( RuntimeConfig.INFORMATION_SERVER_PORT.getInteger() );

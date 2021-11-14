@@ -79,9 +79,21 @@ import org.polypheny.db.adapter.enumerable.EnumerableRel.Prefer;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
 import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.BinaryOperator;
+import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.ExecutableStatement;
+import org.polypheny.db.core.ExplainFormat;
+import org.polypheny.db.core.ExplainLevel;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.ParseException;
+import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.Validator;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Bindables;
 import org.polypheny.db.interpreter.Interpreters;
@@ -89,6 +101,11 @@ import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.jdbc.PolyphenyDbPrepare;
 import org.polypheny.db.jdbc.PolyphenyDbPrepare.SparkHandler.RuleSetBuilder;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.languages.LanguageManager;
+import org.polypheny.db.languages.NodeToRelConverter;
+import org.polypheny.db.languages.NodeToRelConverter.ConfigBuilder;
+import org.polypheny.db.languages.Parser;
+import org.polypheny.db.languages.RexConvertletTable;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
@@ -151,26 +168,6 @@ import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.SqlBinaryOperator;
-import org.polypheny.db.sql.SqlExecutableStatement;
-import org.polypheny.db.sql.SqlExplainFormat;
-import org.polypheny.db.sql.SqlExplainLevel;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.SqlOperatorTable;
-import org.polypheny.db.sql.SqlUtil;
-import org.polypheny.db.sql.parser.SqlParseException;
-import org.polypheny.db.sql.parser.SqlParser;
-import org.polypheny.db.sql.parser.SqlParserImplFactory;
-import org.polypheny.db.sql.util.ChainedSqlOperatorTable;
-import org.polypheny.db.sql.validate.SqlConformance;
-import org.polypheny.db.sql.validate.SqlValidator;
-import org.polypheny.db.sql2rel.SqlRexConvertletTable;
-import org.polypheny.db.sql2rel.SqlToRelConverter;
-import org.polypheny.db.sql2rel.SqlToRelConverter.Config;
-import org.polypheny.db.sql2rel.SqlToRelConverter.ConfigBuilder;
-import org.polypheny.db.sql2rel.StandardConvertletTable;
 import org.polypheny.db.tools.Frameworks.PrepareAction;
 import org.polypheny.db.type.ExtraPolyTypes;
 import org.polypheny.db.type.PolyType;
@@ -309,15 +306,15 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                 context.getRootSchema(),
                 context.getDefaultSchemaPath(),
                 typeFactory );
-        SqlParser parser = createParser( sql );
-        SqlNode sqlNode;
+        Parser parser = createParser( sql );
+        Node sqlNode;
         try {
             sqlNode = parser.parseStmt();
-        } catch ( SqlParseException e ) {
+        } catch ( ParseException e ) {
             throw new RuntimeException( "parse failed", e );
         }
-        final SqlValidator validator = createSqlValidator( context, catalogReader );
-        SqlNode sqlNode1 = validator.validate( sqlNode );
+        final Validator validator = LanguageManager.getInstance().createValidator( QueryLanguage.SQL, context, catalogReader );
+        Node sqlNode1 = validator.validate( sqlNode );
         if ( convert ) {
             return convert_( context, sql, analyze, fail, catalogReader, validator, sqlNode1 );
         }
@@ -325,7 +322,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     }
 
 
-    private ParseResult convert_( Context context, String sql, boolean analyze, boolean fail, PolyphenyDbCatalogReader catalogReader, SqlValidator validator, SqlNode sqlNode1 ) {
+    private ParseResult convert_( Context context, String sql, boolean analyze, boolean fail, PolyphenyDbCatalogReader catalogReader, Validator validator, Node sqlNode1 ) {
         final JavaTypeFactory typeFactory = context.getTypeFactory();
         final Convention resultConvention =
                 enableBindable
@@ -334,7 +331,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         final HepPlanner planner = new HepPlanner( new HepProgramBuilder().build() );
         planner.addRelTraitDef( ConventionTraitDef.INSTANCE );
 
-        final ConfigBuilder configBuilder = SqlToRelConverter.configBuilder().withTrimUnusedFields( true );
+        final ConfigBuilder configBuilder = NodeToRelConverter.configBuilder().withTrimUnusedFields( true );
         if ( analyze ) {
             configBuilder.withConvertTableAccess( false );
         }
@@ -349,7 +346,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                 planner,
                 resultConvention,
                 createConvertletTable() );
-        final SqlToRelConverter converter = preparingStmt.getSqlToRelConverter( validator, catalogReader, configBuilder.build() );
+        final NodeToRelConverter converter = preparingStmt.getSqlToRelConverter( validator, catalogReader, configBuilder.build() );
 
         final RelRoot root = converter.convertQuery( sqlNode1, false, true );
         if ( analyze ) {
@@ -359,7 +356,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     }
 
 
-    private AnalyzeViewResult analyze_( SqlValidator validator, String sql, SqlNode sqlNode, RelRoot root, boolean fail ) {
+    private AnalyzeViewResult analyze_( Validator validator, String sql, Node sqlNode, RelRoot root, boolean fail ) {
         final RexBuilder rexBuilder = root.rel.getCluster().getRexBuilder();
         RelNode rel = root.rel;
         final RelNode viewRel = rel;
@@ -511,10 +508,10 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
 
     @Override
-    public void executeDdl( Context context, SqlNode node ) {
-        if ( node instanceof SqlExecutableStatement ) {
-            SqlExecutableStatement statement = (SqlExecutableStatement) node;
-            statement.execute( context, null );
+    public void executeDdl( Context context, Node node ) {
+        if ( node instanceof ExecutableStatement ) {
+            ExecutableStatement statement = (ExecutableStatement) node;
+            statement.execute( context, null, null );
             return;
         }
         throw new UnsupportedOperationException();
@@ -524,7 +521,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     /**
      * Factory method for default SQL parser.
      */
-    protected SqlParser createParser( String sql ) {
+    protected Parser createParser( String sql ) {
         return createParser( sql, createParserConfig() );
     }
 
@@ -532,24 +529,24 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     /**
      * Factory method for SQL parser with a given configuration.
      */
-    protected SqlParser createParser( String sql, SqlParser.ConfigBuilder parserConfig ) {
-        return SqlParser.create( sql, parserConfig.build() );
+    protected Parser createParser( String sql, Parser.ConfigBuilder parserConfig ) {
+        return Parser.create( sql, parserConfig.build() );
     }
 
 
     /**
      * Factory method for SQL parser configuration.
      */
-    protected SqlParser.ConfigBuilder createParserConfig() {
-        return SqlParser.configBuilder();
+    protected Parser.ConfigBuilder createParserConfig() {
+        return Parser.configBuilder();
     }
 
 
     /**
      * Factory method for default convertlet table.
      */
-    protected SqlRexConvertletTable createConvertletTable() {
-        return StandardConvertletTable.INSTANCE;
+    protected RexConvertletTable createConvertletTable() {
+        return LanguageManager.getInstance().getStandardConvertlet();
     }
 
 
@@ -707,7 +704,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         final JavaTypeFactory typeFactory = context.getTypeFactory();
         final RelDataType x =
                 typeFactory.builder()
-                        .add( SqlUtil.deriveAliasFromOrdinal( 0 ), null, PolyType.INTEGER )
+                        .add( CoreUtil.deriveAliasFromOrdinal( 0 ), null, PolyType.INTEGER )
                         .build();
         @SuppressWarnings("unchecked") final List<T> list = (List) ImmutableList.of( 1 );
         final List<String> origin = null;
@@ -735,7 +732,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
      *
      * @param kind Kind of statement
      */
-    private StatementType getStatementType( SqlKind kind ) {
+    private StatementType getStatementType( Kind kind ) {
         switch ( kind ) {
             case INSERT:
             case DELETE:
@@ -790,7 +787,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         final StatementType statementType;
         if ( query.sql != null ) {
             final PolyphenyDbConnectionConfig config = context.config();
-            final SqlParser.ConfigBuilder parserConfig = createParserConfig()
+            final Parser.ConfigBuilder parserConfig = createParserConfig()
                     .setQuotedCasing( config.quotedCasing() )
                     .setUnquotedCasing( config.unquotedCasing() )
                     .setQuoting( config.quoting() )
@@ -800,18 +797,18 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
             if ( parserFactory != null ) {
                 parserConfig.setParserFactory( parserFactory );
             }
-            SqlParser parser = createParser( query.sql, parserConfig );
-            SqlNode sqlNode;
+            Parser parser = createParser( query.sql, parserConfig );
+            Node sqlNode;
             try {
                 sqlNode = parser.parseStmt();
                 statementType = getStatementType( sqlNode.getKind() );
-            } catch ( SqlParseException e ) {
+            } catch ( ParseException e ) {
                 throw new RuntimeException( "parse failed: " + e.getMessage(), e );
             }
 
             Hook.PARSE_TREE.run( new Object[]{ query.sql, sqlNode } );
 
-            if ( sqlNode.getKind().belongsTo( SqlKind.DDL ) ) {
+            if ( sqlNode.getKind().belongsTo( Kind.DDL ) ) {
                 executeDdl( context, sqlNode );
 
                 return new PolyphenyDbSignature<>(
@@ -829,7 +826,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                         new ExecutionTimeMonitor() );
             }
 
-            final SqlValidator validator = createSqlValidator( context, catalogReader );
+            final Validator validator = LanguageManager.getInstance().createValidator( QueryLanguage.SQL, context, catalogReader );
             validator.setIdentifierExpansion( true );
             validator.setDefaultNullCollation( config.defaultNullCollation() );
 
@@ -899,15 +896,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                 bindable,
                 statementType,
                 new ExecutionTimeMonitor() );
-    }
-
-
-    private SqlValidator createSqlValidator( Context context, PolyphenyDbCatalogReader catalogReader ) {
-        final SqlOperatorTable opTab0 = context.config().fun( SqlOperatorTable.class, SqlStdOperatorTable.instance() );
-        final SqlOperatorTable opTab = ChainedSqlOperatorTable.of( opTab0, catalogReader );
-        final JavaTypeFactory typeFactory = context.getTypeFactory();
-        final SqlConformance conformance = context.config().conformance();
-        return new PolyphenyDbSqlValidator( opTab, catalogReader, typeFactory, conformance );
     }
 
 
@@ -1075,18 +1063,18 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     /**
      * Holds state for the process of preparing a SQL statement.
      */
-    static class PolyphenyDbPreparingStmt extends Prepare implements ViewExpander {
+    public static class PolyphenyDbPreparingStmt extends Prepare implements ViewExpander {
 
         protected final RelOptPlanner planner;
         protected final RexBuilder rexBuilder;
         protected final PolyphenyDbPrepareImpl prepare;
         protected final PolyphenyDbSchema schema;
         protected final RelDataTypeFactory typeFactory;
-        protected final SqlRexConvertletTable convertletTable;
+        protected final RexConvertletTable convertletTable;
         private final Prefer prefer;
         private final Map<String, Object> internalParameters = new LinkedHashMap<>();
         private int expansionDepth;
-        private SqlValidator sqlValidator;
+        private Validator sqlValidator;
 
 
         PolyphenyDbPreparingStmt(
@@ -1098,7 +1086,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                 Prefer prefer,
                 RelOptPlanner planner,
                 Convention resultConvention,
-                SqlRexConvertletTable convertletTable ) {
+                RexConvertletTable convertletTable ) {
             super( context, catalogReader, resultConvention );
             this.prepare = prepare;
             this.schema = schema;
@@ -1139,7 +1127,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     rel instanceof Sort
                             ? ((Sort) rel).collation
                             : RelCollations.EMPTY;
-            RelRoot root = new RelRoot( rel, resultType, SqlKind.SELECT, fields, collation );
+            RelRoot root = new RelRoot( rel, resultType, Kind.SELECT, fields, collation );
 
             if ( timingTracer != null ) {
                 timingTracer.traceTime( "end sql2rel" );
@@ -1166,9 +1154,9 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
 
         @Override
-        protected SqlToRelConverter getSqlToRelConverter( SqlValidator validator, CatalogReader catalogReader, Config config ) {
+        protected NodeToRelConverter getSqlToRelConverter( Validator validator, CatalogReader catalogReader, NodeToRelConverter.Config config ) {
             final RelOptCluster cluster = prepare.createCluster( planner, rexBuilder );
-            return new SqlToRelConverter( this, validator, catalogReader, cluster, convertletTable, config );
+            return LanguageManager.getInstance().createToRelConverter( QueryLanguage.SQL, this, validator, catalogReader, cluster, convertletTable, config );
         }
 
 
@@ -1183,7 +1171,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
 
         @Override
-        protected RelNode decorrelate( SqlToRelConverter sqlToRelConverter, SqlNode query, RelNode rootRel ) {
+        protected RelNode decorrelate( NodeToRelConverter sqlToRelConverter, Node query, RelNode rootRel ) {
             return sqlToRelConverter.decorrelate( query, rootRel );
         }
 
@@ -1192,18 +1180,18 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         public RelRoot expandView( RelDataType rowType, String queryString, List<String> schemaPath, List<String> viewPath ) {
             expansionDepth++;
 
-            SqlParser parser = prepare.createParser( queryString );
-            SqlNode sqlNode;
+            Parser parser = prepare.createParser( queryString );
+            Node sqlNode;
             try {
                 sqlNode = parser.parseQuery();
-            } catch ( SqlParseException e ) {
+            } catch ( ParseException e ) {
                 throw new RuntimeException( "parse failed", e );
             }
             // View may have different schema path than current connection.
             final CatalogReader catalogReader = this.catalogReader.withSchemaPath( schemaPath );
-            SqlValidator validator = createSqlValidator( catalogReader );
-            final Config config = SqlToRelConverter.configBuilder().withTrimUnusedFields( true ).build();
-            SqlToRelConverter sqlToRelConverter = getSqlToRelConverter( validator, catalogReader, config );
+            Validator validator = createSqlValidator( catalogReader );
+            final NodeToRelConverter.Config config = NodeToRelConverter.configBuilder().withTrimUnusedFields( true ).build();
+            NodeToRelConverter sqlToRelConverter = getSqlToRelConverter( validator, catalogReader, config );
             RelRoot root = sqlToRelConverter.convertQuery( sqlNode, true, false );
 
             --expansionDepth;
@@ -1211,13 +1199,13 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         }
 
 
-        protected SqlValidator createSqlValidator( CatalogReader catalogReader ) {
-            return prepare.createSqlValidator( context, (PolyphenyDbCatalogReader) catalogReader );
+        protected Validator createSqlValidator( CatalogReader catalogReader ) {
+            return LanguageManager.getInstance().createValidator( QueryLanguage.SQL, context, (PolyphenyDbCatalogReader) catalogReader );
         }
 
 
         @Override
-        protected SqlValidator getSqlValidator() {
+        protected Validator getSqlValidator() {
             if ( sqlValidator == null ) {
                 sqlValidator = createSqlValidator( catalogReader );
             }
@@ -1226,7 +1214,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
 
         @Override
-        protected PreparedResult createPreparedExplanation( RelDataType resultType, RelDataType parameterRowType, RelRoot root, SqlExplainFormat format, SqlExplainLevel detailLevel ) {
+        protected PreparedResult createPreparedExplanation( RelDataType resultType, RelDataType parameterRowType, RelRoot root, ExplainFormat format, ExplainLevel detailLevel ) {
             return new PolyphenyDbPreparedExplain( resultType, parameterRowType, root, format, detailLevel );
         }
 
@@ -1234,7 +1222,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         @Override
         protected PreparedResult implement( RelRoot root ) {
             RelDataType resultType = root.rel.getRowType();
-            boolean isDml = root.kind.belongsTo( SqlKind.DML );
+            boolean isDml = root.kind.belongsTo( Kind.DML );
             final Bindable bindable;
             if ( resultConvention == BindableConvention.INSTANCE ) {
                 bindable = Interpreters.bindable( root.rel );
@@ -1252,7 +1240,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
                 try {
                     CatalogReader.THREAD_LOCAL.set( catalogReader );
-                    final SqlConformance conformance = context.config().conformance();
+                    final Conformance conformance = context.config().conformance();
                     internalParameters.put( "_conformance", conformance );
                     bindable = EnumerableInterpretable.toBindable( internalParameters, context.spark(), enumerable, prefer, null );
                 } finally {
@@ -1296,6 +1284,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                 }
             };
         }
+
     }
 
 
@@ -1304,7 +1293,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
      */
     private static class PolyphenyDbPreparedExplain extends PreparedExplain {
 
-        PolyphenyDbPreparedExplain( RelDataType resultType, RelDataType parameterRowType, RelRoot root, SqlExplainFormat format, SqlExplainLevel detailLevel ) {
+        PolyphenyDbPreparedExplain( RelDataType resultType, RelDataType parameterRowType, RelRoot root, ExplainFormat format, ExplainLevel detailLevel ) {
             super( resultType, parameterRowType, root, format, detailLevel );
         }
 
@@ -1322,6 +1311,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                 }
             };
         }
+
     }
 
 
@@ -1337,6 +1327,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         RexNode toRex( Expression expression );
 
         ScalarTranslator bind( List<ParameterExpression> parameterList, List<RexNode> values );
+
     }
 
 
@@ -1396,14 +1387,14 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                             ((MemberExpression) expression).field.getName(),
                             true );
                 case GreaterThan:
-                    return binary( expression, SqlStdOperatorTable.GREATER_THAN );
+                    return binary( expression, StdOperatorRegistry.get( "GREATER_THAN", BinaryOperator.class ) );
                 case LessThan:
-                    return binary( expression, SqlStdOperatorTable.LESS_THAN );
+                    return binary( expression, StdOperatorRegistry.get( "LESS_THAN", BinaryOperator.class ) );
                 case Parameter:
                     return parameter( (ParameterExpression) expression );
                 case Call:
                     MethodCallExpression call = (MethodCallExpression) expression;
-                    SqlOperator operator = RexToLixTranslator.JAVA_TO_SQL_METHOD_MAP.get( call.method );
+                    Operator operator = RexToLixTranslator.JAVA_TO_SQL_METHOD_MAP.get( call.method );
                     if ( operator != null ) {
                         return rexBuilder.makeCall(
                                 type( call ),
@@ -1436,7 +1427,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         }
 
 
-        private RexNode binary( Expression expression, SqlBinaryOperator op ) {
+        private <T extends Operator & BinaryOperator> RexNode binary( Expression expression, T op ) {
             BinaryExpression call = (BinaryExpression) expression;
             return rexBuilder.makeCall( type( call ), op, toRex( ImmutableList.of( call.expression0, call.expression1 ) ) );
         }
@@ -1466,6 +1457,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         public RexNode parameter( ParameterExpression param ) {
             throw new RuntimeException( "unknown parameter " + param );
         }
+
     }
 
 
@@ -1493,6 +1485,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
             }
             throw new RuntimeException( "unknown parameter " + param );
         }
+
     }
+
 }
 

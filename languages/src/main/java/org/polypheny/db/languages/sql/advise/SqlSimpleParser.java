@@ -25,7 +25,7 @@ import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.calcite.avatica.util.Quoting;
-import org.polypheny.db.languages.sql.parser.SqlParser.SqlParserConfig;
+import org.polypheny.db.languages.Parser.ParserConfig;
 
 
 /**
@@ -95,7 +95,7 @@ public class SqlSimpleParser {
 
 
     private final String hintToken;
-    private final SqlParserConfig parserConfig;
+    private final ParserConfig parserConfig;
 
 
     /**
@@ -104,7 +104,7 @@ public class SqlSimpleParser {
      * @param hintToken Hint token
      * @param parserConfig parser configuration
      */
-    public SqlSimpleParser( String hintToken, SqlParserConfig parserConfig ) {
+    public SqlSimpleParser( String hintToken, ParserConfig parserConfig ) {
         this.hintToken = hintToken;
         this.parserConfig = parserConfig;
     }

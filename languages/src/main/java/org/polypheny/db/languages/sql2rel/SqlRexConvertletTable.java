@@ -17,13 +17,14 @@
 package org.polypheny.db.languages.sql2rel;
 
 
+import org.polypheny.db.languages.RexConvertletTable;
 import org.polypheny.db.languages.sql.SqlCall;
 
 
 /**
  * Collection of {@link SqlRexConvertlet}s.
  */
-public interface SqlRexConvertletTable {
+public interface SqlRexConvertletTable extends RexConvertletTable {
 
     /**
      * Returns the convertlet applicable to a given expression.

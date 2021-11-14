@@ -14,13 +14,18 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql;
+package org.polypheny.db.core;
+
+
+import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.transaction.Statement;
 
 
 /**
- * Enumeration representing different access types
+ * Mix-in interface for {@link Node} that allows DDL commands to be executed directly.
  */
-public enum SqlAccessEnum {
-    SELECT, UPDATE, INSERT, DELETE
-}
+public interface ExecutableStatement {
 
+    void execute( Context context, Statement statement, QueryParameters parameters );
+
+}

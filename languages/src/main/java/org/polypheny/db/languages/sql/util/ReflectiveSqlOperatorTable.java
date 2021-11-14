@@ -24,20 +24,22 @@ import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
-import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.core.FunctionCategory;
-import org.polypheny.db.languages.sql.SqlIdentifier;
+import org.polypheny.db.core.Identifier;
+import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.OperatorTable;
+import org.polypheny.db.core.Syntax;
+import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlOperator;
-import org.polypheny.db.languages.sql.SqlOperatorTable;
 import org.polypheny.db.languages.sql.SqlSyntax;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
 
 /**
- * ReflectiveSqlOperatorTable implements the {@link SqlOperatorTable} interface by reflecting the public fields of a subclass.
+ * ReflectiveSqlOperatorTable implements the {@link OperatorTable} interface by reflecting the public fields of a subclass.
  */
-public abstract class ReflectiveSqlOperatorTable implements SqlOperatorTable {
+public abstract class ReflectiveSqlOperatorTable implements OperatorTable {
 
     public static final String IS_NAME = "INFORMATION_SCHEMA";
 
@@ -74,14 +76,14 @@ public abstract class ReflectiveSqlOperatorTable implements SqlOperatorTable {
 
     // implement SqlOperatorTable
     @Override
-    public void lookupOperatorOverloads( SqlIdentifier opName, FunctionCategory category, SqlSyntax syntax, List<SqlOperator> operatorList ) {
+    public void lookupOperatorOverloads( Identifier opName, FunctionCategory category, Syntax syntax, List<Operator> operatorList ) {
         // NOTE jvs 3-Mar-2005:  ignore category until someone cares
 
         String simpleName;
-        if ( opName.names.size() > 1 ) {
-            if ( opName.names.get( opName.names.size() - 2 ).equals( IS_NAME ) ) {
+        if ( opName.getNames().size() > 1 ) {
+            if ( opName.getNames().get( opName.getNames().size() - 2 ).equals( IS_NAME ) ) {
                 // per SQL99 Part 2 Section 10.4 Syntax Rule 7.b.ii.1
-                simpleName = Util.last( opName.names );
+                simpleName = Util.last( opName.getNames() );
             } else {
                 return;
             }
@@ -90,14 +92,14 @@ public abstract class ReflectiveSqlOperatorTable implements SqlOperatorTable {
         }
 
         // Always look up built-in operators case-insensitively. Even in sessions with unquotedCasing=UNCHANGED and caseSensitive=true.
-        final Collection<SqlOperator> list = operators.get( new Key( simpleName, syntax ) );
+        final Collection<SqlOperator> list = operators.get( new Key( simpleName, SqlSyntax.fromSyntax( syntax ) ) );
         if ( list.isEmpty() ) {
             return;
         }
         for ( SqlOperator op : list ) {
-            if ( op.getSqlSyntax() == syntax ) {
+            if ( op.getSyntax() == syntax ) {
                 operatorList.add( op );
-            } else if ( syntax == SqlSyntax.FUNCTION && op instanceof SqlFunction ) {
+            } else if ( syntax == Syntax.FUNCTION && op instanceof SqlFunction ) {
                 // this special case is needed for operators like CAST, which are treated as functions but have special syntax
                 operatorList.add( op );
             }
@@ -108,7 +110,7 @@ public abstract class ReflectiveSqlOperatorTable implements SqlOperatorTable {
             case BINARY:
             case PREFIX:
             case POSTFIX:
-                for ( SqlOperator extra : operators.get( new Key( simpleName, syntax ) ) ) {
+                for ( SqlOperator extra : operators.get( new Key( simpleName, SqlSyntax.fromSyntax( syntax ) ) ) ) {
                     // REVIEW: Should only search operators added during this method?
                     if ( extra != null && !operatorList.contains( extra ) ) {
                         operatorList.add( extra );
@@ -128,7 +130,7 @@ public abstract class ReflectiveSqlOperatorTable implements SqlOperatorTable {
 
 
     @Override
-    public List<SqlOperator> getOperatorList() {
+    public List<Operator> getOperatorList() {
         return ImmutableList.copyOf( operators.values() );
     }
 
@@ -153,6 +155,8 @@ public abstract class ReflectiveSqlOperatorTable implements SqlOperatorTable {
                     return SqlSyntax.FUNCTION;
             }
         }
+
     }
+
 }
 

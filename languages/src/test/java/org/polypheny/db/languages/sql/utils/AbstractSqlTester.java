@@ -38,19 +38,20 @@ import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.Collation.Coercibility;
 import org.polypheny.db.core.Conformance;
 import org.polypheny.db.core.ConformanceEnum;
+import org.polypheny.db.core.Lex;
 import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.core.ParseException;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.StdOperatorRegistry;
-import org.polypheny.db.languages.sql.Lex;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIntervalLiteral;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperator;
-import org.polypheny.db.languages.sql.SqlOperatorTable;
 import org.polypheny.db.languages.sql.SqlSelect;
 import org.polypheny.db.languages.sql.SqlTestFactory;
 import org.polypheny.db.languages.sql.SqlUtil;
@@ -59,7 +60,6 @@ import org.polypheny.db.languages.sql.parser.SqlParser;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil.StringAndPos;
 import org.polypheny.db.languages.sql.util.SqlShuttle;
-import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorNamespace;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -132,7 +132,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
 
         Throwable thrown = null;
         try {
-            validator.validate( sqlNode );
+            validator.validateSql( sqlNode );
         } catch ( Throwable ex ) {
             thrown = ex;
         }
@@ -186,7 +186,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
         } catch ( Throwable e ) {
             throw new RuntimeException( "Error while parsing query: " + sql, e );
         }
-        return validator.validate( sqlNode );
+        return validator.validateSql( sqlNode );
     }
 
 
@@ -348,7 +348,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
 
 
     @Override
-    public SqlTester withOperatorTable( SqlOperatorTable operatorTable ) {
+    public SqlTester withOperatorTable( OperatorTable operatorTable ) {
         return with( "operatorTable", operatorTable );
     }
 
@@ -490,13 +490,13 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
 
 
     @Override
-    public void checkMonotonic( String query, SqlMonotonicity expectedMonotonicity ) {
+    public void checkMonotonic( String query, Monotonicity expectedMonotonicity ) {
         SqlValidator validator = getValidator();
         SqlNode n = parseAndValidate( validator, query );
         final RelDataType rowType = validator.getValidatedNodeType( n );
         final SqlValidatorNamespace selectNamespace = validator.getNamespace( n );
         final String field0 = rowType.getFieldList().get( 0 ).getName();
-        final SqlMonotonicity monotonicity = selectNamespace.getMonotonicity( field0 );
+        final Monotonicity monotonicity = selectNamespace.getMonotonicity( field0 );
         assertThat( monotonicity, equalTo( expectedMonotonicity ) );
     }
 
@@ -536,7 +536,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( String sql ) {
+    public Monotonicity getMonotonicity( String sql ) {
         final SqlValidator validator = getValidator();
         final SqlNode node = parseAndValidate( validator, sql );
         final SqlSelect select = (SqlSelect) node;

@@ -35,6 +35,10 @@ package org.polypheny.db.tools;
 
 
 import com.google.common.collect.ImmutableList;
+import org.polypheny.db.core.OperatorTable;
+import org.polypheny.db.languages.NodeToRelConverter;
+import org.polypheny.db.languages.Parser.ParserConfig;
+import org.polypheny.db.languages.RexConvertletTable;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.RelOptCostFactory;
 import org.polypheny.db.plan.RelOptTable;
@@ -42,10 +46,6 @@ import org.polypheny.db.plan.RelTraitDef;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.sql.SqlOperatorTable;
-import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
-import org.polypheny.db.sql2rel.SqlRexConvertletTable;
-import org.polypheny.db.sql2rel.SqlToRelConverter;
 
 
 /**
@@ -57,13 +57,15 @@ public interface FrameworkConfig {
 
     /**
      * The configuration of SQL parser.
+     *
+     * @return
      */
-    SqlParserConfig getParserConfig();
+    ParserConfig getParserConfig();
 
     /**
-     * The configuration of {@link SqlToRelConverter}.
+     * The configuration of {@link NodeToRelConverter}.
      */
-    SqlToRelConverter.Config getSqlToRelConverterConfig();
+    NodeToRelConverter.Config getSqlToRelConverterConfig();
 
     /**
      * Returns the default schema that should be checked before looking at the root schema.  Returns null to only consult the root schema.
@@ -90,8 +92,10 @@ public interface FrameworkConfig {
 
     /**
      * Returns operator table that should be used to resolve functions and operators during query validation.
+     *
+     * @return
      */
-    SqlOperatorTable getOperatorTable();
+    OperatorTable getOperatorTable();
 
     /**
      * Returns the cost factory that should be used when creating the planner.
@@ -113,8 +117,10 @@ public interface FrameworkConfig {
 
     /**
      * Returns the convertlet table that should be used when converting from SQL to row expressions
+     *
+     * @return
      */
-    SqlRexConvertletTable getConvertletTable();
+    RexConvertletTable getConvertletTable();
 
     /**
      * Returns the PlannerContext that should be made available during planning by calling {@link org.polypheny.db.plan.RelOptPlanner#getContext()}.
@@ -135,5 +141,6 @@ public interface FrameworkConfig {
      * Returns a prepare context.
      */
     org.polypheny.db.jdbc.Context getPrepareContext();
+
 }
 

@@ -14,33 +14,31 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql;
+package org.polypheny.db.core;
 
 
 import java.util.List;
-import org.polypheny.db.core.FunctionCategory;
 
 
 /**
- * SqlOperatorTable defines a directory interface for enumerating and looking up SQL operators and functions.
+ * SqlOperatorTable defines a directory interface for enumerating and looking up operators and functions.
  */
-public interface SqlOperatorTable {
+public interface OperatorTable {
 
     /**
      * Retrieves a list of operators with a given name and syntax. For example, by passing SqlSyntax.Function, the returned list is narrowed to only matching SqlFunction objects.
-     *
-     * @param opName name of operator
+     *  @param opName name of operator
      * @param category function category to look up, or null for any matching operator
      * @param syntax syntax type of operator
      * @param operatorList mutable list to which to append matches
      */
-    void lookupOperatorOverloads( SqlIdentifier opName, FunctionCategory category, SqlSyntax syntax, List<SqlOperator> operatorList );
+    void lookupOperatorOverloads( Identifier opName, FunctionCategory category, Syntax syntax, List<Operator> operatorList );
 
     /**
      * Retrieves a list of all functions and operators in this table. Used for automated testing.
      *
      * @return list of SqlOperator objects
      */
-    List<SqlOperator> getOperatorList();
+    List<Operator> getOperatorList();
 }
 

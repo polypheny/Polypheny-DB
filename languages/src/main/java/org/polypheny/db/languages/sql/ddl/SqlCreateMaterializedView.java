@@ -38,13 +38,14 @@ import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.ExecutableStatement;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlCreate;
-import org.polypheny.db.languages.sql.SqlExecutableStatement;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
@@ -59,7 +60,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.view.MaterializedViewManager;
 
-public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutableStatement {
+public class SqlCreateMaterializedView extends SqlCreate implements ExecutableStatement {
 
 
     private final SqlIdentifier name;
@@ -106,7 +107,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
 
 
     @Override
-    public void execute( Context context, Statement statement ) {
+    public void execute( Context context, Statement statement, QueryParameters parameters ) {
         Catalog catalog = Catalog.getInstance();
         long schemaId;
         String viewName;

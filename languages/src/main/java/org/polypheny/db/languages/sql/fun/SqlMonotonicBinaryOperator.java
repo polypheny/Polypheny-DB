@@ -18,9 +18,9 @@ package org.polypheny.db.languages.sql.fun;
 
 
 import java.math.BigDecimal;
-import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
-import org.polypheny.db.languages.sql.SqlBinaryOperator;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Monotonicity;
+import org.polypheny.db.languages.sql.SqlBinaryOperator;
 import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
@@ -39,17 +39,17 @@ public class SqlMonotonicBinaryOperator extends SqlBinaryOperator {
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( SqlOperatorBinding call ) {
-        final SqlMonotonicity mono0 = call.getOperandMonotonicity( 0 );
-        final SqlMonotonicity mono1 = call.getOperandMonotonicity( 1 );
+    public Monotonicity getMonotonicity( SqlOperatorBinding call ) {
+        final Monotonicity mono0 = call.getOperandMonotonicity( 0 );
+        final Monotonicity mono1 = call.getOperandMonotonicity( 1 );
 
         // constant <op> constant --> constant
-        if ( (mono1 == SqlMonotonicity.CONSTANT) && (mono0 == SqlMonotonicity.CONSTANT) ) {
-            return SqlMonotonicity.CONSTANT;
+        if ( (mono1 == Monotonicity.CONSTANT) && (mono0 == Monotonicity.CONSTANT) ) {
+            return Monotonicity.CONSTANT;
         }
 
         // monotonic <op> constant
-        if ( mono1 == SqlMonotonicity.CONSTANT ) {
+        if ( mono1 == Monotonicity.CONSTANT ) {
             // mono0 + constant --> mono0
             // mono0 - constant --> mono0
             if ( getName().equals( "-" ) || getName().equals( "+" ) ) {
@@ -64,7 +64,7 @@ public class SqlMonotonicBinaryOperator extends SqlBinaryOperator {
 
                 case 0:
                     // mono0 * 0 --> constant (zero)
-                    return SqlMonotonicity.CONSTANT;
+                    return Monotonicity.CONSTANT;
 
                 default:
                     // mono0 * positive constant --> mono0
@@ -73,7 +73,7 @@ public class SqlMonotonicBinaryOperator extends SqlBinaryOperator {
         }
 
         // constant <op> mono
-        if ( mono0 == SqlMonotonicity.CONSTANT ) {
+        if ( mono0 == Monotonicity.CONSTANT ) {
             if ( getName().equals( "-" ) ) {
                 // constant - mono1 --> reverse mono1
                 return mono1.reverse();
@@ -92,7 +92,7 @@ public class SqlMonotonicBinaryOperator extends SqlBinaryOperator {
 
                     case 0:
                         // 0 * mono1 --> constant (zero)
-                        return SqlMonotonicity.CONSTANT;
+                        return Monotonicity.CONSTANT;
 
                     default:
                         // positive constant * mono1 --> mono1
@@ -116,7 +116,7 @@ public class SqlMonotonicBinaryOperator extends SqlBinaryOperator {
             } else if ( mono0.unstrict() == mono1.unstrict() ) {
                 return mono0.unstrict();
             } else {
-                return SqlMonotonicity.NOT_MONOTONIC;
+                return Monotonicity.NOT_MONOTONIC;
             }
         }
         if ( getName().equals( "-" ) ) {
@@ -125,11 +125,11 @@ public class SqlMonotonicBinaryOperator extends SqlBinaryOperator {
             } else if ( mono0.unstrict() == mono1.reverse().unstrict() ) {
                 return mono0.unstrict();
             } else {
-                return SqlMonotonicity.NOT_MONOTONIC;
+                return Monotonicity.NOT_MONOTONIC;
             }
         }
         if ( getName().equals( "*" ) ) {
-            return SqlMonotonicity.NOT_MONOTONIC;
+            return Monotonicity.NOT_MONOTONIC;
         }
 
         return super.getMonotonicity( call );

@@ -22,18 +22,18 @@ import java.math.BigDecimal;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.core.CoreUtil;
-import org.polypheny.db.languages.sql.validate.SqlMonotonicity;
-import org.polypheny.db.languages.sql.validate.SqlValidator;
-import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.core.FunctionCategory;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.core.FunctionCategory;
-import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.SqlWriter;
+import org.polypheny.db.languages.sql.validate.SqlValidator;
+import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
@@ -170,14 +170,14 @@ public class SqlSubstringFunction extends SqlFunction {
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( SqlOperatorBinding call ) {
+    public Monotonicity getMonotonicity( SqlOperatorBinding call ) {
         // SUBSTRING(x FROM 0 FOR constant) has same monotonicity as x
         if ( call.getOperandCount() == 3 ) {
-            final SqlMonotonicity mono0 = call.getOperandMonotonicity( 0 );
-            if ( (mono0 != SqlMonotonicity.NOT_MONOTONIC)
-                    && call.getOperandMonotonicity( 1 ) == SqlMonotonicity.CONSTANT
+            final Monotonicity mono0 = call.getOperandMonotonicity( 0 );
+            if ( (mono0 != Monotonicity.NOT_MONOTONIC)
+                    && call.getOperandMonotonicity( 1 ) == Monotonicity.CONSTANT
                     && call.getOperandLiteralValue( 1, BigDecimal.class ).equals( BigDecimal.ZERO )
-                    && call.getOperandMonotonicity( 2 ) == SqlMonotonicity.CONSTANT ) {
+                    && call.getOperandMonotonicity( 2 ) == Monotonicity.CONSTANT ) {
                 return mono0.unstrict();
             }
         }

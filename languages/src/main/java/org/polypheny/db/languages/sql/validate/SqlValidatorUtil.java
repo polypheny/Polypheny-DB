@@ -33,18 +33,20 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.core.Conformance;
 import org.polypheny.db.core.CoreUtil;
-import org.polypheny.db.core.Node;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.NameMatcher;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.OperatorTable;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.SqlMoniker;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.ValidatorCatalogReader;
+import org.polypheny.db.core.ValidatorTable;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDataTypeSpec;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
-import org.polypheny.db.languages.sql.SqlOperatorTable;
 import org.polypheny.db.plan.RelOptSchemaWithSampling;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.prepare.Prepare;
@@ -92,7 +94,7 @@ public class SqlValidatorUtil {
             final SqlValidatorNamespace resolvedNamespace = dmlNamespace.resolve();
             if ( resolvedNamespace.isWrapperFor( TableNamespace.class ) ) {
                 final TableNamespace tableNamespace = resolvedNamespace.unwrap( TableNamespace.class );
-                final SqlValidatorTable validatorTable = tableNamespace.getTable();
+                final ValidatorTable validatorTable = tableNamespace.getTable();
                 final RelDataTypeFactory typeFactory = catalogReader.getTypeFactory();
                 final List<RelDataTypeField> extendedFields =
                         dmlNamespace.extendList == null
@@ -125,7 +127,7 @@ public class SqlValidatorUtil {
     /**
      * Gets a list of extended columns with field indices to the underlying table.
      */
-    public static List<RelDataTypeField> getExtendedColumns( RelDataTypeFactory typeFactory, SqlValidatorTable table, SqlNodeList extendedColumns ) {
+    public static List<RelDataTypeField> getExtendedColumns( RelDataTypeFactory typeFactory, ValidatorTable table, SqlNodeList extendedColumns ) {
         final ImmutableList.Builder<RelDataTypeField> extendedFields = ImmutableList.builder();
         final ExtensibleTable extTable = table.unwrap( ExtensibleTable.class );
         int extendedFieldOffset =
@@ -256,12 +258,12 @@ public class SqlValidatorUtil {
     /**
      * Factory method for {@link SqlValidator}.
      */
-    public static SqlValidatorWithHints newValidator( SqlOperatorTable opTab, SqlValidatorCatalogReader catalogReader, RelDataTypeFactory typeFactory, Conformance conformance ) {
+    public static SqlValidatorWithHints newValidator( OperatorTable opTab, ValidatorCatalogReader catalogReader, RelDataTypeFactory typeFactory, Conformance conformance ) {
         return new SqlValidatorImpl( opTab, catalogReader, typeFactory, conformance );
     }
 
 
-    public static RelDataTypeField getTargetField( RelDataType rowType, RelDataTypeFactory typeFactory, SqlIdentifier id, SqlValidatorCatalogReader catalogReader, RelOptTable table ) {
+    public static RelDataTypeField getTargetField( RelDataType rowType, RelDataTypeFactory typeFactory, SqlIdentifier id, ValidatorCatalogReader catalogReader, RelOptTable table ) {
         return getTargetField( rowType, typeFactory, id, catalogReader, table, false );
     }
 
@@ -274,7 +276,7 @@ public class SqlValidatorUtil {
      * @param table the target table or null if it is not a RelOptTable instance
      * @return the target field or null if the name cannot be resolved
      */
-    public static RelDataTypeField getTargetField( RelDataType rowType, RelDataTypeFactory typeFactory, SqlIdentifier id, SqlValidatorCatalogReader catalogReader, RelOptTable table, boolean isDocument ) {
+    public static RelDataTypeField getTargetField( RelDataType rowType, RelDataTypeFactory typeFactory, SqlIdentifier id, ValidatorCatalogReader catalogReader, RelOptTable table, boolean isDocument ) {
         final Table t = table == null ? null : table.unwrap( Table.class );
 
         if ( !(t instanceof CustomColumnResolvingTable) ) {
@@ -319,7 +321,7 @@ public class SqlValidatorUtil {
     }
 
 
-    public static void getSchemaObjectMonikers( SqlValidatorCatalogReader catalogReader, List<String> names, List<SqlMoniker> hints ) {
+    public static void getSchemaObjectMonikers( ValidatorCatalogReader catalogReader, List<String> names, List<SqlMoniker> hints ) {
         // Assume that the last name is 'dummy' or similar.
         List<String> subNames = Util.skipLast( names );
 

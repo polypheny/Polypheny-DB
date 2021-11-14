@@ -17,9 +17,11 @@
 package org.polypheny.db.languages.sql.validate;
 
 
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.core.Modality;
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlSelect;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.type.PolyTypeUtil;
 
 
@@ -62,13 +64,13 @@ public class SelectNamespace extends AbstractNamespace {
 
 
     @Override
-    public boolean supportsModality( SqlModality modality ) {
+    public boolean supportsModality( Modality modality ) {
         return validator.validateModality( select, modality, false );
     }
 
 
     @Override
-    public SqlMonotonicity getMonotonicity( String columnName ) {
+    public Monotonicity getMonotonicity( String columnName ) {
         final RelDataType rowType = this.getRowTypeSansSystemColumns();
         final int field = PolyTypeUtil.findField( rowType, columnName );
         final SqlNode selectItem = validator.getRawSelectScope( select ).getExpandedSelectList().get( field );
