@@ -165,6 +165,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     private final RoutingDebugUiPrinter debugUiPrinter = RoutingManager.getInstance().getDebugUiPrinter();
     private final DmlRouter dmlRouter = RoutingManager.getInstance().getDmlRouter();
 
+    private final Map<Integer, Long> scanPerTable = new HashMap<>(); // scanId  -> tableId //Needed for Lookup
     // endregion
 
     // region ctor
@@ -1294,15 +1295,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // get partitions of logical information
 
-        // Map<Long,Set<String>> aggregatedPartitionValues = analyzeRelShuttle.getPartitionValueMap();
-        //List<String> aggregatedPartitionValues = analyzeRelShuttle.partitionValueMap.values().stream().flatMap( Collection::stream ).collect( Collectors.toList() );
-        //val accessedPartitionMap = this.getAccessedPartitionsPerTable( logicalRoot.rel, aggregatedPartitionValues );
+        Map<Integer, Set<String>> partitionValueFilterPerScan = analyzeRelShuttle.getPartitionValueFilterPerScan();
+        val accessedPartitionMap = this.getAccessedPartitionsPerTableScan( logicalRoot.rel, partitionValueFilterPerScan );
 
         // build queryClass from query-name and partitions.
         String queryClass = analyzeRelShuttle.getQueryName();// + accessedPartitionMap;
 
         // build LogicalQueryInformation instance and prepare monitoring
-        val queryInformation = new LogicalQueryInformationImpl( queryClass, analyzeRelShuttle.availableColumns, analyzeRelShuttle.availableColumnsWithTable, analyzeRelShuttle.getUsedColumns(), analyzeRelShuttle.getTables() );
+        val queryInformation = new LogicalQueryInformationImpl( queryClass, accessedPartitionMap, analyzeRelShuttle.availableColumns, analyzeRelShuttle.availableColumnsWithTable, analyzeRelShuttle.getUsedColumns(), analyzeRelShuttle.getTables() );
         this.prepareMonitoring( statement, logicalRoot, isAnalyze, isSubquery, queryInformation );
 
         return queryInformation;
@@ -1310,20 +1310,22 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     /**
-     * Traverse all tables used during execution and identifies every partition that has been accessed.
+     * Traverse all TablesScans used during execution and identifies for teh corresponding the table all
+     * associated partition that needs to be accessed, on the basis of the provided partitionValues identified in a LogicalFilter
+     *
+     * It is necessary to associate the partitoinIds again with the TableScanId and not with the table itself. Because a table could be present
+     * multiple times within one query. The aggregation per table would lead to data loss
      *
      * @param rel RelNode to be processed
-     * @param aggregatedPartitionValues Mapping of tables to identified partition Values
-     * @return Mapping of tables to identified partition Ids
+     * @param aggregatedPartitionValues Mapping of TableScan Ids to identified partition Values
+     * @return Mapping of TableScan Ids to identified partition Ids
      */
-    private Map<Long, List<Long>> getAccessedPartitionsPerTable( RelNode rel, Map<Long, Set<String>> aggregatedPartitionValues ) {
-        Map<Long, List<Long>> accessedPartitionList = new HashMap<>(); // tableId  -> partitionIds
-
-        //Check for each existing table in aggregatedPartitionValues
+    private Map<Integer, List<Long>> getAccessedPartitionsPerTableScan( RelNode rel, Map<Integer, Set<String>> aggregatedPartitionValues ) {
+        Map<Integer, List<Long>> accessedPartitionList = new HashMap<>(); // tableId  -> partitionIds
 
         if ( !(rel instanceof LogicalTableScan) ) {
             for ( int i = 0; i < rel.getInputs().size(); i++ ) {
-                val result = getAccessedPartitionsPerTable( rel.getInput( i ), aggregatedPartitionValues );
+                val result = getAccessedPartitionsPerTableScan( rel.getInput( i ), aggregatedPartitionValues );
                 if ( !result.isEmpty() ) {
                     for ( val elem : result.entrySet() ) {
                         accessedPartitionList.merge( elem.getKey(), elem.getValue(), ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
@@ -1331,31 +1333,31 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 }
             }
         } else {
+            boolean fallback = false;
             if ( rel.getTable() != null ) {
 
                 RelOptTableImpl table = (RelOptTableImpl) rel.getTable();
                 if ( table.getTable() instanceof LogicalTable ) {
                     LogicalTable logicalTable = ((LogicalTable) table.getTable());
+                    int scanId = rel.getId();
+
                     // Get placements of this table
                     CatalogTable catalogTable = Catalog.getInstance().getTable( logicalTable.getTableId() );
 
-                    if ( !aggregatedPartitionValues.containsKey( catalogTable.id ) ) {
+                    if ( !aggregatedPartitionValues.containsKey( scanId ) ) {
 
-                        for ( Entry<Long, Set<String>> entry : aggregatedPartitionValues.entrySet() ) {
+                        if ( aggregatedPartitionValues.get( scanId ) != null ) {
+                            if ( !aggregatedPartitionValues.get( scanId ).isEmpty() ) {
 
-                            long tableId = entry.getKey();
-                            Set<String> partitionValues = entry.getValue();
+                                List<String> partitionValues = aggregatedPartitionValues.get( scanId ).stream().collect( Collectors.toList() );
 
-                            if ( !partitionValues.isEmpty() ) {
                                 if ( log.isDebugEnabled() ) {
                                     log.debug( "TableID: {} is partitioned on column: {} - {}",
-                                            tableId,
+                                            logicalTable.getTableId(),
                                             catalogTable.partitionColumnId,
                                             Catalog.getInstance().getColumn( catalogTable.partitionColumnId ).name );
                                 }
-
                                 List<Long> identifiedPartitions = new ArrayList<>();
-
                                 for ( String partitionValue : partitionValues ) {
                                     log.debug( "Extracted PartitionValue: {}", partitionValue );
                                     long identifiedPartition = PartitionManagerFactory.getInstance()
@@ -1365,15 +1367,24 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                     identifiedPartitions.add( identifiedPartition );
                                     log.debug( "Identified PartitionId: {} for value: {}", identifiedPartition, partitionValue );
                                 }
-                                accessedPartitionList.put( catalogTable.id, identifiedPartitions );
 
-                                // fallback
+                                accessedPartitionList.merge( scanId, identifiedPartitions, ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
+                                scanPerTable.putIfAbsent( scanId, catalogTable.id );
+                                // fallback all partitionIds are needed
                             } else {
-                                accessedPartitionList.put( catalogTable.id, catalogTable.partitionProperty.partitionIds );
+                                fallback = true;
                             }
+                        } else {
+                            fallback = true;
                         }
                     } else {
+                        fallback = true;
+                    }
 
+                    if ( fallback ) {
+                        accessedPartitionList.merge( scanId, catalogTable.partitionProperty.partitionIds
+                                , ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
+                        scanPerTable.putIfAbsent( scanId, catalogTable.id );
                     }
                 }
             }
@@ -1419,8 +1430,34 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     ((QueryEvent) eventData).setUpdatePostCosts( true );
                 }
             }
-
+            finalizeAccessedPartitions( eventData );
             MonitoringServiceProvider.getInstance().monitorEvent( eventData );
+        }
+    }
+
+
+    /**
+     * Aggregates results present in queryInformation as well information directly attached to the Statement Event
+     * Adds all information to teh accessedPartitions directly in the StatementEvent.
+     *
+     * Also remaps scanId to tableId to correctly update the accessed partition List
+     */
+    private void finalizeAccessedPartitions( StatementEvent eventData ) {
+
+        Map<Integer, List<Long>> partitionsInQueryInformation = eventData.getLogicalQueryInformation().getAccessedPartitions();
+        Map<Long, Set<Long>> tempAccessedPartitions = new HashMap<>();
+
+        for ( Entry<Integer, List<Long>> entry : partitionsInQueryInformation.entrySet() ) {
+
+            Integer scanId = entry.getKey();
+            if ( scanPerTable.containsKey( scanId ) ) {
+                Set<Long> partitionIds = entry.getValue().stream().collect( Collectors.toSet() );
+
+                long tableId = scanPerTable.get( scanId );
+                tempAccessedPartitions.put( tableId, partitionIds );
+
+                eventData.updateAccessedPartitions( tempAccessedPartitions );
+            }
         }
     }
 

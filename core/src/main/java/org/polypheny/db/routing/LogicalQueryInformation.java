@@ -25,6 +25,10 @@ import java.util.Map;
  */
 public interface LogicalQueryInformation {
 
+    /**
+     * @return a map with tableId as key and a list of partitionIds as value.
+     */
+    Map<Integer, List<Long>> getAccessedPartitions(); // tableId  -> partitionIds
 
     /**
      * @return a map with columnId as key and tableId as value.

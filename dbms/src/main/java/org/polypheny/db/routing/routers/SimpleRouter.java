@@ -74,10 +74,8 @@ public class SimpleRouter extends AbstractDqlRouter {
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionType );
 
-        //TODO @HENNLO Fix this. Routing should not use precomputed logical infomration
-        // get info from whereClauseVisitor
-        //List<Long> partitionIds = queryInformation.getAccessedPartitions().get( catalogTable.id );
-        List<Long> partitionIds = catalogTable.partitionProperty.partitionIds;
+        //Utilize scanId to retrieve Partitions being accessed
+        List<Long> partitionIds = queryInformation.getAccessedPartitions().get( node.getId() );
 
         Map<Long, List<CatalogColumnPlacement>> placementDistribution = partitionIds != null
                 ? partitionManager.getRelevantPlacements( catalogTable, partitionIds, Collections.emptyList() )

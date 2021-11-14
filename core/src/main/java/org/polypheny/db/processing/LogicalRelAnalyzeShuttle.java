@@ -55,8 +55,8 @@ public class LogicalRelAnalyzeShuttle extends RelShuttleImpl {
 
     protected final LogicalRelAnalyzeRexShuttle rexShuttle;
     @Getter
-    //protected final Map<Integer, List<String>> filterMap = new HashMap<>(); // logical filterId -> List partitionsValue
-    protected final Map<Long, Set<String>> partitionValueMap = new HashMap<>(); // logical filterId -> (logical tableId -> List partitionsValue)
+    //protected final Map<Integer, List<String>> filterMap = new HashMap<>(); // logical scanId (TableScanId) -> List partitionsValue
+    protected final Map<Integer, Set<String>> partitionValueFilterPerScan = new HashMap<>(); // logical scanId (TableScanId) -> (logical tableId -> List partitionsValue)
     @Getter
     protected final HashSet<String> hashBasis = new HashSet<>();
     @Getter
@@ -255,22 +255,16 @@ public class LogicalRelAnalyzeShuttle extends RelShuttleImpl {
             WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor( statement, catalogTable.columnIds.indexOf( catalogTable.partitionColumnId ) );
             filter.accept( whereClauseVisitor );
 
-            if ( !partitionValueMap.containsKey( catalogTable.id ) ) {
-                partitionValueMap.put( catalogTable.id, new HashSet<>() );
-            }
+            int scanId = filter.getInput().getId();
 
-            /*if ( whereClauseVisitor.valueIdentified ) {
-                if ( !whereClauseVisitor.getValues().isEmpty() && !whereClauseVisitor.isUnsupportedFilter() ) {
-                    filterMap.put( filter.getId(), whereClauseVisitor.getValues().stream()
-                            .map( Object::toString )
-                            .collect( Collectors.toList() ) );
-                }
-            }*/
+            if ( !partitionValueFilterPerScan.containsKey( scanId ) ) {
+                partitionValueFilterPerScan.put( scanId, new HashSet<>() );
+            }
 
             if ( whereClauseVisitor.valueIdentified ) {
                 if ( !whereClauseVisitor.getValues().isEmpty() && !whereClauseVisitor.isUnsupportedFilter() ) {
 
-                    partitionValueMap.get( catalogTable.id ).addAll( whereClauseVisitor.getValues().stream()
+                    partitionValueFilterPerScan.get( scanId ).addAll( whereClauseVisitor.getValues().stream()
                             .map( Object::toString )
                             .collect( Collectors.toSet() ) );
                 }

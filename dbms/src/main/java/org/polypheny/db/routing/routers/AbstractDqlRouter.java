@@ -138,6 +138,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
         if ( node instanceof LogicalTableScan && node.getTable() != null ) {
             RelOptTableImpl table = (RelOptTableImpl) node.getTable();
+
             if ( !(table.getTable() instanceof LogicalTable) ) {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
             }

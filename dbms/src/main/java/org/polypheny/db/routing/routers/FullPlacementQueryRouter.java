@@ -46,7 +46,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
     protected List<RoutedRelBuilder> handleHorizontalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
         log.debug( "{} is horizontally partitioned", catalogTable.name );
 
-        val placements = selectPlacementHorizontalPartitioning( catalogTable, queryInformation );
+        val placements = selectPlacementHorizontalPartitioning( node, catalogTable, queryInformation );
 
         val newBuilders = new ArrayList<RoutedRelBuilder>();
         for ( val placementCombination : placements ) {
@@ -101,14 +101,13 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
     }
 
 
-    protected Collection<Map<Long, List<CatalogColumnPlacement>>> selectPlacementHorizontalPartitioning( CatalogTable catalogTable, LogicalQueryInformation queryInformation ) {
+    protected Collection<Map<Long, List<CatalogColumnPlacement>>> selectPlacementHorizontalPartitioning( RelNode node, CatalogTable catalogTable, LogicalQueryInformation queryInformation ) {
+
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionType );
 
-        //TODO @HENNLO Fix this. Routing should not use precomputed logical infomration
-        // get info from whereClauseVisitor
-        //List<Long> partitionIds = queryInformation.getAccessedPartitions().get( catalogTable.id );
-        List<Long> partitionIds = catalogTable.partitionProperty.partitionIds;
+        //Utilize scanId to retrieve Partitions being accessed
+        List<Long> partitionIds = queryInformation.getAccessedPartitions().get( node.getId() );
 
         val allPlacements = partitionManager.getAllPlacements( catalogTable, partitionIds );
 
