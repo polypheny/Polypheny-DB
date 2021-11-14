@@ -16,18 +16,28 @@
 
 package org.polypheny.db.languages;
 
+import java.io.Reader;
+import java.util.TimeZone;
+import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.DataTypeSpec;
+import org.polypheny.db.core.Identifier;
+import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.OperatorTable;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.Validator;
 import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable.ViewExpander;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
+import org.polypheny.db.rel.RelNode;
+import org.slf4j.Logger;
 
 public abstract class LanguageManager {
 
@@ -62,5 +72,21 @@ public abstract class LanguageManager {
     public abstract OperatorTable getStdOperatorTable();
 
     public abstract Validator createPolyphenyValidator( QueryLanguage sql, OperatorTable operatorTable, PolyphenyDbCatalogReader catalogReader, JavaTypeFactory typeFactory, Conformance conformance );
+
+    public abstract ParserFactory getFactory( QueryLanguage sql );
+
+    public abstract Parser getParser( QueryLanguage sql, Reader reader, ParserConfig sqlParserConfig );
+
+    public abstract OperatorTable getOracleOperatorTable();
+
+    public abstract Logger getLogger( QueryLanguage queryLanguage, Class<RelNode> relNodeClass );
+
+    public abstract Identifier createIdentifier( QueryLanguage sql, String name, ParserPos zero );
+
+    public abstract DataTypeSpec createDataTypeSpec( QueryLanguage sql, Identifier typeIdentifier, int precision, int scale, String charSetName, TimeZone o, ParserPos zero );
+
+    public abstract DataTypeSpec createDataTypeSpec( QueryLanguage sql, Identifier typeIdentifier, Identifier componentTypeIdentifier, int precision, int scale, int dimension, int cardinality, String charSetName, TimeZone o, boolean nullable, ParserPos zero );
+
+    public abstract IntervalQualifier createIntervalQualifier( QueryLanguage queryLanguage, TimeUnit startUnit, int startPrecision, TimeUnit endUnit, int fractionalSecondPrecision, ParserPos zero );
 
 }

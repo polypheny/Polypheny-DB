@@ -279,7 +279,7 @@ public class RexBuilder {
      * @return Rex expression for the given aggregate call
      */
     public RexNode addAggCall( AggregateCall aggCall, int groupCount, boolean indicator, List<AggregateCall> aggCalls, Map<AggregateCall, RexNode> aggCallMapping, final List<RelDataType> aggArgTypes ) {
-        if ( aggCall.getAggregation().getFunctionType() == FunctionType.COUNT && !aggCall.isDistinct() ) {
+        if ( aggCall.getAggregation().getFunctionCategory() == FunctionType.COUNT && !aggCall.isDistinct() ) {
             final List<Integer> args = aggCall.getArgList();
             final List<Integer> nullableArgs = nullableArgs( args, aggArgTypes );
             if ( !nullableArgs.equals( args ) ) {

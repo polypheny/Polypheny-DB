@@ -43,7 +43,6 @@ import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.type.PolyType;
 
 
@@ -53,7 +52,7 @@ import org.polypheny.db.type.PolyType;
 public class DruidSqlCastConverter implements DruidSqlOperatorConverter {
 
     @Override
-    public SqlOperator polyphenyDbOperator() {
+    public Operator polyphenyDbOperator() {
         return SqlStdOperatorTable.CAST;
     }
 

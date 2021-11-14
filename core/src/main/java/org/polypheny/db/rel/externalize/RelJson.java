@@ -452,7 +452,7 @@ public class RelJson {
 
     private SqlOperator toOp( String op, Map<String, Object> map ) {
         // TODO: build a map, for more efficient lookup
-        // TODO: look up based on SqlKind
+        // TODO: look up based on Kind
         final List<SqlOperator> operatorList = SqlStdOperatorTable.instance().getOperatorList();
         for ( SqlOperator operator : operatorList ) {
             if ( operator.getName().equals( op ) ) {

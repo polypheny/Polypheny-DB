@@ -22,6 +22,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.SqlCreate;
 import org.polypheny.db.languages.sql.SqlIdentifier;
@@ -95,6 +97,12 @@ public class SqlCreateFunction extends SqlCreate {
 
     @Override
     public List<Node> getOperandList() {
+        return Arrays.asList( name, className, usingList );
+    }
+
+
+    @Override
+    public List<SqlNode> getSqlOperandList() {
         return Arrays.asList( name, className, usingList );
     }
 

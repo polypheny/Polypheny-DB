@@ -38,8 +38,10 @@ import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.ExecutableStatement;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
@@ -51,7 +53,6 @@ import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
-import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.processing.Processor;
@@ -107,6 +108,12 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( name, columnList, query );
+    }
+
+
+    @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         Catalog catalog = Catalog.getInstance();
         long schemaId;
@@ -126,9 +133,9 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
                 viewName = name.names.get( 0 );
             }
         } catch ( UnknownDatabaseException e ) {
-            throw SqlUtil.newContextException( name.getPos(), RESOURCE.databaseNotFound( name.toString() ) );
+            throw CoreUtil.newContextException( name.getPos(), RESOURCE.databaseNotFound( name.toString() ) );
         } catch ( UnknownSchemaException e ) {
-            throw SqlUtil.newContextException( name.getPos(), RESOURCE.schemaNotFound( name.toString() ) );
+            throw CoreUtil.newContextException( name.getPos(), RESOURCE.schemaNotFound( name.toString() ) );
         }
 
         List<DataStore> stores;
@@ -146,7 +153,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
         RelRoot relRoot = sqlProcessor.translate(
                 statement,
                 sqlProcessor.validate(
-                        statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left, );
+                        statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left, null );
 
         List<String> columns = null;
 
@@ -194,7 +201,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
                     ifNotExists,
                     ordered );
         } catch ( TableAlreadyExistsException e ) {
-            throw SqlUtil.newContextException( name.getPos(), RESOURCE.tableExists( viewName ) );
+            throw CoreUtil.newContextException( name.getPos(), RESOURCE.tableExists( viewName ) );
         } catch ( GenericCatalogException | UnknownColumnException | ColumnNotExistsException | ColumnAlreadyExistsException e ) {
             // we just added the table/column, so it has to exist, or we have an internal problem
             throw new RuntimeException( e );
@@ -237,7 +244,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
     private List<String> getColumnInfo() {
         List<String> columnName = new ArrayList<>();
 
-        for ( Ord<SqlNode> c : Ord.zip( columnList ) ) {
+        for ( Ord<SqlNode> c : Ord.zip( columnList.getSqlList() ) ) {
             if ( c.e instanceof SqlIdentifier ) {
                 SqlIdentifier sqlIdentifier = (SqlIdentifier) c.e;
                 columnName.add( sqlIdentifier.getSimple() );
@@ -260,7 +267,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
         name.unparse( writer, leftPrec, rightPrec );
         if ( columnList != null ) {
             SqlWriter.Frame frame = writer.startList( "(", ")" );
-            for ( SqlNode c : columnList ) {
+            for ( SqlNode c : columnList.getSqlList() ) {
                 writer.sep( "," );
                 c.unparse( writer, 0, 0 );
             }

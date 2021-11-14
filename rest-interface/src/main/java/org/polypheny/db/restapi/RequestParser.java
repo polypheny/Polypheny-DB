@@ -45,6 +45,9 @@ import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.core.AggFunction;
+import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.restapi.exception.ParserException;
@@ -53,9 +56,6 @@ import org.polypheny.db.restapi.models.requests.ResourceDeleteRequest;
 import org.polypheny.db.restapi.models.requests.ResourceGetRequest;
 import org.polypheny.db.restapi.models.requests.ResourcePatchRequest;
 import org.polypheny.db.restapi.models.requests.ResourcePostRequest;
-import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -391,22 +391,22 @@ public class RequestParser {
 
 
     @VisibleForTesting
-    SqlAggFunction decodeAggregateFunction( String function ) {
+    AggFunction decodeAggregateFunction( String function ) {
         if ( function == null ) {
             return null;
         }
 
         switch ( function ) {
             case "COUNT":
-                return SqlStdOperatorTable.COUNT;
+                return StdOperatorRegistry.getAgg( "COUNT" );
             case "MAX":
-                return SqlStdOperatorTable.MAX;
+                return StdOperatorRegistry.getAgg( "MAX" );
             case "MIN":
-                return SqlStdOperatorTable.MIN;
+                return StdOperatorRegistry.getAgg( "MIN" );
             case "AVG":
-                return SqlStdOperatorTable.AVG;
+                return StdOperatorRegistry.getAgg( "AVG" );
             case "SUM":
-                return SqlStdOperatorTable.SUM;
+                return StdOperatorRegistry.getAgg( "SUM" );
             default:
                 return null;
         }
@@ -541,8 +541,8 @@ public class RequestParser {
 
     @VisibleForTesting
     Filters parseFilters( Map<String, String[]> filterMap, Map<String, RequestColumn> nameAndAliasMapping ) throws ParserException {
-        Map<RequestColumn, List<Pair<SqlOperator, Object>>> literalFilters = new HashMap<>();
-        Map<RequestColumn, List<Pair<SqlOperator, RequestColumn>>> columnFilters = new HashMap<>();
+        Map<RequestColumn, List<Pair<Operator, Object>>> literalFilters = new HashMap<>();
+        Map<RequestColumn, List<Pair<Operator, RequestColumn>>> columnFilters = new HashMap<>();
 
         for ( String possibleFilterKey : filterMap.keySet() ) {
             if ( possibleFilterKey.startsWith( "_" ) ) {
@@ -562,11 +562,11 @@ public class RequestParser {
                 throw new ParserException( ParserErrorCode.FILTER_UNKNOWN_COLUMN, possibleFilterKey );
             }
 
-            List<Pair<SqlOperator, Object>> literalFilterOperators = new ArrayList<>();
-            List<Pair<SqlOperator, RequestColumn>> columnFilterOperators = new ArrayList<>();
+            List<Pair<Operator, Object>> literalFilterOperators = new ArrayList<>();
+            List<Pair<Operator, RequestColumn>> columnFilterOperators = new ArrayList<>();
 
             for ( String filterString : filterMap.get( possibleFilterKey ) ) {
-                Pair<SqlOperator, String> rightHandSide = this.parseFilterOperation( filterString );
+                Pair<Operator, String> rightHandSide = this.parseFilterOperation( filterString );
                 Object literal = this.parseLiteralValue( catalogColumn.getColumn().type, rightHandSide.right );
                 // TODO: add column filters here
                 literalFilterOperators.add( new Pair<>( rightHandSide.left, literal ) );
@@ -597,34 +597,34 @@ public class RequestParser {
 
 
     @VisibleForTesting
-    Pair<SqlOperator, String> parseFilterOperation( String filterString ) throws ParserException {
+    Pair<Operator, String> parseFilterOperation( String filterString ) throws ParserException {
         log.debug( "Starting to parse filter operation. Value: {}.", filterString );
 
-        SqlOperator callOperator;
+        Operator callOperator;
         String rightHandSide;
         if ( filterString.startsWith( "<=" ) ) {
-            callOperator = SqlStdOperatorTable.LESS_THAN_OR_EQUAL;
+            callOperator = StdOperatorRegistry.get( "LESS_THAN_OR_EQUAL" );
             rightHandSide = filterString.substring( 2, filterString.length() );
         } else if ( filterString.startsWith( "<" ) ) {
-            callOperator = SqlStdOperatorTable.LESS_THAN;
+            callOperator = StdOperatorRegistry.get( "LESS_THAN" );
             rightHandSide = filterString.substring( 1, filterString.length() );
         } else if ( filterString.startsWith( ">=" ) ) {
-            callOperator = SqlStdOperatorTable.GREATER_THAN_OR_EQUAL;
+            callOperator = StdOperatorRegistry.get( "GREATER_THAN_OR_EQUAL" );
             rightHandSide = filterString.substring( 2, filterString.length() );
         } else if ( filterString.startsWith( ">" ) ) {
-            callOperator = SqlStdOperatorTable.GREATER_THAN;
+            callOperator = StdOperatorRegistry.get( "GREATER_THAN" );
             rightHandSide = filterString.substring( 1, filterString.length() );
         } else if ( filterString.startsWith( "=" ) ) {
-            callOperator = SqlStdOperatorTable.EQUALS;
+            callOperator = StdOperatorRegistry.get( "EQUALS" );
             rightHandSide = filterString.substring( 1, filterString.length() );
         } else if ( filterString.startsWith( "!=" ) ) {
-            callOperator = SqlStdOperatorTable.NOT_EQUALS;
+            callOperator = StdOperatorRegistry.get( "NOT_EQUALS" );
             rightHandSide = filterString.substring( 2, filterString.length() );
         } else if ( filterString.startsWith( "%" ) ) {
-            callOperator = SqlStdOperatorTable.LIKE;
+            callOperator = StdOperatorRegistry.get( "LIKE" );
             rightHandSide = filterString.substring( 1, filterString.length() );
         } else if ( filterString.startsWith( "!%" ) ) {
-            callOperator = SqlStdOperatorTable.NOT_LIKE;
+            callOperator = StdOperatorRegistry.get( "NOT_LIKE" );
             rightHandSide = filterString.substring( 2, filterString.length() );
         } else {
             log.warn( "Unable to parse filter operation comparator. Returning null." );
@@ -764,8 +764,8 @@ public class RequestParser {
     @AllArgsConstructor
     public static class Filters {
 
-        public final Map<RequestColumn, List<Pair<SqlOperator, Object>>> literalFilters;
-        public final Map<RequestColumn, List<Pair<SqlOperator, RequestColumn>>> columnFilters;
+        public final Map<RequestColumn, List<Pair<Operator, Object>>> literalFilters;
+        public final Map<RequestColumn, List<Pair<Operator, RequestColumn>>> columnFilters;
 
     }
 

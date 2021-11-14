@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.NameMatcher;
+import org.polypheny.db.core.NameMatchers;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.SqlMoniker;
 import org.polypheny.db.core.SqlMonikerType;
@@ -240,7 +241,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                 switch ( map.size() ) {
                     case 0:
                         if ( nameMatcher.isCaseSensitive() ) {
-                            final NameMatcher liberalMatcher = SqlNameMatchers.liberal();
+                            final NameMatcher liberalMatcher = NameMatchers.liberal();
                             final Map<String, ScopeChild> map2 = findQualifyingTableNames( columnName, identifier, liberalMatcher );
                             if ( !map2.isEmpty() ) {
                                 final List<String> list = new ArrayList<>();
@@ -301,7 +302,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                     }
                     // Look for a table alias that is the wrong case.
                     if ( nameMatcher.isCaseSensitive() ) {
-                        final NameMatcher liberalMatcher = SqlNameMatchers.liberal();
+                        final NameMatcher liberalMatcher = NameMatchers.liberal();
                         resolved.clear();
                         resolve( prefix.names, liberalMatcher, false, resolved );
                         if ( resolved.count() == 1 ) {
@@ -385,7 +386,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                     case 0:
                         // Maybe the last component was correct, just wrong case
                         if ( nameMatcher.isCaseSensitive() ) {
-                            NameMatcher liberalMatcher = SqlNameMatchers.liberal();
+                            NameMatcher liberalMatcher = NameMatchers.liberal();
                             resolved.clear();
                             resolveInNamespace( fromNs, false, suffix.names, liberalMatcher, Path.EMPTY, resolved );
                             if ( resolved.count() > 0 ) {

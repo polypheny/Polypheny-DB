@@ -35,11 +35,11 @@ package org.polypheny.db.rex;
 
 
 import java.util.List;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.rel.metadata.BuiltInMetadata.AllPredicates;
 import org.polypheny.db.rel.metadata.BuiltInMetadata.ExpressionLineage;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlKind;
 
 
 /**
@@ -119,8 +119,8 @@ public class RexTableInputRef extends RexInputRef {
 
 
     @Override
-    public SqlKind getKind() {
-        return SqlKind.TABLE_INPUT_REF;
+    public Kind getKind() {
+        return Kind.TABLE_INPUT_REF;
     }
 
 
@@ -186,6 +186,8 @@ public class RexTableInputRef extends RexInputRef {
         public int compareTo( RelTableRef o ) {
             return digest.compareTo( o.digest );
         }
+
     }
+
 }
 

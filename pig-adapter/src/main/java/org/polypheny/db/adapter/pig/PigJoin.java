@@ -46,7 +46,7 @@ import org.polypheny.db.rel.core.Join;
 import org.polypheny.db.rel.core.JoinRelType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 
 
 /**
@@ -96,7 +96,7 @@ public class PigJoin extends Join implements PigRel {
      * <code>=</code>.
      */
     private String getPigJoinStatement( Implementor implementor ) {
-        if ( !getCondition().isA( SqlKind.EQUALS ) ) {
+        if ( !getCondition().isA( Kind.EQUALS ) ) {
             throw new IllegalArgumentException( "Only equi-join are supported" );
         }
         List<RexNode> operands = ((RexCall) getCondition()).getOperands();

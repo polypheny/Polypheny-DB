@@ -23,9 +23,9 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.function.Functions;
 import org.polypheny.db.core.Function;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
-import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
@@ -51,12 +51,12 @@ public class SqlFunction extends SqlOperator implements Function {
     /**
      * Creates a new SqlFunction for a call to a builtin function.
      *
-     * @param name                 Name of builtin function
-     * @param kind                 kind of operator implemented by function
-     * @param returnTypeInference  strategy to use for return type inference
+     * @param name Name of builtin function
+     * @param kind kind of operator implemented by function
+     * @param returnTypeInference strategy to use for return type inference
      * @param operandTypeInference strategy to use for parameter type inference
-     * @param operandTypeChecker   strategy to use for parameter type checking
-     * @param category             categorization for function
+     * @param operandTypeChecker strategy to use for parameter type checking
+     * @param category categorization for function
      */
     public SqlFunction( String name, Kind kind, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, FunctionCategory category ) {
         // We leave sqlIdentifier as null to indicate that this is a builtin.  Same for paramTypes.
@@ -166,7 +166,7 @@ public class SqlFunction extends SqlOperator implements Function {
      * @return function category
      */
     @Nonnull
-    public FunctionCategory getFunctionType() {
+    public FunctionCategory getFunctionCategory() {
         return this.category;
     }
 
@@ -220,12 +220,12 @@ public class SqlFunction extends SqlOperator implements Function {
 
         final List<RelDataType> argTypes = constructArgTypeList( validator, scope, call, args, convertRowArgToColumnList );
 
-        final SqlFunction function = (SqlFunction) SqlUtil.lookupRoutine( validator.getOperatorTable(), getNameAsId(), argTypes, argNames, getFunctionType(), SqlSyntax.FUNCTION, getKind() );
+        final SqlFunction function = (SqlFunction) SqlUtil.lookupRoutine( validator.getOperatorTable(), getNameAsId(), argTypes, argNames, getFunctionCategory(), SqlSyntax.FUNCTION, getKind() );
         try {
             // If we have a match on function name and parameter count, but couldn't find a function with  a COLUMN_LIST type, retry, but this time, don't convert the row argument to a COLUMN_LIST type;
             // if we did find a match, go back and re-validate the row operands (corresponding to column references), now that we can set the scope to that of the source cursor referenced by that ColumnList type
             if ( convertRowArgToColumnList && containsRowArg( args ) ) {
-                if ( function == null && SqlUtil.matchRoutinesByParameterCount( validator.getOperatorTable(), getNameAsId(), argTypes, getFunctionType() ) ) {
+                if ( function == null && SqlUtil.matchRoutinesByParameterCount( validator.getOperatorTable(), getNameAsId(), argTypes, getFunctionCategory() ) ) {
                     // remove the already validated node types corresponding to row arguments before re-validating
                     for ( Node operand : args ) {
                         if ( operand.getKind() == Kind.ROW ) {
@@ -238,7 +238,7 @@ public class SqlFunction extends SqlOperator implements Function {
                 }
             }
 
-            if ( getFunctionType() == FunctionCategory.USER_DEFINED_CONSTRUCTOR ) {
+            if ( getFunctionCategory() == FunctionCategory.USER_DEFINED_CONSTRUCTOR ) {
                 return validator.deriveConstructorType( scope, call, this, function, argTypes );
             }
             if ( function == null ) {
@@ -262,4 +262,11 @@ public class SqlFunction extends SqlOperator implements Function {
         }
         return false;
     }
+
+
+    @Override
+    public FunctionType getFunctionType() {
+        throw new RuntimeException( "Not Implemented Yet" );
+    }
+
 }

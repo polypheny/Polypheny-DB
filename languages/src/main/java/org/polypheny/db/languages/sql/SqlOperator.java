@@ -25,12 +25,13 @@ import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Literal;
-import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.Syntax;
+import org.polypheny.db.core.Validator;
+import org.polypheny.db.core.ValidatorScope;
 import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.languages.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.languages.sql.fun.SqlBetweenOperator;
@@ -371,7 +372,8 @@ public abstract class SqlOperator extends Operator {
      * @param call Call to this operator
      * @return Type of call
      */
-    public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
+    @Override
+    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         for ( Node operand : call.getOperandList() ) {
             RelDataType nodeType = validator.deriveType( scope, operand );
             assert nodeType != null;
@@ -383,7 +385,7 @@ public abstract class SqlOperator extends Operator {
 
         SqlOperator sqlOperator =
                 SqlUtil.lookupRoutine(
-                        validator.getOperatorTable(),
+                        ((SqlValidator) validator).getOperatorTable(),
                         getNameAsId(),
                         argTypes,
                         null,
@@ -400,10 +402,10 @@ public abstract class SqlOperator extends Operator {
         }
 
         ((SqlBasicCall) call).setOperator( sqlOperator );
-        RelDataType type = ((SqlOperator) call.getOperator()).validateOperands( validator, scope, call );
+        RelDataType type = ((SqlOperator) call.getOperator()).validateOperands( (SqlValidator) validator, (SqlValidatorScope) scope, (SqlCall) call );
 
         // Validate and determine coercibility and resulting collation name of binary operator if needed.
-        type = adjustType( validator, call, type );
+        type = adjustType( (SqlValidator) validator, (SqlCall) call, type );
         ValidatorUtil.checkCharsetAndCollateConsistentIfCharType( type );
         return type;
     }
@@ -428,7 +430,7 @@ public abstract class SqlOperator extends Operator {
     }
 
 
-    protected List<Node> constructOperandList( SqlValidator validator, SqlCall call, List<String> argNames ) {
+    protected List<Node> constructOperandList( Validator validator, Call call, List<String> argNames ) {
         if ( argNames == null ) {
             return call.getOperandList();
         }
@@ -450,9 +452,9 @@ public abstract class SqlOperator extends Operator {
     }
 
 
-    protected List<RelDataType> constructArgTypeList( SqlValidator validator, SqlValidatorScope scope, SqlCall call, List<Node> args, boolean convertRowArgToColumnList ) {
+    protected List<RelDataType> constructArgTypeList( Validator validator, ValidatorScope scope, Call call, List<Node> args, boolean convertRowArgToColumnList ) {
         // Scope for operands. Usually the same as 'scope'.
-        final SqlValidatorScope operandScope = scope.getOperandScope( call );
+        final SqlValidatorScope operandScope = ((SqlValidatorScope) scope).getOperandScope( (SqlCall) call );
 
         final ImmutableList.Builder<RelDataType> argTypeBuilder = ImmutableList.builder();
         for ( Node operand : args ) {
@@ -492,7 +494,7 @@ public abstract class SqlOperator extends Operator {
 
 
     /**
-     * Infers the type of a call to this operator with a given set of operand types. Shorthand for {@link #inferReturnType(SqlOperatorBinding)}.
+     * Infers the type of a call to this operator with a given set of operand types. Shorthand for {@link #inferReturnType(OperatorBinding)}.
      */
     @Override
     public final RelDataType inferReturnType( RelDataTypeFactory typeFactory, List<RelDataType> operandTypes ) {
@@ -559,18 +561,6 @@ public abstract class SqlOperator extends Operator {
      */
     public PolyReturnTypeInference getReturnTypeInference() {
         return returnTypeInference;
-    }
-
-
-    /**
-     * Returns whether a call to this operator is monotonic.
-     *
-     * Default implementation returns {@link Monotonicity#NOT_MONOTONIC}.
-     *
-     * @param call Call to this operator with particular arguments and information about the monotonicity of the arguments
-     */
-    public Monotonicity getMonotonicity( SqlOperatorBinding call ) {
-        return Monotonicity.NOT_MONOTONIC;
     }
 
 

@@ -38,6 +38,7 @@ import com.google.common.base.Preconditions;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -52,7 +53,6 @@ import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.type.PolyTypeUtil;
 
 
@@ -187,7 +187,7 @@ public abstract class TableModify extends SingleRel {
 
     @Override
     public RelDataType deriveRowType() {
-        return RelOptUtil.createDmlRowType( SqlKind.INSERT, getCluster().getTypeFactory() );
+        return RelOptUtil.createDmlRowType( Kind.INSERT, getCluster().getTypeFactory() );
     }
 
 
@@ -256,5 +256,6 @@ public abstract class TableModify extends SingleRel {
                 (getSourceExpressionList() != null ? getSourceExpressionList().stream().map( RexNode::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
                 isFlattened() + "&";
     }
+
 }
 

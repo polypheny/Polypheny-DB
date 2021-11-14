@@ -45,7 +45,7 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -177,7 +177,7 @@ public class HttpCqlInterface extends QueryInterface {
             result = new Result( relRoot.kind, iterator, signature.rowType, signature.columns );
             result.transform();
             long executionTime = result.getExecutionTime();
-            if ( !relRoot.kind.belongsTo( SqlKind.DML ) ) {
+            if ( !relRoot.kind.belongsTo( Kind.DML ) ) {
                 signature.getExecutionTimeMonitor().setExecutionTime( executionTime );
             }
 

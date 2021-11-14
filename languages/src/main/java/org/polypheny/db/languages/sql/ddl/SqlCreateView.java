@@ -33,6 +33,7 @@ import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.ExecutableStatement;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
@@ -46,7 +47,6 @@ import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
-import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.processing.Processor;
@@ -110,9 +110,9 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
                 viewName = name.names.get( 0 );
             }
         } catch ( UnknownDatabaseException e ) {
-            throw SqlUtil.newContextException( name.getPos(), RESOURCE.databaseNotFound( name.toString() ) );
+            throw CoreUtil.newContextException( name.getPos(), RESOURCE.databaseNotFound( name.toString() ) );
         } catch ( UnknownSchemaException e ) {
-            throw SqlUtil.newContextException( name.getPos(), RESOURCE.schemaNotFound( name.toString() ) );
+            throw CoreUtil.newContextException( name.getPos(), RESOURCE.schemaNotFound( name.toString() ) );
         }
 
         PlacementType placementType = PlacementType.AUTOMATIC;
@@ -144,7 +144,7 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
                     String.valueOf( query.toSqlString( PolyphenyDbSqlDialect.DEFAULT ) ),
                     Catalog.QueryLanguage.SQL );
         } catch ( TableAlreadyExistsException e ) {
-            throw SqlUtil.newContextException( name.getPos(), RESOURCE.tableExists( viewName ) );
+            throw CoreUtil.newContextException( name.getPos(), RESOURCE.tableExists( viewName ) );
         } catch ( GenericCatalogException | UnknownColumnException e ) {
             // we just added the table/column so it has to exist or we have a internal problem
             throw new RuntimeException( e );

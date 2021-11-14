@@ -18,10 +18,10 @@ package org.polypheny.db.languages.sql.validate;
 
 
 import java.util.List;
+import org.polypheny.db.core.Identifier;
 import org.polypheny.db.core.SqlMoniker;
 import org.polypheny.db.core.ValidatorCatalogReader;
 import org.polypheny.db.core.ValidatorTable;
-import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.rel.type.RelDataType;
 
 
@@ -50,7 +50,7 @@ public abstract class DelegatingSqlValidatorCatalogReader implements ValidatorCa
 
 
     @Override
-    public RelDataType getNamedType( SqlIdentifier typeName ) {
+    public RelDataType getNamedType( Identifier typeName ) {
         return catalogReader.getNamedType( typeName );
     }
 

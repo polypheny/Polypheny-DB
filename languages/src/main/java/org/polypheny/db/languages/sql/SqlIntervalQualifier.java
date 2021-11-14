@@ -26,6 +26,7 @@ import java.util.regex.Pattern;
 import lombok.Getter;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeVisitor;
@@ -1245,7 +1246,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
 
 
     private PolyphenyDbContextException invalidValueException( ParserPos pos, String value ) {
-        return SqlUtil.newContextException( pos,
+        return CoreUtil.newContextException( pos,
                 RESOURCE.unsupportedIntervalLiteral(
                         "'" + value + "'", "INTERVAL " + toString() ) );
     }
@@ -1257,7 +1258,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
         if ( sign == -1 ) {
             value = value.negate();
         }
-        return SqlUtil.newContextException( pos,
+        return CoreUtil.newContextException( pos,
                 RESOURCE.intervalFieldExceedsPrecision(
                         value, type.name() + "(" + precision + ")" ) );
     }

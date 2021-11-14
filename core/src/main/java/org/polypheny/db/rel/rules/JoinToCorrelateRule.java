@@ -34,6 +34,7 @@
 package org.polypheny.db.rel.rules;
 
 
+import org.polypheny.db.core.SemiJoinType;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
@@ -46,7 +47,6 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
-import org.polypheny.db.sql.SemiJoinType;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -130,5 +130,6 @@ public class JoinToCorrelateRule extends RelOptRule {
         RelNode newRel = LogicalCorrelate.create( left, relBuilder.build(), correlationId, requiredColumns.build(), SemiJoinType.of( join.getJoinType() ) );
         call.transformTo( newRel );
     }
+
 }
 

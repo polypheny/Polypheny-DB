@@ -40,6 +40,7 @@ import java.util.TreeMap;
 import org.apache.calcite.avatica.util.ByteString;
 import org.junit.Before;
 import org.junit.Test;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.plan.RelOptPredicateList;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.Strong;
@@ -58,10 +59,9 @@ import org.polypheny.db.rex.RexProgramBuilder;
 import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.rex.RexUnknownAs;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeAssignmentRules;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -124,7 +124,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
      */
     private void assertNode( String message, String expected, RexNode node ) {
         String actual;
-        if ( node.isA( SqlKind.CAST ) || node.isA( SqlKind.NEW_SPECIFICATION ) ) {
+        if ( node.isA( Kind.CAST ) || node.isA( Kind.NEW_SPECIFICATION ) ) {
             // toString contains type (see RexCall.toString)
             actual = node.toString();
         } else {
@@ -2040,7 +2040,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
     @Test
     public void testIsDeterministic() {
-        SqlOperator ndc = new SqlSpecialOperator( "NDC", SqlKind.OTHER_FUNCTION, 0, false, ReturnTypes.BOOLEAN, null, null ) {
+        SqlOperator ndc = new SqlSpecialOperator( "NDC", Kind.OTHER_FUNCTION, 0, false, ReturnTypes.BOOLEAN, null, null ) {
             @Override
             public boolean isDeterministic() {
                 return false;

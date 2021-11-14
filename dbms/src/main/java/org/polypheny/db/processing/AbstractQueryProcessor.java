@@ -388,7 +388,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             optimalNode = optimize( parameterizedRoot, resultConvention );
 
             // For transformation from DML -> DML, use result of rewrite (e.g. UPDATE -> MERGE). For anything else (e.g. CALL -> SELECT), use original kind.
-            //if ( !optimalRoot.kind.belongsTo( SqlKind.DML ) ) {
+            //if ( !optimalRoot.kind.belongsTo( Kind.DML ) ) {
             //    optimalRoot = optimalRoot.withKind( sqlNodeOriginal.getKind() );
             //}
 
@@ -1112,11 +1112,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     }
 
 
-    protected LogicalTableModify.Operation mapTableModOp( boolean isDml, Kind sqlKind ) {
+    protected LogicalTableModify.Operation mapTableModOp( boolean isDml, Kind Kind ) {
         if ( !isDml ) {
             return null;
         }
-        switch ( sqlKind ) {
+        switch ( Kind ) {
             case INSERT:
                 return LogicalTableModify.Operation.INSERT;
             case DELETE:

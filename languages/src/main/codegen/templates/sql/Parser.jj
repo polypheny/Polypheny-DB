@@ -88,12 +88,16 @@ import org.polypheny.db.sql.SqlJsonEmptyOrError;
 import org.polypheny.db.sql.SqlJsonQueryEmptyOrErrorBehavior;
 import org.polypheny.db.sql.SqlJsonQueryWrapperBehavior;
 import org.polypheny.db.sql.SqlJsonValueEmptyOrErrorBehavior;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlMatchRecognize;
 import org.polypheny.db.sql.SqlMerge;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlNodeList;
+import org.polypheny.db.languages.Parser;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlNodeList;
+import org.polypheny.db.languages.sql.parser.SqlAbstractParserImpl;
+import org.polypheny.db.languages.sql.parser.SqlParserImplFactory;
+import org.polypheny.db.rel.metadata.Metadata;
 import org.polypheny.db.sql.SqlNumericLiteral;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlOrderBy;
@@ -232,7 +236,7 @@ public class ${parser.class} extends SqlAbstractParserImpl
         this.identifierMaxLength = identifierMaxLength;
     }
 
-    public void setConformance(SqlConformance conformance)
+    public void setConformance(Conformance conformance)
     {
         this.conformance = conformance;
     }
@@ -615,7 +619,7 @@ SqlNode OrderedQueryOrExpr(ExprContext exprContext) :
     [
         // use the syntactic type of the expression we just parsed
         // to decide whether ORDER BY makes sense
-        orderBy = OrderBy(e.isA(SqlKind.QUERY))
+        orderBy = OrderBy(e.isA(Kind.QUERY))
     ]
     [
         // Postgres-style syntax. "LIMIT ... OFFSET ..."
@@ -2886,7 +2890,7 @@ SqlNode QueryOrExpr(ExprContext exprContext) :
     }
     (
         {
-            if (!e.isA(SqlKind.QUERY)) {
+            if (!e.isA(Kind.QUERY)) {
                 // whoops, expression we just parsed wasn't a query,
                 // but we're about to see something like UNION, so
                 // force an exception retroactively
@@ -3049,7 +3053,7 @@ List<Object> Expression2(ExprContext exprContext) :
                 |
                     <IN> { op = SqlStdOperatorTable.IN; }
                 |
-                    { final SqlKind k; }
+                    { final Kind k; }
                     k = comp()
                     (
                         <SOME> { op = SqlStdOperatorTable.some(k); }
@@ -3067,7 +3071,7 @@ List<Object> Expression2(ExprContext exprContext) :
                     // special case for stuff like IN (s1 UNION s2)
                     if (nodeList.size() == 1) {
                         SqlNode item = nodeList.get(0);
-                        if (item.isA(SqlKind.QUERY)) {
+                        if (item.isA(Kind.QUERY)) {
                             list.add(item);
                         } else {
                             list.add(nodeList);
@@ -3176,27 +3180,27 @@ List<Object> Expression2(ExprContext exprContext) :
 }
 
 /** Parses a comparison operator inside a SOME / ALL predicate. */
-SqlKind comp() :
+Kind comp() :
 {
 }
 {
-    <LT> { return SqlKind.LESS_THAN; }
+    <LT> { return Kind.LESS_THAN; }
 |
-    <LE> { return SqlKind.LESS_THAN_OR_EQUAL; }
+    <LE> { return Kind.LESS_THAN_OR_EQUAL; }
 |
-    <GT> { return SqlKind.GREATER_THAN; }
+    <GT> { return Kind.GREATER_THAN; }
 |
-    <GE> { return SqlKind.GREATER_THAN_OR_EQUAL; }
+    <GE> { return Kind.GREATER_THAN_OR_EQUAL; }
 |
-    <EQ> { return SqlKind.EQUALS; }
+    <EQ> { return Kind.EQUALS; }
 |
-    <NE> { return SqlKind.NOT_EQUALS; }
+    <NE> { return Kind.NOT_EQUALS; }
 |
     <NE2> {
         if (!this.conformance.isBangEqualAllowed()) {
             throw new ParseException(RESOURCE.bangEqualNotAllowed().str());
         }
-        return SqlKind.NOT_EQUALS;
+        return Kind.NOT_EQUALS;
     }
 }
 
@@ -3279,7 +3283,7 @@ SqlNode Expression3(ExprContext exprContext) :
                     && list1.get(0) instanceof SqlCall)
                 {
                     final SqlCall call = (SqlCall) list1.get(0);
-                    if (call.getKind() == SqlKind.MINUS
+                    if (call.getKind() == Kind.MINUS
                             && call.operandCount() == 2) {
                         List<SqlNode> list3 = startList(call.operand(0));
                         list3.add(call.operand(1));

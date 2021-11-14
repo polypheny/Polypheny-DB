@@ -56,7 +56,7 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -111,13 +111,13 @@ public class MongoProject extends Project implements MongoRel {
                     ? "_" + MongoRules.maybeFix( pair.right.substring( 2 ) )
                     : MongoRules.maybeFix( pair.right );
 
-            if ( pair.left.getKind() == SqlKind.DISTANCE ) {
+            if ( pair.left.getKind() == Kind.DISTANCE ) {
                 documents.put( pair.right, BsonFunctionHelper.getFunction( (RexCall) pair.left, mongoRowType, implementor ) );
                 continue;
             }
 
             if ( pair.left instanceof RexCall ) {
-                if ( ((RexCall) pair.left).operands.get( 0 ).isA( SqlKind.DOC_UPDATE_ADD ) ) {
+                if ( ((RexCall) pair.left).operands.get( 0 ).isA( Kind.DOC_UPDATE_ADD ) ) {
                     Pair<String, RexNode> ret = MongoRules.getAddFields( (RexCall) ((RexCall) pair.left).operands.get( 0 ), rowType );
                     String expr = ret.right.accept( translator );
                     implementor.preProjections.add( new BsonDocument( ret.left, BsonDocument.parse( expr ) ) );
@@ -132,7 +132,7 @@ public class MongoProject extends Project implements MongoRel {
             }
 
             // exclude projection cannot be handled this way, so it needs fixing
-            KindChecker visitor = new KindChecker( SqlKind.DOC_EXCLUDE );
+            KindChecker visitor = new KindChecker( Kind.DOC_EXCLUDE );
             pair.left.accept( visitor );
             if ( visitor.containsKind ) {
                 items.add( name + ":1" );
@@ -140,7 +140,7 @@ public class MongoProject extends Project implements MongoRel {
                 continue;
             }
 
-            visitor = new KindChecker( SqlKind.DOC_UNWIND );
+            visitor = new KindChecker( Kind.DOC_UNWIND );
             pair.left.accept( visitor );
             if ( visitor.containsKind ) {
                 // $unwinds need to projected out else $unwind is not possible
@@ -187,12 +187,12 @@ public class MongoProject extends Project implements MongoRel {
 
     public static class KindChecker extends RexVisitorImpl<Void> {
 
-        private final SqlKind kind;
+        private final Kind kind;
         @Getter
         boolean containsKind = false;
 
 
-        protected KindChecker( SqlKind kind ) {
+        protected KindChecker( Kind kind ) {
             super( true );
             this.kind = kind;
         }

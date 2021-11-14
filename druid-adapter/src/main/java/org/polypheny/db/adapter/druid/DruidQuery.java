@@ -97,7 +97,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.schema.ScannableTable;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.type.PolyType;
@@ -350,9 +350,9 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
      * @return true if the operand is an inputRef and it is a valid Druid Cast operation
      */
     private static boolean isValidLeafCast( RexNode rexNode ) {
-        assert rexNode.isA( SqlKind.CAST );
+        assert rexNode.isA( Kind.CAST );
         final RexNode input = ((RexCall) rexNode).getOperands().get( 0 );
-        if ( !input.isA( SqlKind.INPUT_REF ) ) {
+        if ( !input.isA( Kind.INPUT_REF ) ) {
             // it is not a leaf cast don't bother going further.
             return false;
         }
@@ -387,7 +387,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
      */
     @Nullable
     protected static String extractColumnName( RexNode rexNode, RelDataType rowType, DruidQuery query ) {
-        if ( rexNode.getKind() == SqlKind.INPUT_REF ) {
+        if ( rexNode.getKind() == Kind.INPUT_REF ) {
             final RexInputRef ref = (RexInputRef) rexNode;
             final String columnName = rowType.getFieldNames().get( ref.getIndex() );
             if ( columnName == null ) {
@@ -835,12 +835,12 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
                 // CASE it is an extraction Dimension
                 final String columnPrefix;
                 // TODO: Remove it! if else statement is not really needed it is here to make tests pass.
-                if ( project.getKind() == SqlKind.EXTRACT ) {
+                if ( project.getKind() == Kind.EXTRACT ) {
                     columnPrefix = EXTRACT_COLUMN_NAME_PREFIX + "_" + Objects
                             .requireNonNull( DruidDateTimeUtils
                                     .extractGranularity( project, druidQuery.getConnectionConfig().timeZone() )
                                     .getType().lowerName );
-                } else if ( project.getKind() == SqlKind.FLOOR ) {
+                } else if ( project.getKind() == Kind.FLOOR ) {
                     columnPrefix =
                             FLOOR_COLUMN_NAME_PREFIX + "_" + Objects
                                     .requireNonNull( DruidDateTimeUtils
@@ -922,7 +922,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
                 } else {
                     final RexNode rexNode = project.getProjects().get( index );
                     final RelDataType inputRowType = project.getInput().getRowType();
-                    if ( rexNode.isA( SqlKind.INPUT_REF ) ) {
+                    if ( rexNode.isA( Kind.INPUT_REF ) ) {
                         expression = null;
                         fieldName = extractColumnName( rexNode, inputRowType, druidQuery );
                     } else {

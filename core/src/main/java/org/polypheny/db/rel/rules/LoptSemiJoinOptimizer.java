@@ -59,7 +59,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Util;
@@ -393,7 +393,7 @@ public class LoptSemiJoinOptimizer {
         // Recursively walk the expression; if all sub-expressions are removed from one side of the expression, just return what remains from the other side.
         assert condition instanceof RexCall;
         RexCall call = (RexCall) condition;
-        if ( condition.isA( SqlKind.AND ) ) {
+        if ( condition.isA( Kind.AND ) ) {
             List<RexNode> operands = call.getOperands();
             RexNode left = removeExtraFilters( keys, nFields, operands.get( 0 ) );
             RexNode right = removeExtraFilters( keys, nFields, operands.get( 1 ) );

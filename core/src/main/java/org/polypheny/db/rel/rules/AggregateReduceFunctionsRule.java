@@ -57,8 +57,8 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -136,8 +136,8 @@ public class AggregateReduceFunctionsRule extends RelOptRule {
     /**
      * Returns whether the aggregate call is a reducible function
      */
-    private boolean isReducible( final SqlKind kind ) {
-        if ( SqlKind.AVG_AGG_FUNCTIONS.contains( kind ) || SqlKind.COVAR_AVG_AGG_FUNCTIONS.contains( kind ) ) {
+    private boolean isReducible( final Kind kind ) {
+        if ( Kind.AVG_AGG_FUNCTIONS.contains( kind ) || Kind.COVAR_AVG_AGG_FUNCTIONS.contains( kind ) ) {
             return true;
         }
         switch ( kind ) {
@@ -194,7 +194,7 @@ public class AggregateReduceFunctionsRule extends RelOptRule {
 
 
     private RexNode reduceAgg( Aggregate oldAggRel, AggregateCall oldCall, List<AggregateCall> newCalls, Map<AggregateCall, RexNode> aggCallMapping, List<RexNode> inputExprs ) {
-        final SqlKind kind = oldCall.getAggregation().getKind();
+        final Kind kind = oldCall.getAggregation().getKind();
         if ( isReducible( kind ) ) {
             final Integer y;
             final Integer x;

@@ -37,15 +37,15 @@ package org.polypheny.db.rex;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import javax.annotation.Nonnull;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.QuantifyOperator;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlQuantifyOperator;
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.type.PolyType;
 
 
@@ -57,7 +57,7 @@ public class RexSubQuery extends RexCall {
     public final RelNode rel;
 
 
-    private RexSubQuery( RelDataType type, SqlOperator op, ImmutableList<RexNode> operands, RelNode rel ) {
+    private RexSubQuery( RelDataType type, Operator op, ImmutableList<RexNode> operands, RelNode rel ) {
         super( type, op, operands );
         this.rel = rel;
         this.digest = computeDigest( false );
@@ -69,7 +69,7 @@ public class RexSubQuery extends RexCall {
      */
     public static RexSubQuery in( RelNode rel, ImmutableList<RexNode> nodes ) {
         final RelDataType type = type( rel, nodes );
-        return new RexSubQuery( type, SqlStdOperatorTable.IN, nodes, rel );
+        return new RexSubQuery( type, StdOperatorRegistry.get( "IN" ), nodes, rel );
     }
 
 
@@ -79,8 +79,8 @@ public class RexSubQuery extends RexCall {
      * There is no ALL. For {@code x comparison ALL (sub-query)} use instead {@code NOT (x inverse-comparison SOME (sub-query))}.
      * If {@code comparison} is {@code >} then {@code negated-comparison} is {@code <=}, and so forth.
      */
-    public static RexSubQuery some( RelNode rel, ImmutableList<RexNode> nodes, SqlQuantifyOperator op ) {
-        assert op.kind == SqlKind.SOME;
+    public static <T extends Operator & QuantifyOperator> RexSubQuery some( RelNode rel, ImmutableList<RexNode> nodes, T op ) {
+        assert op.kind == Kind.SOME;
         final RelDataType type = type( rel, nodes );
         return new RexSubQuery( type, op, nodes, rel );
     }
@@ -110,7 +110,7 @@ public class RexSubQuery extends RexCall {
     public static RexSubQuery exists( RelNode rel ) {
         final RelDataTypeFactory typeFactory = rel.getCluster().getTypeFactory();
         final RelDataType type = typeFactory.createPolyType( PolyType.BOOLEAN );
-        return new RexSubQuery( type, SqlStdOperatorTable.EXISTS, ImmutableList.of(), rel );
+        return new RexSubQuery( type, StdOperatorRegistry.get( "EXISTS" ), ImmutableList.of(), rel );
     }
 
 
@@ -122,7 +122,7 @@ public class RexSubQuery extends RexCall {
         assert fieldList.size() == 1;
         final RelDataTypeFactory typeFactory = rel.getCluster().getTypeFactory();
         final RelDataType type = typeFactory.createTypeWithNullability( fieldList.get( 0 ).getType(), true );
-        return new RexSubQuery( type, SqlStdOperatorTable.SCALAR_QUERY, ImmutableList.of(), rel );
+        return new RexSubQuery( type, StdOperatorRegistry.get( "SCALAR_QUERY" ), ImmutableList.of(), rel );
     }
 
 
@@ -168,5 +168,6 @@ public class RexSubQuery extends RexCall {
     public RexSubQuery clone( RelDataType type, List<RexNode> operands, RelNode rel ) {
         return new RexSubQuery( type, getOperator(), ImmutableList.copyOf( operands ), rel );
     }
+
 }
 

@@ -20,6 +20,7 @@ package org.polypheny.db.languages.sql;
 import java.util.List;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -70,10 +71,10 @@ public class SqlDelete extends SqlCall {
     public void setOperand( int i, Node operand ) {
         switch ( i ) {
             case 0:
-                targetTable = operand;
+                targetTable = (SqlNode) operand;
                 break;
             case 1:
-                condition = operand;
+                condition = (SqlNode) operand;
                 break;
             case 2:
                 sourceSelect = (SqlSelect) operand;
@@ -127,8 +128,8 @@ public class SqlDelete extends SqlCall {
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startList( SqlWriter.FrameTypeEnum.SELECT, "DELETE FROM", "" );
-        final int opLeft = getOperator().getLeftPrec();
-        final int opRight = getOperator().getRightPrec();
+        final int opLeft = ((SqlOperator) getOperator()).getLeftPrec();
+        final int opRight = ((SqlOperator) getOperator()).getRightPrec();
         targetTable.unparse( writer, opLeft, opRight );
         if ( alias != null ) {
             writer.keyword( "AS" );
@@ -151,5 +152,6 @@ public class SqlDelete extends SqlCall {
     public void setSourceSelect( SqlSelect sourceSelect ) {
         this.sourceSelect = sourceSelect;
     }
+
 }
 

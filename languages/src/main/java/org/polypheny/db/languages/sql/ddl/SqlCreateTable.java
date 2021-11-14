@@ -35,6 +35,7 @@ import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.ExecutableStatement;
 import org.polypheny.db.core.Identifier;
 import org.polypheny.db.core.Kind;
@@ -55,7 +56,6 @@ import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
-import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.partition.raw.RawPartitionInformation;
 import org.polypheny.db.transaction.Statement;
@@ -211,9 +211,9 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
                 tableName = name.names.get( 0 );
             }
         } catch ( UnknownDatabaseException e ) {
-            throw SqlUtil.newContextException( name.getPos(), RESOURCE.databaseNotFound( name.toString() ) );
+            throw CoreUtil.newContextException( name.getPos(), RESOURCE.databaseNotFound( name.toString() ) );
         } catch ( UnknownSchemaException e ) {
-            throw SqlUtil.newContextException( name.getPos(), RESOURCE.schemaNotFound( name.toString() ) );
+            throw CoreUtil.newContextException( name.getPos(), RESOURCE.schemaNotFound( name.toString() ) );
         }
 
         List<DataStore> stores = store != null ? ImmutableList.of( getDataStoreInstance( store ) ) : null;
@@ -256,13 +256,13 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
             }
 
         } catch ( TableAlreadyExistsException e ) {
-            throw SqlUtil.newContextException( name.getPos(), RESOURCE.tableExists( tableName ) );
+            throw CoreUtil.newContextException( name.getPos(), RESOURCE.tableExists( tableName ) );
         } catch ( ColumnNotExistsException e ) {
-            throw SqlUtil.newContextException( partitionColumn.getPos(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
+            throw CoreUtil.newContextException( partitionColumn.getPos(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
         } catch ( UnknownPartitionTypeException e ) {
-            throw SqlUtil.newContextException( partitionType.getPos(), RESOURCE.unknownPartitionType( partitionType.getSimple() ) );
+            throw CoreUtil.newContextException( partitionType.getPos(), RESOURCE.unknownPartitionType( partitionType.getSimple() ) );
         } catch ( PartitionGroupNamesNotUniqueException e ) {
-            throw SqlUtil.newContextException( partitionColumn.getPos(), RESOURCE.partitionNamesNotUnique() );
+            throw CoreUtil.newContextException( partitionColumn.getPos(), RESOURCE.partitionNamesNotUnique() );
         } catch ( GenericCatalogException | UnknownColumnException e ) {
             // We just added the table/column so it has to exist or we have an internal problem
             throw new RuntimeException( e );

@@ -73,8 +73,8 @@ import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.runtime.Functions;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.sql.SqlBinaryOperator;
-import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.Bug;
@@ -117,8 +117,8 @@ public abstract class DateRangeRules {
                     filter.getCondition().accept( finder );
                     // bail out if there is no EXTRACT of YEAR, or call to FLOOR or CEIL
                     return finder.timeUnits.contains( TimeUnitRange.YEAR )
-                            || finder.opKinds.contains( SqlKind.FLOOR )
-                            || finder.opKinds.contains( SqlKind.CEIL );
+                            || finder.opKinds.contains( Kind.FLOOR )
+                            || finder.opKinds.contains( Kind.CEIL );
                 }
             };
 
@@ -214,7 +214,7 @@ public abstract class DateRangeRules {
     private static class ExtractFinder extends RexVisitorImpl implements AutoCloseable {
 
         private final Set<TimeUnitRange> timeUnits = EnumSet.noneOf( TimeUnitRange.class );
-        private final Set<SqlKind> opKinds = EnumSet.noneOf( SqlKind.class );
+        private final Set<Kind> opKinds = EnumSet.noneOf( Kind.class );
 
         private static final ThreadLocal<ExtractFinder> THREAD_INSTANCES = ThreadLocal.withInitial( ExtractFinder::new );
 
@@ -302,7 +302,7 @@ public abstract class DateRangeRules {
                                 final RexCall subCall = (RexCall) op1;
                                 final RexLiteral flag = (RexLiteral) subCall.operands.get( 1 );
                                 final TimeUnitRange timeUnit = (TimeUnitRange) flag.getValue();
-                                return compareFloorCeil( call.getKind().reverse(), subCall.getOperands().get( 0 ), (RexLiteral) op0, timeUnit, op1.getKind() == SqlKind.FLOOR );
+                                return compareFloorCeil( call.getKind().reverse(), subCall.getOperands().get( 0 ), (RexLiteral) op0, timeUnit, op1.getKind() == Kind.FLOOR );
                             }
                     }
                     switch ( op1.getKind() ) {
@@ -320,7 +320,7 @@ public abstract class DateRangeRules {
                                 final RexCall subCall = (RexCall) op0;
                                 final RexLiteral flag = (RexLiteral) subCall.operands.get( 1 );
                                 final TimeUnitRange timeUnit = (TimeUnitRange) flag.getValue();
-                                return compareFloorCeil( call.getKind(), subCall.getOperands().get( 0 ), (RexLiteral) op1, timeUnit, op0.getKind() == SqlKind.FLOOR );
+                                return compareFloorCeil( call.getKind(), subCall.getOperands().get( 0 ), (RexLiteral) op1, timeUnit, op0.getKind() == Kind.FLOOR );
                             }
                     }
                     // fall through
@@ -409,7 +409,7 @@ public abstract class DateRangeRules {
         }
 
 
-        RexNode compareExtract( SqlKind comparison, RexNode operand, RexLiteral literal ) {
+        RexNode compareExtract( Kind comparison, RexNode operand, RexLiteral literal ) {
             RangeSet<Calendar> rangeSet = operandRanges.get( operand );
             if ( rangeSet == null ) {
                 rangeSet = ImmutableRangeSet.<Calendar>of().complement();
@@ -545,7 +545,7 @@ public abstract class DateRangeRules {
         }
 
 
-        private Range<Calendar> extractRange( TimeUnitRange timeUnit, SqlKind comparison, Calendar c ) {
+        private Range<Calendar> extractRange( TimeUnitRange timeUnit, Kind comparison, Calendar c ) {
             switch ( comparison ) {
                 case EQUALS:
                     return Range.closedOpen( round( c, timeUnit, true ), round( c, timeUnit, false ) );
@@ -577,7 +577,7 @@ public abstract class DateRangeRules {
         }
 
 
-        private RexNode compareFloorCeil( SqlKind comparison, RexNode operand, RexLiteral timeLiteral, TimeUnitRange timeUnit, boolean floor ) {
+        private RexNode compareFloorCeil( Kind comparison, RexNode operand, RexLiteral timeLiteral, TimeUnitRange timeUnit, boolean floor ) {
             RangeSet<Calendar> rangeSet = operandRanges.get( operand );
             if ( rangeSet == null ) {
                 rangeSet = ImmutableRangeSet.<Calendar>of().complement();
@@ -615,7 +615,7 @@ public abstract class DateRangeRules {
         }
 
 
-        private Range<Calendar> floorRange( TimeUnitRange timeUnit, SqlKind comparison, Calendar c ) {
+        private Range<Calendar> floorRange( TimeUnitRange timeUnit, Kind comparison, Calendar c ) {
             Calendar floor = floor( c, timeUnit );
             boolean boundary = floor.equals( c );
             switch ( comparison ) {
@@ -635,7 +635,7 @@ public abstract class DateRangeRules {
         }
 
 
-        private Range<Calendar> ceilRange( TimeUnitRange timeUnit, SqlKind comparison, Calendar c ) {
+        private Range<Calendar> ceilRange( TimeUnitRange timeUnit, Kind comparison, Calendar c ) {
             final Calendar ceil = ceil( c, timeUnit );
             boolean boundary = ceil.equals( c );
             switch ( comparison ) {

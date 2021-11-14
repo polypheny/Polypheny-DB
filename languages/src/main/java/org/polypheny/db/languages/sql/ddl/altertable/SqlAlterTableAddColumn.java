@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
@@ -35,7 +36,6 @@ import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlDataTypeSpec;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
@@ -141,11 +141,11 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                     defaultValue,
                     statement );
         } catch ( NotNullAndDefaultValueException e ) {
-            throw SqlUtil.newContextException( column.getPos(), RESOURCE.notNullAndNoDefaultValue( column.getSimple() ) );
+            throw CoreUtil.newContextException( column.getPos(), RESOURCE.notNullAndNoDefaultValue( column.getSimple() ) );
         } catch ( ColumnAlreadyExistsException e ) {
-            throw SqlUtil.newContextException( column.getPos(), RESOURCE.columnExists( column.getSimple() ) );
+            throw CoreUtil.newContextException( column.getPos(), RESOURCE.columnExists( column.getSimple() ) );
         } catch ( ColumnNotExistsException e ) {
-            throw SqlUtil.newContextException( table.getPos(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
+            throw CoreUtil.newContextException( table.getPos(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
         }
     }
 

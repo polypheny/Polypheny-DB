@@ -40,6 +40,7 @@ import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.RelTraitSet;
@@ -48,7 +49,6 @@ import org.polypheny.db.rel.RelInput;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelWriter;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.util.Util;
 
 
@@ -58,19 +58,19 @@ import org.polypheny.db.util.Util;
 public abstract class SetOp extends AbstractRelNode {
 
     protected ImmutableList<RelNode> inputs;
-    public final SqlKind kind;
+    public final Kind kind;
     public final boolean all;
 
 
     /**
      * Creates a SetOp.
      */
-    protected SetOp( RelOptCluster cluster, RelTraitSet traits, List<RelNode> inputs, SqlKind kind, boolean all ) {
+    protected SetOp( RelOptCluster cluster, RelTraitSet traits, List<RelNode> inputs, Kind kind, boolean all ) {
         super( cluster, traits );
         Preconditions.checkArgument(
-                kind == SqlKind.UNION
-                        || kind == SqlKind.INTERSECT
-                        || kind == SqlKind.EXCEPT );
+                kind == Kind.UNION
+                        || kind == Kind.INTERSECT
+                        || kind == Kind.EXCEPT );
         this.kind = kind;
         this.inputs = ImmutableList.copyOf( inputs );
         this.all = all;
@@ -81,7 +81,7 @@ public abstract class SetOp extends AbstractRelNode {
      * Creates a SetOp by parsing serialized output.
      */
     protected SetOp( RelInput input ) {
-        this( input.getCluster(), input.getTraitSet(), input.getInputs(), SqlKind.UNION, input.getBoolean( "all", false ) );
+        this( input.getCluster(), input.getTraitSet(), input.getInputs(), Kind.UNION, input.getBoolean( "all", false ) );
     }
 
 

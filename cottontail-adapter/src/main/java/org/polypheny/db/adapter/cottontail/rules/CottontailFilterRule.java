@@ -27,7 +27,7 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Filter;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.tools.RelBuilderFactory;
 
 
@@ -116,7 +116,7 @@ public class CottontailFilterRule extends CottontailConverterRule {
             default:
                 return false;
         }
-        return left.getKind() == SqlKind.INPUT_REF;
+        return left.getKind() == Kind.INPUT_REF;
     }
 
 }

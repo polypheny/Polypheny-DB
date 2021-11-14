@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.core.AggFunction;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
@@ -102,8 +103,8 @@ public class AggregateCall {
     /**
      * Creates an AggregateCall, inferring its type if {@code type} is null.
      */
-    public static AggregateCall create(
-            AggFunction aggFunction,
+    public static <T extends Operator & AggFunction> AggregateCall create(
+            T aggFunction,
             boolean distinct,
             boolean approximate,
             List<Integer> argList,
@@ -328,7 +329,7 @@ public class AggregateCall {
                 oldGroupKeyCount == newGroupKeyCount
                         && argList.equals( this.argList )
                         && filterArg == this.filterArg ? type : null;
-        return create( aggFunction, distinct, approximate, argList, filterArg, collation, newGroupKeyCount, input, newType, getName() );
+        return create( (Operator & AggFunction) aggFunction, distinct, approximate, argList, filterArg, collation, newGroupKeyCount, input, newType, getName() );
     }
 
 

@@ -18,7 +18,7 @@ package org.polypheny.db.cql;
 
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
@@ -53,7 +53,7 @@ public class LiteralFilter implements Filter {
         RexNode rhs = rexBuilder.makeLiteral( searchTerm );
         rhs = rexBuilder.makeCast( typeField.getType(), rhs );
         if ( relation.comparator.isSymbolComparator() ) {
-            return rexBuilder.makeCall( relation.comparator.toSqlStdOperatorTable( SqlStdOperatorTable.EQUALS ), lhs, rhs );
+            return rexBuilder.makeCall( relation.comparator.toSqlStdOperatorTable( StdOperatorRegistry.getBinary( "EQUALS" ) ), lhs, rhs );
         } else {
             log.error( "Named Comparators have not been implemented." );
             throw new RuntimeException( "Named Comparators have not been implemented." );

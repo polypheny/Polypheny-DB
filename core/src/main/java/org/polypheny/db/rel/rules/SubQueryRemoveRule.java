@@ -40,6 +40,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.QuantifyOperator;
+import org.polypheny.db.core.RelDecorrelator;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.RelOptRuleOperand;
@@ -60,10 +64,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexSubQuery;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.fun.SqlQuantifyOperator;
-import org.polypheny.db.core.SqlStdOperatorTable;
-import org.polypheny.db.sql2rel.RelDecorrelator;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -132,7 +132,7 @@ public abstract class SubQueryRemoveRule extends RelOptRule {
         if ( unique == null || !unique ) {
             builder.aggregate(
                     builder.groupKey(),
-                    builder.aggregateCall( SqlStdOperatorTable.SINGLE_VALUE, builder.field( 0 ) ) );
+                    builder.aggregateCall( StdOperatorRegistry.getAgg( "SINGLE_VALUE" ), builder.field( 0 ) ) );
         }
         builder.join( JoinRelType.LEFT, builder.literal( true ), variablesSet );
         return field( builder, inputCount, offset );
@@ -165,24 +165,24 @@ public abstract class SubQueryRemoveRule extends RelOptRule {
         //   select max(deptno) as m, count(*) as c, count(deptno) as d
         //   from emp) as q
         //
-        final SqlQuantifyOperator op = (SqlQuantifyOperator) e.op;
+        final QuantifyOperator op = (QuantifyOperator) e.op;
         builder.push( e.rel )
                 .aggregate( builder.groupKey(),
-                        op.comparisonKind == SqlKind.GREATER_THAN || op.comparisonKind == SqlKind.GREATER_THAN_OR_EQUAL
+                        op.getComparisonKind() == Kind.GREATER_THAN || op.getComparisonKind() == Kind.GREATER_THAN_OR_EQUAL
                                 ? builder.min( "m", builder.field( 0 ) )
                                 : builder.max( "m", builder.field( 0 ) ),
                         builder.count( false, "c" ),
                         builder.count( false, "d", builder.field( 0 ) ) )
                 .as( "q" )
                 .join( JoinRelType.INNER );
-        return builder.call( SqlStdOperatorTable.CASE,
-                builder.call( SqlStdOperatorTable.EQUALS, builder.field( "q", "c" ), builder.literal( 0 ) ),
+        return builder.call( StdOperatorRegistry.get( "CASE" ),
+                builder.call( StdOperatorRegistry.get( "EQUALS" ), builder.field( "q", "c" ), builder.literal( 0 ) ),
                 builder.literal( false ),
-                builder.call( SqlStdOperatorTable.IS_TRUE, builder.call( RelOptUtil.op( op.comparisonKind, null ), e.operands.get( 0 ), builder.field( "q", "m" ) ) ),
+                builder.call( StdOperatorRegistry.get( "IS_TRUE" ), builder.call( RelOptUtil.op( op.getComparisonKind(), null ), e.operands.get( 0 ), builder.field( "q", "m" ) ) ),
                 builder.literal( true ),
-                builder.call( SqlStdOperatorTable.GREATER_THAN, builder.field( "q", "c" ), builder.field( "q", "d" ) ),
+                builder.call( StdOperatorRegistry.get( "GREATER_THAN" ), builder.field( "q", "c" ), builder.field( "q", "d" ) ),
                 builder.literal( null ),
-                builder.call( RelOptUtil.op( op.comparisonKind, null ), e.operands.get( 0 ), builder.field( "q", "m" ) ) );
+                builder.call( RelOptUtil.op( op.getComparisonKind(), null ), e.operands.get( 0 ), builder.field( "q", "m" ) ) );
     }
 
 
@@ -351,7 +351,7 @@ public abstract class SubQueryRemoveRule extends RelOptRule {
                         // When true value is absent then we are interested only in false value.
                         builder.sortLimit( 0, 1,
                                 ImmutableList.of(
-                                        builder.call( SqlStdOperatorTable.DESC,
+                                        builder.call( StdOperatorRegistry.get( "DESC" ),
                                                 builder.field( "cs" ) ) ) );
                     } else {
                         builder.distinct();
@@ -443,12 +443,12 @@ public abstract class SubQueryRemoveRule extends RelOptRule {
                 case TRUE_FALSE_UNKNOWN:
                 case UNKNOWN_AS_TRUE:
                     operands.add(
-                            builder.call( SqlStdOperatorTable.LESS_THAN, builder.field( "ct", "ck" ), builder.field( "ct", "c" ) ),
+                            builder.call( StdOperatorRegistry.get( "LESS_THAN" ), builder.field( "ct", "ck" ), builder.field( "ct", "c" ) ),
                             builder.literal( b ) );
             }
         }
         operands.add( builder.literal( false ) );
-        return builder.call( SqlStdOperatorTable.CASE, operands.build() );
+        return builder.call( StdOperatorRegistry.get( "CASE" ), operands.build() );
     }
 
 
@@ -505,6 +505,7 @@ public abstract class SubQueryRemoveRule extends RelOptRule {
             builder.project( shuttle.apply( project.getProjects() ), project.getRowType().getFieldNames() );
             call.transformTo( builder.build() );
         }
+
     }
 
 
@@ -545,6 +546,7 @@ public abstract class SubQueryRemoveRule extends RelOptRule {
             builder.project( fields( builder, filter.getRowType().getFieldCount() ) );
             call.transformTo( builder.build() );
         }
+
     }
 
 
@@ -577,6 +579,7 @@ public abstract class SubQueryRemoveRule extends RelOptRule {
             builder.project( fields( builder, join.getRowType().getFieldCount() ) );
             call.transformTo( builder.build() );
         }
+
     }
 
 
@@ -599,6 +602,8 @@ public abstract class SubQueryRemoveRule extends RelOptRule {
         public RexNode visitSubQuery( RexSubQuery subQuery ) {
             return subQuery.equals( this.subQuery ) ? replacement : subQuery;
         }
+
     }
+
 }
 

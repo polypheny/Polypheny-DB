@@ -22,6 +22,7 @@ import java.util.List;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.core.ExecutableStatement;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;

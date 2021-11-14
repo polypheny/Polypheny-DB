@@ -52,6 +52,7 @@ import java.util.TreeMap;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptPredicateList;
 import org.polypheny.db.plan.RelOptUtil;
@@ -79,9 +80,8 @@ import org.polypheny.db.rex.RexPermuteInputsShuttle;
 import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.util.BitSets;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.BuiltInMethod;
@@ -679,7 +679,7 @@ public class RelMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
 
             @Override
             public Void visitCall( RexCall call ) {
-                if ( call.getOperator().getKind() == SqlKind.EQUALS ) {
+                if ( call.getOperator().getKind() == Kind.EQUALS ) {
                     int lPos = pos( call.getOperands().get( 0 ) );
                     int rPos = pos( call.getOperands().get( 1 ) );
                     if ( lPos != -1 && rPos != -1 ) {
@@ -818,7 +818,7 @@ public class RelMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
         private boolean isAlwaysTrue( RexNode predicate ) {
             if ( predicate instanceof RexCall ) {
                 RexCall c = (RexCall) predicate;
-                if ( c.getOperator().getKind() == SqlKind.EQUALS ) {
+                if ( c.getOperator().getKind() == Kind.EQUALS ) {
                     int lPos = pos( c.getOperands().get( 0 ) );
                     int rPos = pos( c.getOperands().get( 1 ) );
                     return lPos != -1 && lPos == rPos;

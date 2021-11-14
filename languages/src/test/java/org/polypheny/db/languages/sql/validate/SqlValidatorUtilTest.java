@@ -31,8 +31,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import org.junit.Test;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.NameMatcher;
+import org.polypheny.db.core.NameMatchers;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -40,9 +41,6 @@ import org.polypheny.db.languages.sql.SqlTestFactory;
 import org.polypheny.db.languages.sql.utils.SqlTester;
 import org.polypheny.db.languages.sql.utils.SqlValidatorTester;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
-import org.polypheny.db.sql.utils.SqlTester;
-import org.polypheny.db.sql.utils.SqlValidatorTester;
-import org.polypheny.db.test.SqlTestFactory;
 
 
 /**
@@ -152,10 +150,10 @@ public class SqlValidatorUtilTest {
     @Test
     public void testNameMatcher() {
         final ImmutableList<String> beatles = ImmutableList.of( "john", "paul", "ringo", "rinGo" );
-        final NameMatcher insensitiveMatcher = SqlNameMatchers.withCaseSensitive( false );
+        final NameMatcher insensitiveMatcher = NameMatchers.withCaseSensitive( false );
         assertThat( insensitiveMatcher.frequency( beatles, "ringo" ), is( 2 ) );
         assertThat( insensitiveMatcher.frequency( beatles, "rinGo" ), is( 2 ) );
-        final NameMatcher sensitiveMatcher = SqlNameMatchers.withCaseSensitive( true );
+        final NameMatcher sensitiveMatcher = NameMatchers.withCaseSensitive( true );
         assertThat( sensitiveMatcher.frequency( beatles, "ringo" ), is( 1 ) );
         assertThat( sensitiveMatcher.frequency( beatles, "rinGo" ), is( 1 ) );
         assertThat( sensitiveMatcher.frequency( beatles, "Ringo" ), is( 0 ) );

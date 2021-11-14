@@ -17,8 +17,9 @@
 package org.polypheny.db.languages.sql.fun;
 
 
-import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlWriter;
@@ -47,11 +48,12 @@ public class SqlColumnListConstructor extends SqlSpecialOperator {
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         writer.keyword( "ROW" );
         final SqlWriter.Frame frame = writer.startList( "(", ")" );
-        for ( SqlNode operand : call.getOperandList() ) {
+        for ( Node operand : call.getOperandList() ) {
             writer.sep( "," );
-            operand.unparse( writer, leftPrec, rightPrec );
+            ((SqlNode) operand).unparse( writer, leftPrec, rightPrec );
         }
         writer.endList( frame );
     }
+
 }
 

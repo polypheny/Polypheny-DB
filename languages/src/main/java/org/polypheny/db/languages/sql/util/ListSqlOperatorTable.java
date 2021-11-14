@@ -69,7 +69,7 @@ public class ListSqlOperatorTable implements OperatorTable {
 
     protected static FunctionCategory category( SqlOperator operator ) {
         if ( operator instanceof SqlFunction ) {
-            return ((SqlFunction) operator).getFunctionType();
+            return ((SqlFunction) operator).getFunctionCategory();
         } else {
             return FunctionCategory.SYSTEM;
         }

@@ -24,6 +24,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
@@ -32,7 +34,6 @@ import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
-import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
@@ -62,6 +63,12 @@ public class SqlAlterTableAddPrimaryKey extends SqlAlterTable {
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( table, columnList );
+    }
+
+
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
         writer.keyword( "TABLE" );
@@ -84,11 +91,11 @@ public class SqlAlterTableAddPrimaryKey extends SqlAlterTable {
         try {
             DdlManager.getInstance().addPrimaryKey(
                     catalogTable,
-                    columnList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),
+                    columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
                     statement );
 
         } catch ( DdlOnSourceException e ) {
-            throw SqlUtil.newContextException( table.getPos(), RESOURCE.ddlOnSourceTable() );
+            throw CoreUtil.newContextException( table.getPos(), RESOURCE.ddlOnSourceTable() );
         }
     }
 

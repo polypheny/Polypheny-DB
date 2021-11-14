@@ -37,6 +37,8 @@ package org.polypheny.db.rel.rules;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
@@ -55,8 +57,6 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCallBinding;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.validate.SqlMonotonicity;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.mapping.Mappings.TargetMapping;
 
@@ -106,11 +106,11 @@ public class SortProjectTransposeRule extends RelOptRule {
                 return;
             }
             final RexNode node = project.getProjects().get( fc.getFieldIndex() );
-            if ( node.isA( SqlKind.CAST ) ) {
+            if ( node.isA( Kind.CAST ) ) {
                 // Check whether it is a monotonic preserving cast, otherwise we cannot push
                 final RexCall cast = (RexCall) node;
                 final RexCallBinding binding = RexCallBinding.create( cluster.getTypeFactory(), cast, ImmutableList.of( RelCollations.of( RexUtil.apply( map, fc ) ) ) );
-                if ( cast.getOperator().getMonotonicity( binding ) == SqlMonotonicity.NOT_MONOTONIC ) {
+                if ( cast.getOperator().getMonotonicity( binding ) == Monotonicity.NOT_MONOTONIC ) {
                     return;
                 }
             }
@@ -133,5 +133,6 @@ public class SortProjectTransposeRule extends RelOptRule {
         }
         call.transformTo( newProject, equiv );
     }
+
 }
 

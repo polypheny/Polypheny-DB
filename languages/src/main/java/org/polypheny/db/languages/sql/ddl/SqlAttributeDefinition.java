@@ -20,6 +20,8 @@ package org.polypheny.db.languages.sql.ddl;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCollation;
@@ -63,6 +65,12 @@ public class SqlAttributeDefinition extends SqlCall {
 
     @Override
     public List<Node> getOperandList() {
+        return ImmutableList.of( name, dataType );
+    }
+
+
+    @Override
+    public List<SqlNode> getSqlOperandList() {
         return ImmutableList.of( name, dataType );
     }
 

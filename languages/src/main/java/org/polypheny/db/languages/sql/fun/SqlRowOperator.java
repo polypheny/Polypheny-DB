@@ -20,15 +20,15 @@ package org.polypheny.db.languages.sql.fun;
 import java.util.AbstractList;
 import java.util.Map;
 import org.polypheny.db.core.CoreUtil;
-import org.polypheny.db.core.RowOperator;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.core.Kind;
-import org.polypheny.db.languages.sql.SqlOperatorBinding;
+import org.polypheny.db.core.OperatorBinding;
+import org.polypheny.db.core.RowOperator;
+import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlSyntax;
 import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.InferTypes;
 import org.polypheny.db.util.Pair;
@@ -63,7 +63,7 @@ public class SqlRowOperator extends SqlSpecialOperator implements RowOperator {
 
 
     @Override
-    public RelDataType inferReturnType( final SqlOperatorBinding opBinding ) {
+    public RelDataType inferReturnType( final OperatorBinding opBinding ) {
         // The type of a ROW(e1,e2) expression is a record with the types {e1type,e2type}.  According to the standard, field names are implementation-defined.
         return opBinding.getTypeFactory().createStructType(
                 new AbstractList<Map.Entry<String, RelDataType>>() {

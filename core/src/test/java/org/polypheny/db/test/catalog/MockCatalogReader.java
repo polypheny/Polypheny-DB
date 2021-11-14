@@ -43,6 +43,7 @@ import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Modality;
 import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.NameMatcher;
+import org.polypheny.db.core.NameMatchers;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NullInitializerExpressionFactory;
 import org.polypheny.db.core.ValidatorUtil;
@@ -90,8 +91,6 @@ import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.schema.impl.ModifiableViewTable;
 import org.polypheny.db.schema.impl.ViewTableMacro;
-import org.polypheny.db.sql.validate.SqlNameMatchers;
-import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.test.JdbcTest;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -121,7 +120,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
     public MockCatalogReader( RelDataTypeFactory typeFactory, boolean caseSensitive ) {
         super(
                 AbstractPolyphenyDbSchema.createRootSchema( DEFAULT_CATALOG ),
-                SqlNameMatchers.withCaseSensitive( caseSensitive ),
+                NameMatchers.withCaseSensitive( caseSensitive ),
                 ImmutableList.of( PREFIX, ImmutableList.of() ),
                 typeFactory );
     }
@@ -175,7 +174,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
     protected void registerType( final List<String> names, final RelProtoDataType relProtoDataType ) {
         assert names.get( 0 ).equals( DEFAULT_CATALOG );
         final List<String> schemaPath = Util.skipLast( names );
-        final PolyphenyDbSchema schema = ValidatorUtil.getSchema( rootSchema, schemaPath, SqlNameMatchers.withCaseSensitive( true ) );
+        final PolyphenyDbSchema schema = ValidatorUtil.getSchema( rootSchema, schemaPath, NameMatchers.withCaseSensitive( true ) );
         schema.add( Util.last( names ), relProtoDataType );
     }
 
@@ -201,7 +200,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         assert names.get( 0 ).equals( DEFAULT_CATALOG );
         final List<String> schemaPath = Util.skipLast( names );
         final String tableName = Util.last( names );
-        final PolyphenyDbSchema schema = SqlValidatorUtil.getSchema( rootSchema, schemaPath, SqlNameMatchers.withCaseSensitive( true ) );
+        final PolyphenyDbSchema schema = ValidatorUtil.getSchema( rootSchema, schemaPath, NameMatchers.withCaseSensitive( true ) );
         schema.add( tableName, table );
     }
 

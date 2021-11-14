@@ -60,7 +60,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
@@ -261,15 +261,15 @@ public class CassandraFilter extends Filter implements CassandraRel {
             // We currently only use equality, but inequalities on clustering keys should be possible in the future
             switch ( node.getKind() ) {
                 case EQUALS:
-                    return translateBinary( SqlKind.EQUALS, SqlKind.EQUALS, (RexCall) node );
+                    return translateBinary( Kind.EQUALS, Kind.EQUALS, (RexCall) node );
                 case LESS_THAN:
-                    return translateBinary( SqlKind.LESS_THAN, SqlKind.GREATER_THAN, (RexCall) node );
+                    return translateBinary( Kind.LESS_THAN, Kind.GREATER_THAN, (RexCall) node );
                 case LESS_THAN_OR_EQUAL:
-                    return translateBinary( SqlKind.LESS_THAN_OR_EQUAL, SqlKind.GREATER_THAN_OR_EQUAL, (RexCall) node );
+                    return translateBinary( Kind.LESS_THAN_OR_EQUAL, Kind.GREATER_THAN_OR_EQUAL, (RexCall) node );
                 case GREATER_THAN:
-                    return translateBinary( SqlKind.GREATER_THAN, SqlKind.LESS_THAN, (RexCall) node );
+                    return translateBinary( Kind.GREATER_THAN, Kind.LESS_THAN, (RexCall) node );
                 case GREATER_THAN_OR_EQUAL:
-                    return translateBinary( SqlKind.GREATER_THAN_OR_EQUAL, SqlKind.LESS_THAN_OR_EQUAL, (RexCall) node );
+                    return translateBinary( Kind.GREATER_THAN_OR_EQUAL, Kind.LESS_THAN_OR_EQUAL, (RexCall) node );
                 default:
                     throw new AssertionError( "cannot translate " + node );
             }
@@ -279,7 +279,7 @@ public class CassandraFilter extends Filter implements CassandraRel {
         /**
          * Translates a call to a binary operator, reversing arguments if necessary.
          */
-        private Relation translateBinary( SqlKind op, SqlKind rop, RexCall call ) {
+        private Relation translateBinary( Kind op, Kind rop, RexCall call ) {
             final RexNode left = call.operands.get( 0 );
             final RexNode right = call.operands.get( 1 );
             Relation expression = translateBinary2( op, left, right );
@@ -297,7 +297,7 @@ public class CassandraFilter extends Filter implements CassandraRel {
         /**
          * Translates a call to a binary operator. Returns null on failure.
          */
-        private Relation translateBinary2( SqlKind op, RexNode left, RexNode right ) {
+        private Relation translateBinary2( Kind op, RexNode left, RexNode right ) {
             switch ( right.getKind() ) {
                 case LITERAL:
                     break;
@@ -322,7 +322,7 @@ public class CassandraFilter extends Filter implements CassandraRel {
         /**
          * Combines a field name, operator, and literal to produce a predicate string.
          */
-        private Relation translateOp2( SqlKind op, String name, RexLiteral right ) {
+        private Relation translateOp2( Kind op, String name, RexLiteral right ) {
             // In case this is a key, record that it is now restricted
             if ( op.equals( "=" ) ) {
                 partitionKeys.remove( name );

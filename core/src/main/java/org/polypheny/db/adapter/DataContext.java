@@ -31,9 +31,9 @@ import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.core.Advisor;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.sql.advise.SqlAdvisor;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -98,6 +98,7 @@ public interface DataContext {
         private final long index;
         private final RelDataType type;
         private final Object value;
+
     }
 
 
@@ -137,7 +138,7 @@ public interface DataContext {
         /**
          * Advisor that suggests completion hints for SQL statements.
          */
-        SQL_ADVISOR( "sqlAdvisor", SqlAdvisor.class ),
+        SQL_ADVISOR( "sqlAdvisor", Advisor.class ),
 
         /**
          * Writer to the standard error (stderr).
@@ -237,6 +238,8 @@ public interface DataContext {
         public List<Map<Long, Object>> getParameterValues() {
             return null;
         }
+
     }
+
 }
 

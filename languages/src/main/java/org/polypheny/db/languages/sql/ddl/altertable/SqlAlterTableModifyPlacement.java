@@ -26,6 +26,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
@@ -36,7 +38,6 @@ import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
-import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
@@ -74,6 +75,12 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
 
     @Override
     public List<Node> getOperandList() {
+        return ImmutableNullableList.of( table, columnList, storeName );
+    }
+
+
+    @Override
+    public List<SqlNode> getSqlOperandList() {
         return ImmutableNullableList.of( table, columnList, storeName );
     }
 
@@ -121,7 +128,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
         }
 
         // Check if all columns exist
-        for ( SqlNode node : columnList.getList() ) {
+        for ( SqlNode node : columnList.getSqlList() ) {
             getCatalogColumn( catalogTable.id, (SqlIdentifier) node );
         }
 
@@ -139,15 +146,15 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
                     storeInstance,
                     statement );
         } catch ( PlacementNotExistsException e ) {
-            throw SqlUtil.newContextException(
+            throw CoreUtil.newContextException(
                     storeName.getPos(),
                     RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
         } catch ( IndexPreventsRemovalException e ) {
-            throw SqlUtil.newContextException(
+            throw CoreUtil.newContextException(
                     storeName.getPos(),
                     RESOURCE.indexPreventsRemovalOfPlacement( e.getIndexName(), e.getColumnName() ) );
         } catch ( LastPlacementException e ) {
-            throw SqlUtil.newContextException(
+            throw CoreUtil.newContextException(
                     storeName.getPos(),
                     RESOURCE.onlyOnePlacementLeft() );
         }

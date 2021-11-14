@@ -275,7 +275,7 @@ public class ValidatorUtil {
         }
         PolyphenyDbSchema schema = rootSchema;
         for ( String p : path ) {
-            if ( schema == rootSchema && SqlNameMatchers.withCaseSensitive( true ).matches( p, schema.getName() ) ) {
+            if ( schema == rootSchema && NameMatchers.withCaseSensitive( true ).matches( p, schema.getName() ) ) {
                 continue;
             }
             schema = schema.getSubSchema( p, true );

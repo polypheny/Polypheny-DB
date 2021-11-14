@@ -830,15 +830,15 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         if ( names.size() > 1 ) {
             return;
         }
-        for ( SqlOperator op : validator.getOperatorTable().getOperatorList() ) {
+        for ( Operator op : validator.getOperatorTable().getOperatorList() ) {
             SqlIdentifier curOpId = new SqlIdentifier( op.getName(), pos );
 
             final SqlCall call = SqlUtil.makeCall( validator.getOperatorTable(), curOpId );
             if ( call != null ) {
                 result.add( new SqlMonikerImpl( op.getName(), SqlMonikerType.FUNCTION ) );
             } else {
-                if ( (op.getSqlSyntax() == SqlSyntax.FUNCTION) || (op.getSqlSyntax() == SqlSyntax.PREFIX) ) {
-                    if ( op.getOperandTypeChecker() != null ) {
+                if ( (op.getSyntax() == Syntax.FUNCTION) || (op.getSyntax() == Syntax.PREFIX) ) {
+                    if ( ((SqlOperator) op).getOperandTypeChecker() != null ) {
                         String sig = op.getAllowedSignatures();
                         sig = sig.replaceAll( "'", "" );
                         result.add( new SqlMonikerImpl( sig, SqlMonikerType.FUNCTION ) );
@@ -1107,10 +1107,10 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 final SqlUnresolvedFunction function = (SqlUnresolvedFunction) call.getOperator();
                 // This function hasn't been resolved yet.  Perform a half-hearted resolution now in case it's a builtin function requiring special casing.
                 // If it's not, we'll handle it later during overload resolution.
-                final List<SqlOperator> overloads = new ArrayList<>();
-                opTab.lookupOperatorOverloads( function.getNameAsId(), function.getFunctionType(), SqlSyntax.FUNCTION, overloads );
+                final List<Operator> overloads = new ArrayList<>();
+                opTab.lookupOperatorOverloads( function.getNameAsId(), function.getFunctionCategory(), SqlSyntax.FUNCTION.getSyntax(), overloads );
                 if ( overloads.size() == 1 ) {
-                    ((SqlBasicCall) call).setOperator( overloads.get( 0 ) );
+                    ((SqlBasicCall) call).setOperator( (SqlOperator) overloads.get( 0 ) );
                 }
             }
             if ( rewriteCalls ) {
@@ -1537,7 +1537,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     @Override
     public RelDataType getValidatedNodeType( Node node ) {
-        RelDataType type = getValidatedNodeTypeIfKnown( node );
+        RelDataType type = getValidatedNodeTypeIfKnown( (SqlNode) node );
         if ( type == null ) {
             throw Util.needToImplement( node );
         } else {
@@ -1664,8 +1664,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     @Override
     public PolyphenyDbException handleUnresolvedFunction( SqlCall call, SqlFunction unresolvedFunction, List<RelDataType> argTypes, List<String> argNames ) {
         // For builtins, we can give a better error message
-        final List<SqlOperator> overloads = new ArrayList<>();
-        opTab.lookupOperatorOverloads( unresolvedFunction.getNameAsId(), null, SqlSyntax.FUNCTION, overloads );
+        final List<Operator> overloads = new ArrayList<>();
+        opTab.lookupOperatorOverloads( unresolvedFunction.getNameAsId(), null, SqlSyntax.FUNCTION.getSyntax(), overloads );
         if ( overloads.size() == 1 ) {
             SqlFunction fun = (SqlFunction) overloads.get( 0 );
             if ( (fun.getSqlIdentifier() == null) && (fun.getSqlSyntax() != SqlSyntax.FUNCTION_ID) ) {
@@ -4675,7 +4675,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     public <T extends Exception & org.polypheny.db.core.ValidatorException> PolyphenyDbContextException newValidationError( Node node, ExInst<T> e ) {
         assert node != null;
         final ParserPos pos = node.getPos();
-        return SqlUtil.newContextException( pos, e );
+        return CoreUtil.newContextException( pos, e );
     }
 
 
@@ -5113,7 +5113,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         SqlValidatorScope operandScope = scope.getOperandScope( call );
 
         if ( operator instanceof SqlFunction
-                && ((SqlFunction) operator).getFunctionType()
+                && ((SqlFunction) operator).getFunctionCategory()
                 == FunctionCategory.MATCH_RECOGNIZE
                 && !(operandScope instanceof MatchRecognizeScope) ) {
             throw newValidationError( call, Static.RESOURCE.functionMatchRecognizeOnly( call.toString() ) );
@@ -5174,7 +5174,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         }
         final List<List<String>> list = new ArrayList<>();
         for ( int i = 0; i < fieldCount; i++ ) {
-            list.add( getFieldOrigin( sqlQuery, i ) );
+            list.add( getFieldOrigin( (SqlNode) sqlQuery, i ) );
         }
         return ImmutableNullableList.copyOf( list );
     }

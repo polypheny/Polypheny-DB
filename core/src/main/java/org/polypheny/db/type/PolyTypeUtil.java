@@ -51,6 +51,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import org.apache.commons.lang3.reflect.TypeUtils;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.core.Call;
 import org.polypheny.db.core.CallBinding;
 import org.polypheny.db.core.Collation;
@@ -61,16 +62,13 @@ import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.Validator;
 import org.polypheny.db.core.ValidatorScope;
 import org.polypheny.db.core.ValidatorUtil;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeFamily;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rel.type.RelDataTypeFieldImpl;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.SqlCollation;
-import org.polypheny.db.sql.SqlDataTypeSpec;
-import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.util.NumberUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -874,7 +872,7 @@ public abstract class PolyTypeUtil {
 
         // TODO jvs: support row types, user-defined types, interval types, multiset types, etc
         assert typeName != null;
-        Identifier typeIdentifier = new SqlIdentifier( typeName.name(), ParserPos.ZERO );
+        Identifier typeIdentifier = LanguageManager.getInstance().createIdentifier( QueryLanguage.SQL, typeName.name(), ParserPos.ZERO );
 
         String charSetName = null;
 
@@ -888,7 +886,8 @@ public abstract class PolyTypeUtil {
         // REVIEW angel: Use neg numbers to indicate unspecified precision/scale
 
         if ( typeName.allowsScale() ) {
-            return new SqlDataTypeSpec(
+            return LanguageManager.getInstance().createDataTypeSpec(
+                    QueryLanguage.SQL,
                     typeIdentifier,
                     type.getPrecision(),
                     type.getScale(),
@@ -896,7 +895,8 @@ public abstract class PolyTypeUtil {
                     null,
                     ParserPos.ZERO );
         } else if ( typeName.allowsPrec() ) {
-            return new SqlDataTypeSpec(
+            return LanguageManager.getInstance().createDataTypeSpec(
+                    QueryLanguage.SQL,
                     typeIdentifier,
                     type.getPrecision(),
                     -1,
@@ -905,8 +905,9 @@ public abstract class PolyTypeUtil {
                     ParserPos.ZERO );
         } else if ( typeName.getFamily() == PolyTypeFamily.ARRAY ) {
             ArrayType arrayType = (ArrayType) type;
-            Identifier componentTypeIdentifier = new SqlIdentifier( arrayType.getComponentType().getPolyType().getName(), ParserPos.ZERO );
-            return new SqlDataTypeSpec(
+            Identifier componentTypeIdentifier = LanguageManager.getInstance().createIdentifier( QueryLanguage.SQL, arrayType.getComponentType().getPolyType().getName(), ParserPos.ZERO );
+            return LanguageManager.getInstance().createDataTypeSpec(
+                    QueryLanguage.SQL,
                     typeIdentifier,
                     componentTypeIdentifier,
                     arrayType.getComponentType().getPrecision(),
@@ -918,7 +919,8 @@ public abstract class PolyTypeUtil {
                     arrayType.isNullable(),
                     ParserPos.ZERO );
         } else {
-            return new SqlDataTypeSpec(
+            return LanguageManager.getInstance().createDataTypeSpec(
+                    QueryLanguage.SQL,
                     typeIdentifier,
                     -1,
                     -1,

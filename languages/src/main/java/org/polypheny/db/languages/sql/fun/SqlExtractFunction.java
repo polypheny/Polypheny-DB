@@ -21,9 +21,9 @@ import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Monotonicity;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -66,7 +66,7 @@ public class SqlExtractFunction extends SqlFunction {
 
 
     @Override
-    public Monotonicity getMonotonicity( SqlOperatorBinding call ) {
+    public Monotonicity getMonotonicity( OperatorBinding call ) {
         switch ( call.getOperandLiteralValue( 0, TimeUnitRange.class ) ) {
             case YEAR:
                 return call.getOperandMonotonicity( 1 ).unstrict();

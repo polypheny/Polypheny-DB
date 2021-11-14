@@ -20,6 +20,7 @@ import java.io.Reader;
 import java.util.Objects;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.core.Conformance;
 import org.polypheny.db.core.ConformanceEnum;
 import org.polypheny.db.core.Lex;
@@ -56,7 +57,7 @@ public interface Parser {
     }
 
     /**
-     * Creates a <code>SqlParser</code> to parse the given string using the parser implementation created from given {@link SqlParserImplFactory} with given quoting syntax and casing policies for identifiers.
+     * Creates a <code>Parser</code> to parse the given string using the parser implementation created from given {@link ParserFactory} with given quoting syntax and casing policies for identifiers.
      *
      * @param sql A SQL statement or expression to parse
      * @param sqlParserConfig The parser configuration (identifier max length, etc.)
@@ -67,7 +68,7 @@ public interface Parser {
     }
 
     /**
-     * Creates a <code>SqlParser</code> to parse the given string using the parser implementation created from given {@link SqlParserImplFactory} with given quoting syntax and casing policies for identifiers.
+     * Creates a <code>Parser</code> to parse the given string using the parser implementation created from given {@link ParserFactory} with given quoting syntax and casing policies for identifiers.
      *
      * Unlike {@link #create(String, ParserConfig)}, the parser is not able to return the original query string, but will instead return "?".
      *
@@ -76,9 +77,7 @@ public interface Parser {
      * @return A parser
      */
     static Parser create( Reader reader, ParserConfig sqlParserConfig ) {
-        SqlAbstractParserImpl parser = sqlParserConfig.parserFactory().getParser( reader );
-
-        return new SqlParser( parser, sqlParserConfig );
+        return LanguageManager.getInstance().getParser( QueryLanguage.SQL, reader, sqlParserConfig );
     }
 
     Node parseQuery() throws ParseException;
@@ -111,7 +110,8 @@ public interface Parser {
 
         Conformance conformance();
 
-        SqlParserImplFactory parserFactory();
+        ParserFactory parserFactory();
+
     }
 
 
@@ -126,7 +126,7 @@ public interface Parser {
         private int identifierMaxLength = DEFAULT_IDENTIFIER_MAX_LENGTH;
         private boolean caseSensitive = Lex.POLYPHENY.caseSensitive;
         private Conformance conformance = ConformanceEnum.LENIENT;
-        private SqlParserImplFactory parserFactory = SqlParserImpl.FACTORY;
+        private ParserFactory parserFactory = LanguageManager.getInstance().getFactory( QueryLanguage.SQL );
 
 
         private ConfigBuilder() {
@@ -183,7 +183,7 @@ public interface Parser {
         }
 
 
-        public ConfigBuilder setParserFactory( SqlParserImplFactory factory ) {
+        public ConfigBuilder setParserFactory( ParserFactory factory ) {
             this.parserFactory = Objects.requireNonNull( factory );
             return this;
         }
@@ -220,10 +220,10 @@ public interface Parser {
         private final Casing quotedCasing;
         private final Casing unquotedCasing;
         private final Quoting quoting;
-        private final SqlParserImplFactory parserFactory;
+        private final ParserFactory parserFactory;
 
 
-        private ConfigImpl( int identifierMaxLength, Casing quotedCasing, Casing unquotedCasing, Quoting quoting, boolean caseSensitive, Conformance conformance, SqlParserImplFactory parserFactory ) {
+        private ConfigImpl( int identifierMaxLength, Casing quotedCasing, Casing unquotedCasing, Quoting quoting, boolean caseSensitive, Conformance conformance, ParserFactory parserFactory ) {
             this.identifierMaxLength = identifierMaxLength;
             this.caseSensitive = caseSensitive;
             this.conformance = Objects.requireNonNull( conformance );
@@ -271,9 +271,10 @@ public interface Parser {
 
 
         @Override
-        public SqlParserImplFactory parserFactory() {
+        public ParserFactory parserFactory() {
             return parserFactory;
         }
+
     }
 
 }

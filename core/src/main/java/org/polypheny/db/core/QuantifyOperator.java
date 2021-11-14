@@ -16,23 +16,8 @@
 
 package org.polypheny.db.core;
 
-import lombok.Getter;
+public interface QuantifyOperator {
 
-public interface Function {
-
-    FunctionType getFunctionType();
-
-    enum FunctionType {
-        COUNT( true ),
-        SINGLE_VALUE( true );
-
-        @Getter
-        private final boolean isAgg;
-
-
-        FunctionType( boolean isAgg ) {
-            this.isAgg = isAgg;
-        }
-    }
+    Kind getComparisonKind();
 
 }

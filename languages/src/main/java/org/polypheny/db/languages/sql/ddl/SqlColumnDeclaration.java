@@ -23,6 +23,8 @@ import lombok.Getter;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDataTypeSpec;
@@ -97,6 +99,12 @@ public class SqlColumnDeclaration extends SqlCall {
 
     @Override
     public List<Node> getOperandList() {
+        return ImmutableList.of( name, dataType );
+    }
+
+
+    @Override
+    public List<SqlNode> getSqlOperandList() {
         return ImmutableList.of( name, dataType );
     }
 

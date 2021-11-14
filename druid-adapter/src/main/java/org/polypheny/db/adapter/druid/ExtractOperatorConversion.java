@@ -44,7 +44,6 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.type.PolyType;
 
 
@@ -69,7 +68,7 @@ public class ExtractOperatorConversion implements DruidSqlOperatorConverter {
 
 
     @Override
-    public SqlOperator polyphenyDbOperator() {
+    public Operator polyphenyDbOperator() {
         return SqlStdOperatorTable.EXTRACT;
     }
 

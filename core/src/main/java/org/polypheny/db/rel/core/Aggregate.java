@@ -44,8 +44,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.core.AggFunction;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.Function;
+import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.SqlValidatorException;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -65,10 +69,6 @@ import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
-import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.sql.SqlOperatorBinding;
-import org.polypheny.db.sql.SqlUtil;
-import org.polypheny.db.sql.validate.SqlValidatorException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -306,7 +306,7 @@ public abstract class Aggregate extends SingleRel {
         // Aggregates with more aggregate functions cost a bit more
         float multiplier = 1f + (float) aggCalls.size() * 0.125f;
         for ( AggregateCall aggCall : aggCalls ) {
-            if ( aggCall.getAggregation().getName().equals( "SUM" ) ) {
+            if ( ((Operator) aggCall.getAggregation()).getName().equals( "SUM" ) ) {
                 // Pretend that SUM costs a little bit more than $SUM0, to make things deterministic.
                 multiplier += 0.0125f;
             }
@@ -404,7 +404,7 @@ public abstract class Aggregate extends SingleRel {
     private boolean typeMatchesInferred( final AggregateCall aggCall, final Litmus litmus ) {
         Function aggFunction = aggCall.getAggregation();
         AggCallBinding callBinding = aggCall.createBinding( this );
-        RelDataType type = aggFunction.inferReturnType( callBinding );
+        RelDataType type = ((Operator) aggFunction).inferReturnType( callBinding );
         RelDataType expectedType = aggCall.type;
         return RelOptUtil.eq( "aggCall type", expectedType, "inferred type", type, litmus );
     }
@@ -484,10 +484,10 @@ public abstract class Aggregate extends SingleRel {
 
 
     /**
-     * Implementation of the {@link SqlOperatorBinding} interface for an {@link AggregateCall aggregate call} applied to a set of operands in the context of
+     * Implementation of the {@link OperatorBinding} interface for an {@link AggregateCall aggregate call} applied to a set of operands in the context of
      * a {@link LogicalAggregate}.
      */
-    public static class AggCallBinding extends SqlOperatorBinding {
+    public static class AggCallBinding extends OperatorBinding {
 
         private final List<RelDataType> operands;
         private final int groupCount;
@@ -504,7 +504,7 @@ public abstract class Aggregate extends SingleRel {
          * @param filter Whether the aggregate function has a FILTER clause
          */
         public AggCallBinding( RelDataTypeFactory typeFactory, AggFunction aggFunction, List<RelDataType> operands, int groupCount, boolean filter ) {
-            super( typeFactory, aggFunction );
+            super( typeFactory, (Operator) aggFunction );
             this.operands = operands;
             this.groupCount = groupCount;
             this.filter = filter;
@@ -539,7 +539,7 @@ public abstract class Aggregate extends SingleRel {
 
         @Override
         public PolyphenyDbException newError( Resources.ExInst<SqlValidatorException> e ) {
-            return SqlUtil.newContextException( ParserPos.ZERO, e );
+            return CoreUtil.newContextException( ParserPos.ZERO, e );
         }
 
     }

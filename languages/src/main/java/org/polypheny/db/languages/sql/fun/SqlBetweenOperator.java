@@ -20,6 +20,7 @@ package org.polypheny.db.languages.sql.fun;
 import java.util.List;
 import org.polypheny.db.core.BasicNodeVisitor;
 import org.polypheny.db.core.Call;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.ExplicitOperatorBinding;
@@ -29,7 +30,6 @@ import org.polypheny.db.languages.sql.SqlInfixOperator;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlOperatorBinding;
-import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
@@ -195,11 +195,11 @@ public class SqlBetweenOperator extends SqlInfixOperator {
             final int line = lastPos.getEndLineNum();
             final int col = lastPos.getEndColumnNum() + 1;
             ParserPos errPos = new ParserPos( line, col, line, col );
-            throw SqlUtil.newContextException( errPos, Static.RESOURCE.betweenWithoutAnd() );
+            throw CoreUtil.newContextException( errPos, Static.RESOURCE.betweenWithoutAnd() );
         }
         if ( !list.isOp( opOrdinal + 2 ) || list.op( opOrdinal + 2 ).getKind() != Kind.AND ) {
             ParserPos errPos = list.pos( opOrdinal + 2 );
-            throw SqlUtil.newContextException( errPos, Static.RESOURCE.betweenWithoutAnd() );
+            throw CoreUtil.newContextException( errPos, Static.RESOURCE.betweenWithoutAnd() );
         }
 
         // Create the expression after 'AND', but stopping if we encounter an operator of lower precedence.

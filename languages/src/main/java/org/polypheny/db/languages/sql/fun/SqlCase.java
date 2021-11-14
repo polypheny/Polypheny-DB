@@ -20,7 +20,9 @@ package org.polypheny.db.languages.sql.fun;
 import java.util.List;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -69,14 +71,14 @@ public class SqlCase extends SqlCall {
      */
     public static SqlCase createSwitched( ParserPos pos, SqlNode value, SqlNodeList whenList, SqlNodeList thenList, SqlNode elseClause ) {
         if ( null != value ) {
-            List<SqlNode> list = whenList.getList();
+            List<SqlNode> list = whenList.getSqlList();
             for ( int i = 0; i < list.size(); i++ ) {
                 SqlNode e = list.get( i );
                 final SqlCall call;
                 if ( e instanceof SqlNodeList ) {
-                    call = SqlStdOperatorTable.IN.createCall( pos, value, e );
+                    call = (SqlCall) StdOperatorRegistry.get( "IN" ).createCall( pos, value, e );
                 } else {
-                    call = SqlStdOperatorTable.EQUALS.createCall( pos, value, e );
+                    call = (SqlCall) StdOperatorRegistry.get( "EQUALS" ).createCall( pos, value, e );
                 }
                 list.set( i, call );
             }
@@ -109,10 +111,16 @@ public class SqlCase extends SqlCall {
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return UnmodifiableArrayList.of( value, whenList, thenList, elseExpr );
+    }
+
+
+    @Override
     public void setOperand( int i, Node operand ) {
         switch ( i ) {
             case 0:
-                value = operand;
+                value = (SqlNode) operand;
                 break;
             case 1:
                 whenList = (SqlNodeList) operand;
@@ -121,7 +129,7 @@ public class SqlCase extends SqlCall {
                 thenList = (SqlNodeList) operand;
                 break;
             case 3:
-                elseExpr = operand;
+                elseExpr = (SqlNode) operand;
                 break;
             default:
                 throw new AssertionError( i );
@@ -147,5 +155,6 @@ public class SqlCase extends SqlCall {
     public SqlNode getElseOperand() {
         return elseExpr;
     }
+
 }
 

@@ -18,6 +18,8 @@ package org.polypheny.db.languages.sql.parser;
 
 
 import java.io.Reader;
+import org.polypheny.db.languages.Parser;
+import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.tools.Planner;
 
 
@@ -26,13 +28,14 @@ import org.polypheny.db.tools.Planner;
  *
  * A parser factory allows you to include a custom parser in {@link Planner} created through {@code Frameworks}.
  */
-public interface SqlParserImplFactory {
+public interface SqlParserImplFactory extends ParserFactory {
 
     /**
      * Get the underlying parser implementation.
      *
      * @return {@link SqlAbstractParserImpl} object.
      */
-    SqlAbstractParserImpl getParser( Reader stream );
+    Parser getParser( Reader stream );
+
 }
 

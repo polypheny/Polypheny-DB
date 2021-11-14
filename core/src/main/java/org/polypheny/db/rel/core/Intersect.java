@@ -41,7 +41,7 @@ import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelInput;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 
 
 /**
@@ -55,7 +55,7 @@ public abstract class Intersect extends SetOp {
      * Creates an Intersect.
      */
     public Intersect( RelOptCluster cluster, RelTraitSet traits, List<RelNode> inputs, boolean all ) {
-        super( cluster, traits, inputs, SqlKind.INTERSECT, all );
+        super( cluster, traits, inputs, Kind.INTERSECT, all );
     }
 
 

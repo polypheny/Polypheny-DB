@@ -92,9 +92,9 @@ abstract class AggVisitor extends BasicNodeVisitor<Void> {
         // User-defined function may not be resolved yet.
         if ( operator instanceof SqlFunction ) {
             final SqlFunction sqlFunction = (SqlFunction) operator;
-            if ( sqlFunction.getFunctionType().isUserDefinedNotSpecificFunction() ) {
+            if ( sqlFunction.getFunctionCategory().isUserDefinedNotSpecificFunction() ) {
                 final List<SqlOperator> list = new ArrayList<>();
-                opTab.lookupOperatorOverloads( sqlFunction.getSqlIdentifier(), sqlFunction.getFunctionType(), SqlSyntax.FUNCTION, list );
+                opTab.lookupOperatorOverloads( sqlFunction.getSqlIdentifier(), sqlFunction.getFunctionCategory(), SqlSyntax.FUNCTION, list );
                 for ( SqlOperator operator2 : list ) {
                     if ( operator2.isAggregator() && !operator2.requiresOver() ) {
                         // If nested aggregates disallowed or found aggregate at invalid level

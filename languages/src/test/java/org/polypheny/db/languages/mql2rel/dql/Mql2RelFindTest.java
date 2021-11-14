@@ -716,11 +716,11 @@ public class Mql2RelFindTest extends Mql2RelTest {
         assertEquals( kind, condition.op.kind );
 
        /*if ( Arrays.asList(
-                SqlKind.GREATER_THAN,
-                SqlKind.GREATER_THAN_OR_EQUAL,
-                SqlKind.LESS_THAN,
-                SqlKind.LESS_THAN_OR_EQUAL ).contains( kind ) ) {
-            assertEquals( SqlKind.CAST, condition.operands.get( 0 ).getKind() );
+                Kind.GREATER_THAN,
+                Kind.GREATER_THAN_OR_EQUAL,
+                Kind.LESS_THAN,
+                Kind.LESS_THAN_OR_EQUAL ).contains( kind ) ) {
+            assertEquals( Kind.CAST, condition.operands.get( 0 ).getKind() );
 
             // test json value
             testJsonValue( assertRexCall(, 0 ), key );

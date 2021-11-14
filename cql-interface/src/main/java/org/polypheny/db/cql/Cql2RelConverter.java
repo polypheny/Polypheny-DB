@@ -40,7 +40,7 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
@@ -110,7 +110,7 @@ public class Cql2RelConverter {
                         ? ((Sort) relNode).collation
                         : RelCollations.EMPTY;
 
-        return new RelRoot( relNode, relNode.getRowType(), SqlKind.SELECT, fields, collation );
+        return new RelRoot( relNode, relNode.getRowType(), Kind.SELECT, fields, collation );
     }
 
 

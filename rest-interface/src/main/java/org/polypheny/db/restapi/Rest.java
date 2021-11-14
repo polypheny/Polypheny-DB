@@ -33,9 +33,9 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.core.Kind;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.languages.sql.SqlOperator;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.DmlEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
@@ -65,8 +65,6 @@ import org.polypheny.db.restapi.models.requests.ResourceValuesRequest;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilder.GroupKey;
 import org.polypheny.db.transaction.Statement;
@@ -354,7 +352,7 @@ public class Rest {
             filtersRows.forEach( ( r ) -> filterMap.put( r.getKey(), r ) );
             int index = 0;
             for ( RequestColumn column : filters.literalFilters.keySet() ) {
-                for ( Pair<SqlOperator, Object> filterOperationPair : filters.literalFilters.get( column ) ) {
+                for ( Pair<Operator, Object> filterOperationPair : filters.literalFilters.get( column ) ) {
                     RelDataTypeField typeField = filterMap.get( column.getFullyQualifiedName() );
                     RexNode inputRef = rexBuilder.makeInputRef( baseNodeForFilters, typeField.getIndex() );
                     Object param = filterOperationPair.right;
@@ -579,7 +577,7 @@ public class Rest {
             restResult = new RestResult( relRoot.kind, iterator, signature.rowType, signature.columns );
             restResult.transform();
             long executionTime = restResult.getExecutionTime();
-            if ( !relRoot.kind.belongsTo( SqlKind.DML ) ) {
+            if ( !relRoot.kind.belongsTo( Kind.DML ) ) {
                 signature.getExecutionTimeMonitor().setExecutionTime( executionTime );
             }
 

@@ -35,7 +35,7 @@ import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -192,7 +192,7 @@ public class ExploreQueryProcessor {
 
         SqlNode parsed = sqlProcessor.parse( sql );
 
-        if ( parsed.isA( SqlKind.DDL ) ) {
+        if ( parsed.isA( Kind.DDL ) ) {
             // explore by example should not execute any ddls
             throw new RuntimeException( "No DDL expected here" );
         } else {

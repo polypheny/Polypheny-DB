@@ -35,9 +35,9 @@ package org.polypheny.db.rex;
 
 
 import java.util.Objects;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.rel.core.CorrelationId;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlKind;
 
 
 /**
@@ -70,8 +70,8 @@ public class RexCorrelVariable extends RexVariable {
 
 
     @Override
-    public SqlKind getKind() {
-        return SqlKind.CORREL_VARIABLE;
+    public Kind getKind() {
+        return Kind.CORREL_VARIABLE;
     }
 
 
@@ -89,5 +89,6 @@ public class RexCorrelVariable extends RexVariable {
     public int hashCode() {
         return Objects.hash( digest, type, id );
     }
+
 }
 

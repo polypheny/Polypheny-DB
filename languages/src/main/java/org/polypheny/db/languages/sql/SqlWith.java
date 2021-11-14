@@ -20,7 +20,9 @@ package org.polypheny.db.languages.sql;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -61,13 +63,19 @@ public class SqlWith extends SqlCall {
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableList.of( withList, body );
+    }
+
+
+    @Override
     public void setOperand( int i, Node operand ) {
         switch ( i ) {
             case 0:
                 withList = (SqlNodeList) operand;
                 break;
             case 1:
-                body = operand;
+                body = (SqlNode) operand;
                 break;
             default:
                 throw new AssertionError( i );
@@ -100,7 +108,7 @@ public class SqlWith extends SqlCall {
             final SqlWith with = (SqlWith) call;
             final SqlWriter.Frame frame = writer.startList( SqlWriter.FrameTypeEnum.WITH, "WITH", "" );
             final SqlWriter.Frame frame1 = writer.startList( "", "" );
-            for ( SqlNode node : with.withList ) {
+            for ( SqlNode node : with.withList.getSqlList() ) {
                 writer.sep( "," );
                 node.unparse( writer, 0, 0 );
             }
@@ -113,8 +121,8 @@ public class SqlWith extends SqlCall {
 
 
         @Override
-        public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
-            return new SqlWith( pos, (SqlNodeList) operands[0], operands[1] );
+        public SqlCall createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
+            return new SqlWith( pos, (SqlNodeList) operands[0], (SqlNode) operands[1] );
         }
 
 
@@ -122,6 +130,8 @@ public class SqlWith extends SqlCall {
         public void validateCall( SqlCall call, SqlValidator validator, SqlValidatorScope scope, SqlValidatorScope operandScope ) {
             validator.validateWith( (SqlWith) call, scope );
         }
+
     }
+
 }
 

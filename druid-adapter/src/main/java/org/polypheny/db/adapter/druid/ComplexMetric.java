@@ -35,7 +35,7 @@ package org.polypheny.db.adapter.druid;
 
 
 import org.polypheny.db.rel.core.AggregateCall;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 
 
 /**
@@ -97,7 +97,7 @@ public class ComplexMetric {
         switch ( type ) {
             case HYPER_UNIQUE:
             case THETA_SKETCH:
-                return call != null && call.getAggregation().getKind() == SqlKind.COUNT && call.isDistinct();
+                return call != null && call.getAggregation().getKind() == Kind.COUNT && call.isDistinct();
             default:
                 return false;
         }

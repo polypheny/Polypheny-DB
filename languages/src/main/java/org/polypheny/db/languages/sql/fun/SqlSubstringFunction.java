@@ -25,11 +25,11 @@ import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Monotonicity;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -170,7 +170,7 @@ public class SqlSubstringFunction extends SqlFunction {
 
 
     @Override
-    public Monotonicity getMonotonicity( SqlOperatorBinding call ) {
+    public Monotonicity getMonotonicity( OperatorBinding call ) {
         // SUBSTRING(x FROM 0 FOR constant) has same monotonicity as x
         if ( call.getOperandCount() == 3 ) {
             final Monotonicity mono0 = call.getOperandMonotonicity( 0 );

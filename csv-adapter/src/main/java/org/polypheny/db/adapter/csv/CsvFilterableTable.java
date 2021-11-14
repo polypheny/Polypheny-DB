@@ -46,7 +46,7 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.FilterableTable;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.util.Source;
 
 
@@ -86,10 +86,10 @@ public class CsvFilterableTable extends CsvTable implements FilterableTable {
 
 
     private boolean addFilter( RexNode filter, Object[] filterValues ) {
-        if ( filter.isA( SqlKind.EQUALS ) ) {
+        if ( filter.isA( Kind.EQUALS ) ) {
             final RexCall call = (RexCall) filter;
             RexNode left = call.getOperands().get( 0 );
-            if ( left.isA( SqlKind.CAST ) ) {
+            if ( left.isA( Kind.CAST ) ) {
                 left = ((RexCall) left).operands.get( 0 );
             }
             final RexNode right = call.getOperands().get( 1 );

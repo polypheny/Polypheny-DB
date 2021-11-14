@@ -35,9 +35,9 @@ package org.polypheny.db.rex;
 
 
 import java.util.List;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.util.Pair;
 
 
@@ -121,8 +121,8 @@ public class RexInputRef extends RexSlot {
 
 
     @Override
-    public SqlKind getKind() {
-        return SqlKind.INPUT_REF;
+    public Kind getKind() {
+        return Kind.INPUT_REF;
     }
 
 
@@ -144,5 +144,6 @@ public class RexInputRef extends RexSlot {
     public static String createName( int index ) {
         return NAMES.get( index );
     }
+
 }
 

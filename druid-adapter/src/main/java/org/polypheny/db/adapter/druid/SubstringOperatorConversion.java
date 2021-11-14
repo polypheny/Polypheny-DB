@@ -35,13 +35,12 @@ package org.polypheny.db.adapter.druid;
 
 
 import javax.annotation.Nullable;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.sql.Kind;
 
 
 /**
@@ -50,7 +49,7 @@ import org.polypheny.db.core.SqlStdOperatorTable;
 public class SubstringOperatorConversion implements DruidSqlOperatorConverter {
 
     @Override
-    public SqlOperator polyphenyDbOperator() {
+    public Operator polyphenyDbOperator() {
         return SqlStdOperatorTable.SUBSTRING;
     }
 
@@ -67,7 +66,7 @@ public class SubstringOperatorConversion implements DruidSqlOperatorConverter {
         final String startIndex;
         final String length;
         // SQL is 1-indexed, Druid is 0-indexed.
-        if ( !call.getOperands().get( 1 ).isA( SqlKind.LITERAL ) ) {
+        if ( !call.getOperands().get( 1 ).isA( Kind.LITERAL ) ) {
             final String arg1 = DruidExpressions.toDruidExpression( call.getOperands().get( 1 ), rowType, query );
             if ( arg1 == null ) {
                 // can not infer start index expression bailout.
@@ -80,7 +79,7 @@ public class SubstringOperatorConversion implements DruidSqlOperatorConverter {
 
         if ( call.getOperands().size() > 2 ) {
             //case substring from start index with length
-            if ( !call.getOperands().get( 2 ).isA( SqlKind.LITERAL ) ) {
+            if ( !call.getOperands().get( 2 ).isA( Kind.LITERAL ) ) {
                 // case it is an expression try to parse it
                 length = DruidExpressions.toDruidExpression( call.getOperands().get( 2 ), rowType, query );
                 if ( length == null ) {

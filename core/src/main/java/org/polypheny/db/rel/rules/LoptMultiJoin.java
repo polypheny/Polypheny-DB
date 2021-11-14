@@ -55,7 +55,7 @@ import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.util.BitSets;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableIntList;
@@ -508,7 +508,7 @@ public class LoptMultiJoin {
             if ( !(joinFilter instanceof RexCall) ) {
                 continue;
             }
-            if ( !joinFilter.isA( SqlKind.COMPARISON ) ) {
+            if ( !joinFilter.isA( Kind.COMPARISON ) ) {
                 continue;
             }
 

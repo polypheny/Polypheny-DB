@@ -295,11 +295,11 @@ public abstract class Prepare {
     }
 
 
-    protected LogicalTableModify.Operation mapTableModOp( boolean isDml, Kind sqlKind ) {
+    protected LogicalTableModify.Operation mapTableModOp( boolean isDml, Kind Kind ) {
         if ( !isDml ) {
             return null;
         }
-        switch ( sqlKind ) {
+        switch ( Kind ) {
             case INSERT:
                 return LogicalTableModify.Operation.INSERT;
             case DELETE:

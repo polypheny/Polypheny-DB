@@ -30,12 +30,14 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.languages.sql.SqlUtil;
+import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
@@ -75,6 +77,12 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( table, storeName );
+    }
+
+
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
         writer.keyword( "TABLE" );
@@ -108,14 +116,14 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
 
         DataStore storeInstance = AdapterManager.getInstance().getStore( storeName.getSimple() );
         if ( storeInstance == null ) {
-            throw SqlUtil.newContextException(
+            throw CoreUtil.newContextException(
                     storeName.getPos(),
                     RESOURCE.unknownStoreName( storeName.getSimple() ) );
         }
         int storeId = storeInstance.getAdapterId();
         // Check whether this placement already exists
         if ( !catalogTable.placementsByAdapter.containsKey( storeId ) ) {
-            throw SqlUtil.newContextException(
+            throw CoreUtil.newContextException(
                     storeName.getPos(),
                     RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
         }

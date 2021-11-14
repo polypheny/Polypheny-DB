@@ -23,7 +23,9 @@ import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
@@ -32,7 +34,6 @@ import org.polypheny.db.languages.sql.SqlAlter;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
-import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
@@ -62,6 +63,12 @@ public class SqlAlterAdaptersDrop extends SqlAlter {
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( uniqueName );
+    }
+
+
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
         writer.keyword( "ADAPTERS" );
@@ -75,7 +82,7 @@ public class SqlAlterAdaptersDrop extends SqlAlter {
         try {
             DdlManager.getInstance().dropAdapter( uniqueName.toString(), statement );
         } catch ( UnknownAdapterException e ) {
-            throw SqlUtil.newContextException( uniqueName.getPos(), RESOURCE.unknownAdapter( e.getAdapterName() ) );
+            throw CoreUtil.newContextException( uniqueName.getPos(), RESOURCE.unknownAdapter( e.getAdapterName() ) );
         } catch ( Exception e ) {
             throw new RuntimeException( "Could not remove the adapter with the unique name '" + uniqueName.toString() + "' for the following reason: " + e.getMessage(), e );
         }

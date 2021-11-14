@@ -19,11 +19,13 @@ package org.polypheny.db.languages.sql.ddl.altermaterializedview;
 import java.util.List;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlIdentifier;
+import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.ddl.SqlAlterMaterializedView;
 import org.polypheny.db.transaction.Statement;
@@ -42,6 +44,12 @@ public class SqlAlterMaterializedViewFreshnessManual extends SqlAlterMaterialize
 
     @Override
     public List<Node> getOperandList() {
+        return ImmutableNullableList.of( name );
+    }
+
+
+    @Override
+    public List<SqlNode> getSqlOperandList() {
         return ImmutableNullableList.of( name );
     }
 

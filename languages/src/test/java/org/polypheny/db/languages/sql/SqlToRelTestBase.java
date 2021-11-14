@@ -41,7 +41,6 @@ import org.polypheny.db.languages.NodeToRelConverter.Config;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.languages.sql.parser.SqlParser;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.languages.sql2rel.SqlToRelConverter;
@@ -715,8 +714,8 @@ public abstract class SqlToRelTestBase {
         @Override
         public SqlNode parseQuery( String sql ) throws Exception {
             final ParserConfig sqlParserConfig = Parser.configBuilder().setConformance( getConformance() ).build();
-            SqlParser parser = Parser.create( sql, sqlParserConfig );
-            return parser.parseQuery();
+            Parser parser = Parser.create( sql, sqlParserConfig );
+            return (SqlNode) parser.parseQuery();
         }
 
 

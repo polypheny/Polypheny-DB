@@ -35,7 +35,7 @@ public class SqlParser implements Parser {
     private final SqlAbstractParserImpl parser;
 
 
-    private SqlParser( SqlAbstractParserImpl parser, ParserConfig sqlParserConfig ) {
+    public SqlParser( SqlAbstractParserImpl parser, ParserConfig sqlParserConfig ) {
         this.parser = parser;
         parser.setTabSize( 1 );
         parser.setQuotedCasing( sqlParserConfig.quotedCasing() );

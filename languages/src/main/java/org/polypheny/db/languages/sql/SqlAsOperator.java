@@ -22,6 +22,7 @@ import org.polypheny.db.core.BasicNodeVisitor.ArgHandler;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.NodeVisitor;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
@@ -133,7 +134,7 @@ public class SqlAsOperator extends SqlSpecialOperator {
 
 
     @Override
-    public Monotonicity getMonotonicity( SqlOperatorBinding call ) {
+    public Monotonicity getMonotonicity( OperatorBinding call ) {
         return call.getOperandMonotonicity( 0 );
     }
 }

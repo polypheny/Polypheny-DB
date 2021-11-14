@@ -57,7 +57,7 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.type.PolyType;
 
@@ -325,19 +325,19 @@ public class GeodeRules {
          */
         private boolean checkConditionContainsInputRefOrLiterals( RexNode left, RexNode right, List<String> fieldNames ) {
             // FIXME Ignore casts for rel and assume they aren't really necessary
-            if ( left.isA( SqlKind.CAST ) ) {
+            if ( left.isA( Kind.CAST ) ) {
                 left = ((RexCall) left).getOperands().get( 0 );
             }
 
-            if ( right.isA( SqlKind.CAST ) ) {
+            if ( right.isA( Kind.CAST ) ) {
                 right = ((RexCall) right).getOperands().get( 0 );
             }
 
-            if ( left.isA( SqlKind.INPUT_REF ) && right.isA( SqlKind.LITERAL ) ) {
+            if ( left.isA( Kind.INPUT_REF ) && right.isA( Kind.LITERAL ) ) {
                 final RexInputRef left1 = (RexInputRef) left;
                 String name = fieldNames.get( left1.getIndex() );
                 return name != null;
-            } else if ( left.isA( SqlKind.INPUT_REF ) && right.isA( SqlKind.INPUT_REF ) ) {
+            } else if ( left.isA( Kind.INPUT_REF ) && right.isA( Kind.INPUT_REF ) ) {
 
                 final RexInputRef left1 = (RexInputRef) left;
                 String leftName = fieldNames.get( left1.getIndex() );
@@ -347,7 +347,7 @@ public class GeodeRules {
 
                 return (leftName != null) && (rightName != null);
             }
-            if ( left.isA( SqlKind.OTHER_FUNCTION ) && right.isA( SqlKind.LITERAL ) ) {
+            if ( left.isA( Kind.OTHER_FUNCTION ) && right.isA( Kind.LITERAL ) ) {
                 if ( ((RexCall) left).getOperator() != SqlStdOperatorTable.ITEM ) {
                     return false;
                 }

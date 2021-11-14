@@ -20,6 +20,7 @@ package org.polypheny.db.languages.sql.fun;
 import java.math.BigDecimal;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Monotonicity;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.languages.sql.SqlBinaryOperator;
 import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
@@ -39,7 +40,8 @@ public class SqlMonotonicBinaryOperator extends SqlBinaryOperator {
 
 
     @Override
-    public Monotonicity getMonotonicity( SqlOperatorBinding call ) {
+    public Monotonicity getMonotonicity( OperatorBinding rawCall ) {
+        SqlOperatorBinding call = (SqlOperatorBinding) rawCall;
         final Monotonicity mono0 = call.getOperandMonotonicity( 0 );
         final Monotonicity mono1 = call.getOperandMonotonicity( 1 );
 
@@ -134,5 +136,6 @@ public class SqlMonotonicBinaryOperator extends SqlBinaryOperator {
 
         return super.getMonotonicity( call );
     }
+
 }
 

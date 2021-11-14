@@ -28,19 +28,19 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
 import org.polypheny.db.config.PolyphenyDbConnectionProperty;
+import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.ConformanceEnum;
 import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.core.NullCollation;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.languages.NodeToRelConverter;
+import org.polypheny.db.languages.sql.fun.SqlCaseOperator;
+import org.polypheny.db.languages.sql.validate.SqlDelegatingConformance;
+import org.polypheny.db.languages.sql2rel.SqlToRelConverter;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelVisitor;
 import org.polypheny.db.rel.core.CorrelationId;
 import org.polypheny.db.rel.externalize.RelXmlWriter;
-import org.polypheny.db.sql.fun.SqlCaseOperator;
-import org.polypheny.db.sql.validate.SqlConformance;
-import org.polypheny.db.sql.validate.SqlConformanceEnum;
-import org.polypheny.db.sql.validate.SqlDelegatingConformance;
-import org.polypheny.db.sql2rel.SqlToRelConverter;
 import org.polypheny.db.test.DiffRepository;
 import org.polypheny.db.test.catalog.MockCatalogReaderExtended;
 import org.polypheny.db.util.Bug;
@@ -314,7 +314,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
     @Test
     public void testGroupByAlias() {
-        sql( "select empno as d from emp group by d" ).conformance( SqlConformanceEnum.LENIENT ).ok();
+        sql( "select empno as d from emp group by d" ).conformance( ConformanceEnum.LENIENT ).ok();
     }
 
 
@@ -322,19 +322,19 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
     public void testGroupByAliasOfSubExpressionsInProject() {
         final String sql = "select deptno+empno as d, deptno+empno+mgr\n"
                 + "from emp group by d,mgr";
-        sql( sql ).conformance( SqlConformanceEnum.LENIENT ).ok();
+        sql( sql ).conformance( ConformanceEnum.LENIENT ).ok();
     }
 
 
     @Test
     public void testGroupByAliasEqualToColumnName() {
-        sql( "select empno, ename as deptno from emp group by empno, deptno" ).conformance( SqlConformanceEnum.LENIENT ).ok();
+        sql( "select empno, ename as deptno from emp group by empno, deptno" ).conformance( ConformanceEnum.LENIENT ).ok();
     }
 
 
     @Test
     public void testGroupByOrdinal() {
-        sql( "select empno from emp group by 1" ).conformance( SqlConformanceEnum.LENIENT ).ok();
+        sql( "select empno from emp group by 1" ).conformance( ConformanceEnum.LENIENT ).ok();
     }
 
 
@@ -342,13 +342,13 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
     public void testGroupByContainsLiterals() {
         final String sql = "select count(*) from (\n"
                 + "  select 1 from emp group by substring(ename from 2 for 3))";
-        sql( sql ).conformance( SqlConformanceEnum.LENIENT ).ok();
+        sql( sql ).conformance( ConformanceEnum.LENIENT ).ok();
     }
 
 
     @Test
     public void testAliasInHaving() {
-        sql( "select count(empno) as e from emp having e > 1" ).conformance( SqlConformanceEnum.LENIENT ).ok();
+        sql( "select count(empno) as e from emp having e > 1" ).conformance( ConformanceEnum.LENIENT ).ok();
     }
 
 
@@ -1399,7 +1399,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
         final String sql = "select d.deptno, e2.empno_avg\n"
                 + "from dept_nested as d outer apply\n"
                 + " (select avg(e.empno) as empno_avg from UNNEST(d.employees) as e) e2";
-        sql( sql ).conformance( SqlConformanceEnum.LENIENT ).ok();
+        sql( sql ).conformance( ConformanceEnum.LENIENT ).ok();
     }
 
 
@@ -2053,7 +2053,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Tests one of the custom conversions which is recognized by the identity of the operator (in this case, {@link SqlStdOperatorTable#CHARACTER_LENGTH}).
+     * Tests one of the custom conversions which is recognized by the identity of the operator (in this case, {@link org.polypheny.db.core.StdOperatorRegistry #CHARACTER_LENGTH}).
      */
     @Test
     public void testCharLength() {
@@ -2350,7 +2350,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
     public void testInsertSubset() {
         final String sql = "insert into empnullables\n"
                 + "values (50, 'Fred')";
-        sql( sql ).conformance( SqlConformanceEnum.PRAGMATIC_2003 ).ok();
+        sql( sql ).conformance( ConformanceEnum.PRAGMATIC_2003 ).ok();
     }
 
 
@@ -2364,7 +2364,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
     @Test
     public void testInsertSubsetWithCustomInitializerExpressionFactory() {
         final String sql = "insert into empdefaults values (100)";
-        sql( sql ).conformance( SqlConformanceEnum.PRAGMATIC_2003 ).ok();
+        sql( sql ).conformance( ConformanceEnum.PRAGMATIC_2003 ).ok();
     }
 
 
@@ -2380,7 +2380,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
     public void testInsertBindSubset() {
         final String sql = "insert into empnullables\n"
                 + "values (?, ?)";
-        sql( sql ).conformance( SqlConformanceEnum.PRAGMATIC_2003 ).ok();
+        sql( sql ).conformance( ConformanceEnum.PRAGMATIC_2003 ).ok();
     }
 
 
@@ -2394,7 +2394,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
     @Test
     public void testInsertBindSubsetWithCustomInitializerExpressionFactory() {
         final String sql = "insert into empdefaults values (?)";
-        sql( sql ).conformance( SqlConformanceEnum.PRAGMATIC_2003 ).ok();
+        sql( sql ).conformance( ConformanceEnum.PRAGMATIC_2003 ).ok();
     }
 
 
@@ -2402,7 +2402,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
     public void testInsertSubsetView() {
         final String sql = "insert into empnullables_20\n"
                 + "values (10, 'Fred')";
-        sql( sql ).conformance( SqlConformanceEnum.PRAGMATIC_2003 ).ok();
+        sql( sql ).conformance( ConformanceEnum.PRAGMATIC_2003 ).ok();
     }
 
 
@@ -2604,7 +2604,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
     @Ignore
     public void testInsertSubsetModifiableView() {
         final String sql = "insert into EMP_MODIFIABLEVIEW values (10, 'Fred')";
-        sql( sql ).with( getExtendedTester() ).conformance( SqlConformanceEnum.PRAGMATIC_2003 ).ok();
+        sql( sql ).with( getExtendedTester() ).conformance( ConformanceEnum.PRAGMATIC_2003 ).ok();
     }
 
 
@@ -2620,7 +2620,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
     @Ignore
     public void testInsertBindSubsetModifiableView() {
         final String sql = "insert into EMP_MODIFIABLEVIEW values (?, ?)";
-        sql( sql ).conformance( SqlConformanceEnum.PRAGMATIC_2003 ).with( getExtendedTester() ).ok();
+        sql( sql ).conformance( ConformanceEnum.PRAGMATIC_2003 ).with( getExtendedTester() ).ok();
     }
 
 
@@ -3164,10 +3164,10 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
                 + "FROM emp AS e\n"
                 + "WHERE cast(e.empno as bigint) in (130, 131, 132, 133, 134)";
         // No conversion to join since less than IN-list size threshold 10
-        SqlToRelConverter.Config noConvertConfig = SqlToRelConverter.configBuilder().withInSubQueryThreshold( 10 ).build();
+        SqlToRelConverter.Config noConvertConfig = NodeToRelConverter.configBuilder().withInSubQueryThreshold( 10 ).build();
         sql( sql ).withConfig( noConvertConfig ).convertsTo( "${planNotConverted}" );
         // Conversion to join since greater than IN-list size threshold 2
-        SqlToRelConverter.Config convertConfig = SqlToRelConverter.configBuilder().withInSubQueryThreshold( 2 ).build();
+        SqlToRelConverter.Config convertConfig = NodeToRelConverter.configBuilder().withInSubQueryThreshold( 2 ).build();
         sql( sql ).withConfig( convertConfig ).convertsTo( "${planConverted}" );
     }
 
@@ -3192,7 +3192,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
                 + "FROM (SELECT * FROM SALES.NATION)\n"
                 + "GROUP BY n_regionkey";
 
-        sql( sql ).conformance( new SqlDelegatingConformance( SqlConformanceEnum.DEFAULT ) {
+        sql( sql ).conformance( new SqlDelegatingConformance( ConformanceEnum.DEFAULT ) {
             @Override
             public boolean isGroupByAlias() {
                 return true;
@@ -3235,6 +3235,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
         } );
     }
 */
+
 
     @Test
     public void testUnionInFrom() {
@@ -3425,7 +3426,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
         Properties properties = new Properties();
         properties.setProperty( PolyphenyDbConnectionProperty.DEFAULT_NULL_COLLATION.camelName(), NullCollation.LOW.name() );
         PolyphenyDbConnectionConfigImpl connectionConfig = new PolyphenyDbConnectionConfigImpl( properties );
-        TesterImpl tester = new TesterImpl( getDiffRepos(), false, false, true, false, null, null, SqlToRelConverter.Config.DEFAULT, SqlConformanceEnum.DEFAULT, Contexts.of( connectionConfig ) );
+        TesterImpl tester = new TesterImpl( getDiffRepos(), false, false, true, false, null, null, SqlToRelConverter.Config.DEFAULT, ConformanceEnum.DEFAULT, Contexts.of( connectionConfig ) );
         sql( sql ).with( tester ).ok();
     }
 
@@ -3591,6 +3592,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
                 stack.pop();
             }
         }
+
     }
 
 
@@ -3605,10 +3607,10 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
         private final Tester tester;
         private final boolean trim;
         private final SqlToRelConverter.Config config;
-        private final SqlConformance conformance;
+        private final Conformance conformance;
 
 
-        Sql( String sql, boolean expand, boolean decorrelate, Tester tester, boolean trim, SqlToRelConverter.Config config, SqlConformance conformance ) {
+        Sql( String sql, boolean expand, boolean decorrelate, Tester tester, boolean trim, SqlToRelConverter.Config config, Conformance conformance ) {
             this.sql = sql;
             this.expand = expand;
             this.decorrelate = decorrelate;
@@ -3658,9 +3660,11 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
         }
 
 
-        public Sql conformance( SqlConformance conformance ) {
+        public Sql conformance( Conformance conformance ) {
             return new Sql( sql, expand, decorrelate, tester, trim, config, conformance );
         }
+
     }
+
 }
 

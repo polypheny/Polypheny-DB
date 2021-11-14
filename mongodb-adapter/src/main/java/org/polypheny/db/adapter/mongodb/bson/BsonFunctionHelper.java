@@ -29,7 +29,7 @@ import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 
 public class BsonFunctionHelper extends BsonDocument {
 
@@ -99,9 +99,9 @@ public class BsonFunctionHelper extends BsonDocument {
 
 
     private static BsonValue getDynamicFunction( RexNode rexNode ) {
-        if ( rexNode.isA( SqlKind.DYNAMIC_PARAM ) ) {
+        if ( rexNode.isA( Kind.DYNAMIC_PARAM ) ) {
             return new BsonDynamic( (RexDynamicParam) rexNode ).setIsFunc( true );
-        } else if ( rexNode.isA( SqlKind.CAST ) ) {
+        } else if ( rexNode.isA( Kind.CAST ) ) {
             RexCall call = (RexCall) rexNode;
             return getDynamicFunction( call.operands.get( 0 ) );
         }
@@ -138,13 +138,13 @@ public class BsonFunctionHelper extends BsonDocument {
 
 
     private static BsonValue getVal( RexNode rexNode, MongoRowType rowType, Implementor implementor ) {
-        if ( rexNode.isA( SqlKind.INPUT_REF ) ) {
+        if ( rexNode.isA( Kind.INPUT_REF ) ) {
             RexInputRef rex = (RexInputRef) rexNode;
             return new BsonString( "$" + rowType.getPhysicalName( rowType.getFieldNames().get( rex.getIndex() ), implementor ) );
-        } else if ( rexNode.isA( SqlKind.ARRAY_VALUE_CONSTRUCTOR ) ) {
+        } else if ( rexNode.isA( Kind.ARRAY_VALUE_CONSTRUCTOR ) ) {
             RexCall rex = (RexCall) rexNode;
             return BsonUtil.getBsonArray( rex, implementor.getBucket() );
-        } else if ( rexNode.isA( SqlKind.DYNAMIC_PARAM ) ) {
+        } else if ( rexNode.isA( Kind.DYNAMIC_PARAM ) ) {
             RexDynamicParam rex = (RexDynamicParam) rexNode;
             return new BsonDynamic( rex );
         }

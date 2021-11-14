@@ -89,7 +89,7 @@ public abstract class SqlNode implements Node {
     /**
      * Returns whether this node is a member of an aggregate category.
      *
-     * For example, {@code node.isA(SqlKind.QUERY)} returns {@code true} if the node is a SELECT, INSERT, UPDATE etc.
+     * For example, {@code node.isA(Kind.QUERY)} returns {@code true} if the node is a SELECT, INSERT, UPDATE etc.
      *
      * This method is shorthand: {@code node.isA(category)} is always equivalent to {@code node.getKind().belongsTo(category)}.
      *

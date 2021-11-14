@@ -34,11 +34,11 @@
 package org.polypheny.db.config;
 
 
-import javassist.compiler.Lex;
 import org.apache.calcite.avatica.ConnectionConfig;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.Lex;
 import org.polypheny.db.core.NullCollation;
 
 /**

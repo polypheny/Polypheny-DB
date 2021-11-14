@@ -21,6 +21,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.ExecutableStatement;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.ParserPos;
@@ -33,7 +34,6 @@ import org.polypheny.db.languages.sql.SqlDrop;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
-import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.transaction.Statement;
 
@@ -78,9 +78,9 @@ public class SqlDropSchema extends SqlDrop implements ExecutableStatement {
         try {
             DdlManager.getInstance().dropSchema( context.getDatabaseId(), name.getSimple(), ifExists, statement );
         } catch ( SchemaNotExistException e ) {
-            throw SqlUtil.newContextException( name.getPos(), RESOURCE.schemaNotFound( name.getSimple() ) );
+            throw CoreUtil.newContextException( name.getPos(), RESOURCE.schemaNotFound( name.getSimple() ) );
         } catch ( DdlOnSourceException e ) {
-            throw SqlUtil.newContextException( name.getPos(), RESOURCE.ddlOnSourceTable() );
+            throw CoreUtil.newContextException( name.getPos(), RESOURCE.ddlOnSourceTable() );
         }
     }
 

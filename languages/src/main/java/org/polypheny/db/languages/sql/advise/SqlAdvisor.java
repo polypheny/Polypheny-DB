@@ -29,6 +29,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import org.apache.calcite.avatica.util.Casing;
+import org.polypheny.db.core.Advisor;
 import org.polypheny.db.core.ParseException;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.SqlMoniker;
@@ -54,7 +55,7 @@ import org.slf4j.Logger;
 /**
  * An assistant which offers hints and corrections to a partially-formed SQL statement. It is used in the SQL editor user-interface.
  */
-public class SqlAdvisor {
+public class SqlAdvisor implements Advisor {
 
     public static final Logger LOGGER = PolyphenyDbTrace.PARSER_LOGGER;
     private static final String HINT_TOKEN = "_suggest_";
@@ -495,7 +496,7 @@ public class SqlAdvisor {
      * @return metadata
      */
     protected SqlAbstractParserImpl.Metadata getParserMetadata() {
-        SqlParser parser = Parser.create( "", parserConfig );
+        SqlParser parser = (SqlParser) Parser.create( "", parserConfig );
         return parser.getMetadata();
     }
 
@@ -508,8 +509,8 @@ public class SqlAdvisor {
      * @throws ParseException if not syntactically valid
      */
     protected SqlNode parseQuery( String sql ) throws ParseException {
-        SqlParser parser = Parser.create( sql, parserConfig );
-        return parser.parseStmt();
+        Parser parser = Parser.create( sql, parserConfig );
+        return (SqlNode) parser.parseStmt();
     }
 
 
@@ -630,6 +631,8 @@ public class SqlAdvisor {
         public String getMessage() {
             return errorMsg;
         }
+
     }
+
 }
 

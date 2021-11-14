@@ -34,9 +34,9 @@
 package org.polypheny.db.rex;
 
 
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.sql.SqlKind;
 
 
 /**
@@ -89,8 +89,8 @@ public class RexFieldAccess extends RexNode {
 
 
     @Override
-    public SqlKind getKind() {
-        return SqlKind.FIELD_ACCESS;
+    public Kind getKind() {
+        return Kind.FIELD_ACCESS;
     }
 
 
@@ -135,5 +135,6 @@ public class RexFieldAccess extends RexNode {
         result = 31 * result + field.hashCode();
         return result;
     }
+
 }
 

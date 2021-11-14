@@ -24,12 +24,14 @@ import java.util.Objects;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.languages.sql.SqlUtil;
+import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
@@ -54,6 +56,12 @@ public class SqlAlterTableOwner extends SqlAlterTable {
 
     @Override
     public List<Node> getOperandList() {
+        return ImmutableNullableList.of( table, owner );
+    }
+
+
+    @Override
+    public List<SqlNode> getSqlOperandList() {
         return ImmutableNullableList.of( table, owner );
     }
 
@@ -84,7 +92,7 @@ public class SqlAlterTableOwner extends SqlAlterTable {
         try {
             DdlManager.getInstance().alterTableOwner( catalogTable, owner.getSimple() );
         } catch ( UnknownUserException e ) {
-            throw SqlUtil.newContextException( owner.getPos(), RESOURCE.userNotFound( owner.getSimple() ) );
+            throw CoreUtil.newContextException( owner.getPos(), RESOURCE.userNotFound( owner.getSimple() ) );
         }
     }
 

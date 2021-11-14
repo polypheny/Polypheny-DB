@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql.validate;
+package org.polypheny.db.core;
 
 
 import com.google.common.collect.ImmutableList;
@@ -24,23 +24,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import org.polypheny.db.core.NameMatcher;
+import java.util.stream.Collectors;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.util.Util;
 
 
 /**
  * Helpers for {@link NameMatcher}.
  */
-public class SqlNameMatchers {
+public class NameMatchers {
 
     private static final BaseMatcher CASE_SENSITIVE = new BaseMatcher( true );
     private static final BaseMatcher CASE_INSENSITIVE = new BaseMatcher( false );
 
 
-    private SqlNameMatchers() {
+    private NameMatchers() {
     }
 
 
@@ -142,7 +141,16 @@ public class SqlNameMatchers {
 
         @Override
         public String bestString() {
-            return SqlIdentifier.getString( bestMatch() );
+            return Util.sepList( toStar( bestMatch() ), "." );
+        }
+
+
+        public List<String> toStar( List<String> names ) { // same as in SqlLiteral todo dl deduplicate
+            return names.stream().map( s -> s.equals( "" )
+                    ? "*"
+                    : s.equals( "*" )
+                            ? "\"*\""
+                            : s ).collect( Collectors.toList() );
         }
 
 

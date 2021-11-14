@@ -19,7 +19,9 @@ package org.polypheny.db.languages.sql.fun;
 
 import com.google.common.base.Preconditions;
 import java.util.Objects;
+import lombok.Getter;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.QuantifyOperator;
 
 
 /**
@@ -32,8 +34,9 @@ import org.polypheny.db.core.Kind;
  *
  * <code>ANY</code> is a synonym for <code>SOME</code>.
  */
-public class SqlQuantifyOperator extends SqlInOperator {
+public class SqlQuantifyOperator extends SqlInOperator implements QuantifyOperator {
 
+    @Getter
     public final Kind comparisonKind;
 
 
@@ -55,5 +58,6 @@ public class SqlQuantifyOperator extends SqlInOperator {
         Preconditions.checkArgument( kind == Kind.SOME
                 || kind == Kind.ALL );
     }
+
 }
 

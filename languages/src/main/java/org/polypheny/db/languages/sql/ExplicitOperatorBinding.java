@@ -18,6 +18,7 @@ package org.polypheny.db.languages.sql;
 
 
 import java.util.List;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.SqlValidatorException;
 import org.polypheny.db.rel.type.RelDataType;
@@ -75,7 +76,7 @@ public class ExplicitOperatorBinding extends SqlOperatorBinding {
         if ( delegate != null ) {
             return delegate.newError( e );
         } else {
-            return SqlUtil.newContextException( ParserPos.ZERO, e );
+            return CoreUtil.newContextException( ParserPos.ZERO, e );
         }
     }
 

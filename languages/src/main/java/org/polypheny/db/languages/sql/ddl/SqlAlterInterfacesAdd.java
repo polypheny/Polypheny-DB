@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.iface.QueryInterfaceManager;
@@ -61,6 +62,12 @@ public class SqlAlterInterfacesAdd extends SqlAlter {
 
     @Override
     public List<Node> getOperandList() {
+        return ImmutableNullableList.of( uniqueName, clazzName, config );
+    }
+
+
+    @Override
+    public List<SqlNode> getSqlOperandList() {
         return ImmutableNullableList.of( uniqueName, clazzName, config );
     }
 

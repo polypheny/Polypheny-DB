@@ -18,7 +18,10 @@ package org.polypheny.db.languages.sql;
 
 
 import java.util.List;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -32,8 +35,8 @@ public class SqlOrderBy extends SqlCall {
 
     public static final SqlSpecialOperator OPERATOR = new Operator() {
         @Override
-        public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
-            return new SqlOrderBy( pos, operands[0], (SqlNodeList) operands[1], operands[2], operands[3] );
+        public Call createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
+            return new SqlOrderBy( pos, (SqlNode) operands[0], (SqlNodeList) operands[1], (SqlNode) operands[2], (SqlNode) operands[3] );
         }
     };
 
@@ -60,7 +63,7 @@ public class SqlOrderBy extends SqlCall {
 
     @Override
     public Operator getOperator() {
-        return OPERATOR;
+        return (Operator) OPERATOR;
     }
 
 
@@ -118,6 +121,8 @@ public class SqlOrderBy extends SqlCall {
             }
             writer.endList( frame );
         }
+
     }
+
 }
 

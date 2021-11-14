@@ -20,8 +20,8 @@ package org.polypheny.db.languages.sql.fun;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Monotonicity;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.SqlSyntax;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
@@ -48,7 +48,7 @@ public class SqlBaseContextVariable extends SqlFunction {
 
     // All of the string constants are monotonic.
     @Override
-    public Monotonicity getMonotonicity( SqlOperatorBinding call ) {
+    public Monotonicity getMonotonicity( OperatorBinding call ) {
         return Monotonicity.CONSTANT;
     }
 

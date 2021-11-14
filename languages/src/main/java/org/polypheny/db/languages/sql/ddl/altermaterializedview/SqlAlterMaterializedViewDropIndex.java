@@ -22,13 +22,15 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.languages.sql.SqlUtil;
+import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.ddl.SqlAlterMaterializedView;
 import org.polypheny.db.transaction.Statement;
@@ -55,6 +57,12 @@ public class SqlAlterMaterializedViewDropIndex extends SqlAlterMaterializedView 
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( table, indexName );
+    }
+
+
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
         writer.keyword( "MATERIALIZED VIEW" );
@@ -76,7 +84,7 @@ public class SqlAlterMaterializedViewDropIndex extends SqlAlterMaterializedView 
         try {
             DdlManager.getInstance().dropIndex( catalogTable, indexName.getSimple(), statement );
         } catch ( DdlOnSourceException e ) {
-            throw SqlUtil.newContextException( table.getPos(), RESOURCE.ddlOnSourceTable() );
+            throw CoreUtil.newContextException( table.getPos(), RESOURCE.ddlOnSourceTable() );
         }
     }
 

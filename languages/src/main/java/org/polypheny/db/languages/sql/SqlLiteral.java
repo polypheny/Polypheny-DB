@@ -25,6 +25,7 @@ import java.util.Objects;
 import lombok.Getter;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.core.Collation;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.Monotonicity;
@@ -573,7 +574,7 @@ public class SqlLiteral extends SqlNode implements Literal {
                     try {
                         return bd.intValueExact();
                     } catch ( ArithmeticException e ) {
-                        throw SqlUtil.newContextException( getPos(), Static.RESOURCE.numberLiteralOutOfRange( bd.toString() ) );
+                        throw CoreUtil.newContextException( getPos(), Static.RESOURCE.numberLiteralOutOfRange( bd.toString() ) );
                     }
                 } else {
                     return bd.intValue();
@@ -600,7 +601,7 @@ public class SqlLiteral extends SqlNode implements Literal {
                     try {
                         return bd.longValueExact();
                     } catch ( ArithmeticException e ) {
-                        throw SqlUtil.newContextException( getPos(), Static.RESOURCE.numberLiteralOutOfRange( bd.toString() ) );
+                        throw CoreUtil.newContextException( getPos(), Static.RESOURCE.numberLiteralOutOfRange( bd.toString() ) );
                     }
                 } else {
                     return bd.longValue();
@@ -824,7 +825,7 @@ public class SqlLiteral extends SqlNode implements Literal {
         try {
             bits = BitString.createFromHexString( s );
         } catch ( NumberFormatException e ) {
-            throw SqlUtil.newContextException( pos, Static.RESOURCE.binaryLiteralInvalid() );
+            throw CoreUtil.newContextException( pos, Static.RESOURCE.binaryLiteralInvalid() );
         }
         return new SqlBinaryStringLiteral( bits, pos );
     }
@@ -842,7 +843,7 @@ public class SqlLiteral extends SqlNode implements Literal {
         try {
             bits = BitString.createFromBytes( bytes );
         } catch ( NumberFormatException e ) {
-            throw SqlUtil.newContextException( pos, Static.RESOURCE.binaryLiteralInvalid() );
+            throw CoreUtil.newContextException( pos, Static.RESOURCE.binaryLiteralInvalid() );
         }
         return new SqlBinaryStringLiteral( bits, pos );
     }
@@ -901,14 +902,14 @@ public class SqlLiteral extends SqlNode implements Literal {
                     }
                 }
                 if ( (i + 5) > n ) {
-                    throw SqlUtil.newContextException( getPos(), Static.RESOURCE.unicodeEscapeMalformed( i ) );
+                    throw CoreUtil.newContextException( getPos(), Static.RESOURCE.unicodeEscapeMalformed( i ) );
                 }
                 final String u = s.substring( i + 1, i + 5 );
                 final int v;
                 try {
                     v = Integer.parseInt( u, 16 );
                 } catch ( NumberFormatException ex ) {
-                    throw SqlUtil.newContextException( getPos(), Static.RESOURCE.unicodeEscapeMalformed( i ) );
+                    throw CoreUtil.newContextException( getPos(), Static.RESOURCE.unicodeEscapeMalformed( i ) );
                 }
                 sb.append( (char) (v & 0xFFFF) );
 

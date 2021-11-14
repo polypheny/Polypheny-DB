@@ -32,6 +32,8 @@ import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
@@ -43,7 +45,6 @@ import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
-import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
@@ -89,6 +90,12 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( table, columnList, storeName, indexMethod, indexName );
+    }
+
+
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
         writer.keyword( "TABLE" );
@@ -127,7 +134,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
             storeInstance = getDataStoreInstance( storeName );
 
             if ( storeInstance == null ) {
-                throw SqlUtil.newContextException(
+                throw CoreUtil.newContextException(
                         storeName.getPos(),
                         RESOURCE.unknownAdapter( storeName.getSimple() ) );
             }
@@ -139,27 +146,27 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
             DdlManager.getInstance().addIndex(
                     catalogTable,
                     indexMethodName,
-                    columnList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),
+                    columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
                     indexName.getSimple(),
                     unique,
                     storeInstance,
                     statement );
         } catch ( UnknownColumnException e ) {
-            throw SqlUtil.newContextException( columnList.getPos(), RESOURCE.columnNotFound( e.getColumnName() ) );
+            throw CoreUtil.newContextException( columnList.getPos(), RESOURCE.columnNotFound( e.getColumnName() ) );
         } catch ( UnknownSchemaException e ) {
-            throw SqlUtil.newContextException( table.getPos(), RESOURCE.schemaNotFound( e.getSchemaName() ) );
+            throw CoreUtil.newContextException( table.getPos(), RESOURCE.schemaNotFound( e.getSchemaName() ) );
         } catch ( UnknownTableException e ) {
-            throw SqlUtil.newContextException( table.getPos(), RESOURCE.tableNotFound( e.getTableName() ) );
+            throw CoreUtil.newContextException( table.getPos(), RESOURCE.tableNotFound( e.getTableName() ) );
         } catch ( UnknownIndexMethodException e ) {
-            throw SqlUtil.newContextException(
+            throw CoreUtil.newContextException(
                     indexMethod.getPos(),
                     RESOURCE.unknownIndexMethod( indexMethod.getSimple() ) );
         } catch ( AlterSourceException e ) {
-            throw SqlUtil.newContextException( table.getPos(), RESOURCE.ddlOnSourceTable() );
+            throw CoreUtil.newContextException( table.getPos(), RESOURCE.ddlOnSourceTable() );
         } catch ( IndexExistsException e ) {
-            throw SqlUtil.newContextException( indexName.getPos(), RESOURCE.indexExists( indexName.getSimple() ) );
+            throw CoreUtil.newContextException( indexName.getPos(), RESOURCE.indexExists( indexName.getSimple() ) );
         } catch ( MissingColumnPlacementException e ) {
-            throw SqlUtil.newContextException(
+            throw CoreUtil.newContextException(
                     storeName.getPos(),
                     RESOURCE.missingColumnPlacement( e.getColumnName(), storeInstance.getUniqueName() ) );
         } catch ( GenericCatalogException | UnknownKeyException | UnknownUserException | UnknownDatabaseException | TransactionException e ) {

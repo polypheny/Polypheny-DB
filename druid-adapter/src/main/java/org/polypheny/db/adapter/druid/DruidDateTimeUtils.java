@@ -51,7 +51,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.TimestampString;
@@ -187,7 +187,7 @@ public class DruidDateTimeUtils {
             case GREATER_THAN:
             case GREATER_THAN_OR_EQUAL: {
                 final Long value;
-                SqlKind kind = call.getKind();
+                Kind kind = call.getKind();
                 if ( call.getOperands().get( 0 ) instanceof RexInputRef && literalValue( call.getOperands().get( 1 ) ) != null ) {
                     value = literalValue( call.getOperands().get( 1 ) );
                 } else if ( call.getOperands().get( 1 ) instanceof RexInputRef && literalValue( call.getOperands().get( 0 ) ) != null ) {
@@ -282,7 +282,7 @@ public class DruidDateTimeUtils {
                 final RexNode operand = call.getOperands().get( 0 );
                 final RelDataType callType = call.getType();
                 final RelDataType operandType = operand.getType();
-                if ( operand.getKind() == SqlKind.LITERAL
+                if ( operand.getKind() == Kind.LITERAL
                         && callType.getPolyType() == operandType.getPolyType()
                         && (callType.getPolyType() == PolyType.DATE
                         || callType.getPolyType() == PolyType.TIMESTAMP

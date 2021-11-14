@@ -42,7 +42,7 @@ import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanOperand;
@@ -233,7 +233,7 @@ public class CottontailFilter extends Filter implements CottontailRel {
                 boolean negated ) {
             Expression rightSideData;
 
-            if ( left.getKind() != SqlKind.INPUT_REF ) {
+            if ( left.getKind() != Kind.INPUT_REF ) {
                 return null;
             }
 

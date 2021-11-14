@@ -213,7 +213,7 @@ public class AggregationTest {
 //
 //
 //    /**
-//     * Testing {@link SqlKind#ANY_VALUE} aggregate function
+//     * Testing {@link Kind#ANY_VALUE} aggregate function
 //     */
 //    @Test
 //    public void anyValue() {

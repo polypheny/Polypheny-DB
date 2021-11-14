@@ -55,9 +55,13 @@ public abstract class SqlCall extends SqlNode implements Call {
     }
 
 
+    public abstract List<SqlNode> getSqlOperandList();
+
+
     /**
      * Changes the value of an operand. Allows some rewrite by {@link SqlValidator}; use sparingly.
-     *  @param i Operand index
+     *
+     * @param i Operand index
      * @param operand Operand value
      */
     @Override
@@ -87,7 +91,7 @@ public abstract class SqlCall extends SqlNode implements Call {
     @Override
     public Node clone( ParserPos pos ) {
         final List<Node> operandList = getOperandList();
-        return (Node) getOperator().createCall( getFunctionQuantifier(), pos, operandList.toArray( new Node[0] ) );
+        return getOperator().createCall( getFunctionQuantifier(), pos, operandList.toArray( new Node[0] ) );
     }
 
 
@@ -180,7 +184,7 @@ public abstract class SqlCall extends SqlNode implements Call {
     public Monotonicity getMonotonicity( SqlValidatorScope scope ) {
         // Delegate to operator.
         final SqlCallBinding binding = new SqlCallBinding( scope.getValidator(), scope, this );
-        return ((SqlOperator) getOperator()).getMonotonicity( binding );
+        return getOperator().getMonotonicity( binding );
     }
 
 
@@ -190,7 +194,7 @@ public abstract class SqlCall extends SqlNode implements Call {
      * @return boolean true if function call to COUNT(*)
      */
     public boolean isCountStar() {
-        if ( ((SqlOperator) getOperator()).isName( "COUNT" ) && operandCount() == 1 ){
+        if ( ((SqlOperator) getOperator()).isName( "COUNT" ) && operandCount() == 1 ) {
             final SqlNode parm = operand( 0 );
             if ( parm instanceof SqlIdentifier ) {
                 SqlIdentifier id = (SqlIdentifier) parm;

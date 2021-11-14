@@ -42,7 +42,7 @@ import org.polypheny.db.rel.RelInput;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.metadata.RelMdUtil;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 
 
 /**
@@ -55,7 +55,7 @@ import org.polypheny.db.sql.SqlKind;
 public abstract class Minus extends SetOp {
 
     public Minus( RelOptCluster cluster, RelTraitSet traits, List<RelNode> inputs, boolean all ) {
-        super( cluster, traits, inputs, SqlKind.EXCEPT, all );
+        super( cluster, traits, inputs, Kind.EXCEPT, all );
     }
 
 

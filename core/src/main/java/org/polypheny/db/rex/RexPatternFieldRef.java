@@ -34,8 +34,8 @@
 package org.polypheny.db.rex;
 
 
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlKind;
 
 
 /**
@@ -81,8 +81,9 @@ public class RexPatternFieldRef extends RexInputRef {
 
 
     @Override
-    public SqlKind getKind() {
-        return SqlKind.PATTERN_INPUT_REF;
+    public Kind getKind() {
+        return Kind.PATTERN_INPUT_REF;
     }
+
 }
 

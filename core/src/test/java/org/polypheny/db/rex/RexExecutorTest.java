@@ -55,6 +55,7 @@ import org.junit.Test;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.plan.RelOptCluster;
@@ -65,10 +66,9 @@ import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.sql.SqlBinaryOperator;
-import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.fun.SqlMonotonicBinaryOperator;
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.transaction.Statement;
@@ -275,7 +275,7 @@ public class RexExecutorTest {
     private static final SqlBinaryOperator PLUS_RANDOM =
             new SqlMonotonicBinaryOperator(
                     "+",
-                    SqlKind.PLUS,
+                    Kind.PLUS,
                     40,
                     true,
                     ReturnTypes.NULLABLE_SUM,

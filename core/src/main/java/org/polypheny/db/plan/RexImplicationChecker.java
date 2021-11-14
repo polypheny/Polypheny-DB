@@ -54,7 +54,7 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlCastFunction;
 import org.polypheny.db.util.Pair;
@@ -319,20 +319,20 @@ public class RexImplicationChecker {
             final List<Pair<SqlOperator, RexNode>> firstUsageList = firstUsage.usageList;
             final int firstLen = firstUsageList.size();
 
-            final SqlKind fKind = firstUsageList.get( 0 ).getKey().getKind();
-            final SqlKind sKind = secondUsageList.get( 0 ).getKey().getKind();
-            final SqlKind fKind2 = (firstUsageList.size() == 2) ? firstUsageList.get( 1 ).getKey().getKind() : null;
-            final SqlKind sKind2 = (secondUsageList.size() == 2) ? secondUsageList.get( 1 ).getKey().getKind() : null;
+            final Kind fKind = firstUsageList.get( 0 ).getKey().getKind();
+            final Kind sKind = secondUsageList.get( 0 ).getKey().getKind();
+            final Kind fKind2 = (firstUsageList.size() == 2) ? firstUsageList.get( 1 ).getKey().getKind() : null;
+            final Kind sKind2 = (secondUsageList.size() == 2) ? secondUsageList.get( 1 ).getKey().getKind() : null;
 
             if ( firstLen == 2 && secondLen == 2
                     && !(isEquivalentOp( fKind, sKind ) && isEquivalentOp( fKind2, sKind2 ))
                     && !(isEquivalentOp( fKind, sKind2 ) && isEquivalentOp( fKind2, sKind )) ) {
                 return false;
             } else if ( firstLen == 1 && secondLen == 1
-                    && fKind != SqlKind.EQUALS && !isSupportedUnaryOperators( sKind )
+                    && fKind != Kind.EQUALS && !isSupportedUnaryOperators( sKind )
                     && !isEquivalentOp( fKind, sKind ) ) {
                 return false;
-            } else if ( firstLen == 1 && secondLen == 2 && fKind != SqlKind.EQUALS ) {
+            } else if ( firstLen == 1 && secondLen == 2 && fKind != Kind.EQUALS ) {
                 return false;
             } else if ( firstLen == 2 && secondLen == 1 ) {
                 // Allow only cases like
@@ -350,7 +350,7 @@ public class RexImplicationChecker {
     }
 
 
-    private boolean isSupportedUnaryOperators( SqlKind kind ) {
+    private boolean isSupportedUnaryOperators( Kind kind ) {
         switch ( kind ) {
             case IS_NOT_NULL:
             case IS_NULL:
@@ -361,17 +361,17 @@ public class RexImplicationChecker {
     }
 
 
-    private boolean isEquivalentOp( SqlKind fKind, SqlKind sKind ) {
+    private boolean isEquivalentOp( Kind fKind, Kind sKind ) {
         switch ( sKind ) {
             case GREATER_THAN:
             case GREATER_THAN_OR_EQUAL:
-                if ( !(fKind == SqlKind.GREATER_THAN) && !(fKind == SqlKind.GREATER_THAN_OR_EQUAL) ) {
+                if ( !(fKind == Kind.GREATER_THAN) && !(fKind == Kind.GREATER_THAN_OR_EQUAL) ) {
                     return false;
                 }
                 break;
             case LESS_THAN:
             case LESS_THAN_OR_EQUAL:
-                if ( !(fKind == SqlKind.LESS_THAN) && !(fKind == SqlKind.LESS_THAN_OR_EQUAL) ) {
+                if ( !(fKind == Kind.LESS_THAN) && !(fKind == Kind.LESS_THAN_OR_EQUAL) ) {
                     return false;
                 }
                 break;
@@ -383,17 +383,17 @@ public class RexImplicationChecker {
     }
 
 
-    private boolean isOppositeOp( SqlKind fKind, SqlKind sKind ) {
+    private boolean isOppositeOp( Kind fKind, Kind sKind ) {
         switch ( sKind ) {
             case GREATER_THAN:
             case GREATER_THAN_OR_EQUAL:
-                if ( !(fKind == SqlKind.LESS_THAN) && !(fKind == SqlKind.LESS_THAN_OR_EQUAL) ) {
+                if ( !(fKind == Kind.LESS_THAN) && !(fKind == Kind.LESS_THAN_OR_EQUAL) ) {
                     return false;
                 }
                 break;
             case LESS_THAN:
             case LESS_THAN_OR_EQUAL:
-                if ( !(fKind == SqlKind.GREATER_THAN) && !(fKind == SqlKind.GREATER_THAN_OR_EQUAL) ) {
+                if ( !(fKind == Kind.GREATER_THAN) && !(fKind == Kind.GREATER_THAN_OR_EQUAL) ) {
                     return false;
                 }
                 break;
@@ -461,7 +461,7 @@ public class RexImplicationChecker {
             final List<RexNode> operands = call.getOperands();
             RexNode first = removeCast( operands.get( 0 ) );
 
-            if ( first.isA( SqlKind.INPUT_REF ) ) {
+            if ( first.isA( Kind.INPUT_REF ) ) {
                 updateUsage( call.getOperator(), (RexInputRef) first, null );
             }
         }
@@ -472,11 +472,11 @@ public class RexImplicationChecker {
             RexNode first = removeCast( operands.get( 0 ) );
             RexNode second = removeCast( operands.get( 1 ) );
 
-            if ( first.isA( SqlKind.INPUT_REF ) && second.isA( SqlKind.LITERAL ) ) {
+            if ( first.isA( Kind.INPUT_REF ) && second.isA( Kind.LITERAL ) ) {
                 updateUsage( call.getOperator(), (RexInputRef) first, second );
             }
 
-            if ( first.isA( SqlKind.LITERAL ) && second.isA( SqlKind.INPUT_REF ) ) {
+            if ( first.isA( Kind.LITERAL ) && second.isA( Kind.INPUT_REF ) ) {
                 updateUsage( reverse( call.getOperator() ), (RexInputRef) second, first );
             }
         }

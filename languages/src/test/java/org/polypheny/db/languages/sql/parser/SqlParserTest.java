@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.parser;
+package org.polypheny.db.languages.sql.parser;
 
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -49,8 +49,8 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.sql.SqlDialect;
-import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlSetOption;
 import org.polypheny.db.sql.dialect.AnsiSqlDialect;
@@ -652,7 +652,7 @@ public class SqlParserTest {
         return new BaseMatcher<SqlNode>() {
             @Override
             public boolean matches( Object item ) {
-                return item instanceof SqlNode && SqlKind.DDL.contains( ((SqlNode) item).getKind() );
+                return item instanceof SqlNode && Kind.DDL.contains( ((SqlNode) item).getKind() );
             }
 
 

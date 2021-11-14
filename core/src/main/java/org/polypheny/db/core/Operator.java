@@ -26,7 +26,7 @@ import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
 import org.polypheny.db.util.Litmus;
 
-public abstract class Operator implements Node {
+public abstract class Operator {
 
     /**
      * See {@link Kind}. It's possible to have a name that doesn't match the kind
@@ -276,6 +276,20 @@ public abstract class Operator implements Node {
 
     public abstract RelDataType inferReturnType( OperatorBinding opBinding );
 
+    public abstract RelDataType deriveType( Validator validator, ValidatorScope scope, Call call );
+
     public abstract RelDataType inferReturnType( RelDataTypeFactory typeFactory, List<RelDataType> operandTypes );
+
+
+    /**
+     * Returns whether a call to this operator is monotonic.
+     *
+     * Default implementation returns {@link Monotonicity#NOT_MONOTONIC}.
+     *
+     * @param call Call to this operator with particular arguments and information about the monotonicity of the arguments
+     */
+    public Monotonicity getMonotonicity( OperatorBinding call ) {
+        return Monotonicity.NOT_MONOTONIC;
+    }
 
 }

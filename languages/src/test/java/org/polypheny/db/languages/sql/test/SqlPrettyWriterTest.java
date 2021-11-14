@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.test;
+package org.polypheny.db.languages.sql.test;
 
 
 import static org.junit.Assert.assertTrue;
@@ -23,13 +23,13 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.polypheny.db.sql.SqlCall;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.dialect.AnsiSqlDialect;
-import org.polypheny.db.sql.parser.SqlParseException;
-import org.polypheny.db.sql.parser.SqlParser;
-import org.polypheny.db.sql.pretty.SqlPrettyWriter;
+import org.polypheny.db.core.ParseException;
+import org.polypheny.db.languages.Parser;
+import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlWriter;
+import org.polypheny.db.languages.sql.dialect.AnsiSqlDialect;
+import org.polypheny.db.languages.sql.pretty.SqlPrettyWriter;
 import org.polypheny.db.test.DiffRepository;
 import org.polypheny.db.util.Litmus;
 
@@ -59,8 +59,8 @@ public class SqlPrettyWriterTest {
     protected SqlNode parseQuery( String sql ) {
         SqlNode node;
         try {
-            node = SqlParser.create( sql ).parseQuery();
-        } catch ( SqlParseException e ) {
+            node = (SqlNode) Parser.create( sql ).parseQuery();
+        } catch ( ParseException e ) {
             String message = "Received error while parsing SQL '" + sql + "'; error is:" + NL + e.toString();
             throw new AssertionError( message );
         }
@@ -362,4 +362,5 @@ public class SqlPrettyWriterTest {
         String actual = prettyWriter.format( node );
         getDiffRepos().assertEquals( "formatted", "${formatted}", actual );
     }
+
 }

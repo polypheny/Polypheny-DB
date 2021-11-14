@@ -77,7 +77,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.Pair;
@@ -646,7 +646,7 @@ public class DruidRules {
 
         // Removes the IS_TRUE in front of RexCalls, if they exist
         private static RexNode stripFilter( RexNode node ) {
-            if ( node.getKind() == SqlKind.IS_TRUE ) {
+            if ( node.getKind() == Kind.IS_TRUE ) {
                 return ((RexCall) node).getOperands().get( 0 );
             }
             return node;

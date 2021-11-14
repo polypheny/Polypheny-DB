@@ -17,10 +17,10 @@
 package org.polypheny.db.languages.sql.fun;
 
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.languages.sql.SqlAggFunction;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Optionality;
@@ -44,6 +44,12 @@ public class SqlSingleValueAggFunction extends SqlAggFunction {
                 false,
                 false,
                 Optionality.FORBIDDEN );
+    }
+
+
+    @Override
+    public FunctionType getFunctionType() {
+        return FunctionType.SINGLE_VALUE;
     }
 
 }

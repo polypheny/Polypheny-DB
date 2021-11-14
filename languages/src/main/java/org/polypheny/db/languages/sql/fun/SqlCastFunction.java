@@ -25,6 +25,7 @@ import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Monotonicity;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.languages.sql.SqlBasicCall;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
@@ -170,7 +171,7 @@ public class SqlCastFunction extends SqlFunction {
 
 
     @Override
-    public Monotonicity getMonotonicity( SqlOperatorBinding call ) {
+    public Monotonicity getMonotonicity( OperatorBinding call ) {
         RelDataTypeFamily castFrom = call.getOperandType( 0 ).getFamily();
         RelDataTypeFamily castTo = call.getOperandType( 1 ).getFamily();
         if ( castFrom instanceof PolyTypeFamily && castTo instanceof PolyTypeFamily && nonMonotonicCasts.containsEntry( castFrom, castTo ) ) {

@@ -23,11 +23,12 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperator;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.rex.RexNode;
 
 
@@ -125,7 +126,7 @@ public class ReflectiveConvertletTable implements SqlRexConvertletTable {
     @Override
     public SqlRexConvertlet get( SqlCall call ) {
         SqlRexConvertlet convertlet;
-        final SqlOperator op = call.getOperator();
+        final Operator op = call.getOperator();
 
         // Is there a convertlet for this operator (e.g. SqlStdOperatorTable.plusOperator)?
         convertlet = (SqlRexConvertlet) map.get( op );
@@ -179,7 +180,7 @@ public class ReflectiveConvertletTable implements SqlRexConvertletTable {
                     Preconditions.checkArgument(
                             call.getOperator() == alias,
                             "call to wrong operator" );
-                    final SqlCall newCall = target.createCall( ParserPos.ZERO, call.getOperandList() );
+                    final SqlCall newCall = (SqlCall) target.createCall( ParserPos.ZERO, call.getOperandList() );
                     return cx.convertExpression( newCall );
                 } );
     }

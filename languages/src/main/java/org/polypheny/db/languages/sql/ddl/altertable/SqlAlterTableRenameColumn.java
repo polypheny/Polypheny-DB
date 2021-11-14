@@ -23,13 +23,15 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
+import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.languages.sql.SqlUtil;
+import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
@@ -61,6 +63,12 @@ public class SqlAlterTableRenameColumn extends SqlAlterTable {
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( table, columnNewName, columnOldName );
+    }
+
+
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
         writer.keyword( "TABLE" );
@@ -80,9 +88,9 @@ public class SqlAlterTableRenameColumn extends SqlAlterTable {
         try {
             DdlManager.getInstance().renameColumn( catalogTable, columnOldName.getSimple(), columnNewName.getSimple(), statement );
         } catch ( ColumnAlreadyExistsException e ) {
-            throw SqlUtil.newContextException( columnNewName.getPos(), RESOURCE.columnExists( columnNewName.getSimple() ) );
+            throw CoreUtil.newContextException( columnNewName.getPos(), RESOURCE.columnExists( columnNewName.getSimple() ) );
         } catch ( ColumnNotExistsException e ) {
-            throw SqlUtil.newContextException( columnOldName.getPos(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
+            throw CoreUtil.newContextException( columnOldName.getPos(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
         }
     }
 

@@ -19,13 +19,14 @@ package org.polypheny.db.languages.sql.fun;
 
 import com.google.common.collect.ImmutableList;
 import org.polypheny.db.core.CoreUtil;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlBinaryOperator;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -68,12 +69,12 @@ public class SqlOverlapsOperator extends SqlBinaryOperator {
             SqlCall row = call.operand( i );
             writer.keyword( "PERIOD" );
             writer.sep( "(", true );
-            row.operand( 0 ).unparse( writer, leftPrec, rightPrec );
+            ((SqlNode) row.operand( 0 )).unparse( writer, leftPrec, rightPrec );
             writer.sep( ",", true );
-            row.operand( 1 ).unparse( writer, leftPrec, rightPrec );
+            ((SqlNode) row.operand( 1 )).unparse( writer, leftPrec, rightPrec );
             writer.sep( ")", true );
         } else {
-            call.operand( i ).unparse( writer, leftPrec, rightPrec );
+            ((SqlNode) call.operand( i )).unparse( writer, leftPrec, rightPrec );
         }
     }
 

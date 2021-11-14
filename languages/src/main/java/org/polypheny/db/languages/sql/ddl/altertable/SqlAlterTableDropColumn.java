@@ -23,13 +23,13 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
@@ -84,7 +84,7 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
         try {
             DdlManager.getInstance().dropColumn( catalogTable, column.getSimple(), statement );
         } catch ( ColumnNotExistsException e ) {
-            throw SqlUtil.newContextException( column.getPos(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
+            throw CoreUtil.newContextException( column.getPos(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
         }
     }
 

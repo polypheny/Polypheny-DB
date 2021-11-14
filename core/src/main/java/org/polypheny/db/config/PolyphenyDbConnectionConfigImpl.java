@@ -40,15 +40,13 @@ import java.util.Properties;
 import org.apache.calcite.avatica.ConnectionConfigImpl;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
+import org.polypheny.db.core.ChainedOperatorTable;
 import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.ConformanceEnum;
+import org.polypheny.db.core.Lex;
+import org.polypheny.db.core.NullCollation;
 import org.polypheny.db.core.OperatorTable;
-import org.polypheny.db.core.SqlStdOperatorTable;
-import org.polypheny.db.sql.Lex;
-import org.polypheny.db.sql.NullCollation;
-import org.polypheny.db.sql.SqlOperatorTable;
-import org.polypheny.db.sql.fun.OracleSqlOperatorTable;
-import org.polypheny.db.sql.util.ChainedSqlOperatorTable;
-import org.polypheny.db.sql.validate.SqlConformanceEnum;
+import org.polypheny.db.languages.LanguageManager;
 
 
 /**
@@ -87,18 +85,18 @@ public class PolyphenyDbConnectionConfigImpl extends ConnectionConfigImpl implem
         for ( String s : fun.split( "," ) ) {
             operatorTable( s, tables );
         }
-        tables.add( SqlStdOperatorTable.instance() );
-        return operatorTableClass.cast( ChainedSqlOperatorTable.of( tables.toArray( new SqlOperatorTable[0] ) ) );
+        tables.add( LanguageManager.getInstance().getStdOperatorTable() );
+        return operatorTableClass.cast( ChainedOperatorTable.of( tables.toArray( new OperatorTable[0] ) ) );
     }
 
 
-    private static void operatorTable( String s, Collection<SqlOperatorTable> tables ) {
+    private static void operatorTable( String s, Collection<OperatorTable> tables ) {
         switch ( s ) {
             case "standard":
-                tables.add( SqlStdOperatorTable.instance() );
+                tables.add( LanguageManager.getInstance().getStdOperatorTable() );
                 return;
             case "oracle":
-                tables.add( OracleSqlOperatorTable.instance() );
+                tables.add( LanguageManager.getInstance().getOracleOperatorTable() );
                 return;
             //case "spatial":
             //    tables.add( PolyphenyDbCatalogReader.operatorTable( GeoFunctions.class.getName() ) );
@@ -159,7 +157,7 @@ public class PolyphenyDbConnectionConfigImpl extends ConnectionConfigImpl implem
 
     @Override
     public Conformance conformance() {
-        return PolyphenyDbConnectionProperty.CONFORMANCE.wrap( properties ).getEnum( SqlConformanceEnum.class );
+        return PolyphenyDbConnectionProperty.CONFORMANCE.wrap( properties ).getEnum( ConformanceEnum.class );
     }
 
 

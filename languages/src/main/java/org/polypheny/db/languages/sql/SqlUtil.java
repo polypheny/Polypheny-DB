@@ -17,8 +17,6 @@
 package org.polypheny.db.languages.sql;
 
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
@@ -47,14 +45,13 @@ import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeList;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.Syntax;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
-import org.polypheny.db.runtime.PolyphenyDbContextException;
-import org.polypheny.db.runtime.PolyphenyDbException;
-import org.polypheny.db.runtime.Resources;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BarfingInvocationHandler;
 import org.polypheny.db.util.Glossary;
@@ -217,7 +214,7 @@ public abstract class SqlUtil {
         if ( operator instanceof SqlFunction ) {
             SqlFunction function = (SqlFunction) operator;
 
-            if ( function.getFunctionType().isSpecific() ) {
+            if ( function.getFunctionCategory().isSpecific() ) {
                 writer.keyword( "SPECIFIC" );
             }
             SqlIdentifier id = function.getSqlIdentifier();
@@ -304,7 +301,7 @@ public abstract class SqlUtil {
      * @return matching routine, or null if none found
      * @see Glossary#SQL99 SQL:1999 Part 2 Section 10.4
      */
-    public static SqlOperator lookupRoutine( OperatorTable opTab, SqlIdentifier funcName, List<RelDataType> argTypes, List<String> argNames, FunctionCategory category, SqlSyntax syntax, Kind sqlKind ) {
+    public static SqlOperator lookupRoutine( OperatorTable opTab, SqlIdentifier funcName, List<RelDataType> argTypes, List<String> argNames, FunctionCategory category, SqlSyntax syntax, Kind Kind ) {
         Iterator<SqlOperator> list =
                 lookupSubjectRoutines(
                         opTab,
@@ -312,7 +309,7 @@ public abstract class SqlUtil {
                         argTypes,
                         argNames,
                         syntax,
-                        sqlKind,
+                        Kind,
                         category );
         if ( list.hasNext() ) {
             // return first on schema path
@@ -322,8 +319,8 @@ public abstract class SqlUtil {
     }
 
 
-    private static Iterator<SqlOperator> filterOperatorRoutinesByKind( Iterator<SqlOperator> routines, final Kind sqlKind ) {
-        return Iterators.filter( routines, operator -> Objects.requireNonNull( operator ).getKind() == sqlKind );
+    private static Iterator<SqlOperator> filterOperatorRoutinesByKind( Iterator<SqlOperator> routines, final Kind Kind ) {
+        return Iterators.filter( routines, operator -> Objects.requireNonNull( operator ).getKind() == Kind );
     }
 
 
@@ -335,12 +332,12 @@ public abstract class SqlUtil {
      * @param argTypes argument types
      * @param argNames argument names, or null if call by position
      * @param sqlSyntax the SqlSyntax of the SqlOperator being looked up
-     * @param sqlKind the SqlKind of the SqlOperator being looked up
+     * @param Kind the Kind of the SqlOperator being looked up
      * @param category category of routine to look up
      * @return list of matching routines
      * @see Glossary#SQL99 SQL:1999 Part 2 Section 10.4
      */
-    public static Iterator<SqlOperator> lookupSubjectRoutines( OperatorTable opTab, SqlIdentifier funcName, List<RelDataType> argTypes, List<String> argNames, SqlSyntax sqlSyntax, Kind sqlKind, FunctionCategory category ) {
+    public static Iterator<SqlOperator> lookupSubjectRoutines( OperatorTable opTab, SqlIdentifier funcName, List<RelDataType> argTypes, List<String> argNames, SqlSyntax sqlSyntax, Kind Kind, FunctionCategory category ) {
         // start with all routines matching by name
         Iterator<SqlOperator> routines = lookupSubjectRoutinesByName( opTab, funcName, sqlSyntax, category );
 
@@ -365,8 +362,8 @@ public abstract class SqlUtil {
         // third pass:  for each parameter from left to right, eliminate all routines except those with the best precedence match for the given arguments
         routines = filterRoutinesByTypePrecedence( sqlSyntax, routines, argTypes );
 
-        // fourth pass: eliminate routines which do not have the same SqlKind as requested
-        return filterOperatorRoutinesByKind( routines, sqlKind );
+        // fourth pass: eliminate routines which do not have the same Kind as requested
+        return filterOperatorRoutinesByKind( routines, Kind );
     }
 
 
@@ -391,8 +388,9 @@ public abstract class SqlUtil {
 
 
     private static Iterator<SqlOperator> lookupSubjectRoutinesByName( OperatorTable opTab, SqlIdentifier funcName, final SqlSyntax syntax, FunctionCategory category ) {
-        final List<SqlOperator> sqlOperators = new ArrayList<>();
-        opTab.lookupOperatorOverloads( funcName, category, syntax, sqlOperators );
+        final List<Operator> operators = new ArrayList<>();
+        opTab.lookupOperatorOverloads( funcName, category, syntax.getSyntax(), operators );
+        final List<SqlOperator> sqlOperators = operators.stream().map( e -> (SqlOperator) e ).collect( Collectors.toList() );
         switch ( syntax ) {
             case FUNCTION:
                 return Iterators.filter( sqlOperators.iterator(), Predicates.instanceOf( SqlFunction.class ) );
@@ -554,13 +552,13 @@ public abstract class SqlUtil {
      */
     public static SqlCall makeCall( OperatorTable opTab, SqlIdentifier id ) {
         if ( id.names.size() == 1 ) {
-            final List<SqlOperator> list = new ArrayList<>();
-            opTab.lookupOperatorOverloads( id, null, SqlSyntax.FUNCTION, list );
-            for ( SqlOperator operator : list ) {
-                if ( operator.getSqlSyntax() == SqlSyntax.FUNCTION_ID ) {
+            final List<Operator> list = new ArrayList<>();
+            opTab.lookupOperatorOverloads( id, null, Syntax.FUNCTION, list );
+            for ( Operator operator : list ) {
+                if ( operator.getSyntax() == Syntax.FUNCTION_ID ) {
                     // Even though this looks like an identifier, it is a actually a call to a function. Construct a fake call to this function, so we can use the regular operator validation.
                     return new SqlBasicCall(
-                            operator,
+                            (SqlOperator) operator,
                             SqlNode.EMPTY_ARRAY,
                             id.getPos(),
                             true,
@@ -569,41 +567,6 @@ public abstract class SqlUtil {
             }
         }
         return null;
-    }
-
-
-    /**
-     * Wraps an exception with context.
-     */
-    public static PolyphenyDbException newContextException( final ParserPos pos, Resources.ExInst<?> e, String inputText ) {
-        PolyphenyDbContextException ex = newContextException( pos, e );
-        ex.setOriginalStatement( inputText );
-        return ex;
-    }
-
-
-    /**
-     * Wraps an exception with context.
-     */
-    public static PolyphenyDbContextException newContextException( final ParserPos pos, Resources.ExInst<?> e ) {
-        int line = pos.getLineNum();
-        int col = pos.getColumnNum();
-        int endLine = pos.getEndLineNum();
-        int endCol = pos.getEndColumnNum();
-        return newContextException( line, col, endLine, endCol, e );
-    }
-
-
-    /**
-     * Wraps an exception with context.
-     */
-    public static PolyphenyDbContextException newContextException( int line, int col, int endLine, int endCol, Resources.ExInst<?> e ) {
-        PolyphenyDbContextException contextExcn =
-                (line == endLine && col == endCol
-                        ? RESOURCE.validatorContextPoint( line, col )
-                        : RESOURCE.validatorContext( line, col, endLine, endCol )).ex( e.ex() );
-        contextExcn.setPosition( line, col, endLine, endCol );
-        return contextExcn;
     }
 
 

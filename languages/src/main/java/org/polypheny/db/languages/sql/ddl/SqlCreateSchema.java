@@ -23,17 +23,19 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.exceptions.SchemaAlreadyExistsException;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.ExecutableStatement;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlCreate;
 import org.polypheny.db.languages.sql.SqlIdentifier;
+import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
-import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
@@ -68,6 +70,12 @@ public class SqlCreateSchema extends SqlCreate implements ExecutableStatement {
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( name );
+    }
+
+
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "CREATE" );
         if ( replace ) {
@@ -86,7 +94,7 @@ public class SqlCreateSchema extends SqlCreate implements ExecutableStatement {
         try {
             DdlManager.getInstance().createSchema( name.getSimple(), context.getDatabaseId(), type, context.getCurrentUserId(), ifNotExists, replace );
         } catch ( SchemaAlreadyExistsException e ) {
-            throw SqlUtil.newContextException( name.getPos(), RESOURCE.schemaExists( name.getSimple() ) );
+            throw CoreUtil.newContextException( name.getPos(), RESOURCE.schemaExists( name.getSimple() ) );
         }
 
     }

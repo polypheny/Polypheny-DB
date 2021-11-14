@@ -23,6 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.jdbc.Context;
@@ -58,6 +59,12 @@ public class SqlAlterConfig extends SqlAlter {
 
     @Override
     public List<Node> getOperandList() {
+        return ImmutableNullableList.of( key, value );
+    }
+
+
+    @Override
+    public List<SqlNode> getSqlOperandList() {
         return ImmutableNullableList.of( key, value );
     }
 

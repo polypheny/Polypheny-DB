@@ -49,18 +49,18 @@ import java.util.Set;
  *
  * Note that we do not even have to check that a {@code SqlNode} is a {@link SqlCall}.
  *
- * To identify a category of expressions, use {@code SqlNode.isA} with an aggregate SqlKind. The following expression will return <code>true</code> for calls to '=' and '&gt;=', but <code>false</code> for the constant '5', or a call to '+':
+ * To identify a category of expressions, use {@code SqlNode.isA} with an aggregate Kind. The following expression will return <code>true</code> for calls to '=' and '&gt;=', but <code>false</code> for the constant '5', or a call to '+':
  *
  * <blockquote>
- * <pre>exp.isA({@link #COMPARISON SqlKind.COMPARISON})</pre>
+ * <pre>exp.isA({@link #COMPARISON Kind.COMPARISON})</pre>
  * </blockquote>
  *
- * RexNode also has a {@code getKind} method; {@code SqlKind} values are preserved during translation from {@code SqlNode} to {@code RexNode}, where applicable.
+ * RexNode also has a {@code getKind} method; {@code Kind} values are preserved during translation from {@code SqlNode} to {@code RexNode}, where applicable.
  *
  * There is no water-tight definition of "common", but that's OK. There will always be operators that don't have their own kind, and for these we use the {@code SqlOperator}. But for really the common ones, e.g. the many places where we are looking
  * for {@code AND}, {@code OR} and {@code EQUALS}, the enum helps.
  *
- * (If we were using Scala, {@link SqlOperator} would be a case class, and we wouldn't need {@code SqlKind}. But we're not.)
+ * (If we were using Scala, {@link SqlOperator} would be a case class, and we wouldn't need {@code Kind}. But we're not.)
  */
 public enum Kind {
 
@@ -1564,7 +1564,7 @@ public enum Kind {
 
 
     /**
-     * Returns whether this {@code SqlKind} belongs to a given category.
+     * Returns whether this {@code Kind} belongs to a given category.
      *
      * A category is a collection of kinds, not necessarily disjoint. For example, QUERY is { SELECT, UNION, INTERSECT, EXCEPT, VALUES, ORDER_BY, EXPLICIT_TABLE }.
      *

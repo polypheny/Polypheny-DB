@@ -55,7 +55,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.TimeString;
@@ -207,7 +207,7 @@ public class GeodeFilter extends Filter implements GeodeRel {
 
             return disjunctions.stream().allMatch( node -> {
                 // IN SET query can only be used for EQUALS
-                if ( node.getKind() != SqlKind.EQUALS ) {
+                if ( node.getKind() != Kind.EQUALS ) {
                     return false;
                 }
 
@@ -216,7 +216,7 @@ public class GeodeFilter extends Filter implements GeodeRel {
                 final RexNode right = call.operands.get( 1 );
 
                 // The right node should always be literal
-                if ( right.getKind() != SqlKind.LITERAL ) {
+                if ( right.getKind() != Kind.LITERAL ) {
                     return false;
                 }
 

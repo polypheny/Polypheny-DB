@@ -40,11 +40,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.ValidatorUtil;
-import org.polypheny.db.sql.SqlIntervalQualifier;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Glossary;
 
@@ -500,7 +501,7 @@ public interface RelDataTypeFactory {
          * Adds a field with an interval type.
          */
         public Builder add( String name, String physicalName, TimeUnit startUnit, int startPrecision, TimeUnit endUnit, int fractionalSecondPrecision ) {
-            final IntervalQualifier q = new SqlIntervalQualifier( startUnit, startPrecision, endUnit, fractionalSecondPrecision, ParserPos.ZERO );
+            final IntervalQualifier q = LanguageManager.getInstance().createIntervalQualifier( QueryLanguage.SQL, startUnit, startPrecision, endUnit, fractionalSecondPrecision, ParserPos.ZERO );
             add( name, physicalName, typeFactory.createSqlIntervalType( q ) );
             return this;
         }

@@ -25,6 +25,7 @@ import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.Modality;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.json.JsonConstructorNullClause;
@@ -1913,7 +1914,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
                 @Override
                 public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
                     final SqlWriter.Frame frame = writer.startList( "(", ")" );
-                    call.operand( 0 ).unparse( writer, 0, 0 );
+                    ((SqlNode) call.operand( 0 )).unparse( writer, 0, 0 );
                     writer.endList( frame );
                 }
 
@@ -2012,9 +2013,9 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
                     OperandTypes.VARIADIC ) {
                 @Override
                 public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
-                    call.operand( 0 ).unparse( writer, leftPrec, 0 );
+                    ((SqlNode) call.operand( 0 )).unparse( writer, leftPrec, 0 );
                     writer.keyword( "TABLESAMPLE" );
-                    call.operand( 1 ).unparse( writer, 0, rightPrec );
+                    ((SqlNode) call.operand( 1 )).unparse( writer, 0, rightPrec );
                 }
             };
 
@@ -2141,7 +2142,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
             new SqlSpecialOperator( "PATTERN_QUANTIFIER", Kind.PATTERN_QUANTIFIER, 90 ) {
                 @Override
                 public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
-                    call.operand( 0 ).unparse( writer, this.getLeftPrec(), this.getRightPrec() );
+                    ((SqlNode) call.operand( 0 )).unparse( writer, this.getLeftPrec(), this.getRightPrec() );
                     int startNum = ((SqlNumericLiteral) call.operand( 1 )).intValue( true );
                     SqlNumericLiteral endRepNum = call.operand( 2 );
                     boolean isReluctant = ((SqlLiteral) call.operand( 3 )).booleanValue();
@@ -2185,7 +2186,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
                     writer.keyword( "PERMUTE" );
                     SqlWriter.Frame frame = writer.startList( "(", ")" );
                     for ( int i = 0; i < call.getOperandList().size(); i++ ) {
-                        SqlNode pattern = call.getOperandList().get( i );
+                        SqlNode pattern = (SqlNode) call.getOperandList().get( i );
                         pattern.unparse( writer, 0, 0 );
                         if ( i != call.getOperandList().size() - 1 ) {
                             writer.print( "," );
@@ -2205,7 +2206,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
                 @Override
                 public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
                     SqlWriter.Frame frame = writer.startList( "{-", "-}" );
-                    SqlNode node = call.getOperandList().get( 0 );
+                    SqlNode node = (SqlNode) call.getOperandList().get( 0 );
                     node.unparse( writer, 0, 0 );
                     writer.endList( frame );
                 }

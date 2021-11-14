@@ -23,12 +23,12 @@ import java.util.Objects;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.ddl.SqlAlterView;
 import org.polypheny.db.transaction.Statement;
@@ -84,7 +84,7 @@ public class SqlAlterViewRename extends SqlAlterView {
         try {
             DdlManager.getInstance().renameTable( catalogTable, newName.getSimple(), statement );
         } catch ( TableAlreadyExistsException e ) {
-            throw SqlUtil.newContextException( oldName.getPos(), RESOURCE.schemaExists( newName.getSimple() ) );
+            throw CoreUtil.newContextException( oldName.getPos(), RESOURCE.schemaExists( newName.getSimple() ) );
         }
     }
 

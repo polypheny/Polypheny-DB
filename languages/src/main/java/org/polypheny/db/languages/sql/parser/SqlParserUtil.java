@@ -31,14 +31,13 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.languages.sql.SqlBinaryOperator;
 import org.polypheny.db.languages.sql.SqlDateLiteral;
 import org.polypheny.db.languages.sql.SqlIntervalLiteral;
 import org.polypheny.db.languages.sql.SqlIntervalQualifier;
-import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
@@ -50,8 +49,9 @@ import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlSpecialOperator.TokenSequence;
 import org.polypheny.db.languages.sql.SqlTimeLiteral;
 import org.polypheny.db.languages.sql.SqlTimestampLiteral;
-import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.PrecedenceClimbingParser;
 import org.polypheny.db.util.SaffronProperties;
@@ -115,7 +115,7 @@ public final class SqlParserUtil {
         final String dateStr = parseString( s );
         final Calendar cal = DateTimeUtils.parseDateFormat( dateStr, Format.PER_THREAD.get().date, DateTimeUtils.UTC_ZONE );
         if ( cal == null ) {
-            throw SqlUtil.newContextException( pos, RESOURCE.illegalLiteral( "DATE", s, RESOURCE.badFormat( DateTimeUtils.DATE_FORMAT_STRING ).str() ) );
+            throw CoreUtil.newContextException( pos, RESOURCE.illegalLiteral( "DATE", s, RESOURCE.badFormat( DateTimeUtils.DATE_FORMAT_STRING ).str() ) );
         }
         final DateString d = DateString.fromCalendarFields( cal );
         return SqlLiteral.createDate( d, pos );
@@ -126,7 +126,7 @@ public final class SqlParserUtil {
         final String dateStr = parseString( s );
         final DateTimeUtils.PrecisionTime pt = DateTimeUtils.parsePrecisionDateTimeLiteral( dateStr, Format.PER_THREAD.get().time, DateTimeUtils.UTC_ZONE, -1 );
         if ( pt == null ) {
-            throw SqlUtil.newContextException( pos, RESOURCE.illegalLiteral( "TIME", s, RESOURCE.badFormat( DateTimeUtils.TIME_FORMAT_STRING ).str() ) );
+            throw CoreUtil.newContextException( pos, RESOURCE.illegalLiteral( "TIME", s, RESOURCE.badFormat( DateTimeUtils.TIME_FORMAT_STRING ).str() ) );
         }
         final TimeString t = TimeString.fromCalendarFields( pt.getCalendar() ).withFraction( pt.getFraction() );
         return SqlLiteral.createTime( t, pt.getPrecision(), pos );
@@ -137,7 +137,7 @@ public final class SqlParserUtil {
         final String dateStr = parseString( s );
         final DateTimeUtils.PrecisionTime pt = DateTimeUtils.parsePrecisionDateTimeLiteral( dateStr, Format.PER_THREAD.get().timestamp, DateTimeUtils.UTC_ZONE, -1 );
         if ( pt == null ) {
-            throw SqlUtil.newContextException( pos, RESOURCE.illegalLiteral( "TIMESTAMP", s, RESOURCE.badFormat( DateTimeUtils.TIMESTAMP_FORMAT_STRING ).str() ) );
+            throw CoreUtil.newContextException( pos, RESOURCE.illegalLiteral( "TIMESTAMP", s, RESOURCE.badFormat( DateTimeUtils.TIMESTAMP_FORMAT_STRING ).str() ) );
         }
         final TimestampString ts = TimestampString.fromCalendarFields( pt.getCalendar() ).withFraction( pt.getFraction() );
         return SqlLiteral.createTimestamp( ts, pt.getPrecision(), pos );
@@ -147,7 +147,7 @@ public final class SqlParserUtil {
     public static SqlIntervalLiteral parseIntervalLiteral( ParserPos pos, int sign, String s, SqlIntervalQualifier intervalQualifier ) {
         final String intervalStr = parseString( s );
         if ( intervalStr.equals( "" ) ) {
-            throw SqlUtil.newContextException( pos, RESOURCE.illegalIntervalLiteral( s + " " + intervalQualifier.toString(), pos.toString() ) );
+            throw CoreUtil.newContextException( pos, RESOURCE.illegalIntervalLiteral( s + " " + intervalQualifier.toString(), pos.toString() ) );
         }
         return SqlLiteral.createInterval( sign, intervalStr, intervalQualifier, pos );
     }
@@ -442,7 +442,7 @@ public final class SqlParserUtil {
 
 
     public static SqlNode[] toNodeArray( SqlNodeList list ) {
-        return list.toArray();
+        return (SqlNode[]) list.toArray();
     }
 
 
@@ -527,7 +527,7 @@ public final class SqlParserUtil {
                         && list.get( 0 ) instanceof SqlNumericLiteral ) {
                     return list.get( 0 );
                 }
-                return item.op.createCall( item.pos.plusAll( list ), list );
+                return (SqlNode) item.op.createCall( item.pos.plusAll( list ), list );
             default:
                 throw new AssertionError( token );
         }

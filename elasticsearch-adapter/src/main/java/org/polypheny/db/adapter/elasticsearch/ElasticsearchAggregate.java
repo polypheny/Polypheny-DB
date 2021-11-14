@@ -41,7 +41,8 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -53,7 +54,6 @@ import org.polypheny.db.rel.core.AggregateCall;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
@@ -62,7 +62,7 @@ import org.polypheny.db.util.ImmutableBitSet;
  */
 public class ElasticsearchAggregate extends Aggregate implements ElasticsearchRel {
 
-    private static final Set<SqlKind> SUPPORTED_AGGREGATIONS = EnumSet.of( SqlKind.COUNT, SqlKind.MAX, SqlKind.MIN, SqlKind.AVG, SqlKind.SUM, SqlKind.ANY_VALUE );
+    private static final Set<Kind> SUPPORTED_AGGREGATIONS = EnumSet.of( Kind.COUNT, Kind.MAX, Kind.MIN, Kind.AVG, Kind.SUM, Kind.ANY_VALUE );
 
 
     /**
@@ -82,11 +82,11 @@ public class ElasticsearchAggregate extends Aggregate implements ElasticsearchRe
 
         for ( AggregateCall aggCall : aggCalls ) {
             if ( aggCall.isDistinct() && !aggCall.isApproximate() ) {
-                final String message = String.format( Locale.ROOT, "Only approximate distinct aggregations are supported in Elastic (cardinality aggregation). Use %s function", SqlStdOperatorTable.APPROX_COUNT_DISTINCT.getName() );
+                final String message = String.format( Locale.ROOT, "Only approximate distinct aggregations are supported in Elastic (cardinality aggregation). Use %s function", StdOperatorRegistry.get( "APPROX_COUNT_DISTINCT" ).getName() );
                 throw new InvalidRelException( message );
             }
 
-            final SqlKind kind = aggCall.getAggregation().getKind();
+            final Kind kind = aggCall.getAggregation().getKind();
             if ( !SUPPORTED_AGGREGATIONS.contains( kind ) ) {
                 final String message = String.format( Locale.ROOT, "Aggregation %s not supported (use one of %s)", kind, SUPPORTED_AGGREGATIONS );
                 throw new InvalidRelException( message );
@@ -139,7 +139,7 @@ public class ElasticsearchAggregate extends Aggregate implements ElasticsearchRe
 
             final String name = names.isEmpty() ? ElasticsearchConstants.ID : names.get( 0 );
             field.put( "field", implementor.expressionItemMap.getOrDefault( name, name ) );
-            if ( aggCall.getAggregation().getKind() == SqlKind.ANY_VALUE ) {
+            if ( aggCall.getAggregation().getKind() == Kind.ANY_VALUE ) {
                 field.put( "size", 1 );
             }
 
@@ -153,7 +153,7 @@ public class ElasticsearchAggregate extends Aggregate implements ElasticsearchRe
      * But currently only one-to-one mapping is supported between sql agg and elastic aggregation.
      */
     private static String toElasticAggregate( AggregateCall call ) {
-        final SqlKind kind = call.getAggregation().getKind();
+        final Kind kind = call.getAggregation().getKind();
         switch ( kind ) {
             case COUNT:
                 // approx_count_distinct() vs count()

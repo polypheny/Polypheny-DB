@@ -61,7 +61,7 @@ import java.util.function.Consumer;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.polypheny.db.sql2rel.SqlToRelConverter;
+import org.polypheny.db.languages.sql2rel.SqlToRelConverter;
 import org.polypheny.db.util.Sources;
 import org.polypheny.db.util.Util;
 
@@ -930,6 +930,7 @@ public class CsvTest {
                 // ignore
             }
         }
+
     }
 
 
@@ -986,6 +987,8 @@ public class CsvTest {
         Fluent returnsUnordered( String... expectedLines ) {
             return checking( expectUnordered( expectedLines ) );
         }
+
     }
+
 }
 

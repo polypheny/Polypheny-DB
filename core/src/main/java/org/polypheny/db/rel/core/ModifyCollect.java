@@ -23,7 +23,7 @@ import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 
 
 /**
@@ -32,7 +32,7 @@ import org.polypheny.db.sql.SqlKind;
 public abstract class ModifyCollect extends SetOp {
 
     protected ModifyCollect( RelOptCluster cluster, RelTraitSet traits, List<RelNode> inputs, boolean all ) {
-        super( cluster, traits, inputs, SqlKind.UNION, all );
+        super( cluster, traits, inputs, Kind.UNION, all );
     }
 
 

@@ -34,8 +34,8 @@
 package org.polypheny.db.adapter.pig;
 
 
-import static org.polypheny.db.sql.SqlKind.INPUT_REF;
-import static org.polypheny.db.sql.SqlKind.LITERAL;
+import static org.polypheny.db.sql.Kind.INPUT_REF;
+import static org.polypheny.db.sql.Kind.LITERAL;
 
 import com.google.common.base.Preconditions;
 import java.util.ArrayList;

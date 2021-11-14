@@ -50,6 +50,7 @@ import org.junit.Test;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.plan.RelOptCluster;
@@ -71,9 +72,8 @@ import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.sql.SqlCollation;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.util.DateString;
@@ -455,11 +455,11 @@ public class RexImplicationCheckerTest {
                         outerFloorCall,
                         RexUnknownAs.UNKNOWN,
                         true );
-                assertThat( floorSimplifiedExpr.getKind(), Is.is( SqlKind.FLOOR ) );
+                assertThat( floorSimplifiedExpr.getKind(), Is.is( Kind.FLOOR ) );
                 assertThat( ((RexLiteral) floorSimplifiedExpr.getOperands().get( 1 )).getValue().toString(), is( timeUnitRanges.get( j ).toString() ) );
                 assertThat( floorSimplifiedExpr.getOperands().get( 0 ).toString(), is( literalTs.toString() ) );
                 final RexCall ceilSimplifiedExpr = (RexCall) f.simplify.simplifyPreservingType( outerCeilCall, RexUnknownAs.UNKNOWN, true );
-                assertThat( ceilSimplifiedExpr.getKind(), is( SqlKind.CEIL ) );
+                assertThat( ceilSimplifiedExpr.getKind(), is( Kind.CEIL ) );
                 assertThat( ((RexLiteral) ceilSimplifiedExpr.getOperands().get( 1 )).getValue().toString(), is( timeUnitRanges.get( j ).toString() ) );
                 assertThat( ceilSimplifiedExpr.getOperands().get( 0 ).toString(), is( literalTs.toString() ) );
             }

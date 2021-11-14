@@ -38,7 +38,7 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.Pair;
 
@@ -131,12 +131,12 @@ public class CassandraFilterRule extends CassandraConverterRule {
      * @return True if the node represents an equality predicate on a primary key
      */
     private boolean isEqualityOnKey( RexNode node, List<String> fieldNames, Set<String> partitionKeys, List<String> clusteringKeys ) {
-        if ( !(node.getKind() == SqlKind.EQUALS
-                || node.getKind() == SqlKind.GREATER_THAN
-                || node.getKind() == SqlKind.GREATER_THAN_OR_EQUAL
-                || node.getKind() == SqlKind.LESS_THAN
-                || node.getKind() == SqlKind.LESS_THAN_OR_EQUAL
-                || node.getKind() == SqlKind.NOT_EQUALS) ) {
+        if ( !(node.getKind() == Kind.EQUALS
+                || node.getKind() == Kind.GREATER_THAN
+                || node.getKind() == Kind.GREATER_THAN_OR_EQUAL
+                || node.getKind() == Kind.LESS_THAN
+                || node.getKind() == Kind.LESS_THAN_OR_EQUAL
+                || node.getKind() == Kind.NOT_EQUALS) ) {
             return false;
         }
 
@@ -165,11 +165,11 @@ public class CassandraFilterRule extends CassandraConverterRule {
      */
     private String compareFieldWithLiteral( RexNode left, RexNode right, List<String> fieldNames ) {
         // FIXME Ignore casts for new and assume they aren't really necessary
-        if ( left.isA( SqlKind.CAST ) ) {
+        if ( left.isA( Kind.CAST ) ) {
             left = ((RexCall) left).getOperands().get( 0 );
         }
 
-        if ( left.isA( SqlKind.INPUT_REF ) && right.isA( SqlKind.LITERAL ) ) {
+        if ( left.isA( Kind.INPUT_REF ) && right.isA( Kind.LITERAL ) ) {
             final RexInputRef left1 = (RexInputRef) left;
             if ( left1.getIndex() < fieldNames.size() ) {
                 return fieldNames.get( left1.getIndex() );

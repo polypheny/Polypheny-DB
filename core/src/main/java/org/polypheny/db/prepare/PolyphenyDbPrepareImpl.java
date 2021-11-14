@@ -105,6 +105,7 @@ import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.NodeToRelConverter;
 import org.polypheny.db.languages.NodeToRelConverter.ConfigBuilder;
 import org.polypheny.db.languages.Parser;
+import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.languages.RexConvertletTable;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.plan.Convention;
@@ -793,7 +794,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     .setQuoting( config.quoting() )
                     .setConformance( config.conformance() )
                     .setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
-            final SqlParserImplFactory parserFactory = config.parserFactory( SqlParserImplFactory.class, null );
+            final ParserFactory parserFactory = config.parserFactory( ParserFactory.class, null );
             if ( parserFactory != null ) {
                 parserConfig.setParserFactory( parserFactory );
             }

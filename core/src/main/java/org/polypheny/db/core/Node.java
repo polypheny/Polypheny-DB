@@ -56,9 +56,6 @@ public interface Node extends Cloneable, Visitable {
         return litmus.succeed();
     }
 
-    @Deprecated
-    Object clone();
-
     /**
      * Creates a copy of a SqlNode.
      */

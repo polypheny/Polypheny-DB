@@ -16,10 +16,14 @@
 
 package org.polypheny.db.core;
 
-import lombok.Getter;
-
 public interface AggFunction extends Function {
 
     Kind getKind();
+
+    boolean isAggregator();
+
+    boolean isQuantifierAllowed();
+
+    boolean allowsFilter();
 
 }

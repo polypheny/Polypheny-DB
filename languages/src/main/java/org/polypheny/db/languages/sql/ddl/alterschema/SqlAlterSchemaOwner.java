@@ -23,12 +23,14 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.languages.sql.SqlUtil;
+import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.ddl.SqlAlterSchema;
 import org.polypheny.db.transaction.Statement;
@@ -61,6 +63,12 @@ public class SqlAlterSchemaOwner extends SqlAlterSchema {
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( schema, owner );
+    }
+
+
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
         writer.keyword( "SCHEMA" );
@@ -76,9 +84,9 @@ public class SqlAlterSchemaOwner extends SqlAlterSchema {
         try {
             DdlManager.getInstance().alterSchemaOwner( schema.getSimple(), owner.getSimple(), context.getDatabaseId() );
         } catch ( UnknownSchemaException e ) {
-            throw SqlUtil.newContextException( schema.getPos(), RESOURCE.schemaNotFound( schema.getSimple() ) );
+            throw CoreUtil.newContextException( schema.getPos(), RESOURCE.schemaNotFound( schema.getSimple() ) );
         } catch ( UnknownUserException e ) {
-            throw SqlUtil.newContextException( owner.getPos(), RESOURCE.userNotFound( owner.getSimple() ) );
+            throw CoreUtil.newContextException( owner.getPos(), RESOURCE.userNotFound( owner.getSimple() ) );
         }
     }
 

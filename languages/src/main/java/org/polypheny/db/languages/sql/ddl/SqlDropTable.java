@@ -20,6 +20,7 @@ package org.polypheny.db.languages.sql.ddl;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
@@ -29,7 +30,6 @@ import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
-import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.transaction.Statement;
 
@@ -68,7 +68,7 @@ public class SqlDropTable extends SqlDropObject {
         try {
             DdlManager.getInstance().dropTable( table, statement );
         } catch ( DdlOnSourceException e ) {
-            throw SqlUtil.newContextException( name.getPos(), RESOURCE.ddlOnSourceTable() );
+            throw CoreUtil.newContextException( name.getPos(), RESOURCE.ddlOnSourceTable() );
         }
 
     }

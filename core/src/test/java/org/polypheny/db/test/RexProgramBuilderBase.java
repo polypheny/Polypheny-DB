@@ -44,6 +44,7 @@ import java.util.TimeZone;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.plan.RelOptPredicateList;
 import org.polypheny.db.rel.type.RelDataType;
@@ -58,7 +59,6 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 
@@ -167,6 +167,7 @@ public abstract class RexProgramBuilderBase {
         public List<Map<Long, Object>> getParameterValues() {
             throw new UnsupportedOperationException();
         }
+
     }
 
 
@@ -213,67 +214,67 @@ public abstract class RexProgramBuilderBase {
 
 
     protected RexNode isNull( RexNode node ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.IS_NULL, node );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NULL" ), node );
     }
 
 
     protected RexNode isUnknown( RexNode node ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.IS_UNKNOWN, node );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "IS_UNKNOWN" ), node );
     }
 
 
     protected RexNode isNotNull( RexNode node ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.IS_NOT_NULL, node );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NOT_NULL" ), node );
     }
 
 
     protected RexNode isFalse( RexNode node ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.IS_FALSE, node );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "IS_FALSE" ), node );
     }
 
 
     protected RexNode isNotFalse( RexNode node ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.IS_NOT_FALSE, node );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NOT_FALSE" ), node );
     }
 
 
     protected RexNode isTrue( RexNode node ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.IS_TRUE, node );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "IS_TRUE" ), node );
     }
 
 
     protected RexNode isNotTrue( RexNode node ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.IS_NOT_TRUE, node );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NOT_TRUE" ), node );
     }
 
 
     protected RexNode isDistinctFrom( RexNode a, RexNode b ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.IS_DISTINCT_FROM, a, b );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "IS_DISTINCT_FROM" ), a, b );
     }
 
 
     protected RexNode isNotDistinctFrom( RexNode a, RexNode b ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.IS_NOT_DISTINCT_FROM, a, b );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NOT_DISTINCT_FROM" ), a, b );
     }
 
 
     protected RexNode nullIf( RexNode node1, RexNode node2 ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.NULLIF, node1, node2 );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "NULLIF" ), node1, node2 );
     }
 
 
     protected RexNode not( RexNode node ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.NOT, node );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "NOT" ), node );
     }
 
 
     protected RexNode unaryMinus( RexNode node ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.UNARY_MINUS, node );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "UNARY_MINUS" ), node );
     }
 
 
     protected RexNode unaryPlus( RexNode node ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.UNARY_PLUS, node );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "UNARY_PLUS" ), node );
     }
 
 
@@ -284,7 +285,7 @@ public abstract class RexProgramBuilderBase {
 
     protected RexNode and( Iterable<? extends RexNode> nodes ) {
         // Does not flatten nested ANDs. We want test input to contain nested ANDs.
-        return rexBuilder.makeCall( SqlStdOperatorTable.AND, ImmutableList.copyOf( nodes ) );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "AND" ), ImmutableList.copyOf( nodes ) );
     }
 
 
@@ -295,7 +296,7 @@ public abstract class RexProgramBuilderBase {
 
     protected RexNode or( Iterable<? extends RexNode> nodes ) {
         // Does not flatten nested ORs. We want test input to contain nested ORs.
-        return rexBuilder.makeCall( SqlStdOperatorTable.OR, ImmutableList.copyOf( nodes ) );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "OR" ), ImmutableList.copyOf( nodes ) );
     }
 
 
@@ -305,7 +306,7 @@ public abstract class RexProgramBuilderBase {
 
 
     protected RexNode case_( Iterable<? extends RexNode> nodes ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.CASE, ImmutableList.copyOf( nodes ) );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "CASE" ), ImmutableList.copyOf( nodes ) );
     }
 
 
@@ -338,67 +339,67 @@ public abstract class RexProgramBuilderBase {
 
 
     protected RexNode eq( RexNode n1, RexNode n2 ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.EQUALS, n1, n2 );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "EQUALS" ), n1, n2 );
     }
 
 
     protected RexNode ne( RexNode n1, RexNode n2 ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.NOT_EQUALS, n1, n2 );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "NOT_EQUALS" ), n1, n2 );
     }
 
 
     protected RexNode le( RexNode n1, RexNode n2 ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.LESS_THAN_OR_EQUAL, n1, n2 );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "LESS_THAN_OR_EQUAL" ), n1, n2 );
     }
 
 
     protected RexNode lt( RexNode n1, RexNode n2 ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.LESS_THAN, n1, n2 );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "LESS_THAN" ), n1, n2 );
     }
 
 
     protected RexNode ge( RexNode n1, RexNode n2 ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.GREATER_THAN_OR_EQUAL, n1, n2 );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "GREATER_THAN_OR_EQUAL" ), n1, n2 );
     }
 
 
     protected RexNode gt( RexNode n1, RexNode n2 ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.GREATER_THAN, n1, n2 );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "GREATER_THAN" ), n1, n2 );
     }
 
 
     protected RexNode plus( RexNode n1, RexNode n2 ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.PLUS, n1, n2 );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "PLUS" ), n1, n2 );
     }
 
 
     protected RexNode mul( RexNode n1, RexNode n2 ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.MULTIPLY, n1, n2 );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "MULTIPLY" ), n1, n2 );
     }
 
 
     protected RexNode coalesce( RexNode... nodes ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.COALESCE, nodes );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "COALESCE" ), nodes );
     }
 
 
     protected RexNode divInt( RexNode n1, RexNode n2 ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.DIVIDE_INTEGER, n1, n2 );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "DIVIDE_INTEGER" ), n1, n2 );
     }
 
 
     protected RexNode div( RexNode n1, RexNode n2 ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.DIVIDE, n1, n2 );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "DIVIDE" ), n1, n2 );
     }
 
 
     protected RexNode sub( RexNode n1, RexNode n2 ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.MINUS, n1, n2 );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "MINUS" ), n1, n2 );
     }
 
 
     protected RexNode add( RexNode n1, RexNode n2 ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.PLUS, n1, n2 );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "PLUS" ), n1, n2 );
     }
 
 
@@ -410,7 +411,7 @@ public abstract class RexProgramBuilderBase {
      * @return IN expression
      */
     protected RexNode in( RexNode node, RexNode... nodes ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.IN, ImmutableList.<RexNode>builder().add( node ).add( nodes ).build() );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "IN" ), ImmutableList.<RexNode>builder().add( node ).add( nodes ).build() );
     }
 
 
@@ -667,4 +668,5 @@ public abstract class RexProgramBuilderBase {
         assertArgValue( arg );
         return rexBuilder.makeFieldAccess( getDynamicParam( nonNullableVarchar, "varchar" ), arg + MAX_FIELDS );
     }
+
 }

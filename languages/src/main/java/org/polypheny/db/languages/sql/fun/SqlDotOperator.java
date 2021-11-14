@@ -20,6 +20,7 @@ package org.polypheny.db.languages.sql.fun;
 import java.util.Arrays;
 import org.polypheny.db.core.BasicNodeVisitor.ArgHandler;
 import org.polypheny.db.core.Call;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeVisitor;
@@ -31,7 +32,6 @@ import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
-import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -105,14 +105,14 @@ public class SqlDotOperator extends SqlSpecialOperator {
         final RelDataType nodeType = validator.deriveType( scope, operand );
         assert nodeType != null;
         if ( !nodeType.isStruct() ) {
-            throw SqlUtil.newContextException( operand.getPos(), Static.RESOURCE.incompatibleTypes() );
+            throw CoreUtil.newContextException( operand.getPos(), Static.RESOURCE.incompatibleTypes() );
         }
 
         final SqlNode fieldId = call.operand( 1 );
         final String fieldName = fieldId.toString();
         final RelDataTypeField field = nodeType.getField( fieldName, false, false );
         if ( field == null ) {
-            throw SqlUtil.newContextException( fieldId.getPos(), Static.RESOURCE.unknownField( fieldName ) );
+            throw CoreUtil.newContextException( fieldId.getPos(), Static.RESOURCE.unknownField( fieldName ) );
         }
         RelDataType type = field.getType();
 

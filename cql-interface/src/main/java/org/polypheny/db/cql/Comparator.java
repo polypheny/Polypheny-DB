@@ -16,8 +16,8 @@
 
 package org.polypheny.db.cql;
 
-import org.polypheny.db.core.SqlStdOperatorTable;
-import org.polypheny.db.sql.SqlBinaryOperator;
+import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.languages.sql.SqlBinaryOperator;
 
 
 public enum Comparator {
@@ -74,17 +74,17 @@ public enum Comparator {
         if ( this == SERVER_CHOICE ) {
             return fallback;
         } else if ( this == EQUALS ) {
-            return SqlStdOperatorTable.EQUALS;
+            return StdOperatorRegistry.getBinary( "EQUALS" );
         } else if ( this == NOT_EQUALS ) {
-            return SqlStdOperatorTable.NOT_EQUALS;
+            return StdOperatorRegistry.getBinary( "NOT_EQUALS" );
         } else if ( this == GREATER_THAN ) {
-            return SqlStdOperatorTable.GREATER_THAN;
+            return StdOperatorRegistry.getBinary( "GREATER_THAN" );
         } else if ( this == LESS_THAN ) {
-            return SqlStdOperatorTable.LESS_THAN;
+            return StdOperatorRegistry.getBinary( "LESS_THAN" );
         } else if ( this == GREATER_THAN_OR_EQUALS ) {
-            return SqlStdOperatorTable.GREATER_THAN_OR_EQUAL;
+            return StdOperatorRegistry.getBinary( "GREATER_THAN_OR_EQUAL" );
         } else {
-            return SqlStdOperatorTable.LESS_THAN_OR_EQUAL;
+            return StdOperatorRegistry.getBinary( "LESS_THAN_OR_EQUAL" );
         }
     }
 

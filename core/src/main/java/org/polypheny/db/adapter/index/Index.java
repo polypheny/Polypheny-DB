@@ -34,7 +34,7 @@ import org.polypheny.db.rel.core.Values;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Statement;
@@ -99,7 +99,7 @@ public abstract class Index {
                 .project( cols.stream().map( builder::field ).collect( Collectors.toList() ) )
                 .build();
         final QueryProcessor processor = statement.getQueryProcessor();
-        final PolyphenyDbSignature signature = processor.prepareQuery( RelRoot.of( scan, SqlKind.SELECT ) );
+        final PolyphenyDbSignature signature = processor.prepareQuery( RelRoot.of( scan, Kind.SELECT ) );
         // Execute query
         final Iterable<Object> enumerable = signature.enumerable( statement.getDataContext() );
         final Iterator<Object> iterator = enumerable.iterator();

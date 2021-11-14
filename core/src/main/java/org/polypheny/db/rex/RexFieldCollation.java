@@ -38,33 +38,33 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import java.util.Set;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.rel.RelFieldCollation;
 import org.polypheny.db.rel.RelFieldCollation.Direction;
-import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.util.Pair;
 
 
 /**
  * Expression combined with sort flags (DESCENDING, NULLS LAST).
  */
-public class RexFieldCollation extends Pair<RexNode, ImmutableSet<SqlKind>> {
+public class RexFieldCollation extends Pair<RexNode, ImmutableSet<Kind>> {
 
     /**
-     * Canonical map of all combinations of {@link SqlKind} values that can ever occur.
+     * Canonical map of all combinations of {@link Kind} values that can ever occur.
      * We use a canonical map to save a bit of memory. Because the sets are EnumSets they have predictable order for toString().
      */
-    private static final ImmutableMap<Set<SqlKind>, ImmutableSet<SqlKind>> KINDS =
+    private static final ImmutableMap<Set<Kind>, ImmutableSet<Kind>> KINDS =
             new Initializer()
                     .add()
-                    .add( SqlKind.NULLS_FIRST )
-                    .add( SqlKind.NULLS_LAST )
-                    .add( SqlKind.DESCENDING )
-                    .add( SqlKind.DESCENDING, SqlKind.NULLS_FIRST )
-                    .add( SqlKind.DESCENDING, SqlKind.NULLS_LAST )
+                    .add( Kind.NULLS_FIRST )
+                    .add( Kind.NULLS_LAST )
+                    .add( Kind.DESCENDING )
+                    .add( Kind.DESCENDING, Kind.NULLS_FIRST )
+                    .add( Kind.DESCENDING, Kind.NULLS_LAST )
                     .build();
 
 
-    public RexFieldCollation( RexNode left, Set<SqlKind> right ) {
+    public RexFieldCollation( RexNode left, Set<Kind> right ) {
         super( left, KINDS.get( right ) );
     }
 
@@ -76,7 +76,7 @@ public class RexFieldCollation extends Pair<RexNode, ImmutableSet<SqlKind>> {
             return s;
         }
         final StringBuilder b = new StringBuilder( s );
-        for ( SqlKind operator : right ) {
+        for ( Kind operator : right ) {
             switch ( operator ) {
                 case DESCENDING:
                     b.append( " DESC" );
@@ -96,27 +96,27 @@ public class RexFieldCollation extends Pair<RexNode, ImmutableSet<SqlKind>> {
 
 
     public Direction getDirection() {
-        return right.contains( SqlKind.DESCENDING )
+        return right.contains( Kind.DESCENDING )
                 ? RelFieldCollation.Direction.DESCENDING
                 : RelFieldCollation.Direction.ASCENDING;
     }
 
 
     public RelFieldCollation.NullDirection getNullDirection() {
-        return right.contains( SqlKind.NULLS_LAST )
+        return right.contains( Kind.NULLS_LAST )
                 ? RelFieldCollation.NullDirection.LAST
-                : right.contains( SqlKind.NULLS_FIRST )
+                : right.contains( Kind.NULLS_FIRST )
                         ? RelFieldCollation.NullDirection.FIRST
                         : getDirection().defaultNullDirection();
     }
 
 
     /**
-     * Helper, used during initialization, that builds a canonizing map from sets of {@code SqlKind} to immutable sets of {@code SqlKind}.
+     * Helper, used during initialization, that builds a canonizing map from sets of {@code Kind} to immutable sets of {@code Kind}.
      */
     private static class Initializer {
 
-        final ImmutableMap.Builder<Set<SqlKind>, ImmutableSet<SqlKind>> builder = ImmutableMap.builder();
+        final ImmutableMap.Builder<Set<Kind>, ImmutableSet<Kind>> builder = ImmutableMap.builder();
 
 
         public Initializer add() {
@@ -124,20 +124,22 @@ public class RexFieldCollation extends Pair<RexNode, ImmutableSet<SqlKind>> {
         }
 
 
-        public Initializer add( SqlKind kind, SqlKind... kinds ) {
+        public Initializer add( Kind kind, Kind... kinds ) {
             return add( Sets.immutableEnumSet( kind, kinds ) );
         }
 
 
-        private Initializer add( ImmutableSet<SqlKind> set ) {
+        private Initializer add( ImmutableSet<Kind> set ) {
             builder.put( set, set );
             return this;
         }
 
 
-        public ImmutableMap<Set<SqlKind>, ImmutableSet<SqlKind>> build() {
+        public ImmutableMap<Set<Kind>, ImmutableSet<Kind>> build() {
             return builder.build();
         }
+
     }
+
 }
 

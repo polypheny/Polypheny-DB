@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql2rel;
+package org.polypheny.db.core;
 
 
 import org.polypheny.db.rel.RelHomogeneousShuttle;

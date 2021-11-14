@@ -20,6 +20,7 @@ package org.polypheny.db.languages.sql.fun;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Monotonicity;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.SqlSyntax;
@@ -73,7 +74,7 @@ public class SqlAbstractTimeFunction extends SqlFunction {
 
     // All of the time functions are increasing. Not strictly increasing.
     @Override
-    public Monotonicity getMonotonicity( SqlOperatorBinding call ) {
+    public Monotonicity getMonotonicity( OperatorBinding call ) {
         return Monotonicity.INCREASING;
     }
 

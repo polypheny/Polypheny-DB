@@ -7,6 +7,7 @@ version = versionMajor + "." + versionMinor + versionQualifier
 
 dependencies {
     implementation project(":core")
+    implementation project(":languages")
 
     implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
     implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0

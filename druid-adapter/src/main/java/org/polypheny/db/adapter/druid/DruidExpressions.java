@@ -50,7 +50,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -116,10 +116,10 @@ public class DruidExpressions {
      */
     @Nullable
     public static String toDruidExpression( final RexNode rexNode, final RelDataType inputRowType, final DruidQuery druidRel ) {
-        SqlKind kind = rexNode.getKind();
+        Kind kind = rexNode.getKind();
         PolyType polyType = rexNode.getType().getPolyType();
 
-        if ( kind == SqlKind.INPUT_REF ) {
+        if ( kind == Kind.INPUT_REF ) {
             final RexInputRef ref = (RexInputRef) rexNode;
             final String columnName = inputRowType.getFieldNames().get( ref.getIndex() );
             if ( columnName == null ) {
@@ -141,7 +141,7 @@ public class DruidExpressions {
                 return conversion.toDruidExpression( rexNode, inputRowType, druidRel );
             }
         }
-        if ( kind == SqlKind.LITERAL ) {
+        if ( kind == Kind.LITERAL ) {
             // Translate literal.
             if ( RexLiteral.isNullLiteral( rexNode ) ) {
                 //case the filter/project might yield to unknown let Polypheny-DB deal with this for now

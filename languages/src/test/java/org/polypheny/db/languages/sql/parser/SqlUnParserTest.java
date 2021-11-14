@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.parser;
+package org.polypheny.db.languages.sql.parser;
 
 
 /**

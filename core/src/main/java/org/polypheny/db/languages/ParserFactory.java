@@ -14,25 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.core;
+package org.polypheny.db.languages;
 
-import lombok.Getter;
+import java.io.Reader;
 
-public interface Function {
+public interface ParserFactory {
 
-    FunctionType getFunctionType();
-
-    enum FunctionType {
-        COUNT( true ),
-        SINGLE_VALUE( true );
-
-        @Getter
-        private final boolean isAgg;
-
-
-        FunctionType( boolean isAgg ) {
-            this.isAgg = isAgg;
-        }
-    }
+    Parser getParser( Reader stream );
 
 }

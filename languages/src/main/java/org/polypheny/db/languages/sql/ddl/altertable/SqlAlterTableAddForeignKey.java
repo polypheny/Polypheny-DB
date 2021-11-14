@@ -28,6 +28,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionException;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
@@ -35,7 +36,6 @@ import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
-import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
@@ -107,10 +107,10 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
 
         // Make sure that this is a table of type TABLE (and not SOURCE)
         if ( catalogTable.tableType != TableType.TABLE ) {
-            throw SqlUtil.newContextException( table.getPos(), RESOURCE.ddlOnSourceTable() );
+            throw CoreUtil.newContextException( table.getPos(), RESOURCE.ddlOnSourceTable() );
         }
         if ( refTable.tableType != TableType.TABLE ) {
-            throw SqlUtil.newContextException( referencesTable.getPos(), RESOURCE.ddlOnSourceTable() );
+            throw CoreUtil.newContextException( referencesTable.getPos(), RESOURCE.ddlOnSourceTable() );
         }
         try {
             DdlManager.getInstance().addForeignKey(
@@ -122,7 +122,7 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
                     onUpdate,
                     onDelete );
         } catch ( UnknownColumnException e ) {
-            throw SqlUtil.newContextException( columnList.getPos(), RESOURCE.columnNotFound( e.getColumnName() ) );
+            throw CoreUtil.newContextException( columnList.getPos(), RESOURCE.columnNotFound( e.getColumnName() ) );
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         }

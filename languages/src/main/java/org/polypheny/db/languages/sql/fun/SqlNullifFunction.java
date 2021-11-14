@@ -18,16 +18,16 @@ package org.polypheny.db.languages.sql.fun;
 
 
 import java.util.List;
-import org.polypheny.db.core.Node;
-import org.polypheny.db.languages.sql.validate.SqlValidator;
-import org.polypheny.db.languages.sql.SqlCall;
-import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
 
@@ -54,7 +54,7 @@ public class SqlNullifFunction extends SqlFunction {
     // override SqlOperator
     @Override
     public SqlNode rewriteCall( SqlValidator validator, SqlCall call ) {
-        List<SqlNode> operands = call.getOperandList();
+        List<Node> operands = call.getOperandList();
         ParserPos pos = call.getPos();
 
         checkOperandCount( validator, getOperandTypeChecker(), call );
@@ -64,7 +64,7 @@ public class SqlNullifFunction extends SqlFunction {
         SqlNodeList thenList = new SqlNodeList( pos );
         whenList.add( operands.get( 1 ) );
         thenList.add( SqlLiteral.createNull( ParserPos.ZERO ) );
-        return SqlCase.createSwitched( pos, operands.get( 0 ), whenList, thenList, Node.clone( operands.get( 0 ) ) );
+        return SqlCase.createSwitched( pos, (SqlNode) operands.get( 0 ), whenList, thenList, (SqlNode) Node.clone( operands.get( 0 ) ) );
     }
 }
 

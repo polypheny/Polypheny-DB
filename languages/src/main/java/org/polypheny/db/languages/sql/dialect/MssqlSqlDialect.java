@@ -18,19 +18,19 @@ package org.polypheny.db.languages.sql.dialect;
 
 
 import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.SqlAbstractDateTimeLiteral;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDialect;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlIntervalLiteral;
 import org.polypheny.db.languages.sql.SqlIntervalQualifier;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.type.inference.ReturnTypes;
 
@@ -145,13 +145,13 @@ public class MssqlSqlDialect extends SqlDialect {
 
 
     @Override
-    public void unparseSqlDatetimeArithmetic( SqlWriter writer, SqlCall call, Kind sqlKind, int leftPrec, int rightPrec ) {
+    public void unparseSqlDatetimeArithmetic( SqlWriter writer, SqlCall call, Kind Kind, int leftPrec, int rightPrec ) {
 
         final SqlWriter.Frame frame = writer.startFunCall( "DATEADD" );
         SqlNode operand = call.operand( 1 );
         if ( operand instanceof SqlIntervalLiteral ) {
             //There is no DATESUB method available, so change the sign.
-            unparseSqlIntervalLiteralMssql( writer, (SqlIntervalLiteral) operand, sqlKind == Kind.MINUS ? -1 : 1 );
+            unparseSqlIntervalLiteralMssql( writer, (SqlIntervalLiteral) operand, Kind == Kind.MINUS ? -1 : 1 );
         } else {
             operand.unparse( writer, leftPrec, rightPrec );
         }

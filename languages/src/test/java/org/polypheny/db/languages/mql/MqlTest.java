@@ -64,8 +64,8 @@ public abstract class MqlTest {
 
         logicalOperators.put( "$and", Kind.AND );
         logicalOperators.put( "$or", Kind.OR );
-        //logicalOperators.put( "nor", SqlKind.N);
-        //logicalOperators.put( "not", SqlKind.NOT );
+        //logicalOperators.put( "nor", Kind.N);
+        //logicalOperators.put( "not", Kind.NOT );
     }
 
 

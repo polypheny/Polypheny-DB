@@ -27,6 +27,7 @@ import org.polypheny.db.core.CyclicDefinitionException;
 import org.polypheny.db.core.Modality;
 import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.NameMatcher;
+import org.polypheny.db.core.NameMatchers;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.ValidatorTable;
 import org.polypheny.db.languages.sql.SqlCall;
@@ -120,7 +121,7 @@ public class IdentifierNamespace extends AbstractNamespace {
 
         // Failed to match.  If we're matching case-sensitively, try a more lenient match. If we find something we can offer a helpful hint.
         if ( nameMatcher.isCaseSensitive() ) {
-            final NameMatcher liberalMatcher = SqlNameMatchers.liberal();
+            final NameMatcher liberalMatcher = NameMatchers.liberal();
             resolved.clear();
             parentScope.resolveTable( names, liberalMatcher, SqlValidatorScope.Path.EMPTY, resolved );
             if ( resolved.count() == 1 ) {

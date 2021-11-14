@@ -57,7 +57,7 @@ public class BinaryOperatorConversion implements DruidSqlOperatorConverter {
 
 
     @Override
-    public SqlOperator polyphenyDbOperator() {
+    public Operator polyphenyDbOperator() {
         return operator;
     }
 

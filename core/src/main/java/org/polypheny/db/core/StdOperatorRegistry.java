@@ -44,4 +44,9 @@ public class StdOperatorRegistry {
         return (AggFunction) get( key );
     }
 
+
+    public static <T extends Operator & BinaryOperator> T getBinary( String key ) {
+        return (T) get( key );
+    }
+
 }

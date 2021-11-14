@@ -26,7 +26,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.languages.sql.validate.SqlValidator;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelCollation;
@@ -72,6 +73,7 @@ import org.polypheny.db.util.mapping.IntPair;
 import org.polypheny.db.util.mapping.Mapping;
 import org.polypheny.db.util.mapping.MappingType;
 import org.polypheny.db.util.mapping.Mappings;
+import org.slf4j.Logger;
 
 
 /**
@@ -97,7 +99,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
      *
      * @param validator Validator
      */
-    public RelFieldTrimmer( SqlValidator validator, RelBuilder relBuilder ) {
+    public RelFieldTrimmer( Validator validator, RelBuilder relBuilder ) {
         Util.discard( validator ); // may be useful one day
         this.relBuilder = relBuilder;
         this.trimFieldsDispatcher =
@@ -127,8 +129,9 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
         if ( !trimResult.right.isIdentity() ) {
             throw new IllegalArgumentException();
         }
-        if ( SqlToRelConverter.SQL2REL_LOGGER.isDebugEnabled() ) {
-            SqlToRelConverter.SQL2REL_LOGGER.debug(
+        Logger logger = LanguageManager.getInstance().getLogger( QueryLanguage.SQL, RelNode.class );
+        if ( logger.isDebugEnabled() ) {
+            logger.debug(
                     RelOptUtil.dumpPlan(
                             "Plan after trimming unused fields",
                             trimResult.left,
@@ -925,6 +928,8 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
             super( left, right );
             assert right.getTargetCount() == left.getRowType().getFieldCount() : "rowType: " + left.getRowType() + ", mapping: " + right;
         }
+
     }
+
 }
 

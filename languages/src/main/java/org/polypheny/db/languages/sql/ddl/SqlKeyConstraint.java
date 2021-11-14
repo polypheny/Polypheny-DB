@@ -21,9 +21,12 @@ import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIdentifier;
+import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlWriter;
@@ -96,6 +99,12 @@ public class SqlKeyConstraint extends SqlCall {
 
     @Override
     public List<Node> getOperandList() {
+        return ImmutableNullableList.of( name, columnList );
+    }
+
+
+    @Override
+    public List<SqlNode> getSqlOperandList() {
         return ImmutableNullableList.of( name, columnList );
     }
 

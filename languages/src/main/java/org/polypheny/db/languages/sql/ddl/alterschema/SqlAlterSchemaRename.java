@@ -23,12 +23,14 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.exceptions.SchemaAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.languages.sql.SqlUtil;
+import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.ddl.SqlAlterSchema;
 import org.polypheny.db.transaction.Statement;
@@ -58,6 +60,12 @@ public class SqlAlterSchemaRename extends SqlAlterSchema {
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( oldName, newName );
+    }
+
+
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
         writer.keyword( "SCHEMA" );
@@ -73,9 +81,9 @@ public class SqlAlterSchemaRename extends SqlAlterSchema {
         try {
             DdlManager.getInstance().renameSchema( newName.getSimple(), oldName.getSimple(), context.getDatabaseId() );
         } catch ( SchemaAlreadyExistsException e ) {
-            throw SqlUtil.newContextException( newName.getPos(), RESOURCE.schemaExists( newName.getSimple() ) );
+            throw CoreUtil.newContextException( newName.getPos(), RESOURCE.schemaExists( newName.getSimple() ) );
         } catch ( UnknownSchemaException e ) {
-            throw SqlUtil.newContextException( oldName.getPos(), RESOURCE.schemaNotFound( oldName.getSimple() ) );
+            throw CoreUtil.newContextException( oldName.getPos(), RESOURCE.schemaNotFound( oldName.getSimple() ) );
         }
     }
 

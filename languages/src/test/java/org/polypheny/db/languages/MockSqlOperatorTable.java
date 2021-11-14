@@ -21,10 +21,10 @@ import com.google.common.collect.ImmutableList;
 import org.polypheny.db.core.ChainedOperatorTable;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlOperator;
-import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.util.ListSqlOperatorTable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -72,7 +72,7 @@ public class MockSqlOperatorTable extends ChainedOperatorTable {
 
 
         @Override
-        public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
+        public RelDataType inferReturnType( OperatorBinding opBinding ) {
             final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
             return typeFactory.builder()
                     .add( "I", null, PolyType.INTEGER )
@@ -93,7 +93,7 @@ public class MockSqlOperatorTable extends ChainedOperatorTable {
 
 
         @Override
-        public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
+        public RelDataType inferReturnType( OperatorBinding opBinding ) {
             final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
             return typeFactory.builder()
                     .add( "NAME", null, PolyType.VARCHAR, 1024 )

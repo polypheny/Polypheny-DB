@@ -27,6 +27,7 @@ import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogSchema;
@@ -44,7 +45,7 @@ import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -309,7 +310,7 @@ public class StatisticQueryProcessor {
 
         SqlNode parsed = sqlProcessor.parse( sql );
 
-        if ( parsed.isA( SqlKind.DDL ) ) {
+        if ( parsed.isA( Kind.DDL ) ) {
             // statistics module should not execute any ddls
             throw new RuntimeException( "No DDL expected here" );
         } else {

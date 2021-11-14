@@ -57,13 +57,10 @@ import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.ParserUtil;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlCollation;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParserUtil;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.CompositeList;
@@ -769,12 +766,12 @@ public class RexLiteral extends RexNode {
             case INTERVAL_MINUTE:
             case INTERVAL_MINUTE_SECOND:
             case INTERVAL_SECOND:
-                long millis = SqlParserUtil.intervalToMillis( literal, type.getIntervalQualifier() );
+                long millis = ParserUtil.intervalToMillis( literal, type.getIntervalQualifier() );
                 return new RexLiteral( BigDecimal.valueOf( millis ), type, typeName );
             case INTERVAL_YEAR:
             case INTERVAL_YEAR_MONTH:
             case INTERVAL_MONTH:
-                long months = SqlParserUtil.intervalToMonths( literal, type.getIntervalQualifier() );
+                long months = ParserUtil.intervalToMonths( literal, type.getIntervalQualifier() );
                 return new RexLiteral( BigDecimal.valueOf( months ), type, typeName );
             case DATE:
             case TIME:

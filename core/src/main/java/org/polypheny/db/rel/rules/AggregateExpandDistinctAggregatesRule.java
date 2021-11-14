@@ -65,8 +65,8 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.fun.SqlSumEmptyIsZeroAggFunction;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
@@ -123,7 +123,7 @@ public final class AggregateExpandDistinctAggregatesRule extends RelOptRule {
             }
             if ( !aggCall.isDistinct() ) {
                 ++nonDistinctAggCallCount;
-                final SqlKind aggCallKind = aggCall.getAggregation().getKind();
+                final Kind aggCallKind = aggCall.getAggregation().getKind();
                 // We only support COUNT/SUM/MIN/MAX for the "single" count distinct optimization
                 switch ( aggCallKind ) {
                     case COUNT:
@@ -291,7 +291,7 @@ public final class AggregateExpandDistinctAggregatesRule extends RelOptRule {
                 // If aggregate B had a COUNT aggregate call the corresponding aggregate at aggregate A must be SUM. For other aggregates, it remains the same.
                 final int arg = bottomGroups.size() + nonDistinctAggCallProcessedSoFar;
                 final List<Integer> newArgs = ImmutableList.of( arg );
-                if ( aggCall.getAggregation().getKind() == SqlKind.COUNT ) {
+                if ( aggCall.getAggregation().getKind() == Kind.COUNT ) {
                     newCall = AggregateCall.create( new SqlSumEmptyIsZeroAggFunction(), false, aggCall.isApproximate(), newArgs, -1, aggCall.collation, originalGroupSet.cardinality(), relBuilder.peek(), aggCall.getType(), aggCall.getName() );
                 } else {
                     newCall = AggregateCall.create( aggCall.getAggregation(), false, aggCall.isApproximate(), newArgs, -1, aggCall.collation, originalGroupSet.cardinality(), relBuilder.peek(), aggCall.getType(), aggCall.name );

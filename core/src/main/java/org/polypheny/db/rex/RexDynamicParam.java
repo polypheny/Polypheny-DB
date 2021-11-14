@@ -36,7 +36,7 @@ package org.polypheny.db.rex;
 
 import java.util.Objects;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 
 
 /**
@@ -60,8 +60,8 @@ public class RexDynamicParam extends RexVariable {
 
 
     @Override
-    public SqlKind getKind() {
-        return SqlKind.DYNAMIC_PARAM;
+    public Kind getKind() {
+        return Kind.DYNAMIC_PARAM;
     }
 
 

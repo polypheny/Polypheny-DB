@@ -133,7 +133,7 @@ public interface NodeToRelConverter {
         private RelBuilderFactory relBuilderFactory = RelFactories.LOGICAL_BUILDER;
 
 
-        private ConfigBuilder() {
+        public ConfigBuilder() {
         }
 
 

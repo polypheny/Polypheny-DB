@@ -95,7 +95,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.Kind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlDatetimePlusOperator;
 import org.polypheny.db.sql.fun.SqlDatetimeSubtractionOperator;
@@ -310,7 +310,7 @@ public class MongoRules {
                 return "'$" + name + "'";
             }
             final List<String> strings = translateList( call.operands );
-            if ( call.getKind() == SqlKind.CAST ) {
+            if ( call.getKind() == Kind.CAST ) {
                 return strings.get( 0 );
             }
             String stdOperator = MONGO_OPERATORS.get( call.getOperator() );
@@ -418,23 +418,23 @@ public class MongoRules {
                 BsonArray array = new BsonArray();
                 array.addAll( translateList( call.operands ).stream().map( BsonString::new ).collect( Collectors.toList() ) );
                 return array.toString();
-            } else if ( call.isA( SqlKind.DOC_FIELD ) ) {
+            } else if ( call.isA( Kind.DOC_FIELD ) ) {
                 return RexToMongoTranslator.translateDocValue( implementor.getStaticRowType(), call );
 
-            } else if ( call.isA( SqlKind.DOC_ITEM ) ) {
+            } else if ( call.isA( Kind.DOC_ITEM ) ) {
                 RexNode leftPre = call.operands.get( 0 );
                 String left = leftPre.accept( this );
 
                 String right = call.operands.get( 1 ).accept( this );
 
                 return "{\"$arrayElemAt\":[" + left + "," + right + "]}";
-            } else if ( call.isA( SqlKind.DOC_SLICE ) ) {
+            } else if ( call.isA( Kind.DOC_SLICE ) ) {
                 String left = call.operands.get( 0 ).accept( this );
                 String skip = call.operands.get( 1 ).accept( this );
                 String return_ = call.operands.get( 2 ).accept( this );
 
                 return "{\"$slice\":[ " + left + "," + skip + "," + return_ + "]}";
-            } else if ( call.isA( SqlKind.DOC_EXCLUDE ) ) {
+            } else if ( call.isA( Kind.DOC_EXCLUDE ) ) {
                 String parent = implementor
                         .getStaticRowType()
                         .getFieldNames()
@@ -457,7 +457,7 @@ public class MongoRules {
                 }
 
                 return String.join( ",", fields );
-            } else if ( call.isA( SqlKind.DOC_UNWIND ) ) {
+            } else if ( call.isA( Kind.DOC_UNWIND ) ) {
                 return call.operands.get( 0 ).accept( this );
             }
             return null;
@@ -840,11 +840,11 @@ public class MongoRules {
                                     rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
                                     BsonUtil.getAsBson( (RexLiteral) el, bucket ) );
                         } else if ( el instanceof RexCall ) {
-                            if ( ((RexCall) el).op.kind == SqlKind.PLUS ) {
+                            if ( ((RexCall) el).op.kind == Kind.PLUS ) {
                                 doc.append(
                                         rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
-                                        visitCall( implementor, (RexCall) el, SqlKind.PLUS, el.getType().getPolyType() ) );
-                            } else if ( ((RexCall) el).op.kind.belongsTo( SqlKind.DOC_KIND ) ) {
+                                        visitCall( implementor, (RexCall) el, Kind.PLUS, el.getType().getPolyType() ) );
+                            } else if ( ((RexCall) el).op.kind.belongsTo( Kind.DOC_KIND ) ) {
                                 docDocs.add( handleDocumentUpdate( (RexCall) el, bucket, rowType ) );
                             } else {
                                 doc.append(
@@ -1028,27 +1028,27 @@ public class MongoRules {
         }
 
 
-        private BsonValue visitCall( Implementor implementor, RexCall call, SqlKind op, PolyType type ) {
+        private BsonValue visitCall( Implementor implementor, RexCall call, Kind op, PolyType type ) {
             BsonDocument doc = new BsonDocument();
 
             BsonArray array = new BsonArray();
             for ( RexNode operand : call.operands ) {
-                if ( operand.getKind() == SqlKind.FIELD_ACCESS ) {
+                if ( operand.getKind() == Kind.FIELD_ACCESS ) {
                     String physicalName = "$" + implementor.getPhysicalName( ((RexFieldAccess) operand).getField().getName() );
                     array.add( new BsonString( physicalName ) );
                 } else if ( operand instanceof RexCall ) {
                     array.add( visitCall( implementor, (RexCall) operand, ((RexCall) operand).op.getKind(), type ) );
-                } else if ( operand.getKind() == SqlKind.LITERAL ) {
+                } else if ( operand.getKind() == Kind.LITERAL ) {
                     array.add( BsonUtil.getAsBson( ((RexLiteral) operand).getValueAs( BsonUtil.getClassFromType( type ) ), type, implementor.mongoTable.getMongoSchema().getBucket() ) );
-                } else if ( operand.getKind() == SqlKind.DYNAMIC_PARAM ) {
+                } else if ( operand.getKind() == Kind.DYNAMIC_PARAM ) {
                     array.add( new BsonDynamic( (RexDynamicParam) operand ) );
                 } else {
                     throw new RuntimeException( "Not implemented yet" );
                 }
             }
-            if ( op == SqlKind.PLUS ) {
+            if ( op == Kind.PLUS ) {
                 doc.append( "$add", array );
-            } else if ( op == SqlKind.MINUS ) {
+            } else if ( op == Kind.MINUS ) {
                 doc.append( "$subtract", array );
             } else {
                 throw new RuntimeException( "Not implemented yet" );
@@ -1090,7 +1090,7 @@ public class MongoRules {
 
                     doc.append( physicalMapping.get( pos ), getBsonArray( (RexCall) rexNode, type, bucket ) );
 
-                } else if ( rexNode.getKind() == SqlKind.INPUT_REF && input.getInput() instanceof MongoValues ) {
+                } else if ( rexNode.getKind() == Kind.INPUT_REF && input.getInput() instanceof MongoValues ) {
                     handleDirectInsert( implementor, (MongoValues) input.getInput() );
                     return;
                 } else {
@@ -1124,7 +1124,7 @@ public class MongoRules {
 
 
         private BsonValue getBsonArray( RexCall el, PolyType type, GridFSBucket bucket ) {
-            if ( el.op.kind == SqlKind.ARRAY_VALUE_CONSTRUCTOR ) {
+            if ( el.op.kind == Kind.ARRAY_VALUE_CONSTRUCTOR ) {
                 BsonArray array = new BsonArray();
                 array.addAll( el.operands.stream().map( operand -> {
                     if ( operand instanceof RexLiteral ) {

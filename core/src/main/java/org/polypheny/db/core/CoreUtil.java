@@ -18,27 +18,22 @@ package org.polypheny.db.core;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
-import com.google.common.base.Utf8;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.TreeSet;
-import org.apache.calcite.avatica.util.ByteString;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.runtime.PolyphenyDbContextException;
+import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.runtime.Resources;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.ConversionUtil;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.SaffronProperties;
-import org.polypheny.db.util.Util;
 
 public class CoreUtil {
 
@@ -240,6 +235,41 @@ public class CoreUtil {
         RelDataType type = typeFactory.createPolyType( PolyType.CHAR, str.getValue().length() );
         type = typeFactory.createTypeWithCharsetAndCollation( type, charset, collation );
         return type;
+    }
+
+
+    /**
+     * Wraps an exception with context.
+     */
+    public static PolyphenyDbException newContextException( final ParserPos pos, Resources.ExInst<?> e, String inputText ) {
+        PolyphenyDbContextException ex = newContextException( pos, e );
+        ex.setOriginalStatement( inputText );
+        return ex;
+    }
+
+
+    /**
+     * Wraps an exception with context.
+     */
+    public static PolyphenyDbContextException newContextException( final ParserPos pos, Resources.ExInst<?> e ) {
+        int line = pos.getLineNum();
+        int col = pos.getColumnNum();
+        int endLine = pos.getEndLineNum();
+        int endCol = pos.getEndColumnNum();
+        return newContextException( line, col, endLine, endCol, e );
+    }
+
+
+    /**
+     * Wraps an exception with context.
+     */
+    public static PolyphenyDbContextException newContextException( int line, int col, int endLine, int endCol, Resources.ExInst<?> e ) {
+        PolyphenyDbContextException contextExcn =
+                (line == endLine && col == endCol
+                        ? RESOURCE.validatorContextPoint( line, col )
+                        : RESOURCE.validatorContext( line, col, endLine, endCol )).ex( e.ex() );
+        contextExcn.setPosition( line, col, endLine, endCol );
+        return contextExcn;
     }
 
 

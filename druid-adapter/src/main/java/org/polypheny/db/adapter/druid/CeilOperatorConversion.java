@@ -38,12 +38,12 @@ import java.util.TimeZone;
 import javax.annotation.Nullable;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnitRange;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.type.PolyType;
 
 
@@ -53,8 +53,8 @@ import org.polypheny.db.type.PolyType;
 public class CeilOperatorConversion implements DruidSqlOperatorConverter {
 
     @Override
-    public SqlOperator polyphenyDbOperator() {
-        return SqlStdOperatorTable.CEIL;
+    public Operator polyphenyDbOperator() {
+        return StdOperatorRegistry.get( "CEIL" );
     }
 
 
@@ -93,5 +93,6 @@ public class CeilOperatorConversion implements DruidSqlOperatorConverter {
             return null;
         }
     }
+
 }
 

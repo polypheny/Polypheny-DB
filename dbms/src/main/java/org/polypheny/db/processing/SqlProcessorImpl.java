@@ -41,6 +41,7 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.ExecutableStatement;
 import org.polypheny.db.core.ExplainFormat;
 import org.polypheny.db.core.ExplainLevel;
@@ -66,7 +67,6 @@ import org.polypheny.db.languages.sql.SqlInsert;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
-import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.parser.SqlParser;
@@ -125,13 +125,13 @@ public class SqlProcessorImpl implements Processor, ViewExpander {
             log.debug( "Parsing PolySQL statement ..." );
         }
         stopWatch.start();
-        SqlNode parsed;
+        Node parsed;
         if ( log.isDebugEnabled() ) {
             log.debug( "SQL: {}", query );
         }
 
         try {
-            final SqlParser parser = Parser.create( new SourceStringReader( query ), parserConfig );
+            final Parser parser = Parser.create( new SourceStringReader( query ), parserConfig );
             parsed = parser.parseStmt();
         } catch ( ParseException e ) {
             log.error( "Caught exception", e );
@@ -168,7 +168,7 @@ public class SqlProcessorImpl implements Processor, ViewExpander {
         validator = new PolyphenyDbSqlValidator( SqlStdOperatorTable.instance(), catalogReader, transaction.getTypeFactory(), conformance );
         validator.setIdentifierExpansion( true );
 
-        SqlNode validated;
+        Node validated;
         RelDataType type;
         try {
             validated = validator.validate( parsed );
@@ -253,7 +253,7 @@ public class SqlProcessorImpl implements Processor, ViewExpander {
                 // Acquire global schema lock
                 LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
                 // Execute statement
-                ((ExecutableStatement) parsed).execute( statement.getPrepareContext(), statement, );
+                ((ExecutableStatement) parsed).execute( statement.getPrepareContext(), statement, null );
                 statement.getTransaction().commit();
                 Catalog.getInstance().commit();
                 return new PolyphenyDbSignature<>(
@@ -421,11 +421,11 @@ public class SqlProcessorImpl implements Processor, ViewExpander {
             }
             catalogTable = Catalog.getInstance().getTable( schemaId, tableOldName );
         } catch ( UnknownDatabaseException e ) {
-            throw SqlUtil.newContextException( tableName.getPos(), RESOURCE.databaseNotFound( tableName.toString() ) );
+            throw CoreUtil.newContextException( tableName.getPos(), RESOURCE.databaseNotFound( tableName.toString() ) );
         } catch ( UnknownSchemaException e ) {
-            throw SqlUtil.newContextException( tableName.getPos(), RESOURCE.schemaNotFound( tableName.toString() ) );
+            throw CoreUtil.newContextException( tableName.getPos(), RESOURCE.schemaNotFound( tableName.toString() ) );
         } catch ( UnknownTableException e ) {
-            throw SqlUtil.newContextException( tableName.getPos(), RESOURCE.tableNotFound( tableName.toString() ) );
+            throw CoreUtil.newContextException( tableName.getPos(), RESOURCE.tableNotFound( tableName.toString() ) );
         }
         return catalogTable;
     }

@@ -59,6 +59,12 @@ public class SqlWithItem extends SqlCall {
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( name, columnList, query );
+    }
+
+
+    @Override
     public void setOperand( int i, Node operand ) {
         switch ( i ) {
             case 0:

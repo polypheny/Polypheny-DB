@@ -37,11 +37,11 @@ package org.polypheny.db.adapter.druid;
 import java.util.TimeZone;
 import javax.annotation.Nullable;
 import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.type.PolyType;
 
 
@@ -51,8 +51,8 @@ import org.polypheny.db.type.PolyType;
 public class FloorOperatorConversion implements DruidSqlOperatorConverter {
 
     @Override
-    public SqlOperator polyphenyDbOperator() {
-        return SqlStdOperatorTable.FLOOR;
+    public Operator polyphenyDbOperator() {
+        return StdOperatorRegistry.get( "FLOOR" );
     }
 
 
@@ -88,4 +88,5 @@ public class FloorOperatorConversion implements DruidSqlOperatorConverter {
             return null;
         }
     }
+
 }
